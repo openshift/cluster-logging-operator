@@ -34,6 +34,10 @@ func Reconcile(logging *v1alpha1.ClusterLogging)(err error) {
   }
 
   // Reconcile Log Store
+  err = k8shandler.CreateOrUpdateLogStore(logging)
+  if err != nil {
+    logrus.Fatalf("Unable to create or update logstore: %v", err)
+  }
 
   // Reconcile Visualization
 

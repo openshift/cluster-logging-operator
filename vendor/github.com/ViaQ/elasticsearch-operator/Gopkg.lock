@@ -15,12 +15,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/ViaQ/elasticsearch-operator"
-  packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "693f4f6253be240539c2d8cea1f3652952f5cef9"
-
-[[projects]]
-  branch = "master"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
@@ -317,7 +311,7 @@
     "imports",
     "internal/fastwalk"
   ]
-  revision = "57f659e14dda699044a713b0f8d1d3ff033e0455"
+  revision = "32950ab3be12acf6d472893021373669979907ab"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -520,6 +514,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1edb082c387ddcba03f9ee9f8910a416af2163fba9e9c36c1502b89781b41a9a"
+  inputs-digest = "ecd2e1d13a38e943f4705a5b804ae00256c7f741f0eb49211cc498d71278059c"
   solver-name = "gps-cdcl"
   solver-version = 1

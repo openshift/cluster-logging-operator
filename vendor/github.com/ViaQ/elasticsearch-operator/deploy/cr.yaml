@@ -1,0 +1,20 @@
+apiVersion: "elasticsearch.redhat.com/v1alpha1"
+kind: "Elasticsearch"
+metadata:
+  name: "elastic1"
+spec:
+  nodeSpec:
+    image: docker.io/t0ffel/logging-insecure-elasticsearch5
+  nodes:
+    - roles:
+      - client
+      - data
+      - master
+      replicas: 1
+      resources:
+        limits:
+          memory: 1Gi
+        requests:
+          memory: 512Mi
+  securityConfig:
+    disabled: true

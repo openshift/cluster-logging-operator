@@ -1,0 +1,63 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: elasticsearch-template
+parameters:
+- name: NAMESPACE
+  value: elasticsearch
+- name: ELASTICSEARCH_CLUSTER_NAME
+  value: elastic1
+objects:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: elasticsearch-operator
+    namespace: ${NAMESPACE}
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        name: elasticsearch-operator
+    template:
+      metadata:
+        labels:
+          name: elasticsearch-operator
+      spec:
+        containers:
+          - name: elasticsearch-operator
+            image: t0ffel/es-operator
+            ports:
+            - containerPort: 60000
+              name: metrics
+            command:
+            - elasticsearch-operator
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: WATCH_NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+              - name: OPERATOR_NAME
+                value: "elasticsearch-operator"
+- apiVersion: "elasticsearch.redhat.com/v1alpha1"
+  kind: "Elasticsearch"
+  metadata:
+    name: ${ELASTICSEARCH_CLUSTER_NAME}
+    namespace: ${NAMESPACE}
+  spec:
+    nodeSpec:
+      image: docker.io/openshift/logging-elasticsearch5
+    nodes:
+      - roles:
+        - client
+        - data
+        - master
+        replicas: 1
+        resources:
+          limits:
+            memory: 1Gi
+          requests:
+            memory: 512Mi
+        nodeSelector:
+          kubernetes.io/hostname: localhost
+

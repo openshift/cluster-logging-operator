@@ -7,14 +7,16 @@ import (
   "os"
   "os/exec"
   "io/ioutil"
+  "path"
+
+  "github.com/openshift/cluster-logging-operator/pkg/utils"
 
   sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
   k8sutil "github.com/operator-framework/operator-sdk/pkg/util/k8sutil"
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func extractMasterCertificate(namespace string, secretName string) error {
-
+func extractSecretToFile(namespace string, secretName string, key string, toFile string) error {
   secret := &v1.Secret{
     TypeMeta: metav1.TypeMeta{
       Kind: "Secret",
@@ -27,32 +29,34 @@ func extractMasterCertificate(namespace string, secretName string) error {
   }
   err := sdk.Get(secret)
 
-  // value []byte
-  caValue, ok := secret.Data["masterca"]
+  value, ok := secret.Data[key]
 
   // check to see if the map value exists
   if ! ok {
-    logrus.Fatalf("No secret data \"masterca\" found")
+    logrus.Fatalf("No secret data \"%s\" found", key)
     return nil
   }
 
-  err = ioutil.WriteFile("/tmp/_working_dir/ca.crt", caValue, 0644)
+  err = ioutil.WriteFile(path.Join(utils.WORKING_DIR, toFile), value, 0644)
   if err != nil {
-    logrus.Fatalf("Unable to write CA cert to working dir: %v", err)
+    logrus.Fatalf("Unable to write to working dir: %v", err)
   }
 
-  keyValue, ok := secret.Data["masterkey"]
+  return nil
+}
 
-  // check to see if the map value exists
-  if ! ok {
-    logrus.Fatalf("No secret data \"masterkey\" found")
-    return nil
-  }
+func extractMasterCertificate(namespace string, secretName string) error {
 
-  err = ioutil.WriteFile("/tmp/_working_dir/ca.key", keyValue, 0644)
-  if err != nil {
-    logrus.Fatalf("Unable to write CA key to working dir: %v", err)
-  }
+  extractSecretToFile(namespace, secretName, "masterca", "ca.crt")
+  extractSecretToFile(namespace, secretName, "masterkey", "ca.key")
+
+  return nil
+}
+
+func extractKibanaInternalCertificate(namespace string, secretName string) error {
+
+  extractSecretToFile(namespace, secretName, "kibanacert", "kibana-internal.crt")
+  extractSecretToFile(namespace, secretName, "kibanakey", "kibana-internal.key")
 
   return nil
 }
@@ -66,6 +70,7 @@ func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) error {
   }
 
   err = extractMasterCertificate(namespace, "logging-master-ca")
+  err = extractKibanaInternalCertificate(namespace, "logging-master-ca")
 
   cmd := exec.Command("bash", "scripts/cert_generation.sh")
   cmd.Env = append(os.Environ(),

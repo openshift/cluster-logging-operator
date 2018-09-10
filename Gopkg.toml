@@ -41,3 +41,7 @@ required = [
 [[constraint]]
   branch = "master"
   name = "github.com/ViaQ/elasticsearch-operator"
+
+[[constraint]]
+  name = "github.com/openshift/api"
+  version = "3.9.0"

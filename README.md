@@ -9,7 +9,9 @@ CLUSTER_LOGGING_OPERATOR=$GOPATH/src/github.com/openshift/cluster-logging-operat
 ELASTICSEARCH_OPERATOR=$GOPATH/src/github.com/openshift/elasticsearch-operator
 
 oc adm ca create-signer-cert --cert='/tmp/ca.crt' --key='/tmp/ca.key' --serial='/tmp/ca.serial.txt'
-oc create -n openshift-logging secret generic logging-master-ca --from-file=masterca=/tmp/ca.crt --from-file=masterkey=/tmp/ca.key
+oc adm ca create-server-cert --cert='/tmp/kibana-internal.crt' --key='/tmp/kibana-internal.key' --hostnames='kibana,kibana-ops' --signer-cert='/tmp/ca.crt' --signer-key='/tmp/ca.key' --signer-serial='/tmp/ca.serial.txt'
+
+oc create -n openshift-logging secret generic logging-master-ca --from-file=masterca=/tmp/ca.crt --from-file=masterkey=/tmp/ca.key --from-file=kibanacert=/tmp/kibana-internal.crt --from-file=kibanakey=/tmp/kibana-internal.key
 
 oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/rbac.yaml
 oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/crd.yaml

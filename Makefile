@@ -7,7 +7,7 @@ GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
 DOCKER_OPTS=
 
 APP_NAME=cluster-logging-operator
-APP_REPO=github.com/openshift/$(APP_NAME)
+APP_REPO=github.com/openshift/origin-$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 

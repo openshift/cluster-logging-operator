@@ -34,7 +34,7 @@ func createOrUpdateKibanaServiceAccount(logging *logging.ClusterLogging) error {
 
 func createOrUpdateKibanaDeployment(logging *logging.ClusterLogging) error {
 
-  kibanaPodSpec := PodSpec(logging)
+  kibanaPodSpec := kibanaPodSpec(logging)
   kibanaDeployment := utils.Deployment("logging-kibana", logging.Namespace, "kibana", "kibana", kibanaPodSpec)
 
   err := sdk.Create(kibanaDeployment)
@@ -117,7 +117,7 @@ func createOrUpdateKibanaSecret(logging *logging.ClusterLogging) error {
   return nil
 }
 
-func PodSpec(logging *logging.ClusterLogging) v1.PodSpec {
+func kibanaPodSpec(logging *logging.ClusterLogging) v1.PodSpec {
   return v1.PodSpec{
     Affinity: &v1.Affinity{
       PodAntiAffinity: &v1.PodAntiAffinity{

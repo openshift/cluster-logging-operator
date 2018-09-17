@@ -48,6 +48,10 @@ func Reconcile(logging *v1alpha1.ClusterLogging)(err error) {
   // Reconcile Curation
 
   // Reconcile Collection
+  err = k8shandler.CreateOrUpdateCollection(logging)
+  if err != nil {
+    logrus.Fatalf("Unable to create of update collection: %v", err)
+  }
 
   return nil
 }

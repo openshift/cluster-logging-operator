@@ -5,16 +5,132 @@ import (
   "time"
   "io/ioutil"
   "github.com/sirupsen/logrus"
+  "bytes"
+  "os"
 
   "k8s.io/api/core/v1"
   apps "k8s.io/api/apps/v1"
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
   route "github.com/openshift/api/route/v1"
-  scheduling "k8s.io/api/scheduling/v1alpha1"
+  scheduling "k8s.io/api/scheduling/v1beta1"
   batch "k8s.io/api/batch/v1beta1"
+  logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 )
 
 const WORKING_DIR = "/tmp/_working_dir"
+const ALLINONE_ANNOTATION = "io.openshift.clusterlogging.alpha/allinone"
+
+func AllInOne(logging *logging.ClusterLogging) bool {
+
+  _, ok := logging.ObjectMeta.Annotations[ALLINONE_ANNOTATION]
+  return ok
+}
+
+// These keys are based on the "container name" + "-{image,version}"
+var COMPONENT_IMAGES = map[string]string {
+  "kibana-image": "logging-kibana5",
+  "kibana-version": "latest",
+  "kibana-proxy-image": "oauth-proxy",
+  "kibana-proxy-version": "latest",
+  "curator-image": "logging-curator5",
+  "curator-version": "latest",
+  "fluentd-image": "logging-fluentd",
+  "fluentd-version": "latest",
+  "elasticsearch-image": "logging-elasticsearch5",
+  "elasticsearch-version": "latest",
+}
+
+func getImageName(component string) string {
+
+  var componentKey bytes.Buffer
+  componentKey.WriteString(component)
+  componentKey.WriteString("-image")
+
+  imageName, ok := COMPONENT_IMAGES[componentKey.String()]
+
+  if ok {
+    return imageName
+  }
+
+  return ""
+}
+
+func getImageVersion(component string) string {
+
+  var componentKey bytes.Buffer
+  componentKey.WriteString(component)
+  componentKey.WriteString("-version")
+
+  imageVersion, ok := COMPONENT_IMAGES[componentKey.String()]
+
+  if ok {
+    return imageVersion
+  }
+
+  return ""
+}
+
+func getImagePrefix(component string) string {
+
+  repoPrefix := os.Getenv("REPO_PREFIX")
+  imagePrefix := os.Getenv("IMAGE_PREFIX")
+
+  var prefix bytes.Buffer
+
+  switch component {
+  case "kibana":
+    prefix.WriteString(repoPrefix)
+    prefix.WriteString(imagePrefix)
+
+  case "kibana-proxy":
+    prefix.WriteString(repoPrefix)
+
+  case "curator":
+    prefix.WriteString(repoPrefix)
+    prefix.WriteString(imagePrefix)
+
+  case "fluentd":
+    prefix.WriteString(repoPrefix)
+    prefix.WriteString(imagePrefix)
+
+  case "elasticsearch":
+    prefix.WriteString(repoPrefix)
+    prefix.WriteString(imagePrefix)
+
+  default:
+    return ""
+  }
+
+  return prefix.String()
+}
+
+func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
+	return metav1.OwnerReference{
+		APIVersion: logging.SchemeGroupVersion.String(),
+		Kind:       o.Kind,
+		Name:       o.Name,
+		UID:        o.UID,
+		Controller: GetBool(true),
+	}
+}
+
+func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
+  if (metav1.OwnerReference{}) != ownerRef {
+    object.SetOwnerReferences(append(object.GetOwnerReferences(), ownerRef))
+  }
+}
+
+func GetComponentImage(component string) string {
+
+  var image bytes.Buffer
+
+  image.WriteString(getImagePrefix(component))
+  image.WriteString(getImageName(component))
+  image.WriteString(":")
+  image.WriteString(getImageVersion(component))
+
+  return image.String()
+}
 
 func GetFileContents(filePath string) []byte {
   contents, err := ioutil.ReadFile(filePath)
@@ -112,6 +228,23 @@ func Route(routeName string, namespace string, hostName string, serviceName stri
         Kind: "Service",
       },
     },
+  }
+}
+
+func PodSpec(serviceAccountName string, containers []v1.Container, volumes []v1.Volume) v1.PodSpec {
+  return v1.PodSpec{
+    Containers: containers,
+    ServiceAccountName: serviceAccountName,
+    Volumes: volumes,
+  }
+}
+
+func Container(containerName string, pullPolicy v1.PullPolicy, resources v1.ResourceRequirements) v1.Container {
+  return v1.Container{
+    Name: containerName,
+    Image: GetComponentImage(containerName),
+    ImagePullPolicy: pullPolicy,
+    Resources: resources,
   }
 }
 
@@ -218,7 +351,6 @@ func ConfigMap(configmapName string, namespace string, data map[string]string) *
   }
 }
 
-// TODO: figure out where this spec is defined...
 func PriorityClass(priorityclassName string, priorityValue int32, globalDefault bool, description string) *scheduling.PriorityClass {
   return &scheduling.PriorityClass{
     TypeMeta: metav1.TypeMeta{

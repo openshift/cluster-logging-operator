@@ -30,4 +30,8 @@ oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/cr.yaml
 ```
 
 To test on an OCP cluster with logging already installed, you can run:
-`OPERATOR_NAME=cluster-logging-operator WATCH_NAMESPACE=openshift-logging KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig go run cmd/cluster-logging-operator/main.go`
+`REPO_PREFIX=openshift/ IMAGE_PREFIX=origin- OPERATOR_NAME=cluster-logging-operator WATCH_NAMESPACE=openshift-logging KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig go run cmd/cluster-logging-operator/main.go`
+
+
+To remove created API objects:
+`oc delete ClusterLogging example -n openshift-logging`

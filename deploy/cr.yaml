@@ -2,3 +2,12 @@ apiVersion: "logging.openshift.io/v1alpha1"
 kind: "ClusterLogging"
 metadata:
   name: "example"
+  annotations:
+    "io.openshift.clusterlogging.alpha/allinone": ""
+spec:
+  logStore:
+    type: "elasticsearch"
+    elasticsearch:
+      replicas: 1
+      storage:
+        emptyDir: {}

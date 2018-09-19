@@ -48,7 +48,6 @@ func createOrUpdateFluentdServiceAccount(logging *logging.ClusterLogging) error 
 
 func createOrUpdateFluentdConfigMap(logging *logging.ClusterLogging) error {
 
-  // TODO: update to use the actual files we want...
   fluentdConfigMap := utils.ConfigMap(
     "logging-fluentd",
     logging.Namespace,

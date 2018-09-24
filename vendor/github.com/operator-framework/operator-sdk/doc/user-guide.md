@@ -4,7 +4,7 @@ This guide walks through an example of building a simple memcached-operator usin
 
 ## Prerequisites
 
-- [dep][dep_tool] version v0.4.1+.
+- [dep][dep_tool] version v0.5.0+.
 - [git][git_tool]
 - [go][go_tool] version v1.10+.
 - [docker][docker_tool] version 17.03+.
@@ -36,6 +36,7 @@ This installs the CLI binary `operator-sdk` at `$GOPATH/bin`.
 Use the CLI to create a new memcached-operator project:
 
 ```sh
+$ mkdir -p $GOPATH/src/github.com/example-inc/
 $ cd $GOPATH/src/github.com/example-inc/
 $ operator-sdk new memcached-operator --api-version=cache.example.com/v1alpha1 --kind=Memcached
 $ cd memcached-operator
@@ -58,10 +59,26 @@ By default, the memcached-operator watches `Memcached` resource events as shown 
 
 ```Go
 func main() {
-  sdk.Watch("cache.example.com/v1alpha1", "Memcached", "default", 5)
+  sdk.Watch("cache.example.com/v1alpha1", "Memcached", "default", time.Duration(5)*time.Second)
   sdk.Handle(stub.NewHandler())
   sdk.Run(context.TODO())
 }
+```
+
+#### Options
+**Worker Count**
+The number of concurrent informer workers can be configured with an additional Watch option. The default value is 1 if an argument is not given.
+```Go
+sdk.Watch("cache.example.com/v1alpha1", "Memcached", "default", time.Duration(5)*time.Second, sdk.WithNumWorkers(n))
+```
+
+**Label Selector**
+Label selectors allow the watch to filter resources by kubernetes labels. It can be specified using the standard kubernetes label selector format:
+
+https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
+
+```Go
+sdk.Watch("cache.example.com/v1alpha1", "Memcached", "default", time.Duration(5)*time.Second, sdk.WithLabelSelector("app=myapp"))
 ```
 
 ### Define the Memcached spec and status
@@ -114,6 +131,7 @@ Run as pod inside a Kubernetes cluster is preferred for production use.
 Build the memcached-operator image and push it to a registry:
 ```
 $ operator-sdk build quay.io/example/memcached-operator:v0.0.1
+$ sed -i 's|REPLACE_IMAGE|quay.io/example/memcached-operator:v0.0.1|g' deploy/operator.yaml
 $ docker push quay.io/example/memcached-operator:v0.0.1
 ```
 
@@ -122,6 +140,7 @@ Kubernetes deployment manifests are generated in `deploy/operator.yaml`. The dep
 Deploy the memcached-operator:
 
 ```sh
+$ kubectl create -f deploy/sa.yaml
 $ kubectl create -f deploy/rbac.yaml
 $ kubectl create -f deploy/operator.yaml
 ```
@@ -247,6 +266,44 @@ $ kubectl delete -f deploy/cr.yaml
 $ kubectl delete -f deploy/operator.yaml
 ```
 
+
+## Advanced Topics
+### Adding 3rd Party Resources To Your Operator
+To add a resource to an operator, you must add it to a scheme. By creating an `AddToScheme` method or reusing one you can easily add a resource to your scheme. An [example][deployments_register] shows that you define a function and then use the [runtime][runtime_package] package to create a `SchemeBuilder`
+
+#### Current Operator-SDK
+You then need to tell the operators to use these functions to add the resources to its scheme. In operator-sdk you use [AddToSDKScheme][osdk_add_to_scheme] to add this.
+Example of you main.go:
+```go
+import (
+    ....
+    appsv1 "k8s.io/api/apps/v1"
+)
+
+func main() {
+    k8sutil.AddToSDKScheme(appsv1.AddToScheme)`
+    sdk.Watch(appsv1.SchemeGroupVersion.String(), "Deployments", <namespace>, <resyncPeriod>)
+}
+```
+
+#### Future with Controller Runtime
+When using controller runtime, you will also need to tell its scheme about your resourece. In controller runtime to add to the scheme, you can get the managers [scheme][manager_scheme].  If you would like to see what kubebuilder generates to add the resoureces to the [scheme][simple_resource].
+Example:
+```go
+import (
+    ....
+    appsv1 "k8s.io/api/apps/v1"
+)
+
+func main() {
+    ....
+    if err := appsv1.AddToScheme(mgr.GetScheme()); err != nil {
+        log.Fatal(err)
+    }
+    ....
+}
+```
+
 [memcached_handler]: ../example/memcached-operator/handler.go.tmpl
 [layout_doc]:./project_layout.md
 [dep_tool]:https://golang.github.io/dep/docs/installation.html
@@ -255,3 +312,8 @@ $ kubectl delete -f deploy/operator.yaml
 [docker_tool]:https://docs.docker.com/install/
 [kubectl_tool]:https://kubernetes.io/docs/tasks/tools/install-kubectl/
 [minikube_tool]:https://github.com/kubernetes/minikube#installation
+[manager_scheme]: https://github.com/kubernetes-sigs/controller-runtime/blob/master/pkg/manager/manager.go#L61
+[simple_resource]: https://book.kubebuilder.io/basics/simple_resource.html
+[deployments_register]: https://github.com/kubernetes/api/blob/master/apps/v1/register.go#L41
+[runtime_package]: https://godoc.org/k8s.io/apimachinery/pkg/runtime
+[osdk_add_to_scheme]: https://github.com/operator-framework/operator-sdk/blob/4179b6ac459b2b0cb04ab3a1b438c280bd28d1a5/pkg/util/k8sutil/k8sutil.go#L67

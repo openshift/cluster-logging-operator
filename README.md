@@ -1,6 +1,13 @@
 # cluster-logging-operator
 Operator to support OKD cluster logging
 
+## Testing
+
+### E2E Testing
+To run the e2e tests, from the repo directory, run:
+`operator-sdk test local ./test/e2e/`
+
+### Dev Testing
 To set up your local environment based on what will be provided by OLM, run:
 ```
 mkdir /tmp/_working_dir
@@ -13,6 +20,7 @@ oc adm ca create-server-cert --cert='/tmp/kibana-internal.crt' --key='/tmp/kiban
 
 oc create -n openshift-logging secret generic logging-master-ca --from-file=masterca=/tmp/ca.crt --from-file=masterkey=/tmp/ca.key --from-file=kibanacert=/tmp/kibana-internal.crt --from-file=kibanakey=/tmp/kibana-internal.key
 
+oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/sa.yaml
 oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/rbac.yaml
 oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/crd.yaml
 oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/rbac.yaml

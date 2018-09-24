@@ -33,13 +33,6 @@ rules:
 
 ---
 
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: cluster-logging-operator
-
----
-
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:

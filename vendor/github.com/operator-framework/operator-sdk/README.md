@@ -30,6 +30,15 @@ The SDK provides the following workflow to develop a new operator:
 
 At a high level an operator using the SDK processes events for watched resources in a user defined handler and takes actions to reconcile the state of the application.
 
+## Prerequisites
+
+- [dep][dep_tool] version v0.5.0+.
+- [git][git_tool]
+- [go][go_tool] version v1.10+.
+- [docker][docker_tool] version 17.03+.
+- [kubectl][kubectl_tool] version v1.9.0+.
+- Access to a kubernetes v.1.9.0+ cluster.
+
 ## Quick Start
 
 First, checkout and install the operator-sdk CLI:
@@ -48,6 +57,7 @@ Create and deploy an app-operator using the SDK CLI:
 
 ```sh
 # Create an app-operator project that defines the App CR.
+$ mkdir -p $GOPATH/src/github.com/example-inc/
 $ cd $GOPATH/src/github.com/example-inc/
 $ operator-sdk new app-operator --api-version=app.example.com/v1alpha1 --kind=App
 $ cd app-operator
@@ -56,7 +66,11 @@ $ cd app-operator
 $ operator-sdk build quay.io/example/app-operator
 $ docker push quay.io/example/app-operator
 
+# Update the operator manifest to use the built image name
+$ sed -i 's|REPLACE_IMAGE|quay.io/example/app-operator|g' deploy/operator.yaml
+
 # Deploy the app-operator
+$ kubectl create -f deploy/sa.yaml
 $ kubectl create -f deploy/rbac.yaml
 $ kubectl create -f deploy/crd.yaml
 $ kubectl create -f deploy/operator.yaml
@@ -71,9 +85,13 @@ busy-box   1/1       Running   0          50s
 
 # Cleanup
 $ kubectl delete -f deploy/cr.yaml
+$ kubectl delete -f deploy/crd.yaml
 $ kubectl delete -f deploy/operator.yaml
 $ kubectl delete -f deploy/rbac.yaml
+$ kubectl delete -f deploy/sa.yaml
 ```
+
+## User Guide
 
 To learn more about the operator-sdk, see the [user guide][guide].
 
@@ -102,3 +120,8 @@ Operator SDK is under Apache 2.0 license. See the [LICENSE][license_file] file f
 [contrib]: ./CONTRIBUTING.MD
 [bug_guide]:./doc/dev/reporting_bugs.md
 [license_file]:./LICENSE
+[dep_tool]:https://golang.github.io/dep/docs/installation.html
+[git_tool]:https://git-scm.com/downloads
+[go_tool]:https://golang.org/dl/
+[docker_tool]:https://docs.docker.com/install/
+[kubectl_tool]:https://kubernetes.io/docs/tasks/tools/install-kubectl/

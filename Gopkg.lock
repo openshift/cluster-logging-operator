@@ -201,10 +201,12 @@
   packages = [
     "pkg/k8sclient",
     "pkg/sdk",
+    "pkg/sdk/internal/metrics",
+    "pkg/test",
     "pkg/util/k8sutil",
     "version"
   ]
-  revision = "3ac731fc3bea56e357d3596f014ac5bb4a13a0bc"
+  revision = "d23344453ec6124f1555fafc2e66230f98410bbb"
 
 [[projects]]
   branch = "master"
@@ -372,6 +374,17 @@
   revision = "acf347b865f29325eb61f4cd2df11e86e073a5ee"
 
 [[projects]]
+  name = "k8s.io/apiextensions-apiserver"
+  packages = [
+    "pkg/apis/apiextensions",
+    "pkg/apis/apiextensions/v1beta1",
+    "pkg/client/clientset/clientset",
+    "pkg/client/clientset/clientset/scheme",
+    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
+  ]
+  revision = "f1425805c0335c1f5b23e70f0154747b3df5a16a"
+
+[[projects]]
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -523,9 +536,17 @@
   ]
   revision = "0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803"
 
+[[projects]]
+  name = "sigs.k8s.io/controller-runtime"
+  packages = [
+    "pkg/client",
+    "pkg/client/apiutil"
+  ]
+  revision = "60bb251ad86f9b313653618aad0c2c53f41a6625"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5496aaf73a1ebd67e5bda9113c9b0bb332bb272849cf82c519cd13b8e2016ee2"
+  inputs-digest = "2942af794199b0cb784eeba637561b5cbeacbaa2786989fe2353b48950b5e047"
   solver-name = "gps-cdcl"
   solver-version = 1

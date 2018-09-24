@@ -13,7 +13,7 @@ import (
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func extractMasterCertificate(namespace string, secretName string)(error) {
+func extractMasterCertificate(namespace string, secretName string) error {
 
   secret := &v1.Secret{
     TypeMeta: metav1.TypeMeta{
@@ -57,7 +57,7 @@ func extractMasterCertificate(namespace string, secretName string)(error) {
   return nil
 }
 
-func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging)(error) {
+func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) error {
 
   // Pull master signing cert out from secret in logging.Spec.SecretName
   namespace, err := k8sutil.GetWatchNamespace()

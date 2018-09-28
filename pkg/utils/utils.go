@@ -10,6 +10,7 @@ import (
   apps "k8s.io/api/apps/v1"
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
   route "github.com/openshift/api/route/v1"
+  scheduling "k8s.io/api/scheduling/v1alpha1"
 )
 
 const WORKING_DIR = "/tmp/_working_dir"
@@ -156,4 +157,83 @@ func Deployment(deploymentName string, namespace string, loggingComponent string
       },
     },
   }
+}
+
+func DaemonSet(daemonsetName string, namespace string, loggingComponent string, component string, podSpec v1.PodSpec) *apps.DaemonSet {
+  return &apps.DaemonSet{
+    TypeMeta: metav1.TypeMeta{
+      Kind: "DaemonSet",
+      APIVersion: "extensions/v1beta1",
+    },
+    ObjectMeta: metav1.ObjectMeta{
+      Name: daemonsetName,
+      Namespace: namespace,
+      Labels: map[string]string{
+        "provider": "openshift",
+        "component": component,
+        "logging-infra": loggingComponent,
+      },
+      Annotations: map[string]string{
+        "prometheus.io/scrape": "true",
+        "prometheus.io/port": "24231",
+        "prometheus.io/scheme": "http",
+      },
+    },
+    Spec: apps.DaemonSetSpec{
+      Template: v1.PodTemplateSpec{
+        ObjectMeta: metav1.ObjectMeta{
+          Name: daemonsetName,
+          Labels: map[string]string{
+            "provider": "openshift",
+            "component": component,
+            "logging-infra": loggingComponent,
+          },
+          Annotations: map[string]string{
+            "scheduler.alpha.kubernetes.io/critical-pod": "''",
+          },
+        },
+        Spec: podSpec,
+      },
+      UpdateStrategy: apps.DaemonSetUpdateStrategy{
+        Type: apps.RollingUpdateDaemonSetStrategyType,
+        RollingUpdate: &apps.RollingUpdateDaemonSet{},
+      },
+      MinReadySeconds: 600,
+    },
+  }
+}
+
+func ConfigMap(configmapName string, namespace string, data map[string]string) *v1.ConfigMap {
+  return &v1.ConfigMap{
+    TypeMeta: metav1.TypeMeta{
+      Kind: "ConfigMap",
+      APIVersion: "v1",
+    },
+    ObjectMeta: metav1.ObjectMeta{
+      Name: configmapName,
+      Namespace: namespace,
+    },
+    Data: data,
+  }
+}
+
+// TODO: figure out where this spec is defined...
+func PriorityClass(priorityclassName string, priorityValue int32, globalDefault bool, description string) *scheduling.PriorityClass {
+  return &scheduling.PriorityClass{
+    TypeMeta: metav1.TypeMeta{
+      Kind: "PriorityClass",
+      APIVersion: "scheduling.k8s.io/v1beta1",
+    },
+    ObjectMeta: metav1.ObjectMeta{
+      Name: priorityclassName,
+    },
+    Value: priorityValue,
+    GlobalDefault: globalDefault,
+    Description: description,
+  }
+}
+
+func GetBool(value bool) *bool {
+  b := value
+  return &b
 }

@@ -40,6 +40,10 @@ func Reconcile(logging *v1alpha1.ClusterLogging)(err error) {
   }
 
   // Reconcile Visualization
+  err = k8shandler.CreateOrUpdateVisualization(logging)
+  if err != nil {
+    logrus.Fatalf("Unable to create or update visualization: %v", err)
+  }
 
   // Reconcile Curation
 

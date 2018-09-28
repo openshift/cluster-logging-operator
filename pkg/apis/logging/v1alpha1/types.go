@@ -36,6 +36,11 @@ type VisualizationSpec struct {
   Resources         v1.ResourceRequirements `json:"resources"`
   NodeSelector      map[string]string `json:"nodeSelector,omitempty"`
   Replicas          int32 `json:"replicas"`
+  Proxy             VisualizationProxySpec `json:proxySpec,omitempty`
+}
+
+type VisualizationProxySpec struct {
+  Resources         v1.ResourceRequirements `json:"resources"`
 }
 
 // This is the struct that will contain information pertinent to Log storage (Elasticsearch)

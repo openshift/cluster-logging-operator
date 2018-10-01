@@ -11,6 +11,7 @@ import (
   metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
   route "github.com/openshift/api/route/v1"
   scheduling "k8s.io/api/scheduling/v1alpha1"
+  batch "k8s.io/api/batch/v1beta1"
 )
 
 const WORKING_DIR = "/tmp/_working_dir"
@@ -132,7 +133,7 @@ func Deployment(deploymentName string, namespace string, loggingComponent string
       },
     },
     Spec: apps.DeploymentSpec{
-      //Replicas: 0,
+      Replicas: GetInt32(1),
       Selector: &metav1.LabelSelector{
         MatchLabels: map[string]string {
           "provider": "openshift",
@@ -236,4 +237,33 @@ func PriorityClass(priorityclassName string, priorityValue int32, globalDefault 
 func GetBool(value bool) *bool {
   b := value
   return &b
+}
+
+func GetInt32(value int32) *int32 {
+  i := value
+  return &i
+}
+
+func GetInt64(value int64) *int64 {
+  i := value
+  return &i
+}
+
+func CronJob(cronjobName string, namespace string, loggingComponent string, component string, cronjobSpec batch.CronJobSpec) *batch.CronJob {
+  return &batch.CronJob{
+    TypeMeta: metav1.TypeMeta{
+      Kind: "CronJob",
+      APIVersion: "batch/v1beta1",
+    },
+    ObjectMeta: metav1.ObjectMeta{
+      Name: cronjobName,
+      Namespace: namespace,
+      Labels: map[string]string{
+        "provider": "openshift",
+        "component": component,
+        "logging-infra": loggingComponent,
+      },
+    },
+    Spec: cronjobSpec,
+  }
 }

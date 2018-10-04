@@ -6,7 +6,7 @@ services:
 - docker
 
 go:
-- 1.10.1
+- 1.10.3
 
 jobs:
   include:
@@ -25,13 +25,18 @@ install:
 
 script:
 - make install
+- go test ./commands/...
 - go test ./pkg/...
 - go test ./test/e2e/...
 - cd test/test-framework
 # test framework with defaults
-- operator-sdk test -t .
+- operator-sdk test local .
 # test operator-sdk test flags
-- operator-sdk test -t . -g deploy/crd.yaml -n deploy/namespace-init.yaml -f "-parallel 1" -k $HOME/.kube/config
+- operator-sdk test local . --global-manifest deploy/crd.yaml --namespaced-manifest deploy/namespace-init.yaml --go-test-flags "-parallel 1" --kubeconfig $HOME/.kube/config
+# test operator-sdk test local single namespace mode
+- kubectl create namespace test-memcached
+- operator-sdk test local . --namespace=test-memcached
+- kubectl delete namespace test-memcached
 # go back to project root
 - cd ../..
 - go vet ./...

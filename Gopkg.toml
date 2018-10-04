@@ -14,27 +14,23 @@ required = [
 
 [[override]]
   name = "k8s.io/code-generator"
-  # revision for tag "kubernetes-1.9.3"
-  revision = "91d3f6a57905178524105a085085901bb73bd3dc"
+  version = "kubernetes-1.11.0"
 
 [[override]]
   name = "k8s.io/api"
-  # revision for tag "kubernetes-1.9.3"
-  revision = "acf347b865f29325eb61f4cd2df11e86e073a5ee"
+  version = "kubernetes-1.11.0"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  # revision for tag "kubernetes-1.9.3"
-  revision = "19e3f5aa3adca672c153d324e6b7d82ff8935f03"
+  version = "kubernetes-1.11.0"
 
 [[override]]
   name = "k8s.io/apiextensions-apiserver"
-  revision = "f1425805c0335c1f5b23e70f0154747b3df5a16a"
+  version = "kubernetes-1.11.0"
 
 [[override]]
   name = "k8s.io/client-go"
-  # revision for tag "kubernetes-1.9.3"
-  revision = "9389c055a838d4f208b699b3c7c51b70f2368861"
+  version = "kubernetes-1.11.0"
 
 [[constraint]]
   name = "github.com/operator-framework/operator-sdk"
@@ -43,9 +39,10 @@ required = [
   # version = "=v0.0.5"
 
 [[constraint]]
+  name = "github.com/openshift/elasticsearch-operator"
   branch = "master"
-  name = "github.com/ViaQ/elasticsearch-operator"
 
 [[constraint]]
   name = "github.com/openshift/api"
-  version = "3.9.0"
+  #version = "3.11.0"
+  branch = "master"

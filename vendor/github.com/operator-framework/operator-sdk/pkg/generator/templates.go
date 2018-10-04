@@ -255,32 +255,32 @@ required = [
 
 [[override]]
   name = "k8s.io/code-generator"
-  # revision for tag "kubernetes-1.10.1"
-  revision = "7ead8f38b01cf8653249f5af80ce7b2c8aba12e2"
+  # revision for tag "kubernetes-1.11.2"
+  revision = "6702109cc68eb6fe6350b83e14407c8d7309fd1a"
 
 [[override]]
   name = "k8s.io/api"
-  # revision for tag "kubernetes-1.10.1"
-  revision = "73d903622b7391f3312dcbac6483fed484e185f8"
+  # revision for tag "kubernetes-1.11.2"
+  revision = "2d6f90ab1293a1fb871cf149423ebb72aa7423aa"
 
 [[override]]
   name = "k8s.io/apiextensions-apiserver"
-  # revision for tag "kubernetes-1.10.1"
-  revision = "4347b330d0ff094db860f2f75fa725b4f4b53618"
+  # revision for tag "kubernetes-1.11.2"
+  revision = "408db4a50408e2149acbd657bceb2480c13cb0a4"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  # revision for tag "kubernetes-1.10.1"
-  revision = "302974c03f7e50f16561ba237db776ab93594ef6"
+  # revision for tag "kubernetes-1.11.2"
+  revision = "103fd098999dc9c0c88536f5c9ad2e5da39373ae"
 
 [[override]]
   name = "k8s.io/client-go"
-  # revision for tag "kubernetes-1.10.1"
-  revision = "989be4278f353e42f26c416c53757d16fcff77db"
+  # revision for tag "kubernetes-1.11.2"
+  revision = "1f13a808da65775f22cbf47862c4e5898d8f4ca1"
 
 [[override]]
   name = "sigs.k8s.io/controller-runtime"
-  revision = "60bb251ad86f9b313653618aad0c2c53f41a6625"
+  version = "v0.1.3"
 
 [prune]
   go-tests = true
@@ -424,6 +424,24 @@ spec:
   version: {{.Version}}
 `
 
+const testYamlTmpl = `apiVersion: v1
+kind: Pod
+metadata:
+  name: {{.ProjectName}}-test
+spec:
+  restartPolicy: Never
+  containers:
+  - name: {{.ProjectName}}-test
+    image: {{.Image}}
+    imagePullPolicy: Always
+    command: ["/go-test.sh"]
+    env:
+      - name: {{.TestNamespaceEnv}}
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+`
+
 const operatorYamlTmpl = `apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -548,21 +566,18 @@ mkdir -p ${BIN_DIR}
 PROJECT_NAME="{{.ProjectName}}"
 REPO_PATH="{{.RepoPath}}"
 BUILD_PATH="${REPO_PATH}/cmd/${PROJECT_NAME}"
+TEST_PATH="${REPO_PATH}/${TEST_LOCATION}"
 echo "building "${PROJECT_NAME}"..."
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${BIN_DIR}/${PROJECT_NAME} $BUILD_PATH
+if $ENABLE_TESTS ; then
+	echo "building "${PROJECT_NAME}-test"..."
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -c -o ${BIN_DIR}/${PROJECT_NAME}-test $TEST_PATH
+fi
 `
 
-const dockerBuildTmpl = `#!/usr/bin/env bash
+const goTestScript = `#!/bin/sh
 
-if ! which docker > /dev/null; then
-	echo "docker needs to be installed"
-	exit 1
-fi
-
-: ${IMAGE:?"Need to set IMAGE, e.g. gcr.io/<repo>/<your>-operator"}
-
-echo "building container ${IMAGE}..."
-docker build -t "${IMAGE}" -f tmp/build/Dockerfile .
+memcached-operator-test -test.parallel=1 -test.failfast -root=/ -kubeconfig=incluster -namespacedMan=namespaced.yaml -test.v
 `
 
 const dockerFileTmpl = `FROM alpine:3.6
@@ -571,6 +586,16 @@ RUN adduser -D {{.ProjectName}}
 USER {{.ProjectName}}
 
 ADD tmp/_output/bin/{{.ProjectName}} /usr/local/bin/{{.ProjectName}}
+`
+
+const testingDockerFileTmpl = `ARG BASEIMAGE
+
+FROM ${BASEIMAGE}
+
+ADD tmp/_output/bin/memcached-operator-test /usr/local/bin/memcached-operator-test
+ARG NAMESPACEDMAN
+ADD $NAMESPACEDMAN /namespaced.yaml
+ADD tmp/build/go-test.sh /go-test.sh
 `
 
 // apiDocTmpl is the template for apis/../doc.go

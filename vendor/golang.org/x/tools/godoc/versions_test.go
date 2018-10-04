@@ -4,7 +4,10 @@
 
 package godoc
 
-import "testing"
+import (
+	"go/build"
+	"testing"
+)
 
 func TestParseVersionRow(t *testing.T) {
 	tests := []struct {
@@ -27,7 +30,12 @@ func TestParseVersionRow(t *testing.T) {
 		},
 		{
 			row: "pkg archive/tar, type Header struct, AccessTime time.Time",
-			// TODO: implement; for now we expect nothing
+			want: versionedRow{
+				pkg:        "archive/tar",
+				kind:       "field",
+				structName: "Header",
+				name:       "AccessTime",
+			},
 		},
 		{
 			row: "pkg archive/tar, method (*Reader) Read([]uint8) (int, error)",
@@ -46,6 +54,15 @@ func TestParseVersionRow(t *testing.T) {
 				name: "FileInfoHeader",
 			},
 		},
+		{
+			row: "pkg encoding/base32, method (Encoding) WithPadding(int32) *Encoding",
+			want: versionedRow{
+				pkg:  "encoding/base32",
+				kind: "method",
+				name: "WithPadding",
+				recv: "Encoding",
+			},
+		},
 	}
 
 	for i, tt := range tests {
@@ -57,6 +74,17 @@ func TestParseVersionRow(t *testing.T) {
 			t.Errorf("%d. parseRow(%q) = %+v; want %+v", i, tt.row, got, tt.want)
 		}
 	}
+}
+
+// hasTag checks whether a given release tag is contained in the current version
+// of the go binary.
+func hasTag(t string) bool {
+	for _, v := range build.Default.ReleaseTags {
+		if t == v {
+			return true
+		}
+	}
+	return false
 }
 
 func TestAPIVersion(t *testing.T) {
@@ -94,6 +122,9 @@ func TestAPIVersion(t *testing.T) {
 		{"type", "archive/tar", "Header", "", ""},
 		{"method", "archive/tar", "Next", "*Reader", ""},
 	} {
+		if tc.want != "" && !hasTag("go"+tc.want) {
+			continue
+		}
 		if got := av.sinceVersionFunc(tc.kind, tc.receiver, tc.name, tc.pkg); got != tc.want {
 			t.Errorf(`sinceFunc("%s", "%s", "%s", "%s") = "%s"; want "%s"`, tc.kind, tc.receiver, tc.name, tc.pkg, got, tc.want)
 		}

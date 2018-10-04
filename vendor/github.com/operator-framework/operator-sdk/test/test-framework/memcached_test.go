@@ -74,6 +74,9 @@ func memcachedScaleTest(t *testing.T, f *framework.Framework, ctx *framework.Tes
 	if err != nil {
 		return err
 	}
+	ctx.AddFinalizerFn(func() error {
+		return f.DynamicClient.Delete(goctx.TODO(), exampleMemcached)
+	})
 	// wait for example-memcached to reach 3 replicas
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-memcached", 3, retryInterval, timeout)
 	if err != nil {

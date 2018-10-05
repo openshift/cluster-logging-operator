@@ -31,6 +31,7 @@ func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
 			"admin-cert":        utils.GetFileContents("/tmp/_working_dir/system.admin.crt"),
 			"admin-ca":          utils.GetFileContents("/tmp/_working_dir/ca.crt"),
 		})
+
 	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(logging))
 
 	err := sdk.Create(esSecret)

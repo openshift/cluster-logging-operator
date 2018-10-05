@@ -3,6 +3,8 @@ FROM openshift/origin-release:golang-1.10 AS builder
 
 WORKDIR /tmp/cluster-logging-operator
 COPY vendor/ /tmp/cluster-logging-operator/vendor
+COPY manifests/ /manifests/
+COPY scripts/* /usr/local/bin/scripts/
 COPY cmd/ /tmp/cluster-logging-operator/cmd
 COPY pkg/ /tmp/cluster-logging-operator/pkg
 COPY Makefile /tmp/cluster-logging-operator
@@ -22,5 +24,6 @@ ENTRYPOINT ["/usr/local/bin/cluster-logging-operator"]
 
 LABEL io.k8s.display-name="OpenShift cluster-logging-operator" \
       io.k8s.description="This is a component of OpenShift Container Platform that manages the lifecycle of the Aggregated logging stack." \
-      io.openshift.tags="openshift,logging" \
+      io.openshift.tags="openshift,logging,cluster-logging" \
+      io.openshift.release.operator=true \
       maintainer="AOS Logging <aos-logging@redhat.com>"

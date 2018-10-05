@@ -11,3 +11,13 @@ spec:
       replicas: 1
       storage:
         emptyDir: {}
+  visualization:
+    type: "kibana"
+    kibana:
+      replicas: 1
+  curation:
+    type: "curator"
+    schedule: "30 3 * * *"
+  collection:
+    type: "fluentd"
+    nodeSelector: "logging-infra-fluentd=true"

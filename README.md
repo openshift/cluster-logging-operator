@@ -20,6 +20,9 @@ oc adm ca create-server-cert --cert='/tmp/kibana-internal.crt' --key='/tmp/kiban
 
 oc create -n openshift-logging secret generic logging-master-ca --from-file=masterca=/tmp/ca.crt --from-file=masterkey=/tmp/ca.key --from-file=kibanacert=/tmp/kibana-internal.crt --from-file=kibanakey=/tmp/kibana-internal.key
 
+oc label node --all logging-infra-fluentd=true
+oc adm policy add-scc-to-user privileged -z fluentd -n openshift-logging
+
 oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/sa.yaml
 oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/rbac.yaml
 oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/crd.yaml

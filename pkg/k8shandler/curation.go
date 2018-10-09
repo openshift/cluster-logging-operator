@@ -1,182 +1,182 @@
 package k8shandler
 
 import (
-  "k8s.io/apimachinery/pkg/api/errors"
-  "github.com/sirupsen/logrus"
-  "github.com/openshift/cluster-logging-operator/pkg/utils"
-  "k8s.io/api/core/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 
-  sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
-  logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-  metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-  batch "k8s.io/api/batch/v1beta1"
-  batchv1 "k8s.io/api/batch/v1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
+	batchv1 "k8s.io/api/batch/v1"
+	batch "k8s.io/api/batch/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Note: this will eventually be deprecated and functionality will be moved into the ES operator
 //   in the case of Curator. Other curation deployments may not be supported in the future
 
 func CreateOrUpdateCuration(logging *logging.ClusterLogging) error {
-  createOrUpdateCuratorServiceAccount(logging)
+	createOrUpdateCuratorServiceAccount(logging)
 
-  createOrUpdateCuratorConfigMap(logging)
-  createOrUpdateCuratorCronJob(logging)
+	createOrUpdateCuratorConfigMap(logging)
+	createOrUpdateCuratorCronJob(logging)
 
-  return createOrUpdateCuratorSecret(logging)
+	return createOrUpdateCuratorSecret(logging)
 }
 
 func createOrUpdateCuratorServiceAccount(logging *logging.ClusterLogging) error {
 
-  curatorServiceAccount := utils.ServiceAccount("curator", logging.Namespace)
+	curatorServiceAccount := utils.ServiceAccount("curator", logging.Namespace)
 
-  utils.AddOwnerRefToObject(curatorServiceAccount, utils.AsOwner(logging))
+	utils.AddOwnerRefToObject(curatorServiceAccount, utils.AsOwner(logging))
 
-  err := sdk.Create(curatorServiceAccount)
-  if err != nil && !errors.IsAlreadyExists(err) {
-    logrus.Fatalf("Failure creating Curator service account: %v", err)
-  }
+	err := sdk.Create(curatorServiceAccount)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		logrus.Fatalf("Failure creating Curator service account: %v", err)
+	}
 
-  return nil
+	return nil
 }
 
 func createOrUpdateCuratorConfigMap(logging *logging.ClusterLogging) error {
 
-  curatorConfigMap := utils.ConfigMap(
-    "curator",
-    logging.Namespace,
-    map[string]string{
-      "actions.yaml": string(utils.GetFileContents("files/curator-actions.yaml")),
-      "curator5.yaml": string(utils.GetFileContents("files/curator5-config.yaml")),
-      "config.yaml": string(utils.GetFileContents("files/curator-config.yaml")),
-    },
-  )
+	curatorConfigMap := utils.ConfigMap(
+		"curator",
+		logging.Namespace,
+		map[string]string{
+			"actions.yaml":  string(utils.GetFileContents("files/curator-actions.yaml")),
+			"curator5.yaml": string(utils.GetFileContents("files/curator5-config.yaml")),
+			"config.yaml":   string(utils.GetFileContents("files/curator-config.yaml")),
+		},
+	)
 
-  utils.AddOwnerRefToObject(curatorConfigMap, utils.AsOwner(logging))
+	utils.AddOwnerRefToObject(curatorConfigMap, utils.AsOwner(logging))
 
-  err := sdk.Create(curatorConfigMap)
-  if err != nil && !errors.IsAlreadyExists(err) {
-    logrus.Fatalf("Failure constructing Curator configmap: %v", err)
-  }
+	err := sdk.Create(curatorConfigMap)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		logrus.Fatalf("Failure constructing Curator configmap: %v", err)
+	}
 
-  return nil
+	return nil
 }
 
 func createOrUpdateCuratorSecret(logging *logging.ClusterLogging) error {
 
-  curatorSecret := utils.Secret(
-    "curator",
-    logging.Namespace,
-    map[string][]byte{
-      "ca": utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-      "key": utils.GetFileContents("/tmp/_working_dir/system.logging.curator.key"),
-      "cert": utils.GetFileContents("/tmp/_working_dir/system.logging.curator.crt"),
-      "ops-ca": utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-      "ops-key": utils.GetFileContents("/tmp/_working_dir/system.logging.curator.key"),
-      "ops-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.curator.crt"),
-    }  )
+	curatorSecret := utils.Secret(
+		"curator",
+		logging.Namespace,
+		map[string][]byte{
+			"ca":       utils.GetFileContents("/tmp/_working_dir/ca.crt"),
+			"key":      utils.GetFileContents("/tmp/_working_dir/system.logging.curator.key"),
+			"cert":     utils.GetFileContents("/tmp/_working_dir/system.logging.curator.crt"),
+			"ops-ca":   utils.GetFileContents("/tmp/_working_dir/ca.crt"),
+			"ops-key":  utils.GetFileContents("/tmp/_working_dir/system.logging.curator.key"),
+			"ops-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.curator.crt"),
+		})
 
-  utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(logging))
+	utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(logging))
 
-  err := sdk.Create(curatorSecret)
-  if err != nil && !errors.IsAlreadyExists(err) {
-    logrus.Fatalf("Failure constructing Curator secret: %v", err)
-  }
+	err := sdk.Create(curatorSecret)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		logrus.Fatalf("Failure constructing Curator secret: %v", err)
+	}
 
-  return nil
+	return nil
 }
 
 func getCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elasticsearchHost string) *batch.CronJob {
-  curatorContainer := utils.Container("curator", v1.PullIfNotPresent, logging.Spec.Curation.CuratorSpec.Resources)
+	curatorContainer := utils.Container("curator", v1.PullIfNotPresent, logging.Spec.Curation.CuratorSpec.Resources)
 
-  curatorContainer.Env = []v1.EnvVar{
-    {Name: "K8S_HOST_URL", Value: ""},
-    {Name: "ES_HOST", Value: elasticsearchHost},
-    {Name: "ES_PORT", Value: "9200"},
-    {Name: "ES_CLIENT_CERT", Value: ""},
-    {Name: "ES_CLIENT_KEY", Value: ""},
-    {Name: "ES_CA", Value: ""},
-    {Name: "CURATOR_DEFAULT_DAYS", Value: ""},
-    {Name: "CURATOR_SCRIPT_LOG_LEVEL", Value: ""},
-    {Name: "CURATOR_LOG_LEVEL", Value: ""},
-    {Name: "CURATOR_TIMEOUT", Value: ""},
-  }
+	curatorContainer.Env = []v1.EnvVar{
+		{Name: "K8S_HOST_URL", Value: ""},
+		{Name: "ES_HOST", Value: elasticsearchHost},
+		{Name: "ES_PORT", Value: "9200"},
+		{Name: "ES_CLIENT_CERT", Value: ""},
+		{Name: "ES_CLIENT_KEY", Value: ""},
+		{Name: "ES_CA", Value: ""},
+		{Name: "CURATOR_DEFAULT_DAYS", Value: ""},
+		{Name: "CURATOR_SCRIPT_LOG_LEVEL", Value: ""},
+		{Name: "CURATOR_LOG_LEVEL", Value: ""},
+		{Name: "CURATOR_TIMEOUT", Value: ""},
+	}
 
-  curatorContainer.VolumeMounts = []v1.VolumeMount{
-    {Name: "certs", ReadOnly: true, MountPath: "/etc/curator/keys"},
-    {Name: "config", ReadOnly: true, MountPath: "/etc/curator/settings"},
-  }
+	curatorContainer.VolumeMounts = []v1.VolumeMount{
+		{Name: "certs", ReadOnly: true, MountPath: "/etc/curator/keys"},
+		{Name: "config", ReadOnly: true, MountPath: "/etc/curator/settings"},
+	}
 
-  curatorPodSpec := utils.PodSpec(
-    curatorName,
-    []v1.Container{curatorContainer},
-    []v1.Volume{
-      {Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "curator"}}}},
-      {Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "curator"}}},
-    },
-  )
+	curatorPodSpec := utils.PodSpec(
+		curatorName,
+		[]v1.Container{curatorContainer},
+		[]v1.Volume{
+			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "curator"}}}},
+			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "curator"}}},
+		},
+	)
 
-  curatorPodSpec.RestartPolicy = v1.RestartPolicyNever
-  curatorPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(600)
+	curatorPodSpec.RestartPolicy = v1.RestartPolicyNever
+	curatorPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(600)
 
-  curatorCronJob := utils.CronJob(
-    curatorName,
-    logging.Namespace,
-    "curator",
-    curatorName,
-    batch.CronJobSpec{
-      SuccessfulJobsHistoryLimit: utils.GetInt32(1),
-      FailedJobsHistoryLimit: utils.GetInt32(1),
-      Schedule: "30 3 * * *",
-      JobTemplate: batch.JobTemplateSpec{
-        Spec: batchv1.JobSpec{
-          BackoffLimit: utils.GetInt32(0),
-          Parallelism: utils.GetInt32(1),
-          Template: v1.PodTemplateSpec{
-            ObjectMeta: metav1.ObjectMeta{
-              Name: curatorName,
-              Namespace: logging.Namespace,
-              Labels: map[string]string{
-                "provider": "openshift",
-                "component": curatorName,
-                "logging-infra": "curator",
-              },
-            },
-            Spec: curatorPodSpec,
-          },
-        },
-      },
-    },
-  )
+	curatorCronJob := utils.CronJob(
+		curatorName,
+		logging.Namespace,
+		"curator",
+		curatorName,
+		batch.CronJobSpec{
+			SuccessfulJobsHistoryLimit: utils.GetInt32(1),
+			FailedJobsHistoryLimit:     utils.GetInt32(1),
+			Schedule:                   "30 3 * * *",
+			JobTemplate: batch.JobTemplateSpec{
+				Spec: batchv1.JobSpec{
+					BackoffLimit: utils.GetInt32(0),
+					Parallelism:  utils.GetInt32(1),
+					Template: v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      curatorName,
+							Namespace: logging.Namespace,
+							Labels: map[string]string{
+								"provider":      "openshift",
+								"component":     curatorName,
+								"logging-infra": "curator",
+							},
+						},
+						Spec: curatorPodSpec,
+					},
+				},
+			},
+		},
+	)
 
-  utils.AddOwnerRefToObject(curatorCronJob, utils.AsOwner(logging))
+	utils.AddOwnerRefToObject(curatorCronJob, utils.AsOwner(logging))
 
-  return curatorCronJob
+	return curatorCronJob
 }
 
 func createOrUpdateCuratorCronJob(logging *logging.ClusterLogging) error {
 
-  if utils.AllInOne(logging) {
-    curatorCronJob := getCuratorCronJob(logging, "curator", "elasticsearch")
+	if utils.AllInOne(logging) {
+		curatorCronJob := getCuratorCronJob(logging, "curator", "elasticsearch")
 
-    err := sdk.Create(curatorCronJob)
-    if err != nil && !errors.IsAlreadyExists(err) {
-      logrus.Fatalf("Failure constructing Curator cronjob: %v", err)
-    }
-  } else {
-    curatorCronJob := getCuratorCronJob(logging, "curator-app", "elasticsearch-app")
+		err := sdk.Create(curatorCronJob)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			logrus.Fatalf("Failure constructing Curator cronjob: %v", err)
+		}
+	} else {
+		curatorCronJob := getCuratorCronJob(logging, "curator-app", "elasticsearch-app")
 
-    err := sdk.Create(curatorCronJob)
-    if err != nil && !errors.IsAlreadyExists(err) {
-      logrus.Fatalf("Failure constructing Curator App cronjob: %v", err)
-    }
+		err := sdk.Create(curatorCronJob)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			logrus.Fatalf("Failure constructing Curator App cronjob: %v", err)
+		}
 
-    curatorInfraCronJob := getCuratorCronJob(logging, "curator-infra", "elasticsearch-infra")
+		curatorInfraCronJob := getCuratorCronJob(logging, "curator-infra", "elasticsearch-infra")
 
-    err = sdk.Create(curatorInfraCronJob)
-    if err != nil && !errors.IsAlreadyExists(err) {
-      logrus.Fatalf("Failure constructing Curator Infra cronjob: %v", err)
-    }
-  }
+		err = sdk.Create(curatorInfraCronJob)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			logrus.Fatalf("Failure constructing Curator Infra cronjob: %v", err)
+		}
+	}
 
-  return nil
+	return nil
 }

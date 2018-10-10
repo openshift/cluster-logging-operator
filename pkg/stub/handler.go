@@ -2,6 +2,7 @@ package stub
 
 import (
 	"context"
+
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
@@ -58,7 +59,7 @@ func Reconcile(logging *v1alpha1.ClusterLogging) (err error) {
 	// Reconcile Collection
 	err = k8shandler.CreateOrUpdateCollection(logging)
 	if err != nil {
-		logrus.Fatalf("Unable to create of update collection: %v", err)
+		logrus.Fatalf("Unable to create or update collection: %v", err)
 	}
 
 	return nil

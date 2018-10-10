@@ -136,7 +136,8 @@ func GetComponentImage(component string) string {
 func GetFileContents(filePath string) []byte {
 	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		logrus.Fatalf("Unable to read file to get contents: %v", err)
+		logrus.Errorf("Unable to read file to get contents: %v", err)
+		return nil
 	}
 
 	return contents

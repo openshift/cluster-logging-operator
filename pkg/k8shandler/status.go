@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -13,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func UpdateStatus(logging *v1alpha1.ClusterLogging) (err error) {
+func UpdateStatus(logging *v1alpha1.ClusterLogging) error {
 
 	changed := false
 
@@ -21,7 +22,7 @@ func UpdateStatus(logging *v1alpha1.ClusterLogging) (err error) {
 		elasticsearchStatus, err := getElasticsearchStatus(logging.Namespace)
 
 		if err != nil {
-			logrus.Fatalf("Failed to get status for Elasticsearch")
+			return fmt.Errorf("Failed to get status for Elasticsearch: %v", err)
 		}
 
 		if !reflect.DeepEqual(elasticsearchStatus, logging.Status.LogStore.ElasticsearchStatus) {
@@ -35,7 +36,7 @@ func UpdateStatus(logging *v1alpha1.ClusterLogging) (err error) {
 		kibanaStatus, err := getKibanaStatus(logging.Namespace)
 
 		if err != nil {
-			logrus.Fatalf("Failed to get status for Elasticsearch")
+			return fmt.Errorf("Failed to get status for Kibana: %v", err)
 		}
 
 		if !reflect.DeepEqual(kibanaStatus, logging.Status.Visualization.KibanaStatus) {
@@ -49,7 +50,7 @@ func UpdateStatus(logging *v1alpha1.ClusterLogging) (err error) {
 		curatorStatus, err := getCuratorStatus(logging.Namespace)
 
 		if err != nil {
-			logrus.Fatalf("Failed to get status for Curator")
+			return fmt.Errorf("Failed to get status for Curator: %v", err)
 		}
 
 		if !reflect.DeepEqual(curatorStatus, logging.Status.Curation.CuratorStatus) {
@@ -63,7 +64,7 @@ func UpdateStatus(logging *v1alpha1.ClusterLogging) (err error) {
 		fluentdStatus, err := getFluentdCollectorStatus(logging.Namespace)
 
 		if err != nil {
-			logrus.Fatalf("Failed to get status of Fluentd")
+			return fmt.Errorf("Failed to get status of Fluentd: %v", err)
 		}
 
 		if !reflect.DeepEqual(fluentdStatus, logging.Status.Collection.FluentdStatus) {
@@ -74,23 +75,22 @@ func UpdateStatus(logging *v1alpha1.ClusterLogging) (err error) {
 	}
 
 	if changed {
-		err = sdk.Update(logging)
-
-		// TODO: check for invalid object error (the object was deleted on us...)
-
-		if err != nil {
-			logrus.Fatalf("Failed to update Cluster Logging status: %v", err)
+		if err := sdk.Update(logging); err != nil {
+			return fmt.Errorf("Failed to update Cluster Logging status: %v", err)
 		}
 	}
 
 	return nil
 }
 
-func getCuratorStatus(namespace string) (statuses []v1alpha1.CuratorStatus, err error) {
+func getCuratorStatus(namespace string) ([]v1alpha1.CuratorStatus, error) {
 
 	status := []v1alpha1.CuratorStatus{}
 
 	curatorCronJobList, err := utils.GetCronJobList(namespace, "logging-infra=curator")
+	if err != nil {
+		return status, err
+	}
 
 	for _, cronjob := range curatorCronJobList.Items {
 
@@ -106,10 +106,14 @@ func getCuratorStatus(namespace string) (statuses []v1alpha1.CuratorStatus, err 
 	return status, nil
 }
 
-func getFluentdCollectorStatus(namespace string) (status v1alpha1.FluentdCollectorStatus, err error) {
+func getFluentdCollectorStatus(namespace string) (v1alpha1.FluentdCollectorStatus, error) {
+
+	fluentdStatus := v1alpha1.FluentdCollectorStatus{}
 
 	fluentdDaemonsetList, err := utils.GetDaemonSetList(namespace, "logging-infra=fluentd")
-	fluentdStatus := v1alpha1.FluentdCollectorStatus{}
+	if err != nil {
+		return fluentdStatus, err
+	}
 
 	if len(fluentdDaemonsetList.Items) != 0 {
 		daemonset := fluentdDaemonsetList.Items[0]
@@ -128,11 +132,14 @@ func getFluentdCollectorStatus(namespace string) (status v1alpha1.FluentdCollect
 	return fluentdStatus, nil
 }
 
-func getKibanaStatus(namespace string) (statuses []v1alpha1.KibanaStatus, err error) {
+func getKibanaStatus(namespace string) ([]v1alpha1.KibanaStatus, error) {
 
 	status := []v1alpha1.KibanaStatus{}
 
 	kibanaDeploymentList, err := utils.GetDeploymentList(namespace, "logging-infra=kibana")
+	if err != nil {
+		return status, err
+	}
 
 	for _, deployment := range kibanaDeploymentList.Items {
 
@@ -165,22 +172,22 @@ func getKibanaStatus(namespace string) (statuses []v1alpha1.KibanaStatus, err er
 	return status, nil
 }
 
-func getElasticsearchStatus(namespace string) (statuses []v1alpha1.ElasticsearchStatus, err error) {
+func getElasticsearchStatus(namespace string) ([]v1alpha1.ElasticsearchStatus, error) {
 
 	// we can scrape the status provided by the elasticsearch-operator
 	// get list of elasticsearch objects
 	esList := &elasticsearch.ElasticsearchList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
-			APIVersion: "elasticsearch.redhat.com/v1alpha1",
+			APIVersion: "logging.openshift.io/v1alpha1",
 		},
 	}
 
-	err = sdk.List(namespace, esList)
+	err := sdk.List(namespace, esList)
 	status := []v1alpha1.ElasticsearchStatus{}
 
 	if err != nil {
-		logrus.Fatalf("Unable to get Elasticsearches: %v", err)
+		return status, fmt.Errorf("Unable to get Elasticsearches: %v", err)
 	}
 
 	if len(esList.Items) != 0 {

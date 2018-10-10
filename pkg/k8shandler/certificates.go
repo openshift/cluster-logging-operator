@@ -1,8 +1,8 @@
 package k8shandler
 
 import (
+	"fmt"
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"k8s.io/api/core/v1"
 	"os"
@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func extractSecretToFile(namespace string, secretName string, key string, toFile string) error {
+func extractSecretToFile(namespace string, secretName string, key string, toFile string) (err error) {
 	secret := &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
@@ -27,57 +27,72 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 			Namespace: namespace,
 		},
 	}
-	err := sdk.Get(secret)
+	if err = sdk.Get(secret); err != nil {
+		return fmt.Errorf("Unable to extract secret to file: %v", secretName, err)
+	}
 
 	value, ok := secret.Data[key]
 
 	// check to see if the map value exists
 	if !ok {
-		logrus.Fatalf("No secret data \"%s\" found", key)
-		return nil
+		return fmt.Errorf("No secret data \"%s\" found", key)
 	}
 
-	err = ioutil.WriteFile(path.Join(utils.WORKING_DIR, toFile), value, 0644)
-	if err != nil {
-		logrus.Fatalf("Unable to write to working dir: %v", err)
+	if err = ioutil.WriteFile(path.Join(utils.WORKING_DIR, toFile), value, 0644); err != nil {
+		return fmt.Errorf("Unable to write to working dir: %v", err)
 	}
 
 	return nil
 }
 
-func extractMasterCertificate(namespace string, secretName string) error {
+func extractMasterCertificate(namespace string, secretName string) (err error) {
 
-	extractSecretToFile(namespace, secretName, "masterca", "ca.crt")
-	extractSecretToFile(namespace, secretName, "masterkey", "ca.key")
+	if err = extractSecretToFile(namespace, secretName, "masterca", "ca.crt"); err != nil {
+		return
+	}
 
-	return nil
-}
-
-func extractKibanaInternalCertificate(namespace string, secretName string) error {
-
-	extractSecretToFile(namespace, secretName, "kibanacert", "kibana-internal.crt")
-	extractSecretToFile(namespace, secretName, "kibanakey", "kibana-internal.key")
+	if err = extractSecretToFile(namespace, secretName, "masterkey", "ca.key"); err != nil {
+		return
+	}
 
 	return nil
 }
 
-func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) error {
+func extractKibanaInternalCertificate(namespace string, secretName string) (err error) {
+
+	if err = extractSecretToFile(namespace, secretName, "kibanacert", "kibana-internal.crt"); err != nil {
+		return
+	}
+
+	if err = extractSecretToFile(namespace, secretName, "kibanakey", "kibana-internal.key"); err != nil {
+		return
+	}
+
+	return nil
+}
+
+func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) (err error) {
 
 	// Pull master signing cert out from secret in logging.Spec.SecretName
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
-		logrus.Fatalf("Failed to get watch namespace: %v", err)
+		return fmt.Errorf("Failed to get watch namespace: %v", err)
 	}
 
-	err = extractMasterCertificate(namespace, "logging-master-ca")
-	err = extractKibanaInternalCertificate(namespace, "logging-master-ca")
+	if err = extractMasterCertificate(namespace, "logging-master-ca"); err != nil {
+		return
+	}
+
+	if err = extractKibanaInternalCertificate(namespace, "logging-master-ca"); err != nil {
+		return
+	}
 
 	cmd := exec.Command("bash", "scripts/cert_generation.sh")
 	cmd.Env = append(os.Environ(),
 		"NAMESPACE="+namespace,
 	)
 	if err = cmd.Run(); err != nil {
-		logrus.Fatalf("Error running script: %v", err)
+		return fmt.Errorf("Error running script: %v", err)
 	}
 
 	return nil

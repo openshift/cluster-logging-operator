@@ -2,11 +2,11 @@ package stub
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	"github.com/sirupsen/logrus"
 )
 
 func NewHandler() sdk.Handler {
@@ -18,48 +18,49 @@ type Handler struct {
 }
 
 func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
+
+	// Ignore the delete event since the garbage collector will clean up all secondary resources for the CR
+	// All secondary resources must have the CR set as their OwnerReference for this to be the case
+	if event.Deleted {
+		return nil
+	}
+
 	switch o := event.Object.(type) {
 	case *v1alpha1.ClusterLogging:
 		return Reconcile(o)
 	}
+
 	return nil
 }
 
 func Reconcile(logging *v1alpha1.ClusterLogging) (err error) {
 	// Reconcile certs
-	err = k8shandler.CreateOrUpdateCertificates(logging)
-	if err != nil {
-		logrus.Fatalf("Unable to create or update certificates: %v", err)
-	}
-
-	// Get status before we reconcile so we can make decisions on what needs to be done
-	err = k8shandler.UpdateStatus(logging)
-	if err != nil {
-		logrus.Fatalf("Unable to update Cluster Logging status: %v", err)
+	if err = k8shandler.CreateOrUpdateCertificates(logging); err != nil {
+		return fmt.Errorf("Unable to create or update certificates: %v", err)
 	}
 
 	// Reconcile Log Store
-	err = k8shandler.CreateOrUpdateLogStore(logging)
-	if err != nil {
-		logrus.Fatalf("Unable to create or update logstore: %v", err)
+	if err = k8shandler.CreateOrUpdateLogStore(logging); err != nil {
+		return fmt.Errorf("Unable to create or update logstore: %v", err)
 	}
 
 	// Reconcile Visualization
-	err = k8shandler.CreateOrUpdateVisualization(logging)
-	if err != nil {
-		logrus.Fatalf("Unable to create or update visualization: %v", err)
+	if err = k8shandler.CreateOrUpdateVisualization(logging); err != nil {
+		return fmt.Errorf("Unable to create or update visualization: %v", err)
 	}
 
 	// Reconcile Curation
-	err = k8shandler.CreateOrUpdateCuration(logging)
-	if err != nil {
-		logrus.Fatalf("Unable to create or update curation: %v", err)
+	if err = k8shandler.CreateOrUpdateCuration(logging); err != nil {
+		return fmt.Errorf("Unable to create or update curation: %v", err)
 	}
 
 	// Reconcile Collection
-	err = k8shandler.CreateOrUpdateCollection(logging)
-	if err != nil {
-		logrus.Fatalf("Unable to create or update collection: %v", err)
+	if err = k8shandler.CreateOrUpdateCollection(logging); err != nil {
+		return fmt.Errorf("Unable to create or update collection: %v", err)
+	}
+
+	if err = k8shandler.UpdateStatus(logging); err != nil {
+		return fmt.Errorf("Unable to update Cluster Logging status: %v", err)
 	}
 
 	return nil

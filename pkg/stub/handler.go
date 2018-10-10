@@ -2,6 +2,7 @@ package stub
 
 import (
 	"context"
+
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
@@ -25,12 +26,16 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 }
 
 func Reconcile(logging *v1alpha1.ClusterLogging) (err error) {
-	logrus.Info("Started reconciliation")
-
 	// Reconcile certs
 	err = k8shandler.CreateOrUpdateCertificates(logging)
 	if err != nil {
 		logrus.Fatalf("Unable to create or update certificates: %v", err)
+	}
+
+	// Get status before we reconcile so we can make decisions on what needs to be done
+	err = k8shandler.UpdateStatus(logging)
+	if err != nil {
+		logrus.Fatalf("Unable to update Cluster Logging status: %v", err)
 	}
 
 	// Reconcile Log Store
@@ -54,7 +59,7 @@ func Reconcile(logging *v1alpha1.ClusterLogging) (err error) {
 	// Reconcile Collection
 	err = k8shandler.CreateOrUpdateCollection(logging)
 	if err != nil {
-		logrus.Fatalf("Unable to create of update collection: %v", err)
+		logrus.Fatalf("Unable to create or update collection: %v", err)
 	}
 
 	return nil

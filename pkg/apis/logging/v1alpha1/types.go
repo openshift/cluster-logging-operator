@@ -98,37 +98,37 @@ type ClusterLoggingStatus struct {
 }
 
 type VisualizationStatus struct {
-	Type         string `json:"type"`
-	KibanaStatus `json:",inline,omitempty"`
+	KibanaStatus []KibanaStatus `json:"kibanaStatus,omitempty"`
 }
 
 type KibanaStatus struct {
 	Replicas    int32    `json:"replicas"`
+	Deployment  string   `json:"deployment"`
 	ReplicaSets []string `json:"replicaSets"`
 	Pods        []string `json:"pods"`
 }
 
 type LogStoreStatus struct {
-	Type                string `json:"type"`
-	ElasticsearchStatus `json:",inline,omitempty"`
+	ElasticsearchStatus []ElasticsearchStatus `json:"elasticsearchStatus,omitempty"`
 }
 
 type ElasticsearchStatus struct {
-	Replicas    int32    `json:"replicas"`
-	ReplicaSets []string `json:"replicaSets"`
-	Pods        []string `json:"pods"`
+	ClusterName  string   `json:"clusterName"`
+	Replicas     int32    `json:"replicas"`
+	ReplicaSets  []string `json:"replicaSets"`
+	Deployments  []string `json:"deployments"`
+	StatefulSets []string `json:"statefulSets"`
+	Pods         []string `json:"pods"`
 }
 
 type CollectionStatus struct {
-	Type                   string `json:"type"`
-	FluentdCollectorStatus `json:",inline,omitempty"`
-	NormalizerStatus       NormalizerStatus `json:"normalizerStatus,omitempty"`
+	FluentdStatus    FluentdCollectorStatus `json:"fluentdStatus,omitempty"`
+	NormalizerStatus NormalizerStatus       `json:"normalizerStatus,omitempty"`
 }
 
 type FluentdCollectorStatus struct {
-	DaemonSets []string `json:"daemonSets"`
-	Nodes      []string `json:"nodes"`
-	Pods       []string `json:"pods"`
+	DaemonSet string            `json:"daemonSet"`
+	Pods      map[string]string `json:"pods"`
 }
 
 type FluentdNormalizerStatus struct {
@@ -138,16 +138,15 @@ type FluentdNormalizerStatus struct {
 }
 
 type NormalizerStatus struct {
-	Type                    string `json:"type"`
-	FluentdNormalizerStatus `json:",inline,omitempty"`
+	FluentdStatus []FluentdNormalizerStatus `json:"fluentdStatus,omitempty"`
 }
 
 type CurationStatus struct {
-	Type          string `json:"type"`
-	CuratorStatus `json:",inline,omitempty"`
+	CuratorStatus []CuratorStatus `json:"curatorStatus,omitempty"`
 }
 
 type CuratorStatus struct {
-	ChronJobs []string `json:"chronJobs"`
-	Schedules []string `json:"schedules"`
+	CronJob   string `json:"cronJobs"`
+	Schedule  string `json:"schedules"`
+	Suspended bool   `json:"suspended"`
 }

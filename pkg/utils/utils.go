@@ -10,6 +10,7 @@ import (
 
 	route "github.com/openshift/api/route/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
 	"k8s.io/api/core/v1"
@@ -398,4 +399,99 @@ func CronJob(cronjobName string, namespace string, loggingComponent string, comp
 		},
 		Spec: cronjobSpec,
 	}
+}
+
+func GetDeploymentList(namespace string, selector string) (*apps.DeploymentList, error) {
+	list := &apps.DeploymentList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Deployment",
+			APIVersion: "apps/v1",
+		},
+	}
+
+	err := sdk.List(
+		namespace,
+		list,
+		sdk.WithListOptions(&metav1.ListOptions{
+			LabelSelector: selector,
+		}),
+	)
+
+	return list, err
+}
+
+func GetReplicaSetList(namespace string, selector string) (*apps.ReplicaSetList, error) {
+	list := &apps.ReplicaSetList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ReplicaSet",
+			APIVersion: "apps/v1",
+		},
+	}
+
+	err := sdk.List(
+		namespace,
+		list,
+		sdk.WithListOptions(&metav1.ListOptions{
+			LabelSelector: selector,
+		}),
+	)
+
+	return list, err
+}
+
+func GetPodList(namespace string, selector string) (*v1.PodList, error) {
+	list := &v1.PodList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: "v1",
+		},
+	}
+
+	err := sdk.List(
+		namespace,
+		list,
+		sdk.WithListOptions(&metav1.ListOptions{
+			LabelSelector: selector,
+		}),
+	)
+
+	return list, err
+}
+
+func GetCronJobList(namespace string, selector string) (*batch.CronJobList, error) {
+	list := &batch.CronJobList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "CronJob",
+			APIVersion: "batch/v1beta1",
+		},
+	}
+
+	err := sdk.List(
+		namespace,
+		list,
+		sdk.WithListOptions(&metav1.ListOptions{
+			LabelSelector: selector,
+		}),
+	)
+
+	return list, err
+}
+
+func GetDaemonSetList(namespace string, selector string) (*apps.DaemonSetList, error) {
+	list := &apps.DaemonSetList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "DaemonSet",
+			APIVersion: "extensions/v1beta1",
+		},
+	}
+
+	err := sdk.List(
+		namespace,
+		list,
+		sdk.WithListOptions(&metav1.ListOptions{
+			LabelSelector: selector,
+		}),
+	)
+
+	return list, err
 }

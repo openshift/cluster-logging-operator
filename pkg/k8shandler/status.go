@@ -2,11 +2,12 @@ package k8shandler
 
 import (
 	"bytes"
+	"reflect"
+
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
-	"reflect"
 
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

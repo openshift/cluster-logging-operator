@@ -4,16 +4,16 @@ metadata:
   name: elasticsearch-template
 parameters:
 - name: NAMESPACE
-  value: elasticsearch
-- name: ELASTICSEARCH_ADMIN_USER
-  value: developer
+  value: openshift-logging
+- name: LOGGING_ADMIN_USER
+  value: loggingadmin
 objects:
 - apiVersion: apiextensions.k8s.io/v1beta1
   kind: CustomResourceDefinition
   metadata:
-    name: elasticsearches.elasticsearch.redhat.com
+    name: elasticsearches.logging.openshift.io
   spec:
-    group: elasticsearch.redhat.com
+    group: logging.openshift.io
     names:
       kind: Elasticsearch
       listKind: ElasticsearchList
@@ -28,7 +28,7 @@ objects:
     namespace: ${NAMESPACE}
   rules:
   - apiGroups:
-    - elasticsearch.redhat.com
+    - logging.openshift.io
     resources:
     - "*"
     verbs:
@@ -58,16 +58,15 @@ objects:
 - kind: ServiceAccount
   apiVersion: v1
   metadata:
-    name: aggregated-logging-elasticsearch-operator
+    name: elasticsearch-operator
     namespace: ${NAMESPACE}
 - kind: RoleBinding
   apiVersion: rbac.authorization.k8s.io/v1beta1
   metadata:
-    name: default-account-elasticsearch-operator
-    namespace: ${NAMESPACE}
+    name: elasticsearch-operator-rolebinding
   subjects:
   - kind: ServiceAccount
-    name: aggregated-logging-elasticsearch-operator
+    name: elasticsearch-operator
   roleRef:
     kind: Role
     name: elasticsearch-operator
@@ -79,7 +78,7 @@ objects:
     namespace: ${NAMESPACE}
   subjects:
   - kind: User
-    name: ${ELASTICSEARCH_ADMIN_USER}
+    name: ${LOGGING_ADMIN_USER}
   roleRef:
     kind: Role
     name: elasticsearch-operator

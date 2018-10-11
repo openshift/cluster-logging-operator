@@ -20,13 +20,13 @@ jobs:
     - go test ./...
     - go vet ./...
     - operator-sdk build quay.io/t0ffel/elasticsearch-operator
-    - 'sed -i -e ''s/imagePullPolicy: Always/imagePullPolicy: Never/g'' deploy/operator.yaml'
+    - 'sed -i -e ''s/imagePullPolicy: Always/imagePullPolicy: Never/g'' deploy/deployment.yaml'
     - kubectl create -f deploy/rbac.yaml
     - kubectl create -f deploy/crd.yaml
     - ./tests/wait-for-operator.sh
     - CLUSTER_NAME=elastic1 ./tests/test-insecure-cdm.sh
     - CLUSTER_NAME=elastic1 ./tests/test-secure-cdm.sh
-    - kubectl delete -f deploy/operator.yaml
+    - kubectl delete -f deploy/deployment.yaml
   - stage: push to quay.io
     script:
     - go get -u github.com/operator-framework/operator-sdk/commands/operator-sdk

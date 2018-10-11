@@ -1,8 +1,8 @@
 package k8shandler
 
 import (
+	"fmt"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -16,11 +16,18 @@ import (
 // Note: this will eventually be deprecated and functionality will be moved into the ES operator
 //   in the case of Curator. Other curation deployments may not be supported in the future
 
-func CreateOrUpdateCuration(logging *logging.ClusterLogging) error {
-	createOrUpdateCuratorServiceAccount(logging)
+func CreateOrUpdateCuration(logging *logging.ClusterLogging) (err error) {
+	if err = createOrUpdateCuratorServiceAccount(logging); err != nil {
+		return
+	}
 
-	createOrUpdateCuratorConfigMap(logging)
-	createOrUpdateCuratorCronJob(logging)
+	if err = createOrUpdateCuratorConfigMap(logging); err != nil {
+		return
+	}
+
+	if err = createOrUpdateCuratorCronJob(logging); err != nil {
+		return
+	}
 
 	return createOrUpdateCuratorSecret(logging)
 }
@@ -33,7 +40,7 @@ func createOrUpdateCuratorServiceAccount(logging *logging.ClusterLogging) error 
 
 	err := sdk.Create(curatorServiceAccount)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		logrus.Fatalf("Failure creating Curator service account: %v", err)
+		return fmt.Errorf("Failure creating Curator service account: %v", err)
 	}
 
 	return nil
@@ -55,7 +62,7 @@ func createOrUpdateCuratorConfigMap(logging *logging.ClusterLogging) error {
 
 	err := sdk.Create(curatorConfigMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		logrus.Fatalf("Failure constructing Curator configmap: %v", err)
+		return fmt.Errorf("Failure constructing Curator configmap: %v", err)
 	}
 
 	return nil
@@ -79,7 +86,7 @@ func createOrUpdateCuratorSecret(logging *logging.ClusterLogging) error {
 
 	err := sdk.Create(curatorSecret)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		logrus.Fatalf("Failure constructing Curator secret: %v", err)
+		return fmt.Errorf("Failure constructing Curator secret: %v", err)
 	}
 
 	return nil
@@ -160,21 +167,21 @@ func createOrUpdateCuratorCronJob(logging *logging.ClusterLogging) error {
 
 		err := sdk.Create(curatorCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
-			logrus.Fatalf("Failure constructing Curator cronjob: %v", err)
+			return fmt.Errorf("Failure constructing Curator cronjob: %v", err)
 		}
 	} else {
 		curatorCronJob := getCuratorCronJob(logging, "curator-app", "elasticsearch-app")
 
 		err := sdk.Create(curatorCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
-			logrus.Fatalf("Failure constructing Curator App cronjob: %v", err)
+			return fmt.Errorf("Failure constructing Curator App cronjob: %v", err)
 		}
 
 		curatorInfraCronJob := getCuratorCronJob(logging, "curator-infra", "elasticsearch-infra")
 
 		err = sdk.Create(curatorInfraCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
-			logrus.Fatalf("Failure constructing Curator Infra cronjob: %v", err)
+			return fmt.Errorf("Failure constructing Curator Infra cronjob: %v", err)
 		}
 	}
 

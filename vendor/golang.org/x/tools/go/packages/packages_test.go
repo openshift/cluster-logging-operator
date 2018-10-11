@@ -202,7 +202,7 @@ func TestLoadImportsGraph(t *testing.T) {
 		t.Errorf("failed to obtain metadata for ad-hoc package: %s", err)
 	} else {
 		got := fmt.Sprintf("%s %s", initial[0].ID, srcs(initial[0]))
-		if want := "command-line-arguments [c.go]"; got != want && !usesOldGolist {
+		if want := "command-line-arguments [c.go]"; got != want {
 			t.Errorf("oops: got %s, want %s", got, want)
 		}
 	}
@@ -279,55 +279,6 @@ func TestLoadImportsTestVariants(t *testing.T) {
 
 	if graph != wantGraph {
 		t.Errorf("wrong import graph: got <<%s>>, want <<%s>>", graph, wantGraph)
-	}
-}
-
-func TestLoadImportsC(t *testing.T) {
-	// This test checks that when a package depends on the
-	// test variant of "syscall", "unsafe", or "runtime/cgo", that dependency
-	// is not removed when those packages are added when it imports "C".
-	//
-	// For this test to work, the external test of syscall must have a dependency
-	// on net, and net must import "syscall" and "C".
-	if runtime.GOOS == "windows" {
-		t.Skipf("skipping on windows; packages on windows do not satisfy conditions for test.")
-	}
-	if runtime.GOOS == "plan9" {
-		// See https://github.com/golang/go/issues/27100.
-		t.Skip(`skipping on plan9; for some reason "net [syscall.test]" is not loaded`)
-	}
-	if usesOldGolist {
-		t.Skip("not yet supported in pre-Go 1.10.4 golist fallback implementation")
-	}
-
-	cfg := &packages.Config{
-		Mode:  packages.LoadImports,
-		Tests: true,
-	}
-	initial, err := packages.Load(cfg, "syscall", "net")
-	if err != nil {
-		t.Fatalf("failed to load imports: %v", err)
-	}
-
-	_, all := importGraph(initial)
-
-	for _, test := range []struct {
-		pattern    string
-		wantImport string // an import to check for
-	}{
-		{"net", "syscall:syscall"},
-		{"net [syscall.test]", "syscall:syscall [syscall.test]"},
-		{"syscall_test [syscall.test]", "net:net [syscall.test]"},
-	} {
-		// Test the import paths.
-		pkg := all[test.pattern]
-		if pkg == nil {
-			t.Errorf("package %q not loaded", test.pattern)
-			continue
-		}
-		if imports := strings.Join(imports(pkg), " "); !strings.Contains(imports, test.wantImport) {
-			t.Errorf("package %q: got \n%s, \nwant to have %s", test.pattern, imports, test.wantImport)
-		}
 	}
 }
 
@@ -812,12 +763,45 @@ func TestLoadSyntaxError(t *testing.T) {
 	}
 }
 
-// This function tests use of the ParseFile hook to supply
-// alternative file contents to the parser and type-checker.
-func TestLoadAllSyntaxOverlay(t *testing.T) {
+// This function tests use of the ParseFile hook to modify
+// the AST after parsing.
+func TestParseFileModifyAST(t *testing.T) {
 	type M = map[string]string
 
 	tmp, cleanup := makeTree(t, M{
+		"src/a/a.go": `package a; const A = "a" `,
+	})
+	defer cleanup()
+
+	parseFile := func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
+		const mode = parser.AllErrors | parser.ParseComments
+		f, err := parser.ParseFile(fset, filename, src, mode)
+		// modify AST to change `const A = "a"` to `const A = "b"`
+		spec := f.Decls[0].(*ast.GenDecl).Specs[0].(*ast.ValueSpec)
+		spec.Values[0].(*ast.BasicLit).Value = `"b"`
+		return f, err
+	}
+	cfg := &packages.Config{
+		Mode:      packages.LoadAllSyntax,
+		Env:       append(os.Environ(), "GOPATH="+tmp, "GO111MODULE=off"),
+		ParseFile: parseFile,
+	}
+	initial, err := packages.Load(cfg, "a")
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Check value of a.A has been set to "b"
+	a := initial[0]
+	got := constant(a, "A").Val().String()
+	if got != `"b"` {
+		t.Errorf("a.A: got %s, want %s", got, `"b"`)
+	}
+}
+
+// This function tests config.Overlay functionality.
+func TestOverlay(t *testing.T) {
+	tmp, cleanup := makeTree(t, map[string]string{
 		"src/a/a.go": `package a; import "b"; const A = "a" + b.B`,
 		"src/b/b.go": `package b; import "c"; const B = "b" + c.C`,
 		"src/c/c.go": `package c; const C = "c"`,
@@ -826,32 +810,23 @@ func TestLoadAllSyntaxOverlay(t *testing.T) {
 	defer cleanup()
 
 	for i, test := range []struct {
-		overlay  M
+		overlay  map[string][]byte
 		want     string // expected value of a.A
 		wantErrs []string
 	}{
-		{nil, `"abc"`, nil}, // default
-		{M{}, `"abc"`, nil}, // empty overlay
-		{M{filepath.Join(tmp, "src/c/c.go"): `package c; const C = "C"`}, `"abC"`, nil},
-		{M{filepath.Join(tmp, "src/b/b.go"): `package b; import "c"; const B = "B" + c.C`}, `"aBc"`, nil},
-		{M{filepath.Join(tmp, "src/b/b.go"): `package b; import "d"; const B = "B" + d.D`}, `unknown`,
+		{nil, `"abc"`, nil},                 // default
+		{map[string][]byte{}, `"abc"`, nil}, // empty overlay
+		{map[string][]byte{filepath.Join(tmp, "src/c/c.go"): []byte(`package c; const C = "C"`)}, `"abC"`, nil},
+		{map[string][]byte{filepath.Join(tmp, "src/b/b.go"): []byte(`package b; import "c"; const B = "B" + c.C`)}, `"aBc"`, nil},
+		{map[string][]byte{filepath.Join(tmp, "src/b/b.go"): []byte(`package b; import "d"; const B = "B" + d.D`)}, `unknown`,
 			[]string{`could not import d (no metadata for d)`}},
 	} {
-		var parseFile func(fset *token.FileSet, filename string) (*ast.File, error)
-		if test.overlay != nil {
-			parseFile = func(fset *token.FileSet, filename string) (*ast.File, error) {
-				var src interface{}
-				if content, ok := test.overlay[filename]; ok {
-					src = content
-				}
-				const mode = parser.AllErrors | parser.ParseComments
-				return parser.ParseFile(fset, filename, src, mode)
-			}
-		}
+		var parseFile func(fset *token.FileSet, filename string, src []byte) (*ast.File, error)
 		cfg := &packages.Config{
 			Mode:      packages.LoadAllSyntax,
 			Env:       append(os.Environ(), "GOPATH="+tmp, "GO111MODULE=off"),
 			ParseFile: parseFile,
+			Overlay:   test.overlay,
 		}
 		initial, err := packages.Load(cfg, "a")
 		if err != nil {
@@ -880,10 +855,6 @@ func TestLoadAllSyntaxOverlay(t *testing.T) {
 func TestLoadAllSyntaxImportErrors(t *testing.T) {
 	// TODO(matloob): Remove this once go list -e -compiled is fixed. See golang.org/issue/26755
 	t.Skip("go list -compiled -e fails with non-zero exit status for empty packages")
-
-	if usesOldGolist {
-		t.Skip("not yet supported in pre-Go 1.10.4 golist fallback implementation")
-	}
 
 	tmp, cleanup := makeTree(t, map[string]string{
 		"src/unicycle/unicycle.go": `package unicycle; import _ "unicycle"`,

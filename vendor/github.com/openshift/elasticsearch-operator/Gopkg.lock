@@ -15,16 +15,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/ViaQ/elasticsearch-operator"
-  packages = [
-    "pkg/apis/elasticsearch/v1alpha1",
-    "pkg/k8shandler",
-    "pkg/stub"
-  ]
-  revision = "693f4f6253be240539c2d8cea1f3652952f5cef9"
-
-[[projects]]
-  branch = "master"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
@@ -545,6 +535,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c9cb1dd28f59c45892d184313d1a33fea6fd3fcd56406aa8375e3258cc491d06"
+  inputs-digest = "b1c04e42ffd8841d8c5aa6676163c99bd2a38ffab5b824c29f201a3c58991656"
   solver-name = "gps-cdcl"
   solver-version = 1

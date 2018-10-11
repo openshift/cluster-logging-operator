@@ -1,3 +1,3 @@
 // +k8s:deepcopy-gen=package
-// +groupName=elasticsearch.redhat.com
+// +groupName=logging.openshift.io
 package v1alpha1

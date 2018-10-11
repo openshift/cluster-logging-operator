@@ -153,6 +153,11 @@ func main() {
 	printVersion()
 
 	sdk.ExposeMetricsPort()
+	metrics, err := stub.RegisterOperatorMetrics()
+	if err != nil {
+		logrus.Errorf("failed to register operator specific metrics: %v", err)
+	}
+	h := stub.NewHandler(metrics)
 
 	resource := "{{.APIVersion}}"
 	kind := "{{.Kind}}"
@@ -163,7 +168,7 @@ func main() {
 	resyncPeriod := time.Duration(5) * time.Second
 	logrus.Infof("Watching %s, %s, %s, %d", resource, kind, namespace, resyncPeriod)
 	sdk.Watch(resource, kind, namespace, resyncPeriod)
-	sdk.Handle(stub.NewHandler())
+	sdk.Handle(h)
 	sdk.Run(context.TODO())
 }
 `
@@ -182,13 +187,23 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
-func NewHandler() sdk.Handler {
-	return &Handler{}
+func NewHandler(m *Metrics) sdk.Handler {
+	return &Handler{
+		metrics: m,
+	}
+}
+
+type Metrics struct {
+	operatorErrors prometheus.Counter
 }
 
 type Handler struct {
+	// Metrics example
+	metrics *Metrics
+
 	// Fill me
 }
 
@@ -198,6 +213,8 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 		err := sdk.Create(newbusyBoxPod(o))
 		if err != nil && !errors.IsAlreadyExists(err) {
 			logrus.Errorf("failed to create busybox pod : %v", err)
+			// increment error metric
+			h.metrics.operatorErrors.Inc()
 			return err
 		}
 	}
@@ -236,6 +253,18 @@ func newbusyBoxPod(cr *{{.Version}}.{{.Kind}}) *corev1.Pod {
 			},
 		},
 	}
+}
+
+func RegisterOperatorMetrics() (*Metrics, error) {
+	operatorErrors := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "memcached_operator_reconcile_errors_total",
+		Help: "Number of errors that occurred while reconciling the memcached deployment",
+	})
+	err := prometheus.Register(operatorErrors)
+	if err != nil {
+		return nil, err
+	}
+	return &Metrics{operatorErrors: operatorErrors}, nil
 }
 `
 
@@ -456,16 +485,17 @@ spec:
       labels:
         name: {{.ProjectName}}
     spec:
-      serviceAccountName: {{.ProjectName}}
+{{- if .IsGoOperator }}
+      serviceAccountName: {{.ProjectName}}{{ end }}
       containers:
         - name: {{.ProjectName}}
           image: {{.Image}}
           ports:
           - containerPort: {{.MetricsPort}}
             name: {{.MetricsPortName}}
-          command:
+{{ if .IsGoOperator }}          command:
           - {{.ProjectName}}
-          imagePullPolicy: Always
+{{ end }}          imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
@@ -475,7 +505,11 @@ spec:
               value: "{{.ProjectName}}"
 `
 
-const rbacYamlTmpl = `kind: Role
+// For Ansible Operator we are assuming namespace: default on ClusterRoleBinding
+// Documentation will tell user to update
+const rbacYamlTmpl = `{{- if .IsGoOperator }}kind: Role
+{{- else -}}
+kind: ClusterRole{{ end }}
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: {{.ProjectName}}
@@ -509,16 +543,25 @@ rules:
   - "*"
 
 ---
-
+{{ if .IsGoOperator }}
 kind: RoleBinding
+{{- else }}
+kind: ClusterRoleBinding{{ end }}
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: {{.ProjectName}}
 subjects:
 - kind: ServiceAccount
+{{- if .IsGoOperator }}
   name: {{.ProjectName}}
+{{- else }}
+  name: default
+  namespace: default{{ end }}
 roleRef:
+{{- if .IsGoOperator }}
   kind: Role
+{{- else }}
+  kind: ClusterRole{{ end }}
   name: {{.ProjectName}}
   apiGroup: rbac.authorization.k8s.io
 `
@@ -550,30 +593,6 @@ deepcopy \
 {{.APIDirName}}:{{.Version}} \
 --go-header-file "./tmp/codegen/boilerplate.go.txt"
 `
-const buildTmpl = `#!/usr/bin/env bash
-
-set -o errexit
-set -o nounset
-set -o pipefail
-
-if ! which go > /dev/null; then
-	echo "golang needs to be installed"
-	exit 1
-fi
-
-BIN_DIR="$(pwd)/tmp/_output/bin"
-mkdir -p ${BIN_DIR}
-PROJECT_NAME="{{.ProjectName}}"
-REPO_PATH="{{.RepoPath}}"
-BUILD_PATH="${REPO_PATH}/cmd/${PROJECT_NAME}"
-TEST_PATH="${REPO_PATH}/${TEST_LOCATION}"
-echo "building "${PROJECT_NAME}"..."
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ${BIN_DIR}/${PROJECT_NAME} $BUILD_PATH
-if $ENABLE_TESTS ; then
-	echo "building "${PROJECT_NAME}-test"..."
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go test -c -o ${BIN_DIR}/${PROJECT_NAME}-test $TEST_PATH
-fi
-`
 
 const goTestScript = `#!/bin/sh
 
@@ -596,6 +615,40 @@ ADD tmp/_output/bin/memcached-operator-test /usr/local/bin/memcached-operator-te
 ARG NAMESPACEDMAN
 ADD $NAMESPACEDMAN /namespaced.yaml
 ADD tmp/build/go-test.sh /go-test.sh
+`
+
+// Ansible Operator files
+const dockerFileAnsibleTmpl = `FROM quay.io/water-hole/ansible-operator
+
+COPY roles/ ${HOME}/roles/
+{{- if .GeneratePlaybook }}
+COPY playbook.yaml ${HOME}/playbook.yaml{{ end }}
+COPY watches.yaml ${HOME}/watches.yaml
+`
+
+const watchesTmpl = `---
+- version: {{.Version}}
+  group: {{.GroupName}}
+  kind: {{.Kind}}
+{{ if .GeneratePlaybook }}  playbook: /opt/ansible/playbook.yaml{{ else }}  role: /opt/ansible/roles/{{.Kind}}{{ end }}
+`
+
+const playbookTmpl = `- hosts: localhost
+  gather_facts: no
+  tasks:
+  - import_role:
+      name: "{{.Kind}}"
+`
+
+const galaxyInitTmpl = `#!/usr/bin/env bash
+
+if ! which ansible-galaxy > /dev/null; then
+	echo "ansible needs to be installed"
+	exit 1
+fi
+
+echo "Initializing role skeleton..."
+ansible-galaxy init --init-path={{.Name}}/roles/ {{.Kind}}
 `
 
 // apiDocTmpl is the template for apis/../doc.go

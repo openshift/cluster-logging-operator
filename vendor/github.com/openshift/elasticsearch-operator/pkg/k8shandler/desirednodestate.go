@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	v1alpha1 "github.com/ViaQ/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	elasticsearchCertsPath    = "/etc/elasticsearch/secret"
+	elasticsearchCertsPath    = "/etc/openshift/elasticsearch/secret"
 	elasticsearchConfigPath   = "/usr/share/java/elasticsearch/config"
 	elasticsearchDefaultImage = "docker.io/t0ffel/elasticsearch5"
 	heapDumpLocation          = "/elasticsearch/persistent/heapdump.hprof"

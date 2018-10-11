@@ -23,15 +23,16 @@ objects:
         labels:
           name: elasticsearch-operator
       spec:
+        serviceAccountName: elasticsearch-operator
         containers:
           - name: elasticsearch-operator
-            image: t0ffel/es-operator
+            image: quay.io/openshift/origin-elasticsearch-operator:latest
+            imagePullPolicy: IfNotPresent
+            command:
+            - elasticsearch-operator
             ports:
             - containerPort: 60000
               name: metrics
-            command:
-            - elasticsearch-operator
-            imagePullPolicy: IfNotPresent
             env:
               - name: WATCH_NAMESPACE
                 valueFrom:
@@ -39,14 +40,14 @@ objects:
                     fieldPath: metadata.namespace
               - name: OPERATOR_NAME
                 value: "elasticsearch-operator"
-- apiVersion: "elasticsearch.redhat.com/v1alpha1"
+- apiVersion: "logging.openshift.io/v1alpha1"
   kind: "Elasticsearch"
   metadata:
     name: ${ELASTICSEARCH_CLUSTER_NAME}
     namespace: ${NAMESPACE}
   spec:
     nodeSpec:
-      image: docker.io/openshift/logging-elasticsearch5
+      image: quay.io/openshift/origin-logging-elasticsearch5:latest
     nodes:
       - roles:
         - client
@@ -60,4 +61,3 @@ objects:
             memory: 512Mi
         nodeSelector:
           kubernetes.io/hostname: localhost
-

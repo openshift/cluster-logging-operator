@@ -59,9 +59,5 @@ func Reconcile(logging *v1alpha1.ClusterLogging) (err error) {
 		return fmt.Errorf("Unable to create or update collection: %v", err)
 	}
 
-	if err = k8shandler.UpdateStatus(logging); err != nil {
-		return fmt.Errorf("Unable to update Cluster Logging status: %v", err)
-	}
-
 	return nil
 }

@@ -3,31 +3,56 @@ package k8shandler
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"reflect"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
+	apps "k8s.io/api/apps/v1"
 )
 
-func CreateOrUpdateCollection(logging *logging.ClusterLogging) (err error) {
-	if err = createOrUpdateFluentdServiceAccount(logging); err != nil {
-		return
+func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
+
+	if cluster.Spec.Collection.LogCollection.Type == logging.LogCollectionTypeFluentd {
+		if err = createOrUpdateFluentdServiceAccount(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateCollectionPriorityClass(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateFluentdConfigMap(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateFluentdDaemonset(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateFluentdSecret(cluster); err != nil {
+			return
+		}
+
+		fluentdStatus, err := getFluentdCollectorStatus(cluster.Namespace)
+
+		if err != nil {
+			return fmt.Errorf("Failed to get status of Fluentd: %v", err)
+		}
+
+		if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.LogCollection.FluentdStatus) {
+			logrus.Infof("Updating status of Fluentd")
+			cluster.Status.Collection.LogCollection.FluentdStatus = fluentdStatus
+
+			if err = sdk.Update(cluster); err != nil {
+				return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", err)
+			}
+		}
 	}
 
-	if err = createOrUpdateCollectionPriorityClass(logging); err != nil {
-		return
-	}
-
-	if err = createOrUpdateFluentdConfigMap(logging); err != nil {
-		return
-	}
-
-	if err = createOrUpdateFluentdDaemonset(logging); err != nil {
-		return
-	}
-
-	return createOrUpdateFluentdSecret(logging)
+	return nil
 }
 
 func createOrUpdateCollectionPriorityClass(logging *logging.ClusterLogging) error {
@@ -104,7 +129,7 @@ func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdDaemonset(logging *logging.ClusterLogging) error {
+func createOrUpdateFluentdDaemonset(logging *logging.ClusterLogging) (err error) {
 
 	var fluentdPodSpec v1.PodSpec
 
@@ -118,9 +143,13 @@ func createOrUpdateFluentdDaemonset(logging *logging.ClusterLogging) error {
 
 	utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(logging))
 
-	err := sdk.Create(fluentdDaemonset)
+	err = sdk.Create(fluentdDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Fluentd Daemonset %v", err)
+	}
+
+	if err = updateFluentdDaemonsetIfRequired(fluentdDaemonset); err != nil {
+		return
 	}
 
 	return nil
@@ -128,7 +157,7 @@ func createOrUpdateFluentdDaemonset(logging *logging.ClusterLogging) error {
 
 func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
 
-	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.FluentdSpec.Resources)
+	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.FluentdSpec.Resources)
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "true"},
@@ -193,4 +222,31 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	return fluentdPodSpec
+}
+
+func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
+	current := desired.DeepCopy()
+
+	if err = sdk.Get(current); err != nil {
+		return fmt.Errorf("Failed to get Fluentd daemonset: %v", err)
+	}
+
+	current, different := isFluentdDaemonsetDifferent(current, desired)
+
+	if different {
+		if err = sdk.Update(current); err != nil {
+			return fmt.Errorf("Failed to update Fluentd daemonset: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func isFluentdDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
+
+	different := false
+
+	// TODO: populate this
+
+	return current, different
 }

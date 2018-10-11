@@ -6,18 +6,43 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/sirupsen/logrus"
+	"reflect"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateOrUpdateLogStore(logging *logging.ClusterLogging) (err error) {
-	if err = createOrUpdateElasticsearchSecret(logging); err != nil {
-		return
+func CreateOrUpdateLogStore(cluster *logging.ClusterLogging) (err error) {
+
+	if cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
+
+		if err = createOrUpdateElasticsearchSecret(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateElasticsearchCR(cluster); err != nil {
+			return
+		}
+
+		elasticsearchStatus, err := getElasticsearchStatus(cluster.Namespace)
+
+		if err != nil {
+			return fmt.Errorf("Failed to get status for Elasticsearch: %v", err)
+		}
+
+		if !reflect.DeepEqual(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
+			logrus.Infof("Updating status of Elasticsearch")
+			cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
+
+			if err = sdk.Update(cluster); err != nil {
+				return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", err)
+			}
+		}
 	}
 
-	return createOrUpdateElasticsearchCR(logging)
+	return nil
 }
 
 func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
@@ -97,21 +122,29 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 	return cr
 }
 
-func createOrUpdateElasticsearchCR(logging *logging.ClusterLogging) error {
+func createOrUpdateElasticsearchCR(logging *logging.ClusterLogging) (err error) {
 
 	if utils.AllInOne(logging) {
 		esCR := getElasticsearchCR(logging, "elasticsearch")
 
-		err := sdk.Create(esCR)
+		err = sdk.Create(esCR)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Elasticsearch CR: %v", err)
+		}
+
+		if err = updateElasticsearchCRIfRequired(esCR); err != nil {
+			return
 		}
 	} else {
 		esCR := getElasticsearchCR(logging, "elasticsearch-app")
 
-		err := sdk.Create(esCR)
+		err = sdk.Create(esCR)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Elasticsearch CR: %v", err)
+		}
+
+		if err = updateElasticsearchCRIfRequired(esCR); err != nil {
+			return
 		}
 
 		esInfraCR := getElasticsearchCR(logging, "elasticsearch-infra")
@@ -120,28 +153,38 @@ func createOrUpdateElasticsearchCR(logging *logging.ClusterLogging) error {
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Elasticsearch Infra CR: %v", err)
 		}
-	} /*else if errors.IsAlreadyExists(err) {
-	  // Get existing configMap to check if it is same as what we want
-	  existingCR := &v1alpha1.Elasticsearch{
-	    ObjectMeta: metav1.ObjectMeta{
-	      Name: "elasticsearch",
-	      Namespace: logging.Namespace,
-	    },
-	    TypeMeta: metav1.TypeMeta{
-	      Kind: "Elasticsearch",
-	      APIVersion: "logging.openshift.io/v1alpha1",
-	    },
-	  }
 
-	  err = sdk.Get(existingCR)
-	  if err != nil {
-	    logrus.Fatalf("Unable to get Elasticsearch CR: %v", err)
-	  }
-
-	  logrus.Infof("Found existing CR: %v", existingCR)
-
-	  // TODO: Compare existing CR labels, selectors and port
-	}*/
+		if err = updateElasticsearchCRIfRequired(esInfraCR); err != nil {
+			return
+		}
+	}
 
 	return nil
+}
+
+func updateElasticsearchCRIfRequired(desired *v1alpha1.Elasticsearch) (err error) {
+	current := desired.DeepCopy()
+
+	if err = sdk.Get(current); err != nil {
+		return fmt.Errorf("Failed to get Elasticsearch CR: %v", err)
+	}
+
+	current, different := isElasticsearchCRDifferent(current, desired)
+
+	if different {
+		if err = sdk.Update(current); err != nil {
+			return fmt.Errorf("Failed to update Elasticsearch CR: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func isElasticsearchCRDifferent(current *v1alpha1.Elasticsearch, desired *v1alpha1.Elasticsearch) (*v1alpha1.Elasticsearch, bool) {
+
+	different := false
+
+	//TODO: populate this
+
+	return current, different
 }

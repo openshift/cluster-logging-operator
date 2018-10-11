@@ -32,7 +32,7 @@ type ClusterLoggingSpec struct {
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)
 type VisualizationSpec struct {
-	Type       string `json:"type"`
+	Type       VisualizationType `json:"type"`
 	KibanaSpec `json:"kibana,omitempty"`
 }
 
@@ -49,7 +49,7 @@ type ProxySpec struct {
 
 // This is the struct that will contain information pertinent to Log storage (Elasticsearch)
 type LogStoreSpec struct {
-	Type              string `json:"type"`
+	Type              LogStoreType `json:"type"`
 	ElasticsearchSpec `json:"elasticsearch,omitempty"`
 }
 
@@ -60,11 +60,20 @@ type ElasticsearchSpec struct {
 	Storage      v1alpha1.ElasticsearchNodeStorageSource `json:"storage"`
 }
 
-// This is the struct that will contain information pertinent to Log collection (Fluentd)
+// This is the struct that will contain information pertinent to Log and event collection
 type CollectionSpec struct {
-	Type        string `json:"type"`
+	LogCollection   LogCollectionSpec   `json:"logCollection,omitempty"`
+	EventCollection EventCollectionSpec `json:"eventCollection,omitempty"`
+	Normalizer      NormalizerSpec      `json:"normalizer,omitempty"`
+}
+
+type LogCollectionSpec struct {
+	Type        LogCollectionType `json:"type"`
 	FluentdSpec `json:"fluentd,omitempty"`
-	Normalizer  NormalizerSpec `json:normalizerSpec,omitempty"`
+}
+
+type EventCollectionSpec struct {
+	Type EventCollectionType `json:"type"`
 }
 
 type FluentdSpec struct {
@@ -74,13 +83,13 @@ type FluentdSpec struct {
 
 // This is the struct that will contain information pertinent to Log normalization (Mux)
 type NormalizerSpec struct {
-	Type        string `json:"type"`
+	Type        NormalizerType `json:"type"`
 	FluentdSpec `json:"fluentd,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log curation (Curator)
 type CurationSpec struct {
-	Type        string `json:"type"`
+	Type        CurationType `json:"type"`
 	CuratorSpec `json:"curator,omitempty"`
 }
 
@@ -122,8 +131,16 @@ type ElasticsearchStatus struct {
 }
 
 type CollectionStatus struct {
-	FluentdStatus    FluentdCollectorStatus `json:"fluentdStatus,omitempty"`
-	NormalizerStatus NormalizerStatus       `json:"normalizerStatus,omitempty"`
+	LogCollection    LogCollectionStatus   `json:"logCollection,omitempty"`
+	EventCollection  EventCollectionStatus `json:"eventCollection,omitempty"`
+	NormalizerStatus NormalizerStatus      `json:"normalizerStatus,omitempty"`
+}
+
+type LogCollectionStatus struct {
+	FluentdStatus FluentdCollectorStatus `json:"fluentdStatus,omitempty"`
+}
+
+type EventCollectionStatus struct {
 }
 
 type FluentdCollectorStatus struct {
@@ -150,3 +167,31 @@ type CuratorStatus struct {
 	Schedule  string `json:"schedules"`
 	Suspended bool   `json:"suspended"`
 }
+
+type LogStoreType string
+
+const (
+	LogStoreTypeElasticsearch LogStoreType = "elasticsearch"
+)
+
+type VisualizationType string
+
+const (
+	VisualizationTypeKibana VisualizationType = "kibana"
+)
+
+type CurationType string
+
+const (
+	CurationTypeCurator CurationType = "curator"
+)
+
+type LogCollectionType string
+
+const (
+	LogCollectionTypeFluentd LogCollectionType = "fluentd"
+)
+
+type EventCollectionType string
+
+type NormalizerType string

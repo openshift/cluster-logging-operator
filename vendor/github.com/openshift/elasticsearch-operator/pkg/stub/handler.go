@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ViaQ/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
-	"github.com/ViaQ/elasticsearch-operator/pkg/k8shandler"
+	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	"github.com/openshift/elasticsearch-operator/pkg/k8shandler"
 	"github.com/sirupsen/logrus"
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
@@ -47,7 +47,7 @@ func Reconcile(es *v1alpha1.Elasticsearch) (err error) {
 		return fmt.Errorf("Failed to reconcile ServiceAccount for Elasticsearch cluster: %v", err)
 	}
 
-	// Ensure existence of services
+	// Ensure existence of config maps
 	configMapName, err := k8shandler.CreateOrUpdateConfigMaps(es)
 	if err != nil {
 		return fmt.Errorf("Failed to reconcile ConfigMaps for Elasticsearch cluster: %v", err)

@@ -3,7 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
-	api "github.com/ViaQ/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 
 	apps "k8s.io/api/apps/v1"

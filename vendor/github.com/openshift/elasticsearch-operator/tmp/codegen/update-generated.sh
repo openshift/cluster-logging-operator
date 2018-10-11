@@ -6,7 +6,7 @@ set -o pipefail
 
 vendor/k8s.io/code-generator/generate-groups.sh \
 deepcopy \
-github.com/ViaQ/elasticsearch-operator/pkg/generated \
-github.com/ViaQ/elasticsearch-operator/pkg/apis \
+github.com/openshift/elasticsearch-operator/pkg/generated \
+github.com/openshift/elasticsearch-operator/pkg/apis \
 elasticsearch:v1alpha1 \
 --go-header-file "./tmp/codegen/boilerplate.go.txt"

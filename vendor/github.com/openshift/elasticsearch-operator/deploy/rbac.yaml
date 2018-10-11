@@ -1,10 +1,11 @@
-kind: Role
+---
 apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
 metadata:
   name: elasticsearch-operator
 rules:
 - apiGroups:
-  - elasticsearch.redhat.com
+  - logging.openshift.io
   resources:
   - "*"
   verbs:
@@ -33,21 +34,19 @@ rules:
   - "*"
 
 ---
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: aggregated-logging-elasticsearch-operator
+  name: elasticsearch-operator
 
 ---
-
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: elasticsearch-operator-rolebinding
 subjects:
 - kind: ServiceAccount
-  name: aggregated-logging-elasticsearch-operator
+  name: elasticsearch-operator
 roleRef:
   kind: Role
   name: elasticsearch-operator

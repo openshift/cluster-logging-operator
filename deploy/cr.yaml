@@ -23,4 +23,5 @@ spec:
     logCollection:
       type: "fluentd"
       fluentd:
-        nodeSelector: "logging-infra-fluentd=true"
+        nodeSelector:
+          logging-infra-fluentd: "true"

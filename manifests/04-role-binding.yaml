@@ -10,3 +10,17 @@ roleRef:
   kind: Role
   name: cluster-logging-operator
   apiGroup: rbac.authorization.k8s.io
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: cluster-logging-operator-priority-rolebinding
+subjects:
+- kind: ServiceAccount
+  name: cluster-logging-operator
+  namespace: cluster-logging
+roleRef:
+  kind: ClusterRole
+  name: cluster-logging-operator-priority
+  apiGroup: rbac.authorization.k8s.io

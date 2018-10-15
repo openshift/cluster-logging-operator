@@ -20,7 +20,7 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 	secret := &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
-			APIVersion: "v1",
+			APIVersion: v1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,

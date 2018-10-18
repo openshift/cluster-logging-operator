@@ -3,8 +3,10 @@ package k8shandler
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"reflect"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
@@ -16,20 +18,43 @@ import (
 // Note: this will eventually be deprecated and functionality will be moved into the ES operator
 //   in the case of Curator. Other curation deployments may not be supported in the future
 
-func CreateOrUpdateCuration(logging *logging.ClusterLogging) (err error) {
-	if err = createOrUpdateCuratorServiceAccount(logging); err != nil {
-		return
+func CreateOrUpdateCuration(cluster *logging.ClusterLogging) (err error) {
+
+	if cluster.Spec.Curation.Type == logging.CurationTypeCurator {
+
+		if err = createOrUpdateCuratorServiceAccount(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateCuratorConfigMap(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateCuratorCronJob(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateCuratorSecret(cluster); err != nil {
+			return
+		}
+
+		curatorStatus, err := getCuratorStatus(cluster.Namespace)
+
+		if err != nil {
+			return fmt.Errorf("Failed to get status for Curator: %v", err)
+		}
+
+		if !reflect.DeepEqual(curatorStatus, cluster.Status.Curation.CuratorStatus) {
+			logrus.Infof("Updating status of Curator")
+			cluster.Status.Curation.CuratorStatus = curatorStatus
+
+			if err = sdk.Update(cluster); err != nil {
+				return fmt.Errorf("Failed to update Cluster Logging Curator status: %v", err)
+			}
+		}
 	}
 
-	if err = createOrUpdateCuratorConfigMap(logging); err != nil {
-		return
-	}
-
-	if err = createOrUpdateCuratorCronJob(logging); err != nil {
-		return
-	}
-
-	return createOrUpdateCuratorSecret(logging)
+	return nil
 }
 
 func createOrUpdateCuratorServiceAccount(logging *logging.ClusterLogging) error {
@@ -160,21 +185,29 @@ func getCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elas
 	return curatorCronJob
 }
 
-func createOrUpdateCuratorCronJob(logging *logging.ClusterLogging) error {
+func createOrUpdateCuratorCronJob(logging *logging.ClusterLogging) (err error) {
 
 	if utils.AllInOne(logging) {
 		curatorCronJob := getCuratorCronJob(logging, "curator", "elasticsearch")
 
-		err := sdk.Create(curatorCronJob)
+		err = sdk.Create(curatorCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Curator cronjob: %v", err)
+		}
+
+		if err = updateCuratorIfRequired(curatorCronJob); err != nil {
+			return
 		}
 	} else {
 		curatorCronJob := getCuratorCronJob(logging, "curator-app", "elasticsearch-app")
 
-		err := sdk.Create(curatorCronJob)
+		err = sdk.Create(curatorCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Curator App cronjob: %v", err)
+		}
+
+		if err = updateCuratorIfRequired(curatorCronJob); err != nil {
+			return
 		}
 
 		curatorInfraCronJob := getCuratorCronJob(logging, "curator-infra", "elasticsearch-infra")
@@ -183,7 +216,50 @@ func createOrUpdateCuratorCronJob(logging *logging.ClusterLogging) error {
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Curator Infra cronjob: %v", err)
 		}
+
+		if err = updateCuratorIfRequired(curatorInfraCronJob); err != nil {
+			return
+		}
 	}
 
 	return nil
+}
+
+func updateCuratorIfRequired(desired *batch.CronJob) (err error) {
+	current := desired.DeepCopy()
+
+	if err = sdk.Get(current); err != nil {
+		return fmt.Errorf("Failed to get Curator cronjob: %v", err)
+	}
+
+	current, different := isCuratorDifferent(current, desired)
+
+	if different {
+		if err = sdk.Update(current); err != nil {
+			return fmt.Errorf("Failed to update Curator cronjob: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.CronJob, bool) {
+
+	different := false
+
+	// Check schedule
+	if current.Spec.Schedule != desired.Spec.Schedule {
+		current.Spec.Schedule = desired.Spec.Schedule
+		logrus.Infof("Invalid Curator schedule found, updating %q", current.Name)
+		different = true
+	}
+
+	// Check suspended
+	if current.Spec.Suspend != nil && desired.Spec.Suspend != nil && *current.Spec.Suspend != *desired.Spec.Suspend {
+		current.Spec.Suspend = desired.Spec.Suspend
+		logrus.Infof("Invalid Curator suspend value found, updating %q", current.Name)
+		different = true
+	}
+
+	return current, different
 }

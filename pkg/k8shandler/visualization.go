@@ -4,33 +4,58 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"reflect"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
+	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateOrUpdateVisualization(logging *logging.ClusterLogging) (err error) {
-	if err = createOrUpdateKibanaServiceAccount(logging); err != nil {
-		return
+func CreateOrUpdateVisualization(cluster *logging.ClusterLogging) (err error) {
+
+	if cluster.Spec.Visualization.Type == logging.VisualizationTypeKibana {
+		if err = createOrUpdateKibanaServiceAccount(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateKibanaService(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateKibanaRoute(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateKibanaDeployment(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateKibanaSecret(cluster); err != nil {
+			return
+		}
+
+		kibanaStatus, err := getKibanaStatus(cluster.Namespace)
+
+		if err != nil {
+			return fmt.Errorf("Failed to get status for Kibana: %v", err)
+		}
+
+		if !reflect.DeepEqual(kibanaStatus, cluster.Status.Visualization.KibanaStatus) {
+			logrus.Infof("Updating status of Kibana")
+			cluster.Status.Visualization.KibanaStatus = kibanaStatus
+
+			if err = sdk.Update(cluster); err != nil {
+				return fmt.Errorf("Failed to update Cluster Logging Kibana status: %v", err)
+			}
+		}
 	}
 
-	if err = createOrUpdateKibanaService(logging); err != nil {
-		return
-	}
-
-	if err = createOrUpdateKibanaRoute(logging); err != nil {
-		return
-	}
-
-	if err = createOrUpdateKibanaDeployment(logging); err != nil {
-		return
-	}
-
-	return createOrUpdateKibanaSecret(logging)
+	return nil
 }
 
 func createOrUpdateKibanaServiceAccount(logging *logging.ClusterLogging) error {
@@ -47,7 +72,7 @@ func createOrUpdateKibanaServiceAccount(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateKibanaDeployment(logging *logging.ClusterLogging) error {
+func createOrUpdateKibanaDeployment(logging *logging.ClusterLogging) (err error) {
 
 	if utils.AllInOne(logging) {
 		kibanaPodSpec := getKibanaPodSpec(logging, "kibana", "elasticsearch")
@@ -55,19 +80,28 @@ func createOrUpdateKibanaDeployment(logging *logging.ClusterLogging) error {
 
 		utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(logging))
 
-		err := sdk.Create(kibanaDeployment)
+		err = sdk.Create(kibanaDeployment)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Kibana deployment: %v", err)
 		}
+
+		if err = updateKibanaIfRequired(kibanaDeployment); err != nil {
+			return
+		}
+
 	} else {
 		kibanaPodSpec := getKibanaPodSpec(logging, "kibana-app", "elasticsearch-app")
 		kibanaDeployment := utils.Deployment("kibana-app", logging.Namespace, "kibana", "kibana", kibanaPodSpec)
 
 		utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(logging))
 
-		err := sdk.Create(kibanaDeployment)
+		err = sdk.Create(kibanaDeployment)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Kibana App deployment: %v", err)
+		}
+
+		if err = updateKibanaIfRequired(kibanaDeployment); err != nil {
+			return
 		}
 
 		kibanaInfraPodSpec := getKibanaPodSpec(logging, "kibana-infra", "elasticsearch-infra")
@@ -78,6 +112,10 @@ func createOrUpdateKibanaDeployment(logging *logging.ClusterLogging) error {
 		err = sdk.Create(kibanaInfraDeployment)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Kibana Infra deployment: %v", err)
+		}
+
+		if err = updateKibanaIfRequired(kibanaInfraDeployment); err != nil {
+			return
 		}
 	}
 
@@ -320,4 +358,35 @@ func getKibanaPodSpec(logging *logging.ClusterLogging, kibanaName string, elasti
 	}
 
 	return kibanaPodSpec
+}
+
+func updateKibanaIfRequired(desired *apps.Deployment) (err error) {
+	current := desired.DeepCopy()
+
+	if err = sdk.Get(current); err != nil {
+		return fmt.Errorf("Failed to get Kibana deployment: %v", err)
+	}
+
+	current, different := isKibanaDifferent(current, desired)
+
+	if different {
+		if err = sdk.Update(current); err != nil {
+			return fmt.Errorf("Failed to update Kibana deployment: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*apps.Deployment, bool) {
+
+	different := false
+
+	if *current.Spec.Replicas != *desired.Spec.Replicas {
+		current.Spec.Replicas = desired.Spec.Replicas
+		logrus.Infof("Invalid Kibana replica count found, updating %q", current.Name)
+		different = true
+	}
+
+	return current, different
 }

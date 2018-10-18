@@ -17,7 +17,10 @@ spec:
       replicas: 1
   curation:
     type: "curator"
-    schedule: "30 3 * * *"
+    curator:
+      schedule: "30 3 * * *"
   collection:
-    type: "fluentd"
-    nodeSelector: "logging-infra-fluentd=true"
+    logCollection:
+      type: "fluentd"
+      fluentd:
+        nodeSelector: "logging-infra-fluentd=true"

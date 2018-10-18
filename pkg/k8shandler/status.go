@@ -3,85 +3,14 @@ package k8shandler
 import (
 	"bytes"
 	"fmt"
-	"reflect"
 
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	"github.com/sirupsen/logrus"
 
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-func UpdateStatus(logging *v1alpha1.ClusterLogging) error {
-
-	changed := false
-
-	if logging.Spec.LogStore.Type == "elasticsearch" {
-		elasticsearchStatus, err := getElasticsearchStatus(logging.Namespace)
-
-		if err != nil {
-			return fmt.Errorf("Failed to get status for Elasticsearch: %v", err)
-		}
-
-		if !reflect.DeepEqual(elasticsearchStatus, logging.Status.LogStore.ElasticsearchStatus) {
-			logrus.Infof("Updating status of Elasticsearch")
-			logging.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
-			changed = true
-		}
-	}
-
-	if logging.Spec.Visualization.Type == "kibana" {
-		kibanaStatus, err := getKibanaStatus(logging.Namespace)
-
-		if err != nil {
-			return fmt.Errorf("Failed to get status for Kibana: %v", err)
-		}
-
-		if !reflect.DeepEqual(kibanaStatus, logging.Status.Visualization.KibanaStatus) {
-			logrus.Infof("Updating status of Kibana")
-			logging.Status.Visualization.KibanaStatus = kibanaStatus
-			changed = true
-		}
-	}
-
-	if logging.Spec.Curation.Type == "curator" {
-		curatorStatus, err := getCuratorStatus(logging.Namespace)
-
-		if err != nil {
-			return fmt.Errorf("Failed to get status for Curator: %v", err)
-		}
-
-		if !reflect.DeepEqual(curatorStatus, logging.Status.Curation.CuratorStatus) {
-			logrus.Infof("Updating status of Curator")
-			logging.Status.Curation.CuratorStatus = curatorStatus
-			changed = true
-		}
-	}
-
-	if logging.Spec.Collection.Type == "fluentd" {
-		fluentdStatus, err := getFluentdCollectorStatus(logging.Namespace)
-
-		if err != nil {
-			return fmt.Errorf("Failed to get status of Fluentd: %v", err)
-		}
-
-		if !reflect.DeepEqual(fluentdStatus, logging.Status.Collection.FluentdStatus) {
-			logrus.Infof("Updating status of Fluentd")
-			logging.Status.Collection.FluentdStatus = fluentdStatus
-			changed = true
-		}
-	}
-
-	if changed {
-		if err := sdk.Update(logging); err != nil {
-			return fmt.Errorf("Failed to update Cluster Logging status: %v", err)
-		}
-	}
-
-	return nil
-}
 
 func getCuratorStatus(namespace string) ([]v1alpha1.CuratorStatus, error) {
 

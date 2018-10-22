@@ -222,6 +222,7 @@ init_cert_files
 create_signing_conf
 
 generate_certs 'system.logging.fluentd'
+generate_certs 'system.logging.rsyslog'
 generate_certs 'system.logging.kibana'
 generate_certs 'system.logging.curator'
 generate_certs 'system.admin'

@@ -1,0 +1,2 @@
+version=2
+rule=:%time:word% %stream:word% %logtag:word% %log:rest%

@@ -36,7 +36,9 @@ func TestClusterLogging(t *testing.T) {
 	}
 	// run subtests
 	t.Run("clusterlogging-group", func(t *testing.T) {
-		t.Run("Cluster", ClusterLoggingCluster)
+		t.Run("Cluster with fluentd", ClusterLoggingClusterFluentd)
+		time.Sleep(time.Minute * 1) // wait for objects to be deleted/cleaned up
+		t.Run("Cluster with rsyslog", ClusterLoggingClusterRsyslog)
 	})
 }
 
@@ -128,10 +130,36 @@ func createRequiredClusterRoleAndBinding(f *framework.Framework, ctx *framework.
 	return nil
 }
 
-func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, collector string) error {
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("Could not get namespace: %v", err)
+	}
+
+	var collectionSpec logging.CollectionSpec
+	if collector == "fluentd" {
+		collectionSpec = logging.CollectionSpec{
+			LogCollection: logging.LogCollectionSpec{
+				Type: logging.LogCollectionTypeFluentd,
+				FluentdSpec: logging.FluentdSpec{
+					NodeSelector: map[string]string{
+						"node-role.kubernetes.io/infra": "true",
+					},
+				},
+			},
+		}
+	}
+	if collector == "rsyslog" {
+		collectionSpec = logging.CollectionSpec{
+			LogCollection: logging.LogCollectionSpec{
+				Type: logging.LogCollectionTypeRsyslog,
+				RsyslogSpec: logging.RsyslogSpec{
+					NodeSelector: map[string]string{
+						"node-role.kubernetes.io/infra": "true",
+					},
+				},
+			},
+		}
 	}
 
 	// create clusterlogging custom resource
@@ -157,16 +185,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 					Schedule: "* * * * *",
 				},
 			},
-			Collection: logging.CollectionSpec{
-				LogCollection: logging.LogCollectionSpec{
-					Type: logging.LogCollectionTypeFluentd,
-					FluentdSpec: logging.FluentdSpec{
-						NodeSelector: map[string]string{
-							"node-role.kubernetes.io/infra": "true",
-						},
-					},
-				},
-			},
+			Collection: collectionSpec,
 		},
 	}
 	err = f.Client.Create(goctx.TODO(), exampleClusterLogging, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
@@ -194,7 +213,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		return err
 	}
 
-	err = WaitForDaemonSet(t, f.KubeClient, namespace, "fluentd", 1, retryInterval, timeout)
+	err = WaitForDaemonSet(t, f.KubeClient, namespace, collector, 1, retryInterval, timeout)
 	if err != nil {
 		return err
 	}
@@ -202,18 +221,15 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	return nil
 }
 
-func ClusterLoggingCluster(t *testing.T) {
-	t.Parallel()
-	ctx := framework.NewTestCtx(t)
-	defer ctx.Cleanup()
+func clusterLoggingClusterCommon(t *testing.T, ctx *framework.TestCtx) error {
 	err := ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
-		t.Fatalf("failed to initialize cluster resources: %v", err)
+		return err
 	}
 	t.Log("Initialized cluster resources")
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
 	t.Logf("Found namespace: %v", namespace)
 
@@ -222,18 +238,44 @@ func ClusterLoggingCluster(t *testing.T) {
 	// wait for cluster-logging-operator to be ready
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "cluster-logging-operator", 1, retryInterval, timeout)
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
 
 	if err = createRequiredSecret(f, ctx); err != nil {
-		t.Fatal(err)
+		return err
 	}
 
 	if err = createRequiredClusterRoleAndBinding(f, ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ClusterLoggingClusterFluentd(t *testing.T) {
+	t.Parallel()
+	ctx := framework.NewTestCtx(t)
+	defer ctx.Cleanup()
+	err := clusterLoggingClusterCommon(t, ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err = clusterLoggingFullClusterTest(t, f, ctx); err != nil {
+	if err = clusterLoggingFullClusterTest(t, framework.Global, ctx, "fluentd"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func ClusterLoggingClusterRsyslog(t *testing.T) {
+	t.Parallel()
+	ctx := framework.NewTestCtx(t)
+	defer ctx.Cleanup()
+	err := clusterLoggingClusterCommon(t, ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err = clusterLoggingFullClusterTest(t, framework.Global, ctx, "rsyslog"); err != nil {
 		t.Fatal(err)
 	}
 }

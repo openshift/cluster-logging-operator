@@ -28,7 +28,7 @@ OC?=oc
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all build clean fmt simplify run deploy deploy-setup deploy-image undeploy test-e2e
+.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy test-e2e undeploy
 
 all: build #check install
 

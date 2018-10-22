@@ -18,3 +18,7 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/logging-fluentd:latest
+  - name: rsyslog
+    from:
+      kind: DockerImage
+      name: docker.io/viaq/rsyslog:latest

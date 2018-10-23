@@ -161,7 +161,7 @@ func Secret(secretName string, namespace string, data map[string][]byte) *v1.Sec
 	return &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
-			APIVersion: "v1",
+			APIVersion: v1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -176,7 +176,7 @@ func ServiceAccount(accountName string, namespace string) *v1.ServiceAccount {
 	return &v1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceAccount",
-			APIVersion: "v1",
+			APIVersion: v1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      accountName,
@@ -189,7 +189,7 @@ func Service(serviceName string, namespace string, selectorComponent string, ser
 	return &v1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
-			APIVersion: "v1",
+			APIVersion: v1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceName,
@@ -212,7 +212,7 @@ func Route(routeName string, namespace string, hostName string, serviceName stri
 	return &route.Route{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Route",
-			APIVersion: "route.openshift.io/v1",
+			APIVersion: route.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      routeName,
@@ -256,7 +256,7 @@ func Deployment(deploymentName string, namespace string, loggingComponent string
 	return &apps.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
-			APIVersion: "extensions/v1beta1",
+			APIVersion: apps.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
@@ -299,7 +299,7 @@ func DaemonSet(daemonsetName string, namespace string, loggingComponent string, 
 	return &apps.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
-			APIVersion: "extensions/v1beta1",
+			APIVersion: apps.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      daemonsetName,
@@ -316,6 +316,13 @@ func DaemonSet(daemonsetName string, namespace string, loggingComponent string, 
 			},
 		},
 		Spec: apps.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"provider":      "openshift",
+					"component":     component,
+					"logging-infra": loggingComponent,
+				},
+			},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: daemonsetName,
@@ -325,7 +332,7 @@ func DaemonSet(daemonsetName string, namespace string, loggingComponent string, 
 						"logging-infra": loggingComponent,
 					},
 					Annotations: map[string]string{
-						"scheduler.alpha.kubernetes.io/critical-pod": "''",
+						"scheduler.alpha.kubernetes.io/critical-pod": "",
 					},
 				},
 				Spec: podSpec,
@@ -343,7 +350,7 @@ func ConfigMap(configmapName string, namespace string, data map[string]string) *
 	return &v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
-			APIVersion: "v1",
+			APIVersion: v1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configmapName,
@@ -357,7 +364,7 @@ func PriorityClass(priorityclassName string, priorityValue int32, globalDefault 
 	return &scheduling.PriorityClass{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PriorityClass",
-			APIVersion: "scheduling.k8s.io/v1beta1",
+			APIVersion: scheduling.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: priorityclassName,
@@ -387,7 +394,7 @@ func CronJob(cronjobName string, namespace string, loggingComponent string, comp
 	return &batch.CronJob{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CronJob",
-			APIVersion: "batch/v1beta1",
+			APIVersion: batch.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cronjobName,
@@ -406,7 +413,7 @@ func GetDeploymentList(namespace string, selector string) (*apps.DeploymentList,
 	list := &apps.DeploymentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
-			APIVersion: "apps/v1",
+			APIVersion: apps.SchemeGroupVersion.String(),
 		},
 	}
 
@@ -425,7 +432,7 @@ func GetReplicaSetList(namespace string, selector string) (*apps.ReplicaSetList,
 	list := &apps.ReplicaSetList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ReplicaSet",
-			APIVersion: "apps/v1",
+			APIVersion: apps.SchemeGroupVersion.String(),
 		},
 	}
 
@@ -444,7 +451,7 @@ func GetPodList(namespace string, selector string) (*v1.PodList, error) {
 	list := &v1.PodList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Pod",
-			APIVersion: "v1",
+			APIVersion: v1.SchemeGroupVersion.String(),
 		},
 	}
 
@@ -463,7 +470,7 @@ func GetCronJobList(namespace string, selector string) (*batch.CronJobList, erro
 	list := &batch.CronJobList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "CronJob",
-			APIVersion: "batch/v1beta1",
+			APIVersion: batch.SchemeGroupVersion.String(),
 		},
 	}
 
@@ -482,7 +489,7 @@ func GetDaemonSetList(namespace string, selector string) (*apps.DaemonSetList, e
 	list := &apps.DaemonSetList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
-			APIVersion: "extensions/v1beta1",
+			APIVersion: apps.SchemeGroupVersion.String(),
 		},
 	}
 

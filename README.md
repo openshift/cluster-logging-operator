@@ -5,7 +5,11 @@ Operator to support OKD cluster logging
 
 ### E2E Testing
 To run the e2e tests, from the repo directory, run:
-`operator-sdk test local ./test/e2e/`
+```
+oc adm policy add-scc-to-user privileged -z fluentd -n openshift-logging
+imagebuilder -t quay.io/openshift/cluster-logging-operator .
+operator-sdk test local --namespace openshift-logging ./test/e2e/
+```
 
 ### Dev Testing
 To set up your local environment based on what will be provided by OLM, run:
@@ -23,16 +27,17 @@ oc create -n openshift-logging secret generic logging-master-ca --from-file=mast
 oc label node --all logging-infra-fluentd=true
 oc adm policy add-scc-to-user privileged -z fluentd -n openshift-logging
 
-oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/sa.yaml
-oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/rbac.yaml
-oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/crd.yaml
+oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/service_account.yaml
+oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/role.yaml
+oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/role_binding.yaml
+oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/crds/crd.yaml
 oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/rbac.yaml
 oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/crd.yaml
 
 oc create -n openshift-logging -f $CLUSTER_LOGGING_OPERATOR/deploy/cr.yaml
 ```
 
-To test on an OCP cluster with logging already installed, you can run:
+To test on an OCP cluster, you can run:
 `REPO_PREFIX=openshift/ IMAGE_PREFIX=origin- OPERATOR_NAME=cluster-logging-operator WATCH_NAMESPACE=openshift-logging KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig go run cmd/cluster-logging-operator/main.go`
 
 

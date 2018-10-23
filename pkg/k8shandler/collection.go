@@ -28,11 +28,11 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 			return
 		}
 
-		if err = createOrUpdateFluentdDaemonset(cluster); err != nil {
+		if err = createOrUpdateFluentdSecret(cluster); err != nil {
 			return
 		}
 
-		if err = createOrUpdateFluentdSecret(cluster); err != nil {
+		if err = createOrUpdateFluentdDaemonset(cluster); err != nil {
 			return
 		}
 
@@ -140,7 +140,6 @@ func createOrUpdateFluentdDaemonset(logging *logging.ClusterLogging) (err error)
 	}
 
 	fluentdDaemonset := utils.DaemonSet("fluentd", logging.Namespace, "fluentd", "fluentd", fluentdPodSpec)
-
 	utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(logging))
 
 	err = sdk.Create(fluentdDaemonset)
@@ -183,7 +182,7 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: "runlogjournal", MountPath: "/run/log/journal"},
-		{Name: "varlog", ReadOnly: true, MountPath: "/var/log"},
+		{Name: "varlog", MountPath: "/var/log"},
 		{Name: "varlibdockercontainers", ReadOnly: true, MountPath: "/var/lib/docker"},
 		{Name: "config", ReadOnly: true, MountPath: "/etc/fluent/configs.d/user"},
 		{Name: "certs", ReadOnly: true, MountPath: "/etc/fluent/keys"},
@@ -217,9 +216,7 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 	fluentdPodSpec.PriorityClassName = "cluster-logging"
 
-	fluentdPodSpec.NodeSelector = map[string]string{
-		"logging-infra-fluentd": "true",
-	}
+	fluentdPodSpec.NodeSelector = logging.Spec.Collection.LogCollection.FluentdSpec.NodeSelector
 
 	return fluentdPodSpec
 }

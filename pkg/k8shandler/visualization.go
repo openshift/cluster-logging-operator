@@ -331,7 +331,7 @@ func getKibanaPodSpec(logging *logging.ClusterLogging, kibanaName string, elasti
 	}
 
 	kibanaPodSpec := utils.PodSpec(
-		kibanaName,
+		"kibana",
 		[]v1.Container{kibanaContainer, kibanaProxyContainer},
 		[]v1.Volume{
 			{Name: "kibana", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "kibana"}}},

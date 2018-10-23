@@ -58,7 +58,8 @@ func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
 			"admin-key":         utils.GetFileContents("/tmp/_working_dir/system.admin.key"),
 			"admin-cert":        utils.GetFileContents("/tmp/_working_dir/system.admin.crt"),
 			"admin-ca":          utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-		})
+		},
+	)
 
 	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(logging))
 
@@ -104,7 +105,7 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
-			APIVersion: "logging.openshift.io/v1alpha1",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
 		},
 		Spec: v1alpha1.ElasticsearchSpec{
 			Spec: v1alpha1.ElasticsearchNodeSpec{

@@ -139,7 +139,7 @@ func getCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elas
 	}
 
 	curatorPodSpec := utils.PodSpec(
-		curatorName,
+		"curator",
 		[]v1.Container{curatorContainer},
 		[]v1.Volume{
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "curator"}}}},
@@ -158,7 +158,7 @@ func getCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elas
 		batch.CronJobSpec{
 			SuccessfulJobsHistoryLimit: utils.GetInt32(1),
 			FailedJobsHistoryLimit:     utils.GetInt32(1),
-			Schedule:                   "30 3 * * *",
+			Schedule:                   logging.Spec.Curation.CuratorSpec.Schedule,
 			JobTemplate: batch.JobTemplateSpec{
 				Spec: batchv1.JobSpec{
 					BackoffLimit: utils.GetInt32(0),

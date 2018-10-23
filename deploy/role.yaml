@@ -19,6 +19,7 @@ rules:
   - events
   - configmaps
   - secrets
+  - serviceaccounts
   verbs:
   - "*"
 - apiGroups:
@@ -30,17 +31,16 @@ rules:
   - statefulsets
   verbs:
   - "*"
-
----
-
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: cluster-logging-operator-rolebinding
-subjects:
-- kind: ServiceAccount
-  name: cluster-logging-operator
-roleRef:
-  kind: Role
-  name: cluster-logging-operator
-  apiGroup: rbac.authorization.k8s.io
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes
+  - routes/custom-host
+  verbs:
+  - "*"
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  verbs:
+  - "*"

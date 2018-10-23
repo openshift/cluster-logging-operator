@@ -108,7 +108,7 @@ func getElasticsearchStatus(namespace string) ([]v1alpha1.ElasticsearchStatus, e
 	esList := &elasticsearch.ElasticsearchList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
-			APIVersion: "logging.openshift.io/v1alpha1",
+			APIVersion: elasticsearch.SchemeGroupVersion.String(),
 		},
 	}
 

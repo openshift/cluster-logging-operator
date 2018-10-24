@@ -309,11 +309,6 @@ func DaemonSet(daemonsetName string, namespace string, loggingComponent string, 
 				"component":     component,
 				"logging-infra": loggingComponent,
 			},
-			Annotations: map[string]string{
-				"prometheus.io/scrape": "true",
-				"prometheus.io/port":   "24231",
-				"prometheus.io/scheme": "https",
-			},
 		},
 		Spec: apps.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{

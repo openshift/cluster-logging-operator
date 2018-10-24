@@ -312,7 +312,7 @@ func DaemonSet(daemonsetName string, namespace string, loggingComponent string, 
 			Annotations: map[string]string{
 				"prometheus.io/scrape": "true",
 				"prometheus.io/port":   "24231",
-				"prometheus.io/scheme": "http",
+				"prometheus.io/scheme": "https",
 			},
 		},
 		Spec: apps.DaemonSetSpec{

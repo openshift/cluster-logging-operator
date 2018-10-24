@@ -226,5 +226,6 @@ generate_certs 'system.logging.kibana'
 generate_certs 'system.logging.curator'
 generate_certs 'system.admin'
 
-generate_certs 'elasticsearch' "$(generate_extensions true logging-es{,-ops})"
-generate_certs 'logging-es' "$(generate_extensions false logging-es{,-ops}{,-cluster}{,.${NAMESPACE}.svc.cluster.local})"
+# TODO: get es SAN DNS, IP values from es service names
+generate_certs 'elasticsearch' "$(generate_extensions true elasticsearch elasticsearch-infra elasticsearch-apps)"
+generate_certs 'logging-es' "$(generate_extensions false {elasticsearch,elasticsearch-infra,elasticsearch-apps}{,-cluster}{,.${NAMESPACE}.svc.cluster.local})"

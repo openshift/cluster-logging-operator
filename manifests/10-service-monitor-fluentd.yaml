@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: fluentd
+  namespace: openshift-logging
+spec:
+  endpoints:
+  - port: 24231
+    scheme: https
+    tlsConfig:
+      caFile: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+  selector:
+    matchLabels:
+      logging-infra: fluentd

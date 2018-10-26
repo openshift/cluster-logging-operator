@@ -76,7 +76,7 @@ func createRequiredClusterRoleAndBinding(f *framework.Framework, ctx *framework.
 			APIVersion: rbac.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster-logging-operator-priority",
+			Name: "cluster-logging-operator-cluster",
 		},
 		Rules: []rbac.PolicyRule{
 			rbac.PolicyRule{
@@ -84,6 +84,11 @@ func createRequiredClusterRoleAndBinding(f *framework.Framework, ctx *framework.
 				Resources: []string{"priorityclasses"},
 				Verbs:     []string{"*"},
 			},
+			rbac.PolicyRule{
+				APIGroups: []string{"oauth.openshift.io"},
+				Resources: []string{"oauthclients"},
+				Verbs:		 []string{"*"},
+			}
 		},
 	}
 
@@ -98,7 +103,7 @@ func createRequiredClusterRoleAndBinding(f *framework.Framework, ctx *framework.
 			APIVersion: rbac.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster-logging-operator-priority-rolebinding",
+			Name: "cluster-logging-operator-cluster-rolebinding",
 		},
 		Subjects: []rbac.Subject{
 			rbac.Subject{
@@ -110,7 +115,7 @@ func createRequiredClusterRoleAndBinding(f *framework.Framework, ctx *framework.
 		RoleRef: rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     "cluster-logging-operator-priority",
+			Name:     "cluster-logging-operator-cluster",
 		},
 	}
 

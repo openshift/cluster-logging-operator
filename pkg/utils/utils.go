@@ -498,3 +498,17 @@ func GetDaemonSetList(namespace string, selector string) (*apps.DaemonSetList, e
 
 	return list, err
 }
+
+// TODO: expand these to include the default DNS from the top level config
+// instead of cluster.local
+func GetClusterDNSDomain() (string, error) {
+
+	// get configmap from openshift-node namespace
+
+	// pull out node-config.yaml
+
+	// pull out dnsDomain value
+
+	// return it
+	return "cluster.local", nil
+}

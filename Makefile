@@ -5,13 +5,17 @@ GOBUILD=go build
 GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
 
 DOCKER_OPTS=
-IMAGE_BUILD=docker build
+IMAGE_BUILDER?=docker build
+IMAGE_BUILD=$(IMAGE_BUILDER)
+IMAGE_TAG?=docker tag
 
 APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-DOCKER_TAG=github.com/openshift/$(APP_NAME)
+DOCKER_TAG=quay.io/openshift/$(APP_NAME)
 MAIN_PKG=cmd/$(APP_NAME)/main.go
+
+OC?=oc
 
 # These will be provided to the target
 #VERSION := 1.0.0
@@ -24,7 +28,7 @@ MAIN_PKG=cmd/$(APP_NAME)/main.go
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all build clean fmt simplify run
+.PHONY: all build clean fmt simplify run deploy deploy-setup deploy-image undeploy test-e2e
 
 all: build #check install
 
@@ -38,16 +42,25 @@ clean:
 	@rm -rf $(TARGET_DIR)
 
 image:
-	$(IMAGE_BUILD) -t $(DOCKER_TAG) . $(DOCKER_OPTS)
-
-#install:
-#	@go install $(LDFLAGS)
-
-#uninstall: clean
-#	@rm -f $$(which ${TARGET})
+	$(IMAGE_BUILDER) -t $(DOCKER_TAG) . $(DOCKER_OPTS)
 
 fmt:
 	@gofmt -l -w $(SRC)
 
 simplify:
 	@gofmt -s -l -w $(SRC)
+
+deploy-setup:
+	EXCLUSIONS="10-service-monitor-fluentd.yaml 05-deployment.yaml image-references" hack/deploy-setup.sh
+
+deploy-image:
+	hack/deploy-image.sh
+
+deploy: deploy-setup image deploy-image
+	hack/deploy.sh
+
+test-e2e: image deploy-image
+	hack/test-e2e.sh
+
+undeploy:
+	hack/undeploy.sh

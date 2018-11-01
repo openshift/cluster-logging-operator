@@ -16,7 +16,8 @@ Running locally outside an OKD cluster:
 ```
 ### `make` targets
 Various `make` targets are included to simplify building and deploying the operator
-from the repository root directory.  Hacking and deploying the operator assumes:
+from the repository root directory, all of which are not listed here.  Hacking and 
+deploying the operator assumes:
 * a running OKD cluster
 * `oc` binary in your `$PATH`
 * Logged into a cluster with an admin user who has the cluster role of `cluster-admin`
@@ -26,7 +27,13 @@ from the repository root directory.  Hacking and deploying the operator assumes:
 The deployment can be optionally modified using any of the following:
 
 *  `IMAGE_BUILDER` is the command to build the container image (default: `docker build`)
+*  `EXCLUSIONS` is list of manifest files that should be ignored (default: '')
 *  `OC` is the openshift binary to use to deploy resources (default: `oc` in path)
+
+**Note:**  If while hacking you find your changes are not being applied, use 
+`docker images` to see if there is a local version of the `cluster-logging-operator`
+on your machine which may being used by the cluster instead of the one pushed to
+the docker registry.  You may need to delete it (e.g. `docker rmi $IMAGE`)
 
 #### Full Deploy
 Deploys all resources and creates an instance of the `cluster-logging-operator`

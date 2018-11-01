@@ -1,13 +1,11 @@
 package utils
 
 import (
-	"bytes"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
-
-	"github.com/sirupsen/logrus"
 
 	route "github.com/openshift/api/route/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -30,85 +28,12 @@ func AllInOne(logging *logging.ClusterLogging) bool {
 
 // These keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	"kibana-image":          "logging-kibana5",
-	"kibana-version":        "latest",
-	"kibana-proxy-image":    "oauth-proxy",
-	"kibana-proxy-version":  "latest",
-	"curator-image":         "logging-curator5",
-	"curator-version":       "latest",
-	"fluentd-image":         "logging-fluentd",
-	"fluentd-version":       "latest",
-	"elasticsearch-image":   "logging-elasticsearch5",
-	"elasticsearch-version": "latest",
-	"rsyslog-image":         "viaq/rsyslog",
-	"rsyslog-version":       "latest",
-}
-
-func getImageName(component string) string {
-
-	var componentKey bytes.Buffer
-	componentKey.WriteString(component)
-	componentKey.WriteString("-image")
-
-	imageName, ok := COMPONENT_IMAGES[componentKey.String()]
-
-	if ok {
-		return imageName
-	}
-
-	return ""
-}
-
-func getImageVersion(component string) string {
-
-	var componentKey bytes.Buffer
-	componentKey.WriteString(component)
-	componentKey.WriteString("-version")
-
-	imageVersion, ok := COMPONENT_IMAGES[componentKey.String()]
-
-	if ok {
-		return imageVersion
-	}
-
-	return ""
-}
-
-func getImagePrefix(component string) string {
-
-	repoPrefix := os.Getenv("REPO_PREFIX")
-	imagePrefix := os.Getenv("IMAGE_PREFIX")
-
-	var prefix bytes.Buffer
-
-	switch component {
-	case "kibana":
-		prefix.WriteString(repoPrefix)
-		prefix.WriteString(imagePrefix)
-
-	case "kibana-proxy":
-		prefix.WriteString(repoPrefix)
-
-	case "curator":
-		prefix.WriteString(repoPrefix)
-		prefix.WriteString(imagePrefix)
-
-	case "fluentd":
-		prefix.WriteString(repoPrefix)
-		prefix.WriteString(imagePrefix)
-
-	case "elasticsearch":
-		prefix.WriteString(repoPrefix)
-		prefix.WriteString(imagePrefix)
-
-	case "rsyslog":
-		prefix.WriteString("")
-
-	default:
-		return ""
-	}
-
-	return prefix.String()
+	"kibana":        "KIBANA_IMAGE",
+	"kibana-proxy":  "OAUTH_PROXY_IMAGE",
+	"curator":       "CURATOR_IMAGE",
+	"fluentd":       "FLUENTD_IMAGE",
+	"elasticsearch": "ELASTICSEARCH_IMAGE",
+	"rsyslog":       "RSYSLOG_IMAGE",
 }
 
 func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
@@ -127,16 +52,21 @@ func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
 	}
 }
 
+// GetComponentImage returns a full image pull spec for a given component
+// based on the component type
 func GetComponentImage(component string) string {
 
-	var image bytes.Buffer
-
-	image.WriteString(getImagePrefix(component))
-	image.WriteString(getImageName(component))
-	image.WriteString(":")
-	image.WriteString(getImageVersion(component))
-
-	return image.String()
+	env_var_name, ok := COMPONENT_IMAGES[component]
+	if !ok {
+		logrus.Errorf("Environment variable name mapping missing for component: %s", component)
+		return ""
+	}
+	imageTag := os.Getenv(env_var_name)
+	if imageTag == "" {
+		logrus.Errorf("No image tag defined for component '%s' by environment variable '%s'", component, env_var_name)
+	}
+	logrus.Debugf("Setting component image for '%s' to: '%s'", component, imageTag)
+	return imageTag
 }
 
 func GetFileContents(filePath string) []byte {

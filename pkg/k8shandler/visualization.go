@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 
+	oauth "github.com/openshift/api/oauth/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
@@ -31,11 +32,17 @@ func CreateOrUpdateVisualization(cluster *logging.ClusterLogging) (err error) {
 			return
 		}
 
-		if err = createOrUpdateKibanaDeployment(cluster); err != nil {
+		oauthSecret := utils.GetRandomWord(64)
+
+		if err = createOrUpdateKibanaSecret(cluster, oauthSecret); err != nil {
 			return
 		}
 
-		if err = createOrUpdateKibanaSecret(cluster); err != nil {
+		if err = createOrUpdateOauthClient(cluster, string(oauthSecret)); err != nil {
+			return
+		}
+
+		if err = createOrUpdateKibanaDeployment(cluster); err != nil {
 			return
 		}
 
@@ -117,6 +124,50 @@ func createOrUpdateKibanaDeployment(logging *logging.ClusterLogging) (err error)
 		if err = updateKibanaIfRequired(kibanaInfraDeployment); err != nil {
 			return
 		}
+	}
+
+	return nil
+}
+
+func createOrUpdateOauthClient(logging *logging.ClusterLogging, oauthSecret string) (err error) {
+
+	clusterDomain, err := utils.GetClusterDNSDomain()
+	if err != nil {
+		return nil
+	}
+
+	oauthClient := &oauth.OAuthClient{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "OAuthClient",
+			APIVersion: oauth.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kibana-proxy",
+			Namespace: logging.Namespace,
+			Labels: map[string]string{
+				"logging-infra": "support",
+			},
+		},
+		Secret: oauthSecret,
+		RedirectURIs: []string{
+			fmt.Sprintf("%s.%s", "https://kibana", clusterDomain),
+			fmt.Sprintf("%s.%s", "https://kibana-app", clusterDomain),
+			fmt.Sprintf("%s.%s", "https://kibana-infra", clusterDomain),
+		},
+		ScopeRestrictions: []oauth.ScopeRestriction{
+			oauth.ScopeRestriction{
+				ExactValues: []string{
+					"user:info",
+					"user:check-access",
+					"user:list-projects",
+				},
+			},
+		},
+	}
+
+	err = sdk.Create(oauthClient)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating OAuthClient: %v", err)
 	}
 
 	return nil
@@ -232,7 +283,7 @@ func createOrUpdateKibanaService(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateKibanaSecret(logging *logging.ClusterLogging) error {
+func createOrUpdateKibanaSecret(logging *logging.ClusterLogging, oauthSecret []byte) error {
 
 	kibanaSecret := utils.Secret(
 		"kibana",
@@ -254,7 +305,7 @@ func createOrUpdateKibanaSecret(logging *logging.ClusterLogging) error {
 		"kibana-proxy",
 		logging.Namespace,
 		map[string][]byte{
-			"oauth-secret":   utils.GetRandomWord(64),
+			"oauth-secret":   oauthSecret,
 			"session-secret": utils.GetRandomWord(32),
 			"server-key":     utils.GetFileContents("/tmp/_working_dir/kibana-internal.key"),
 			"server-cert":    utils.GetFileContents("/tmp/_working_dir/kibana-internal.crt"),

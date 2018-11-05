@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+
 	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -114,7 +115,7 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 			Nodes:              esNodes,
 			ServiceAccountName: "elasticsearch",
 			ConfigMapName:      "elasticsearch",
-			//SecretName: "elasticsearch",
+			SecretName:         "elasticsearch",
 		},
 	}
 

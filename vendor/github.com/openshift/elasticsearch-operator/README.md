@@ -117,3 +117,34 @@ Kubernetes TBD+ and OpenShift TBD+ are supported.
 - [ ] Prometheus monitoring
 - [ ] Status monitoring
 - [ ] Rolling restarts
+
+## Testing
+
+### E2E Testing
+To run the e2e tests, from the repo directory, run:
+```
+sudo sysctl -w vm.max_map_count=262144
+imagebuilder -t quay.io/openshift/elasticsearch-operator .
+operator-sdk test local --namespace openshift-logging ./test/e2e/
+```
+
+### Dev Testing
+To set up your local environment based on what will be provided by OLM, run:
+```
+sudo sysctl -w vm.max_map_count=262144
+ELASTICSEARCH_OPERATOR=$GOPATH/src/github.com/openshift/elasticsearch-operator
+
+oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/service_account.yaml
+oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/role.yaml
+oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/role_binding.yaml
+oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/crds/crd.yaml
+
+oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/cr.yaml
+```
+
+To test on an OCP cluster, you can run:
+`OPERATOR_NAME=elasticsearch-operator WATCH_NAMESPACE=openshift-logging KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig go run cmd/elasticsearch-operator/main.go`
+
+
+To remove created API objects:
+`oc delete Elasticsearch elasticsearch -n openshift-logging`

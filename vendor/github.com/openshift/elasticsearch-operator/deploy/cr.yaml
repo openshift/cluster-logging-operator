@@ -2,10 +2,10 @@
 apiVersion: "logging.openshift.io/v1alpha1"
 kind: "Elasticsearch"
 metadata:
-  name: "elastic1"
+  name: "elasticsearch"
 spec:
   nodeSpec:
-    image: quay.io/openshift/origin-logging-elasticsearch5:latest
+    image: openshift/origin-logging-elasticsearch5:latest
   nodes:
     - roles:
       - client

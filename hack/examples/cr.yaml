@@ -1,0 +1,27 @@
+apiVersion: "logging.openshift.io/v1alpha1"
+kind: "ClusterLogging"
+metadata:
+  name: "example"
+  annotations:
+    "io.openshift.clusterlogging.alpha/allinone": ""
+spec:
+  logStore:
+    type: "elasticsearch"
+    elasticsearch:
+      replicas: 1
+      storage:
+        emptyDir: {}
+  visualization:
+    type: "kibana"
+    kibana:
+      replicas: 1
+  curation:
+    type: "curator"
+    curator:
+      schedule: "30 3 * * *"
+  collection:
+    logCollection:
+      type: "fluentd"
+      fluentd:
+        nodeSelector:
+          logging-infra-fluentd: "true"

@@ -50,8 +50,11 @@ fmt:
 simplify:
 	@gofmt -s -l -w $(SRC)
 
+gendeepcopy:
+	@operator-sdk generate k8s
+
 deploy-setup:
-	EXCLUSIONS="10-service-monitor-fluentd.yaml 05-deployment.yaml image-references" hack/deploy-setup.sh
+	EXCLUSIONS="01-namespace.yaml 10-service-monitor-fluentd.yaml 05-deployment.yaml image-references" hack/deploy-setup.sh
 
 deploy-image:
 	hack/deploy-image.sh

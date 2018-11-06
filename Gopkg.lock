@@ -180,27 +180,31 @@
 [[projects]]
   branch = "master"
   name = "github.com/openshift/api"
-  packages = ["route/v1"]
+  packages = [
+    "oauth/v1",
+    "route/v1"
+  ]
   revision = "fac417a1916188eb39f7c36e279c832ce1c965df"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "aff1269f424db33d8373d3d6d0f46d251fecbae6"
+  revision = "1314ac35296be197a852bbd35c3dc284d4a05a08"
 
 [[projects]]
-  branch = "master"
   name = "github.com/operator-framework/operator-sdk"
   packages = [
     "pkg/k8sclient",
     "pkg/sdk",
     "pkg/sdk/internal/metrics",
     "pkg/test",
+    "pkg/test/e2eutil",
     "pkg/util/k8sutil",
     "version"
   ]
-  revision = "70b4502d2b78f47bb63e56df1be84cb32881c683"
+  revision = "e5a0ab096e1a7c0e6b937d2b41707eccb82c3c77"
+  version = "v0.0.7"
 
 [[projects]]
   branch = "master"
@@ -567,6 +571,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fb6c81a6a129cd77a87e4687dd349b9542a5f3832dc5f99a8a39decedd9b60ce"
+  inputs-digest = "08a0679432088f6f2e9f9b06543e30f63ae3f6effa336d278de2fb9783447619"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -13,28 +13,32 @@ import (
 	//"github.com/sirupsen/logrus"
 )
 
-// CreateOrUpdateConfigMaps ensures the existens of ConfigMaps with Elasticsearch configuration
+// CreateOrUpdateConfigMaps ensures the existence of ConfigMaps with Elasticsearch configuration
 func CreateOrUpdateConfigMaps(dpl *v1alpha1.Elasticsearch) (string, error) {
 	owner := asOwner(dpl)
-	var configMapName string
+	configMapName := dpl.Spec.ConfigMapName
 	if dpl.Spec.ConfigMapName == "" {
 		configMapName = dpl.Name
-	} else {
-		configMapName = dpl.Spec.ConfigMapName
 	}
 
 	// TODO: take all vars from CRD
-	pathData := "- /elasticsearch/persistent/"
-	err := createOrUpdateConfigMap(configMapName, dpl.Namespace, dpl.Name, defaultKibanaIndexMode, pathData, false, dpl.Spec.Secure.Disabled, owner, dpl.Labels)
+	kibanaIndexMode, err := KibanaIndexMode("")
+	if err != nil {
+		return "", err
+	}
+	esUnicastHost := EsUnicastHost(dpl.Name)
+	rootLogger := RootLogger()
+
+	err = createOrUpdateConfigMap(configMapName, dpl.Namespace, dpl.Name, kibanaIndexMode, esUnicastHost, rootLogger, owner, dpl.Labels)
 	if err != nil {
 		return configMapName, fmt.Errorf("Failure creating ConfigMap %v", err)
 	}
 	return configMapName, nil
 }
 
-func createOrUpdateConfigMap(configMapName, namespace, clusterName, kibanaIndexMode, pathData string,
-	allowClusterReader bool, insecureCluster bool, owner metav1.OwnerReference, labels map[string]string) error {
-	elasticsearchCM, err := createConfigMap(configMapName, namespace, clusterName, kibanaIndexMode, pathData, allowClusterReader, insecureCluster, labels)
+func createOrUpdateConfigMap(configMapName, namespace, clusterName, kibanaIndexMode, esUnicastHost, rootLogger string,
+	owner metav1.OwnerReference, labels map[string]string) error {
+	elasticsearchCM, err := createConfigMap(configMapName, namespace, clusterName, kibanaIndexMode, esUnicastHost, rootLogger, labels)
 	if err != nil {
 		return err
 	}
@@ -55,18 +59,18 @@ func createOrUpdateConfigMap(configMapName, namespace, clusterName, kibanaIndexM
 	return nil
 }
 
-func createConfigMap(configMapName, namespace, clusterName, kibanaIndexMode, pathData string,
-	allowClusterReader bool, insecureCluster bool, labels map[string]string) (*v1.ConfigMap, error) {
+func createConfigMap(configMapName, namespace, clusterName, kibanaIndexMode, esUnicastHost, rootLogger string,
+	labels map[string]string) (*v1.ConfigMap, error) {
 	cm := configMap(configMapName, namespace, labels)
 	cm.Data = map[string]string{}
 	buf := &bytes.Buffer{}
-	if err := renderEsYml(buf, allowClusterReader, kibanaIndexMode, pathData, insecureCluster); err != nil {
+	if err := renderEsYml(buf, kibanaIndexMode, esUnicastHost); err != nil {
 		return cm, err
 	}
 	cm.Data["elasticsearch.yml"] = buf.String()
 
 	buf = &bytes.Buffer{}
-	if err := renderLog4j2Properties(buf, defaultRootLogger); err != nil {
+	if err := renderLog4j2Properties(buf, rootLogger); err != nil {
 		return cm, err
 	}
 	cm.Data["log4j2.properties"] = buf.String()

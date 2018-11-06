@@ -9,8 +9,8 @@ IMAGE_BUILD=docker build
 
 APP_NAME=elasticsearch-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
-DOCKER_TAG=github.com/openshift/origin-$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
+DOCKER_TAG=github.com/openshift/$(APP_NAME)
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 
 # These will be provided to the target

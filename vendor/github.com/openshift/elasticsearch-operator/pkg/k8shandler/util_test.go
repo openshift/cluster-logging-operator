@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -11,6 +12,28 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
+
+const (
+	envKey   = "TEST"
+	envValue = "value"
+)
+
+func TestLookupEnvWithDefaultDefined(t *testing.T) {
+	os.Setenv(envKey, envValue)
+	res := lookupEnvWithDefault(envKey, "should be ignored")
+	if res != envValue {
+		t.Errorf("Expected %s=%s but got %s=%s", envKey, envValue, envKey, res)
+	}
+}
+
+func TestLookupEnvWithDefaultUndefined(t *testing.T) {
+	expected := "defaulted"
+	os.Unsetenv(envKey)
+	res := lookupEnvWithDefault(envKey, expected)
+	if res != expected {
+		t.Errorf("Expected %s=%s but got %s=%s", envKey, expected, envKey, res)
+	}
+}
 
 func TestGetReadinessProbe(t *testing.T) {
 	goodProbe := v1.Probe{

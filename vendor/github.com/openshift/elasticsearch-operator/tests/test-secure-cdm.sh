@@ -41,7 +41,6 @@ SERVICEACCOUNT_NAME="${SERVICEACCOUNT_NAME:-aggregated-logging-elasticsearch}"
 
 # Modify the CR to use secure image and enable secure Elasticsearch config
 sed -i -e 's#image: docker.io/t0ffel/logging-insecure-elasticsearch5#image: registry.access.redhat.com/openshift3/logging-elasticsearch:v3.9#g' deploy/cr.yaml
-sed -i -e "s/disabled: true/disabled: false/g" deploy/cr.yaml
 
 # Create secret
 kubectl create -n ${NAMESPACE} -f tests/test-secret.yaml

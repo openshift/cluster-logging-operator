@@ -33,6 +33,7 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 
 // Reconcile reconciles the cluster's state to the spec specified
 func Reconcile(es *v1alpha1.Elasticsearch) (err error) {
+	// TODO: get rid of this message as part of LOG-206
 	logrus.Info("Started reconciliation")
 
 	// Ensure existence of services
@@ -51,6 +52,16 @@ func Reconcile(es *v1alpha1.Elasticsearch) (err error) {
 	configMapName, err := k8shandler.CreateOrUpdateConfigMaps(es)
 	if err != nil {
 		return fmt.Errorf("Failed to reconcile ConfigMaps for Elasticsearch cluster: %v", err)
+	}
+
+	// Ensure existence of prometheus rules
+	if err = k8shandler.CreateOrUpdatePrometheusRules(es); err != nil {
+		return fmt.Errorf("Failed to reconcile PrometheusRules for Elasticsearch cluster: %v", err)
+	}
+
+	// Ensure existence of service monitors
+	if err = k8shandler.CreateOrUpdateServiceMonitors(es); err != nil {
+		return fmt.Errorf("Failed to reconcile Service Monitors for Elasticsearch cluster: %v", err)
 	}
 
 	// TODO: Ensure existence of storage?

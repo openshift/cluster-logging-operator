@@ -25,6 +25,10 @@ required = [
   version = "kubernetes-1.11.0"
 
 [[override]]
+  name = "k8s.io/apiextensions-apiserver"
+  version = "kubernetes-1.11.0"
+
+[[override]]
   name = "k8s.io/client-go"
   version = "kubernetes-1.11.0"
 
@@ -32,5 +36,5 @@ required = [
   name = "github.com/operator-framework/operator-sdk"
   # The version rule is used for a specific release and the master branch for in between releases.
   #revision = "1a3f18b6b1006076ad29386083c576ca4ac59686"
-  branch = "master"
+  branch = "v0.0.7"
   # version = "=v0.0.5"

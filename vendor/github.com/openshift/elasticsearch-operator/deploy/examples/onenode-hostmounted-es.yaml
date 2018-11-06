@@ -4,7 +4,7 @@ metadata:
   name: elastic1
 spec:
   nodeSpec:
-    image: quay.io/openshift/origin-logging-elasticsearch5:latest
+    image: quay.io/openshift/logging-elasticsearch5:latest
   nodes:
   - nodeSpec: {}
     roles:

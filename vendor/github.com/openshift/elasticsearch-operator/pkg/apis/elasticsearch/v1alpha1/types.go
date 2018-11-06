@@ -61,11 +61,12 @@ type ElasticsearchNodeStorageSource struct {
 
 // ElasticsearchNodeStatus represents the status of individual Elasticsearch node
 type ElasticsearchNodeStatus struct {
-	DeploymentName  string `json:"deploymentName,omitempty"`
-	ReplicaSetName  string `json:"replicaSetName,omitempty"`
-	StatefulSetName string `json:"statefulSetName,omitempty"`
-	PodName         string `json:"podName,omitempty"`
-	Status          string `json:"status,omitempty"`
+	DeploymentName  string                  `json:"deploymentName,omitempty"`
+	ReplicaSetName  string                  `json:"replicaSetName,omitempty"`
+	StatefulSetName string                  `json:"statefulSetName,omitempty"`
+	PodName         string                  `json:"podName,omitempty"`
+	Status          string                  `json:"status,omitempty"`
+	Roles           []ElasticsearchNodeRole `json:"roles,omitempty"`
 }
 
 // ElasticsearchSpec struct represents the Spec of Elasticsearch cluster CRD
@@ -73,23 +74,15 @@ type ElasticsearchSpec struct {
 	// Fill me
 	Nodes              []ElasticsearchNode   `json:"nodes"`
 	Spec               ElasticsearchNodeSpec `json:"nodeSpec"`
-	Secure             ElasticsearchSecure   `json:"securityConfig"`
 	ServiceAccountName string                `json:"serviceAccountName,omitempty"`
 	ConfigMapName      string                `json:"configMapName,omitempty"`
+	SecretName         string                `json:"secretName,omitempty"`
 }
 
 // ElasticsearchNodeSpec represents configuration of an individual Elasticsearch node
 type ElasticsearchNodeSpec struct {
 	Image     string                  `json:"image,omitempty"`
 	Resources v1.ResourceRequirements `json:"resources"`
-}
-
-// ElasticsearchSecure struct represents security configuration of the cluster
-// whether SearchGuard is enabled along with oauth-proxy sidecar
-type ElasticsearchSecure struct {
-	Disabled           bool   `json:"disabled"`
-	Image              string `json:"image,omitempty"`
-	CertificatesSecret string `json:"certificatesSecret,omitempty"`
 }
 
 type ElasticsearchRequiredAction string
@@ -101,7 +94,6 @@ const (
 	ElasticsearchActionNewClusterNeeded     ElasticsearchRequiredAction = "NewClusterNeeded"
 	ElasticsearchActionNone                 ElasticsearchRequiredAction = "ClusterOK"
 	ElasticsearchActionScaleDownNeeded      ElasticsearchRequiredAction = "ScaleDownNeeded"
-	ElasticsearchActionStatusUpdateNeeded   ElasticsearchRequiredAction = "StatusUpdateNeeded"
 )
 
 type ElasticsearchNodeRole string
@@ -115,6 +107,6 @@ const (
 // ElasticsearchStatus represents the status of Elasticsearch cluster
 type ElasticsearchStatus struct {
 	// Fill me
-	Nodes    []ElasticsearchNodeStatus   `json:"nodes"`
-	K8sState ElasticsearchRequiredAction `json:"clusterState"`
+	Nodes         []ElasticsearchNodeStatus `json:"nodes"`
+	ClusterHealth string                    `json:"clusterHealth"`
 }

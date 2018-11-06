@@ -19,12 +19,14 @@ func CreateOrUpdateServices(dpl *v1alpha1.Elasticsearch) error {
 	elasticsearchRestSvcName := dpl.Name
 	owner := asOwner(dpl)
 
-	err := createOrUpdateService(elasticsearchClusterSvcName, dpl.Namespace, dpl.Name, "cluster", 9300, selectorForES("es-node-master", dpl.Name), dpl.Labels, owner)
+	labelsWithDefault := appendDefaultLabel(dpl.Name, dpl.Labels)
+
+	err := createOrUpdateService(elasticsearchClusterSvcName, dpl.Namespace, dpl.Name, "cluster", 9300, selectorForES("es-node-master", dpl.Name), labelsWithDefault, owner)
 	if err != nil {
 		return fmt.Errorf("Failure creating service %v", err)
 	}
 
-	err = createOrUpdateService(elasticsearchRestSvcName, dpl.Namespace, dpl.Name, "restapi", 9200, selectorForES("es-node-client", dpl.Name), dpl.Labels, owner)
+	err = createOrUpdateService(elasticsearchRestSvcName, dpl.Namespace, dpl.Name, "restapi", 9200, selectorForES("es-node-client", dpl.Name), labelsWithDefault, owner)
 	if err != nil {
 		return fmt.Errorf("Failure creating service %v", err)
 	}

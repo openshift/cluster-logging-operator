@@ -19,9 +19,8 @@ import (
 const (
 	elasticsearchCertsPath    = "/etc/openshift/elasticsearch/secret"
 	elasticsearchConfigPath   = "/usr/share/java/elasticsearch/config"
-	elasticsearchDefaultImage = "docker.io/t0ffel/elasticsearch5"
+	elasticsearchDefaultImage = "quay.io/openshift/logging-elasticsearch5"
 	heapDumpLocation          = "/elasticsearch/persistent/heapdump.hprof"
-	promUser                  = "prometheus"
 )
 
 type nodeState struct {
@@ -30,17 +29,20 @@ type nodeState struct {
 }
 
 type desiredNodeState struct {
-	ClusterName         string
-	Namespace           string
-	DeployName          string
-	Roles               []v1alpha1.ElasticsearchNodeRole
-	ESNodeSpec          v1alpha1.ElasticsearchNode
-	ElasticsearchSecure v1alpha1.ElasticsearchSecure
-	NodeNum             int32
-	ReplicaNum          int32
-	ServiceAccountName  string
-	ConfigMapName       string
-	Labels              map[string]string
+	ClusterName        string
+	Namespace          string
+	DeployName         string
+	Roles              []v1alpha1.ElasticsearchNodeRole
+	ESNodeSpec         v1alpha1.ElasticsearchNode
+	SecretName         string
+	NodeNum            int32
+	ReplicaNum         int32
+	ServiceAccountName string
+	ConfigMapName      string
+	Labels             map[string]string
+	MasterNum          int32
+	DataNum            int32
+	EnvVars            []v1.EnvVar
 }
 
 type actualNodeState struct {
@@ -48,26 +50,30 @@ type actualNodeState struct {
 	Deployment  *apps.Deployment
 	ReplicaSet  *apps.ReplicaSet
 	Pod         *v1.Pod
+	// Roles       []v1alpha1.ElasticsearchNodeRole
 }
 
-func constructNodeSpec(dpl *v1alpha1.Elasticsearch, esNode v1alpha1.ElasticsearchNode, configMapName, serviceAccountName string, nodeNum int32, replicaNum int32) (desiredNodeState, error) {
+func constructNodeSpec(dpl *v1alpha1.Elasticsearch, esNode v1alpha1.ElasticsearchNode, configMapName, serviceAccountName string, nodeNum int32, replicaNum int32, masterNum, dataNum int32) (desiredNodeState, error) {
 	nodeCfg := desiredNodeState{
-		ClusterName:         dpl.Name,
-		Namespace:           dpl.Namespace,
-		Roles:               esNode.Roles,
-		ESNodeSpec:          esNode,
-		ElasticsearchSecure: dpl.Spec.Secure,
-		NodeNum:             nodeNum,
-		ReplicaNum:          replicaNum,
-		ServiceAccountName:  serviceAccountName,
-		ConfigMapName:       configMapName,
-		Labels:              dpl.Labels,
+		ClusterName:        dpl.Name,
+		Namespace:          dpl.Namespace,
+		Roles:              esNode.Roles,
+		ESNodeSpec:         esNode,
+		SecretName:         dpl.Spec.SecretName,
+		NodeNum:            nodeNum,
+		ReplicaNum:         replicaNum,
+		ServiceAccountName: serviceAccountName,
+		ConfigMapName:      configMapName,
+		Labels:             dpl.Labels,
+		MasterNum:          masterNum,
+		DataNum:            dataNum,
 	}
 	deployName, err := constructDeployName(dpl.Name, esNode.Roles, nodeNum, replicaNum)
 	if err != nil {
 		return nodeCfg, err
 	}
 	nodeCfg.DeployName = deployName
+	nodeCfg.EnvVars = nodeCfg.getEnvVars()
 
 	nodeCfg.ESNodeSpec.Spec = reconcileNodeSpec(dpl.Spec.Spec, esNode.Spec)
 	return nodeCfg, nil
@@ -165,6 +171,7 @@ func (cfg *desiredNodeState) getLabels() map[string]string {
 	labels["es-node-data"] = strconv.FormatBool(cfg.isNodeData())
 	labels["es-node-master"] = strconv.FormatBool(cfg.isNodeMaster())
 	labels["cluster-name"] = cfg.ClusterName
+	labels["component"] = cfg.ClusterName
 	return labels
 }
 
@@ -337,11 +344,11 @@ func (cfg *desiredNodeState) getEnvVars() []v1.EnvVar {
 		},
 		v1.EnvVar{
 			Name:  "NODE_QUORUM",
-			Value: "1",
+			Value: strconv.Itoa(int(cfg.MasterNum/2 + 1)),
 		},
 		v1.EnvVar{
 			Name:  "RECOVER_EXPECTED_NODES",
-			Value: "1",
+			Value: strconv.Itoa(int(cfg.DataNum)),
 		},
 		v1.EnvVar{
 			Name:  "RECOVER_AFTER_TIME",
@@ -364,12 +371,8 @@ func (cfg *desiredNodeState) getEnvVars() []v1.EnvVar {
 			Value: strconv.FormatBool(cfg.isNodeData()),
 		},
 		v1.EnvVar{
-			Name:  "PROMETHEUS_USER",
-			Value: promUser,
-		},
-		v1.EnvVar{
 			Name:  "PRIMARY_SHARDS",
-			Value: "1",
+			Value: strconv.Itoa(int(cfg.DataNum)),
 		},
 		v1.EnvVar{
 			Name:  "REPLICA_SHARDS",
@@ -412,7 +415,6 @@ func (cfg *desiredNodeState) getESContainer() v1.Container {
 			},
 		},
 		ReadinessProbe: &probe,
-		LivenessProbe:  &probe,
 		VolumeMounts:   cfg.getVolumeMounts(),
 		Resources:      cfg.ESNodeSpec.Spec.Resources,
 	}
@@ -429,12 +431,10 @@ func (cfg *desiredNodeState) getVolumeMounts() []v1.VolumeMount {
 			MountPath: elasticsearchConfigPath,
 		},
 	}
-	if !cfg.ElasticsearchSecure.Disabled {
-		mounts = append(mounts, v1.VolumeMount{
-			Name:      "certificates",
-			MountPath: elasticsearchCertsPath,
-		})
-	}
+	mounts = append(mounts, v1.VolumeMount{
+		Name:      "certificates",
+		MountPath: elasticsearchCertsPath,
+	})
 	return mounts
 }
 
@@ -520,23 +520,18 @@ func (cfg *desiredNodeState) getVolumes() []v1.Volume {
 		})
 	}
 
-	if !cfg.ElasticsearchSecure.Disabled {
-		var secretName string
-		if cfg.ElasticsearchSecure.CertificatesSecret == "" {
-			secretName = cfg.ClusterName
-		} else {
-			secretName = cfg.ElasticsearchSecure.CertificatesSecret
-		}
-
-		vols = append(vols, v1.Volume{
-			Name: "certificates",
-			VolumeSource: v1.VolumeSource{
-				Secret: &v1.SecretVolumeSource{
-					SecretName: secretName,
-				},
-			},
-		})
+	secretName := cfg.SecretName
+	if cfg.SecretName == "" {
+		secretName = cfg.ClusterName
 	}
+	vols = append(vols, v1.Volume{
+		Name: "certificates",
+		VolumeSource: v1.VolumeSource{
+			Secret: &v1.SecretVolumeSource{
+				SecretName: secretName,
+			},
+		},
+	})
 	return vols
 }
 

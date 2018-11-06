@@ -1,7 +1,5 @@
 package k8shandler
 
-const defaultKibanaIndexMode = "unique"
-
 const esYmlTmpl = `
 cluster:
   name: ${CLUSTER_NAME}
@@ -19,13 +17,8 @@ node:
 network:
   host: 0.0.0.0
 
-cloud:
-  kubernetes:
-    service: ${SERVICE_DNS}
-    namespace: ${NAMESPACE}
-
 discovery.zen:
-  hosts_provider: kubernetes
+  ping.unicast.hosts: {{.EsUnicastHost}}
   minimum_master_nodes: ${NODE_QUORUM}
 
 gateway:
@@ -33,13 +26,6 @@ gateway:
   expected_nodes: ${RECOVER_EXPECTED_NODES}
   recover_after_time: ${RECOVER_AFTER_TIME}
 
-path:
-  data:
-  {{.PathData}}
-
-`
-
-const secureYmlTmpl = `
 io.fabric8.elasticsearch.kibana.mapping.app: /usr/share/elasticsearch/index_patterns/com.redhat.viaq-openshift.index-pattern.json
 io.fabric8.elasticsearch.kibana.mapping.ops: /usr/share/elasticsearch/index_patterns/com.redhat.viaq-openshift.index-pattern.json
 io.fabric8.elasticsearch.kibana.mapping.empty: /usr/share/elasticsearch/index_patterns/com.redhat.viaq-openshift.index-pattern.json
@@ -53,14 +39,16 @@ openshift.searchguard:
   keystore.path: /etc/elasticsearch/secret/admin.jks
   truststore.path: /etc/elasticsearch/secret/searchguard.truststore
 
-openshift.operations.allow_cluster_reader: {{.AllowClusterReader}}
-
 openshift.kibana.index.mode: {{.KibanaIndexMode}}
+
+path:
+  data: /elasticsearch/persistent/${CLUSTER_NAME}/data
+  logs: /elasticsearch/persistent/${CLUSTER_NAME}/logs
 
 searchguard:
   authcz.admin_dn:
   - CN=system.admin,OU=OpenShift,O=Logging
-  config_index_name: ".searchguard.${DC_NAME}"
+  config_index_name: ".searchguard"
   ssl:
     transport:
       enabled: true
@@ -80,8 +68,6 @@ searchguard:
       truststore_type: JKS
       truststore_filepath: /etc/elasticsearch/secret/truststore
       truststore_password: tspass`
-
-const defaultRootLogger = "console"
 
 const log4j2PropertiesTmpl = `
 status = error
@@ -105,6 +91,10 @@ appender.rolling.policies.type = Policies
 appender.rolling.policies.time.type = TimeBasedTriggeringPolicy
 appender.rolling.policies.time.interval = 1
 appender.rolling.policies.time.modulate = true
+appender.rolling.policies.size.type=SizeBasedTriggeringPolicy
+appender.rolling.policies.size.size=100MB
+appender.rolling.strategy.type=DefaultRolloverStrategy
+appender.rolling.strategy.max=5
 
 rootLogger.level = info
 rootLogger.appenderRef.{{.RootLogger}}.ref = {{.RootLogger}}

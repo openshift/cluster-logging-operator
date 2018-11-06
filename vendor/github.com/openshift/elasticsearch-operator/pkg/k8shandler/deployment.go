@@ -47,7 +47,22 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 		}
 	}
 
-	// TODO: Check if the Variables are the desired ones
+	// Check if the Variables are the desired ones
+	envVars := node.resource.Spec.Template.Spec.Containers[0].Env
+	desiredVars := cfg.EnvVars
+	for index, value := range envVars {
+		if value.ValueFrom == nil {
+			if desiredVars[index] != value {
+				logrus.Infof("Env vars are different for %q", node.resource.GetName())
+				return true, nil
+			}
+		} else {
+			if desiredVars[index].ValueFrom.FieldRef.FieldPath != value.ValueFrom.FieldRef.FieldPath {
+				logrus.Infof("Env vars are different for %q", node.resource.GetName())
+				return true, nil
+			}
+		}
+	}
 
 	// Check that storage configuration is the same
 	// Maybe this needs to be split into a separate method since this

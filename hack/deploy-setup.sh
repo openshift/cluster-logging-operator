@@ -23,6 +23,9 @@ load_manifest() {
   popd
 }
 
+# This is required for when running the operator locally using go run
+mkdir /tmp/_working_dir
+
 load_manifest ${repo_dir}
 load_manifest ${ELASTICSEARCH_OP_REPO} openshift-logging
 

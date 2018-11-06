@@ -2,10 +2,12 @@ package k8shandler
 
 import (
 	"fmt"
+	"os"
 
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 
+	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	apps "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -21,6 +23,7 @@ const (
 	defaultCPURequest       = "100m"
 	defaultMemoryLimit      = "4Gi"
 	defaultMemoryRequest    = "1Gi"
+	MAX_MASTER_COUNT        = 3
 )
 
 // addOwnerRefToObject appends the desired OwnerReference to the object
@@ -52,6 +55,17 @@ func labelsForESCluster(clusterName string) map[string]string {
 	return map[string]string{
 		"cluster-name": clusterName,
 	}
+}
+
+func appendDefaultLabel(clusterName string, labels map[string]string) map[string]string {
+	if _, ok := labels["cluster-name"]; ok {
+		return labels
+	}
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	labels["cluster-name"] = clusterName
+	return labels
 }
 
 // asOwner returns an owner reference set as the vault cluster CR
@@ -286,6 +300,23 @@ func listPods(clusterName, namespace string) (*v1.PodList, error) {
 	return podList, nil
 }
 
+func listRunningPods(clusterName, namespace string) (*v1.PodList, error) {
+	pods, err := listPods(clusterName, namespace)
+	if err != nil {
+		return nil, err
+	}
+	// empty slice with memory allocated for len(pods.Items) v1.Pod objects
+	runningPods := make([]v1.Pod, 0, len(pods.Items))
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == v1.PodRunning {
+			runningPods = append(runningPods, pod)
+		}
+	}
+	result := podList()
+	result.Items = runningPods
+	return result, nil
+}
+
 // getPodNames returns the pod names of the array of pods passed in
 func getPodNames(pods []v1.Pod) []string {
 	var podNames []string
@@ -312,4 +343,74 @@ func popStatefulSet(statefulSets *apps.StatefulSetList, cfg desiredNodeState) (*
 	statefulSets.Items[index] = statefulSets.Items[len(statefulSets.Items)-1]
 	dpls.Items = statefulSets.Items[:len(statefulSets.Items)-1]
 	return dpls, statefulSet, true
+}
+
+func getMasterCount(dpl *v1alpha1.Elasticsearch) int32 {
+	masterCount := int32(0)
+
+	for _, node := range dpl.Spec.Nodes {
+		if isNodeMaster(node) {
+			masterCount = masterCount + node.Replicas
+		}
+	}
+
+	return masterCount
+}
+
+func getDataCount(dpl *v1alpha1.Elasticsearch) int32 {
+	dataCount := int32(0)
+
+	for _, node := range dpl.Spec.Nodes {
+		if isNodeData(node) {
+			dataCount = dataCount + node.Replicas
+		}
+	}
+
+	return dataCount
+}
+
+func isNodeMaster(node v1alpha1.ElasticsearchNode) bool {
+	for _, role := range node.Roles {
+		if role == v1alpha1.ElasticsearchRoleMaster {
+			return true
+		}
+	}
+	return false
+}
+
+func isNodeData(node v1alpha1.ElasticsearchNode) bool {
+	for _, role := range node.Roles {
+		if role == v1alpha1.ElasticsearchRoleData {
+			return true
+		}
+	}
+	return false
+}
+
+func isNodeClient(node *v1alpha1.ElasticsearchNode) bool {
+	for _, role := range node.Roles {
+		if role == v1alpha1.ElasticsearchRoleClient {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidMasterCount(cluster *v1alpha1.Elasticsearch) bool {
+	masterCount := int32(0)
+
+	for _, node := range cluster.Spec.Nodes {
+		if isNodeMaster(node) {
+			masterCount = masterCount + node.Replicas
+		}
+	}
+
+	return (masterCount <= MAX_MASTER_COUNT)
+}
+
+func lookupEnvWithDefault(envName, defaultValue string) string {
+	if value, ok := os.LookupEnv(envName); ok {
+		return value
+	}
+	return defaultValue
 }

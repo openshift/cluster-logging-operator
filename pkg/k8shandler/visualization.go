@@ -3,12 +3,13 @@ package k8shandler
 import (
 	"bytes"
 	"fmt"
+	"reflect"
+
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"reflect"
 
 	oauth "github.com/openshift/api/oauth/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -142,10 +143,10 @@ func createOrUpdateOauthClient(logging *logging.ClusterLogging, oauthSecret stri
 			APIVersion: oauth.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kibana-proxy",
-			Namespace: logging.Namespace,
+			Name: "kibana-proxy",
 			Labels: map[string]string{
 				"logging-infra": "support",
+				"namespace":     logging.Namespace,
 			},
 		},
 		Secret: oauthSecret,

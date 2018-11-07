@@ -3,11 +3,12 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"testing"
-	"time"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
@@ -87,8 +88,8 @@ func createRequiredClusterRoleAndBinding(f *framework.Framework, ctx *framework.
 			rbac.PolicyRule{
 				APIGroups: []string{"oauth.openshift.io"},
 				Resources: []string{"oauthclients"},
-				Verbs:		 []string{"*"},
-			}
+				Verbs:     []string{"*"},
+			},
 		},
 	}
 
@@ -214,7 +215,7 @@ func ClusterLoggingCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log("Found namespace: %v", namespace)
+	t.Logf("Found namespace: %v", namespace)
 
 	// get global framework variables
 	f := framework.Global

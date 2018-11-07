@@ -2,17 +2,17 @@ CURPATH=$(PWD)
 TARGET_DIR=$(CURPATH)/_output
 
 GOBUILD=go build
-GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
+BUILD_GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
 
-DOCKER_OPTS=
-IMAGE_BUILDER?=docker build
+IMAGE_BUILDER_OPTS=
+IMAGE_BUILDER?=imagebuilder
 IMAGE_BUILD=$(IMAGE_BUILDER)
 IMAGE_TAG?=docker tag
 
 APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-DOCKER_TAG=quay.io/openshift/$(APP_NAME)
+IMAGE_TAG=quay.io/openshift/$(APP_NAME)
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 
 OC?=oc
@@ -32,17 +32,32 @@ SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 all: build #check install
 
-build: $(SRC)
+operator-sdk:
+	@if ! type -p operator-sdk ; \
+	then if [ ! -d $(GOPATH)/src/github.com/operator-framework/operator-sdk ] ; \
+	  then git clone https://github.com/operator-framework/operator-sdk --branch master $(GOPATH)/src/github.com/operator-framework/operator-sdk ; \
+	  fi ; \
+	  cd $(GOPATH)/src/github.com/operator-framework/operator-sdk ; \
+	  make dep ; \
+	  make install || sudo make install || cd commands/operator-sdk && sudo go install ; \
+	fi
+
+imagebuilder:
+	@if ! type -p imagebuilder ; \
+	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
+	fi
+
+build:
 	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/pkg $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/vendor/* $(TARGET_DIR)/src
-	@GOPATH=$(GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
+	@GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
 
 clean:
 	@rm -rf $(TARGET_DIR)
 
-image:
-	$(IMAGE_BUILDER) -t $(DOCKER_TAG) . $(DOCKER_OPTS)
+image: imagebuilder
+	$(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS)
 
 fmt:
 	@gofmt -l -w $(SRC)
@@ -50,7 +65,7 @@ fmt:
 simplify:
 	@gofmt -s -l -w $(SRC)
 
-gendeepcopy:
+gendeepcopy: operator-sdk
 	@operator-sdk generate k8s
 
 deploy-setup:
@@ -62,7 +77,7 @@ deploy-image:
 deploy: deploy-setup image deploy-image
 	hack/deploy.sh
 
-test-e2e: image deploy-image
+test-e2e: image deploy-image operator-sdk
 	hack/test-e2e.sh
 
 undeploy:

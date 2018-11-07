@@ -15,12 +15,11 @@ pushd manifests;
      cat ${f} >> ${manifest}; 
   done; 
 popd
-registry_ip=$(oc get service docker-registry -n default -o jsonpath={.spec.clusterIP})
-sed -ie "s,quay.io/openshift/cluster-logging-operator,${registry_ip}:5000/openshift/cluster-logging-operator," ${manifest}
+
+oc adm policy add-scc-to-user privileged -z fluentd -n openshift-logging
 
 operator-sdk test local \
   --namespace openshift-logging \
   ./test/e2e \
   --namespaced-manifest ${manifest} \
   --global-manifest  ${repo_dir}/manifests/05-crd.yaml
-

@@ -1,6 +1,9 @@
 #!/bin/bash
 
-set -e
+# is this even needed for e2e tests?
+exit 0
+
+set -euxo pipefail
 
 source "$(dirname $0)/common"
 
@@ -20,5 +23,6 @@ trap "kill -15 ${forwarding_pid}" EXIT
 sleep 1.0
 
 echo "Pushing image ${tag}..."
+# where/how is the oc login done to use the correct creds here?
 docker login 127.0.0.1:${LOCAL_PORT} -u ${ADMIN_USER} -p $(oc whoami -t)
 docker push ${tag}

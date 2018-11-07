@@ -28,3 +28,7 @@ spec:
                 fieldPath: metadata.namespace
           - name: OPERATOR_NAME
             value: "cluster-logging-operator"
+          - name: REPO_PREFIX
+            value: "openshift/"
+          - name: IMAGE_PREFIX
+            value: "origin-"

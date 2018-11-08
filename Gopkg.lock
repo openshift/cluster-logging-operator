@@ -44,25 +44,25 @@
   name = "github.com/go-openapi/jsonpointer"
   packages = ["."]
   revision = "ef5f0afec364d3b9396b7b77b43dbe26bf1f8004"
-  version = "v0.17.0"
+  version = "v0.17.2"
 
 [[projects]]
   name = "github.com/go-openapi/jsonreference"
   packages = ["."]
   revision = "8483a886a90412cd6858df4ea3483dce9c8e35a3"
-  version = "v0.17.0"
+  version = "v0.17.2"
 
 [[projects]]
   name = "github.com/go-openapi/spec"
   packages = ["."]
   revision = "5bae59e25b21498baea7f9d46e9c147ec106a42e"
-  version = "v0.17.0"
+  version = "v0.17.2"
 
 [[projects]]
   name = "github.com/go-openapi/swag"
   packages = ["."]
   revision = "5899d5c5e619fda5fa86e14795a835f473ca284c"
-  version = "v0.17.0"
+  version = "v0.17.2"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -184,13 +184,13 @@
     "oauth/v1",
     "route/v1"
   ]
-  revision = "fac417a1916188eb39f7c36e279c832ce1c965df"
+  revision = "fd594d07117b2d47134db828fb9ea85efa2a0c2f"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "1314ac35296be197a852bbd35c3dc284d4a05a08"
+  revision = "3058d2e5b82c7d9798c66844f10d08bb12a973d0"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -222,10 +222,11 @@
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
+    "prometheus/internal",
     "prometheus/promhttp"
   ]
-  revision = "c5b7fccd204277076155f10851dad72b76a49317"
-  version = "v0.8.0"
+  revision = "abad2d1bd44235a26707c172eab6bca5bf2dbad3"
+  version = "v0.9.1"
 
 [[projects]]
   branch = "master"
@@ -241,7 +242,7 @@
     "internal/bitbucket.org/ww/goautoneg",
     "model"
   ]
-  revision = "c7de2306084e37d54b8be01f3541a8464345e9a5"
+  revision = "7e9e6cabbd393fc208072eedef99188d0ce788b6"
 
 [[projects]]
   branch = "master"
@@ -257,8 +258,8 @@
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "ad15b42461921f1fb3529b058c6786c6a45d5162"
-  version = "v1.1.1"
+  revision = "bcd833dfe83d3cebad139e4a29ed79cb2318bf95"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -270,19 +271,18 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "7c1a557ab941a71c619514f229f0b27ccb0c27cf"
+  revision = "e4dc69e5b2fd71dcaf8bd5d054eb936deb78d1fa"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = [
-    "context",
     "http/httpguts",
     "http2",
     "http2/hpack",
     "idna"
   ]
-  revision = "49bb7cea24b1df9410e1712aa6433dae904ff66a"
+  revision = "03003ca0c849e57b6ea29a4bab8d3cb6e4d568fe"
 
 [[projects]]
   branch = "master"
@@ -291,7 +291,7 @@
     "unix",
     "windows"
   ]
-  revision = "fa43e7bc11baaae89f3f902b2b4d832b68234844"
+  revision = "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -319,7 +319,7 @@
   branch = "master"
   name = "golang.org/x/time"
   packages = ["rate"]
-  revision = "fbb02b2291d28baffd63558aa44b4b56f178d650"
+  revision = "85acf8d2951cb2a3bde7632f9ff273ef0379bcbd"
 
 [[projects]]
   branch = "master"
@@ -327,9 +327,10 @@
   packages = [
     "go/ast/astutil",
     "imports",
-    "internal/fastwalk"
+    "internal/fastwalk",
+    "internal/gopathwalk"
   ]
-  revision = "a398e557df606a73ba39c8fd09a1b392b2a7ab59"
+  revision = "dfbbb7b6d4af9851715d68a9c8ac612b21592ee6"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -545,7 +546,13 @@
     "parser",
     "types"
   ]
-  revision = "4242d8e6c5dba56827bb7bcf14ad11cda38f3991"
+  revision = "51747d6e00da1fc578d5a333a93bb2abcbce7a95"
+
+[[projects]]
+  branch = "master"
+  name = "k8s.io/klog"
+  packages = ["."]
+  revision = "b9b56d5dfc9208f60ea747056670942d8b0afdc8"
 
 [[projects]]
   branch = "master"
@@ -557,7 +564,7 @@
     "pkg/generators/rules",
     "pkg/util/sets"
   ]
-  revision = "9dfdf9be683f61f82cda12362c44c784e0778b56"
+  revision = "a9a16210091c9a2b6a937e06a182955c03654c4c"
 
 [[projects]]
   name = "sigs.k8s.io/controller-runtime"
@@ -565,8 +572,8 @@
     "pkg/client",
     "pkg/client/apiutil"
   ]
-  revision = "53fc44b56078cd095b11bd44cfa0288ee4cf718f"
-  version = "v0.1.4"
+  revision = "5fd1e9e9fac5261e9ad9d47c375afc014fc31d21"
+  version = "v0.1.7"
 
 [solve-meta]
   analyzer-name = "dep"

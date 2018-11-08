@@ -70,6 +70,7 @@ type CollectionSpec struct {
 type LogCollectionSpec struct {
 	Type        LogCollectionType `json:"type"`
 	FluentdSpec `json:"fluentd,omitempty"`
+	RsyslogSpec `json:"rsyslog,omitempty"`
 }
 
 type EventCollectionSpec struct {
@@ -77,6 +78,11 @@ type EventCollectionSpec struct {
 }
 
 type FluentdSpec struct {
+	Resources    v1.ResourceRequirements `json:"resources"`
+	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
+}
+
+type RsyslogSpec struct {
 	Resources    v1.ResourceRequirements `json:"resources"`
 	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
 }
@@ -139,6 +145,7 @@ type CollectionStatus struct {
 
 type LogCollectionStatus struct {
 	FluentdStatus FluentdCollectorStatus `json:"fluentdStatus,omitempty"`
+	RsyslogStatus RsyslogCollectorStatus `json:"rsyslogStatus,omitempty"`
 }
 
 type EventCollectionStatus struct {
@@ -147,6 +154,12 @@ type EventCollectionStatus struct {
 type FluentdCollectorStatus struct {
 	DaemonSet string            `json:"daemonSet"`
 	Nodes     map[string]string `json:"nodes"`
+	Pods      PodStateMap       `json:"pods"`
+}
+
+type RsyslogCollectorStatus struct {
+	DaemonSet string            `json:"daemonSet"`
+	Nodes     map[string]string `json:"Nodes"`
 	Pods      PodStateMap       `json:"pods"`
 }
 
@@ -210,6 +223,7 @@ type LogCollectionType string
 
 const (
 	LogCollectionTypeFluentd LogCollectionType = "fluentd"
+	LogCollectionTypeRsyslog LogCollectionType = "rsyslog"
 )
 
 type EventCollectionType string

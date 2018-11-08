@@ -63,6 +63,33 @@ func getFluentdCollectorStatus(namespace string) (v1alpha1.FluentdCollectorStatu
 	return fluentdStatus, nil
 }
 
+func getRsyslogCollectorStatus(namespace string) (v1alpha1.RsyslogCollectorStatus, error) {
+
+	rsyslogStatus := v1alpha1.RsyslogCollectorStatus{}
+
+	rsyslogDaemonsetList, err := utils.GetDaemonSetList(namespace, "logging-infra=rsyslog")
+	if err != nil {
+		return rsyslogStatus, err
+	}
+
+	if len(rsyslogDaemonsetList.Items) != 0 {
+		daemonset := rsyslogDaemonsetList.Items[0]
+
+		rsyslogStatus.DaemonSet = daemonset.Name
+
+		// use map to represent {pod: node}
+		podList, _ := utils.GetPodList(namespace, "logging-infra=rsyslog")
+		podNodeMap := make(map[string]string)
+		for _, pod := range podList.Items {
+			podNodeMap[pod.Name] = pod.Spec.NodeName
+		}
+		rsyslogStatus.Pods = podStateMap(podList.Items)
+		rsyslogStatus.Nodes = podNodeMap
+	}
+
+	return rsyslogStatus, nil
+}
+
 func getKibanaStatus(namespace string) ([]v1alpha1.KibanaStatus, error) {
 
 	status := []v1alpha1.KibanaStatus{}

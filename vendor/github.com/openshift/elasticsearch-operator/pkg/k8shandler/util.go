@@ -414,3 +414,22 @@ func lookupEnvWithDefault(envName, defaultValue string) string {
 	}
 	return defaultValue
 }
+
+func GetPodList(namespace string, selector string) (*v1.PodList, error) {
+	list := &v1.PodList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: v1.SchemeGroupVersion.String(),
+		},
+	}
+
+	err := sdk.List(
+		namespace,
+		list,
+		sdk.WithListOptions(&metav1.ListOptions{
+			LabelSelector: selector,
+		}),
+	)
+
+	return list, err
+}

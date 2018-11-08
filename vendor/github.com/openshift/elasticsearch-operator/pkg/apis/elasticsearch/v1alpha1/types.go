@@ -107,6 +107,17 @@ const (
 // ElasticsearchStatus represents the status of Elasticsearch cluster
 type ElasticsearchStatus struct {
 	// Fill me
-	Nodes         []ElasticsearchNodeStatus `json:"nodes"`
-	ClusterHealth string                    `json:"clusterHealth"`
+	Nodes         []ElasticsearchNodeStatus             `json:"nodes"`
+	ClusterHealth string                                `json:"clusterHealth"`
+	Pods          map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
 }
+
+type PodStateMap map[PodStateType][]string
+
+type PodStateType string
+
+const (
+	PodStateTypeReady    PodStateType = "ready"
+	PodStateTypeNotReady PodStateType = "notReady"
+	PodStateTypeFailed   PodStateType = "failed"
+)

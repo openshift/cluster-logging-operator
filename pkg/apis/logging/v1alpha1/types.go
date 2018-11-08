@@ -111,10 +111,10 @@ type VisualizationStatus struct {
 }
 
 type KibanaStatus struct {
-	Replicas    int32    `json:"replicas"`
-	Deployment  string   `json:"deployment"`
-	ReplicaSets []string `json:"replicaSets"`
-	Pods        []string `json:"pods"`
+	Replicas    int32       `json:"replicas"`
+	Deployment  string      `json:"deployment"`
+	ReplicaSets []string    `json:"replicaSets"`
+	Pods        PodStateMap `json:"pods"`
 }
 
 type LogStoreStatus struct {
@@ -122,12 +122,13 @@ type LogStoreStatus struct {
 }
 
 type ElasticsearchStatus struct {
-	ClusterName  string   `json:"clusterName"`
-	Replicas     int32    `json:"replicas"`
-	ReplicaSets  []string `json:"replicaSets"`
-	Deployments  []string `json:"deployments"`
-	StatefulSets []string `json:"statefulSets"`
-	Pods         []string `json:"pods"`
+	ClusterName   string                                `json:"clusterName"`
+	Replicas      int32                                 `json:"replicas"`
+	ReplicaSets   []string                              `json:"replicaSets"`
+	Deployments   []string                              `json:"deployments"`
+	StatefulSets  []string                              `json:"statefulSets"`
+	ClusterHealth string                                `json:"clusterHealth"`
+	Pods          map[ElasticsearchRoleType]PodStateMap `json:"pods"`
 }
 
 type CollectionStatus struct {
@@ -145,13 +146,14 @@ type EventCollectionStatus struct {
 
 type FluentdCollectorStatus struct {
 	DaemonSet string            `json:"daemonSet"`
-	Pods      map[string]string `json:"pods"`
+	Nodes     map[string]string `json:"nodes"`
+	Pods      PodStateMap       `json:"pods"`
 }
 
 type FluentdNormalizerStatus struct {
-	Replicas    int32    `json:"replicas"`
-	ReplicaSets []string `json:"replicaSets"`
-	Pods        []string `json:"pods"`
+	Replicas    int32       `json:"replicas"`
+	ReplicaSets []string    `json:"replicaSets"`
+	Pods        PodStateMap `json:"pods"`
 }
 
 type NormalizerStatus struct {
@@ -168,10 +170,28 @@ type CuratorStatus struct {
 	Suspended bool   `json:"suspended"`
 }
 
+type PodStateMap map[PodStateType][]string
+
+type PodStateType string
+
+const (
+	PodStateTypeReady    PodStateType = "ready"
+	PodStateTypeNotReady PodStateType = "notReady"
+	PodStateTypeFailed   PodStateType = "failed"
+)
+
 type LogStoreType string
 
 const (
 	LogStoreTypeElasticsearch LogStoreType = "elasticsearch"
+)
+
+type ElasticsearchRoleType string
+
+const (
+	ElasticsearchRoleTypeClient ElasticsearchRoleType = "client"
+	ElasticsearchRoleTypeData   ElasticsearchRoleType = "data"
+	ElasticsearchRoleTypeMaster ElasticsearchRoleType = "master"
 )
 
 type VisualizationType string

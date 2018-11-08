@@ -180,7 +180,7 @@ func createOrUpdateKibanaRoute(logging *logging.ClusterLogging) error {
 		kibanaRoute := utils.Route(
 			"kibana",
 			logging.Namespace,
-			"kibana.example.com",
+			"kibana",
 			"kibana",
 		)
 
@@ -194,7 +194,7 @@ func createOrUpdateKibanaRoute(logging *logging.ClusterLogging) error {
 		kibanaRoute := utils.Route(
 			"kibana-app",
 			logging.Namespace,
-			"kibana-app.example.com",
+			"kibana-app",
 			"kibana-app",
 		)
 
@@ -208,7 +208,7 @@ func createOrUpdateKibanaRoute(logging *logging.ClusterLogging) error {
 		kibanaInfraRoute := utils.Route(
 			"kibana-infra",
 			logging.Namespace,
-			"kibana-infra.example.com",
+			"kibana-infra",
 			"kibana-infra",
 		)
 

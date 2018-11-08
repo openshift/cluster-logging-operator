@@ -16,7 +16,14 @@ pushd manifests;
   done; 
 popd
 
+# allows fluentd to have root access to node
 oc adm policy add-scc-to-user privileged -z fluentd -n openshift-logging
+# allows fluentd to query k8s api for all namespace/pod info
+oc adm policy add-cluster-role-to-user cluster-reader -z fluentd -n openshift-logging
+# allows rsyslog to have root access to node
+oc adm policy add-scc-to-user privileged -z rsyslog -n openshift-logging
+# allows rsyslog to query k8s api for all namespace/pod info
+oc adm policy add-cluster-role-to-user cluster-reader -z rsyslog -n openshift-logging
 
 operator-sdk test local \
   --namespace openshift-logging \

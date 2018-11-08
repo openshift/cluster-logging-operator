@@ -2,11 +2,12 @@ package utils
 
 import (
 	"bytes"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	route "github.com/openshift/api/route/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -39,6 +40,8 @@ var COMPONENT_IMAGES = map[string]string{
 	"fluentd-version":       "latest",
 	"elasticsearch-image":   "logging-elasticsearch5",
 	"elasticsearch-version": "latest",
+	"rsyslog-image":         "viaq/rsyslog",
+	"rsyslog-version":       "latest",
 }
 
 func getImageName(component string) string {
@@ -97,6 +100,9 @@ func getImagePrefix(component string) string {
 	case "elasticsearch":
 		prefix.WriteString(repoPrefix)
 		prefix.WriteString(imagePrefix)
+
+	case "rsyslog":
+		prefix.WriteString("")
 
 	default:
 		return ""

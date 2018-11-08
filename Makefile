@@ -7,13 +7,14 @@ BUILD_GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
 IMAGE_BUILDER_OPTS=
 IMAGE_BUILDER?=imagebuilder
 IMAGE_BUILD=$(IMAGE_BUILDER)
-IMAGE_TAG?=docker tag
+IMAGE_TAG_CMD?=docker tag
 
 APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-IMAGE_TAG=quay.io/openshift/$(APP_NAME)
+IMAGE_TAG=openshift/$(APP_NAME)
 MAIN_PKG=cmd/$(APP_NAME)/main.go
+NAMESPACE?=openshift-logging
 
 OC?=oc
 
@@ -28,7 +29,7 @@ OC?=oc
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy test-e2e undeploy
+.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-e2e undeploy
 
 all: build #check install
 
@@ -76,6 +77,9 @@ deploy-image:
 
 deploy: deploy-setup image deploy-image
 	hack/deploy.sh
+
+deploy-example: deploy
+	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-e2e: image deploy-image operator-sdk
 	hack/test-e2e.sh

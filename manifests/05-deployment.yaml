@@ -28,7 +28,15 @@ spec:
                 fieldPath: metadata.namespace
           - name: OPERATOR_NAME
             value: "cluster-logging-operator"
-          - name: REPO_PREFIX
-            value: "openshift/"
-          - name: IMAGE_PREFIX
-            value: "origin-"
+          - name: ELASTICSEARCH_IMAGE
+            value: "docker.io/openshift/origin-logging-elasticsearch5:latest"
+          - name: FLUENTD_IMAGE
+            value: "docker.io/openshift/origin-logging-fluentd:latest"
+          - name: KIBANA_IMAGE
+            value: "docker.io/openshift/origin-logging-kibana5:latest"
+          - name: CURATOR_IMAGE
+            value: "docker.io/openshift/origin-logging-curator5:latest"
+          - name: OAUTH_PROXY_IMAGE
+            value: "docker.io/openshift/oauth-proxy:latest"
+          - name: RSYSLOG_IMAGE
+            value: "docker.io/viaq/rsyslog:latest"

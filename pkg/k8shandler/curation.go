@@ -185,40 +185,46 @@ func getCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elas
 	return curatorCronJob
 }
 
-func createOrUpdateCuratorCronJob(logging *logging.ClusterLogging) (err error) {
+func createOrUpdateCuratorCronJob(cluster *logging.ClusterLogging) (err error) {
 
-	if utils.AllInOne(logging) {
-		curatorCronJob := getCuratorCronJob(logging, "curator", "elasticsearch")
+	if utils.AllInOne(cluster) {
+		curatorCronJob := getCuratorCronJob(cluster, "curator", "elasticsearch")
 
 		err = sdk.Create(curatorCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Curator cronjob: %v", err)
 		}
 
-		if err = updateCuratorIfRequired(curatorCronJob); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateCuratorIfRequired(curatorCronJob); err != nil {
+				return
+			}
 		}
 	} else {
-		curatorCronJob := getCuratorCronJob(logging, "curator-app", "elasticsearch-app")
+		curatorCronJob := getCuratorCronJob(cluster, "curator-app", "elasticsearch-app")
 
 		err = sdk.Create(curatorCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Curator App cronjob: %v", err)
 		}
 
-		if err = updateCuratorIfRequired(curatorCronJob); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateCuratorIfRequired(curatorCronJob); err != nil {
+				return
+			}
 		}
 
-		curatorInfraCronJob := getCuratorCronJob(logging, "curator-infra", "elasticsearch-infra")
+		curatorInfraCronJob := getCuratorCronJob(cluster, "curator-infra", "elasticsearch-infra")
 
 		err = sdk.Create(curatorInfraCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Curator Infra cronjob: %v", err)
 		}
 
-		if err = updateCuratorIfRequired(curatorInfraCronJob); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateCuratorIfRequired(curatorInfraCronJob); err != nil {
+				return
+			}
 		}
 	}
 

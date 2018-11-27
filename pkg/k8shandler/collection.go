@@ -261,52 +261,56 @@ func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdDaemonset(logging *logging.ClusterLogging) (err error) {
+func createOrUpdateFluentdDaemonset(cluster *logging.ClusterLogging) (err error) {
 
 	var fluentdPodSpec v1.PodSpec
 
-	if utils.AllInOne(logging) {
-		fluentdPodSpec = getFluentdPodSpec(logging, "elasticsearch", "elasticsearch")
+	if utils.AllInOne(cluster) {
+		fluentdPodSpec = getFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
 	} else {
-		fluentdPodSpec = getFluentdPodSpec(logging, "elasticsearch-app", "elasticsearch-infra")
+		fluentdPodSpec = getFluentdPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
 	}
 
-	fluentdDaemonset := utils.DaemonSet("fluentd", logging.Namespace, "fluentd", "fluentd", fluentdPodSpec)
-	utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(logging))
+	fluentdDaemonset := utils.DaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
+	utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(cluster))
 
 	err = sdk.Create(fluentdDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Fluentd Daemonset %v", err)
 	}
 
-	if err = updateFluentdDaemonsetIfRequired(fluentdDaemonset); err != nil {
-		return
+	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+		if err = updateFluentdDaemonsetIfRequired(fluentdDaemonset); err != nil {
+			return
+		}
 	}
 
 	return nil
 }
 
-func createOrUpdateRsyslogDaemonset(logging *logging.ClusterLogging) (err error) {
+func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error) {
 
 	var rsyslogPodSpec v1.PodSpec
 
-	if utils.AllInOne(logging) {
-		rsyslogPodSpec = getRsyslogPodSpec(logging, "elasticsearch", "elasticsearch")
+	if utils.AllInOne(cluster) {
+		rsyslogPodSpec = getRsyslogPodSpec(cluster, "elasticsearch", "elasticsearch")
 	} else {
-		rsyslogPodSpec = getRsyslogPodSpec(logging, "elasticsearch-app", "elasticsearch-infra")
+		rsyslogPodSpec = getRsyslogPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
 	}
 
-	rsyslogDaemonset := utils.DaemonSet("rsyslog", logging.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
+	rsyslogDaemonset := utils.DaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
 
-	utils.AddOwnerRefToObject(rsyslogDaemonset, utils.AsOwner(logging))
+	utils.AddOwnerRefToObject(rsyslogDaemonset, utils.AsOwner(cluster))
 
 	err = sdk.Create(rsyslogDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Rsyslog Daemonset %v", err)
 	}
 
-	if err = updateRsyslogDaemonsetIfRequired(rsyslogDaemonset); err != nil {
-		return
+	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+		if err = updateRsyslogDaemonsetIfRequired(rsyslogDaemonset); err != nil {
+			return
+		}
 	}
 
 	return nil

@@ -24,6 +24,9 @@ type ClusterLogging struct {
 }
 
 type ClusterLoggingSpec struct {
+	// managementState indicates whether and how the operator should manage the component
+	ManagementState ManagementState `json:"managementState"`
+
 	Visualization VisualizationSpec `json:"visualization,omitempty"`
 	LogStore      LogStoreSpec      `json:"logStore,omitempty"`
 	Collection    CollectionSpec    `json:"collection,omitempty"`
@@ -229,3 +232,13 @@ const (
 type EventCollectionType string
 
 type NormalizerType string
+
+type ManagementState string
+
+const (
+	// Managed means that the operator is actively managing its resources and trying to keep the component active.
+	// It will only upgrade the component if it is safe to do so
+	ManagementStateManaged ManagementState = "Managed"
+	// Unmanaged means that the operator will not take any action related to the component
+	ManagementStateUnmanaged ManagementState = "Unmanaged"
+)

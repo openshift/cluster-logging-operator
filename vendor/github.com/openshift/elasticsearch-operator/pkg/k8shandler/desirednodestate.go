@@ -59,7 +59,7 @@ func constructNodeSpec(dpl *v1alpha1.Elasticsearch, esNode v1alpha1.Elasticsearc
 		Namespace:          dpl.Namespace,
 		Roles:              esNode.Roles,
 		ESNodeSpec:         esNode,
-		SecretName:         dpl.Spec.SecretName,
+		SecretName:         v1alpha1.SecretName,
 		NodeNum:            nodeNum,
 		ReplicaNum:         replicaNum,
 		ServiceAccountName: serviceAccountName,
@@ -172,6 +172,7 @@ func (cfg *desiredNodeState) getLabels() map[string]string {
 	labels["es-node-master"] = strconv.FormatBool(cfg.isNodeMaster())
 	labels["cluster-name"] = cfg.ClusterName
 	labels["component"] = cfg.ClusterName
+	labels["tuned.openshift.io/elasticsearch"] = "true"
 	return labels
 }
 

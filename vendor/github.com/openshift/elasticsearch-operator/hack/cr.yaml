@@ -4,6 +4,7 @@ kind: "Elasticsearch"
 metadata:
   name: "elasticsearch"
 spec:
+  managementState: "Managed"
   nodeSpec:
     image: openshift/origin-logging-elasticsearch5:latest
   nodes:

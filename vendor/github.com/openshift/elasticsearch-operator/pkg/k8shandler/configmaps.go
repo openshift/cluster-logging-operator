@@ -16,10 +16,7 @@ import (
 // CreateOrUpdateConfigMaps ensures the existence of ConfigMaps with Elasticsearch configuration
 func CreateOrUpdateConfigMaps(dpl *v1alpha1.Elasticsearch) (string, error) {
 	owner := asOwner(dpl)
-	configMapName := dpl.Spec.ConfigMapName
-	if dpl.Spec.ConfigMapName == "" {
-		configMapName = dpl.Name
-	}
+	configMapName := v1alpha1.ConfigMapName
 
 	// TODO: take all vars from CRD
 	kibanaIndexMode, err := KibanaIndexMode("")

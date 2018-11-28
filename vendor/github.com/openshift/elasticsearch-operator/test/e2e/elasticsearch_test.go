@@ -3,12 +3,14 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"testing"
-	"time"
+	"k8s.io/apimachinery/pkg/types"
 
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
@@ -16,7 +18,7 @@ import (
 )
 
 var (
-	retryInterval        = time.Second * 10
+	retryInterval        = time.Second * 2
 	timeout              = time.Second * 300
 	cleanupRetryInterval = time.Second * 1
 	cleanupTimeout       = time.Second * 5
@@ -121,67 +123,81 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 	}
 	err = f.Client.Create(goctx.TODO(), exampleElasticsearch, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
-		return err
+		return fmt.Errorf("could not create exampleElasticsearch: %v", err)
 	}
 
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-0-1", 1, retryInterval, timeout)
 	if err != nil {
-		return err
+		return fmt.Errorf("timed out waiting for Deployment example-elasticsearch-clientdatamaster-0-1: %v", err)
 	}
+	t.Log("Created initial deployment")
 
 	// Scale up current node
 	// then look for example-elasticsearch-clientdatamaster-0-2 and prior node
+	exampleName := types.NamespacedName{Name: "example-elasticsearch", Namespace: namespace}
+	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
+		return fmt.Errorf("failed to get exampleElasticsearch: %v", err)
+	}
 	exampleElasticsearch.Spec.Nodes[0].Replicas = int32(2)
 	err = f.Client.Update(goctx.TODO(), exampleElasticsearch)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not update exampleElasticsearch with 2 replicas: %v", err)
 	}
 
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-0-1", 1, retryInterval, timeout)
 	if err != nil {
-		return err
+		return fmt.Errorf("timed out waiting for Deployment example-elasticsearch-clientdatamaster-0-1: %v", err)
 	}
 
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-0-2", 1, retryInterval, timeout)
 	if err != nil {
-		return err
+		return fmt.Errorf("timed out waiting for Deployment example-elasticsearch-clientdatamaster-0-2: %v", err)
 	}
+	t.Log("Created additional deployment")
 
+	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
+		return fmt.Errorf("failed to get exampleElasticsearch: %v", err)
+	}
 	exampleElasticsearch.Spec.Nodes = append(exampleElasticsearch.Spec.Nodes, esNode)
 	err = f.Client.Update(goctx.TODO(), exampleElasticsearch)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not update exampleElasticsearch with an additional node: %v", err)
 	}
 
 	// Create another node
 	// then look for example-elasticsearch-clientdatamaster-1-1 and prior nodes
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-0-1", 1, retryInterval, timeout)
 	if err != nil {
-		return err
+		return fmt.Errorf("timed out waiting for Deployment example-elasticsearch-clientdatamaster-0-1: %v", err)
 	}
 
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-0-2", 1, retryInterval, timeout)
 	if err != nil {
-		return err
+		return fmt.Errorf("timed out waiting for Deployment example-elasticsearch-clientdatamaster-0-2: %v", err)
 	}
 
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-1-1", 1, retryInterval, timeout)
 	if err != nil {
-		return err
+		return fmt.Errorf("timed out waiting for Deployment example-elasticsearch-clientdatamaster-1-1: %v", err)
 	}
+	t.Log("Created 3 deployments")
 
 	// Incorrect scale up and verify we don't see a 4th master created
+	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
+		return fmt.Errorf("failed to get exampleElasticsearch: %v", err)
+	}
 	exampleElasticsearch.Spec.Nodes[1].Replicas = int32(2)
 	err = f.Client.Update(goctx.TODO(), exampleElasticsearch)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not update exampleElasticsearch with an additional node and replica: %v", err)
 	}
 
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-1-2", 0, retryInterval, time.Second*30)
 	if err == nil {
-		return fmt.Errorf("Unexpected deployment example-elasticsearch-clientdatamaster-1-2 found.")
+		return fmt.Errorf("unexpected deployment example-elasticsearch-clientdatamaster-1-2 found")
 	}
 
+	t.Log("Finished successfully")
 	return nil
 }
 
@@ -198,7 +214,7 @@ func ElasticsearchCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log("Found namespace: %v", namespace)
+	t.Logf("Found namespace: %v", namespace)
 
 	// get global framework variables
 	f := framework.Global

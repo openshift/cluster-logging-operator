@@ -190,7 +190,7 @@
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "3058d2e5b82c7d9798c66844f10d08bb12a973d0"
+  revision = "a745c6421aefcd8cfe00630f747e243fa4806e22"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"

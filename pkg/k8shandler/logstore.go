@@ -2,12 +2,14 @@ package k8shandler
 
 import (
 	"fmt"
+
 	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
+	"reflect"
+
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
-	"reflect"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
@@ -111,10 +113,7 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 			Spec: v1alpha1.ElasticsearchNodeSpec{
 				Image: utils.GetComponentImage("elasticsearch"),
 			},
-			Nodes:              esNodes,
-			ServiceAccountName: "elasticsearch",
-			ConfigMapName:      "elasticsearch",
-			//SecretName: "elasticsearch",
+			Nodes: esNodes,
 		},
 	}
 

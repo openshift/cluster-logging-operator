@@ -80,50 +80,56 @@ func createOrUpdateKibanaServiceAccount(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateKibanaDeployment(logging *logging.ClusterLogging) (err error) {
+func createOrUpdateKibanaDeployment(cluster *logging.ClusterLogging) (err error) {
 
-	if utils.AllInOne(logging) {
-		kibanaPodSpec := getKibanaPodSpec(logging, "kibana", "elasticsearch")
-		kibanaDeployment := utils.Deployment("kibana", logging.Namespace, "kibana", "kibana", kibanaPodSpec)
+	if utils.AllInOne(cluster) {
+		kibanaPodSpec := getKibanaPodSpec(cluster, "kibana", "elasticsearch")
+		kibanaDeployment := utils.Deployment("kibana", cluster.Namespace, "kibana", "kibana", kibanaPodSpec)
 
-		utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(logging))
+		utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(cluster))
 
 		err = sdk.Create(kibanaDeployment)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Kibana deployment: %v", err)
 		}
 
-		if err = updateKibanaIfRequired(kibanaDeployment); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateKibanaIfRequired(kibanaDeployment); err != nil {
+				return
+			}
 		}
 
 	} else {
-		kibanaPodSpec := getKibanaPodSpec(logging, "kibana-app", "elasticsearch-app")
-		kibanaDeployment := utils.Deployment("kibana-app", logging.Namespace, "kibana", "kibana", kibanaPodSpec)
+		kibanaPodSpec := getKibanaPodSpec(cluster, "kibana-app", "elasticsearch-app")
+		kibanaDeployment := utils.Deployment("kibana-app", cluster.Namespace, "kibana", "kibana", kibanaPodSpec)
 
-		utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(logging))
+		utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(cluster))
 
 		err = sdk.Create(kibanaDeployment)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Kibana App deployment: %v", err)
 		}
 
-		if err = updateKibanaIfRequired(kibanaDeployment); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateKibanaIfRequired(kibanaDeployment); err != nil {
+				return
+			}
 		}
 
-		kibanaInfraPodSpec := getKibanaPodSpec(logging, "kibana-infra", "elasticsearch-infra")
-		kibanaInfraDeployment := utils.Deployment("kibana-infra", logging.Namespace, "kibana", "kibana", kibanaInfraPodSpec)
+		kibanaInfraPodSpec := getKibanaPodSpec(cluster, "kibana-infra", "elasticsearch-infra")
+		kibanaInfraDeployment := utils.Deployment("kibana-infra", cluster.Namespace, "kibana", "kibana", kibanaInfraPodSpec)
 
-		utils.AddOwnerRefToObject(kibanaInfraDeployment, utils.AsOwner(logging))
+		utils.AddOwnerRefToObject(kibanaInfraDeployment, utils.AsOwner(cluster))
 
 		err = sdk.Create(kibanaInfraDeployment)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Kibana Infra deployment: %v", err)
 		}
 
-		if err = updateKibanaIfRequired(kibanaInfraDeployment); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateKibanaIfRequired(kibanaInfraDeployment); err != nil {
+				return
+			}
 		}
 	}
 

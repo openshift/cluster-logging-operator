@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ -n "${DEBUG:-}" ]; then
+    set -x
+fi
+
+alias oc=${OC:-oc}
+
+repo_dir="$(dirname $0)/.."
+
+IMAGE_TAG=${IMAGE_TAG:-"quay.io/openshift/elasticsearch-operator:latest"}
+
+# probably needs some work for contexts which have '-' in the name and are not IPs
+context=$(oc config current-context)
+API_SERVER=$(python -c \
+    "import re; m=re.match('.*/(.*)/.*',\"${context}\"); print m.group(1).replace('-','.')")
+
+ADMIN_USER=${ADMIN_USER:-admin}
+ADMIN_PSWD=${ADMIN_USER:-admin123}
+NAMESPACE=${NAMESPACE:-openshift-logging}

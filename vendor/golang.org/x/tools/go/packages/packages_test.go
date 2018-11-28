@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"go/ast"
-	"go/build"
 	constantpkg "go/constant"
 	"go/parser"
 	"go/token"
@@ -1222,9 +1221,6 @@ func TestName_ModulesDedup(t *testing.T) {
 
 func TestJSON(t *testing.T) { packagestest.TestAll(t, testJSON) }
 func testJSON(t *testing.T, exporter packagestest.Exporter) {
-	if !haveReleaseTag("go1.11") {
-		t.Skip("skipping; flaky before Go 1.11; https://golang.org/issue/28609")
-	}
 	//TODO: add in some errors
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
 		Name: "golang.org/fake",
@@ -1414,24 +1410,41 @@ func testPatternPassthrough(t *testing.T, exporter packagestest.Exporter) {
 
 func TestConfigDefaultEnv(t *testing.T) { packagestest.TestAll(t, testConfigDefaultEnv) }
 func testConfigDefaultEnv(t *testing.T, exporter packagestest.Exporter) {
-	if runtime.GOOS == "windows" {
+	const driverJSON = `{
+  "Roots": ["gopackagesdriver"],
+  "Packages": [{"ID": "gopackagesdriver", "Name": "gopackagesdriver"}]
+}`
+	var (
+		pathKey      string
+		driverScript packagestest.Writer
+	)
+	switch runtime.GOOS {
+	case "windows":
 		// TODO(jayconrod): write an equivalent batch script for windows.
 		// Hint: "type" can be used to read a file to stdout.
 		t.Skip("test requires sh")
+	case "plan9":
+		pathKey = "path"
+		driverScript = packagestest.Script(`#!/bin/rc
+
+cat <<'EOF'
+` + driverJSON + `
+EOF
+`)
+	default:
+		pathKey = "PATH"
+		driverScript = packagestest.Script(`#!/bin/sh
+
+cat - <<'EOF'
+` + driverJSON + `
+EOF
+`)
 	}
 	exported := packagestest.Export(t, exporter, []packagestest.Module{{
 		Name: "golang.org/fake",
 		Files: map[string]interface{}{
-			"bin/gopackagesdriver": packagestest.Script(`#!/bin/sh
-
-cat - <<'EOF'
-{
-  "Roots": ["gopackagesdriver"],
-  "Packages": [{"ID": "gopackagesdriver", "Name": "gopackagesdriver"}]
-}
-EOF
-`),
-			"golist/golist.go": "package golist",
+			"bin/gopackagesdriver": driverScript,
+			"golist/golist.go":     "package golist",
 		}}})
 	defer exported.Cleanup()
 	driver := exported.File("golang.org/fake", "bin/gopackagesdriver")
@@ -1440,7 +1453,7 @@ EOF
 		t.Fatal(err)
 	}
 
-	path, ok := os.LookupEnv("PATH")
+	path, ok := os.LookupEnv(pathKey)
 	var pathWithDriver string
 	if ok {
 		pathWithDriver = binDir + string(os.PathListSeparator) + path
@@ -1472,9 +1485,9 @@ EOF
 		},
 	} {
 		t.Run(test.desc, func(t *testing.T) {
-			oldPath := os.Getenv("PATH")
-			os.Setenv("PATH", test.path)
-			defer os.Setenv("PATH", oldPath)
+			oldPath := os.Getenv(pathKey)
+			os.Setenv(pathKey, test.path)
+			defer os.Setenv(pathKey, oldPath)
 			exported.Config.Env = append(coreEnv, "GOPACKAGESDRIVER="+test.driver)
 			pkgs, err := packages.Load(exported.Config, "golist")
 			if err != nil {
@@ -1587,6 +1600,12 @@ func importGraph(initial []*packages.Package) (string, map[string]*packages.Pack
 						continue
 					}
 				}
+				// math/bits took on a dependency on unsafe in 1.12, which breaks some
+				// tests. As a short term hack, prune that edge.
+				// TODO(matloob): think of a cleaner solution, or remove math/bits from the test.
+				if p.ID == "math/bits" && imp.ID == "unsafe" {
+					continue
+				}
 				edges = append(edges, fmt.Sprintf("%s -> %s", p, imp))
 				visit(imp)
 			}
@@ -1619,13 +1638,4 @@ func constant(p *packages.Package, name string) *types.Const {
 		return nil
 	}
 	return c.(*types.Const)
-}
-
-func haveReleaseTag(tag string) bool {
-	for _, v := range build.Default.ReleaseTags {
-		if tag == v {
-			return true
-		}
-	}
-	return false
 }

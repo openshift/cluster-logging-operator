@@ -10,7 +10,6 @@ import (
 
 	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	//"github.com/sirupsen/logrus"
 )
 
 // CreateOrUpdateConfigMaps ensures the existence of ConfigMaps with Elasticsearch configuration

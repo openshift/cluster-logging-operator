@@ -10,7 +10,6 @@ import (
 	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	//"github.com/sirupsen/logrus"
 )
 
 // CreateOrUpdateServices ensures the existence of the services for Elasticsearch cluster

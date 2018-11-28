@@ -120,8 +120,16 @@ Kubernetes TBD+ and OpenShift TBD+ are supported.
 
 ## Testing
 
+In a real deployment OpenShift monitoring will be installed.  However
+for testing purposes, you should install the monitoring CRDs:
+
+    oc create -n openshift-logging -f \
+    https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prometheus-operator-crd/prometheusrule.crd.yaml
+    oc create -n openshift-logging -f \
+    https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prometheus-operator-crd/servicemonitor.crd.yaml
+
 ### E2E Testing
-To run the e2e tests, from the repo directory, run:
+To run the e2e tests, install the above CRDs and from the repo directory, run:
 ```
 sudo sysctl -w vm.max_map_count=262144
 imagebuilder -t quay.io/openshift/elasticsearch-operator .
@@ -143,7 +151,11 @@ oc create -n openshift-logging -f $ELASTICSEARCH_OPERATOR/deploy/cr.yaml
 ```
 
 To test on an OCP cluster, you can run:
-`OPERATOR_NAME=elasticsearch-operator WATCH_NAMESPACE=openshift-logging KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig go run cmd/elasticsearch-operator/main.go`
+
+    ALERTS_FILE_PATH=files/prometheus_alerts.yml RULES_FILE_PATH=files/prometheus_rules.yml \
+    OPERATOR_NAME=elasticsearch-operator WATCH_NAMESPACE=openshift-logging \
+    KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig \
+    go run cmd/elasticsearch-operator/main.go
 
 
 To remove created API objects:

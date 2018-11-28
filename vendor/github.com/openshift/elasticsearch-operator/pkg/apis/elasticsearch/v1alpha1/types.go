@@ -7,6 +7,12 @@ import (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
+const (
+	ServiceAccountName string = "elasticsearch"
+	ConfigMapName      string = "elasticsearch"
+	SecretName         string = "elasticsearch"
+)
+
 // ElasticsearchList struct represents list of Elasticsearch objects
 type ElasticsearchList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -72,11 +78,8 @@ type ElasticsearchNodeStatus struct {
 // ElasticsearchSpec struct represents the Spec of Elasticsearch cluster CRD
 type ElasticsearchSpec struct {
 	// Fill me
-	Nodes              []ElasticsearchNode   `json:"nodes"`
-	Spec               ElasticsearchNodeSpec `json:"nodeSpec"`
-	ServiceAccountName string                `json:"serviceAccountName,omitempty"`
-	ConfigMapName      string                `json:"configMapName,omitempty"`
-	SecretName         string                `json:"secretName,omitempty"`
+	Nodes []ElasticsearchNode   `json:"nodes"`
+	Spec  ElasticsearchNodeSpec `json:"nodeSpec"`
 }
 
 // ElasticsearchNodeSpec represents configuration of an individual Elasticsearch node

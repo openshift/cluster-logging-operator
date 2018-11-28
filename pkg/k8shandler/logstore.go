@@ -122,40 +122,46 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 	return cr
 }
 
-func createOrUpdateElasticsearchCR(logging *logging.ClusterLogging) (err error) {
+func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) {
 
-	if utils.AllInOne(logging) {
-		esCR := getElasticsearchCR(logging, "elasticsearch")
+	if utils.AllInOne(cluster) {
+		esCR := getElasticsearchCR(cluster, "elasticsearch")
 
 		err = sdk.Create(esCR)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Elasticsearch CR: %v", err)
 		}
 
-		if err = updateElasticsearchCRIfRequired(esCR); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateElasticsearchCRIfRequired(esCR); err != nil {
+				return
+			}
 		}
 	} else {
-		esCR := getElasticsearchCR(logging, "elasticsearch-app")
+		esCR := getElasticsearchCR(cluster, "elasticsearch-app")
 
 		err = sdk.Create(esCR)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Elasticsearch CR: %v", err)
 		}
 
-		if err = updateElasticsearchCRIfRequired(esCR); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateElasticsearchCRIfRequired(esCR); err != nil {
+				return
+			}
 		}
 
-		esInfraCR := getElasticsearchCR(logging, "elasticsearch-infra")
+		esInfraCR := getElasticsearchCR(cluster, "elasticsearch-infra")
 
 		err = sdk.Create(esInfraCR)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating Elasticsearch Infra CR: %v", err)
 		}
 
-		if err = updateElasticsearchCRIfRequired(esInfraCR); err != nil {
-			return
+		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+			if err = updateElasticsearchCRIfRequired(esInfraCR); err != nil {
+				return
+			}
 		}
 	}
 

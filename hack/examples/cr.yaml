@@ -5,6 +5,7 @@ metadata:
   annotations:
     "io.openshift.clusterlogging.alpha/allinone": ""
 spec:
+  managementState: "Managed"
   logStore:
     type: "elasticsearch"
     elasticsearch:

@@ -32,3 +32,10 @@ rules:
   - statefulsets
   verbs:
   - "*"
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - prometheusrules
+  - servicemonitors
+  verbs:
+  - "*"

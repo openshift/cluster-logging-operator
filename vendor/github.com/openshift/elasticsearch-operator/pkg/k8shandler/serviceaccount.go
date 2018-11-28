@@ -17,12 +17,7 @@ const (
 // CreateOrUpdateServiceAccount ensures the existence of the serviceaccount for Elasticsearch cluster
 func CreateOrUpdateServiceAccount(dpl *v1alpha1.Elasticsearch) (string, error) {
 	// In case no serviceaccount is specified in the spec, we'll use the default name for service account
-	var serviceAccountName string
-	if dpl.Spec.ServiceAccountName == "" {
-		serviceAccountName = defaultServiceAccountName
-	} else {
-		serviceAccountName = dpl.Spec.ServiceAccountName
-	}
+	serviceAccountName := v1alpha1.ServiceAccountName
 
 	owner := asOwner(dpl)
 

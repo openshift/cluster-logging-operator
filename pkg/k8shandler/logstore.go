@@ -114,6 +114,7 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 				Image: utils.GetComponentImage("elasticsearch"),
 			},
 			Nodes: esNodes,
+			ManagementState: v1alpha1.ManagementStateManaged,
 		},
 	}
 
@@ -190,7 +191,11 @@ func isElasticsearchCRDifferent(current *v1alpha1.Elasticsearch, desired *v1alph
 
 	different := false
 
-	//TODO: populate this
+	if current.Spec.Spec.Image != desired.Spec.Spec.Image {
+		logrus.Infof("Elasticsearch image change found, updating %q", current.Name)
+		current.Spec.Spec.Image = desired.Spec.Spec.Image
+		different = true
+	}
 
 	return current, different
 }

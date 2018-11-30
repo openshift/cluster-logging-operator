@@ -118,7 +118,7 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 			Nodes: []elasticsearch.ElasticsearchNode{
 				esNode,
 			},
-			SecretName: "elasticsearch",
+			ManagementState: elasticsearch.ManagementStateManaged,
 		},
 	}
 	err = f.Client.Create(goctx.TODO(), exampleElasticsearch, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})

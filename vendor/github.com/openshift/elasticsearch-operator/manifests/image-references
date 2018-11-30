@@ -6,8 +6,8 @@ spec:
   - name: elasticsearch-operator
      from:
       kind: DockerImage
-      name: quay.io/openshift/origin-elasticsearch-operator:latest
+      name: openshift/elasticsearch-operator:latest
   - name: logging-elasticsearch5
     from:
       kind: DockerImage
-      name: quay.io/openshift/logging-elasticsearch5:latest
+      name: openshift/origin-logging-elasticsearch5:latest

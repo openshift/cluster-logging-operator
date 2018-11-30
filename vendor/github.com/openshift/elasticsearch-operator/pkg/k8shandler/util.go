@@ -397,15 +397,20 @@ func isNodeClient(node *v1alpha1.ElasticsearchNode) bool {
 }
 
 func isValidMasterCount(cluster *v1alpha1.Elasticsearch) bool {
-	masterCount := int32(0)
 
-	for _, node := range cluster.Spec.Nodes {
-		if isNodeMaster(node) {
-			masterCount = masterCount + node.Replicas
+	if cluster.Spec.ManagementState == v1alpha1.ManagementStateManaged {
+		masterCount := int32(0)
+
+		for _, node := range cluster.Spec.Nodes {
+			if isNodeMaster(node) {
+				masterCount = masterCount + node.Replicas
+			}
 		}
-	}
 
-	return (masterCount <= MAX_MASTER_COUNT)
+		return (masterCount <= MAX_MASTER_COUNT)
+	} else {
+		return true
+	}
 }
 
 func lookupEnvWithDefault(envName, defaultValue string) string {

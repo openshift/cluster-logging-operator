@@ -120,7 +120,7 @@
     ".",
     "diskcache"
   ]
-  revision = "9cad4c3443a7200dd6400aef47183728de563a38"
+  revision = "c63ab54fda8f77302f8d414e19933f2b6026a089"
 
 [[projects]]
   name = "github.com/hashicorp/golang-lru"
@@ -184,13 +184,13 @@
     "oauth/v1",
     "route/v1"
   ]
-  revision = "fd594d07117b2d47134db828fb9ea85efa2a0c2f"
+  revision = "e7dc90658844828191986cb07f3e44eeeba0b03a"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "a745c6421aefcd8cfe00630f747e243fa4806e22"
+  revision = "6fe289a717ebe3c8baf495468ab2c4638610e454"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -242,7 +242,7 @@
     "internal/bitbucket.org/ww/goautoneg",
     "model"
   ]
-  revision = "7e9e6cabbd393fc208072eedef99188d0ce788b6"
+  revision = "4724e9255275ce38f7179b2478abeae4e28c904f"
 
 [[projects]]
   branch = "master"
@@ -253,7 +253,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "185b4288413d2a0dd0806f78c90dde719829e5ae"
+  revision = "aa55a523dc0a8297edf51bb75e8eec13eb3be45d"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -271,7 +271,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "e4dc69e5b2fd71dcaf8bd5d054eb936deb78d1fa"
+  revision = "eb0de9b17e854e9b1ccd9963efafc79862359959"
 
 [[projects]]
   branch = "master"
@@ -282,7 +282,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "03003ca0c849e57b6ea29a4bab8d3cb6e4d568fe"
+  revision = "fae4c4e3ad76c295c3d6d259f898136b4bf833a8"
 
 [[projects]]
   branch = "master"
@@ -291,7 +291,7 @@
     "unix",
     "windows"
   ]
-  revision = "66b7b1311ac80bbafcd2daeef9a5e6e2cd1e2399"
+  revision = "4ed8d59d0b35e1e29334a206d1b3f38b1e5dfb31"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -330,7 +330,7 @@
     "internal/fastwalk",
     "internal/gopathwalk"
   ]
-  revision = "dfbbb7b6d4af9851715d68a9c8ac612b21592ee6"
+  revision = "c5b00d9557fd23dd2a6d9c2f4c80a31d08cac00d"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -341,8 +341,8 @@
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
-  version = "v2.2.1"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
+  version = "v2.2.2"
 
 [[projects]]
   name = "k8s.io/api"
@@ -546,13 +546,13 @@
     "parser",
     "types"
   ]
-  revision = "51747d6e00da1fc578d5a333a93bb2abcbce7a95"
+  revision = "fd15ee9cc2f77baa4f31e59e6acbf21146455073"
 
 [[projects]]
-  branch = "master"
   name = "k8s.io/klog"
   packages = ["."]
-  revision = "b9b56d5dfc9208f60ea747056670942d8b0afdc8"
+  revision = "a5bc97fbc634d635061f3146511332c7e313a55a"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -564,7 +564,7 @@
     "pkg/generators/rules",
     "pkg/util/sets"
   ]
-  revision = "a9a16210091c9a2b6a937e06a182955c03654c4c"
+  revision = "0317810137be915b9cf888946c6e115c1bfac693"
 
 [[projects]]
   name = "sigs.k8s.io/controller-runtime"

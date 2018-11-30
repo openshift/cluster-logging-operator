@@ -5,7 +5,7 @@ metadata:
   namespace: openshift-logging
 spec:
   endpoints:
-  - port: 24231
+  - port: "24231"
     scheme: https
     tlsConfig:
       caFile: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt

@@ -19,7 +19,7 @@ import (
 const (
 	elasticsearchCertsPath    = "/etc/openshift/elasticsearch/secret"
 	elasticsearchConfigPath   = "/usr/share/java/elasticsearch/config"
-	elasticsearchDefaultImage = "quay.io/openshift/logging-elasticsearch5"
+	elasticsearchDefaultImage = "docker.io/openshift/origin-logging-elasticsearch5"
 	heapDumpLocation          = "/elasticsearch/persistent/heapdump.hprof"
 )
 
@@ -495,7 +495,7 @@ func (cfg *desiredNodeState) generatePersistentStorage() v1.VolumeSource {
 		volSource.PersistentVolumeClaim = specVol.PersistentVolumeClaim
 	default:
 		// TODO: assume EmptyDir/update to emptyDir?
-		logrus.Infof("Unknown volume source: %s", specVol)
+		logrus.Warn("Unknown volume source: %s", specVol)
 	}
 	return volSource
 }

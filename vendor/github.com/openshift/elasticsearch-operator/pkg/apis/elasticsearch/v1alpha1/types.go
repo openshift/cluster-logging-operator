@@ -30,6 +30,15 @@ type Elasticsearch struct {
 	Status            ElasticsearchStatus `json:"status,omitempty"`
 }
 
+// ElasticsearchSpec struct represents the Spec of Elasticsearch cluster CRD
+type ElasticsearchSpec struct {
+	// managementState indicates whether and how the operator should manage the component
+	ManagementState ManagementState `json:"managementState"`
+
+	Nodes []ElasticsearchNode   `json:"nodes"`
+	Spec  ElasticsearchNodeSpec `json:"nodeSpec"`
+}
+
 // ElasticsearchNode struct represents individual node in Elasticsearch cluster
 type ElasticsearchNode struct {
 	Roles        []ElasticsearchNodeRole        `json:"roles"`
@@ -75,13 +84,6 @@ type ElasticsearchNodeStatus struct {
 	Roles           []ElasticsearchNodeRole `json:"roles,omitempty"`
 }
 
-// ElasticsearchSpec struct represents the Spec of Elasticsearch cluster CRD
-type ElasticsearchSpec struct {
-	// Fill me
-	Nodes []ElasticsearchNode   `json:"nodes"`
-	Spec  ElasticsearchNodeSpec `json:"nodeSpec"`
-}
-
 // ElasticsearchNodeSpec represents configuration of an individual Elasticsearch node
 type ElasticsearchNodeSpec struct {
 	Image     string                  `json:"image,omitempty"`
@@ -123,4 +125,14 @@ const (
 	PodStateTypeReady    PodStateType = "ready"
 	PodStateTypeNotReady PodStateType = "notReady"
 	PodStateTypeFailed   PodStateType = "failed"
+)
+
+type ManagementState string
+
+const (
+	// Managed means that the operator is actively managing its resources and trying to keep the component active.
+	// It will only upgrade the component if it is safe to do so
+	ManagementStateManaged ManagementState = "Managed"
+	// Unmanaged means that the operator will not take any action related to the component
+	ManagementStateUnmanaged ManagementState = "Unmanaged"
 )

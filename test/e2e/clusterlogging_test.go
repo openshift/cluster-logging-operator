@@ -9,6 +9,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/api/core/v1"
+	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
@@ -34,6 +36,18 @@ func TestClusterLogging(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
+
+	elasticsearchList := &v1alpha1.ElasticsearchList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:	"Elasticsearch",
+			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+		},
+	}
+	err = framework.AddToFrameworkScheme(v1alpha1.AddToScheme, elasticsearchList)
+	if err != nil {
+		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
+	}
+
 	// run subtests
 	t.Run("clusterlogging-group", func(t *testing.T) {
 		t.Run("Cluster with fluentd", ClusterLoggingClusterFluentd)
@@ -173,6 +187,12 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 			Namespace: namespace,
 		},
 		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: logging.LogStoreTypeElasticsearch,
+				ElasticsearchSpec: logging.ElasticsearchSpec {
+					Replicas: 1,
+				},
+			},
 			Visualization: logging.VisualizationSpec{
 				Type: logging.VisualizationTypeKibana,
 				KibanaSpec: logging.KibanaSpec{
@@ -186,6 +206,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 				},
 			},
 			Collection: collectionSpec,
+			ManagementState: logging.ManagementStateManaged,
 		},
 	}
 	err = f.Client.Create(goctx.TODO(), exampleClusterLogging, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
@@ -214,6 +235,11 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	}
 
 	err = WaitForDaemonSet(t, f.KubeClient, namespace, collector, 1, retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = clusterLoggingUpgradeClusterTest(t, f, ctx, collector)
 	if err != nil {
 		return err
 	}
@@ -278,4 +304,134 @@ func ClusterLoggingClusterRsyslog(t *testing.T) {
 	if err = clusterLoggingFullClusterTest(t, framework.Global, ctx, "rsyslog"); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, collector string) error {
+
+	namespace, err := ctx.GetNamespace()
+	if err != nil {
+		return fmt.Errorf("Could not get namespace: %v", err)
+	}
+
+	currentOperator, err := f.KubeClient.AppsV1().Deployments(namespace).Get("cluster-logging-operator", metav1.GetOptions{IncludeUninitialized: true})
+	if err != nil {
+		return fmt.Errorf("failed to get currentOperator: %v", err)
+	}
+
+	currentEnv := currentOperator.Spec.Template.Spec.Containers[0].Env
+	newEnv := []v1.EnvVar{
+		{Name: "WATCH_NAMESPACE", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.namespace"}}},
+		{Name: "OPERATOR_NAME", Value: "cluster-logging-operator"},
+		{Name: "ELASTICSEARCH_IMAGE", Value: "docker.io/openshift/origin-logging-elasticsearch5:upgraded"},
+		{Name: "FLUENTD_IMAGE", Value: "docker.io/openshift/origin-logging-fluentd:upgraded"},
+		{Name: "KIBANA_IMAGE", Value: "docker.io/openshift/origin-logging-kibana5:upgraded"},
+		{Name: "CURATOR_IMAGE", Value: "docker.io/openshift/origin-logging-curator5:upgraded"},
+		{Name: "OAUTH_PROXY_IMAGE", Value: "docker.io/openshift/oauth-proxy:latest"},
+		{Name: "RSYSLOG_IMAGE", Value: "docker.io/viaq/rsyslog:upgraded"},
+	}
+
+	currentOperator.Spec.Template.Spec.Containers[0].Env = newEnv
+	err = f.Client.Update(goctx.TODO(), currentOperator)
+	if err != nil {
+		return fmt.Errorf("could not update cluster-logging-operator with updated image values", err)
+	}
+
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-app", "docker.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-infra", "docker.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana-app", "docker.io/openshift/origin-logging-kibana5:upgraded", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana-infra", "docker.io/openshift/origin-logging-kibana5:upgraded", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator-app", "docker.io/openshift/origin-logging-curator5:upgraded", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator-infra", "docker.io/openshift/origin-logging-curator5:upgraded", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	if collector == "rsyslog" {
+		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "docker.io/viaq/rsyslog:upgraded", retryInterval, timeout)
+		if err != nil {
+			return err
+		}
+	}
+	if collector == "fluentd" {
+		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "docker.io/openshift/origin-logging-fluentd:upgraded", retryInterval, timeout)
+		if err != nil {
+			return err
+		}
+	}
+
+	currentOperator, err = f.KubeClient.AppsV1().Deployments(namespace).Get("cluster-logging-operator", metav1.GetOptions{IncludeUninitialized: true})
+	if err != nil {
+		return fmt.Errorf("failed to get currentOperator: %v", err)
+	}
+
+	currentOperator.Spec.Template.Spec.Containers[0].Env = currentEnv
+	err = f.Client.Update(goctx.TODO(), currentOperator)
+	if err != nil {
+		return fmt.Errorf("could not update cluster-logging-operator with prior image values", err)
+	}
+
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-app", "docker.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-infra", "docker.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana-app", "docker.io/openshift/origin-logging-kibana5:latest", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana-infra", "docker.io/openshift/origin-logging-kibana5:latest", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator-app", "docker.io/openshift/origin-logging-curator5:latest", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator-infra", "docker.io/openshift/origin-logging-curator5:latest", retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	if collector == "rsyslog" {
+		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "docker.io/viaq/rsyslog:latest", retryInterval, timeout)
+		if err != nil {
+			return err
+		}
+	}
+	if collector == "fluentd" {
+		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "docker.io/openshift/origin-logging-fluentd:latest", retryInterval, timeout)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

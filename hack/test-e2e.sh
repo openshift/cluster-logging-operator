@@ -10,10 +10,24 @@ fi
 
 manifest=$(mktemp)
 files="02-service-account.yaml 03-role.yaml 04-role-binding.yaml 05-deployment.yaml"
-pushd manifests; 
-  for f in ${files}; do 
-     cat ${f} >> ${manifest}; 
-  done; 
+pushd manifests;
+  for f in ${files}; do
+     cat ${f} >> ${manifest};
+  done;
+popd
+
+global_manifest=$(mktemp)
+global_files="05-crd.yaml"
+elasticsearch_files="04-crd.yaml"
+pushd manifests;
+  for f in ${global_files}; do
+    cat ${f} >> ${global_manifest}
+  done;
+popd
+pushd vendor/github.com/openshift/elasticsearch-operator/manifests;
+  for f in ${elasticsearch_files}; do
+    cat ${f} >> ${global_manifest}
+  done;
 popd
 
 # allows fluentd to have root access to node
@@ -29,4 +43,4 @@ operator-sdk test local \
   --namespace openshift-logging \
   ./test/e2e \
   --namespaced-manifest ${manifest} \
-  --global-manifest  ${repo_dir}/manifests/05-crd.yaml
+  --global-manifest  ${global_manifest}

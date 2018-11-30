@@ -9,10 +9,18 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"strings"
+	"time"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
+)
+
+var (
+	retryInterval = time.Second * 30
+	timeout       = time.Second * 1800
 )
 
 func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
@@ -468,10 +476,24 @@ func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 		return fmt.Errorf("Failed to get Fluentd daemonset: %v", err)
 	}
 
-	current, different := isFluentdDaemonsetDifferent(current, desired)
+	flushBuffer := isBufferFlushRequired(current, desired)
+	desired, different := isFluentdDaemonsetDifferent(current, desired)
 
 	if different {
-		if err = sdk.Update(current); err != nil {
+
+		if flushBuffer {
+			current.Spec.Template.Spec.Containers[0].Env = append(current.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{Name: "FLUSH_AT_SHUTDOWN", Value: "True"})
+			if err = sdk.Update(current); err != nil {
+				return fmt.Errorf("Failed to prepare Fluentd daemonset to flush its buffers: %v", err)
+			}
+
+			// wait for pods to all restart then continue
+			if err = waitForDaemonSetReady(current); err != nil {
+				return fmt.Errorf("Timed out waiting for Fluentd to be ready")
+			}
+		}
+
+		if err = sdk.Update(desired); err != nil {
 			return fmt.Errorf("Failed to update Fluentd daemonset: %v", err)
 		}
 	}
@@ -501,7 +523,11 @@ func isFluentdDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSe
 
 	different := false
 
-	// TODO: populate this
+	if isDaemonsetImageDifference(current, desired) {
+		logrus.Infof("Fluentd image change found, updating %q", current.Name)
+		current = updateCurrentDaemonsetImages(current, desired)
+		different = true
+	}
 
 	return current, different
 }
@@ -510,7 +536,95 @@ func isRsyslogDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSe
 
 	different := false
 
-	// TODO: populate this
+	if isDaemonsetImageDifference(current, desired) {
+		logrus.Infof("Rsyslog image change found, updating %q", current.Name)
+		current = updateCurrentDaemonsetImages(current, desired)
+		different = true
+	}
 
 	return current, different
+}
+
+func waitForDaemonSetReady(ds *apps.DaemonSet) error {
+
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		err = sdk.Get(ds)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, fmt.Errorf("Failed to get Fluentd daemonset: %v", err)
+			}
+			return false, err
+		}
+
+		if int(ds.Status.DesiredNumberScheduled) == int(ds.Status.NumberReady) {
+			return true, nil
+		}
+
+		return false, nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isDaemonsetImageDifference(current *apps.DaemonSet, desired *apps.DaemonSet) bool {
+
+	for _, curr := range current.Spec.Template.Spec.Containers {
+		for _, des := range desired.Spec.Template.Spec.Containers {
+			// Only compare the images of containers with the same name
+			if curr.Name == des.Name {
+				if curr.Image != des.Image {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func updateCurrentDaemonsetImages(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet) {
+
+	containers := current.Spec.Template.Spec.Containers
+
+	for index, curr := range current.Spec.Template.Spec.Containers {
+		for _, des := range desired.Spec.Template.Spec.Containers {
+			// Only compare the images of containers with the same name
+			if curr.Name == des.Name {
+				if curr.Image != des.Image {
+					containers[index].Image = des.Image
+				}
+			}
+		}
+	}
+
+	return current
+}
+
+func isBufferFlushRequired(current *apps.DaemonSet, desired *apps.DaemonSet) bool {
+
+	currImage := strings.Split(current.Spec.Template.Spec.Containers[0].Image, ":")
+	desImage := strings.Split(desired.Spec.Template.Spec.Containers[0].Image, ":")
+
+	if len(currImage) != 2 || len(desImage) != 2 {
+		// we don't have versions here -- not sure how we would compare versions to determine
+		// need to flush buffers
+		return false
+	}
+
+	currVersion := currImage[1]
+	desVersion := desImage[1]
+
+	if strings.HasPrefix(currVersion, "v") {
+		currVersion = strings.Split(currVersion, "v")[1]
+	}
+
+	if strings.HasPrefix(desVersion, "v") {
+		desVersion = strings.Split(desVersion, "v")[1]
+	}
+
+	return (currVersion == "3.11" && desVersion == "4.0.0")
 }

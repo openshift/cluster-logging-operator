@@ -1,8 +1,10 @@
 package utils
 
 import (
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
+	"os"
+
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,4 +32,11 @@ func Secret(secretName string, namespace string, data map[string][]byte) *v1.Sec
 		Type: "Opaque",
 		Data: data,
 	}
+}
+
+func LookupEnvWithDefault(envName, defaultValue string) string {
+	if value, ok := os.LookupEnv(envName); ok {
+		return value
+	}
+	return defaultValue
 }

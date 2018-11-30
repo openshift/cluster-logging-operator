@@ -24,7 +24,7 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 	// Check replicas number
 	actualReplicas := *node.resource.Spec.Replicas
 	if cfg.getReplicas() != actualReplicas {
-		logrus.Infof("Different number of replicas detected, updating deployment %v", cfg.DeployName)
+		logrus.Debugf("Different number of replicas detected, updating deployment %v", cfg.DeployName)
 		return true, nil
 	}
 
@@ -32,7 +32,7 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 	for _, container := range node.resource.Spec.Template.Spec.Containers {
 		if container.Name == "elasticsearch" {
 			if container.Image != cfg.ESNodeSpec.Spec.Image {
-				logrus.Infof("Container image '%v' is different that desired, updating..", container.Image)
+				logrus.Debugf("Container image '%v' is different that desired, updating..", container.Image)
 				return true, nil
 			}
 		}
@@ -42,7 +42,7 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 	for label, value := range cfg.Labels {
 		val, ok := node.resource.Labels[label]
 		if !ok || val != value {
-			logrus.Infof("Labels on deployment '%v' need updating..", node.resource.GetName())
+			logrus.Debugf("Labels on deployment '%v' need updating..", node.resource.GetName())
 			return true, nil
 		}
 	}
@@ -53,12 +53,12 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 	for index, value := range envVars {
 		if value.ValueFrom == nil {
 			if desiredVars[index] != value {
-				logrus.Infof("Env vars are different for %q", node.resource.GetName())
+				logrus.Debugf("Env vars are different for %q", node.resource.GetName())
 				return true, nil
 			}
 		} else {
 			if desiredVars[index].ValueFrom.FieldRef.FieldPath != value.ValueFrom.FieldRef.FieldPath {
-				logrus.Infof("Env vars are different for %q", node.resource.GetName())
+				logrus.Debugf("Env vars are different for %q", node.resource.GetName())
 				return true, nil
 			}
 		}
@@ -85,7 +85,7 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 			case volume.EmptyDir != nil && (cfg.ESNodeSpec.Storage.EmptyDir != nil || cfg.ESNodeSpec.Storage == v1alpha1.ElasticsearchNodeStorageSource{}):
 				return false, nil
 			default:
-				logrus.Infof("Detected change in storage")
+				logrus.Warn("Detected change in storage")
 				return true, nil
 			}
 		}
@@ -129,7 +129,6 @@ func (node *deploymentNode) constructNodeResource(cfg *desiredNodeState, owner m
 	// sset, _ := json.Marshal(deployment)
 	// s := string(sset[:])
 
-	// logrus.Infof(s)
 	addOwnerRefToObject(&deployment, owner)
 
 	return &deployment, nil

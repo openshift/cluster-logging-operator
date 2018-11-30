@@ -441,10 +441,50 @@ func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*app
 	different := false
 
 	if *current.Spec.Replicas != *desired.Spec.Replicas {
-		current.Spec.Replicas = desired.Spec.Replicas
 		logrus.Infof("Invalid Kibana replica count found, updating %q", current.Name)
+		current.Spec.Replicas = desired.Spec.Replicas
+		different = true
+	}
+
+	if isDeploymentImageDifference(current, desired) {
+		logrus.Infof("Kibana image(s) change found, updating %q", current.Name)
+		current = updateCurrentImages(current, desired)
 		different = true
 	}
 
 	return current, different
+}
+
+func isDeploymentImageDifference(current *apps.Deployment, desired *apps.Deployment) bool {
+
+	for _, curr := range current.Spec.Template.Spec.Containers {
+		for _, des := range desired.Spec.Template.Spec.Containers {
+			// Only compare the images of containers with the same name
+			if curr.Name == des.Name {
+				if curr.Image != des.Image {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func updateCurrentImages(current *apps.Deployment, desired *apps.Deployment) (*apps.Deployment) {
+
+	containers := current.Spec.Template.Spec.Containers
+
+	for index, curr := range current.Spec.Template.Spec.Containers {
+		for _, des := range desired.Spec.Template.Spec.Containers {
+			// Only compare the images of containers with the same name
+			if curr.Name == des.Name {
+				if curr.Image != des.Image {
+					containers[index].Image = des.Image
+				}
+			}
+		}
+	}
+
+	return current
 }

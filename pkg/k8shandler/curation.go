@@ -255,15 +255,21 @@ func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.
 
 	// Check schedule
 	if current.Spec.Schedule != desired.Spec.Schedule {
-		current.Spec.Schedule = desired.Spec.Schedule
 		logrus.Infof("Invalid Curator schedule found, updating %q", current.Name)
+		current.Spec.Schedule = desired.Spec.Schedule
 		different = true
 	}
 
 	// Check suspended
 	if current.Spec.Suspend != nil && desired.Spec.Suspend != nil && *current.Spec.Suspend != *desired.Spec.Suspend {
-		current.Spec.Suspend = desired.Spec.Suspend
 		logrus.Infof("Invalid Curator suspend value found, updating %q", current.Name)
+		current.Spec.Suspend = desired.Spec.Suspend
+		different = true
+	}
+
+	if current.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image != desired.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image {
+		logrus.Infof("Curator image change found, updating %q", current.Name)
+		current.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image = desired.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image
 		different = true
 	}
 

@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
+	"k8s.io/client-go/util/retry"
 	"reflect"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -13,6 +14,7 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -34,13 +36,22 @@ func CreateOrUpdateLogStore(cluster *logging.ClusterLogging) (err error) {
 			return fmt.Errorf("Failed to get status for Elasticsearch: %v", err)
 		}
 
-		if !reflect.DeepEqual(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
-			logrus.Infof("Updating status of Elasticsearch")
-			cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
-
-			if err = sdk.Update(cluster); err != nil {
-				return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", err)
+		printUpdateMessage := true
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
+				if !reflect.DeepEqual(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
+					if printUpdateMessage {
+						logrus.Info("Updating status of Elasticsearch")
+						printUpdateMessage = false
+					}
+					cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
+					return sdk.Update(cluster)
+				}
 			}
+			return nil
+		})
+		if retryErr != nil {
+			return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
 		}
 	}
 
@@ -113,7 +124,7 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 			Spec: v1alpha1.ElasticsearchNodeSpec{
 				Image: utils.GetComponentImage("elasticsearch"),
 			},
-			Nodes: esNodes,
+			Nodes:           esNodes,
 			ManagementState: v1alpha1.ManagementStateManaged,
 		},
 	}
@@ -134,8 +145,11 @@ func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) 
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateElasticsearchCRIfRequired(esCR); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateElasticsearchCRIfRequired(esCR)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 	} else {
@@ -147,8 +161,11 @@ func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) 
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateElasticsearchCRIfRequired(esCR); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateElasticsearchCRIfRequired(esCR)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 
@@ -160,8 +177,11 @@ func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) 
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateElasticsearchCRIfRequired(esInfraCR); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateElasticsearchCRIfRequired(esInfraCR)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 	}
@@ -173,6 +193,11 @@ func updateElasticsearchCRIfRequired(desired *v1alpha1.Elasticsearch) (err error
 	current := desired.DeepCopy()
 
 	if err = sdk.Get(current); err != nil {
+		if apierrors.IsNotFound(err) {
+			// the object doesn't exist -- it was likely culled
+			// recreate it on the next time through if necessary
+			return nil
+		}
 		return fmt.Errorf("Failed to get Elasticsearch CR: %v", err)
 	}
 
@@ -180,7 +205,7 @@ func updateElasticsearchCRIfRequired(desired *v1alpha1.Elasticsearch) (err error
 
 	if different {
 		if err = sdk.Update(current); err != nil {
-			return fmt.Errorf("Failed to update Elasticsearch CR: %v", err)
+			return err
 		}
 	}
 

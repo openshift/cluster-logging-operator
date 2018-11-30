@@ -6,12 +6,14 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/util/retry"
 	"reflect"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	batchv1 "k8s.io/api/batch/v1"
 	batch "k8s.io/api/batch/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -44,13 +46,22 @@ func CreateOrUpdateCuration(cluster *logging.ClusterLogging) (err error) {
 			return fmt.Errorf("Failed to get status for Curator: %v", err)
 		}
 
-		if !reflect.DeepEqual(curatorStatus, cluster.Status.Curation.CuratorStatus) {
-			logrus.Infof("Updating status of Curator")
-			cluster.Status.Curation.CuratorStatus = curatorStatus
-
-			if err = sdk.Update(cluster); err != nil {
-				return fmt.Errorf("Failed to update Cluster Logging Curator status: %v", err)
+		printUpdateMessage := true
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
+				if !reflect.DeepEqual(curatorStatus, cluster.Status.Curation.CuratorStatus) {
+					if printUpdateMessage {
+						logrus.Info("Updating status of Curator")
+						printUpdateMessage = false
+					}
+					cluster.Status.Curation.CuratorStatus = curatorStatus
+					return sdk.Update(cluster)
+				}
 			}
+			return nil
+		})
+		if retryErr != nil {
+			return fmt.Errorf("Failed to update Cluster Logging Curator status: %v", retryErr)
 		}
 	}
 
@@ -196,8 +207,11 @@ func createOrUpdateCuratorCronJob(cluster *logging.ClusterLogging) (err error) {
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateCuratorIfRequired(curatorCronJob); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateCuratorIfRequired(curatorCronJob)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 	} else {
@@ -209,8 +223,11 @@ func createOrUpdateCuratorCronJob(cluster *logging.ClusterLogging) (err error) {
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateCuratorIfRequired(curatorCronJob); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateCuratorIfRequired(curatorCronJob)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 
@@ -222,8 +239,11 @@ func createOrUpdateCuratorCronJob(cluster *logging.ClusterLogging) (err error) {
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateCuratorIfRequired(curatorInfraCronJob); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateCuratorIfRequired(curatorInfraCronJob)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 	}
@@ -235,6 +255,11 @@ func updateCuratorIfRequired(desired *batch.CronJob) (err error) {
 	current := desired.DeepCopy()
 
 	if err = sdk.Get(current); err != nil {
+		if apierrors.IsNotFound(err) {
+			// the object doesn't exist -- it was likely culled
+			// recreate it on the next time through if necessary
+			return nil
+		}
 		return fmt.Errorf("Failed to get Curator cronjob: %v", err)
 	}
 
@@ -242,7 +267,7 @@ func updateCuratorIfRequired(desired *batch.CronJob) (err error) {
 
 	if different {
 		if err = sdk.Update(current); err != nil {
-			return fmt.Errorf("Failed to update Curator cronjob: %v", err)
+			return err
 		}
 	}
 

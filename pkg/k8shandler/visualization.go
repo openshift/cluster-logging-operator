@@ -10,11 +10,13 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/client-go/util/retry"
 
 	oauth "github.com/openshift/api/oauth/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -53,13 +55,22 @@ func CreateOrUpdateVisualization(cluster *logging.ClusterLogging) (err error) {
 			return fmt.Errorf("Failed to get status for Kibana: %v", err)
 		}
 
-		if !reflect.DeepEqual(kibanaStatus, cluster.Status.Visualization.KibanaStatus) {
-			logrus.Infof("Updating status of Kibana")
-			cluster.Status.Visualization.KibanaStatus = kibanaStatus
-
-			if err = sdk.Update(cluster); err != nil {
-				return fmt.Errorf("Failed to update Cluster Logging Kibana status: %v", err)
+		printUpdateMessage := true
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
+				if !reflect.DeepEqual(kibanaStatus, cluster.Status.Visualization.KibanaStatus) {
+					if printUpdateMessage {
+						logrus.Info("Updating status of Kibana")
+						printUpdateMessage = false
+					}
+					cluster.Status.Visualization.KibanaStatus = kibanaStatus
+					return sdk.Update(cluster)
+				}
 			}
+			return nil
+		})
+		if retryErr != nil {
+			return fmt.Errorf("Failed to update Cluster Logging Kibana status: %v", retryErr)
 		}
 	}
 
@@ -94,8 +105,11 @@ func createOrUpdateKibanaDeployment(cluster *logging.ClusterLogging) (err error)
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateKibanaIfRequired(kibanaDeployment); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateKibanaIfRequired(kibanaDeployment)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 
@@ -111,8 +125,11 @@ func createOrUpdateKibanaDeployment(cluster *logging.ClusterLogging) (err error)
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateKibanaIfRequired(kibanaDeployment); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateKibanaIfRequired(kibanaDeployment)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 
@@ -127,8 +144,11 @@ func createOrUpdateKibanaDeployment(cluster *logging.ClusterLogging) (err error)
 		}
 
 		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			if err = updateKibanaIfRequired(kibanaInfraDeployment); err != nil {
-				return
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				return updateKibanaIfRequired(kibanaInfraDeployment)
+			})
+			if retryErr != nil {
+				return retryErr
 			}
 		}
 	}
@@ -422,6 +442,11 @@ func updateKibanaIfRequired(desired *apps.Deployment) (err error) {
 	current := desired.DeepCopy()
 
 	if err = sdk.Get(current); err != nil {
+		if apierrors.IsNotFound(err) {
+			// the object doesn't exist -- it was likely culled
+			// recreate it on the next time through if necessary
+			return nil
+		}
 		return fmt.Errorf("Failed to get Kibana deployment: %v", err)
 	}
 
@@ -429,7 +454,7 @@ func updateKibanaIfRequired(desired *apps.Deployment) (err error) {
 
 	if different {
 		if err = sdk.Update(current); err != nil {
-			return fmt.Errorf("Failed to update Kibana deployment: %v", err)
+			return err
 		}
 	}
 
@@ -471,7 +496,7 @@ func isDeploymentImageDifference(current *apps.Deployment, desired *apps.Deploym
 	return false
 }
 
-func updateCurrentImages(current *apps.Deployment, desired *apps.Deployment) (*apps.Deployment) {
+func updateCurrentImages(current *apps.Deployment, desired *apps.Deployment) *apps.Deployment {
 
 	containers := current.Spec.Template.Spec.Containers
 

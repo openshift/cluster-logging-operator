@@ -7,16 +7,20 @@ Operator to support OKD cluster logging
 
 Running locally outside an OKD cluster:
 ```
- $ REPO_PREFIX=openshift/ \
-   IMAGE_PREFIX=origin- \
+ $ ELASTICSEARCH_IMAGE=docker.io/openshift/origin-logging-elasticsearch5:latest \
+   FLUENTD_IMAGE=docker.io/openshift/origin-logging-fluentd:latest \
+   KIBANA_IMAGE=docker.io/openshift/origin-logging-kibana5:latest \
+   CURATOR_IMAGE=docker.io/openshift/origin-logging-curator5:latest \
+   OAUTH_PROXY_IMAGE=docker.io/openshift/oauth-proxy:latest \
+   RSYSLOG_IMAGE=docker.io/viaq/rsyslog:latest \
    OPERATOR_NAME=cluster-logging-operator \
    WATCH_NAMESPACE=openshift-logging \
    KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig \
-   go run cmd/cluster-logging-operator/main.go`
+   go run cmd/cluster-logging-operator/main.go
 ```
 ### `make` targets
 Various `make` targets are included to simplify building and deploying the operator
-from the repository root directory, all of which are not listed here.  Hacking and 
+from the repository root directory, all of which are not listed here.  Hacking and
 deploying the operator assumes:
 * a running OKD cluster
 * `oc` binary in your `$PATH`
@@ -30,7 +34,7 @@ The deployment can be optionally modified using any of the following:
 *  `EXCLUSIONS` is list of manifest files that should be ignored (default: '')
 *  `OC` is the openshift binary to use to deploy resources (default: `oc` in path)
 
-**Note:**  If while hacking you find your changes are not being applied, use 
+**Note:**  If while hacking you find your changes are not being applied, use
 `docker images` to see if there is a local version of the `cluster-logging-operator`
 on your machine which may being used by the cluster instead of the one pushed to
 the docker registry.  You may need to delete it (e.g. `docker rmi $IMAGE`)
@@ -56,7 +60,7 @@ $ make deploy-setup
 ## Testing
 
 ### E2E Testing
-This test assumes the cluster-logging component images were already pushed 
+This test assumes the cluster-logging component images were already pushed
 to the OKD cluster and can be found at $docker_registry_ip/openshift/$component
 
 **Note:** This test will fail if the component images are not pushed to the cluster

@@ -29,9 +29,6 @@ mkdir /tmp/_working_dir
 load_manifest ${repo_dir}
 load_manifest ${ELASTICSEARCH_OP_REPO} openshift-logging
 
-# This is necessary for running the operator with go run
-mkdir /tmp/_working_dir
-
 tmpdir=$(mktemp -d)
 pushd ${tmpdir}
   oc adm ca create-signer-cert --cert='ca.crt' --key='ca.key' --serial='ca.serial.txt'

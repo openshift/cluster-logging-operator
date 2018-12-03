@@ -10,12 +10,14 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 	"strings"
 	"time"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var (
@@ -47,18 +49,26 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		}
 
 		fluentdStatus, err := getFluentdCollectorStatus(cluster.Namespace)
-
 		if err != nil {
 			return fmt.Errorf("Failed to get status of Fluentd: %v", err)
 		}
 
-		if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.LogCollection.FluentdStatus) {
-			logrus.Infof("Updating status of Fluentd")
-			cluster.Status.Collection.LogCollection.FluentdStatus = fluentdStatus
-
-			if err = sdk.Update(cluster); err != nil {
-				return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", err)
+		printUpdateMessage := true
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
+				if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.LogCollection.FluentdStatus) {
+					if printUpdateMessage {
+						logrus.Info("Updating status of Fluentd")
+						printUpdateMessage = false
+					}
+					cluster.Status.Collection.LogCollection.FluentdStatus = fluentdStatus
+					return sdk.Update(cluster)
+				}
 			}
+			return nil
+		})
+		if retryErr != nil {
+			return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", retryErr)
 		}
 	}
 	if cluster.Spec.Collection.LogCollection.Type == logging.LogCollectionTypeRsyslog {
@@ -79,18 +89,26 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		}
 
 		rsyslogStatus, err := getRsyslogCollectorStatus(cluster.Namespace)
-
 		if err != nil {
 			return fmt.Errorf("Failed to get status of Rsyslog: %v", err)
 		}
 
-		if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.LogCollection.RsyslogStatus) {
-			logrus.Infof("Updating status of Rsyslog")
-			cluster.Status.Collection.LogCollection.RsyslogStatus = rsyslogStatus
-
-			if err = sdk.Update(cluster); err != nil {
-				return fmt.Errorf("Failed to update Cluster Logging Rsyslog status: %v", err)
+		printUpdateMessage := true
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
+				if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.LogCollection.RsyslogStatus) {
+					if printUpdateMessage {
+						logrus.Info("Updating status of Rsyslog")
+						printUpdateMessage = false
+					}
+					cluster.Status.Collection.LogCollection.RsyslogStatus = rsyslogStatus
+					return sdk.Update(cluster)
+				}
 			}
+			return nil
+		})
+		if retryErr != nil {
+			return fmt.Errorf("Failed to update Cluster Logging Rsyslog status: %v", retryErr)
 		}
 	}
 
@@ -288,8 +306,11 @@ func createOrUpdateFluentdDaemonset(cluster *logging.ClusterLogging) (err error)
 	}
 
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = updateFluentdDaemonsetIfRequired(fluentdDaemonset); err != nil {
-			return
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			return updateFluentdDaemonsetIfRequired(fluentdDaemonset)
+		})
+		if retryErr != nil {
+			return retryErr
 		}
 	}
 
@@ -316,8 +337,11 @@ func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error)
 	}
 
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = updateRsyslogDaemonsetIfRequired(rsyslogDaemonset); err != nil {
-			return
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			return updateRsyslogDaemonsetIfRequired(rsyslogDaemonset)
+		})
+		if retryErr != nil {
+			return retryErr
 		}
 	}
 
@@ -473,6 +497,11 @@ func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current := desired.DeepCopy()
 
 	if err = sdk.Get(current); err != nil {
+		if apierrors.IsNotFound(err) {
+			// the object doesn't exist -- it was likely culled
+			// recreate it on the next time through if necessary
+			return nil
+		}
 		return fmt.Errorf("Failed to get Fluentd daemonset: %v", err)
 	}
 
@@ -484,7 +513,8 @@ func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 		if flushBuffer {
 			current.Spec.Template.Spec.Containers[0].Env = append(current.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{Name: "FLUSH_AT_SHUTDOWN", Value: "True"})
 			if err = sdk.Update(current); err != nil {
-				return fmt.Errorf("Failed to prepare Fluentd daemonset to flush its buffers: %v", err)
+				logrus.Debugf("Failed to prepare Fluentd daemonset to flush its buffers: %v", err)
+				return err
 			}
 
 			// wait for pods to all restart then continue
@@ -494,7 +524,7 @@ func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 		}
 
 		if err = sdk.Update(desired); err != nil {
-			return fmt.Errorf("Failed to update Fluentd daemonset: %v", err)
+			return err
 		}
 	}
 
@@ -505,6 +535,11 @@ func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current := desired.DeepCopy()
 
 	if err = sdk.Get(current); err != nil {
+		if apierrors.IsNotFound(err) {
+			// the object doesn't exist -- it was likely culled
+			// recreate it on the next time through if necessary
+			return nil
+		}
 		return fmt.Errorf("Failed to get Rsyslog daemonset: %v", err)
 	}
 
@@ -512,7 +547,7 @@ func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 
 	if different {
 		if err = sdk.Update(current); err != nil {
-			return fmt.Errorf("Failed to update Rsyslog daemonset: %v", err)
+			return err
 		}
 	}
 
@@ -586,7 +621,7 @@ func isDaemonsetImageDifference(current *apps.DaemonSet, desired *apps.DaemonSet
 	return false
 }
 
-func updateCurrentDaemonsetImages(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet) {
+func updateCurrentDaemonsetImages(current *apps.DaemonSet, desired *apps.DaemonSet) *apps.DaemonSet {
 
 	containers := current.Spec.Template.Spec.Containers
 

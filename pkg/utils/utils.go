@@ -14,6 +14,7 @@ import (
 	batch "k8s.io/api/batch/v1beta1"
 	"k8s.io/api/core/v1"
 	scheduling "k8s.io/api/scheduling/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -447,4 +448,22 @@ func GetClusterDNSDomain() (string, error) {
 
 	// return it
 	return "cluster.local", nil
+}
+
+func DoesClusterLoggingExist(cluster *logging.ClusterLogging) (bool, *logging.ClusterLogging) {
+
+	// this is to avoid an invalid memory address panic
+	if cluster == nil {
+		return false, nil
+	}
+
+	if err := sdk.Get(cluster); err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		logrus.Errorf("Failed to check for ClusterLogging object: %v", err)
+		return false, nil
+	}
+
+	return true, cluster
 }

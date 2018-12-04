@@ -145,7 +145,7 @@ func Service(serviceName string, namespace string, selectorComponent string, ser
 	}
 }
 
-func Route(routeName string, namespace string, hostName string, serviceName string) *route.Route {
+func Route(routeName string, namespace string, hostName string, serviceName string, cafilePath string) *route.Route {
 	return &route.Route{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Route",
@@ -165,6 +165,12 @@ func Route(routeName string, namespace string, hostName string, serviceName stri
 			To: route.RouteTargetReference{
 				Name: serviceName,
 				Kind: "Service",
+			},
+			TLS: &route.TLSConfig{
+				Termination: route.TLSTerminationReencrypt,
+				InsecureEdgeTerminationPolicy: route.InsecureEdgeTerminationPolicyRedirect,
+				CACertificate: string(GetFileContents(cafilePath)),
+				DestinationCACertificate: string(GetFileContents(cafilePath)),
 			},
 		},
 	}

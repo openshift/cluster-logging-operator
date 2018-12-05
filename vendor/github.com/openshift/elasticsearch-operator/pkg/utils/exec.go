@@ -1,4 +1,4 @@
-package k8shandler
+package utils
 
 import (
 	"bytes"
@@ -12,14 +12,14 @@ import (
 )
 
 type ExecConfig struct {
-	pod            *v1.Pod
-	containerName  string
-	command        []string
-	kubeConfigPath string
-	masterURL      string
-	stdOut         bool
-	stdErr         bool
-	tty            bool
+	Pod            *v1.Pod
+	ContainerName  string
+	Command        []string
+	KubeConfigPath string
+	MasterURL      string
+	StdOut         bool
+	StdErr         bool
+	Tty            bool
 }
 
 func PodExec(config *ExecConfig) (*bytes.Buffer, *bytes.Buffer, error) {
@@ -28,7 +28,7 @@ func PodExec(config *ExecConfig) (*bytes.Buffer, *bytes.Buffer, error) {
 		execErr bytes.Buffer
 	)
 
-	esPod := config.pod
+	esPod := config.Pod
 	if esPod.Status.Phase != v1.PodRunning {
 		return nil, nil, fmt.Errorf("elasticsearch pod [%s] found but isn't running", esPod.Name)
 	}
@@ -41,13 +41,13 @@ func PodExec(config *ExecConfig) (*bytes.Buffer, *bytes.Buffer, error) {
 		SubResource("exec")
 
 	execRequest.VersionedParams(&v1.PodExecOptions{
-		Container: config.containerName,
-		Command:   config.command,
-		Stdout:    config.stdOut,
-		Stderr:    config.stdErr,
+		Container: config.ContainerName,
+		Command:   config.Command,
+		Stdout:    config.StdOut,
+		Stderr:    config.StdErr,
 	}, scheme.ParameterCodec)
 
-	restClientConfig, err := clientcmd.BuildConfigFromFlags(config.masterURL, config.kubeConfigPath)
+	restClientConfig, err := clientcmd.BuildConfigFromFlags(config.MasterURL, config.KubeConfigPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error when creating rest client command: %v", err)
 	}
@@ -58,7 +58,7 @@ func PodExec(config *ExecConfig) (*bytes.Buffer, *bytes.Buffer, error) {
 	err = exec.Stream(remotecommand.StreamOptions{
 		Stdout: &execOut,
 		Stderr: &execErr,
-		Tty:    config.tty,
+		Tty:    config.Tty,
 	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("remote execution failed: %v", err)

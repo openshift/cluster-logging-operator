@@ -47,6 +47,7 @@ func createOrUpdateService(serviceName, namespace, clusterName, targetPortName s
 		}
 
 		// TODO: Compare existing service labels, selectors and port
+		// TODO: use retry.RetryOnConflict for Updates
 	}
 	return nil
 }

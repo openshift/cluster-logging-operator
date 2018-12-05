@@ -8,6 +8,7 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,17 +36,17 @@ func CreateOrUpdatePrometheusRules(dpl *v1alpha1.Elasticsearch) error {
 		return err
 	}
 
-	//TODO: handle update
+	//TODO: handle update - use retry.RetryOnConflict
 
 	return nil
 }
 
 func buildPrometheusRule(ruleName string, namespace string, labels map[string]string) (*monitoringv1.PrometheusRule, error) {
-	alertsRuleSpec, err := ruleSpec(lookupEnvWithDefault("ALERTS_FILE_PATH", alertsFilePath))
+	alertsRuleSpec, err := ruleSpec(utils.LookupEnvWithDefault("ALERTS_FILE_PATH", alertsFilePath))
 	if err != nil {
 		return nil, err
 	}
-	rulesRuleSpec, err := ruleSpec(lookupEnvWithDefault("RULES_FILE_PATH", rulesFilePath))
+	rulesRuleSpec, err := ruleSpec(utils.LookupEnvWithDefault("RULES_FILE_PATH", rulesFilePath))
 	if err != nil {
 		return nil, err
 	}

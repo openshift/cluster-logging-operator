@@ -24,7 +24,7 @@ func CreateOrUpdateServiceMonitors(dpl *v1alpha1.Elasticsearch) error {
 		return fmt.Errorf("Failure constructing Elasticsearch ServiceMonitor: %v", err)
 	}
 
-	// TODO: handle update
+	// TODO: handle update - use retry.RetryOnConflict
 
 	return nil
 }

@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 )
 
 const (
@@ -217,15 +218,27 @@ func (cfg *desiredNodeState) CreateOrUpdateNode(owner metav1.OwnerReference) err
 	}
 
 	if diff {
-		dep, err := node.constructNodeResource(cfg, metav1.OwnerReference{})
-		if err != nil {
-			return fmt.Errorf("Could not construct node resource for update: %v", err)
+		nretries := -1
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			nretries++
+			if getErr := node.query(); getErr != nil {
+				logrus.Debugf("Could not get Elasticsearch node resource %v: %v", cfg.DeployName, getErr)
+				return getErr
+			}
+			dep, updateErr := node.constructNodeResource(cfg, metav1.OwnerReference{})
+			if updateErr != nil {
+				return fmt.Errorf("Could not construct node resource %v for update: %v", cfg.DeployName, updateErr)
+			}
+			logrus.Infof("Updating node resource %v", cfg.DeployName)
+			if updateErr = sdk.Update(dep); updateErr != nil {
+				logrus.Debugf("Failed to update node resource %v: %v", cfg.DeployName, updateErr)
+			}
+			return updateErr
+		})
+		if retryErr != nil {
+			return fmt.Errorf("Error: could not update status for Elasticsearch %v after %v retries: %v", cfg.DeployName, nretries, retryErr)
 		}
-		logrus.Infof("Updating node resource %v", cfg.DeployName)
-		err = sdk.Update(dep)
-		if err != nil {
-			return fmt.Errorf("Failed to update node resource: %v", err)
-		}
+		logrus.Debugf("Updated Elasticsearch %v after %v retries", cfg.DeployName, nretries)
 	}
 	return nil
 }
@@ -344,14 +357,6 @@ func (cfg *desiredNodeState) getEnvVars() []v1.EnvVar {
 			Value: heapDumpLocation,
 		},
 		v1.EnvVar{
-			Name:  "NODE_QUORUM",
-			Value: strconv.Itoa(int(cfg.MasterNum/2 + 1)),
-		},
-		v1.EnvVar{
-			Name:  "RECOVER_EXPECTED_NODES",
-			Value: strconv.Itoa(int(cfg.DataNum)),
-		},
-		v1.EnvVar{
 			Name:  "RECOVER_AFTER_TIME",
 			Value: "5m",
 		},
@@ -370,14 +375,6 @@ func (cfg *desiredNodeState) getEnvVars() []v1.EnvVar {
 		v1.EnvVar{
 			Name:  "HAS_DATA",
 			Value: strconv.FormatBool(cfg.isNodeData()),
-		},
-		v1.EnvVar{
-			Name:  "PRIMARY_SHARDS",
-			Value: strconv.Itoa(int(cfg.DataNum)),
-		},
-		v1.EnvVar{
-			Name:  "REPLICA_SHARDS",
-			Value: "0",
 		},
 	}
 }
@@ -468,9 +465,8 @@ func (cfg *desiredNodeState) generateMasterPVC() (v1.PersistentVolumeClaim, bool
 			},
 		}
 		return pvc, true, nil
-	} else {
-		return v1.PersistentVolumeClaim{}, false, fmt.Errorf("Unsupported volume configuration for master in cluster %s", cfg.ClusterName)
 	}
+	return v1.PersistentVolumeClaim{}, false, fmt.Errorf("Unsupported volume configuration for master in cluster %s", cfg.ClusterName)
 }
 
 func (cfg *desiredNodeState) generatePersistentStorage() v1.VolumeSource {

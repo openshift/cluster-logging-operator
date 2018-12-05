@@ -2,7 +2,6 @@ package k8shandler
 
 import (
 	"fmt"
-	"os"
 
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
@@ -23,7 +22,7 @@ const (
 	defaultCPURequest       = "100m"
 	defaultMemoryLimit      = "4Gi"
 	defaultMemoryRequest    = "1Gi"
-	MAX_MASTER_COUNT        = 3
+	maxMasterCount          = 3
 )
 
 // addOwnerRefToObject appends the desired OwnerReference to the object
@@ -317,6 +316,24 @@ func listRunningPods(clusterName, namespace string) (*v1.PodList, error) {
 	return result, nil
 }
 
+func listRunningMasterPods(clusterName, namespace string) (*v1.PodList, error) {
+	pods, err := listRunningPods(clusterName, namespace)
+	if err != nil {
+		return nil, err
+	}
+	var masterPods []v1.Pod
+	for _, pod := range pods.Items {
+		for _, envVar := range pod.Spec.Containers[0].Env {
+			if envVar.Name == "IS_MASTER" && envVar.Value == "true" {
+				masterPods = append(masterPods, pod)
+			}
+		}
+	}
+	result := podList()
+	result.Items = masterPods
+	return result, nil
+}
+
 // getPodNames returns the pod names of the array of pods passed in
 func getPodNames(pods []v1.Pod) []string {
 	var podNames []string
@@ -349,7 +366,7 @@ func getMasterCount(dpl *v1alpha1.Elasticsearch) int32 {
 	masterCount := int32(0)
 
 	for _, node := range dpl.Spec.Nodes {
-		if isNodeMaster(node) {
+		if isNodeMaster(&node) {
 			masterCount = masterCount + node.Replicas
 		}
 	}
@@ -361,7 +378,7 @@ func getDataCount(dpl *v1alpha1.Elasticsearch) int32 {
 	dataCount := int32(0)
 
 	for _, node := range dpl.Spec.Nodes {
-		if isNodeData(node) {
+		if isNodeData(&node) {
 			dataCount = dataCount + node.Replicas
 		}
 	}
@@ -369,7 +386,28 @@ func getDataCount(dpl *v1alpha1.Elasticsearch) int32 {
 	return dataCount
 }
 
-func isNodeMaster(node v1alpha1.ElasticsearchNode) bool {
+func getClientCount(dpl *v1alpha1.Elasticsearch) int32 {
+	clientCount := int32(0)
+
+	for _, node := range dpl.Spec.Nodes {
+		if isNodeClient(&node) {
+			clientCount = clientCount + node.Replicas
+		}
+	}
+
+	return clientCount
+}
+
+func getNodeCount(dpl *v1alpha1.Elasticsearch) int32 {
+	nodeCount := int32(0)
+
+	for _, node := range dpl.Spec.Nodes {
+		nodeCount = nodeCount + node.Replicas
+	}
+	return nodeCount
+}
+
+func isNodeMaster(node *v1alpha1.ElasticsearchNode) bool {
 	for _, role := range node.Roles {
 		if role == v1alpha1.ElasticsearchRoleMaster {
 			return true
@@ -378,7 +416,7 @@ func isNodeMaster(node v1alpha1.ElasticsearchNode) bool {
 	return false
 }
 
-func isNodeData(node v1alpha1.ElasticsearchNode) bool {
+func isNodeData(node *v1alpha1.ElasticsearchNode) bool {
 	for _, role := range node.Roles {
 		if role == v1alpha1.ElasticsearchRoleData {
 			return true
@@ -396,28 +434,24 @@ func isNodeClient(node *v1alpha1.ElasticsearchNode) bool {
 	return false
 }
 
-func isValidMasterCount(cluster *v1alpha1.Elasticsearch) bool {
-
-	if cluster.Spec.ManagementState == v1alpha1.ManagementStateManaged {
-		masterCount := int32(0)
-
-		for _, node := range cluster.Spec.Nodes {
-			if isNodeMaster(node) {
-				masterCount = masterCount + node.Replicas
-			}
-		}
-
-		return (masterCount <= MAX_MASTER_COUNT)
-	} else {
-		return true
-	}
+func isValidMasterCount(dpl *v1alpha1.Elasticsearch) bool {
+	masterCount := int(getMasterCount(dpl))
+	return (masterCount <= maxMasterCount)
 }
 
-func lookupEnvWithDefault(envName, defaultValue string) string {
-	if value, ok := os.LookupEnv(envName); ok {
-		return value
+func isValidDataCount(dpl *v1alpha1.Elasticsearch) bool {
+	dataCount := int(getDataCount(dpl))
+	return dataCount > 0
+}
+
+func isValidConf(dpl *v1alpha1.Elasticsearch) error {
+	if !isValidMasterCount(dpl) {
+		return fmt.Errorf("Invalid master nodes count. Please ensure there are no more than %v total nodes with master roles", maxMasterCount)
 	}
-	return defaultValue
+	if !isValidDataCount(dpl) {
+		return fmt.Errorf("No data nodes requested. Please ensure there is at least 1 node with data roles")
+	}
+	return nil
 }
 
 func GetPodList(namespace string, selector string) (*v1.PodList, error) {

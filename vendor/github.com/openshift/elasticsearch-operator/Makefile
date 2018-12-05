@@ -12,7 +12,7 @@ IMAGE_TAG?=docker tag
 APP_NAME=elasticsearch-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-IMAGE_TAG=quay.io/openshift/$(APP_NAME)
+IMAGE_TAG=openshift/$(APP_NAME)
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 RUN_LOG?=elasticsearch-operator.log
 RUN_PID?=elasticsearch-operator.pid
@@ -88,7 +88,6 @@ deploy-setup:
 .PHONY: deploy-setup
 
 go-run: deploy deploy-example
-	@sudo sysctl -w vm.max_map_count=262144
 	@ALERTS_FILE_PATH=files/prometheus_alerts.yml \
 	RULES_FILE_PATH=files/prometheus_rules.yml \
 	OPERATOR_NAME=elasticsearch-operator WATCH_NAMESPACE=openshift-logging \

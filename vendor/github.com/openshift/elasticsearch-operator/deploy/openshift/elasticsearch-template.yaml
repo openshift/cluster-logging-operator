@@ -26,7 +26,7 @@ objects:
         serviceAccountName: elasticsearch-operator
         containers:
           - name: elasticsearch-operator
-            image: quay.io/openshift/elasticsearch-operator:latest
+            image: openshift/elasticsearch-operator:latest
             imagePullPolicy: IfNotPresent
             command:
             - elasticsearch-operator
@@ -47,7 +47,7 @@ objects:
     namespace: ${NAMESPACE}
   spec:
     nodeSpec:
-      image: quay.io/openshift/logging-elasticsearch5:latest
+      image: openshift/origin-logging-elasticsearch5:latest
     nodes:
       - roles:
         - client

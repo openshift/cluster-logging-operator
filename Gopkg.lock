@@ -184,13 +184,13 @@
     "oauth/v1",
     "route/v1"
   ]
-  revision = "e7dc90658844828191986cb07f3e44eeeba0b03a"
+  revision = "83b2fe56301417028bd52e56edd75768e2ea051c"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "6fe289a717ebe3c8baf495468ab2c4638610e454"
+  revision = "dc8ff1828ae0ddf9bf1ddd6b13cf0b12330157d8"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -253,7 +253,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "aa55a523dc0a8297edf51bb75e8eec13eb3be45d"
+  revision = "1dc9a6cbc91aacc3e8b2d63db4d2e957a5394ac4"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -271,7 +271,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "eb0de9b17e854e9b1ccd9963efafc79862359959"
+  revision = "505ab145d0a99da450461ae2c1a9f6cd10d1f447"
 
 [[projects]]
   branch = "master"
@@ -282,7 +282,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "fae4c4e3ad76c295c3d6d259f898136b4bf833a8"
+  revision = "351d144fa1fc0bd934e2408202be0c29f25e35a0"
 
 [[projects]]
   branch = "master"
@@ -291,7 +291,7 @@
     "unix",
     "windows"
   ]
-  revision = "4ed8d59d0b35e1e29334a206d1b3f38b1e5dfb31"
+  revision = "a5c9d58dba9a56f97aaa86f55e638b718c5a6c42"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -330,7 +330,7 @@
     "internal/fastwalk",
     "internal/gopathwalk"
   ]
-  revision = "c5b00d9557fd23dd2a6d9c2f4c80a31d08cac00d"
+  revision = "22934f0fdb6201c132a3dc6120150dcb1646d74c"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -578,6 +578,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "08a0679432088f6f2e9f9b06543e30f63ae3f6effa336d278de2fb9783447619"
+  inputs-digest = "2599c70f8277423c5ecd4039a0ab779c227e2d6bd33ac66e1c1e7cba7aa48f18"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -39,17 +39,21 @@ oc create clusterrolebinding elasticsearch-operator-prometheus-rolebinding \
     --serviceaccount=${NAMESPACE}:elasticsearch-operator \
     --clusterrole=prometheus-crd-edit ||:
 
-# This is necessary for running the operator with go run
-if [ ! -d /tmp/_working_dir ] ; then
- mkdir /tmp/_working_dir
-fi
+sudo sysctl -w vm.max_map_count=262144
 
-oc create secret generic elasticsearch -n ${NAMESPACE} \
-    --from-file=admin-key=test/files/system.admin.key \
-    --from-file=admin-cert=test/files/system.admin.crt \
-    --from-file=admin-ca=test/files/ca.crt \
-    --from-file=test/files/elasticsearch.crt \
-    --from-file=test/files/logging-es.key \
-    --from-file=test/files/logging-es.crt \
-    --from-file=test/files/elasticsearch.key \
-    ||:
+if [ "${CREATE_ES_SECRET:-true}" = true ] ; then
+  # This is necessary for running the operator with go run
+  if [ ! -d /tmp/_working_dir ] ; then
+    mkdir /tmp/_working_dir
+  fi
+
+  oc create secret generic elasticsearch -n ${NAMESPACE} \
+      --from-file=admin-key=test/files/system.admin.key \
+      --from-file=admin-cert=test/files/system.admin.crt \
+      --from-file=admin-ca=test/files/ca.crt \
+      --from-file=test/files/elasticsearch.crt \
+      --from-file=test/files/logging-es.key \
+      --from-file=test/files/logging-es.crt \
+      --from-file=test/files/elasticsearch.key \
+      ||:
+fi

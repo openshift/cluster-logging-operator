@@ -57,10 +57,11 @@ type LogStoreSpec struct {
 }
 
 type ElasticsearchSpec struct {
-	Resources    v1.ResourceRequirements                 `json:"resources"`
-	Replicas     int32                                   `json:"replicas"`
-	NodeSelector map[string]string                       `json:"nodeSelector,omitempty"`
-	Storage      v1alpha1.ElasticsearchNodeStorageSource `json:"storage"`
+	Resources         v1.ResourceRequirements                 `json:"resources"`
+	Replicas          int32                                   `json:"replicas"`
+	NodeSelector      map[string]string                       `json:"nodeSelector,omitempty"`
+	Storage           v1alpha1.ElasticsearchNodeStorageSource `json:"storage"`
+	ReplicationPolicy v1alpha1.ReplicationPolicyType          `json:"dataReplication"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection

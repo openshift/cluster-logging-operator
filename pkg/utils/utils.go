@@ -167,10 +167,10 @@ func Route(routeName string, namespace string, hostName string, serviceName stri
 				Kind: "Service",
 			},
 			TLS: &route.TLSConfig{
-				Termination: route.TLSTerminationReencrypt,
+				Termination:                   route.TLSTerminationReencrypt,
 				InsecureEdgeTerminationPolicy: route.InsecureEdgeTerminationPolicyRedirect,
-				CACertificate: string(GetFileContents(cafilePath)),
-				DestinationCACertificate: string(GetFileContents(cafilePath)),
+				CACertificate:                 string(GetFileContents(cafilePath)),
+				DestinationCACertificate:      string(GetFileContents(cafilePath)),
 			},
 		},
 	}

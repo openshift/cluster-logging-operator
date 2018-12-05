@@ -27,6 +27,8 @@ deploying the operator assumes:
 * Logged into a cluster with an admin user who has the cluster role of `cluster-admin`
 * Access to a clone of the `openshift/elasticsearch-operator` repository
 * `make` targets are executed from the `openshift/cluster-logging-operator` root directory
+* various other commands such as `imagebuilder` and `operator-sdk` - it is suggested
+  that you use the logging `sdk_setup.sh` script at https://raw.githubusercontent.com/openshift/origin-aggregated-logging/master/hack/sdk_setup.sh
 
 The deployment can be optionally modified using any of the following:
 
@@ -40,9 +42,18 @@ on your machine which may being used by the cluster instead of the one pushed to
 the docker registry.  You may need to delete it (e.g. `docker rmi $IMAGE`)
 
 #### Full Deploy
-Deploys all resources and creates an instance of the `cluster-logging-operator`
+Deploys all resources and creates an instance of the `cluster-logging-operator`, creates
+a ClusterLogging custom resource named `example`, starts
+the Elasticsearch, Kibana, and Fluentd pods running.
 ```
-$ make deploy IMAGE_BUILDER=imagebuilder
+$ make deploy-example
+```
+
+#### Partial Deploy
+Deploys all resources and creates an instance of the `cluster-logging-operator`, but does
+not create the CR nor start the components running.
+```
+$ make deploy
 ```
 
 #### Undeploy
@@ -50,6 +61,7 @@ Removes all `cluster-logging` resources and `openshift-logging` project
 ```
 $ make undeploy
 ```
+
 #### Deploy Prerequisites
 Setup the OKD cluster to support cluster-logging without deploying an instance of
 the `cluster-logging-operator`

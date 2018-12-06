@@ -124,8 +124,9 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 			Spec: v1alpha1.ElasticsearchNodeSpec{
 				Image: utils.GetComponentImage("elasticsearch"),
 			},
-			Nodes:           esNodes,
-			ManagementState: v1alpha1.ManagementStateManaged,
+			Nodes:             esNodes,
+			ManagementState:   v1alpha1.ManagementStateManaged,
+			ReplicationPolicy: logging.Spec.LogStore.ElasticsearchSpec.ReplicationPolicy,
 		},
 	}
 

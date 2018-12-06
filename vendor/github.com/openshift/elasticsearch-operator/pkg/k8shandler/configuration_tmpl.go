@@ -19,11 +19,11 @@ network:
 
 discovery.zen:
   ping.unicast.hosts: {{.EsUnicastHost}}
-  minimum_master_nodes: ${NODE_QUORUM}
+  minimum_master_nodes: {{.NodeQuorum}}
 
 gateway:
-  recover_after_nodes: ${NODE_QUORUM}
-  expected_nodes: ${RECOVER_EXPECTED_NODES}
+  recover_after_nodes: {{.NodeQuorum}}
+  expected_nodes: {{.RecoverExpectedShards}}
   recover_after_time: ${RECOVER_AFTER_TIME}
 
 io.fabric8.elasticsearch.kibana.mapping.app: /usr/share/elasticsearch/index_patterns/com.redhat.viaq-openshift.index-pattern.json
@@ -147,3 +147,8 @@ logger.index_indexing_slowlog.name = index.indexing.slowlog.index
 logger.index_indexing_slowlog.level = trace
 logger.index_indexing_slowlog.appenderRef.index_indexing_slowlog_rolling.ref = index_indexing_slowlog_rolling
 logger.index_indexing_slowlog.additivity = false`
+
+const indexSettingsTmpl = `
+PRIMARY_SHARDS={{.PrimaryShards}}
+REPLICA_SHARDS={{.ReplicaShards}}
+`

@@ -23,6 +23,7 @@ func createOrUpdatePersistentVolumeClaim(pvc v1.PersistentVolumeClaimSpec, newNa
 		}
 	} else {
 		logrus.Infof("Reusing existing PVC: %s", newName)
+		// TODO for updates, don't forget to use retry.RetryOnConflict
 	}
 	return nil
 }

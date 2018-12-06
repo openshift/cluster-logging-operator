@@ -7,11 +7,13 @@ import (
 
 // esYmlStruct is used to render esYmlTmpl to a proper elasticsearch.yml format
 type esYmlStruct struct {
-	KibanaIndexMode string
-	EsUnicastHost   string
+	KibanaIndexMode       string
+	EsUnicastHost         string
+	NodeQuorum            string
+	RecoverExpectedShards string
 }
 
-func renderEsYml(w io.Writer, kibanaIndexMode, esUnicastHost string) error {
+func renderEsYml(w io.Writer, kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards string) error {
 	t := template.New("elasticsearch.yml")
 	config := esYmlTmpl
 	t, err := t.Parse(config)
@@ -19,8 +21,10 @@ func renderEsYml(w io.Writer, kibanaIndexMode, esUnicastHost string) error {
 		return err
 	}
 	esy := esYmlStruct{
-		KibanaIndexMode: kibanaIndexMode,
-		EsUnicastHost:   esUnicastHost,
+		KibanaIndexMode:       kibanaIndexMode,
+		EsUnicastHost:         esUnicastHost,
+		NodeQuorum:            nodeQuorum,
+		RecoverExpectedShards: recoverExpectedShards,
 	}
 
 	return t.Execute(w, esy)
@@ -42,4 +46,24 @@ func renderLog4j2Properties(w io.Writer, rootLogger string) error {
 	}
 
 	return t.Execute(w, log4jProp)
+}
+
+type indexSettingsStruct struct {
+	PrimaryShards string
+	ReplicaShards string
+}
+
+func renderIndexSettings(w io.Writer, primaryShardsCount, replicaShardsCount string) error {
+	t := template.New("index_settings")
+	t, err := t.Parse(indexSettingsTmpl)
+	if err != nil {
+		return err
+	}
+
+	indexSettings := indexSettingsStruct{
+		PrimaryShards: primaryShardsCount,
+		ReplicaShards: replicaShardsCount,
+	}
+
+	return t.Execute(w, indexSettings)
 }

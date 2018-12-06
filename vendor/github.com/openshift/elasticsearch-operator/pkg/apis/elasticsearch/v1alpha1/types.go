@@ -30,13 +30,21 @@ type Elasticsearch struct {
 	Status            ElasticsearchStatus `json:"status,omitempty"`
 }
 
+type ReplicationPolicyType string
+
+const (
+	FullReplication    ReplicationPolicyType = "FullReplication"
+	PartialReplication ReplicationPolicyType = "PartialReplication"
+	NoReplication      ReplicationPolicyType = "NoReplication"
+)
+
 // ElasticsearchSpec struct represents the Spec of Elasticsearch cluster CRD
 type ElasticsearchSpec struct {
 	// managementState indicates whether and how the operator should manage the component
-	ManagementState ManagementState `json:"managementState"`
-
-	Nodes []ElasticsearchNode   `json:"nodes"`
-	Spec  ElasticsearchNodeSpec `json:"nodeSpec"`
+	ManagementState   ManagementState       `json:"managementState"`
+	ReplicationPolicy ReplicationPolicyType `json:"dataReplication"`
+	Nodes             []ElasticsearchNode   `json:"nodes"`
+	Spec              ElasticsearchNodeSpec `json:"nodeSpec"`
 }
 
 // ElasticsearchNode struct represents individual node in Elasticsearch cluster
@@ -111,10 +119,10 @@ const (
 
 // ElasticsearchStatus represents the status of Elasticsearch cluster
 type ElasticsearchStatus struct {
-	// Fill me
 	Nodes         []ElasticsearchNodeStatus             `json:"nodes"`
 	ClusterHealth string                                `json:"clusterHealth"`
 	Pods          map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
+	Conditions    []ClusterCondition                    `json:"conditions"`
 }
 
 type PodStateMap map[PodStateType][]string
@@ -135,4 +143,46 @@ const (
 	ManagementStateManaged ManagementState = "Managed"
 	// Unmanaged means that the operator will not take any action related to the component
 	ManagementStateUnmanaged ManagementState = "Unmanaged"
+)
+
+// ClusterCondition contains details for the current condition of this elasticsearch cluster.
+type ClusterCondition struct {
+	// Type is the type of the condition.
+	Type ClusterConditionType `json:"type"`
+	// Status is the status of the condition.
+	Status ConditionStatus `json:"status"`
+	// Last time the condition transitioned from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+	// Unique, one-word, CamelCase reason for the condition's last transition.
+	Reason string `json:"reason,omitempty" protobuf:"bytes,5,opt,name=reason"`
+	// Human-readable message indicating details about last transition.
+	Message string `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
+}
+
+// ClusterConditionType is a valid value for ClusterCondition.Type
+type ClusterConditionType string
+
+// These are valid conditions for elasticsearch node
+const (
+	UpdatingSettings ClusterConditionType = "UpdatingSettings"
+	ScalingUp        ClusterConditionType = "ScalingUp"
+	ScalingDown      ClusterConditionType = "ScalingDown"
+	Restarting       ClusterConditionType = "Restarting"
+)
+
+type ConditionStatus string
+
+const (
+	ConditionTrue    ConditionStatus = "True"
+	ConditionFalse   ConditionStatus = "False"
+	ConditionUnknown ConditionStatus = "Unknown"
+)
+
+type ClusterEvent string
+
+const (
+	ScaledDown            ClusterEvent = "ScaledDown"
+	ScaledUp              ClusterEvent = "ScaledUp"
+	UpdateClusterSettings ClusterEvent = "UpdateClusterSettings"
+	NoEvent               ClusterEvent = "NoEvent"
 )

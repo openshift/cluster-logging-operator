@@ -12,6 +12,7 @@ spec:
       replicas: 1
       storage:
         emptyDir: {}
+      dataReplication: "NoReplication"
   visualization:
     type: "kibana"
     kibana:

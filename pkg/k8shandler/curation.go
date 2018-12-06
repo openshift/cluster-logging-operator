@@ -132,16 +132,16 @@ func getCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elas
 	curatorContainer := utils.Container("curator", v1.PullIfNotPresent, logging.Spec.Curation.CuratorSpec.Resources)
 
 	curatorContainer.Env = []v1.EnvVar{
-		{Name: "K8S_HOST_URL", Value: ""},
+		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc.cluster.local"},
 		{Name: "ES_HOST", Value: elasticsearchHost},
 		{Name: "ES_PORT", Value: "9200"},
-		{Name: "ES_CLIENT_CERT", Value: ""},
-		{Name: "ES_CLIENT_KEY", Value: ""},
-		{Name: "ES_CA", Value: ""},
-		{Name: "CURATOR_DEFAULT_DAYS", Value: ""},
-		{Name: "CURATOR_SCRIPT_LOG_LEVEL", Value: ""},
-		{Name: "CURATOR_LOG_LEVEL", Value: ""},
-		{Name: "CURATOR_TIMEOUT", Value: ""},
+		{Name: "ES_CLIENT_CERT", Value: "/etc/curator/keys/cert"},
+		{Name: "ES_CLIENT_KEY", Value: "/etc/curator/keys/key"},
+		{Name: "ES_CA", Value: "/etc/curator/keys/ca"},
+		{Name: "CURATOR_DEFAULT_DAYS", Value: "30"},
+		{Name: "CURATOR_SCRIPT_LOG_LEVEL", Value: "INFO"},
+		{Name: "CURATOR_LOG_LEVEL", Value: "ERROR"},
+		{Name: "CURATOR_TIMEOUT", Value: "300"},
 	}
 
 	curatorContainer.VolumeMounts = []v1.VolumeMount{

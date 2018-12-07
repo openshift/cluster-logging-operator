@@ -35,6 +35,19 @@ The deployment can be optionally modified using any of the following:
 *  `IMAGE_BUILDER` is the command to build the container image (default: `docker build`)
 *  `EXCLUSIONS` is list of manifest files that should be ignored (default: '')
 *  `OC` is the openshift binary to use to deploy resources (default: `oc` in path)
+*  `REMOTE_REGISTRY` Set to `true` if you are running the cluster on a different machine
+    than the one you are developing on. For example, if you are running a cluster in a
+    local libvirt or minishift environment, you may want to build the image on the host
+    and push them to the cluster running in the VM.
+    You will need a username with a password (i.e. not the default `system:admin` user).
+    If your cluster was deployed with the `allow_all` identity provider, you can create
+    a user like this: `oc login --username=admin --password=admin`, then assign it rights:
+    `oc login --username=system:admin`
+    `oc adm policy add-cluster-role-to-user cluster-admin admin`
+    If you used the new `openshift-installer`, it created a user named `kubeadmin`
+    with the password in the file `installer/auth/kubeadmin_password`.
+    `oc login --username=kubeadmin --password=$( cat ../installer/auth/kubeadmin_password )`
+    The user should already have `cluster-admin` rights.
 
 **Note:**  If while hacking you find your changes are not being applied, use
 `docker images` to see if there is a local version of the `cluster-logging-operator`
@@ -46,28 +59,37 @@ Deploys all resources and creates an instance of the `cluster-logging-operator`,
 a ClusterLogging custom resource named `example`, starts
 the Elasticsearch, Kibana, and Fluentd pods running.
 ```
-$ make deploy-example
+$ [REMOTE_REGISTRY=true] make deploy-example
 ```
 
 #### Partial Deploy
 Deploys all resources and creates an instance of the `cluster-logging-operator`, but does
 not create the CR nor start the components running.
 ```
-$ make deploy
+$ [REMOTE_REGISTRY=true] make deploy
 ```
 
 #### Undeploy
 Removes all `cluster-logging` resources and `openshift-logging` project
 ```
-$ make undeploy
+$ [REMOTE_REGISTRY=true] make undeploy
 ```
 
 #### Deploy Prerequisites
 Setup the OKD cluster to support cluster-logging without deploying an instance of
 the `cluster-logging-operator`
 ```
-$ make deploy-setup
+$ [REMOTE_REGISTRY=true] make deploy-setup
 ```
+
+#### Rebuild and deploy image
+If you already have a remote cluster, and you just want to rebuild and redeploy the image
+to the remote cluster.  Use `make image` instead if you only want to build the image
+but not push it.
+```
+$ REMOTE_REGISTRY=true make deploy-image
+```
+
 
 ## Testing
 

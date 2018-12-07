@@ -7,14 +7,14 @@ BUILD_GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
 IMAGE_BUILDER_OPTS=
 IMAGE_BUILDER?=imagebuilder
 IMAGE_BUILD=$(IMAGE_BUILDER)
-IMAGE_TAG_CMD?=docker tag
+export IMAGE_TAG_CMD?=docker tag
 
-APP_NAME=cluster-logging-operator
+export APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-IMAGE_TAG=openshift/$(APP_NAME)
+export IMAGE_TAG=openshift/$(APP_NAME):latest
 MAIN_PKG=cmd/$(APP_NAME)/main.go
-NAMESPACE?=openshift-logging
+export NAMESPACE?=openshift-logging
 
 OC?=oc
 
@@ -72,16 +72,16 @@ gendeepcopy: operator-sdk
 deploy-setup:
 	EXCLUSIONS="01-namespace.yaml 10-service-monitor-fluentd.yaml 05-deployment.yaml image-references" hack/deploy-setup.sh
 
-deploy-image:
+deploy-image: image
 	hack/deploy-image.sh
 
-deploy: deploy-setup image deploy-image
+deploy: deploy-setup deploy-image
 	hack/deploy.sh
 
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-e2e: image deploy-image operator-sdk
+test-e2e: deploy-image operator-sdk
 	hack/test-e2e.sh
 
 undeploy:

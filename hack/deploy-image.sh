@@ -11,13 +11,12 @@ source "$(dirname $0)/common"
 IMAGE_TAG_CMD=${IMAGE_TAG_CMD:-docker tag}
 LOCAL_PORT=${LOCAL_PORT:-5000}
 
-registry_port=$(oc get service docker-registry -n default -o jsonpath={.spec.ports[0].port})
-tag="127.0.0.1:${registry_port}/openshift/cluster-logging-operator:latest"
+tag="127.0.0.1:${registry_port}/$IMAGE_TAG"
 
-${IMAGE_TAG_CMD} openshift/cluster-logging-operator:latest ${tag}
+${IMAGE_TAG_CMD} $IMAGE_TAG ${tag}
 
-echo "Setting up port-forwarding to remote docker-registry..."
-oc port-forward service/docker-registry -n default ${LOCAL_PORT}:${registry_port} &
+echo "Setting up port-forwarding to remote $registry_svc ..."
+oc port-forward $port_fwd_obj -n $registry_namespace ${LOCAL_PORT}:${registry_port} &
 forwarding_pid=$!
 
 trap "kill -15 ${forwarding_pid}" EXIT

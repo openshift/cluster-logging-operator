@@ -13,7 +13,6 @@ import (
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	batchv1 "k8s.io/api/batch/v1"
 	batch "k8s.io/api/batch/v1beta1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -255,7 +254,7 @@ func updateCuratorIfRequired(desired *batch.CronJob) (err error) {
 	current := desired.DeepCopy()
 
 	if err = sdk.Get(current); err != nil {
-		if apierrors.IsNotFound(err) {
+		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
 			// recreate it on the next time through if necessary
 			return nil

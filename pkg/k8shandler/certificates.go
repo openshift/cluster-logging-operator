@@ -10,11 +10,63 @@ import (
 	"path"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/util/retry"
 
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	k8sutil "github.com/operator-framework/operator-sdk/pkg/util/k8sutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// golang doesn't allow for const maps
+var secretCertificates = map[string]map[string]string{
+	"master-certs": map[string]string{
+		"masterca":  "ca.crt",
+		"masterkey": "ca.key",
+	},
+	"elasticsearch": map[string]string{
+		"elasticsearch.key": "elasticsearch.key",
+		"elasticsearch.crt": "elasticsearch.crt",
+		"logging-es.key":    "logging-es.key",
+		"logging-es.crt":    "logging-es.crt",
+		"admin-key":         "system.admin.key",
+		"admin-cert":        "system.admin.crt",
+		"admin-ca":          "ca.crt",
+	},
+	"kibana": map[string]string{
+		"ca":   "ca.crt",
+		"key":  "system.logging.kibana.key",
+		"cert": "system.logging.kibana.crt",
+	},
+	"kibana-proxy": map[string]string{
+		"server-key":  "kibana-internal.key",
+		"server-cert": "kibana-internal.crt",
+	},
+	"curator": map[string]string{
+		"ca":       "ca.crt",
+		"key":      "system.logging.curator.key",
+		"cert":     "system.logging.curator.crt",
+		"ops-ca":   "ca.crt",
+		"ops-key":  "system.logging.curator.key",
+		"ops-cert": "system.logging.curator.crt",
+	},
+	"fluentd": map[string]string{
+		"app-ca":     "ca.crt",
+		"app-key":    "system.logging.fluentd.key",
+		"app-cert":   "system.logging.fluentd.crt",
+		"infra-ca":   "ca.crt",
+		"infra-key":  "system.logging.fluentd.key",
+		"infra-cert": "system.logging.fluentd.crt",
+	},
+	"rsyslog": map[string]string{
+		"app-ca":     "ca.crt",
+		"app-key":    "system.logging.rsyslog.key",
+		"app-cert":   "system.logging.rsyslog.crt",
+		"infra-ca":   "ca.crt",
+		"infra-key":  "system.logging.rsyslog.key",
+		"infra-cert": "system.logging.rsyslog.crt",
+	},
+}
 
 func extractSecretToFile(namespace string, secretName string, key string, toFile string) (err error) {
 	secret := &v1.Secret{
@@ -28,6 +80,9 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 		},
 	}
 	if err = sdk.Get(secret); err != nil {
+		if errors.IsNotFound(err) {
+			return err
+		}
 		return fmt.Errorf("Unable to extract secret to file: %v", secretName, err)
 	}
 
@@ -45,27 +100,69 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 	return nil
 }
 
-func extractMasterCertificate(namespace string, secretName string) (err error) {
+func writeSecret(logging *v1alpha1.ClusterLogging) (err error) {
 
-	if err = extractSecretToFile(namespace, secretName, "masterca", "ca.crt"); err != nil {
-		return
-	}
+	secret := utils.Secret(
+		"master-certs",
+		logging.Namespace,
+		map[string][]byte{
+			"masterca":  utils.GetFileContents("/tmp/_working_dir/ca.crt"),
+			"masterkey": utils.GetFileContents("/tmp/_working_dir/ca.key"),
+		})
 
-	if err = extractSecretToFile(namespace, secretName, "masterkey", "ca.key"); err != nil {
-		return
+	utils.AddOwnerRefToObject(secret, utils.AsOwner(logging))
+
+	err = sdk.Create(secret)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure constructing master-certs secret: %v", err)
+		}
+
+		current := secret.DeepCopy()
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err = sdk.Get(current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get master-certs secret: %v", err)
+			}
+
+			current.Data = secret.Data
+			if err = sdk.Update(current); err != nil {
+				return err
+			}
+			return nil
+		})
+		if retryErr != nil {
+			return retryErr
+		}
 	}
 
 	return nil
 }
 
-func extractKibanaInternalCertificate(namespace string, secretName string) (err error) {
+func readSecrets(logging *v1alpha1.ClusterLogging) (err error) {
 
-	if err = extractSecretToFile(namespace, secretName, "kibanacert", "kibana-internal.crt"); err != nil {
-		return
+	for secretName, certMap := range secretCertificates {
+		if err = extractCertificates(logging.Namespace, secretName, certMap); err != nil {
+			return
+		}
 	}
 
-	if err = extractSecretToFile(namespace, secretName, "kibanakey", "kibana-internal.key"); err != nil {
-		return
+	return nil
+}
+
+func extractCertificates(namespace, secretName string, certs map[string]string) (err error) {
+
+	for secretKey, certPath := range certs {
+		if err = extractSecretToFile(namespace, secretName, secretKey, certPath); err != nil {
+			if errors.IsNotFound(err) {
+				return nil
+			}
+			return
+		}
 	}
 
 	return nil
@@ -79,11 +176,7 @@ func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) (err error) {
 		return fmt.Errorf("Failed to get watch namespace: %v", err)
 	}
 
-	if err = extractMasterCertificate(namespace, "logging-master-ca"); err != nil {
-		return
-	}
-
-	if err = extractKibanaInternalCertificate(namespace, "logging-master-ca"); err != nil {
+	if err = readSecrets(logging); err != nil {
 		return
 	}
 
@@ -93,6 +186,10 @@ func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) (err error) {
 	)
 	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
+	}
+
+	if err = writeSecret(logging); err != nil {
+		return
 	}
 
 	return nil

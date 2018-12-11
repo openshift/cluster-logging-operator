@@ -33,15 +33,6 @@ mkdir /tmp/_working_dir
 load_manifest ${repo_dir}
 CREATE_ES_SECRET=false NAMESPACE=openshift-logging make -C ${ELASTICSEARCH_OP_REPO} deploy-setup
 
-tmpdir=$(mktemp -d)
-pushd ${tmpdir}
-  oc adm ca create-signer-cert --cert='ca.crt' --key='ca.key' --serial='ca.serial.txt'
-  oc adm ca create-server-cert --cert='kibana-internal.crt' --key='kibana-internal.key' \
-      --hostnames='kibana,kibana-infra' --signer-cert='ca.crt' --signer-key='ca.key' --signer-serial='ca.serial.txt'
-  oc create -n openshift-logging secret generic logging-master-ca --from-file=masterca=ca.crt --from-file=masterkey=ca.key --from-file=kibanacert=kibana-internal.crt \
-      --from-file=kibanakey=kibana-internal.key
-popd
-
 oc adm policy add-scc-to-user privileged -z rsyslog -n openshift-logging
 oc adm policy add-cluster-role-to-user cluster-reader -z rsyslog -n openshift-logging
 oc adm policy add-scc-to-user privileged -z fluentd -n openshift-logging

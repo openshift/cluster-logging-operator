@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"time"
+	"fmt"
 
 	route "github.com/openshift/api/route/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -145,7 +146,7 @@ func Service(serviceName string, namespace string, selectorComponent string, ser
 	}
 }
 
-func Route(routeName string, namespace string, hostName string, serviceName string, cafilePath string) *route.Route {
+func Route(routeName string, namespace string, serviceName string, cafilePath string) *route.Route {
 	return &route.Route{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Route",
@@ -161,7 +162,6 @@ func Route(routeName string, namespace string, hostName string, serviceName stri
 			},
 		},
 		Spec: route.RouteSpec{
-			Host: hostName,
 			To: route.RouteTargetReference{
 				Name: serviceName,
 				Kind: "Service",
@@ -440,6 +440,34 @@ func GetDaemonSetList(namespace string, selector string) (*apps.DaemonSetList, e
 	)
 
 	return list, err
+}
+
+func GetRouteURL(routeName, namespace string) (string, error) {
+
+	foundRoute := &route.Route{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Route",
+			APIVersion: route.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      routeName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"component":     "support",
+				"logging-infra": "support",
+				"provider":      "openshift",
+			},
+		},
+	}
+
+	if err := sdk.Get(foundRoute); err != nil {
+		if !apierrors.IsNotFound(err) {
+			logrus.Errorf("Failed to check for ClusterLogging object: %v", err)
+		}
+		return "", err
+	}
+
+	return fmt.Sprintf("%s%s", "https://", foundRoute.Spec.Host), nil
 }
 
 // TODO: expand these to include the default DNS from the top level config

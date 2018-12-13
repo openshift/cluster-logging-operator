@@ -158,9 +158,36 @@ func createOrUpdateKibanaDeployment(cluster *logging.ClusterLogging) (err error)
 
 func createOrUpdateOauthClient(logging *logging.ClusterLogging, oauthSecret string) (err error) {
 
-	clusterDomain, err := utils.GetClusterDNSDomain()
 	if err != nil {
 		return nil
+	}
+
+	redirectURIs := []string{}
+
+	if utils.AllInOne(logging) {
+		kibanaURL, err := utils.GetRouteURL("kibana", logging.Namespace)
+		if err != nil {
+			return err
+		}
+
+		redirectURIs = []string{
+			kibanaURL,
+		}
+	} else {
+		kibanaAppURL, err := utils.GetRouteURL("kibana-app", logging.Namespace)
+		if err != nil {
+			return err
+		}
+
+		kibanaInfraURL, err := utils.GetRouteURL("kibana-infra", logging.Namespace)
+		if err != nil {
+			return err
+		}
+
+		redirectURIs = []string{
+			kibanaAppURL,
+			kibanaInfraURL,
+		}
 	}
 
 	oauthClient := &oauth.OAuthClient{
@@ -176,11 +203,7 @@ func createOrUpdateOauthClient(logging *logging.ClusterLogging, oauthSecret stri
 			},
 		},
 		Secret: oauthSecret,
-		RedirectURIs: []string{
-			fmt.Sprintf("%s.%s", "https://kibana", clusterDomain),
-			fmt.Sprintf("%s.%s", "https://kibana-app", clusterDomain),
-			fmt.Sprintf("%s.%s", "https://kibana-infra", clusterDomain),
-		},
+		RedirectURIs: redirectURIs,
 		ScopeRestrictions: []oauth.ScopeRestriction{
 			oauth.ScopeRestriction{
 				ExactValues: []string{
@@ -191,6 +214,8 @@ func createOrUpdateOauthClient(logging *logging.ClusterLogging, oauthSecret stri
 			},
 		},
 	}
+
+	utils.AddOwnerRefToObject(oauthClient, utils.AsOwner(logging))
 
 	err = sdk.Create(oauthClient)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -207,7 +232,6 @@ func createOrUpdateKibanaRoute(logging *logging.ClusterLogging) error {
 			"kibana",
 			logging.Namespace,
 			"kibana",
-			"kibana",
 			"/tmp/_working_dir/ca.crt",
 		)
 
@@ -218,7 +242,12 @@ func createOrUpdateKibanaRoute(logging *logging.ClusterLogging) error {
 			return fmt.Errorf("Failure creating Kibana route: %v", err)
 		}
 
-		sharedConfig := createSharedConfig(logging, "https://kibana", "https://kibana")
+		kibanaURL, err := utils.GetRouteURL("kibana", logging.Namespace)
+		if err != nil {
+			return err
+		}
+
+		sharedConfig := createSharedConfig(logging, kibanaURL, kibanaURL)
 		utils.AddOwnerRefToObject(sharedConfig, utils.AsOwner(logging))
 
 		err = sdk.Create(sharedConfig)
@@ -229,7 +258,6 @@ func createOrUpdateKibanaRoute(logging *logging.ClusterLogging) error {
 		kibanaRoute := utils.Route(
 			"kibana-app",
 			logging.Namespace,
-			"kibana-app",
 			"kibana-app",
 			"/tmp/_working_dir/ca.crt",
 		)
@@ -245,7 +273,6 @@ func createOrUpdateKibanaRoute(logging *logging.ClusterLogging) error {
 			"kibana-infra",
 			logging.Namespace,
 			"kibana-infra",
-			"kibana-infra",
 			"/tmp/_working_dir/ca.crt",
 		)
 
@@ -256,7 +283,17 @@ func createOrUpdateKibanaRoute(logging *logging.ClusterLogging) error {
 			return fmt.Errorf("Failure creating Kibana Infra route: %v", err)
 		}
 
-		sharedConfig := createSharedConfig(logging, "https://kibana-app", "https://kibana-infra")
+		kibanaAppURL, err := utils.GetRouteURL("kibana-app", logging.Namespace)
+		if err != nil {
+			return err
+		}
+
+		kibanaInfraURL, err := utils.GetRouteURL("kibana-infra", logging.Namespace)
+		if err != nil {
+			return err
+		}
+
+		sharedConfig := createSharedConfig(logging, kibanaAppURL, kibanaInfraURL)
 		utils.AddOwnerRefToObject(sharedConfig, utils.AsOwner(logging))
 
 		err = sdk.Create(sharedConfig)

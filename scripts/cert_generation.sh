@@ -4,6 +4,8 @@ WORKING_DIR=${WORKING_DIR:-/tmp/_working_dir}
 NAMESPACE=${NAMESPACE:-openshift-logging}
 CA_PATH=${CA_PATH:-$WORKING_DIR/ca.crt}
 
+REGENERATE_NEEDED=0
+
 function init_cert_files() {
 
   if [ ! -f ${WORKING_DIR}/ca.db ]; then
@@ -12,6 +14,21 @@ function init_cert_files() {
 
   if [ ! -f ${WORKING_DIR}/ca.serial.txt ]; then
     echo 00 > ${WORKING_DIR}/ca.serial.txt
+  fi
+}
+
+function generate_signing_ca() {
+  if [ ! -f ${WORKING_DIR}/ca.crt ] || [ ! -f ${WORKING_DIR}/ca.key ] || ! openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/ca.crt; then
+    openssl req -x509 \
+                -new \
+                -newkey rsa:2048 \
+                -keyout ${WORKING_DIR}/ca.key \
+                -nodes \
+                -days 1825 \
+                -out ${WORKING_DIR}/ca.crt \
+                -subj "/CN=openshift-cluster-logging-signer"
+
+    REGENERATE_NEEDED=1
   fi
 }
 
@@ -188,7 +205,7 @@ function generate_certs() {
   local component=$1
   local extensions=${2:-}
 
-  if [ ! -f ${WORKING_DIR}/${component}.crt ] || ! openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/${component}.crt; then
+  if [ $REGENERATE_NEEDED = 1 ] || [ ! -f ${WORKING_DIR}/${component}.crt ] || ! openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/${component}.crt; then
     generate_cert_config $component $extensions
     generate_request $component
     sign_cert $component
@@ -197,13 +214,28 @@ function generate_certs() {
 
 function generate_extensions() {
   local add_oid=$1
+  local add_localhost=$2
+  shift
   shift
   local cert_names=$@
 
-  extension_names="IP.1:127.0.0.1,DNS.1:localhost"
-  extension_index=2
+  extension_names=""
+  extension_index=1
+  local use_comma=0
+
+  if [ "$add_localhost" == "true" ]; then
+    extension_names="IP.1:127.0.0.1,DNS.1:localhost"
+    extension_index=2
+    use_comma=1
+  fi
+
   for name in ${cert_names//,/}; do
-    extension_names="${extension_names},DNS.${extension_index}:${name}"
+    if [ $use_comma = 1 ]; then
+      extension_names="${extension_names},DNS.${extension_index}:${name}"
+    else
+      extension_names="DNS.${extension_index}:${name}"
+      use_comma=1
+    fi
     extension_index=$(( extension_index + 1 ))
   done
 
@@ -218,6 +250,7 @@ if [ ! -d $WORKING_DIR ]; then
   mkdir -p $WORKING_DIR
 fi
 
+generate_signing_ca
 init_cert_files
 create_signing_conf
 
@@ -228,5 +261,6 @@ generate_certs 'system.logging.curator'
 generate_certs 'system.admin'
 
 # TODO: get es SAN DNS, IP values from es service names
-generate_certs 'elasticsearch' "$(generate_extensions true elasticsearch elasticsearch-infra elasticsearch-apps)"
-generate_certs 'logging-es' "$(generate_extensions false {elasticsearch,elasticsearch-infra,elasticsearch-apps}{,-cluster}{,.${NAMESPACE}.svc.cluster.local})"
+generate_certs 'kibana-internal' "$(generate_extensions false false kibana kibana-infra kibana-apps)"
+generate_certs 'elasticsearch' "$(generate_extensions true true elasticsearch elasticsearch-infra elasticsearch-apps)"
+generate_certs 'logging-es' "$(generate_extensions false true {elasticsearch,elasticsearch-infra,elasticsearch-apps}{,-cluster}{,.${NAMESPACE}.svc.cluster.local})"

@@ -155,11 +155,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		collectionSpec = logging.CollectionSpec{
 			LogCollection: logging.LogCollectionSpec{
 				Type: logging.LogCollectionTypeFluentd,
-				FluentdSpec: logging.FluentdSpec{
-					NodeSelector: map[string]string{
-						"node-role.kubernetes.io/infra": "true",
-					},
-				},
+				FluentdSpec: logging.FluentdSpec{},
 			},
 		}
 	}
@@ -167,11 +163,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		collectionSpec = logging.CollectionSpec{
 			LogCollection: logging.LogCollectionSpec{
 				Type: logging.LogCollectionTypeRsyslog,
-				RsyslogSpec: logging.RsyslogSpec{
-					NodeSelector: map[string]string{
-						"node-role.kubernetes.io/infra": "true",
-					},
-				},
+				RsyslogSpec: logging.RsyslogSpec{},
 			},
 		}
 	}

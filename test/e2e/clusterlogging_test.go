@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/api/core/v1"
@@ -54,31 +53,6 @@ func TestClusterLogging(t *testing.T) {
 		time.Sleep(time.Minute * 1) // wait for objects to be deleted/cleaned up
 		t.Run("Cluster with rsyslog", ClusterLoggingClusterRsyslog)
 	})
-}
-
-func createRequiredSecret(f *framework.Framework, ctx *framework.TestCtx) error {
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		return fmt.Errorf("Could not get namespace: %v", err)
-	}
-
-	masterCASecret := utils.Secret(
-		"logging-master-ca",
-		namespace,
-		map[string][]byte{
-			"masterca":   utils.GetFileContents("test/files/ca.crt"),
-			"masterkey":  utils.GetFileContents("test/files/ca.key"),
-			"kibanacert": utils.GetFileContents("test/files/kibana-internal.crt"),
-			"kibanakey":  utils.GetFileContents("test/files/kibana-internal.key"),
-		},
-	)
-
-	err = f.Client.Create(goctx.TODO(), masterCASecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func createRequiredClusterRoleAndBinding(f *framework.Framework, ctx *framework.TestCtx) error {
@@ -155,11 +129,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		collectionSpec = logging.CollectionSpec{
 			LogCollection: logging.LogCollectionSpec{
 				Type: logging.LogCollectionTypeFluentd,
-				FluentdSpec: logging.FluentdSpec{
-					NodeSelector: map[string]string{
-						"node-role.kubernetes.io/infra": "true",
-					},
-				},
+				FluentdSpec: logging.FluentdSpec{},
 			},
 		}
 	}
@@ -167,11 +137,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		collectionSpec = logging.CollectionSpec{
 			LogCollection: logging.LogCollectionSpec{
 				Type: logging.LogCollectionTypeRsyslog,
-				RsyslogSpec: logging.RsyslogSpec{
-					NodeSelector: map[string]string{
-						"node-role.kubernetes.io/infra": "true",
-					},
-				},
+				RsyslogSpec: logging.RsyslogSpec{},
 			},
 		}
 	}
@@ -264,10 +230,6 @@ func clusterLoggingClusterCommon(t *testing.T, ctx *framework.TestCtx) error {
 	// wait for cluster-logging-operator to be ready
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "cluster-logging-operator", 1, retryInterval, timeout)
 	if err != nil {
-		return err
-	}
-
-	if err = createRequiredSecret(f, ctx); err != nil {
 		return err
 	}
 

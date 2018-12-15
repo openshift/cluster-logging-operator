@@ -81,7 +81,7 @@ deploy: deploy-setup deploy-image
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-e2e: deploy-image operator-sdk
+test-e2e: deploy-image
 	hack/test-e2e.sh
 
 undeploy:

@@ -37,8 +37,3 @@ oc adm policy add-scc-to-user privileged -z rsyslog -n openshift-logging
 oc adm policy add-cluster-role-to-user cluster-reader -z rsyslog -n openshift-logging
 oc adm policy add-scc-to-user privileged -z fluentd -n openshift-logging
 oc adm policy add-cluster-role-to-user cluster-reader -z fluentd -n openshift-logging
-if [ "${USE_RSYSLOG:-false}" = true ] ; then
-  oc label node --all logging-infra-rsyslog=true
-else
-  oc label node --all logging-infra-fluentd=true
-fi

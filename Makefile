@@ -31,7 +31,7 @@ SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 #.PHONY: all build clean install uninstall fmt simplify check run
 .PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-e2e undeploy
 
-all: build #check install
+all: fmt build #check install
 
 operator-sdk:
 	@if ! type -p operator-sdk ; \

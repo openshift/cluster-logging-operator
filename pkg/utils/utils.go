@@ -1,12 +1,12 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
-	"fmt"
 
 	route "github.com/openshift/api/route/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"

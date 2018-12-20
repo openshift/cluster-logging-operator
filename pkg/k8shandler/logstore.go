@@ -18,50 +18,56 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateOrUpdateLogStore(cluster *logging.ClusterLogging) (err error) {
+const (
+	//OOTB should be 3
+	ElasticsearchNodeCountDefault int32 = 1
+)
 
-	if cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
+func (cluster *ClusterLogging) CreateOrUpdateLogStore(stack *logging.StackSpec) (err error) {
+	if stack.Store == nil {
+		logrus.Debugf("Store is not spec'd for stack '%s'", stack.Name)
+		return
+	}
 
-		if err = createOrUpdateElasticsearchSecret(cluster); err != nil {
-			return
-		}
+	if err = createOrUpdateElasticsearchSecret(cluster); err != nil {
+		return
+	}
 
-		if err = createOrUpdateElasticsearchCR(cluster); err != nil {
-			return
-		}
+	if err = cluster.createOrUpdateElasticsearchCR(stack); err != nil {
+		return
+	}
 
-		elasticsearchStatus, err := getElasticsearchStatus(cluster.Namespace)
+	elasticsearchStatus, err := getElasticsearchStatus(cluster.Namespace)
 
-		if err != nil {
-			return fmt.Errorf("Failed to get status for Elasticsearch: %v", err)
-		}
+	if err != nil {
+		return fmt.Errorf("Failed to get status for Elasticsearch: %v", err)
+	}
 
-		printUpdateMessage := true
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
-				if !reflect.DeepEqual(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
-					if printUpdateMessage {
-						logrus.Info("Updating status of Elasticsearch")
-						printUpdateMessage = false
-					}
-					cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
-					return sdk.Update(cluster)
+	printUpdateMessage := true
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if exists := utils.DoesClusterLoggingExist(cluster.ClusterLogging); exists {
+			if !reflect.DeepEqual(elasticsearchStatus, cluster.ClusterLogging.Status.LogStore.ElasticsearchStatus) {
+				if printUpdateMessage {
+					logrus.Info("Updating status of Elasticsearch")
+					printUpdateMessage = false
 				}
+				cluster.ClusterLogging.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
+				return sdk.Update(cluster)
 			}
-			return nil
-		})
-		if retryErr != nil {
-			return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
 		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
 	}
 
 	return nil
 }
 
-func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
+func createOrUpdateElasticsearchSecret(logging *ClusterLogging) error {
 
-	esSecret := utils.Secret(
-		"elasticsearch",
+	esSecret := utils.NewSecret(
+		Elasticsearch,
 		logging.Namespace,
 		map[string][]byte{
 			"elasticsearch.key": utils.GetFileContents("/tmp/_working_dir/elasticsearch.key"),
@@ -74,7 +80,7 @@ func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
 		},
 	)
 
-	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(logging))
+	logging.addOwnerRefTo(esSecret)
 
 	err := sdk.Create(esSecret)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -84,18 +90,23 @@ func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName string) *v1alpha1.Elasticsearch {
+func (logging *ClusterLogging) getElasticsearchCR(stack *logging.StackSpec) *v1alpha1.Elasticsearch {
 
+	elasticsearchName := logging.getElasticsearchName(stack.Name)
 	var esNodes []v1alpha1.ElasticsearchNode
 
+	nodeCount := stack.Store.Replicas
+	if nodeCount == 0 {
+		nodeCount = ElasticsearchNodeCountDefault
+	}
 	esNode := v1alpha1.ElasticsearchNode{
 		Roles:        []v1alpha1.ElasticsearchNodeRole{"client", "data", "master"},
-		Replicas:     logging.Spec.LogStore.Replicas,
-		NodeSelector: logging.Spec.LogStore.NodeSelector,
+		Replicas:     nodeCount,
+		NodeSelector: stack.Store.NodeSelector,
 		Spec: v1alpha1.ElasticsearchNodeSpec{
-			Resources: logging.Spec.LogStore.Resources,
+			Resources: stack.Store.Resources,
 		},
-		Storage: logging.Spec.LogStore.ElasticsearchSpec.Storage,
+		Storage: stack.Store.Storage,
 	}
 
 	if esNode.Storage.VolumeClaimTemplate != nil {
@@ -122,68 +133,38 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 		},
 		Spec: v1alpha1.ElasticsearchSpec{
 			Spec: v1alpha1.ElasticsearchNodeSpec{
-				Image: utils.GetComponentImage("elasticsearch"),
+				Image: utils.GetComponentImage(Elasticsearch),
 			},
 			Nodes:             esNodes,
 			ManagementState:   v1alpha1.ManagementStateManaged,
-			ReplicationPolicy: logging.Spec.LogStore.ElasticsearchSpec.ReplicationPolicy,
+			ReplicationPolicy: stack.Store.ReplicationPolicy,
 		},
 	}
 
-	utils.AddOwnerRefToObject(cr, utils.AsOwner(logging))
+	logging.addOwnerRefTo(cr)
 
 	return cr
 }
 
-func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) {
+func (cluster *ClusterLogging) createOrUpdateElasticsearchCR(stack *logging.StackSpec) (err error) {
 
-	if utils.AllInOne(cluster) {
-		esCR := getElasticsearchCR(cluster, "elasticsearch")
+	if stack.Store == nil {
+		return nil
+	}
 
-		err = sdk.Create(esCR)
-		if err != nil && !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure creating Elasticsearch CR: %v", err)
-		}
+	esCR := cluster.getElasticsearchCR(stack)
 
-		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				return updateElasticsearchCRIfRequired(esCR)
-			})
-			if retryErr != nil {
-				return retryErr
-			}
-		}
-	} else {
-		esCR := getElasticsearchCR(cluster, "elasticsearch-app")
+	err = sdk.Create(esCR)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating Elasticsearch CR: %v", err)
+	}
 
-		err = sdk.Create(esCR)
-		if err != nil && !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure creating Elasticsearch CR: %v", err)
-		}
-
-		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				return updateElasticsearchCRIfRequired(esCR)
-			})
-			if retryErr != nil {
-				return retryErr
-			}
-		}
-
-		esInfraCR := getElasticsearchCR(cluster, "elasticsearch-infra")
-
-		err = sdk.Create(esInfraCR)
-		if err != nil && !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure creating Elasticsearch Infra CR: %v", err)
-		}
-
-		if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				return updateElasticsearchCRIfRequired(esInfraCR)
-			})
-			if retryErr != nil {
-				return retryErr
-			}
+	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			return updateElasticsearchCRIfRequired(esCR)
+		})
+		if retryErr != nil {
+			return retryErr
 		}
 	}
 

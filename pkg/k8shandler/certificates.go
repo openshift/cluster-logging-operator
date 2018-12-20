@@ -102,7 +102,7 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 
 func writeSecret(logging *v1alpha1.ClusterLogging) (err error) {
 
-	secret := utils.Secret(
+	secret := utils.NewSecret(
 		"master-certs",
 		logging.Namespace,
 		map[string][]byte{

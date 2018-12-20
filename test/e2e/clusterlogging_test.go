@@ -295,7 +295,7 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 	currentOperator.Spec.Template.Spec.Containers[0].Env = newEnv
 	err = f.Client.Update(goctx.TODO(), currentOperator)
 	if err != nil {
-		return fmt.Errorf("could not update cluster-logging-operator with updated image values", err)
+		return fmt.Errorf("could not update cluster-logging-operator with updated image values: %v", err)
 	}
 
 	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-app", "docker.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
@@ -349,7 +349,7 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 	currentOperator.Spec.Template.Spec.Containers[0].Env = currentEnv
 	err = f.Client.Update(goctx.TODO(), currentOperator)
 	if err != nil {
-		return fmt.Errorf("could not update cluster-logging-operator with prior image values", err)
+		return fmt.Errorf("could not update cluster-logging-operator with prior image values: %v", err)
 	}
 
 	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-app", "docker.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"runtime"
 	"time"
 
@@ -20,6 +21,13 @@ func printVersion() {
 }
 
 func main() {
+
+	if levelEnv, found := os.LookupEnv("LOG_LEVEL"); found {
+		if level, err := logrus.ParseLevel(levelEnv); err == nil {
+			logrus.SetLevel(level)
+		}
+	}
+
 	printVersion()
 
 	sdk.ExposeMetricsPort()

@@ -27,10 +27,28 @@ type ClusterLoggingSpec struct {
 	// managementState indicates whether and how the operator should manage the component
 	ManagementState ManagementState `json:"managementState"`
 
-	Visualization VisualizationSpec `json:"visualization,omitempty"`
-	LogStore      LogStoreSpec      `json:"logStore,omitempty"`
-	Collection    CollectionSpec    `json:"collection,omitempty"`
-	Curation      CurationSpec      `json:"curation,omitempty"`
+	Collection CollectionSpec `json:"collection,omitempty"`
+	Stacks     []StackSpec    `json:"stacks,omitempty"`
+}
+
+//StackSpec fully describes a cluster of a given type
+type StackSpec struct {
+	Name        string    `json:"name"`
+	Type        StackType `json:"type"`
+	ElasticSpec `json:"elastic,omitempty"`
+}
+
+type StackType string
+
+const (
+	StackTypeElastic StackType = "elastic"
+)
+
+//ElasticSpec describes the non-collector components of an Elastic cluster
+type ElasticSpec struct {
+	Visualization *KibanaSpec        `json:"visualization,omitempty"`
+	Store         *ElasticsearchSpec `json:"store,omitempty"`
+	Curation      *CuratorSpec       `json:"curation,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)
@@ -133,10 +151,10 @@ type LogStoreStatus struct {
 
 type ElasticsearchStatus struct {
 	ClusterName   string                                `json:"clusterName"`
-	Replicas      int32                                 `json:"replicas"`
+	Replicas      int32                                 `json:"replicas,omitempty"`
 	ReplicaSets   []string                              `json:"replicaSets"`
 	Deployments   []string                              `json:"deployments"`
-	StatefulSets  []string                              `json:"statefulSets"`
+	StatefulSets  []string                              `json:"statefulSets,omitempty"`
 	ClusterHealth string                                `json:"clusterHealth"`
 	Pods          map[ElasticsearchRoleType]PodStateMap `json:"pods"`
 }

@@ -25,14 +25,14 @@ var (
 	timeout       = time.Second * 1800
 )
 
-func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
+func CreateOrUpdateCollection(cluster *ClusterLogging) (err error) {
 
 	if err = createOrUpdateCollectionPriorityClass(cluster); err != nil {
 		return
 	}
 
 	if cluster.Spec.Collection.LogCollection.Type == logging.LogCollectionTypeFluentd {
-		if err = createOrUpdateFluentdServiceAccount(cluster); err != nil {
+		if err = createOrUpdateServiceAccount(cluster, Fluentd); err != nil {
 			return
 		}
 
@@ -55,13 +55,13 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
-				if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.LogCollection.FluentdStatus) {
+			if exists := utils.DoesClusterLoggingExist(cluster.ClusterLogging); exists {
+				if !reflect.DeepEqual(fluentdStatus, cluster.ClusterLogging.Status.Collection.LogCollection.FluentdStatus) {
 					if printUpdateMessage {
 						logrus.Info("Updating status of Fluentd")
 						printUpdateMessage = false
 					}
-					cluster.Status.Collection.LogCollection.FluentdStatus = fluentdStatus
+					cluster.ClusterLogging.Status.Collection.LogCollection.FluentdStatus = fluentdStatus
 					return sdk.Update(cluster)
 				}
 			}
@@ -72,11 +72,11 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		}
 	}
 	if cluster.Spec.Collection.LogCollection.Type == logging.LogCollectionTypeRsyslog {
-		if err = createOrUpdateRsyslogServiceAccount(cluster); err != nil {
+		if err = createOrUpdateServiceAccount(cluster, Rsyslog); err != nil {
 			return
 		}
 
-		if err = createOrUpdateRsyslogConfigMap(cluster); err != nil {
+		if err = createOrUpdateRsyslogConfigMap(cluster.ClusterLogging); err != nil {
 			return
 		}
 
@@ -95,13 +95,13 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
-				if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.LogCollection.RsyslogStatus) {
+			if exists := utils.DoesClusterLoggingExist(cluster.ClusterLogging); exists {
+				if !reflect.DeepEqual(rsyslogStatus, cluster.ClusterLogging.Status.Collection.LogCollection.RsyslogStatus) {
 					if printUpdateMessage {
 						logrus.Info("Updating status of Rsyslog")
 						printUpdateMessage = false
 					}
-					cluster.Status.Collection.LogCollection.RsyslogStatus = rsyslogStatus
+					cluster.ClusterLogging.Status.Collection.LogCollection.RsyslogStatus = rsyslogStatus
 					return sdk.Update(cluster)
 				}
 			}
@@ -115,11 +115,10 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 	return nil
 }
 
-func createOrUpdateCollectionPriorityClass(logging *logging.ClusterLogging) error {
+func createOrUpdateCollectionPriorityClass(logging *ClusterLogging) error {
 
-	collectionPriorityClass := utils.PriorityClass("cluster-logging", 1000000, false, "This priority class is for the Cluster-Logging Collector")
-
-	utils.AddOwnerRefToObject(collectionPriorityClass, utils.AsOwner(logging))
+	collectionPriorityClass := utils.NewPriorityClass(PriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging Collector")
+	logging.addOwnerRefTo(collectionPriorityClass)
 
 	err := sdk.Create(collectionPriorityClass)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -129,38 +128,24 @@ func createOrUpdateCollectionPriorityClass(logging *logging.ClusterLogging) erro
 	return nil
 }
 
-func createOrUpdateFluentdServiceAccount(logging *logging.ClusterLogging) error {
+func createOrUpdateServiceAccount(logging *ClusterLogging, name string) error {
 
-	fluentdServiceAccount := utils.ServiceAccount("fluentd", logging.Namespace)
+	fluentdServiceAccount := utils.NewServiceAccount(name, logging.Namespace)
 
-	utils.AddOwnerRefToObject(fluentdServiceAccount, utils.AsOwner(logging))
+	logging.addOwnerRefTo(fluentdServiceAccount)
 
 	err := sdk.Create(fluentdServiceAccount)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Fluentd service account: %v", err)
+		return fmt.Errorf("Failure creating service account '%s': %v", name, err)
 	}
 
 	return nil
 }
 
-func createOrUpdateRsyslogServiceAccount(logging *logging.ClusterLogging) error {
+func createOrUpdateFluentdConfigMap(logging *ClusterLogging) error {
 
-	rsyslogServiceAccount := utils.ServiceAccount("rsyslog", logging.Namespace)
-
-	utils.AddOwnerRefToObject(rsyslogServiceAccount, utils.AsOwner(logging))
-
-	err := sdk.Create(rsyslogServiceAccount)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Rsyslog service account: %v", err)
-	}
-
-	return nil
-}
-
-func createOrUpdateFluentdConfigMap(logging *logging.ClusterLogging) error {
-
-	fluentdConfigMap := utils.ConfigMap(
-		"fluentd",
+	fluentdConfigMap := utils.NewConfigMap(
+		Fluentd,
 		logging.Namespace,
 		map[string]string{
 			"fluent.conf":          string(utils.GetFileContents("files/fluent.conf")),
@@ -169,7 +154,7 @@ func createOrUpdateFluentdConfigMap(logging *logging.ClusterLogging) error {
 		},
 	)
 
-	utils.AddOwnerRefToObject(fluentdConfigMap, utils.AsOwner(logging))
+	logging.addOwnerRefTo(fluentdConfigMap)
 
 	err := sdk.Create(fluentdConfigMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -186,7 +171,7 @@ func createOrUpdateRsyslogConfigMap(logging *logging.ClusterLogging) error {
 	// - one for main rsyslog.conf file - rsyslog-main
 	// - one for the actual config files - rsyslog
 	rsyslogConfigMaps := make(map[string]*v1.ConfigMap)
-	rsyslogBinConfigMap := utils.ConfigMap(
+	rsyslogBinConfigMap := utils.NewConfigMap(
 		"rsyslog-bin",
 		logging.Namespace,
 		map[string]string{
@@ -195,7 +180,7 @@ func createOrUpdateRsyslogConfigMap(logging *logging.ClusterLogging) error {
 	)
 	rsyslogConfigMaps["rsyslog-bin"] = rsyslogBinConfigMap
 
-	rsyslogMainConfigMap := utils.ConfigMap(
+	rsyslogMainConfigMap := utils.NewConfigMap(
 		"rsyslog-main",
 		logging.Namespace,
 		map[string]string{
@@ -221,12 +206,12 @@ func createOrUpdateRsyslogConfigMap(logging *logging.ClusterLogging) error {
 		fullname := "files/rsyslog/" + fileInfo.Name()
 		rsyslogConfigMapFiles[fileInfo.Name()] = string(utils.GetFileContents(fullname))
 	}
-	rsyslogConfigMap := utils.ConfigMap(
-		"rsyslog",
+	rsyslogConfigMap := utils.NewConfigMap(
+		Rsyslog,
 		logging.Namespace,
 		rsyslogConfigMapFiles,
 	)
-	rsyslogConfigMaps["rsyslog"] = rsyslogConfigMap
+	rsyslogConfigMaps[Rsyslog] = rsyslogConfigMap
 	for name, cm := range rsyslogConfigMaps {
 		utils.AddOwnerRefToObject(cm, utils.AsOwner(logging))
 
@@ -239,10 +224,10 @@ func createOrUpdateRsyslogConfigMap(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
+func createOrUpdateFluentdSecret(logging *ClusterLogging) error {
 
-	fluentdSecret := utils.Secret(
-		"fluentd",
+	fluentdSecret := utils.NewSecret(
+		Fluentd,
 		logging.Namespace,
 		map[string][]byte{
 			"app-ca":     utils.GetFileContents("/tmp/_working_dir/ca.crt"),
@@ -253,7 +238,7 @@ func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
 			"infra-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.crt"),
 		})
 
-	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(logging))
+	logging.addOwnerRefTo(fluentdSecret)
 
 	err := sdk.Create(fluentdSecret)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -263,10 +248,10 @@ func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
+func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 
-	rsyslogSecret := utils.Secret(
-		"rsyslog",
+	rsyslogSecret := utils.NewSecret(
+		Rsyslog,
 		logging.Namespace,
 		map[string][]byte{
 			"app-ca":     utils.GetFileContents("/tmp/_working_dir/ca.crt"),
@@ -277,7 +262,7 @@ func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
 			"infra-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.crt"),
 		})
 
-	utils.AddOwnerRefToObject(rsyslogSecret, utils.AsOwner(logging))
+	logging.addOwnerRefTo(rsyslogSecret)
 
 	err := sdk.Create(rsyslogSecret)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -287,18 +272,16 @@ func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdDaemonset(cluster *logging.ClusterLogging) (err error) {
+func createOrUpdateFluentdDaemonset(cluster *ClusterLogging) (err error) {
 
-	var fluentdPodSpec v1.PodSpec
+	// TODO iterate the stacks format names based on convention
+	// ie. env var APP_HOST=elasticsearch-app; INFRA_HOST=elasticsearch-infra
+	elasticSearchAppName := cluster.getElasticsearchName(APP)
+	elasticSearchInfraName := cluster.getElasticsearchName(INFRA)
+	fluentdPodSpec := newFluentdPodSpec(cluster, elasticSearchAppName, elasticSearchInfraName)
 
-	if utils.AllInOne(cluster) {
-		fluentdPodSpec = getFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
-	} else {
-		fluentdPodSpec = getFluentdPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
-	}
-
-	fluentdDaemonset := utils.DaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
-	utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(cluster))
+	fluentdDaemonset := utils.NewDaemonSet(Fluentd, cluster.Namespace, Fluentd, Fluentd, fluentdPodSpec)
+	cluster.addOwnerRefTo(fluentdDaemonset)
 
 	err = sdk.Create(fluentdDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -317,19 +300,17 @@ func createOrUpdateFluentdDaemonset(cluster *logging.ClusterLogging) (err error)
 	return nil
 }
 
-func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error) {
+func createOrUpdateRsyslogDaemonset(cluster *ClusterLogging) (err error) {
 
-	var rsyslogPodSpec v1.PodSpec
+	// TODO iterate the stacks format names based on convention
+	// ie. env var APP_HOST=elasticsearch-app; INFRA_HOST=elasticsearch-infra
+	elasticSearchAppName := cluster.getElasticsearchName(APP)
+	elasticSearchInfraName := cluster.getElasticsearchName(INFRA)
+	rsyslogPodSpec := newRsyslogPodSpec(cluster, elasticSearchAppName, elasticSearchInfraName)
 
-	if utils.AllInOne(cluster) {
-		rsyslogPodSpec = getRsyslogPodSpec(cluster, "elasticsearch", "elasticsearch")
-	} else {
-		rsyslogPodSpec = getRsyslogPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
-	}
+	rsyslogDaemonset := utils.NewDaemonSet(Rsyslog, cluster.Namespace, Rsyslog, Rsyslog, rsyslogPodSpec)
 
-	rsyslogDaemonset := utils.DaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
-
-	utils.AddOwnerRefToObject(rsyslogDaemonset, utils.AsOwner(cluster))
+	cluster.addOwnerRefTo(rsyslogDaemonset)
 
 	err = sdk.Create(rsyslogDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -348,9 +329,9 @@ func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error)
 	return nil
 }
 
-func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
+func newFluentdPodSpec(logging *ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
 
-	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.FluentdSpec.Resources)
+	fluentdContainer := utils.NewContainer("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.FluentdSpec.Resources)
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "true"},
@@ -392,7 +373,7 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		Privileged: utils.GetBool(true),
 	}
 
-	fluentdPodSpec := utils.PodSpec(
+	fluentdPodSpec := utils.NewPodSpec(
 		"fluentd",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{
@@ -409,16 +390,16 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		},
 	)
 
-	fluentdPodSpec.PriorityClassName = "cluster-logging"
+	fluentdPodSpec.PriorityClassName = PriorityClassName
 
 	fluentdPodSpec.NodeSelector = logging.Spec.Collection.LogCollection.FluentdSpec.NodeSelector
 
 	return fluentdPodSpec
 }
 
-func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
+func newRsyslogPodSpec(logging *ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
 
-	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.RsyslogSpec.Resources)
+	rsyslogContainer := utils.NewContainer(Rsyslog, v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.RsyslogSpec.Resources)
 
 	rsyslogContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "true"},
@@ -468,7 +449,7 @@ func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		"/opt/app-root/bin/rsyslog.sh",
 	}
 
-	rsyslogPodSpec := utils.PodSpec(
+	rsyslogPodSpec := utils.NewPodSpec(
 		"rsyslog",
 		[]v1.Container{rsyslogContainer},
 		[]v1.Volume{
@@ -486,7 +467,7 @@ func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		},
 	)
 
-	rsyslogPodSpec.PriorityClassName = "cluster-logging"
+	rsyslogPodSpec.PriorityClassName = PriorityClassName
 
 	rsyslogPodSpec.NodeSelector = logging.Spec.Collection.LogCollection.RsyslogSpec.NodeSelector
 
@@ -506,7 +487,7 @@ func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	}
 
 	flushBuffer := isBufferFlushRequired(current, desired)
-	desired, different := isFluentdDaemonsetDifferent(current, desired)
+	desired, different := isDaemonsetDifferent(current, desired)
 
 	if different {
 
@@ -543,7 +524,7 @@ func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 		return fmt.Errorf("Failed to get Rsyslog daemonset: %v", err)
 	}
 
-	current, different := isRsyslogDaemonsetDifferent(current, desired)
+	current, different := isDaemonsetDifferent(current, desired)
 
 	if different {
 		if err = sdk.Update(current); err != nil {
@@ -554,25 +535,12 @@ func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	return nil
 }
 
-func isFluentdDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
+func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
 
 	different := false
 
 	if isDaemonsetImageDifference(current, desired) {
-		logrus.Infof("Fluentd image change found, updating %q", current.Name)
-		current = updateCurrentDaemonsetImages(current, desired)
-		different = true
-	}
-
-	return current, different
-}
-
-func isRsyslogDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
-
-	different := false
-
-	if isDaemonsetImageDifference(current, desired) {
-		logrus.Infof("Rsyslog image change found, updating %q", current.Name)
+		logrus.Infof("DaemonSet Image change found, updating %q", current.Name)
 		current = updateCurrentDaemonsetImages(current, desired)
 		different = true
 	}

@@ -27,11 +27,12 @@ OC?=oc
 
 # go source files, ignore vendor directory
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+FMT_SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./_output/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
 .PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-e2e undeploy
 
-all: fmt build #check install
+all: build #check install
 
 operator-sdk:
 	@if ! type -p operator-sdk ; \
@@ -48,7 +49,7 @@ imagebuilder:
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
 	fi
 
-build:
+build: fmt
 	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/pkg $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/vendor/* $(TARGET_DIR)/src
@@ -61,7 +62,7 @@ image: imagebuilder
 	$(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS)
 
 fmt:
-	@gofmt -l -w $(SRC)
+	@gofmt -l -w $(FMT_SRC)
 
 simplify:
 	@gofmt -s -l -w $(SRC)

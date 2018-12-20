@@ -7,15 +7,8 @@ Operator to support OKD cluster logging
 
 Running locally outside an OKD cluster:
 ```
- $ ELASTICSEARCH_IMAGE=docker.io/openshift/origin-logging-elasticsearch5:latest \
-   FLUENTD_IMAGE=docker.io/openshift/origin-logging-fluentd:latest \
-   KIBANA_IMAGE=docker.io/openshift/origin-logging-kibana5:latest \
-   CURATOR_IMAGE=docker.io/openshift/origin-logging-curator5:latest \
-   OAUTH_PROXY_IMAGE=docker.io/openshift/oauth-proxy:latest \
-   RSYSLOG_IMAGE=docker.io/viaq/rsyslog:latest \
-   OPERATOR_NAME=cluster-logging-operator \
-   WATCH_NAMESPACE=openshift-logging \
-   KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig \
+ $ source ./hack/set-env
+ $ KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig \
    go run cmd/cluster-logging-operator/main.go
 ```
 ### `make` targets
@@ -41,9 +34,13 @@ The deployment can be optionally modified using any of the following:
     and push them to the cluster running in the VM.
     You will need a username with a password (i.e. not the default `system:admin` user).
     If your cluster was deployed with the `allow_all` identity provider, you can create
-    a user like this: `oc login --username=admin --password=admin`, then assign it rights:
-    `oc login --username=system:admin`
-    `oc adm policy add-cluster-role-to-user cluster-admin admin`
+    a user like this: 
+    ```oc login --username=admin --password=admin```
+    then assign it rights:
+    ```
+    oc login --username=system:admin
+    oc adm policy add-cluster-role-to-user cluster-admin admin
+    ```
     If you used the new `openshift-installer`, it created a user named `kubeadmin`
     with the password in the file `installer/auth/kubeadmin_password`.
     `oc login --username=kubeadmin --password=$( cat ../installer/auth/kubeadmin_password )`

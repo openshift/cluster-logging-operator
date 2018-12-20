@@ -20,13 +20,6 @@ import (
 )
 
 const WORKING_DIR = "/tmp/_working_dir"
-const ALLINONE_ANNOTATION = "io.openshift.clusterlogging.alpha/allinone"
-
-func AllInOne(logging *logging.ClusterLogging) bool {
-
-	_, ok := logging.ObjectMeta.Annotations[ALLINONE_ANNOTATION]
-	return ok
-}
 
 // These keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
@@ -95,7 +88,7 @@ func GetRandomWord(wordSize int) []byte {
 	return []byte(string(b))
 }
 
-func Secret(secretName string, namespace string, data map[string][]byte) *v1.Secret {
+func NewSecret(secretName string, namespace string, data map[string][]byte) *v1.Secret {
 	return &v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
@@ -110,7 +103,7 @@ func Secret(secretName string, namespace string, data map[string][]byte) *v1.Sec
 	}
 }
 
-func ServiceAccount(accountName string, namespace string) *v1.ServiceAccount {
+func NewServiceAccount(accountName string, namespace string) *v1.ServiceAccount {
 	return &v1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceAccount",
@@ -123,7 +116,8 @@ func ServiceAccount(accountName string, namespace string) *v1.ServiceAccount {
 	}
 }
 
-func Service(serviceName string, namespace string, selectorComponent string, servicePorts []v1.ServicePort) *v1.Service {
+//NewService is a factory method to create an instance of a Service
+func NewService(serviceName string, namespace string, selectorComponent string, servicePorts []v1.ServicePort) *v1.Service {
 	return &v1.Service{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Service",
@@ -146,7 +140,7 @@ func Service(serviceName string, namespace string, selectorComponent string, ser
 	}
 }
 
-func Route(routeName string, namespace string, serviceName string, cafilePath string) *route.Route {
+func NewRoute(routeName string, namespace string, serviceName string, cafilePath string) *route.Route {
 	return &route.Route{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Route",
@@ -176,7 +170,7 @@ func Route(routeName string, namespace string, serviceName string, cafilePath st
 	}
 }
 
-func PodSpec(serviceAccountName string, containers []v1.Container, volumes []v1.Volume) v1.PodSpec {
+func NewPodSpec(serviceAccountName string, containers []v1.Container, volumes []v1.Volume) v1.PodSpec {
 	return v1.PodSpec{
 		Containers:         containers,
 		ServiceAccountName: serviceAccountName,
@@ -184,7 +178,7 @@ func PodSpec(serviceAccountName string, containers []v1.Container, volumes []v1.
 	}
 }
 
-func Container(containerName string, pullPolicy v1.PullPolicy, resources v1.ResourceRequirements) v1.Container {
+func NewContainer(containerName string, pullPolicy v1.PullPolicy, resources v1.ResourceRequirements) v1.Container {
 	return v1.Container{
 		Name:            containerName,
 		Image:           GetComponentImage(containerName),
@@ -193,9 +187,7 @@ func Container(containerName string, pullPolicy v1.PullPolicy, resources v1.Reso
 	}
 }
 
-// loggingComponent = kibana
-// component = kibana{,-ops}
-func Deployment(deploymentName string, namespace string, loggingComponent string, component string, podSpec v1.PodSpec) *apps.Deployment {
+func NewDeployment(deploymentName string, namespace string, loggingComponent string, component string, podSpec v1.PodSpec) *apps.Deployment {
 	return &apps.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
@@ -238,7 +230,7 @@ func Deployment(deploymentName string, namespace string, loggingComponent string
 	}
 }
 
-func DaemonSet(daemonsetName string, namespace string, loggingComponent string, component string, podSpec v1.PodSpec) *apps.DaemonSet {
+func NewDaemonSet(daemonsetName string, namespace string, loggingComponent string, component string, podSpec v1.PodSpec) *apps.DaemonSet {
 	return &apps.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
@@ -284,7 +276,7 @@ func DaemonSet(daemonsetName string, namespace string, loggingComponent string, 
 	}
 }
 
-func ConfigMap(configmapName string, namespace string, data map[string]string) *v1.ConfigMap {
+func NewConfigMap(configmapName string, namespace string, data map[string]string) *v1.ConfigMap {
 	return &v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -298,7 +290,7 @@ func ConfigMap(configmapName string, namespace string, data map[string]string) *
 	}
 }
 
-func PriorityClass(priorityclassName string, priorityValue int32, globalDefault bool, description string) *scheduling.PriorityClass {
+func NewPriorityClass(priorityclassName string, priorityValue int32, globalDefault bool, description string) *scheduling.PriorityClass {
 	return &scheduling.PriorityClass{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PriorityClass",
@@ -484,20 +476,20 @@ func GetClusterDNSDomain() (string, error) {
 	return "cluster.local", nil
 }
 
-func DoesClusterLoggingExist(cluster *logging.ClusterLogging) (bool, *logging.ClusterLogging) {
+func DoesClusterLoggingExist(cluster *logging.ClusterLogging) bool {
 
 	// this is to avoid an invalid memory address panic
 	if cluster == nil {
-		return false, nil
+		return false
 	}
 
 	if err := sdk.Get(cluster); err != nil {
 		if apierrors.IsNotFound(err) {
-			return false, nil
+			return false
 		}
 		logrus.Errorf("Failed to check for ClusterLogging object: %v", err)
-		return false, nil
+		return false
 	}
 
-	return true, cluster
+	return true
 }

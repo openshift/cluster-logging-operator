@@ -1,7 +1,7 @@
 apiVersion: "logging.openshift.io/v1alpha1"
 kind: "ClusterLogging"
 metadata:
-  name: "cluster-logging"
+  name: "cluster-logging-split"
 spec:
   managementState: "Managed"
   stacks:
@@ -11,6 +11,14 @@ spec:
        store: {}
        visualization: {}
        curation: {}
+  - name: infra
+    type: elastic
+    elastic:
+       store: {}
+       visualization: {}
+       curation: {}
+  collection:
+    logCollection:
   collection:
     logCollection:
       type: "fluentd"

@@ -8,7 +8,7 @@ spec:
   - port: "24231"
     scheme: https
     tlsConfig:
-      caFile: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+      caFile: /etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt
   selector:
     matchLabels:
       logging-infra: fluentd

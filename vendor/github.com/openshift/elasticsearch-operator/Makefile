@@ -7,12 +7,12 @@ BUILD_GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
 IMAGE_BUILDER_OPTS=
 IMAGE_BUILDER?=imagebuilder
 IMAGE_BUILD=$(IMAGE_BUILDER)
-IMAGE_TAG?=docker tag
+export IMAGE_TAGGER?=docker tag
 
-APP_NAME=elasticsearch-operator
+export APP_NAME=elasticsearch-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-IMAGE_TAG=openshift/$(APP_NAME)
+export IMAGE_TAG=openshift/$(APP_NAME):latest
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 RUN_LOG?=elasticsearch-operator.log
 RUN_PID?=elasticsearch-operator.pid
@@ -71,15 +71,15 @@ fmt:
 simplify:
 	@gofmt -s -l -w $(SRC)
 
-deploy: deploy-setup image deploy-image
+deploy: deploy-setup deploy-image
 	hack/deploy.sh
 .PHONY: deploy
 
-deploy-image:
+deploy-image: image
 	hack/deploy-image.sh
 .PHONY: deploy-image
 
-deploy-example:
+deploy-example: deploy
 	@oc create -n openshift-logging -f hack/cr.yaml
 .PHONY: deploy-example
 

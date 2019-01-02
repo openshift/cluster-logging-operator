@@ -32,17 +32,20 @@ type BuildSpec struct {
 }
 
 type BuildDefaults struct {
-	// GitHTTPProxy is the location of the HTTPProxy for Git source
+	// DefaultProxy contains the default proxy settings for all build operations, including image pull/push
+	// and source download.
+	//
+	// Values can be overrode by setting the `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` environment variables
+	// in the build config's strategy.
 	// +optional
-	GitHTTPProxy string `json:"gitHTTPProxy,omitempty"`
+	DefaultProxy *ProxySpec `json:"defaultProxy,omitempty"`
 
-	// GitHTTPSProxy is the location of the HTTPSProxy for Git source
+	// GitProxy contains the proxy settings for git operations only. If set, this will override
+	// any Proxy settings for all git commands, such as git clone.
+	//
+	// Values that are not set here will be inherited from DefaultProxy.
 	// +optional
-	GitHTTPSProxy string `json:"gitHTTPSProxy,omitempty"`
-
-	// GitNoProxy is the list of domains for which the proxy should not be used
-	// +optional
-	GitNoProxy string `json:"gitNoProxy,omitempty"`
+	GitProxy *ProxySpec `json:"gitProxy,omitempty"`
 
 	// Env is a set of default environment variables that will be applied to the
 	// build if the specified variables do not exist on the build

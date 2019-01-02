@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"testing"
 
 	"golang.org/x/tools/go/packages/packagestest"
@@ -753,6 +752,16 @@ func main() { fmt.Println() }
 `,
 	},
 
+	{
+		name: "ignore_unexported_identifier",
+		in: `package main
+var _ = fmt.unexported`,
+		out: `package main
+
+var _ = fmt.unexported
+`,
+	},
+
 	// FormatOnly
 	{
 		name:       "formatonly_works",
@@ -1449,6 +1458,7 @@ import "golang.org/x/net/http2/hpack"
 var _ = hpack.HuffmanDecode
 `
 	testConfig{
+		gopathOnly: true,
 		module: packagestest.Module{
 			Name: "foo.com",
 			Files: fm{
@@ -1498,15 +1508,34 @@ type fm map[string]interface{}
 func (c testConfig) test(t *testing.T, fn func(*goimportTest)) {
 	t.Helper()
 
-	var exported *packagestest.Exported
 	if c.module.Name != "" {
 		c.modules = []packagestest.Module{c.module}
 	}
 
-	for _, exporter := range []packagestest.Exporter{packagestest.GOPATH} {
-		t.Run(exporter.Name(), func(t *testing.T) {
+	kinds := []string{"GOPATH_GoPackages"}
+	for _, exporter := range packagestest.All {
+		kinds = append(kinds, exporter.Name())
+	}
+	for _, kind := range kinds {
+		t.Run(kind, func(t *testing.T) {
 			t.Helper()
-			exported = packagestest.Export(t, exporter, c.modules)
+
+			var exporter packagestest.Exporter
+			switch kind {
+			case "GOPATH":
+				exporter = packagestest.GOPATH
+			case "GOPATH_GoPackages":
+				exporter = packagestest.GOPATH
+				forceGoPackages = true
+			case "Modules":
+				if c.gopathOnly {
+					t.Skip("test marked GOPATH-only")
+				}
+				exporter = packagestest.Modules
+			default:
+				panic("unknown test type")
+			}
+			exported := packagestest.Export(t, exporter, c.modules)
 			defer exported.Cleanup()
 
 			env := make(map[string]string)
@@ -1519,19 +1548,22 @@ func (c testConfig) test(t *testing.T, fn func(*goimportTest)) {
 			goroot := env["GOROOT"]
 			gopath := env["GOPATH"]
 
-			scanOnce = sync.Once{}
-
 			oldGOPATH := build.Default.GOPATH
 			oldGOROOT := build.Default.GOROOT
 			oldCompiler := build.Default.Compiler
 			build.Default.GOROOT = goroot
 			build.Default.GOPATH = gopath
 			build.Default.Compiler = "gc"
+			goPackagesDir = exported.Config.Dir
+			go111ModuleEnv = env["GO111MODULE"]
 
 			defer func() {
 				build.Default.GOPATH = oldGOPATH
 				build.Default.GOROOT = oldGOROOT
 				build.Default.Compiler = oldCompiler
+				go111ModuleEnv = ""
+				goPackagesDir = ""
+				forceGoPackages = false
 			}()
 
 			it := &goimportTest{
@@ -1882,6 +1914,62 @@ var time Time
 	}.processTest(t, "foo.com", "pkg/uses.go", nil, nil, usesGlobal)
 }
 
+// Some people put multiple packages' files in the same directory. Globals
+// declared in other packages should be ignored.
+func TestGlobalImports_DifferentPackage(t *testing.T) {
+	const declaresGlobal = `package main
+var fmt int
+`
+	const input = `package pkg
+var _ = fmt.Printf
+`
+	const want = `package pkg
+
+import "fmt"
+
+var _ = fmt.Printf
+`
+
+	testConfig{
+		module: packagestest.Module{
+			Name: "foo.com",
+			Files: fm{
+				"pkg/main.go": declaresGlobal,
+				"pkg/uses.go": input,
+			},
+		},
+	}.processTest(t, "foo.com", "pkg/uses.go", nil, nil, want)
+}
+
+func TestGlobalImports_MultipleMains(t *testing.T) {
+	const declaresGlobal = `package main
+var fmt int
+`
+	const input = `package main
+import "fmt"
+var _, _ = fmt.Printf, bytes.Equal
+`
+	const want = `package main
+
+import (
+	"bytes"
+	"fmt"
+)
+
+var _, _ = fmt.Printf, bytes.Equal
+`
+
+	testConfig{
+		module: packagestest.Module{
+			Name: "foo.com",
+			Files: fm{
+				"pkg/main.go": declaresGlobal,
+				"pkg/uses.go": input,
+			},
+		},
+	}.processTest(t, "foo.com", "pkg/uses.go", nil, nil, want)
+}
+
 // Tests that sibling files - other files in the same package - can provide an
 // import that may not be the default one otherwise.
 func TestSiblingImports(t *testing.T) {
@@ -1891,10 +1979,12 @@ func TestSiblingImports(t *testing.T) {
 
 import "local/log"
 import "my/bytes"
+import renamed "fmt"
 
 func LogSomething() {
 	log.Print("Something")
 	bytes.SomeFunc()
+	renamed.Println("Something")
 }
 `
 
@@ -1905,6 +1995,7 @@ var _ = bytes.Buffer{}
 
 func LogSomethingElse() {
 	log.Print("Something else")
+	renamed.Println("Yet another")
 }
 `
 
@@ -1913,6 +2004,7 @@ func LogSomethingElse() {
 
 import (
 	"bytes"
+	renamed "fmt"
 	"local/log"
 )
 
@@ -1920,6 +2012,7 @@ var _ = bytes.Buffer{}
 
 func LogSomethingElse() {
 	log.Print("Something else")
+	renamed.Println("Yet another")
 }
 `
 
@@ -1932,6 +2025,34 @@ func LogSomethingElse() {
 			},
 		},
 	}.processTest(t, "foo.com", "p/needs_import.go", nil, nil, want)
+}
+
+// Tests #29180: a sibling import of the right package with the wrong name is used.
+func TestSiblingImport_Misnamed(t *testing.T) {
+	const sibling = `package main
+import renamed "fmt"
+var _ = renamed.Printf
+`
+	const input = `package pkg
+var _ = fmt.Printf
+`
+	const want = `package pkg
+
+import "fmt"
+
+var _ = fmt.Printf
+`
+
+	testConfig{
+		module: packagestest.Module{
+			Name: "foo.com",
+			Files: fm{
+				"pkg/main.go": sibling,
+				"pkg/uses.go": input,
+			},
+		},
+	}.processTest(t, "foo.com", "pkg/uses.go", nil, nil, want)
+
 }
 
 func TestPkgIsCandidate(t *testing.T) {
@@ -1948,7 +2069,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "client",
 			pkg: &pkg{
 				dir:             "/gopath/src/client",
-				importPath:      "client",
 				importPathShort: "client",
 			},
 			want: true,
@@ -1959,7 +2079,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "zzz",
 			pkg: &pkg{
 				dir:             "/gopath/src/client",
-				importPath:      "client",
 				importPathShort: "client",
 			},
 			want: false,
@@ -1970,7 +2089,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "client",
 			pkg: &pkg{
 				dir:             "/gopath/src/client/foo/foo/foo",
-				importPath:      "client/foo/foo",
 				importPathShort: "client/foo/foo",
 			},
 			want: false,
@@ -1981,7 +2099,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "client",
 			pkg: &pkg{
 				dir:             "/gopath/src/foo/go-client",
-				importPath:      "foo/go-client",
 				importPathShort: "foo/go-client",
 			},
 			want: true,
@@ -1992,7 +2109,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "client",
 			pkg: &pkg{
 				dir:             "/gopath/src/foo/internal/client",
-				importPath:      "foo/internal/client",
 				importPathShort: "foo/internal/client",
 			},
 			want: false,
@@ -2003,7 +2119,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "client",
 			pkg: &pkg{
 				dir:             "/gopath/src/foo/internal/client",
-				importPath:      "foo/internal/client",
 				importPathShort: "foo/internal/client",
 			},
 			want: true,
@@ -2014,7 +2129,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "client",
 			pkg: &pkg{
 				dir:             "/gopath/src/other/vendor/client",
-				importPath:      "other/vendor/client",
 				importPathShort: "client",
 			},
 			want: false,
@@ -2025,7 +2139,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "client",
 			pkg: &pkg{
 				dir:             "/gopath/src/foo/vendor/client",
-				importPath:      "other/foo/client",
 				importPathShort: "client",
 			},
 			want: true,
@@ -2036,7 +2149,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "socketio",
 			pkg: &pkg{
 				dir:             "/gopath/src/foo/socket-io",
-				importPath:      "foo/socket-io",
 				importPathShort: "foo/socket-io",
 			},
 			want: true,
@@ -2047,7 +2159,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "fooprod",
 			pkg: &pkg{
 				dir:             "/gopath/src/foo/FooPROD",
-				importPath:      "foo/FooPROD",
 				importPathShort: "foo/FooPROD",
 			},
 			want: true,
@@ -2058,7 +2169,6 @@ func TestPkgIsCandidate(t *testing.T) {
 			pkgIdent: "fooprod",
 			pkg: &pkg{
 				dir:             "/gopath/src/foo/Foo-PROD",
-				importPath:      "foo/Foo-PROD",
 				importPathShort: "foo/Foo-PROD",
 			},
 			want: true,

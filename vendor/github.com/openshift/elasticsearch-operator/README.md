@@ -79,6 +79,20 @@ If you are using an image built in a different node, you can specify to use a re
 the environment variable `REMOTE_REGISTRY=true` before running any of the targets below.  See `hack/deploy-image.sh`
 and `hack/deploy.sh` for more details.
 
+*  `REMOTE_REGISTRY` Set to `true` if you are running the cluster on a different machine
+    than the one you are developing on. For example, if you are running a cluster in a
+    local libvirt or minishift environment, you may want to build the image on the host
+    and push them to the cluster running in the VM.
+    You will need a username with a password (i.e. not the default `system:admin` user).
+    If your cluster was deployed with the `allow_all` identity provider, you can create
+    a user like this: `oc login --username=admin --password=admin`, then assign it rights:
+    `oc login --username=system:admin`
+    `oc adm policy add-cluster-role-to-user cluster-admin admin`
+    If you used the new `openshift-installer`, it created a user named `kubeadmin`
+    with the password in the file `installer/auth/kubeadmin_password`.
+    `oc login --username=kubeadmin --password=$( cat ../installer/auth/kubeadmin_password )`
+    The user should already have `cluster-admin` rights.
+
 It is additionally possible to deploy the operator to an Openshift cluster using the provided make targets.  These
 targets assume you have cluster admin access. Following are a few of these targets:
 
@@ -152,8 +166,11 @@ Kubernetes TBD+ and OpenShift TBD+ are supported.
 In a real deployment OpenShift monitoring will be installed.  However
 for testing purposes, you should install the monitoring CRDs:
 ```
-make deploy-setup
+[REMOTE_REGISTRY=true] make deploy-setup
 ```
+
+Use `REMOTE_REGISTRY=true make deploy-image` to build the image and copy it
+to the remote registry.
 
 ### E2E Testing
 To run the e2e tests, install the above CRDs and from the repo directory, run:
@@ -169,8 +186,8 @@ To set up your local environment based on what will be provided by OLM, run:
 ```
 sudo sysctl -w vm.max_map_count=262144
 ELASTICSEARCH_OPERATOR=$GOPATH/src/github.com/openshift/elasticsearch-operator
-make deploy-setup
-make deploy-example
+[REMOTE_REGISTRY=true] make deploy-setup
+[REMOTE_REGISTRY=true] make deploy-example
 ```
 
 To test on an OCP cluster, you can run:

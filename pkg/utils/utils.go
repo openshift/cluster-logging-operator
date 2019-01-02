@@ -20,12 +20,12 @@ import (
 )
 
 const WORKING_DIR = "/tmp/_working_dir"
-const ALLINONE_ANNOTATION = "io.openshift.clusterlogging.alpha/allinone"
+const SPLIT_ANNOTATION = "io.openshift.clusterlogging.alpha/splitinstallation"
 
 func AllInOne(logging *logging.ClusterLogging) bool {
 
-	_, ok := logging.ObjectMeta.Annotations[ALLINONE_ANNOTATION]
-	return ok
+	//_, ok := logging.ObjectMeta.Annotations[SPLIT_ANNOTATION]
+	return true
 }
 
 // These keys are based on the "container name" + "-{image,version}"

@@ -1,11 +1,8 @@
 package utils
 
 import (
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
@@ -171,57 +168,51 @@ func IsRestarting(status *api.ElasticsearchStatus) bool {
 	return false
 }
 
-func UpdateClusterSettings(pod *v1.Pod, quorum int) error {
-	command := []string{"sh", "-c",
-		fmt.Sprintf("es_util --query=_cluster/settings -H 'Content-Type: application/json' -X PUT -d '{\"persistent\":{%s}}'",
-			minimumMasterNodesCommand(quorum))}
+func UpdateNodeUpgradeStatusWithRetry(dpl *api.Elasticsearch, deployName string, value *api.ElasticsearchNodeUpgradeStatus) error {
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if getErr := sdk.Get(dpl); getErr != nil {
+			logrus.Debugf("Could not get Elasticsearch %v: %v", dpl.Name, getErr)
+			return getErr
+		}
 
-	_, _, err := ElasticsearchExec(pod, command)
+		for i, node := range dpl.Status.Nodes {
+			if node.DeploymentName == deployName {
+				dpl.Status.Nodes[i].UpgradeStatus = *value
+			}
+		}
 
-	return err
+		if updateErr := sdk.Update(dpl); updateErr != nil {
+			logrus.Debugf("Failed to update Elasticsearch %v status: %v", dpl.Name, updateErr)
+			return updateErr
+		}
+		return nil
+	})
+	return retryErr
 }
 
-func ClusterHealth(pod *v1.Pod) (map[string]interface{}, error) {
-	command := []string{"es_util", "--query=_cluster/health?pretty=true"}
-	execOut, _, err := ElasticsearchExec(pod, command)
-	if err != nil {
-		logrus.Debug(err)
-		return nil, err
+func NodeRestarting() *api.ElasticsearchNodeUpgradeStatus {
+	return &api.ElasticsearchNodeUpgradeStatus{
+		UnderUpgrade: api.UnderUpgradeTrue,
+		UpgradePhase: api.NodeRestarting,
 	}
-
-	var result map[string]interface{}
-
-	err = json.Unmarshal(execOut.Bytes(), &result)
-	if err != nil {
-		logrus.Debug("could not unmarshal: %v", err)
-		return nil, err
-	}
-	return result, nil
 }
 
-func NumberOfNodes(pod *v1.Pod) int {
-	healthResponse, err := ClusterHealth(pod)
-	if err != nil {
-		return -1
+func NodeRecoveringData() *api.ElasticsearchNodeUpgradeStatus {
+	return &api.ElasticsearchNodeUpgradeStatus{
+		UnderUpgrade: api.UnderUpgradeTrue,
+		UpgradePhase: api.RecoveringData,
 	}
-
-	// is it present?
-	value, present := healthResponse["number_of_nodes"]
-	if !present {
-		return -1
-	}
-
-	// json numbers are represented as floats
-	// so let's convert from type interface{} to float
-	numberofNodes, ok := value.(float64)
-	if !ok {
-		return -1
-	}
-
-	// wow that's a lot of boilerplate...
-	return int(numberofNodes)
 }
 
-func minimumMasterNodesCommand(nodes int) string {
-	return fmt.Sprintf("%s:%d", strconv.Quote("discovery.zen.minimum_master_nodes"), nodes)
+func NodeControllerUpdated() *api.ElasticsearchNodeUpgradeStatus {
+	return &api.ElasticsearchNodeUpgradeStatus{
+		UnderUpgrade: api.UnderUpgradeTrue,
+		UpgradePhase: api.ControllerUpdated,
+	}
+}
+
+func NodeNormalOperation() *api.ElasticsearchNodeUpgradeStatus {
+	return &api.ElasticsearchNodeUpgradeStatus{
+		UnderUpgrade: api.UnderUpgradeFalse,
+	}
 }

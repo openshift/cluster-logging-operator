@@ -149,7 +149,7 @@ func getElasticsearchStatus(namespace string) ([]v1alpha1.ElasticsearchStatus, e
 
 			nodeStatus := v1alpha1.ElasticsearchStatus{
 				ClusterName:   node.Name,
-				Replicas:      node.Spec.Nodes[0].Replicas,
+				NodeCount:     node.Spec.Nodes[0].NodeCount,
 				Deployments:   getDeploymentNames(node.Status),
 				ReplicaSets:   getReplicaSetNames(node.Status),
 				StatefulSets:  getStatefulSetNames(node.Status),

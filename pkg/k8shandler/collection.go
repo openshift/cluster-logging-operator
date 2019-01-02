@@ -31,7 +31,7 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		return
 	}
 
-	if cluster.Spec.Collection.LogCollection.Type == logging.LogCollectionTypeFluentd {
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
 		if err = createOrUpdateFluentdServiceAccount(cluster); err != nil {
 			return
 		}
@@ -56,12 +56,12 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
-				if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.LogCollection.FluentdStatus) {
+				if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
 					if printUpdateMessage {
 						logrus.Info("Updating status of Fluentd")
 						printUpdateMessage = false
 					}
-					cluster.Status.Collection.LogCollection.FluentdStatus = fluentdStatus
+					cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
 					return sdk.Update(cluster)
 				}
 			}
@@ -71,7 +71,7 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 			return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", retryErr)
 		}
 	}
-	if cluster.Spec.Collection.LogCollection.Type == logging.LogCollectionTypeRsyslog {
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
 		if err = createOrUpdateRsyslogServiceAccount(cluster); err != nil {
 			return
 		}
@@ -96,12 +96,12 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
-				if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.LogCollection.RsyslogStatus) {
+				if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.Logs.RsyslogStatus) {
 					if printUpdateMessage {
 						logrus.Info("Updating status of Rsyslog")
 						printUpdateMessage = false
 					}
-					cluster.Status.Collection.LogCollection.RsyslogStatus = rsyslogStatus
+					cluster.Status.Collection.Logs.RsyslogStatus = rsyslogStatus
 					return sdk.Update(cluster)
 				}
 			}
@@ -350,7 +350,7 @@ func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error)
 
 func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
 
-	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.FluentdSpec.Resources)
+	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.Logs.FluentdSpec.Resources)
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -411,7 +411,7 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 	fluentdPodSpec.PriorityClassName = "cluster-logging"
 
-	fluentdPodSpec.NodeSelector = logging.Spec.Collection.LogCollection.FluentdSpec.NodeSelector
+	fluentdPodSpec.NodeSelector = logging.Spec.Collection.Logs.FluentdSpec.NodeSelector
 
 	fluentdPodSpec.Tolerations = []v1.Toleration{
 		v1.Toleration{
@@ -426,7 +426,7 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
 
-	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.RsyslogSpec.Resources)
+	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, logging.Spec.Collection.Logs.RsyslogSpec.Resources)
 
 	rsyslogContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -496,7 +496,7 @@ func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 	rsyslogPodSpec.PriorityClassName = "cluster-logging"
 
-	rsyslogPodSpec.NodeSelector = logging.Spec.Collection.LogCollection.RsyslogSpec.NodeSelector
+	rsyslogPodSpec.NodeSelector = logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector
 
 	rsyslogPodSpec.Tolerations = []v1.Toleration{
 		v1.Toleration{

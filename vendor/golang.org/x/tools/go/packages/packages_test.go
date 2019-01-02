@@ -1058,6 +1058,35 @@ func testContains(t *testing.T, exporter packagestest.Exporter) {
 	}
 }
 
+func TestContainsOverlay(t *testing.T) { packagestest.TestAll(t, testContainsOverlay) }
+func testContainsOverlay(t *testing.T, exporter packagestest.Exporter) {
+	exported := packagestest.Export(t, exporter, []packagestest.Module{{
+		Name: "golang.org/fake",
+		Files: map[string]interface{}{
+			"a/a.go": `package a; import "golang.org/fake/b"`,
+			"b/b.go": `package b; import "golang.org/fake/c"`,
+			"c/c.go": `package c`,
+		}}})
+	defer exported.Cleanup()
+	bOverlayFile := filepath.Join(filepath.Dir(exported.File("golang.org/fake", "b/b.go")), "b_overlay.go")
+	exported.Config.Mode = packages.LoadImports
+	exported.Config.Overlay = map[string][]byte{bOverlayFile: []byte(`package b;`)}
+	initial, err := packages.Load(exported.Config, "file="+bOverlayFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	graph, _ := importGraph(initial)
+	wantGraph := `
+* golang.org/fake/b
+  golang.org/fake/c
+  golang.org/fake/b -> golang.org/fake/c
+`[1:]
+	if graph != wantGraph {
+		t.Errorf("wrong import graph: got <<%s>>, want <<%s>>", graph, wantGraph)
+	}
+}
+
 // This test ensures that the effective GOARCH variable in the
 // application determines the Sizes function used by the type checker.
 // This behavior is a stop-gap until we make the build system's query
@@ -1087,7 +1116,6 @@ func testSizes(t *testing.T, exporter packagestest.Exporter) {
 			t.Errorf("for GOARCH=%s, got word size %d, want %d", arch, gotWordSize, wantWordSize)
 		}
 	}
-
 }
 
 // TestContains_FallbackSticks ensures that when there are both contains and non-contains queries
@@ -1228,6 +1256,25 @@ func TestName_ModulesDedup(t *testing.T) {
 		}
 	}
 	t.Errorf("didn't find v2.0.2 of pkg in Load results: %v", initial)
+}
+
+// Test that Load doesn't get confused when two different patterns match the same package. See #29297.
+func TestRedundantQueries(t *testing.T) { packagestest.TestAll(t, testRedundantQueries) }
+func testRedundantQueries(t *testing.T, exporter packagestest.Exporter) {
+	exported := packagestest.Export(t, exporter, []packagestest.Module{{
+		Name: "golang.org/fake",
+		Files: map[string]interface{}{
+			"a/a.go": `package a;`,
+		}}})
+	defer exported.Cleanup()
+
+	initial, err := packages.Load(exported.Config, "errors", "name=errors")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(initial) != 1 || initial[0].Name != "errors" {
+		t.Fatalf(`Load("errors", "name=errors") = %v, wanted just the errors package`, initial)
+	}
 }
 
 func TestJSON(t *testing.T) { packagestest.TestAll(t, testJSON) }
@@ -1539,6 +1586,24 @@ func testBasicXTest(t *testing.T, exporter packagestest.Exporter) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestErrorMissingFile(t *testing.T) { packagestest.TestAll(t, testErrorMissingFile) }
+func testErrorMissingFile(t *testing.T, exporter packagestest.Exporter) {
+	exported := packagestest.Export(t, exporter, []packagestest.Module{{
+		Name: "golang.org/fake",
+		Files: map[string]interface{}{
+			"a/a_test.go": `package a;`,
+		}}})
+	defer exported.Cleanup()
+
+	exported.Config.Mode = packages.LoadSyntax
+	exported.Config.Tests = false
+	pkgs, err := packages.Load(exported.Config, "missing.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(pkgs)
 }
 
 func errorMessages(errors []packages.Error) []string {

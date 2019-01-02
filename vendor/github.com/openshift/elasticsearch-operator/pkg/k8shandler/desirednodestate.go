@@ -12,7 +12,6 @@ import (
 	apps "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 )
@@ -44,6 +43,7 @@ type desiredNodeState struct {
 	MasterNum          int32
 	DataNum            int32
 	EnvVars            []v1.EnvVar
+	Paused             bool
 }
 
 type actualNodeState struct {
@@ -68,6 +68,7 @@ func constructNodeSpec(dpl *v1alpha1.Elasticsearch, esNode v1alpha1.Elasticsearc
 		Labels:             dpl.Labels,
 		MasterNum:          masterNum,
 		DataNum:            dataNum,
+		Paused:             true,
 	}
 	deployName, err := constructDeployName(dpl.Name, esNode.Roles, nodeNum, replicaNum)
 	if err != nil {
@@ -121,7 +122,7 @@ func (cfg *desiredNodeState) getReplicas() int32 {
 	if cfg.isNodeData() {
 		return 1
 	}
-	return cfg.ESNodeSpec.Replicas
+	return cfg.ESNodeSpec.NodeCount
 }
 
 func (cfg *desiredNodeState) isNodeMaster() bool {
@@ -198,6 +199,7 @@ func (cfg *desiredNodeState) CreateOrUpdateNode(owner metav1.OwnerReference) err
 	err := node.query()
 	if err != nil {
 		// Node's resource doesn't exist, we can construct one
+		cfg.Paused = false
 		logrus.Infof("Constructing new resource %v", cfg.DeployName)
 		dep, err := node.constructNodeResource(cfg, owner)
 		if err != nil {
@@ -207,6 +209,33 @@ func (cfg *desiredNodeState) CreateOrUpdateNode(owner metav1.OwnerReference) err
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Could not create node resource: %v", err)
 		}
+
+		// set it back to being paused
+		cfg.Paused = true
+		nretries := -1
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			nretries++
+			if getErr := node.query(); getErr != nil {
+				logrus.Debugf("Could not get Elasticsearch node resource %v: %v", cfg.DeployName, getErr)
+				return getErr
+			}
+			dep, updateErr := node.constructNodeResource(cfg, metav1.OwnerReference{})
+			if updateErr != nil {
+				return fmt.Errorf("Could not construct node resource %v for update: %v", cfg.DeployName, updateErr)
+			}
+			if nretries == 0 {
+				logrus.Infof("Updating node resource %v", cfg.DeployName)
+			}
+			if updateErr = sdk.Update(dep); updateErr != nil {
+				logrus.Debugf("Failed to update node resource %v: %v", cfg.DeployName, updateErr)
+			}
+			return updateErr
+		})
+		if retryErr != nil {
+			return fmt.Errorf("Error: could not update status for Elasticsearch %v after %v retries: %v", cfg.DeployName, nretries, retryErr)
+		}
+		logrus.Debugf("Updated Elasticsearch %v after %v retries", cfg.DeployName, nretries)
+
 		return nil
 	}
 
@@ -218,6 +247,7 @@ func (cfg *desiredNodeState) CreateOrUpdateNode(owner metav1.OwnerReference) err
 	}
 
 	if diff {
+		cfg.Paused = false
 		nretries := -1
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			nretries++
@@ -230,6 +260,31 @@ func (cfg *desiredNodeState) CreateOrUpdateNode(owner metav1.OwnerReference) err
 				return fmt.Errorf("Could not construct node resource %v for update: %v", cfg.DeployName, updateErr)
 			}
 			logrus.Infof("Updating node resource %v", cfg.DeployName)
+			if updateErr = sdk.Update(dep); updateErr != nil {
+				logrus.Debugf("Failed to update node resource %v: %v", cfg.DeployName, updateErr)
+			}
+			return updateErr
+		})
+		if retryErr != nil {
+			return fmt.Errorf("Error: could not update status for Elasticsearch %v after %v retries: %v", cfg.DeployName, nretries, retryErr)
+		}
+		logrus.Debugf("Updated Elasticsearch %v after %v retries", cfg.DeployName, nretries)
+
+		// set it back to being paused
+		cfg.Paused = true
+		retryErr = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			nretries++
+			if getErr := node.query(); getErr != nil {
+				logrus.Debugf("Could not get Elasticsearch node resource %v: %v", cfg.DeployName, getErr)
+				return getErr
+			}
+			dep, updateErr := node.constructNodeResource(cfg, metav1.OwnerReference{})
+			if updateErr != nil {
+				return fmt.Errorf("Could not construct node resource %v for update: %v", cfg.DeployName, updateErr)
+			}
+			if nretries == 0 {
+				logrus.Infof("Updating node resource %v", cfg.DeployName)
+			}
 			if updateErr = sdk.Update(dep); updateErr != nil {
 				logrus.Debugf("Failed to update node resource %v: %v", cfg.DeployName, updateErr)
 			}
@@ -419,7 +474,7 @@ func (cfg *desiredNodeState) getESContainer() v1.Container {
 }
 
 func (cfg *desiredNodeState) getVolumeMounts() []v1.VolumeMount {
-	mounts := []v1.VolumeMount{
+	return []v1.VolumeMount{
 		v1.VolumeMount{
 			Name:      "elasticsearch-storage",
 			MountPath: "/elasticsearch/persistent",
@@ -428,26 +483,18 @@ func (cfg *desiredNodeState) getVolumeMounts() []v1.VolumeMount {
 			Name:      "elasticsearch-config",
 			MountPath: elasticsearchConfigPath,
 		},
+		v1.VolumeMount{
+			Name:      "certificates",
+			MountPath: elasticsearchCertsPath,
+		},
 	}
-	mounts = append(mounts, v1.VolumeMount{
-		Name:      "certificates",
-		MountPath: elasticsearchCertsPath,
-	})
-	return mounts
 }
 
 // generateMasterPVC method builds PVC for pure master nodes to be used in
 // volumeClaimTemplate in StatefulSet spec
 func (cfg *desiredNodeState) generateMasterPVC() (v1.PersistentVolumeClaim, bool, error) {
 	specVol := cfg.ESNodeSpec.Storage
-	if specVol.VolumeClaimTemplate != nil {
-		// The only supported option to specify own volumeClaimTemplate for masters
-		return *specVol.VolumeClaimTemplate, true, nil
-	} else if specVol.EmptyDir != nil {
-		return v1.PersistentVolumeClaim{}, false, nil
-	} else if (specVol == v1alpha1.ElasticsearchNodeStorageSource{}) {
-		// This is the default option, try to construct small 1Gi PVC
-		volumeSize, _ := resource.ParseQuantity("1Gi")
+	if specVol.StorageClass != nil {
 		pvc := v1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "elasticsearch-storage",
@@ -459,40 +506,58 @@ func (cfg *desiredNodeState) generateMasterPVC() (v1.PersistentVolumeClaim, bool
 				},
 				Resources: v1.ResourceRequirements{
 					Requests: v1.ResourceList{
-						v1.ResourceStorage: volumeSize,
+						v1.ResourceStorage: specVol.StorageClass.Size,
 					},
 				},
+				StorageClassName: &specVol.StorageClass.StorageClassName,
 			},
 		}
 		return pvc, true, nil
+	} else if (specVol == v1alpha1.ElasticsearchStorageSpec{}) {
+		return v1.PersistentVolumeClaim{}, false, nil
 	}
+
 	return v1.PersistentVolumeClaim{}, false, fmt.Errorf("Unsupported volume configuration for master in cluster %s", cfg.ClusterName)
 }
 
 func (cfg *desiredNodeState) generatePersistentStorage() v1.VolumeSource {
 	volSource := v1.VolumeSource{}
 	specVol := cfg.ESNodeSpec.Storage
+
 	switch {
-	case specVol.HostPath != nil:
-		volSource.HostPath = specVol.HostPath
-	case specVol.EmptyDir != nil || specVol == v1alpha1.ElasticsearchNodeStorageSource{}:
-		volSource.EmptyDir = specVol.EmptyDir
-	case specVol.VolumeClaimTemplate != nil:
-		claimName := fmt.Sprintf("%s-%s", specVol.VolumeClaimTemplate.Name, cfg.DeployName)
-		volClaim := v1.PersistentVolumeClaimVolumeSource{
+	/*
+		case specVol.PersistentVolumeClaim != nil:
+		volSource.PersistentVolumeClaim = specVol.PersistentVolumeClaim
+	*/
+
+	case specVol.StorageClass != nil:
+		claimName := fmt.Sprintf("%s-%s", cfg.ClusterName, cfg.DeployName)
+		volSource.PersistentVolumeClaim = &v1.PersistentVolumeClaimVolumeSource{
 			ClaimName: claimName,
 		}
-		volSource.PersistentVolumeClaim = &volClaim
-		err := createOrUpdatePersistentVolumeClaim(specVol.VolumeClaimTemplate.Spec, claimName, cfg.Namespace)
+
+		volSpec := v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				v1.ReadWriteOnce,
+			},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceStorage: specVol.StorageClass.Size,
+				},
+			},
+			StorageClassName: &specVol.StorageClass.StorageClassName,
+		}
+
+		err := createOrUpdatePersistentVolumeClaim(volSpec, claimName, cfg.Namespace)
 		if err != nil {
 			logrus.Errorf("Unable to create PersistentVolumeClaim: %v", err)
 		}
-	case specVol.PersistentVolumeClaim != nil:
-		volSource.PersistentVolumeClaim = specVol.PersistentVolumeClaim
+
 	default:
-		// TODO: assume EmptyDir/update to emptyDir?
-		logrus.Warn("Unknown volume source: %s", specVol)
+		logrus.Debug("Defaulting volume source to emptyDir for node %q", cfg.DeployName)
+		volSource.EmptyDir = &v1.EmptyDirVolumeSource{}
 	}
+
 	return volSource
 }
 

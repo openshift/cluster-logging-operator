@@ -125,9 +125,8 @@ type Config struct {
 	// If the file  with the given path already exists, the parser will use the
 	// alternative file contents provided by the map.
 	//
-	// The Package.Imports map may not include packages that are imported only
-	// by the alternative file contents provided by Overlay. This may cause
-	// type-checking to fail.
+	// Overlays provide incomplete support for when a given file doesn't
+	// already exist on disk. See the package doc above for more details.
 	Overlay map[string][]byte
 }
 
@@ -432,7 +431,7 @@ func (ld *loader) refine(roots []string, list ...*Package) ([]*Package, error) {
 				ld.Mode >= LoadTypes && rootIndex >= 0,
 			needsrc: ld.Mode >= LoadAllSyntax ||
 				ld.Mode >= LoadSyntax && rootIndex >= 0 ||
-				ld.Overlay != nil || // Overlays can invalidate export data. TODO(matloob): make this check fine-grained based on dependencies on overlaid files
+				len(ld.Overlay) > 0 || // Overlays can invalidate export data. TODO(matloob): make this check fine-grained based on dependencies on overlaid files
 				pkg.ExportFile == "" && pkg.PkgPath != "unsafe",
 		}
 		ld.pkgs[lpkg.ID] = lpkg

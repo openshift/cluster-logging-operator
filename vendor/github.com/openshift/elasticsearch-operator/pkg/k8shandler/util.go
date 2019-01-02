@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 const (
@@ -83,10 +82,12 @@ func getReadinessProbe() v1.Probe {
 	return v1.Probe{
 		TimeoutSeconds:      30,
 		InitialDelaySeconds: 10,
-		FailureThreshold:    15,
+		PeriodSeconds:       5,
 		Handler: v1.Handler{
-			TCPSocket: &v1.TCPSocketAction{
-				Port: intstr.FromInt(9300),
+			Exec: &v1.ExecAction{
+				Command: []string{
+					"/usr/share/elasticsearch/probe/readiness.sh",
+				},
 			},
 		},
 	}
@@ -233,6 +234,12 @@ func popReplicaSet(replicaSets *apps.ReplicaSetList, cfg actualNodeState) (*apps
 		return replicaSets, replicaSet, false
 	}
 	for i, rsItem := range replicaSets.Items {
+		// multiple ReplicaSets managed by single Deployment can exist, before they're GC'd
+		desiredReplicas := *rsItem.Spec.Replicas
+		if desiredReplicas == 0 {
+			// ignore old ReplicaSets
+			continue
+		}
 		if isOwner(rsItem.ObjectMeta, cfg.Deployment.ObjectMeta) {
 			replicaSet = rsItem
 			index = i
@@ -308,7 +315,16 @@ func listRunningPods(clusterName, namespace string) (*v1.PodList, error) {
 	runningPods := make([]v1.Pod, 0, len(pods.Items))
 	for _, pod := range pods.Items {
 		if pod.Status.Phase == v1.PodRunning {
-			runningPods = append(runningPods, pod)
+			podReady := true
+			for _, cs := range pod.Status.ContainerStatuses {
+				if !cs.Ready {
+					podReady = false
+					break
+				}
+			}
+			if podReady {
+				runningPods = append(runningPods, pod)
+			}
 		}
 	}
 	result := podList()
@@ -332,6 +348,17 @@ func listRunningMasterPods(clusterName, namespace string) (*v1.PodList, error) {
 	result := podList()
 	result.Items = masterPods
 	return result, nil
+}
+
+func getRunningMasterPod(clusterName, namespace string) (*v1.Pod, error) {
+	pods, err := listRunningMasterPods(clusterName, namespace)
+	if err != nil {
+		return nil, err
+	}
+	if len(pods.Items) == 0 {
+		return nil, fmt.Errorf("no running master pods found")
+	}
+	return &pods.Items[0], nil
 }
 
 // getPodNames returns the pod names of the array of pods passed in
@@ -367,7 +394,7 @@ func getMasterCount(dpl *v1alpha1.Elasticsearch) int32 {
 
 	for _, node := range dpl.Spec.Nodes {
 		if isNodeMaster(&node) {
-			masterCount = masterCount + node.Replicas
+			masterCount = masterCount + node.NodeCount
 		}
 	}
 
@@ -379,7 +406,7 @@ func getDataCount(dpl *v1alpha1.Elasticsearch) int32 {
 
 	for _, node := range dpl.Spec.Nodes {
 		if isNodeData(&node) {
-			dataCount = dataCount + node.Replicas
+			dataCount = dataCount + node.NodeCount
 		}
 	}
 
@@ -391,7 +418,7 @@ func getClientCount(dpl *v1alpha1.Elasticsearch) int32 {
 
 	for _, node := range dpl.Spec.Nodes {
 		if isNodeClient(&node) {
-			clientCount = clientCount + node.Replicas
+			clientCount = clientCount + node.NodeCount
 		}
 	}
 
@@ -402,7 +429,7 @@ func getNodeCount(dpl *v1alpha1.Elasticsearch) int32 {
 	nodeCount := int32(0)
 
 	for _, node := range dpl.Spec.Nodes {
-		nodeCount = nodeCount + node.Replicas
+		nodeCount = nodeCount + node.NodeCount
 	}
 	return nodeCount
 }

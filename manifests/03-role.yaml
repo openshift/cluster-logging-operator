@@ -46,6 +46,13 @@ rules:
   - cronjobs
   verbs:
   - "*"
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - "*"
 
 ---
 kind: ClusterRole

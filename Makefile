@@ -48,7 +48,7 @@ imagebuilder:
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
 	fi
 
-build:
+build: fmt
 	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/pkg $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/vendor/* $(TARGET_DIR)/src
@@ -61,7 +61,9 @@ image: imagebuilder
 	$(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS)
 
 fmt:
-	@gofmt -l -w $(SRC)
+	@gofmt -l -w cmd && \
+	gofmt -l -w pkg && \
+	gofmt -l -w test
 
 simplify:
 	@gofmt -s -l -w $(SRC)

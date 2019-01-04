@@ -353,7 +353,7 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.FluentdSpec.Resources)
 
 	fluentdContainer.Env = []v1.EnvVar{
-		{Name: "MERGE_JSON_LOG", Value: "true"},
+		{Name: "MERGE_JSON_LOG", Value: "false"},
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
 		{Name: "ES_HOST", Value: elasticsearchAppName},
 		{Name: "ES_PORT", Value: "9200"},
@@ -421,7 +421,7 @@ func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, logging.Spec.Collection.LogCollection.RsyslogSpec.Resources)
 
 	rsyslogContainer.Env = []v1.EnvVar{
-		{Name: "MERGE_JSON_LOG", Value: "true"},
+		{Name: "MERGE_JSON_LOG", Value: "false"},
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
 		{Name: "ES_HOST", Value: elasticsearchAppName},
 		{Name: "ES_PORT", Value: "9200"},

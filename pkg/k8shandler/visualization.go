@@ -202,7 +202,7 @@ func createOrUpdateOauthClient(logging *logging.ClusterLogging, oauthSecret stri
 				"namespace":     logging.Namespace,
 			},
 		},
-		Secret: oauthSecret,
+		Secret:       oauthSecret,
 		RedirectURIs: redirectURIs,
 		ScopeRestrictions: []oauth.ScopeRestriction{
 			oauth.ScopeRestriction{

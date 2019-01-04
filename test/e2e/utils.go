@@ -1,17 +1,17 @@
 package e2e
 
 import (
+	"context"
 	"testing"
 	"time"
-	"context"
 
+	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	framework "github.com/operator-framework/operator-sdk/pkg/test"
-	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	dynclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func WaitForCronJob(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, replicas int, retryInterval, timeout time.Duration) error {
@@ -149,7 +149,7 @@ func CheckForElasticsearchImageName(t *testing.T, client framework.FrameworkClie
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		err = client.Get(context.Background(), dynclient.ObjectKey{
 			Namespace: namespace,
-			Name: name,
+			Name:      name,
 		}, elasticsearch)
 		if err != nil {
 			if apierrors.IsNotFound(err) {

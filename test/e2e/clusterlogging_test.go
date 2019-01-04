@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/api/core/v1"
 	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
@@ -38,7 +38,7 @@ func TestClusterLogging(t *testing.T) {
 
 	elasticsearchList := &v1alpha1.ElasticsearchList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:	"Elasticsearch",
+			Kind:       "Elasticsearch",
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
 		},
 	}
@@ -128,7 +128,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	if collector == "fluentd" {
 		collectionSpec = logging.CollectionSpec{
 			LogCollection: logging.LogCollectionSpec{
-				Type: logging.LogCollectionTypeFluentd,
+				Type:        logging.LogCollectionTypeFluentd,
 				FluentdSpec: logging.FluentdSpec{},
 			},
 		}
@@ -136,7 +136,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	if collector == "rsyslog" {
 		collectionSpec = logging.CollectionSpec{
 			LogCollection: logging.LogCollectionSpec{
-				Type: logging.LogCollectionTypeRsyslog,
+				Type:        logging.LogCollectionTypeRsyslog,
 				RsyslogSpec: logging.RsyslogSpec{},
 			},
 		}
@@ -155,7 +155,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		Spec: logging.ClusterLoggingSpec{
 			LogStore: logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
-				ElasticsearchSpec: logging.ElasticsearchSpec {
+				ElasticsearchSpec: logging.ElasticsearchSpec{
 					Replicas: 1,
 				},
 			},
@@ -171,7 +171,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 					Schedule: "* * * * *",
 				},
 			},
-			Collection: collectionSpec,
+			Collection:      collectionSpec,
 			ManagementState: logging.ManagementStateManaged,
 		},
 	}

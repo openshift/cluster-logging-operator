@@ -67,8 +67,6 @@ type ElasticsearchSpec struct {
 // This is the struct that will contain information pertinent to Log and event collection
 type CollectionSpec struct {
 	LogCollection   LogCollectionSpec   `json:"logCollection,omitempty"`
-	EventCollection EventCollectionSpec `json:"eventCollection,omitempty"`
-	Normalizer      NormalizerSpec      `json:"normalizer,omitempty"`
 }
 
 type LogCollectionSpec struct {

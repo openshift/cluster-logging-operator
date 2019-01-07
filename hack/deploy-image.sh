@@ -13,6 +13,29 @@ LOCAL_PORT=${LOCAL_PORT:-5000}
 
 tag=${tag:-"127.0.0.1:${registry_port}/$IMAGE_TAG"}
 
+if [ "${USE_IMAGE_STREAM:-false}" = true ] ; then
+    oc process \
+        -p CL_OP_GITHUB_URL=https://github.com/${CL_OP_GITHUB_REPO:-openshift}/cluster-logging-operator \
+        -p CL_OP_GITHUB_BRANCH=${CL_OP_GITHUB_BRANCH:-master} \
+        -f hack/image-stream-build-config-template.yaml | \
+      oc -n openshift create -f -
+    # wait for is and bc
+    for ii in $(seq 1 10) ; do
+        if oc -n openshift get bc cluster-logging-operator > /dev/null 2>&1 && \
+           oc -n openshift get is cluster-logging-operator > /dev/null 2>&1 ; then
+            break
+        fi
+        sleep 1
+    done
+    if [ $ii = 10 ] ; then
+        echo ERROR: timeout waiting for cluster-logging-operator buildconfig and imagestream to be available
+        exit 1
+    fi
+    # wait
+    oc -n openshift logs -f bc/cluster-logging-operator
+    exit 0
+fi
+
 ${IMAGE_TAG_CMD} $IMAGE_TAG ${tag}
 
 echo "Setting up port-forwarding to remote $registry_svc ..."

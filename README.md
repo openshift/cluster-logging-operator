@@ -29,6 +29,8 @@ deploying the operator assumes:
 * `make` targets are executed from the `openshift/cluster-logging-operator` root directory
 * various other commands such as `imagebuilder` and `operator-sdk` - it is suggested
   that you use the logging `sdk_setup.sh` script at https://raw.githubusercontent.com/openshift/origin-aggregated-logging/master/hack/sdk_setup.sh
+  
+**Note:** If you are using `REMOTE_REGISTRY=true`, ensure you have `docker` package installed and `docker` daemon up and running on the workstation you are running these commands.
 
 The deployment can be optionally modified using any of the following:
 

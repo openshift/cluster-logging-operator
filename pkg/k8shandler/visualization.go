@@ -626,7 +626,7 @@ func createSharedConfigRoleBinding(logging *logging.ClusterLogging) *rbac.RoleBi
 			APIVersion: rbac.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "openshift-logging-sharing-config-reader-binding",
+			Name:      "openshift-logging-sharing-config-reader-binding",
 			Namespace: logging.Namespace,
 		},
 		RoleRef: rbac.RoleRef{

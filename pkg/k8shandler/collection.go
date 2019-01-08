@@ -413,6 +413,14 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 	fluentdPodSpec.NodeSelector = logging.Spec.Collection.LogCollection.FluentdSpec.NodeSelector
 
+	fluentdPodSpec.Tolerations = []v1.Toleration{
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
 	return fluentdPodSpec
 }
 
@@ -489,6 +497,14 @@ func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	rsyslogPodSpec.PriorityClassName = "cluster-logging"
 
 	rsyslogPodSpec.NodeSelector = logging.Spec.Collection.LogCollection.RsyslogSpec.NodeSelector
+
+	rsyslogPodSpec.Tolerations = []v1.Toleration{
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
 
 	return rsyslogPodSpec
 }

@@ -21,6 +21,12 @@ func (node *deploymentNode) getResource() runtime.Object {
 }
 
 func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
+
+	if node.resource.Spec.Paused == false {
+		logrus.Debugf("Deployment %v is not currently paused.", node.resource.Name)
+		return true, nil
+	}
+
 	// Check replicas number
 	actualReplicas := *node.resource.Spec.Replicas
 	if cfg.getReplicas() != actualReplicas {
@@ -29,17 +35,13 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 	}
 
 	// Check image of Elasticsearch container
-	isImageDifferent := false
 	for _, container := range node.resource.Spec.Template.Spec.Containers {
 		if container.Name == "elasticsearch" {
 			if container.Image != cfg.ESNodeSpec.Spec.Image {
-				isImageDifferent = true
 				logrus.Debugf("Resource '%s' has different container image than desired", node.resource.Name)
+				return true, nil
 			}
 		}
-	}
-	if isImageDifferent {
-		return true, nil
 	}
 
 	// Check if labels are correct
@@ -74,19 +76,15 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 	for _, volume := range node.resource.Spec.Template.Spec.Volumes {
 		if volume.Name == "elasticsearch-storage" {
 			switch {
-			case volume.PersistentVolumeClaim != nil && cfg.ESNodeSpec.Storage.PersistentVolumeClaim != nil:
-				if volume.PersistentVolumeClaim.ClaimName == cfg.ESNodeSpec.Storage.PersistentVolumeClaim.ClaimName {
-					return false, nil
-				}
-			case volume.PersistentVolumeClaim != nil && cfg.ESNodeSpec.Storage.VolumeClaimTemplate != nil:
-				// FIXME: don't forget to fix this
-				desiredClaimName := fmt.Sprintf("%s-%s", cfg.ESNodeSpec.Storage.VolumeClaimTemplate.Name, node.resource.Name)
+			case volume.PersistentVolumeClaim != nil && cfg.ESNodeSpec.Storage.StorageClass != nil:
+				desiredClaimName := fmt.Sprintf("%s-%s", cfg.ClusterName, cfg.DeployName)
 				if volume.PersistentVolumeClaim.ClaimName == desiredClaimName {
 					return false, nil
 				}
-			case volume.HostPath != nil && cfg.ESNodeSpec.Storage.HostPath != nil:
-				return false, nil
-			case volume.EmptyDir != nil && (cfg.ESNodeSpec.Storage.EmptyDir != nil || cfg.ESNodeSpec.Storage == v1alpha1.ElasticsearchNodeStorageSource{}):
+
+				logrus.Warn("Detected change in storage")
+				return true, nil
+			case volume.EmptyDir != nil && cfg.ESNodeSpec.Storage == v1alpha1.ElasticsearchStorageSpec{}:
 				return false, nil
 			default:
 				logrus.Warn("Detected change in storage")
@@ -111,8 +109,19 @@ func (node *deploymentNode) constructNodeResource(cfg *desiredNodeState, owner m
 
 	replicas := cfg.getReplicas()
 
-	deployment := node.resource
-	//deployment(cfg.DeployName, node.resource.ObjectMeta.Namespace)
+	// deployment := node.resource
+	deployment := apps.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Deployment",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cfg.DeployName,
+			Namespace: cfg.Namespace,
+		},
+	}
+
+	progressDeadlineSeconds := int32(1800)
 	deployment.ObjectMeta.Labels = cfg.getLabels()
 	deployment.Spec = apps.DeploymentSpec{
 		Replicas: &replicas,
@@ -122,7 +131,9 @@ func (node *deploymentNode) constructNodeResource(cfg *desiredNodeState, owner m
 		Strategy: apps.DeploymentStrategy{
 			Type: "Recreate",
 		},
-		Template: cfg.constructPodTemplateSpec(),
+		ProgressDeadlineSeconds: &progressDeadlineSeconds,
+		Template:                cfg.constructPodTemplateSpec(),
+		Paused:                  cfg.Paused,
 	}
 
 	// if storageClass != "default" {

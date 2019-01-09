@@ -127,16 +127,16 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	var collectionSpec logging.CollectionSpec
 	if collector == "fluentd" {
 		collectionSpec = logging.CollectionSpec{
-			LogCollection: logging.LogCollectionSpec{
-				Type:        logging.LogCollectionTypeFluentd,
+			Logs: logging.LogCollectionSpec{
+				Type: logging.LogCollectionTypeFluentd,
 				FluentdSpec: logging.FluentdSpec{},
 			},
 		}
 	}
 	if collector == "rsyslog" {
 		collectionSpec = logging.CollectionSpec{
-			LogCollection: logging.LogCollectionSpec{
-				Type:        logging.LogCollectionTypeRsyslog,
+			Logs: logging.LogCollectionSpec{
+				Type: logging.LogCollectionTypeRsyslog,
 				RsyslogSpec: logging.RsyslogSpec{},
 			},
 		}
@@ -155,8 +155,8 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		Spec: logging.ClusterLoggingSpec{
 			LogStore: logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
-				ElasticsearchSpec: logging.ElasticsearchSpec{
-					Replicas: 1,
+				ElasticsearchSpec: logging.ElasticsearchSpec {
+					NodeCount: 1,
 				},
 			},
 			Visualization: logging.VisualizationSpec{
@@ -180,22 +180,12 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		return err
 	}
 
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "kibana-app", 1, retryInterval, timeout)
+	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "kibana", 1, retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "kibana-infra", 1, retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = WaitForCronJob(t, f.KubeClient, namespace, "curator-app", 1, retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = WaitForCronJob(t, f.KubeClient, namespace, "curator-infra", 1, retryInterval, timeout)
+	err = WaitForCronJob(t, f.KubeClient, namespace, "curator", 1, retryInterval, timeout)
 	if err != nil {
 		return err
 	}
@@ -298,32 +288,17 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 		return fmt.Errorf("could not update cluster-logging-operator with updated image values", err)
 	}
 
-	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-app", "docker.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "docker.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-infra", "docker.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", "docker.io/openshift/origin-logging-kibana5:upgraded", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana-app", "docker.io/openshift/origin-logging-kibana5:upgraded", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana-infra", "docker.io/openshift/origin-logging-kibana5:upgraded", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator-app", "docker.io/openshift/origin-logging-curator5:upgraded", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator-infra", "docker.io/openshift/origin-logging-curator5:upgraded", retryInterval, timeout)
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", "docker.io/openshift/origin-logging-curator5:upgraded", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
@@ -352,32 +327,17 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 		return fmt.Errorf("could not update cluster-logging-operator with prior image values", err)
 	}
 
-	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-app", "docker.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "docker.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch-infra", "docker.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", "docker.io/openshift/origin-logging-kibana5:latest", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana-app", "docker.io/openshift/origin-logging-kibana5:latest", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana-infra", "docker.io/openshift/origin-logging-kibana5:latest", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator-app", "docker.io/openshift/origin-logging-curator5:latest", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator-infra", "docker.io/openshift/origin-logging-curator5:latest", retryInterval, timeout)
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", "docker.io/openshift/origin-logging-curator5:latest", retryInterval, timeout)
 	if err != nil {
 		return err
 	}

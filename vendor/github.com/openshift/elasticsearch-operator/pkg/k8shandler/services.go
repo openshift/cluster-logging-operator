@@ -20,20 +20,20 @@ func CreateOrUpdateServices(dpl *v1alpha1.Elasticsearch) error {
 
 	labelsWithDefault := appendDefaultLabel(dpl.Name, dpl.Labels)
 
-	err := createOrUpdateService(elasticsearchClusterSvcName, dpl.Namespace, dpl.Name, "cluster", 9300, selectorForES("es-node-master", dpl.Name), labelsWithDefault, owner)
+	err := createOrUpdateService(elasticsearchClusterSvcName, dpl.Namespace, dpl.Name, "cluster", 9300, selectorForES("es-node-master", dpl.Name), labelsWithDefault, true, owner)
 	if err != nil {
 		return fmt.Errorf("Failure creating service %v", err)
 	}
 
-	err = createOrUpdateService(elasticsearchRestSvcName, dpl.Namespace, dpl.Name, "restapi", 9200, selectorForES("es-node-client", dpl.Name), labelsWithDefault, owner)
+	err = createOrUpdateService(elasticsearchRestSvcName, dpl.Namespace, dpl.Name, "restapi", 9200, selectorForES("es-node-client", dpl.Name), labelsWithDefault, false, owner)
 	if err != nil {
 		return fmt.Errorf("Failure creating service %v", err)
 	}
 	return nil
 }
 
-func createOrUpdateService(serviceName, namespace, clusterName, targetPortName string, port int32, selector, labels map[string]string, owner metav1.OwnerReference) error {
-	elasticsearchSvc := createService(serviceName, namespace, clusterName, targetPortName, port, selector, labels)
+func createOrUpdateService(serviceName, namespace, clusterName, targetPortName string, port int32, selector, labels map[string]string, publishNotReady bool, owner metav1.OwnerReference) error {
+	elasticsearchSvc := createService(serviceName, namespace, clusterName, targetPortName, port, selector, labels, publishNotReady)
 	addOwnerRefToObject(elasticsearchSvc, owner)
 	err := sdk.Create(elasticsearchSvc)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -52,7 +52,7 @@ func createOrUpdateService(serviceName, namespace, clusterName, targetPortName s
 	return nil
 }
 
-func createService(serviceName, namespace, clusterName, targetPortName string, port int32, selector, labels map[string]string) *v1.Service {
+func createService(serviceName, namespace, clusterName, targetPortName string, port int32, selector, labels map[string]string, publishNotReady bool) *v1.Service {
 	svc := service(serviceName, namespace)
 	svc.Labels = labels
 	svc.Spec = v1.ServiceSpec{
@@ -64,6 +64,7 @@ func createService(serviceName, namespace, clusterName, targetPortName string, p
 				TargetPort: intstr.FromString(targetPortName),
 			},
 		},
+		PublishNotReadyAddresses: publishNotReady,
 	}
 	return svc
 }

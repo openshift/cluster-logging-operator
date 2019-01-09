@@ -90,22 +90,12 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 
 	esNode := v1alpha1.ElasticsearchNode{
 		Roles:        []v1alpha1.ElasticsearchNodeRole{"client", "data", "master"},
-		Replicas:     logging.Spec.LogStore.Replicas,
+		NodeCount:    logging.Spec.LogStore.NodeCount,
 		NodeSelector: logging.Spec.LogStore.NodeSelector,
 		Spec: v1alpha1.ElasticsearchNodeSpec{
 			Resources: logging.Spec.LogStore.Resources,
 		},
 		Storage: logging.Spec.LogStore.ElasticsearchSpec.Storage,
-	}
-
-	if esNode.Storage.VolumeClaimTemplate != nil {
-		esNode.Storage.VolumeClaimTemplate.ObjectMeta = metav1.ObjectMeta{
-			Name:      elasticsearchName,
-			Namespace: logging.Namespace,
-			Labels: map[string]string{
-				"logging-infra": "support",
-			},
-		}
 	}
 
 	// build Nodes
@@ -124,9 +114,9 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 			Spec: v1alpha1.ElasticsearchNodeSpec{
 				Image: utils.GetComponentImage("elasticsearch"),
 			},
-			Nodes:             esNodes,
-			ManagementState:   v1alpha1.ManagementStateManaged,
-			ReplicationPolicy: logging.Spec.LogStore.ElasticsearchSpec.ReplicationPolicy,
+			Nodes:            esNodes,
+			ManagementState:  v1alpha1.ManagementStateManaged,
+			RedundancyPolicy: logging.Spec.LogStore.ElasticsearchSpec.RedundancyPolicy,
 		},
 	}
 

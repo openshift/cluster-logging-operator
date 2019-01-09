@@ -57,16 +57,16 @@ type LogStoreSpec struct {
 }
 
 type ElasticsearchSpec struct {
-	Resources         v1.ResourceRequirements                 `json:"resources"`
-	Replicas          int32                                   `json:"replicas"`
-	NodeSelector      map[string]string                       `json:"nodeSelector,omitempty"`
-	Storage           v1alpha1.ElasticsearchNodeStorageSource `json:"storage"`
-	ReplicationPolicy v1alpha1.ReplicationPolicyType          `json:"dataReplication"`
+	Resources        v1.ResourceRequirements           `json:"resources"`
+	NodeCount        int32                             `json:"nodeCount"`
+	NodeSelector     map[string]string                 `json:"nodeSelector,omitempty"`
+	Storage          v1alpha1.ElasticsearchStorageSpec `json:"storage"`
+	RedundancyPolicy v1alpha1.RedundancyPolicyType     `json:"redundancyPolicy"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection
 type CollectionSpec struct {
-	LogCollection LogCollectionSpec `json:"logCollection,omitempty"`
+	Logs LogCollectionSpec `json:"logs,omitempty"`
 }
 
 type LogCollectionSpec struct {
@@ -87,12 +87,6 @@ type FluentdSpec struct {
 type RsyslogSpec struct {
 	Resources    v1.ResourceRequirements `json:"resources"`
 	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
-}
-
-// This is the struct that will contain information pertinent to Log normalization (Mux)
-type NormalizerSpec struct {
-	Type        NormalizerType `json:"type"`
-	FluentdSpec `json:"fluentd,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log curation (Curator)
@@ -131,7 +125,7 @@ type LogStoreStatus struct {
 
 type ElasticsearchStatus struct {
 	ClusterName   string                                `json:"clusterName"`
-	Replicas      int32                                 `json:"replicas"`
+	NodeCount     int32                                 `json:"nodeCount"`
 	ReplicaSets   []string                              `json:"replicaSets"`
 	Deployments   []string                              `json:"deployments"`
 	StatefulSets  []string                              `json:"statefulSets"`
@@ -140,9 +134,7 @@ type ElasticsearchStatus struct {
 }
 
 type CollectionStatus struct {
-	LogCollection    LogCollectionStatus   `json:"logCollection,omitempty"`
-	EventCollection  EventCollectionStatus `json:"eventCollection,omitempty"`
-	NormalizerStatus NormalizerStatus      `json:"normalizerStatus,omitempty"`
+	Logs LogCollectionStatus `json:"logs,omitempty"`
 }
 
 type LogCollectionStatus struct {

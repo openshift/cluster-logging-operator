@@ -10,13 +10,8 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 )
 
-const (
-	defaultServiceAccountName = "aggregated-logging-elasticsearch"
-)
-
 // CreateOrUpdateServiceAccount ensures the existence of the serviceaccount for Elasticsearch cluster
 func CreateOrUpdateServiceAccount(dpl *v1alpha1.Elasticsearch) (string, error) {
-	// In case no serviceaccount is specified in the spec, we'll use the default name for service account
 	serviceAccountName := v1alpha1.ServiceAccountName
 
 	owner := asOwner(dpl)

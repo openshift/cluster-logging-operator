@@ -213,5 +213,11 @@ func isElasticsearchCRDifferent(current *v1alpha1.Elasticsearch, desired *v1alph
 		different = true
 	}
 
+	if current.Spec.RedundancyPolicy != desired.Spec.RedundancyPolicy {
+		logrus.Infof("Elasticsearch redundancy policy change found, updating %q", current.Name)
+		current.Spec.RedundancyPolicy = desired.Spec.RedundancyPolicy
+		different = true
+	}
+
 	return current, different
 }

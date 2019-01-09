@@ -8,15 +8,15 @@ import (
 
 const (
 	modeUnique    = "unique"
-	modeOpsShared = "ops_shared"
-	defaultMode   = modeUnique
+	modeSharedOps = "shared_ops"
+	defaultMode   = modeSharedOps
 )
 
 func kibanaIndexMode(mode string) (string, error) {
 	if mode == "" {
 		return defaultMode, nil
 	}
-	if mode == modeUnique || mode == modeOpsShared {
+	if mode == modeUnique || mode == modeSharedOps {
 		return mode, nil
 	}
 	return "", fmt.Errorf("invalid kibana index mode provided [%s]", mode)
@@ -32,15 +32,17 @@ func rootLogger() string {
 
 func calculateReplicaCount(dpl *v1alpha1.Elasticsearch) int {
 	dataNodeCount := int((getDataCount(dpl)))
-	repType := dpl.Spec.ReplicationPolicy
+	repType := dpl.Spec.RedundancyPolicy
 	switch repType {
-	case v1alpha1.FullReplication:
+	case v1alpha1.FullRedundancy:
 		return dataNodeCount - 1
-	case v1alpha1.PartialReplication:
+	case v1alpha1.MultipleRedundancy:
 		return (dataNodeCount - 1) / 2
-	case v1alpha1.NoReplication:
-		fallthrough
-	default:
+	case v1alpha1.SingleRedundancy:
+		return 1
+	case v1alpha1.ZeroRedundancy:
 		return 0
+	default:
+		return 1
 	}
 }

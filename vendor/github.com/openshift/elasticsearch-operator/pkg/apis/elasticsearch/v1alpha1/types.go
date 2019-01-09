@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,73 +31,95 @@ type Elasticsearch struct {
 	Status            ElasticsearchStatus `json:"status,omitempty"`
 }
 
-type ReplicationPolicyType string
+// RedundancyPolicyType controls number of elasticsearch replica shards
+type RedundancyPolicyType string
 
 const (
-	FullReplication    ReplicationPolicyType = "FullReplication"
-	PartialReplication ReplicationPolicyType = "PartialReplication"
-	NoReplication      ReplicationPolicyType = "NoReplication"
+	// FullRedundancy - each index is fully replicated on every Data node in the cluster
+	FullRedundancy RedundancyPolicyType = "FullRedundancy"
+	// MultipleRedundancy - each index is spread over half of the Data nodes
+	MultipleRedundancy RedundancyPolicyType = "MultipleRedundancy"
+	// SingleRedundancy - one replica shard
+	SingleRedundancy RedundancyPolicyType = "SingleRedundancy"
+	// ZeroRedundancy - no replica shards
+	ZeroRedundancy RedundancyPolicyType = "ZeroRedundancy"
 )
 
 // ElasticsearchSpec struct represents the Spec of Elasticsearch cluster CRD
 type ElasticsearchSpec struct {
 	// managementState indicates whether and how the operator should manage the component
-	ManagementState   ManagementState       `json:"managementState"`
-	ReplicationPolicy ReplicationPolicyType `json:"dataReplication"`
-	Nodes             []ElasticsearchNode   `json:"nodes"`
-	Spec              ElasticsearchNodeSpec `json:"nodeSpec"`
+	ManagementState  ManagementState       `json:"managementState"`
+	RedundancyPolicy RedundancyPolicyType  `json:"redundancyPolicy"`
+	Nodes            []ElasticsearchNode   `json:"nodes"`
+	Spec             ElasticsearchNodeSpec `json:"nodeSpec"`
 }
 
 // ElasticsearchNode struct represents individual node in Elasticsearch cluster
 type ElasticsearchNode struct {
-	Roles        []ElasticsearchNodeRole        `json:"roles"`
-	Replicas     int32                          `json:"replicas"`
-	Spec         ElasticsearchNodeSpec          `json:"nodeSpec"`
-	NodeSelector map[string]string              `json:"nodeSelector,omitempty"`
-	Storage      ElasticsearchNodeStorageSource `json:"storage"`
+	Roles        []ElasticsearchNodeRole  `json:"roles"`
+	NodeCount    int32                    `json:"nodeCount"`
+	Spec         ElasticsearchNodeSpec    `json:"nodeSpec"`
+	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
+	Storage      ElasticsearchStorageSpec `json:"storage"`
 }
 
-type ElasticsearchNodeStorageSource struct {
-	// HostPath option will mount directory from the host.
-	// Cluster administrator must grant `hostaccess` scc to the service account.
-	// Cluster admin also must set appropriate SELINUX labels and perissions
-	// for the directory on the host.
-	HostPath *v1.HostPathVolumeSource `json:"hostPath,omitempty"`
-
-	// EmptyDir should be only used for testing purposes and not in production.
-	// This option will use temporary directory for data storage. Data will be lost
-	// when Pod is regenerated.
-	EmptyDir *v1.EmptyDirVolumeSource `json:"emptyDir,omitempty"`
-
-	// VolumeClaimTemplate is supposed to act similarly to VolumeClaimTemplates field
-	// of StatefulSetSpec. Meaning that it'll generate a number of PersistentVolumeClaims
-	// per individual Elasticsearch cluster node. The actual PVC name used will
-	// be constructed from VolumeClaimTemplate name, node type and replica number
-	// for the specific node.
-	VolumeClaimTemplate *v1.PersistentVolumeClaim `json:"volumeClaimTemplate,omitempty"`
+type ElasticsearchStorageSpec struct {
+	StorageClass *ElasticsearchStorageClassSpec `json:",inline,omitempty"`
 
 	// PersistentVolumeClaim will NOT try to regenerate PVC, it will be used
 	// as-is. You may want to use it instead of VolumeClaimTemplate in case
 	// you already have bounded PersistentVolumeClaims you want to use, and the names
 	// of these PersistentVolumeClaims doesn't follow the naming convention.
-	PersistentVolumeClaim *v1.PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty"`
+
+	// TODO: uncomment when we add in adoption
+	//PersistentVolumeClaim *v1.PersistentVolumeClaimVolumeSource `json:"persistentVolumeClaim,omitempty"`
+}
+
+type ElasticsearchStorageClassSpec struct {
+	StorageClassName string            `json:"storageClassName"`
+	Size             resource.Quantity `json:"size"`
 }
 
 // ElasticsearchNodeStatus represents the status of individual Elasticsearch node
 type ElasticsearchNodeStatus struct {
-	DeploymentName  string                  `json:"deploymentName,omitempty"`
-	ReplicaSetName  string                  `json:"replicaSetName,omitempty"`
-	StatefulSetName string                  `json:"statefulSetName,omitempty"`
-	PodName         string                  `json:"podName,omitempty"`
-	Status          string                  `json:"status,omitempty"`
-	Roles           []ElasticsearchNodeRole `json:"roles,omitempty"`
+	DeploymentName  string `json:"deploymentName,omitempty"`
+	ReplicaSetName  string `json:"replicaSetName,omitempty"`
+	StatefulSetName string `json:"statefulSetName,omitempty"`
+	PodName         string `json:"podName,omitempty"`
+	Status          string `json:"status,omitempty"`
+	// UnderUpgrade    UpgradeStatus              `json:"underUpgrade,omitempty"`
+	UpgradeStatus ElasticsearchNodeUpgradeStatus `json:"upgradeStatus,omitempty"`
+	Roles         []ElasticsearchNodeRole        `json:"roles,omitempty"`
 }
+
+type ElasticsearchNodeUpgradeStatus struct {
+	UnderUpgrade UpgradeStatus             `json:"underUpgrade,omitempty"`
+	UpgradePhase ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
+}
+
+type ElasticsearchUpgradePhase string
+
+const (
+	NodeRestarting    ElasticsearchUpgradePhase = "nodeRestarting"
+	RecoveringData    ElasticsearchUpgradePhase = "recoveringData"
+	ControllerUpdated ElasticsearchUpgradePhase = "controllerUpdated"
+	// UpgradeInitializing    ElasticsearchUpgradePhase = "upgradeInitializing"
+	// NodeRejoined   ElasticsearchUpgradePhase = "nodeRejoined"
+	// ShardAllocationEnabled ElasticsearchUpgradePhase = "shardAllocationEnabled"
+)
 
 // ElasticsearchNodeSpec represents configuration of an individual Elasticsearch node
 type ElasticsearchNodeSpec struct {
 	Image     string                  `json:"image,omitempty"`
 	Resources v1.ResourceRequirements `json:"resources"`
 }
+
+type UpgradeStatus string
+
+const (
+	UnderUpgradeTrue  UpgradeStatus = "True"
+	UnderUpgradeFalse UpgradeStatus = "False"
+)
 
 type ElasticsearchRequiredAction string
 
@@ -117,12 +140,20 @@ const (
 	ElasticsearchRoleMaster ElasticsearchNodeRole = "master"
 )
 
+type ShardAllocationState string
+
+const (
+	ShardAllocationTrue  ShardAllocationState = "True"
+	ShardAllocationFalse ShardAllocationState = "False"
+)
+
 // ElasticsearchStatus represents the status of Elasticsearch cluster
 type ElasticsearchStatus struct {
-	Nodes         []ElasticsearchNodeStatus             `json:"nodes"`
-	ClusterHealth string                                `json:"clusterHealth"`
-	Pods          map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
-	Conditions    []ClusterCondition                    `json:"conditions"`
+	Nodes                  []ElasticsearchNodeStatus             `json:"nodes"`
+	ClusterHealth          string                                `json:"clusterHealth"`
+	ShardAllocationEnabled ShardAllocationState                  `json:"shardAllocationEnabled"`
+	Pods                   map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
+	Conditions             []ClusterCondition                    `json:"conditions"`
 }
 
 type PodStateMap map[PodStateType][]string

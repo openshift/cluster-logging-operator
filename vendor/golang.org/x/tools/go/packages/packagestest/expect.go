@@ -45,7 +45,7 @@ const (
 // When invoking a method the expressions in the parameter list need to be
 // converted to values to be passed to the method.
 // There are a very limited set of types the arguments are allowed to be.
-//   expect.Comment : passed the Comment instance being evaluated.
+//   expect.Note : passed the Note instance being evaluated.
 //   string : can be supplied either a string literal or an identifier.
 //   int : can only be supplied an integer literal.
 //   *regexp.Regexp : can only be supplied a regular expression literal
@@ -146,7 +146,11 @@ func (e *Exported) getNotes() error {
 	}
 	for _, pkg := range pkgs {
 		for _, filename := range pkg.GoFiles {
-			l, err := expect.Parse(e.fset, filename, nil)
+			content, err := e.FileContents(filename)
+			if err != nil {
+				return err
+			}
+			l, err := expect.Parse(e.fset, filename, content)
 			if err != nil {
 				return fmt.Errorf("Failed to extract expectations: %v", err)
 			}
@@ -337,7 +341,7 @@ func (e *Exported) rangeConverter(n *expect.Note, args []interface{}) (Range, []
 			return mark, args, nil
 		}
 	case string:
-		start, end, err := expect.MatchBefore(e.fset, e.fileContents, n.Pos, arg)
+		start, end, err := expect.MatchBefore(e.fset, e.FileContents, n.Pos, arg)
 		if err != nil {
 			return Range{}, nil, err
 		}
@@ -346,7 +350,7 @@ func (e *Exported) rangeConverter(n *expect.Note, args []interface{}) (Range, []
 		}
 		return Range{Start: start, End: end}, args, nil
 	case *regexp.Regexp:
-		start, end, err := expect.MatchBefore(e.fset, e.fileContents, n.Pos, arg)
+		start, end, err := expect.MatchBefore(e.fset, e.FileContents, n.Pos, arg)
 		if err != nil {
 			return Range{}, nil, err
 		}

@@ -19,6 +19,7 @@ REPO_PREFIX=${REPO_PREFIX:-"openshift/"}
 IMAGE_PREFIX=${IMAGE_PREFIX:-"origin-"}
 export REPO_PREFIX IMAGE_PREFIX
 REMOTE_REGISTRY=${REMOTE_REGISTRY:-false}
+NAMESPACE=${NAMESPACE:-"openshift-logging"}
 
 if [ $REMOTE_REGISTRY = false ] ; then
     : # skip

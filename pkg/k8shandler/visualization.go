@@ -488,7 +488,7 @@ func getKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 			ValueFrom: &v1.EnvVarSource{
 				ResourceFieldRef: &v1.ResourceFieldSelector{
 					ContainerName: "kibana",
-					Resource: "limits.memory",
+					Resource:      "limits.memory",
 				},
 			},
 		},
@@ -536,7 +536,7 @@ func getKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 			ValueFrom: &v1.EnvVarSource{
 				ResourceFieldRef: &v1.ResourceFieldSelector{
 					ContainerName: "kibana-proxy",
-					Resource: "limits.memory",
+					Resource:      "limits.memory",
 				},
 			},
 		},
@@ -557,14 +557,14 @@ func getKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 			{Name: "kibana", VolumeSource: v1.VolumeSource{
 				Secret: &v1.SecretVolumeSource{
 					SecretName: "kibana",
-					},
 				},
+			},
 			},
 			{Name: "kibana-proxy", VolumeSource: v1.VolumeSource{
 				Secret: &v1.SecretVolumeSource{
 					SecretName: "kibana-proxy",
-					},
 				},
+			},
 			},
 		},
 	)
@@ -579,7 +579,7 @@ func getKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 							MatchExpressions: []metav1.LabelSelectorRequirement{
 								{Key: "logging-infra",
 									Operator: metav1.LabelSelectorOpIn,
-									Values: []string{"kibana"},
+									Values:   []string{"kibana"},
 								},
 							},
 						},

@@ -38,8 +38,13 @@ func WaitForCronJob(t *testing.T, kubeclient kubernetes.Interface, namespace, na
 	return nil
 }
 
-func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, replicas int, retryInterval, timeout time.Duration) error {
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, retryInterval, timeout time.Duration) error {
+	nodes, err := kubeclient.Core().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	nodeCount := len(nodes.Items)
+	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		daemonset, err := kubeclient.AppsV1().DaemonSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -48,17 +53,16 @@ func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, 
 			}
 			return false, err
 		}
-
-		if int(daemonset.Status.NumberReady) == replicas {
+		if int(daemonset.Status.NumberReady) == nodeCount {
 			return true, nil
 		}
-		t.Logf("Waiting for full availability of %s daemonset (%d/%d)\n", name, int(daemonset.Status.NumberReady), replicas)
+		t.Logf("Waiting for full availability of %s daemonset (%d/%d)\n", name, int(daemonset.Status.NumberReady), nodeCount)
 		return false, nil
 	})
 	if err != nil {
 		return err
 	}
-	t.Logf("Daemonset available (%d/%d)\n", replicas, replicas)
+	t.Logf("Daemonset available (%d/%d)\n", nodeCount, nodeCount)
 	return nil
 }
 

@@ -5,7 +5,7 @@ maintaining the deployment by modifying the cluster logging CRD to be unmanaged.
 
 ```
   spec:
-    managementState: "UnManaged"
+    managementState: "Unmanaged"
 ```
 **NOTE:** Many of the configurations described in the following sections could previously be modified by
 updating the ansible inventory file.  These changes are no longer supported in a managed capacity and are

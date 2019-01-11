@@ -5,14 +5,15 @@ import (
 	"io/ioutil"
 	"reflect"
 
+	"strings"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
-	"strings"
-	"time"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"

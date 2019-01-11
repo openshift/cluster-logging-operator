@@ -14,7 +14,7 @@ RUN INSTALL_PKGS=" \
     chmod og+w /tmp/_working_dir
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/_output/bin/cluster-logging-operator /usr/bin/
 COPY scripts/* /usr/bin/scripts/
-COPY files/* /usr/bin/files/
+COPY files/ /usr/bin/files/
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
 ENTRYPOINT ["/usr/bin/cluster-logging-operator"]

@@ -2,6 +2,23 @@
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
+  name: watch-cluster-logging
+  namespace: openshift-logging
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  verbs:
+  - watch
+  - list
+
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
   name: cluster-logging-operator
   namespace: openshift-logging
 rules:

@@ -1,13 +1,13 @@
 package utils
 
 import (
+	oauth "github.com/openshift/api/oauth/v1"
 	route "github.com/openshift/api/route/v1"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
 	scheduling "k8s.io/api/scheduling/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-  oauth "github.com/openshift/api/oauth/v1"
 )
 
 func CronJob(cronjobName string, namespace string, loggingComponent string, component string, cronjobSpec batch.CronJobSpec) *batch.CronJob {
@@ -234,7 +234,7 @@ func ConfigMap(configmapName string, namespace string, data map[string]string) *
 
 func OAuthClient(oauthClientName, namespace, oauthSecret string, redirectURIs, scopeRestrictions []string) *oauth.OAuthClient {
 
-  return &oauth.OAuthClient{
+	return &oauth.OAuthClient{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "OAuthClient",
 			APIVersion: oauth.SchemeGroupVersion.String(),

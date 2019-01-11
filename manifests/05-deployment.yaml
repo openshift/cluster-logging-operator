@@ -17,7 +17,7 @@ spec:
       serviceAccountName: cluster-logging-operator
       containers:
       - name: cluster-logging-operator
-        image: openshift/origin-cluster-logging-operator:latest
+        image: quay.io/openshift/origin-cluster-logging-operator:latest
         imagePullPolicy: IfNotPresent
         command:
         - cluster-logging-operator

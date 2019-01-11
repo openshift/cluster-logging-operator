@@ -1,5 +1,6 @@
 CURPATH=$(PWD)
 TARGET_DIR=$(CURPATH)/_output
+KUBECONFIG?=$(HOME)/.kube/config
 
 GOBUILD=go build
 BUILD_GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
@@ -83,7 +84,7 @@ deploy: deploy-setup deploy-image
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-e2e: deploy-image
+test-e2e:
 	hack/test-e2e.sh
 
 undeploy:

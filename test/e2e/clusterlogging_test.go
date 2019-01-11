@@ -13,13 +13,13 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
-	rbac "k8s.io/api/rbac/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rbac "k8s.io/api/rbac/v1beta1"
 )
 
 var (
 	retryInterval        = time.Second * 5
-	timeout              = time.Second * 60
+	timeout              = time.Second * 120
 	cleanupRetryInterval = time.Second * 1
 	cleanupTimeout       = time.Second * 5
 )
@@ -49,6 +49,7 @@ func TestClusterLogging(t *testing.T) {
 
 	// run subtests
 	t.Run("clusterlogging-group", func(t *testing.T) {
+
 		t.Run("Cluster with fluentd", ClusterLoggingClusterFluentd)
 		time.Sleep(time.Minute * 1) // wait for objects to be deleted/cleaned up
 		t.Run("Cluster with rsyslog", ClusterLoggingClusterRsyslog)
@@ -128,7 +129,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	if collector == "fluentd" {
 		collectionSpec = logging.CollectionSpec{
 			Logs: logging.LogCollectionSpec{
-				Type: logging.LogCollectionTypeFluentd,
+				Type:        logging.LogCollectionTypeFluentd,
 				FluentdSpec: logging.FluentdSpec{},
 			},
 		}
@@ -136,7 +137,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	if collector == "rsyslog" {
 		collectionSpec = logging.CollectionSpec{
 			Logs: logging.LogCollectionSpec{
-				Type: logging.LogCollectionTypeRsyslog,
+				Type:        logging.LogCollectionTypeRsyslog,
 				RsyslogSpec: logging.RsyslogSpec{},
 			},
 		}
@@ -155,7 +156,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		Spec: logging.ClusterLoggingSpec{
 			LogStore: logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
-				ElasticsearchSpec: logging.ElasticsearchSpec {
+				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 1,
 				},
 			},
@@ -190,7 +191,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 		return err
 	}
 
-	err = WaitForDaemonSet(t, f.KubeClient, namespace, collector, 1, retryInterval, timeout)
+	err = WaitForDaemonSet(t, f.KubeClient, namespace, collector, retryInterval, timeout)
 	if err != nil {
 		return err
 	}
@@ -203,7 +204,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	return nil
 }
 
-func clusterLoggingClusterCommon(t *testing.T, ctx *framework.TestCtx) error {
+func waitForOperatorToBeReady(t *testing.T, ctx *framework.TestCtx) error {
 	err := ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		return err
@@ -234,7 +235,7 @@ func ClusterLoggingClusterFluentd(t *testing.T) {
 	t.Parallel()
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
-	err := clusterLoggingClusterCommon(t, ctx)
+	err := waitForOperatorToBeReady(t, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +249,7 @@ func ClusterLoggingClusterRsyslog(t *testing.T) {
 	t.Parallel()
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
-	err := clusterLoggingClusterCommon(t, ctx)
+	err := waitForOperatorToBeReady(t, ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -285,7 +286,7 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 	currentOperator.Spec.Template.Spec.Containers[0].Env = newEnv
 	err = f.Client.Update(goctx.TODO(), currentOperator)
 	if err != nil {
-		return fmt.Errorf("could not update cluster-logging-operator with updated image values", err)
+		return fmt.Errorf("could not update cluster-logging-operator with updated image values %v", err)
 	}
 
 	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "docker.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
@@ -324,7 +325,7 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 	currentOperator.Spec.Template.Spec.Containers[0].Env = currentEnv
 	err = f.Client.Update(goctx.TODO(), currentOperator)
 	if err != nil {
-		return fmt.Errorf("could not update cluster-logging-operator with prior image values", err)
+		return fmt.Errorf("could not update cluster-logging-operator with prior image values %v", err)
 	}
 
 	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "docker.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)

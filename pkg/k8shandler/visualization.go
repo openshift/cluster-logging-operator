@@ -396,9 +396,9 @@ func createOrUpdateKibanaSecret(logging *logging.ClusterLogging, oauthSecret []b
 
 	utils.AddOwnerRefToObject(kibanaSecret, utils.AsOwner(logging))
 
-	err := sdk.Create(kibanaSecret)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Kibana secret: %v", err)
+	err := utils.CreateOrUpdateSecret(kibanaSecret)
+	if err != nil {
+		return err
 	}
 
 	proxySecret := utils.Secret(
@@ -413,9 +413,9 @@ func createOrUpdateKibanaSecret(logging *logging.ClusterLogging, oauthSecret []b
 
 	utils.AddOwnerRefToObject(proxySecret, utils.AsOwner(logging))
 
-	err = sdk.Create(proxySecret)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Kibana Proxy secret: %v", err)
+	err = utils.CreateOrUpdateSecret(proxySecret)
+	if err != nil {
+		return err
 	}
 
 	return nil

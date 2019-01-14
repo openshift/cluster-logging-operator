@@ -12,7 +12,7 @@ export IMAGE_TAG_CMD?=docker tag
 export APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-export IMAGE_TAG=openshift/$(APP_NAME):latest
+export IMAGE_TAG=openshift/origin-$(APP_NAME):latest
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 export NAMESPACE?=openshift-logging
 

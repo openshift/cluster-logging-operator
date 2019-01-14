@@ -255,9 +255,9 @@ func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
 
 	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(logging))
 
-	err := sdk.Create(fluentdSecret)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Fluentd secret: %v", err)
+	err := utils.CreateOrUpdateSecret(fluentdSecret)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -279,9 +279,9 @@ func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
 
 	utils.AddOwnerRefToObject(rsyslogSecret, utils.AsOwner(logging))
 
-	err := sdk.Create(rsyslogSecret)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Rsyslog secret: %v", err)
+	err := utils.CreateOrUpdateSecret(rsyslogSecret)
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -14,6 +14,8 @@ import (
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/util/retry"
 	scheduling "k8s.io/api/scheduling/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -500,4 +502,36 @@ func DoesClusterLoggingExist(cluster *logging.ClusterLogging) (bool, *logging.Cl
 	}
 
 	return true, cluster
+}
+
+func CreateOrUpdateSecret(secret *v1.Secret) (err error) {
+	err = sdk.Create(secret)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure constructing %v secret: %v", secret.Name, err)
+		}
+
+		current := secret.DeepCopy()
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err = sdk.Get(current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get %v secret: %v", secret.Name, err)
+			}
+
+			current.Data = secret.Data
+			if err = sdk.Update(current); err != nil {
+				return err
+			}
+			return nil
+		})
+		if retryErr != nil {
+			return retryErr
+		}
+	}
+
+	return nil
 }

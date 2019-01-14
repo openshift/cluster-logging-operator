@@ -11,7 +11,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/util/retry"
 
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	k8sutil "github.com/operator-framework/operator-sdk/pkg/util/k8sutil"
@@ -112,32 +111,9 @@ func writeSecret(logging *v1alpha1.ClusterLogging) (err error) {
 
 	utils.AddOwnerRefToObject(secret, utils.AsOwner(logging))
 
-	err = sdk.Create(secret)
+	err = utils.CreateOrUpdateSecret(secret)
 	if err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure constructing master-certs secret: %v", err)
-		}
-
-		current := secret.DeepCopy()
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err = sdk.Get(current); err != nil {
-				if errors.IsNotFound(err) {
-					// the object doesn't exist -- it was likely culled
-					// recreate it on the next time through if necessary
-					return nil
-				}
-				return fmt.Errorf("Failed to get master-certs secret: %v", err)
-			}
-
-			current.Data = secret.Data
-			if err = sdk.Update(current); err != nil {
-				return err
-			}
-			return nil
-		})
-		if retryErr != nil {
-			return retryErr
-		}
+		return
 	}
 
 	return nil

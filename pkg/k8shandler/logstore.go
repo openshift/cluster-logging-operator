@@ -76,9 +76,9 @@ func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
 
 	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(logging))
 
-	err := sdk.Create(esSecret)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Elasticsearch secret: %v", err)
+	err := utils.CreateOrUpdateSecret(esSecret)
+	if err != nil {
+		return err
 	}
 
 	return nil

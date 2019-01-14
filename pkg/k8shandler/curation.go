@@ -119,9 +119,9 @@ func createOrUpdateCuratorSecret(logging *logging.ClusterLogging) error {
 
 	utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(logging))
 
-	err := sdk.Create(curatorSecret)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Curator secret: %v", err)
+	err := utils.CreateOrUpdateSecret(curatorSecret)
+	if err != nil {
+		return err
 	}
 
 	return nil

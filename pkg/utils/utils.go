@@ -10,8 +10,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	route "github.com/openshift/api/route/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+
+	route "github.com/openshift/api/route/v1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
@@ -25,13 +26,7 @@ import (
 const WORKING_DIR = "/tmp/_working_dir"
 const SPLIT_ANNOTATION = "io.openshift.clusterlogging.alpha/splitinstallation"
 
-func AllInOne(cluster *logging.ClusterLogging) bool {
-
-	//_, ok := cluster.ObjectMeta.Annotations[SPLIT_ANNOTATION]
-	return true
-}
-
-// These keys are based on the "container name" + "-{image,version}"
+// COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
 	"kibana":        "KIBANA_IMAGE",
 	"kibana-proxy":  "OAUTH_PROXY_IMAGE",
@@ -41,16 +36,24 @@ var COMPONENT_IMAGES = map[string]string{
 	"rsyslog":       "RSYSLOG_IMAGE",
 }
 
-func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
+//KubernetesResource is an adapter between public and private impl of ClusterLogging
+type KubernetesResource interface {
+	SchemeGroupVersion() string
+	Type() metav1.TypeMeta
+	Meta() metav1.ObjectMeta
+}
+
+func AsOwner(o KubernetesResource) metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion: logging.SchemeGroupVersion.String(),
-		Kind:       o.Kind,
-		Name:       o.Name,
-		UID:        o.UID,
+		APIVersion: o.SchemeGroupVersion(),
+		Kind:       o.Type().Kind,
+		Name:       o.Meta().Name,
+		UID:        o.Meta().UID,
 		Controller: GetBool(true),
 	}
 }
 
+//AddOwnerRefToObject adds the parent as an owner to the child
 func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
 	if (metav1.OwnerReference{}) != ownerRef {
 		object.SetOwnerReferences(append(object.GetOwnerReferences(), ownerRef))
@@ -281,24 +284,6 @@ func GetRouteURL(routeName, namespace string) (string, error) {
 	return fmt.Sprintf("%s%s", "https://", foundRoute.Spec.Host), nil
 }
 
-func DoesClusterLoggingExist(cluster *logging.ClusterLogging) (bool, *logging.ClusterLogging) {
-
-	// this is to avoid an invalid memory address panic
-	if cluster == nil {
-		return false, nil
-	}
-
-	if err := sdk.Get(cluster); err != nil {
-		if errors.IsNotFound(err) {
-			return false, nil
-		}
-		logrus.Errorf("Failed to check for ClusterLogging object: %v", err)
-		return false, nil
-	}
-
-	return true, cluster
-}
-
 func CreateOrUpdateSecret(secret *core.Secret) (err error) {
 	err = sdk.Create(secret)
 	if err != nil {
@@ -331,9 +316,9 @@ func CreateOrUpdateSecret(secret *core.Secret) (err error) {
 	return nil
 }
 
-func RemoveServiceAccount(cluster *logging.ClusterLogging, serviceAccountName string) error {
+func RemoveServiceAccount(namespace string, serviceAccountName string) error {
 
-	serviceAccount := ServiceAccount(serviceAccountName, cluster.Namespace)
+	serviceAccount := ServiceAccount(serviceAccountName, namespace)
 
 	err := sdk.Delete(serviceAccount)
 	if err != nil && !errors.IsNotFound(err) {
@@ -343,11 +328,11 @@ func RemoveServiceAccount(cluster *logging.ClusterLogging, serviceAccountName st
 	return nil
 }
 
-func RemoveConfigMap(cluster *logging.ClusterLogging, configmapName string) error {
+func RemoveConfigMap(namespace string, configmapName string) error {
 
 	configMap := ConfigMap(
 		configmapName,
-		cluster.Namespace,
+		namespace,
 		map[string]string{},
 	)
 
@@ -359,11 +344,11 @@ func RemoveConfigMap(cluster *logging.ClusterLogging, configmapName string) erro
 	return nil
 }
 
-func RemoveSecret(cluster *logging.ClusterLogging, secretName string) error {
+func RemoveSecret(namespace string, secretName string) error {
 
 	secret := Secret(
 		secretName,
-		cluster.Namespace,
+		namespace,
 		map[string][]byte{},
 	)
 
@@ -375,11 +360,11 @@ func RemoveSecret(cluster *logging.ClusterLogging, secretName string) error {
 	return nil
 }
 
-func RemoveRoute(cluster *logging.ClusterLogging, routeName string) error {
+func RemoveRoute(namespace string, routeName string) error {
 
 	route := Route(
 		routeName,
-		cluster.Namespace,
+		namespace,
 		routeName,
 		"",
 	)
@@ -392,11 +377,11 @@ func RemoveRoute(cluster *logging.ClusterLogging, routeName string) error {
 	return nil
 }
 
-func RemoveService(cluster *logging.ClusterLogging, serviceName string) error {
+func RemoveService(namespace string, serviceName string) error {
 
 	service := Service(
 		serviceName,
-		cluster.Namespace,
+		namespace,
 		serviceName,
 		[]core.ServicePort{},
 	)
@@ -409,11 +394,11 @@ func RemoveService(cluster *logging.ClusterLogging, serviceName string) error {
 	return nil
 }
 
-func RemoveOAuthClient(cluster *logging.ClusterLogging, clientName string) error {
+func RemoveOAuthClient(namespace string, clientName string) error {
 
 	oauthClient := OAuthClient(
 		clientName,
-		cluster.Namespace,
+		namespace,
 		"",
 		[]string{},
 		[]string{},
@@ -427,11 +412,11 @@ func RemoveOAuthClient(cluster *logging.ClusterLogging, clientName string) error
 	return nil
 }
 
-func RemoveDaemonset(cluster *logging.ClusterLogging, daemonsetName string) error {
+func RemoveDaemonset(namespace string, daemonsetName string) error {
 
 	daemonset := DaemonSet(
 		daemonsetName,
-		cluster.Namespace,
+		namespace,
 		daemonsetName,
 		daemonsetName,
 		core.PodSpec{},
@@ -445,11 +430,11 @@ func RemoveDaemonset(cluster *logging.ClusterLogging, daemonsetName string) erro
 	return nil
 }
 
-func RemoveDeployment(cluster *logging.ClusterLogging, deploymentName string) error {
+func RemoveDeployment(namespace string, deploymentName string) error {
 
 	deployment := Deployment(
 		deploymentName,
-		cluster.Namespace,
+		namespace,
 		deploymentName,
 		deploymentName,
 		core.PodSpec{},
@@ -463,11 +448,11 @@ func RemoveDeployment(cluster *logging.ClusterLogging, deploymentName string) er
 	return nil
 }
 
-func RemoveCronJob(cluster *logging.ClusterLogging, cronjobName string) error {
+func RemoveCronJob(namespace string, cronjobName string) error {
 
 	cronjob := CronJob(
 		cronjobName,
-		cluster.Namespace,
+		namespace,
 		cronjobName,
 		cronjobName,
 		batch.CronJobSpec{},
@@ -481,7 +466,7 @@ func RemoveCronJob(cluster *logging.ClusterLogging, cronjobName string) error {
 	return nil
 }
 
-func RemovePriorityClass(cluster *logging.ClusterLogging, priorityclassName string) error {
+func RemovePriorityClass(priorityclassName string) error {
 	collectionPriorityClass := PriorityClass(
 		priorityclassName,
 		1000000,

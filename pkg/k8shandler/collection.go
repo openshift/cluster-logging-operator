@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -15,10 +16,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+)
+
+const (
+	clusterLoggingPriorityClassName = "cluster-logging"
 )
 
 var (
@@ -26,7 +30,7 @@ var (
 	timeout       = time.Second * 1800
 )
 
-func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
+func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
@@ -35,15 +39,15 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 			return
 		}
 
-		if err = createOrUpdateCollectorServiceAccount(cluster); err != nil {
+		if err = cluster.createOrUpdateCollectorServiceAccount(); err != nil {
 			return
 		}
 	} else {
-		if err = utils.RemoveServiceAccount(cluster, "logcollector"); err != nil {
+		if err = utils.RemoveServiceAccount(cluster.Namespace, "logcollector"); err != nil {
 			return
 		}
 
-		if err = utils.RemovePriorityClass(cluster, "cluster-logging"); err != nil {
+		if err = utils.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
 			return
 		}
 	}
@@ -68,7 +72,7 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
+			if exists := cluster.Exists(); exists {
 				if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
 					if printUpdateMessage {
 						logrus.Info("Updating status of Fluentd")
@@ -107,7 +111,7 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if exists, cluster := utils.DoesClusterLoggingExist(cluster); exists {
+			if exists := cluster.Exists(); exists {
 				if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.Logs.RsyslogStatus) {
 					if printUpdateMessage {
 						logrus.Info("Updating status of Rsyslog")
@@ -129,17 +133,18 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 	return nil
 }
 
-func removeFluentd(cluster *logging.ClusterLogging) (err error) {
+func removeFluentd(cluster *ClusterLogging) (err error) {
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = utils.RemoveConfigMap(cluster, "fluentd"); err != nil {
+
+		if err = utils.RemoveConfigMap(cluster.Namespace, "fluentd"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveSecret(cluster, "fluentd"); err != nil {
+		if err = utils.RemoveSecret(cluster.Namespace, "fluentd"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveDaemonset(cluster, "fluentd"); err != nil {
+		if err = utils.RemoveDaemonset(cluster.Namespace, "fluentd"); err != nil {
 			return
 		}
 	}
@@ -147,25 +152,25 @@ func removeFluentd(cluster *logging.ClusterLogging) (err error) {
 	return nil
 }
 
-func removeRsyslog(cluster *logging.ClusterLogging) (err error) {
+func removeRsyslog(cluster *ClusterLogging) (err error) {
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = utils.RemoveConfigMap(cluster, "rsyslog-bin"); err != nil {
+		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog-bin"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveConfigMap(cluster, "rsyslog-main"); err != nil {
+		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog-main"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveConfigMap(cluster, "rsyslog"); err != nil {
+		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveSecret(cluster, "rsyslog"); err != nil {
+		if err = utils.RemoveSecret(cluster.Namespace, "rsyslog"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveDaemonset(cluster, "rsyslog"); err != nil {
+		if err = utils.RemoveDaemonset(cluster.Namespace, "rsyslog"); err != nil {
 			return
 		}
 	}
@@ -173,11 +178,11 @@ func removeRsyslog(cluster *logging.ClusterLogging) (err error) {
 	return nil
 }
 
-func createOrUpdateCollectionPriorityClass(logging *logging.ClusterLogging) error {
+func createOrUpdateCollectionPriorityClass(logging *ClusterLogging) error {
 
-	collectionPriorityClass := utils.PriorityClass("cluster-logging", 1000000, false, "This priority class is for the Cluster-Logging Collector")
+	collectionPriorityClass := utils.NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging Collector")
 
-	utils.AddOwnerRefToObject(collectionPriorityClass, utils.AsOwner(logging))
+	logging.AddOwnerRefTo(collectionPriorityClass)
 
 	err := sdk.Create(collectionPriorityClass)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -187,7 +192,7 @@ func createOrUpdateCollectionPriorityClass(logging *logging.ClusterLogging) erro
 	return nil
 }
 
-func createOrUpdateCollectorServiceAccount(cluster *logging.ClusterLogging) error {
+func (cluster *ClusterLogging) createOrUpdateCollectorServiceAccount() error {
 
 	collectorServiceAccount := utils.ServiceAccount("logcollector", cluster.Namespace)
 
@@ -250,7 +255,7 @@ func createOrUpdateCollectorServiceAccount(cluster *logging.ClusterLogging) erro
 			[]string{"get", "list", "watch"},
 		),
 	)
-	clusterRole, err := utils.CreateClusterRole("metadata-reader", clusterrules, cluster)
+	clusterRole, err := utils.CreateClusterRole("metadata-reader", clusterrules, cluster.ClusterLogging)
 	if err != nil {
 		return err
 	}
@@ -279,7 +284,7 @@ func createOrUpdateCollectorServiceAccount(cluster *logging.ClusterLogging) erro
 	return nil
 }
 
-func createOrUpdateFluentdConfigMap(logging *logging.ClusterLogging) error {
+func createOrUpdateFluentdConfigMap(logging *ClusterLogging) error {
 
 	fluentdConfigMap := utils.ConfigMap(
 		"fluentd",
@@ -301,7 +306,7 @@ func createOrUpdateFluentdConfigMap(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateRsyslogConfigMap(logging *logging.ClusterLogging) error {
+func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 
 	// need three configmaps
 	// - one for rsyslog run.sh script - rsyslog-bin
@@ -350,7 +355,7 @@ func createOrUpdateRsyslogConfigMap(logging *logging.ClusterLogging) error {
 	)
 	rsyslogConfigMaps["rsyslog"] = rsyslogConfigMap
 	for name, cm := range rsyslogConfigMaps {
-		utils.AddOwnerRefToObject(cm, utils.AsOwner(logging))
+		logging.AddOwnerRefTo(cm)
 
 		err = sdk.Create(cm)
 		if err != nil && !errors.IsAlreadyExists(err) {
@@ -361,7 +366,7 @@ func createOrUpdateRsyslogConfigMap(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
+func createOrUpdateFluentdSecret(logging *ClusterLogging) error {
 
 	fluentdSecret := utils.Secret(
 		"fluentd",
@@ -375,7 +380,7 @@ func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
 			"infra-cert": utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
 		})
 
-	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(logging))
+	logging.AddOwnerRefTo(fluentdSecret)
 
 	err := utils.CreateOrUpdateSecret(fluentdSecret)
 	if err != nil {
@@ -385,7 +390,7 @@ func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
+func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 
 	rsyslogSecret := utils.Secret(
 		"rsyslog",
@@ -399,7 +404,7 @@ func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
 			"infra-cert": utils.GetWorkingDirFileContents("system.logging.rsyslog.crt"),
 		})
 
-	utils.AddOwnerRefToObject(rsyslogSecret, utils.AsOwner(logging))
+	logging.AddOwnerRefTo(rsyslogSecret)
 
 	err := utils.CreateOrUpdateSecret(rsyslogSecret)
 	if err != nil {
@@ -409,18 +414,14 @@ func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdDaemonset(cluster *logging.ClusterLogging) (err error) {
+func createOrUpdateFluentdDaemonset(cluster *ClusterLogging) (err error) {
 
 	var fluentdPodSpec v1.PodSpec
 
-	if utils.AllInOne(cluster) {
-		fluentdPodSpec = newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
-	} else {
-		fluentdPodSpec = newFluentdPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
-	}
+	fluentdPodSpec = newFluentdPodSpec(cluster.ClusterLogging, "elasticsearch", "elasticsearch")
 
 	fluentdDaemonset := utils.DaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
-	utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(cluster))
+	cluster.AddOwnerRefTo(fluentdDaemonset)
 
 	err = sdk.Create(fluentdDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -439,15 +440,11 @@ func createOrUpdateFluentdDaemonset(cluster *logging.ClusterLogging) (err error)
 	return nil
 }
 
-func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error) {
+func createOrUpdateRsyslogDaemonset(cluster *ClusterLogging) (err error) {
 
 	var rsyslogPodSpec v1.PodSpec
 
-	if utils.AllInOne(cluster) {
-		rsyslogPodSpec = newRsyslogPodSpec(cluster, "elasticsearch", "elasticsearch")
-	} else {
-		rsyslogPodSpec = newRsyslogPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
-	}
+	rsyslogPodSpec = newRsyslogPodSpec(cluster.ClusterLogging, "elasticsearch", "elasticsearch")
 
 	rsyslogDaemonset := utils.DaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
 
@@ -523,7 +520,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		Privileged: utils.GetBool(true),
 	}
 
-	fluentdPodSpec := utils.PodSpec(
+	fluentdPodSpec := utils.NewPodSpec(
 		"logcollector",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{
@@ -540,7 +537,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		},
 	)
 
-	fluentdPodSpec.PriorityClassName = "cluster-logging"
+	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName
 
 	fluentdPodSpec.NodeSelector = logging.Spec.Collection.Logs.FluentdSpec.NodeSelector
 
@@ -615,7 +612,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		"/opt/app-root/bin/rsyslog.sh",
 	}
 
-	rsyslogPodSpec := utils.PodSpec(
+	rsyslogPodSpec := utils.NewPodSpec(
 		"logcollector",
 		[]v1.Container{rsyslogContainer},
 		[]v1.Volume{
@@ -633,7 +630,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		},
 	)
 
-	rsyslogPodSpec.PriorityClassName = "cluster-logging"
+	rsyslogPodSpec.PriorityClassName = clusterLoggingPriorityClassName
 
 	rsyslogPodSpec.NodeSelector = logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector
 
@@ -661,7 +658,7 @@ func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	}
 
 	flushBuffer := isBufferFlushRequired(current, desired)
-	desired, different := isFluentdDaemonsetDifferent(current, desired)
+	desired, different := isDaemonsetDifferent(current, desired)
 
 	if different {
 
@@ -698,7 +695,7 @@ func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 		return fmt.Errorf("Failed to get Rsyslog daemonset: %v", err)
 	}
 
-	current, different := isRsyslogDaemonsetDifferent(current, desired)
+	current, different := isDaemonsetDifferent(current, desired)
 
 	if different {
 		if err = sdk.Update(current); err != nil {
@@ -709,25 +706,12 @@ func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	return nil
 }
 
-func isFluentdDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
+func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
 
 	different := false
 
 	if isDaemonsetImageDifference(current, desired) {
-		logrus.Infof("Fluentd image change found, updating %q", current.Name)
-		current = updateCurrentDaemonsetImages(current, desired)
-		different = true
-	}
-
-	return current, different
-}
-
-func isRsyslogDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
-
-	different := false
-
-	if isDaemonsetImageDifference(current, desired) {
-		logrus.Infof("Rsyslog image change found, updating %q", current.Name)
+		logrus.Infof("Daemonset image change found, updating %q", current.Name)
 		current = updateCurrentDaemonsetImages(current, desired)
 		different = true
 	}

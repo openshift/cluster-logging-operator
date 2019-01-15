@@ -1,5 +1,8 @@
 package utils
 
+// factory.go is a set of factory methods for initializing
+// various OpenShift structs
+
 import (
 	oauth "github.com/openshift/api/oauth/v1"
 	route "github.com/openshift/api/route/v1"
@@ -45,6 +48,9 @@ func Secret(secretName string, namespace string, data map[string][]byte) *core.S
 	}
 }
 
+func NewServiceAccount(accountName string, namespace string) *core.ServiceAccount {
+	return ServiceAccount(accountName, namespace)
+}
 func ServiceAccount(accountName string, namespace string) *core.ServiceAccount {
 	return &core.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
@@ -111,6 +117,10 @@ func Route(routeName string, namespace string, serviceName string, cafilePath st
 	}
 }
 
+//NewPodSpec is a constructor to instansiate a new PodSpec
+func NewPodSpec(serviceAccountName string, containers []core.Container, volumes []core.Volume) core.PodSpec {
+	return PodSpec(serviceAccountName, containers, volumes)
+}
 func PodSpec(serviceAccountName string, containers []core.Container, volumes []core.Volume) core.PodSpec {
 	return core.PodSpec{
 		Containers:         containers,
@@ -259,6 +269,10 @@ func OAuthClient(oauthClientName, namespace, oauthSecret string, redirectURIs, s
 
 }
 
+//NewPriorityClass is a constructor to create a PriorityClass
+func NewPriorityClass(priorityclassName string, priorityValue int32, globalDefault bool, description string) *scheduling.PriorityClass {
+	return PriorityClass(priorityclassName, priorityValue, globalDefault, description)
+}
 func PriorityClass(priorityclassName string, priorityValue int32, globalDefault bool, description string) *scheduling.PriorityClass {
 	return &scheduling.PriorityClass{
 		TypeMeta: metav1.TypeMeta{

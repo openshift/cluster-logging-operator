@@ -1,5 +1,6 @@
 # cluster-logging-operator
-Operator to support OKD cluster logging
+An operator to support OKD aggregated cluster logging.  Cluster logging configuration information
+is found in the [configuration](./docs/configuration.md) documentation.
 
 ## Hacking
 

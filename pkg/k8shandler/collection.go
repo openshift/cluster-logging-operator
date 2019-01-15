@@ -32,6 +32,8 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
+		removeRsyslog(cluster)
+
 		if err = createOrUpdateFluentdServiceAccount(cluster); err != nil {
 			return
 		}
@@ -72,6 +74,8 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		}
 	}
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
+		removeFluentd(cluster)
+
 		if err = createOrUpdateRsyslogServiceAccount(cluster); err != nil {
 			return
 		}
@@ -109,6 +113,58 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		})
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Rsyslog status: %v", retryErr)
+		}
+	}
+
+	return nil
+}
+
+func removeFluentd(cluster *logging.ClusterLogging) (err error) {
+	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+		if err = utils.RemoveServiceAccount(cluster, "fluentd"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveConfigMap(cluster, "fluentd"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveSecret(cluster, "fluentd"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveDaemonset(cluster, "fluentd"); err != nil {
+			return
+		}
+	}
+
+	return nil
+}
+
+func removeRsyslog(cluster *logging.ClusterLogging) (err error) {
+	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+		if err = utils.RemoveServiceAccount(cluster, "rsyslog"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveConfigMap(cluster, "rsyslog-bin"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveConfigMap(cluster, "rsyslog-main"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveConfigMap(cluster, "rsyslog"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveSecret(cluster, "rsyslog"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveDaemonset(cluster, "rsyslog"); err != nil {
+			return
 		}
 	}
 

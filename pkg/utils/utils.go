@@ -535,3 +535,66 @@ func CreateOrUpdateSecret(secret *v1.Secret) (err error) {
 
 	return nil
 }
+
+
+func RemoveServiceAccount(logging *logging.ClusterLogging, serviceAccountName string) error {
+
+	serviceAccount := ServiceAccount(serviceAccountName, logging.Namespace)
+
+	err := sdk.Delete(serviceAccount)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v service account: %v", serviceAccountName, err)
+	}
+
+	return nil
+}
+
+func RemoveConfigMap(logging *logging.ClusterLogging, configmapName string) error {
+
+	configMap := ConfigMap(
+		configmapName,
+		logging.Namespace,
+		map[string]string{ },
+	)
+
+	err := sdk.Delete(configMap)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v configmap: %v", configmapName, err)
+	}
+
+	return nil
+}
+
+func RemoveSecret(logging *logging.ClusterLogging, secretName string) error {
+
+	secret := Secret(
+		secretName,
+		logging.Namespace,
+		map[string][]byte{ },
+	)
+
+	err := sdk.Delete(secret)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v secret: %v", secretName, err)
+	}
+
+	return nil
+}
+
+func RemoveDaemonset(cluster *logging.ClusterLogging, daemonsetName string) error {
+
+	daemonset := DaemonSet(
+		daemonsetName,
+		cluster.Namespace,
+		daemonsetName,
+		daemonsetName,
+		v1.PodSpec{},
+	)
+
+	err := sdk.Delete(daemonset)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v Daemonset %v", daemonsetName, err)
+	}
+
+	return nil
+}

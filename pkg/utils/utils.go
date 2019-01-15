@@ -13,20 +13,18 @@ import (
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
-	"k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
-	scheduling "k8s.io/api/scheduling/v1beta1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const WORKING_DIR = "/tmp/_working_dir"
 const SPLIT_ANNOTATION = "io.openshift.clusterlogging.alpha/splitinstallation"
 
-func AllInOne(logging *logging.ClusterLogging) bool {
+func AllInOne(cluster *logging.ClusterLogging) bool {
 
-	//_, ok := logging.ObjectMeta.Annotations[SPLIT_ANNOTATION]
+	//_, ok := cluster.ObjectMeta.Annotations[SPLIT_ANNOTATION]
 	return true
 }
 
@@ -74,6 +72,12 @@ func GetComponentImage(component string) string {
 }
 
 func GetFileContents(filePath string) []byte {
+
+	if filePath == "" {
+		logrus.Debug("Empty file path provided for retrieving file contents")
+		return nil
+	}
+
 	contents, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		logrus.Errorf("Unable to read file to get contents: %v", err)
@@ -97,224 +101,6 @@ func GetRandomWord(wordSize int) []byte {
 	return []byte(string(b))
 }
 
-func Secret(secretName string, namespace string, data map[string][]byte) *v1.Secret {
-	return &v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: v1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-		Type: "Opaque",
-		Data: data,
-	}
-}
-
-func ServiceAccount(accountName string, namespace string) *v1.ServiceAccount {
-	return &v1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceAccount",
-			APIVersion: v1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      accountName,
-			Namespace: namespace,
-		},
-	}
-}
-
-func Service(serviceName string, namespace string, selectorComponent string, servicePorts []v1.ServicePort) *v1.Service {
-	return &v1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: v1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"logging-infra": "support",
-			},
-		},
-		Spec: v1.ServiceSpec{
-			Selector: map[string]string{
-				"component": selectorComponent,
-				"provider":  "openshift",
-			},
-			Ports: servicePorts,
-		},
-	}
-}
-
-func Route(routeName string, namespace string, serviceName string, cafilePath string) *route.Route {
-	return &route.Route{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Route",
-			APIVersion: route.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      routeName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"component":     "support",
-				"logging-infra": "support",
-				"provider":      "openshift",
-			},
-		},
-		Spec: route.RouteSpec{
-			To: route.RouteTargetReference{
-				Name: serviceName,
-				Kind: "Service",
-			},
-			TLS: &route.TLSConfig{
-				Termination:                   route.TLSTerminationReencrypt,
-				InsecureEdgeTerminationPolicy: route.InsecureEdgeTerminationPolicyRedirect,
-				CACertificate:                 string(GetFileContents(cafilePath)),
-				DestinationCACertificate:      string(GetFileContents(cafilePath)),
-			},
-		},
-	}
-}
-
-func PodSpec(serviceAccountName string, containers []v1.Container, volumes []v1.Volume) v1.PodSpec {
-	return v1.PodSpec{
-		Containers:         containers,
-		ServiceAccountName: serviceAccountName,
-		Volumes:            volumes,
-	}
-}
-
-func Container(containerName string, pullPolicy v1.PullPolicy, resources v1.ResourceRequirements) v1.Container {
-	return v1.Container{
-		Name:            containerName,
-		Image:           GetComponentImage(containerName),
-		ImagePullPolicy: pullPolicy,
-		Resources:       resources,
-	}
-}
-
-// loggingComponent = kibana
-// component = kibana{,-ops}
-func Deployment(deploymentName string, namespace string, loggingComponent string, component string, podSpec v1.PodSpec) *apps.Deployment {
-	return &apps.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: apps.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      deploymentName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"provider":      "openshift",
-				"component":     component,
-				"logging-infra": loggingComponent,
-			},
-		},
-		Spec: apps.DeploymentSpec{
-			Replicas: GetInt32(1),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"provider":      "openshift",
-					"component":     component,
-					"logging-infra": loggingComponent,
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: deploymentName,
-					Labels: map[string]string{
-						"provider":      "openshift",
-						"component":     component,
-						"logging-infra": loggingComponent,
-					},
-				},
-				Spec: podSpec,
-			},
-			Strategy: apps.DeploymentStrategy{
-				Type: apps.RollingUpdateDeploymentStrategyType,
-				//RollingUpdate: {}
-			},
-		},
-	}
-}
-
-func DaemonSet(daemonsetName string, namespace string, loggingComponent string, component string, podSpec v1.PodSpec) *apps.DaemonSet {
-	return &apps.DaemonSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "DaemonSet",
-			APIVersion: apps.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      daemonsetName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"provider":      "openshift",
-				"component":     component,
-				"logging-infra": loggingComponent,
-			},
-		},
-		Spec: apps.DaemonSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"provider":      "openshift",
-					"component":     component,
-					"logging-infra": loggingComponent,
-				},
-			},
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: daemonsetName,
-					Labels: map[string]string{
-						"provider":      "openshift",
-						"component":     component,
-						"logging-infra": loggingComponent,
-					},
-					Annotations: map[string]string{
-						"scheduler.alpha.kubernetes.io/critical-pod": "",
-					},
-				},
-				Spec: podSpec,
-			},
-			UpdateStrategy: apps.DaemonSetUpdateStrategy{
-				Type:          apps.RollingUpdateDaemonSetStrategyType,
-				RollingUpdate: &apps.RollingUpdateDaemonSet{},
-			},
-			MinReadySeconds: 600,
-		},
-	}
-}
-
-func ConfigMap(configmapName string, namespace string, data map[string]string) *v1.ConfigMap {
-	return &v1.ConfigMap{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: v1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      configmapName,
-			Namespace: namespace,
-		},
-		Data: data,
-	}
-}
-
-func PriorityClass(priorityclassName string, priorityValue int32, globalDefault bool, description string) *scheduling.PriorityClass {
-	return &scheduling.PriorityClass{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "PriorityClass",
-			APIVersion: scheduling.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: priorityclassName,
-		},
-		Value:         priorityValue,
-		GlobalDefault: globalDefault,
-		Description:   description,
-	}
-}
-
 func GetBool(value bool) *bool {
 	b := value
 	return &b
@@ -328,25 +114,6 @@ func GetInt32(value int32) *int32 {
 func GetInt64(value int64) *int64 {
 	i := value
 	return &i
-}
-
-func CronJob(cronjobName string, namespace string, loggingComponent string, component string, cronjobSpec batch.CronJobSpec) *batch.CronJob {
-	return &batch.CronJob{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "CronJob",
-			APIVersion: batch.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cronjobName,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"provider":      "openshift",
-				"component":     component,
-				"logging-infra": loggingComponent,
-			},
-		},
-		Spec: cronjobSpec,
-	}
 }
 
 func GetDeploymentList(namespace string, selector string) (*apps.DeploymentList, error) {
@@ -387,11 +154,11 @@ func GetReplicaSetList(namespace string, selector string) (*apps.ReplicaSetList,
 	return list, err
 }
 
-func GetPodList(namespace string, selector string) (*v1.PodList, error) {
-	list := &v1.PodList{
+func GetPodList(namespace string, selector string) (*core.PodList, error) {
+	list := &core.PodList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Pod",
-			APIVersion: v1.SchemeGroupVersion.String(),
+			APIVersion: core.SchemeGroupVersion.String(),
 		},
 	}
 
@@ -463,27 +230,13 @@ func GetRouteURL(routeName, namespace string) (string, error) {
 	}
 
 	if err := sdk.Get(foundRoute); err != nil {
-		if !apierrors.IsNotFound(err) {
+		if !errors.IsNotFound(err) {
 			logrus.Errorf("Failed to check for ClusterLogging object: %v", err)
 		}
 		return "", err
 	}
 
 	return fmt.Sprintf("%s%s", "https://", foundRoute.Spec.Host), nil
-}
-
-// TODO: expand these to include the default DNS from the top level config
-// instead of cluster.local
-func GetClusterDNSDomain() (string, error) {
-
-	// get configmap from openshift-node namespace
-
-	// pull out node-config.yaml
-
-	// pull out dnsDomain value
-
-	// return it
-	return "cluster.local", nil
 }
 
 func DoesClusterLoggingExist(cluster *logging.ClusterLogging) (bool, *logging.ClusterLogging) {
@@ -494,7 +247,7 @@ func DoesClusterLoggingExist(cluster *logging.ClusterLogging) (bool, *logging.Cl
 	}
 
 	if err := sdk.Get(cluster); err != nil {
-		if apierrors.IsNotFound(err) {
+		if errors.IsNotFound(err) {
 			return false, nil
 		}
 		logrus.Errorf("Failed to check for ClusterLogging object: %v", err)
@@ -504,7 +257,7 @@ func DoesClusterLoggingExist(cluster *logging.ClusterLogging) (bool, *logging.Cl
 	return true, cluster
 }
 
-func CreateOrUpdateSecret(secret *v1.Secret) (err error) {
+func CreateOrUpdateSecret(secret *core.Secret) (err error) {
 	err = sdk.Create(secret)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
@@ -536,10 +289,9 @@ func CreateOrUpdateSecret(secret *v1.Secret) (err error) {
 	return nil
 }
 
+func RemoveServiceAccount(cluster *logging.ClusterLogging, serviceAccountName string) error {
 
-func RemoveServiceAccount(logging *logging.ClusterLogging, serviceAccountName string) error {
-
-	serviceAccount := ServiceAccount(serviceAccountName, logging.Namespace)
+	serviceAccount := ServiceAccount(serviceAccountName, cluster.Namespace)
 
 	err := sdk.Delete(serviceAccount)
 	if err != nil && !errors.IsNotFound(err) {
@@ -549,11 +301,11 @@ func RemoveServiceAccount(logging *logging.ClusterLogging, serviceAccountName st
 	return nil
 }
 
-func RemoveConfigMap(logging *logging.ClusterLogging, configmapName string) error {
+func RemoveConfigMap(cluster *logging.ClusterLogging, configmapName string) error {
 
 	configMap := ConfigMap(
 		configmapName,
-		logging.Namespace,
+		cluster.Namespace,
 		map[string]string{ },
 	)
 
@@ -565,17 +317,69 @@ func RemoveConfigMap(logging *logging.ClusterLogging, configmapName string) erro
 	return nil
 }
 
-func RemoveSecret(logging *logging.ClusterLogging, secretName string) error {
+func RemoveSecret(cluster *logging.ClusterLogging, secretName string) error {
 
 	secret := Secret(
 		secretName,
-		logging.Namespace,
+		cluster.Namespace,
 		map[string][]byte{ },
 	)
 
 	err := sdk.Delete(secret)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v secret: %v", secretName, err)
+	}
+
+	return nil
+}
+
+func RemoveRoute(cluster *logging.ClusterLogging, routeName string) error {
+
+	route := Route(
+		routeName,
+		cluster.Namespace,
+		routeName,
+		"",
+	)
+
+	err := sdk.Delete(route)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v route %v", routeName, err)
+	}
+
+	return nil
+}
+
+func RemoveService(cluster *logging.ClusterLogging, serviceName string) error {
+
+	service := Service(
+		serviceName,
+		cluster.Namespace,
+		serviceName,
+		[]core.ServicePort{ },
+	)
+
+	err := sdk.Delete(service)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v service %v", serviceName, err)
+	}
+
+	return nil
+}
+
+func RemoveOAuthClient(cluster *logging.ClusterLogging, clientName string) error {
+
+	oauthClient := OAuthClient(
+		clientName,
+		cluster.Namespace,
+		"",
+		[]string{ },
+		[]string{ },
+	)
+
+	err := sdk.Delete(oauthClient)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v oauthclient %v", clientName, err)
 	}
 
 	return nil
@@ -588,12 +392,48 @@ func RemoveDaemonset(cluster *logging.ClusterLogging, daemonsetName string) erro
 		cluster.Namespace,
 		daemonsetName,
 		daemonsetName,
-		v1.PodSpec{},
+		core.PodSpec{},
 	)
 
 	err := sdk.Delete(daemonset)
 	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting %v Daemonset %v", daemonsetName, err)
+		return fmt.Errorf("Failure deleting %v daemonset %v", daemonsetName, err)
+	}
+
+	return nil
+}
+
+func RemoveDeployment(cluster *logging.ClusterLogging, deploymentName string) error {
+
+	deployment := Deployment(
+		deploymentName,
+		cluster.Namespace,
+		deploymentName,
+		deploymentName,
+		core.PodSpec{},
+	)
+
+	err := sdk.Delete(deployment)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v deployment %v", deploymentName, err)
+	}
+
+	return nil
+}
+
+func RemoveCronJob(cluster *logging.ClusterLogging, cronjobName string) error {
+
+	cronjob := CronJob(
+		cronjobName,
+		cluster.Namespace,
+		cronjobName,
+		cronjobName,
+		batch.CronJobSpec{ },
+	)
+
+	err := sdk.Delete(cronjob)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v cronjob %v", cronjobName, err)
 	}
 
 	return nil

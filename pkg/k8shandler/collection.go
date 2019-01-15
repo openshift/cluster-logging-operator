@@ -32,8 +32,6 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
-		removeRsyslog(cluster)
-
 		if err = createOrUpdateFluentdServiceAccount(cluster); err != nil {
 			return
 		}
@@ -72,10 +70,11 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", retryErr)
 		}
-	}
-	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
+	} else {
 		removeFluentd(cluster)
+	}
 
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
 		if err = createOrUpdateRsyslogServiceAccount(cluster); err != nil {
 			return
 		}
@@ -114,6 +113,8 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Rsyslog status: %v", retryErr)
 		}
+	} else {
+		removeRsyslog(cluster)
 	}
 
 	return nil

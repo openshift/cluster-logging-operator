@@ -17,7 +17,7 @@ spec:
       serviceAccountName: cluster-logging-operator
       containers:
       - name: cluster-logging-operator
-        image: openshift/cluster-logging-operator:latest
+        image: openshift/origin-cluster-logging-operator:latest
         imagePullPolicy: IfNotPresent
         command:
         - cluster-logging-operator

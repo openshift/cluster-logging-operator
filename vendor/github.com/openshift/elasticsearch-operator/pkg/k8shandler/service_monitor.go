@@ -10,6 +10,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+    prometheusCAFile = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
+)
+
 // CreateOrUpdateServiceMonitors ensures the existence of ServiceMonitors for Elasticsearch cluster
 func CreateOrUpdateServiceMonitors(dpl *v1alpha1.Elasticsearch) error {
 	serviceMonitorName := fmt.Sprintf("monitor-%s-%s", dpl.Name, "cluster")
@@ -35,7 +39,7 @@ func createServiceMonitor(serviceMonitorName, namespace string, labels map[strin
 		MatchLabels: labels,
 	}
 	tlsConfig := monitoringv1.TLSConfig{
-		CAFile: "/etc/prometheus/configmaps/prometheus-serving-certs-ca-bundle/service-ca.crt",
+		CAFile: prometheusCAFile,
 	}
 	endpoint := monitoringv1.Endpoint{
 		Port:            "restapi",

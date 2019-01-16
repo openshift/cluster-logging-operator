@@ -7,7 +7,7 @@ alias oc=${OC:-oc}
 
 repo_dir="$(dirname $0)/.."
 
-IMAGE_TAG=${IMAGE_TAG:-"openshift/elasticsearch-operator:latest"}
+IMAGE_TAG=${IMAGE_TAG:-"openshift/origin-elasticsearch-operator:latest"}
 
 # probably needs some work for contexts which have '-' in the name and are not IPs
 context=$(oc config current-context)

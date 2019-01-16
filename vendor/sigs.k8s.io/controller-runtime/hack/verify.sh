@@ -55,6 +55,3 @@ gometalinter.v2 --disable-all \
 #    --enable=gosec \
 #    --enable=maligned \
 #    --enable=safesql \
-
-header_text "running dep check"
-dep check

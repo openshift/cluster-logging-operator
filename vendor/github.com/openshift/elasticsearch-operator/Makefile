@@ -12,7 +12,7 @@ export IMAGE_TAGGER?=docker tag
 export APP_NAME=elasticsearch-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-export IMAGE_TAG=openshift/$(APP_NAME):latest
+export IMAGE_TAG=openshift/origin-$(APP_NAME):latest
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 RUN_LOG?=elasticsearch-operator.log
 RUN_PID?=elasticsearch-operator.pid
@@ -50,7 +50,7 @@ get-dep:
 	fi
 
 
-build: $(SRC)
+build: fmt
 	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/pkg $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/vendor/* $(TARGET_DIR)/src
@@ -66,7 +66,9 @@ test-e2e: image operator-sdk
 	hack/test-e2e.sh
 
 fmt:
-	@gofmt -l -w $(SRC)
+	@gofmt -l -w cmd && \
+	gofmt -l -w pkg && \
+	gofmt -l -w test
 
 simplify:
 	@gofmt -s -l -w $(SRC)

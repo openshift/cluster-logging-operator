@@ -178,19 +178,19 @@
   version = "1.0.1"
 
 [[projects]]
-  branch = "master"
+  branch = "release-3.11"
   name = "github.com/openshift/api"
   packages = [
     "oauth/v1",
     "route/v1"
   ]
-  revision = "84404551741398f2300f84b16fb97ef351749982"
+  revision = "5ad8479f64f1b60ee9c62ce8ef1fe6638838725e"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "cfd8cc5114ddf1834241b148092c87f4bfd0fffb"
+  revision = "2c7f4243c41e274e7b180209a8e4f84b6b35cc99"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -232,7 +232,7 @@
   branch = "master"
   name = "github.com/prometheus/client_model"
   packages = ["go"]
-  revision = "5c3871d89910bfb32f5fcab2aa4b9ec68e65a99f"
+  revision = "56726106282f1985ea77d5305743db7231b0c0a8"
 
 [[projects]]
   branch = "master"
@@ -282,7 +282,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "1e06a53dbb7e2ed46e91183f219db23c6943c532"
+  revision = "915654e7eabcea33ae277abbecf52f0d8b7a9fdc"
 
 [[projects]]
   branch = "master"
@@ -291,7 +291,7 @@
     "unix",
     "windows"
   ]
-  revision = "48ac38b7c8cbedd50b1613c0fccacfc7d88dfcdf"
+  revision = "11f53e03133963fb11ae0588e08b5e0b85be8be5"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -337,7 +337,7 @@
     "internal/gopathwalk",
     "internal/semver"
   ]
-  revision = "421f03a57a641a72b8ea4ceb640e73391675fc6f"
+  revision = "c3e15677277459a71545fa40c982ca9e4562801e"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -553,7 +553,7 @@
     "parser",
     "types"
   ]
-  revision = "fd15ee9cc2f77baa4f31e59e6acbf21146455073"
+  revision = "f8a0810f38afb8478882b3835a615aebfda39afa"
 
 [[projects]]
   name = "k8s.io/klog"
@@ -571,7 +571,7 @@
     "pkg/generators/rules",
     "pkg/util/sets"
   ]
-  revision = "0317810137be915b9cf888946c6e115c1bfac693"
+  revision = "ced9eb3070a5f1c548ef46e8dfe2a97c208d9f03"
 
 [[projects]]
   name = "sigs.k8s.io/controller-runtime"
@@ -579,12 +579,11 @@
     "pkg/client",
     "pkg/client/apiutil"
   ]
-  revision = "f6f0bc9611363b43664d08fb097ab13243ef621d"
-  version = "v0.1.9"
+  revision = "5fd1e9e9fac5261e9ad9d47c375afc014fc31d21"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1504b4396fec4ce23cf902b0122fa11f6aab008788ce957fe27494f9d126319c"
+  inputs-digest = "5fd8ef39f6188405a880565a13baaa5ff8f763c5fd4c3e17a59fc5d5237efa44"
   solver-name = "gps-cdcl"
   solver-version = 1

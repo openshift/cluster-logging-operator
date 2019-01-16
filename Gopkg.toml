@@ -42,5 +42,8 @@ required = [
 
 [[constraint]]
   name = "github.com/openshift/api"
-  #version = "3.11.0"
   branch = "master"
+
+[[override]]
+  name = "sigs.k8s.io/controller-runtime"
+  revision = "5fd1e9e9fac5261e9ad9d47c375afc014fc31d21"

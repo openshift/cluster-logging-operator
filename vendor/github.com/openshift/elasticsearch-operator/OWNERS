@@ -9,8 +9,9 @@ approvers:
   - josefkarasek
   - nkinder
 reviewers:
-  - jwforres
-  - jcantrill
   - ewolinetz
-  - richm
+  - jcantrill
+  - josefkarasek
+  - lukas-vlcek
   - nhosoi
+  - richm

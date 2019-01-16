@@ -36,6 +36,7 @@ package unix
 #include <sys/resource.h>
 #include <sys/select.h>
 #include <sys/signal.h>
+#include <sys/signalfd.h>
 #include <sys/statfs.h>
 #include <sys/statvfs.h>
 #include <sys/sysinfo.h>
@@ -229,8 +230,8 @@ struct sockaddr_rc {
 // copied from /usr/include/linux/un.h
 struct my_sockaddr_un {
 	sa_family_t sun_family;
-#if defined(__ARM_EABI__) || defined(__powerpc64__)
-	// on ARM char is by default unsigned
+#if defined(__ARM_EABI__) || defined(__powerpc64__) || defined(__riscv)
+	// on some platforms char is unsigned by default
 	signed char sun_path[108];
 #else
 	char sun_path[108];
@@ -747,6 +748,8 @@ const (
 )
 
 type Sigset_t C.sigset_t
+
+type SignalfdSiginfo C.struct_signalfd_siginfo
 
 const RNDGETENTCNT = C.RNDGETENTCNT
 

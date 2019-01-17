@@ -62,6 +62,30 @@ func CreateOrUpdateCuration(cluster *logging.ClusterLogging) (err error) {
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Curator status: %v", retryErr)
 		}
+	} else {
+		removeCurator(cluster)
+	}
+
+	return nil
+}
+
+func removeCurator(cluster *logging.ClusterLogging) (err error) {
+	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+		if err = utils.RemoveServiceAccount(cluster, "curator"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveConfigMap(cluster, "curator"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveSecret(cluster, "curator"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveCronJob(cluster, "curator"); err != nil {
+			return
+		}
 	}
 
 	return nil

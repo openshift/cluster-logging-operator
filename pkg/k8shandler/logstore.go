@@ -53,6 +53,22 @@ func CreateOrUpdateLogStore(cluster *logging.ClusterLogging) (err error) {
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
 		}
+	} else {
+		removeElasticsearch(cluster)
+	}
+
+	return nil
+}
+
+func removeElasticsearch(cluster *logging.ClusterLogging) (err error) {
+	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+		if err = utils.RemoveSecret(cluster, "elasticsearch"); err != nil {
+			return
+		}
+
+		if err = removeElasticsearchCR(cluster, "elasticsearch"); err != nil {
+			return
+		}
 	}
 
 	return nil
@@ -123,6 +139,18 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 	utils.AddOwnerRefToObject(cr, utils.AsOwner(logging))
 
 	return cr
+}
+
+func removeElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName string) error {
+
+	esCr := getElasticsearchCR(cluster, elasticsearchName)
+
+	err := sdk.Delete(esCr)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v elasticsearch CR %v", elasticsearchName, err)
+	}
+
+	return nil
 }
 
 func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) {

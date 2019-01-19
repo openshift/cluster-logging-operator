@@ -10,6 +10,10 @@ import (
 type NodeTypeInterface interface {
 	getResource() runtime.Object
 	isDifferent(cfg *desiredNodeState) (bool, error)
+	isUpdateNeeded(cfg *desiredNodeState) bool
+	needsPause(cfg *desiredNodeState) (bool, error)
+	awaitingRollout(cfg *desiredNodeState, currentRevision string) (bool, error)
+	getRevision(cfg *desiredNodeState) (string, error)
 	constructNodeResource(cfg *desiredNodeState, owner metav1.OwnerReference) (runtime.Object, error)
 	delete() error
 	query() error

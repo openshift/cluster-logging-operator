@@ -6,8 +6,6 @@ import (
 
 	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/openshift/elasticsearch-operator/pkg/k8shandler"
-	"github.com/sirupsen/logrus"
-
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 )
 
@@ -33,8 +31,6 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 
 // Reconcile reconciles the cluster's state to the spec specified
 func Reconcile(es *v1alpha1.Elasticsearch) (err error) {
-	// Ensure existence of services
-	logrus.Debugf("Begin Reconcile of Elasticsearch cluster %v", es.ClusterName)
 	err = k8shandler.CreateOrUpdateServices(es)
 	if err != nil {
 		return fmt.Errorf("Failed to reconcile Services for Elasticsearch cluster: %v", err)
@@ -70,6 +66,5 @@ func Reconcile(es *v1alpha1.Elasticsearch) (err error) {
 		return fmt.Errorf("Failed to reconcile Elasticsearch deployment spec: %v", err)
 	}
 
-	logrus.Debugf("End Reconcile of Elasticsearch cluster %v", es.ClusterName)
 	return nil
 }

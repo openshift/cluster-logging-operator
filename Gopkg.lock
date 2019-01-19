@@ -31,8 +31,8 @@
     ".",
     "log"
   ]
-  revision = "3eb9738c1697594ea6e71a7156a9bb32ed216cf0"
-  version = "v2.8.0"
+  revision = "e37671aced663c8d3a395bd301857e26dcf4340c"
+  version = "v2.8.1"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -178,19 +178,19 @@
   version = "1.0.1"
 
 [[projects]]
-  branch = "release-3.11"
+  branch = "master"
   name = "github.com/openshift/api"
   packages = [
     "oauth/v1",
     "route/v1"
   ]
-  revision = "5ad8479f64f1b60ee9c62ce8ef1fe6638838725e"
+  revision = "4d49b5754a7067c0bf325b67ac6fc5e7d307aaad"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "2c7f4243c41e274e7b180209a8e4f84b6b35cc99"
+  revision = "377ae86d53083f1b3ea65beadba338472601fcae"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -253,7 +253,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "b1a0a9a36d7453ba0f62578b99712f3a6c5f82d1"
+  revision = "bf6a532e95b1f7a62adf0ab5050a5bb2237ad2f4"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -282,7 +282,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "915654e7eabcea33ae277abbecf52f0d8b7a9fdc"
+  revision = "ed066c81e75eba56dd9bd2139ade88125b855585"
 
 [[projects]]
   branch = "master"
@@ -337,7 +337,7 @@
     "internal/gopathwalk",
     "internal/semver"
   ]
-  revision = "c3e15677277459a71545fa40c982ca9e4562801e"
+  revision = "16909d206f00da7d0d5ba28cd9dc7fb223648ecf"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -584,6 +584,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5fd8ef39f6188405a880565a13baaa5ff8f763c5fd4c3e17a59fc5d5237efa44"
+  inputs-digest = "185d7a1879db58f418324c89407e9fe7f970c637d1f4eabf92e71b7dc68e676e"
   solver-name = "gps-cdcl"
   solver-version = 1

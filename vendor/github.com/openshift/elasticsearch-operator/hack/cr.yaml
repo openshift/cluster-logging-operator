@@ -6,15 +6,17 @@ metadata:
 spec:
   managementState: "Managed"
   nodeSpec:
-    image: openshift/origin-logging-elasticsearch5:latest
+    image: docker.io/openshift/origin-logging-elasticsearch5:latest
+    resources:
+      limits:
+        memory: 1Gi
+      requests:
+        memory: 512Mi
   nodes:
-    - roles:
-      - client
-      - data
-      - master
-      replicas: 1
-      resources:
-        limits:
-          memory: 1Gi
-        requests:
-          memory: 512Mi
+  - nodeCount: 1
+    roles:
+    - client
+    - data
+    - master
+    storage: {}
+  redundancyPolicy: SingleRedundancy

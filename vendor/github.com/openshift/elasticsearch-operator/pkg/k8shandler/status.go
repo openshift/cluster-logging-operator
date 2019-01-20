@@ -16,6 +16,7 @@ const healthUnknown = "cluster health unknown"
 
 // UpdateStatus updates the status of Elasticsearch CRD
 func (cState *ClusterState) UpdateStatus(dpl *v1alpha1.Elasticsearch) error {
+	// TODO: only update this when is different from current...
 	nretries := -1
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		nretries++

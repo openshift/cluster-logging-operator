@@ -15,8 +15,8 @@ import (
 	batch "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/util/retry"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 )
 
 const WORKING_DIR = "/tmp/_working_dir"
@@ -306,7 +306,7 @@ func RemoveConfigMap(cluster *logging.ClusterLogging, configmapName string) erro
 	configMap := ConfigMap(
 		configmapName,
 		cluster.Namespace,
-		map[string]string{ },
+		map[string]string{},
 	)
 
 	err := sdk.Delete(configMap)
@@ -322,7 +322,7 @@ func RemoveSecret(cluster *logging.ClusterLogging, secretName string) error {
 	secret := Secret(
 		secretName,
 		cluster.Namespace,
-		map[string][]byte{ },
+		map[string][]byte{},
 	)
 
 	err := sdk.Delete(secret)
@@ -356,7 +356,7 @@ func RemoveService(cluster *logging.ClusterLogging, serviceName string) error {
 		serviceName,
 		cluster.Namespace,
 		serviceName,
-		[]core.ServicePort{ },
+		[]core.ServicePort{},
 	)
 
 	err := sdk.Delete(service)
@@ -373,8 +373,8 @@ func RemoveOAuthClient(cluster *logging.ClusterLogging, clientName string) error
 		clientName,
 		cluster.Namespace,
 		"",
-		[]string{ },
-		[]string{ },
+		[]string{},
+		[]string{},
 	)
 
 	err := sdk.Delete(oauthClient)
@@ -428,7 +428,7 @@ func RemoveCronJob(cluster *logging.ClusterLogging, cronjobName string) error {
 		cluster.Namespace,
 		cronjobName,
 		cronjobName,
-		batch.CronJobSpec{ },
+		batch.CronJobSpec{},
 	)
 
 	err := sdk.Delete(cronjob)

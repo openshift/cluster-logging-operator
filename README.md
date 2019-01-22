@@ -28,82 +28,67 @@ deploying the operator assumes:
 * Logged into a cluster with an admin user who has the cluster role of `cluster-admin`
 * Access to a clone of the `openshift/elasticsearch-operator` repository
 * `make` targets are executed from the `openshift/cluster-logging-operator` root directory
-* various other commands such as `imagebuilder` and `operator-sdk` - it is suggested
-  that you use the logging `sdk_setup.sh` script at https://raw.githubusercontent.com/openshift/origin-aggregated-logging/master/hack/sdk_setup.sh
-  
-**Note:** If you are using `REMOTE_REGISTRY=true`, ensure you have `docker` package installed and `docker` daemon up and running on the workstation you are running these commands.
+* various other commands such as `imagebuilder` and `operator-sdk`. The
+   [sdk_setup.sh](https://raw.githubusercontent.com/openshift/origin-aggregated-logging/master/hack/sdk_setup.sh) will setup your environment.
 
 The deployment can be optionally modified using any of the following:
 
-*  `IMAGE_BUILDER` is the command to build the container image (default: `docker build`)
-*  `EXCLUSIONS` is list of manifest files that should be ignored (default: '')
-*  `OC` is the openshift binary to use to deploy resources (default: `oc` in path)
-*  `REMOTE_REGISTRY` Set to `true` if you are running the cluster on a different machine
-    than the one you are developing on. For example, if you are running a cluster in a
-    local libvirt or minishift environment, you may want to build the image on the host
-    and push them to the cluster running in the VM.
-    You will need a username with a password (i.e. not the default `system:admin` user).
-    If your cluster was deployed with the `allow_all` identity provider, you can create
-    a user like this: `oc login --username=admin --password=admin`, then assign it rights:
-    `oc login --username=system:admin`
-    `oc adm policy add-cluster-role-to-user cluster-admin admin`
-    If you used the new `openshift-installer`, it created a user named `kubeadmin`
+| Env Var | Default | Description|
+|---------|---------|------------|
+|`IMAGE_BUILDER`|`imagebuilder`| The command to build the container image|
+|`EXCLUSIONS`|none|The list of manifest files that should will be ignored|
+|`OC`|`oc` in `PATH`| The openshift binary to use to deploy resources|
+|`REMOTE_REGISTRY`|false|`true` if you are running the cluster on a different machine
+    than the one you are developing on|
+  
+**Note:** Use `REMOTE_REGISTRY=true`, for example, if you are running a cluster in a
+    local libvirt or minishift environment; you may want to build the image on the host
+    and push them to the cluster running in the VM. This requires a username with a password (i.e. not the default `system:admin` user).
+    If your cluster was deployed with the `allow_all` identity provider, you can:
+create a user and assign it rights:
+```
+    oc login --username=admin --password=admin
+    oc adm policy add-cluster-role-to-user cluster-admin admin
+```
+
+If you used the new `openshift-installer`, it creates a user named `kubeadmin`
     with the password in the file `installer/auth/kubeadmin_password`.
-    `oc login --username=kubeadmin --password=$( cat ../installer/auth/kubeadmin_password )`
-    The user should already have `cluster-admin` rights.
+
+```oc login --username=kubeadmin --password=$( cat ../installer/auth/kubeadmin_password )```
+
+The user should already have `cluster-admin` rights.
+
+**Note:** If you are using `REMOTE_REGISTRY=true`, ensure you have `docker` package installed and `docker` daemon up and running on the workstation you are running these commands.
+
 
 **Note:**  If while hacking you find your changes are not being applied, use
 `docker images` to see if there is a local version of the `cluster-logging-operator`
 on your machine which may being used by the cluster instead of the one pushed to
 the docker registry.  You may need to delete it (e.g. `docker rmi $IMAGE`)
 
-#### Full Deploy
-Deploys all resources and creates an instance of the `cluster-logging-operator`, creates
-a ClusterLogging custom resource named `example`, starts
-the Elasticsearch, Kibana, and Fluentd pods running.
-```
-$ [REMOTE_REGISTRY=true] make deploy-example
-```
+Following is a list of some of the existing `make` targets to facilitate deployment:
 
-#### Partial Deploy
-Deploys all resources and creates an instance of the `cluster-logging-operator`, but does
-not create the CR nor start the components running.
-```
-$ [REMOTE_REGISTRY=true] make deploy
-```
-
-#### Undeploy
-Removes all `cluster-logging` resources and `openshift-logging` project
-```
-$ [REMOTE_REGISTRY=true] make undeploy
-```
-
-#### Deploy Prerequisites
-Setup the OKD cluster to support cluster-logging without deploying an instance of
-the `cluster-logging-operator`
-```
-$ [REMOTE_REGISTRY=true] make deploy-setup
-```
-
-#### Rebuild and deploy image
-If you already have a remote cluster, and you just want to rebuild and redeploy the image
-to the remote cluster.  Use `make image` instead if you only want to build the image
-but not push it.
-```
-$ REMOTE_REGISTRY=true make deploy-image
-```
+|Target|Description|
+|------|-----------|
+|`deploy-example`|Deploys all resources and creates an instance of the `cluster-logging-operator`, creates a ClusterLogging custom resource named `example`, starts the Elasticsearch, Kibana, and Fluentd pods running.|
+|`deploy`|Deploys all resources and creates an instance of the `cluster-logging-operator`, but does not create the CR nor start the components running.|
+|`undeploy`|Removes all `cluster-logging` resources and `openshift-logging` project|
+|`deploy-setup`|Setup the OKD cluster to support cluster-logging without deploying an instance of the `cluster-logging-operator`|
+|`deploy-image`|If you already have a remote cluster, and you just want to rebuild and redeploy the image to the remote cluster.  Use `make image` instead if you only want to build the image but not push it.|
 
 
 ## Testing
 
 ### E2E Testing
-This test assumes the cluster-logging component images were already pushed
-to the OKD cluster and can be found at $docker_registry_ip/openshift/$component
+This test assumes:
+* the cluster-logging-operator image is available
+* the cluster-logging component images are available (i.e. $docker_registry_ip/openshift/$component)
 
-**Note:** This test will fail if the component images are not pushed to the cluster
-on which the operator runs.
+**Note:** This test will fail if the images are not pushed to the cluster
+on which the operator runs or can be pulled from a visible registry.
 
-Running the tests directly from the repo directory:
+**Note:** It is necessary to set the `IMAGE_CLUSTER_LOGGING_OPERATOR` environment variable to a valid pull spec
+in order to run this test against local changes to the `cluster-logging-operator`. For example:
 ```
-$ make test-e2e
+$ make deploy-image && IMAGE_CLUSTER_LOGGING_OPERATOR=openshift/origin-cluster-logging-operator:latest make test-e2e
 ```

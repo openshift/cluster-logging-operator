@@ -32,7 +32,7 @@ takes a full pull spec of the image:
 The following configuration options apply generally to all components defined in for a ClusterLogging object (e.g. logStore, visualization, etc).
 
 ### Memory and CPU
-Each component specification allows for adjustments to both the CPU and 
+Each component specification allows for adjustments to both the CPU and
 memory limits.  This is defined by modifying the `resources`
 block with valid memory (e.g. 16Gi) and CPU values (e.g 1):
 ```
@@ -50,7 +50,7 @@ block with valid memory (e.g. 16Gi) and CPU values (e.g 1):
 ```
 
 ## Data Aggregation and Storage
-An Elasticsearch cluster is responsible for log aggregation.  Following is a sample 
+An Elasticsearch cluster is responsible for log aggregation.  Following is a sample
 of the spec:
 ```
   spec:
@@ -59,12 +59,11 @@ of the spec:
       elasticsearch:
         nodeCount: 3
         storage:
-          storageClass: 
-            name: "gp2"
-            size: "200G"
+          storageClassName: "gp2"
+          size: "200G"
         redundancyPolicy: "SingleRedundancy"
 ```
-This example specifies each data node in the cluster will be bound to a `PersistentVolumeClaim` that 
+This example specifies each data node in the cluster will be bound to a `PersistentVolumeClaim` that
 requests "200G" of "gp2" storage.  Additionally, each primary shard will be backed by a single replica.
 
 ### Backing storage
@@ -92,9 +91,9 @@ The policy that defines how shards are replicated across data nodes in the clust
 |`ZeroRedundancy`| No copies of any shards.  Logs may be unavailable (or lost) in the event a node is down or fails|
 
 ## Log Collectors
-Log collectors are deployed as a Daemonset to each node in the OKD cluster.  Following are the 
+Log collectors are deployed as a Daemonset to each node in the OKD cluster.  Following are the
 supported log collectors for Cluster Logging:
-* Fluentd - The default log collector based on Fluentd. 
+* Fluentd - The default log collector based on Fluentd.
 * Rsyslog - Alternate log collector supported as **Tech Preview** only.
 
 ```

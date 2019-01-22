@@ -1,7 +1,11 @@
-#!/bin/bash
+#!/bin/bash -x
 set -e
 
-source "$(dirname $0)/common"
+if [ -n "${IMAGE_CLUSTER_LOGGING_OPERATOR:-}" ] ; then
+  source "$(dirname $0)/common"
+fi
+
+IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift/origin-cluster-logging-operator:latest}
 
 repo_dir="$(dirname $0)/.."
 if ! oc get project openshift-logging > /dev/null 2>&1 ; then
@@ -15,6 +19,8 @@ pushd manifests;
      cat ${f} >> ${manifest};
   done;
 popd
+# update the manifest with the image built by ci
+sed -i "s,quay.io/openshift/origin-cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," ${manifest}
 
 global_manifest=$(mktemp)
 global_files="05-crd.yaml"
@@ -39,9 +45,9 @@ oc adm policy add-scc-to-user privileged -z rsyslog -n openshift-logging
 # allows rsyslog to query k8s api for all namespace/pod info
 oc adm policy add-cluster-role-to-user cluster-reader -z rsyslog -n openshift-logging
 
-TEST_NAMESPACE=openshift-logging go test ./test/e2e/... \
+TEST_NAMESPACE=${NAMESPACE} go test ./test/e2e/... \
   -root=$(pwd) \
-  -kubeconfig=$HOME/.kube/config \
+  -kubeconfig=${KUBECONFIG} \
   -globalMan ${global_manifest} \
   -namespacedMan ${manifest} \
   -v \

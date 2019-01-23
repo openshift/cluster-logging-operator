@@ -45,7 +45,7 @@ operator-sdk:
 	fi
 
 imagebuilder:
-	@if ! type -p imagebuilder ; \
+	@if [ $${USE_IMAGE_STREAM:-false} = false ] && ! type -p imagebuilder ; \
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
 	fi
 
@@ -59,7 +59,9 @@ clean:
 	@rm -rf $(TARGET_DIR)
 
 image: imagebuilder
-	$(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS)
+	@if [ $${USE_IMAGE_STREAM:-false} = false ] ; \
+	then $(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS) ; \
+	fi
 
 fmt:
 	@gofmt -l -w cmd && \
@@ -81,11 +83,17 @@ deploy-image: image
 deploy: deploy-setup deploy-image
 	hack/deploy.sh
 
+deploy-no-build: deploy-setup
+	NO_BUILD=true hack/deploy.sh
+
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-e2e:
 	hack/test-e2e.sh
+
+deploy-example-no-build: deploy-no-build
+	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 undeploy:
 	hack/undeploy.sh

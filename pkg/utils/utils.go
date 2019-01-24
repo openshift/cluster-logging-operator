@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"time"
+	"path"
 
 	route "github.com/openshift/api/route/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -85,6 +86,23 @@ func GetFileContents(filePath string) []byte {
 	}
 
 	return contents
+}
+
+func GetWorkingDirFileContents(filePath string) []byte {
+	return GetFileContents(GetWorkingDirFilePath(filePath))
+}
+
+func GetWorkingDirFilePath(toFile string) string {
+	return path.Join(WORKING_DIR, toFile)
+}
+
+func WriteToWorkingDirFile(toFile string, value []byte) error {
+
+	if err := ioutil.WriteFile(GetWorkingDirFilePath(toFile), value, 0644); err != nil {
+		return fmt.Errorf("Unable to write to working dir: %v", err)
+	}
+
+	return nil
 }
 
 func init() {

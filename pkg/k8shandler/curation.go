@@ -133,12 +133,12 @@ func createOrUpdateCuratorSecret(logging *logging.ClusterLogging) error {
 		"curator",
 		logging.Namespace,
 		map[string][]byte{
-			"ca":       utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"key":      utils.GetFileContents("/tmp/_working_dir/system.logging.curator.key"),
-			"cert":     utils.GetFileContents("/tmp/_working_dir/system.logging.curator.crt"),
-			"ops-ca":   utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"ops-key":  utils.GetFileContents("/tmp/_working_dir/system.logging.curator.key"),
-			"ops-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.curator.crt"),
+			"ca":       utils.GetWorkingDirFileContents("ca.crt"),
+			"key":      utils.GetWorkingDirFileContents("system.logging.curator.key"),
+			"cert":     utils.GetWorkingDirFileContents("system.logging.curator.crt"),
+			"ops-ca":   utils.GetWorkingDirFileContents("ca.crt"),
+			"ops-key":  utils.GetWorkingDirFileContents("system.logging.curator.key"),
+			"ops-cert": utils.GetWorkingDirFileContents("system.logging.curator.crt"),
 		})
 
 	utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(logging))

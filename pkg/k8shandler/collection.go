@@ -303,12 +303,12 @@ func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
 		"fluentd",
 		logging.Namespace,
 		map[string][]byte{
-			"app-ca":     utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"app-key":    utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.key"),
-			"app-cert":   utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.crt"),
-			"infra-ca":   utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"infra-key":  utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.key"),
-			"infra-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.crt"),
+			"app-ca":     utils.GetWorkingDirFileContents("ca.crt"),
+			"app-key":    utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
+			"app-cert":   utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
+			"infra-ca":   utils.GetWorkingDirFileContents("ca.crt"),
+			"infra-key":  utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
+			"infra-cert": utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
 		})
 
 	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(logging))
@@ -327,12 +327,12 @@ func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
 		"rsyslog",
 		logging.Namespace,
 		map[string][]byte{
-			"app-ca":     utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"app-key":    utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.key"),
-			"app-cert":   utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.crt"),
-			"infra-ca":   utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"infra-key":  utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.key"),
-			"infra-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.crt"),
+			"app-ca":     utils.GetWorkingDirFileContents("ca.crt"),
+			"app-key":    utils.GetWorkingDirFileContents("system.logging.rsyslog.key"),
+			"app-cert":   utils.GetWorkingDirFileContents("system.logging.rsyslog.crt"),
+			"infra-ca":   utils.GetWorkingDirFileContents("ca.crt"),
+			"infra-key":  utils.GetWorkingDirFileContents("system.logging.rsyslog.key"),
+			"infra-cert": utils.GetWorkingDirFileContents("system.logging.rsyslog.crt"),
 		})
 
 	utils.AddOwnerRefToObject(rsyslogSecret, utils.AsOwner(logging))

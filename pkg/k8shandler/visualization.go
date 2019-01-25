@@ -34,7 +34,11 @@ func CreateOrUpdateVisualization(cluster *logging.ClusterLogging) (err error) {
 			return
 		}
 
-		oauthSecret := utils.GetRandomWord(64)
+		oauthSecret := utils.GetWorkingDirFileContents("kibana-proxy-oauth.secret")
+		if oauthSecret == nil {
+			oauthSecret = utils.GetRandomWord(64)
+			utils.WriteToWorkingDirFile("kibana-proxy-oauth.secret", oauthSecret)
+		}
 
 		if err = createOrUpdateKibanaSecret(cluster, oauthSecret); err != nil {
 			return
@@ -266,8 +270,33 @@ func createOrUpdateOauthClient(cluster *logging.ClusterLogging, oauthSecret stri
 	utils.AddOwnerRefToObject(oauthClient, utils.AsOwner(cluster))
 
 	err = sdk.Create(oauthClient)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating OAuthClient: %v", err)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure constructing %v oauthclient: %v", oauthClient.Name, err)
+		}
+
+		current := oauthClient.DeepCopy()
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err = sdk.Get(current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get %v oauthclient: %v", oauthClient.Name, err)
+			}
+
+			current.RedirectURIs = oauthClient.RedirectURIs
+			current.Secret = oauthClient.Secret
+			current.ScopeRestrictions = oauthClient.ScopeRestrictions
+			if err = sdk.Update(current); err != nil {
+				return err
+			}
+			return nil
+		})
+		if retryErr != nil {
+			return retryErr
+		}
 	}
 
 	return nil
@@ -280,7 +309,7 @@ func createOrUpdateKibanaRoute(cluster *logging.ClusterLogging) error {
 			"kibana",
 			cluster.Namespace,
 			"kibana",
-			"/tmp/_working_dir/ca.crt",
+			utils.GetWorkingDirFilePath("ca.crt"),
 		)
 
 		utils.AddOwnerRefToObject(kibanaRoute, utils.AsOwner(cluster))
@@ -307,7 +336,7 @@ func createOrUpdateKibanaRoute(cluster *logging.ClusterLogging) error {
 			"kibana-app",
 			cluster.Namespace,
 			"kibana-app",
-			"/tmp/_working_dir/ca.crt",
+			utils.GetWorkingDirFilePath("ca.crt"),
 		)
 
 		utils.AddOwnerRefToObject(kibanaRoute, utils.AsOwner(cluster))
@@ -321,7 +350,7 @@ func createOrUpdateKibanaRoute(cluster *logging.ClusterLogging) error {
 			"kibana-infra",
 			cluster.Namespace,
 			"kibana-infra",
-			"/tmp/_working_dir/ca.crt",
+			utils.GetWorkingDirFilePath("ca.crt"),
 		)
 
 		utils.AddOwnerRefToObject(kibanaInfraRoute, utils.AsOwner(cluster))
@@ -436,9 +465,9 @@ func createOrUpdateKibanaSecret(cluster *logging.ClusterLogging, oauthSecret []b
 		"kibana",
 		cluster.Namespace,
 		map[string][]byte{
-			"ca":   utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"key":  utils.GetFileContents("/tmp/_working_dir/system.logging.kibana.key"),
-			"cert": utils.GetFileContents("/tmp/_working_dir/system.logging.kibana.crt"),
+			"ca":   utils.GetWorkingDirFileContents("ca.crt"),
+			"key":  utils.GetWorkingDirFileContents("system.logging.kibana.key"),
+			"cert": utils.GetWorkingDirFileContents("system.logging.kibana.crt"),
 		})
 
 	utils.AddOwnerRefToObject(kibanaSecret, utils.AsOwner(cluster))
@@ -454,8 +483,8 @@ func createOrUpdateKibanaSecret(cluster *logging.ClusterLogging, oauthSecret []b
 		map[string][]byte{
 			"oauth-secret":   oauthSecret,
 			"session-secret": utils.GetRandomWord(32),
-			"server-key":     utils.GetFileContents("/tmp/_working_dir/kibana-internal.key"),
-			"server-cert":    utils.GetFileContents("/tmp/_working_dir/kibana-internal.crt"),
+			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
+			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
 		})
 
 	utils.AddOwnerRefToObject(proxySecret, utils.AsOwner(cluster))

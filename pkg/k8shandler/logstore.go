@@ -80,13 +80,13 @@ func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
 		"elasticsearch",
 		logging.Namespace,
 		map[string][]byte{
-			"elasticsearch.key": utils.GetFileContents("/tmp/_working_dir/elasticsearch.key"),
-			"elasticsearch.crt": utils.GetFileContents("/tmp/_working_dir/elasticsearch.crt"),
-			"logging-es.key":    utils.GetFileContents("/tmp/_working_dir/logging-es.key"),
-			"logging-es.crt":    utils.GetFileContents("/tmp/_working_dir/logging-es.crt"),
-			"admin-key":         utils.GetFileContents("/tmp/_working_dir/system.admin.key"),
-			"admin-cert":        utils.GetFileContents("/tmp/_working_dir/system.admin.crt"),
-			"admin-ca":          utils.GetFileContents("/tmp/_working_dir/ca.crt"),
+			"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
+			"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
+			"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
+			"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
+			"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
+			"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
+			"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
 		},
 	)
 

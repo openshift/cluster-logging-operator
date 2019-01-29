@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"time"
 	"path"
+	"time"
 
 	"github.com/sirupsen/logrus"
 

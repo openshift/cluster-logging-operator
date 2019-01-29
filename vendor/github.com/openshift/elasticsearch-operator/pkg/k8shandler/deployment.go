@@ -40,6 +40,9 @@ func (node *deploymentNode) awaitingRollout(cfg *desiredNodeState, currentRevisi
 	return actualRevision == currentRevision, nil
 }
 
+// needsPause determines whether a Deployment needs to be paused
+// A Deployment doesn't need to be paused if it is already paused.
+// Otherwise it need to be paused.
 func (node *deploymentNode) needsPause(cfg *desiredNodeState) (bool, error) {
 
 	if node.resource.Spec.Paused == false {
@@ -51,7 +54,7 @@ func (node *deploymentNode) needsPause(cfg *desiredNodeState) (bool, error) {
 }
 
 // Since this is called as part of doing an upgrade we check if deployments need to be
-//  paused again as a separate call to avoid unnecessary rollouts
+// paused again as a separate call to avoid unnecessary rollouts
 func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 
 	// Check replicas number
@@ -62,10 +65,6 @@ func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
 	}
 
 	// Check if labels are correct
-	if len(cfg.Labels) != len(node.resource.Labels) {
-		logrus.Debugf("Different labels detected, updating deployment %q", node.resource.GetName())
-		return true, nil
-	}
 	for label, value := range cfg.Labels {
 		val, ok := node.resource.Labels[label]
 		if !ok || val != value {
@@ -129,27 +128,27 @@ func (node *deploymentNode) isUpdateNeeded(cfg *desiredNodeState) bool {
 	for _, container := range node.resource.Spec.Template.Spec.Containers {
 		if container.Name == "elasticsearch" {
 			// Check image of Elasticsearch container
-			if container.Image != cfg.ESNodeSpec.Spec.Image {
+			if container.Image != cfg.Image {
 				logrus.Debugf("Resource '%s' has different container image than desired", node.resource.Name)
 				return true
 			}
 			// Check CPU limits
-			if cfg.ESNodeSpec.Spec.Resources.Limits.Cpu().Cmp(*container.Resources.Limits.Cpu()) != 0 {
+			if cfg.ESNodeSpec.Resources.Limits.Cpu().Cmp(*container.Resources.Limits.Cpu()) != 0 {
 				logrus.Debugf("Resource '%s' has different CPU limit than desired", node.resource.Name)
 				return true
 			}
 			// Check memory limits
-			if cfg.ESNodeSpec.Spec.Resources.Limits.Memory().Cmp(*container.Resources.Limits.Memory()) != 0 {
+			if cfg.ESNodeSpec.Resources.Limits.Memory().Cmp(*container.Resources.Limits.Memory()) != 0 {
 				logrus.Debugf("Resource '%s' has different Memory limit than desired", node.resource.Name)
 				return true
 			}
 			// Check CPU requests
-			if cfg.ESNodeSpec.Spec.Resources.Requests.Cpu().Cmp(*container.Resources.Requests.Cpu()) != 0 {
+			if cfg.ESNodeSpec.Resources.Requests.Cpu().Cmp(*container.Resources.Requests.Cpu()) != 0 {
 				logrus.Debugf("Resource '%s' has different CPU Request than desired", node.resource.Name)
 				return true
 			}
 			// Check memory requests
-			if cfg.ESNodeSpec.Spec.Resources.Requests.Memory().Cmp(*container.Resources.Requests.Memory()) != 0 {
+			if cfg.ESNodeSpec.Resources.Requests.Memory().Cmp(*container.Resources.Requests.Memory()) != 0 {
 				logrus.Debugf("Resource '%s' has different Memory Request than desired", node.resource.Name)
 				return true
 			}

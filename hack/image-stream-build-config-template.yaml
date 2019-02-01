@@ -14,8 +14,8 @@ objects:
   kind: ImageStream
   metadata:
     labels:
-      build: cluster-logging-operator
-    name: cluster-logging-operator
+      build: origin-cluster-logging-operator
+    name: origin-cluster-logging-operator
   spec: {}
 - apiVersion: v1
   kind: BuildConfig
@@ -27,7 +27,7 @@ objects:
     output:
       to:
         kind: ImageStreamTag
-        name: cluster-logging-operator:latest
+        name: origin-cluster-logging-operator:latest
     resources: {}
     source:
       git:

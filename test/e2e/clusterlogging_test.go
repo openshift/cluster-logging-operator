@@ -13,8 +13,8 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	rbac "k8s.io/api/rbac/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -275,12 +275,12 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 	newEnv := []v1.EnvVar{
 		{Name: "WATCH_NAMESPACE", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.namespace"}}},
 		{Name: "OPERATOR_NAME", Value: "cluster-logging-operator"},
-		{Name: "ELASTICSEARCH_IMAGE", Value: "docker.io/openshift/origin-logging-elasticsearch5:upgraded"},
-		{Name: "FLUENTD_IMAGE", Value: "docker.io/openshift/origin-logging-fluentd:upgraded"},
-		{Name: "KIBANA_IMAGE", Value: "docker.io/openshift/origin-logging-kibana5:upgraded"},
-		{Name: "CURATOR_IMAGE", Value: "docker.io/openshift/origin-logging-curator5:upgraded"},
-		{Name: "OAUTH_PROXY_IMAGE", Value: "docker.io/openshift/oauth-proxy:latest"},
-		{Name: "RSYSLOG_IMAGE", Value: "docker.io/viaq/rsyslog:upgraded"},
+		{Name: "ELASTICSEARCH_IMAGE", Value: "quay.io/openshift/origin-logging-elasticsearch5:upgraded"},
+		{Name: "FLUENTD_IMAGE", Value: "quay.io/openshift/origin-logging-fluentd:upgraded"},
+		{Name: "KIBANA_IMAGE", Value: "quay.io/openshift/origin-logging-kibana5:upgraded"},
+		{Name: "CURATOR_IMAGE", Value: "quay.io/openshift/origin-logging-curator5:upgraded"},
+		{Name: "OAUTH_PROXY_IMAGE", Value: "quay.io/openshift/origin-oauth-proxy:latest"},
+		{Name: "RSYSLOG_IMAGE", Value: "quay.io/viaq/rsyslog:upgraded"},
 	}
 
 	currentOperator.Spec.Template.Spec.Containers[0].Env = newEnv
@@ -289,29 +289,29 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 		return fmt.Errorf("could not update cluster-logging-operator with updated image values %v", err)
 	}
 
-	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "docker.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "quay.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", "docker.io/openshift/origin-logging-kibana5:upgraded", retryInterval, timeout)
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", "quay.io/openshift/origin-logging-kibana5:upgraded", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", "docker.io/openshift/origin-logging-curator5:upgraded", retryInterval, timeout)
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", "quay.io/openshift/origin-logging-curator5:upgraded", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
 	if collector == "rsyslog" {
-		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "docker.io/viaq/rsyslog:upgraded", retryInterval, timeout)
+		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "quay.io/viaq/rsyslog:upgraded", retryInterval, timeout)
 		if err != nil {
 			return err
 		}
 	}
 	if collector == "fluentd" {
-		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "docker.io/openshift/origin-logging-fluentd:upgraded", retryInterval, timeout)
+		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "quay.io/openshift/origin-logging-fluentd:upgraded", retryInterval, timeout)
 		if err != nil {
 			return err
 		}
@@ -328,29 +328,29 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 		return fmt.Errorf("could not update cluster-logging-operator with prior image values %v", err)
 	}
 
-	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "docker.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "quay.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", "docker.io/openshift/origin-logging-kibana5:latest", retryInterval, timeout)
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", "quay.io/openshift/origin-logging-kibana5:latest", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", "docker.io/openshift/origin-logging-curator5:latest", retryInterval, timeout)
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", "quay.io/openshift/origin-logging-curator5:latest", retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
 	if collector == "rsyslog" {
-		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "docker.io/viaq/rsyslog:latest", retryInterval, timeout)
+		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "quay.io/viaq/rsyslog:latest", retryInterval, timeout)
 		if err != nil {
 			return err
 		}
 	}
 	if collector == "fluentd" {
-		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "docker.io/openshift/origin-logging-fluentd:latest", retryInterval, timeout)
+		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "quay.io/openshift/origin-logging-fluentd:latest", retryInterval, timeout)
 		if err != nil {
 			return err
 		}

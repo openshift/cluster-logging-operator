@@ -22,8 +22,6 @@ func printVersion() {
 func main() {
 	printVersion()
 
-	sdk.ExposeMetricsPort()
-
 	resource := "logging.openshift.io/v1alpha1"
 	kind := "ClusterLogging"
 	namespace, err := k8sutil.GetWatchNamespace()

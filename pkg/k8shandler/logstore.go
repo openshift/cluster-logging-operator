@@ -108,8 +108,7 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 		Roles:        []v1alpha1.ElasticsearchNodeRole{"client", "data", "master"},
 		NodeCount:    logging.Spec.LogStore.NodeCount,
 		NodeSelector: logging.Spec.LogStore.NodeSelector,
-		Resources:    logging.Spec.LogStore.Resources,
-		Storage:      logging.Spec.LogStore.ElasticsearchSpec.Storage,
+		Storage: logging.Spec.LogStore.ElasticsearchSpec.Storage,
 	}
 
 	// build Nodes
@@ -127,6 +126,7 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 		Spec: v1alpha1.ElasticsearchSpec{
 			Spec: v1alpha1.ElasticsearchNodeSpec{
 				Image: utils.GetComponentImage("elasticsearch"),
+				Resources: logging.Spec.LogStore.ElasticsearchSpec.Resources,
 			},
 			Nodes:            esNodes,
 			ManagementState:  v1alpha1.ManagementStateManaged,

@@ -28,15 +28,27 @@ var (
 
 func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 
-	if err = createOrUpdateCollectionPriorityClass(cluster); err != nil {
-		return
-	}
-
-	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
-		if err = createOrUpdateFluentdServiceAccount(cluster); err != nil {
+	// there is no easier way to check this in golang without writing a helper function
+	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd || cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
+		if err = createOrUpdateCollectionPriorityClass(cluster); err != nil {
 			return
 		}
 
+		if err = createOrUpdateCollectorServiceAccount(cluster); err != nil {
+			return
+		}
+	} else {
+		if err = utils.RemoveServiceAccount(cluster, "logcollector"); err != nil {
+			return
+		}
+
+		if err = utils.RemovePriorityClass(cluster, "cluster-logging"); err != nil {
+			return
+		}
+	}
+
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
 		if err = createOrUpdateFluentdConfigMap(cluster); err != nil {
 			return
 		}
@@ -76,10 +88,6 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
-		if err = createOrUpdateRsyslogServiceAccount(cluster); err != nil {
-			return
-		}
-
 		if err = createOrUpdateRsyslogConfigMap(cluster); err != nil {
 			return
 		}
@@ -123,10 +131,6 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 
 func removeFluentd(cluster *logging.ClusterLogging) (err error) {
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = utils.RemoveServiceAccount(cluster, "fluentd"); err != nil {
-			return
-		}
-
 		if err = utils.RemoveConfigMap(cluster, "fluentd"); err != nil {
 			return
 		}
@@ -145,10 +149,6 @@ func removeFluentd(cluster *logging.ClusterLogging) (err error) {
 
 func removeRsyslog(cluster *logging.ClusterLogging) (err error) {
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = utils.RemoveServiceAccount(cluster, "rsyslog"); err != nil {
-			return
-		}
-
 		if err = utils.RemoveConfigMap(cluster, "rsyslog-bin"); err != nil {
 			return
 		}
@@ -187,29 +187,15 @@ func createOrUpdateCollectionPriorityClass(logging *logging.ClusterLogging) erro
 	return nil
 }
 
-func createOrUpdateFluentdServiceAccount(logging *logging.ClusterLogging) error {
+func createOrUpdateCollectorServiceAccount(logging *logging.ClusterLogging) error {
 
-	fluentdServiceAccount := utils.ServiceAccount("fluentd", logging.Namespace)
+	collectorServiceAccount := utils.ServiceAccount("logcollector", logging.Namespace)
 
-	utils.AddOwnerRefToObject(fluentdServiceAccount, utils.AsOwner(logging))
+	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(logging))
 
-	err := sdk.Create(fluentdServiceAccount)
+	err := sdk.Create(collectorServiceAccount)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Fluentd service account: %v", err)
-	}
-
-	return nil
-}
-
-func createOrUpdateRsyslogServiceAccount(logging *logging.ClusterLogging) error {
-
-	rsyslogServiceAccount := utils.ServiceAccount("rsyslog", logging.Namespace)
-
-	utils.AddOwnerRefToObject(rsyslogServiceAccount, utils.AsOwner(logging))
-
-	err := sdk.Create(rsyslogServiceAccount)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Rsyslog service account: %v", err)
+		return fmt.Errorf("Failure creating Log Collector service account: %v", err)
 	}
 
 	return nil
@@ -451,7 +437,7 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	fluentdPodSpec := utils.PodSpec(
-		"fluentd",
+		"logcollector",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{
 			{Name: "runlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/run/log/journal"}}},
@@ -535,7 +521,7 @@ func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	rsyslogPodSpec := utils.PodSpec(
-		"rsyslog",
+		"logcollector",
 		[]v1.Container{rsyslogContainer},
 		[]v1.Volume{
 			{Name: "runlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/run/log/journal"}}},

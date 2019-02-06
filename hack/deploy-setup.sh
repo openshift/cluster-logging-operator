@@ -33,7 +33,5 @@ mkdir /tmp/_working_dir
 load_manifest ${repo_dir}
 CREATE_ES_SECRET=false NAMESPACE=openshift-logging make -C ${ELASTICSEARCH_OP_REPO} deploy-setup
 
-oc adm policy add-scc-to-user privileged -z rsyslog -n openshift-logging
-oc adm policy add-cluster-role-to-user cluster-reader -z rsyslog -n openshift-logging
-oc adm policy add-scc-to-user privileged -z fluentd -n openshift-logging
-oc adm policy add-cluster-role-to-user cluster-reader -z fluentd -n openshift-logging
+oc adm policy add-scc-to-user privileged -z logcollector -n openshift-logging
+oc adm policy add-cluster-role-to-user cluster-reader -z logcollector -n openshift-logging

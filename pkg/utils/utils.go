@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"time"
 	"path"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -453,6 +453,22 @@ func RemoveCronJob(cluster *logging.ClusterLogging, cronjobName string) error {
 	err := sdk.Delete(cronjob)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v cronjob %v", cronjobName, err)
+	}
+
+	return nil
+}
+
+func RemovePriorityClass(cluster *logging.ClusterLogging, priorityclassName string) error {
+	collectionPriorityClass := PriorityClass(
+		priorityclassName,
+		1000000,
+		false,
+		"This priority class is for the Cluster-Logging Collector",
+	)
+
+	err := sdk.Delete(collectionPriorityClass)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v priority class %v", priorityclassName, err)
 	}
 
 	return nil

@@ -70,6 +70,14 @@ rules:
   - rolebindings
   verbs:
   - "*"
+- apiGroups:
+  - "security.openshift.io"
+  resources:
+  - "securitycontextconstraints"
+  resourceNames:
+  - "privileged"
+  verbs:
+  - use
 
 ---
 kind: ClusterRole
@@ -87,5 +95,11 @@ rules:
   - oauth.openshift.io
   resources:
   - oauthclients
+  verbs:
+  - "*"
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterrolebindings
   verbs:
   - "*"

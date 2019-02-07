@@ -5,7 +5,9 @@ if [ -n "${IMAGE_CLUSTER_LOGGING_OPERATOR:-}" ] ; then
   source "$(dirname $0)/common"
 fi
 
+STABLE_IMAGE_CLUSTER_LOGGING_OPERATOR=$(echo $IMAGE_FORMAT | sed 's,${component},cluster-logging-operator,')
 IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift/origin-cluster-logging-operator:latest}
+IMAGE_MANIFEST_CLUSTER_LOGGING_OPERATOR=${STABLE_IMAGE_CLUSTER_LOGGING_OPERATOR:-$IMAGE_CLUSTER_LOGGING_OPERATOR}
 
 repo_dir="$(dirname $0)/.."
 if ! oc get project openshift-logging > /dev/null 2>&1 ; then
@@ -20,7 +22,7 @@ pushd manifests;
   done;
 popd
 # update the manifest with the image built by ci
-sed -i "s,quay.io/openshift/origin-cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," ${manifest}
+sed -i "s,quay.io/openshift/origin-cluster-logging-operator:latest,${IMAGE_MANIFEST_CLUSTER_LOGGING_OPERATOR}," ${manifest}
 
 global_manifest=$(mktemp)
 global_files="05-crd.yaml"
@@ -35,11 +37,6 @@ pushd vendor/github.com/openshift/elasticsearch-operator/manifests;
     cat ${f} >> ${global_manifest}
   done;
 popd
-
-# allows log collectors to have root access to node
-oc adm policy add-scc-to-user privileged -z logcollector -n openshift-logging
-# allows log collectors to query k8s api for all namespace/pod info
-oc adm policy add-cluster-role-to-user cluster-reader -z logcollector -n openshift-logging
 
 TEST_NAMESPACE=${NAMESPACE} go test ./test/e2e/... \
   -root=$(pwd) \

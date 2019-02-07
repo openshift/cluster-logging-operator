@@ -187,15 +187,81 @@ func createOrUpdateCollectionPriorityClass(logging *logging.ClusterLogging) erro
 	return nil
 }
 
-func createOrUpdateCollectorServiceAccount(logging *logging.ClusterLogging) error {
+func createOrUpdateCollectorServiceAccount(cluster *logging.ClusterLogging) error {
 
-	collectorServiceAccount := utils.ServiceAccount("logcollector", logging.Namespace)
+	collectorServiceAccount := utils.ServiceAccount("logcollector", cluster.Namespace)
 
-	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(logging))
+	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(cluster))
 
 	err := sdk.Create(collectorServiceAccount)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Log Collector service account: %v", err)
+	}
+
+	// Also create the role and role binding so that the service account has host read access
+	collectorRole := utils.NewRole(
+		"log-collector-privileged",
+		cluster.Namespace,
+		utils.NewPolicyRules(
+			utils.NewPolicyRule(
+				[]string{"security.openshift.io"},
+				[]string{"securitycontextconstraints"},
+				[]string{"privileged"},
+				[]string{"use"},
+			),
+		),
+	)
+
+	utils.AddOwnerRefToObject(collectorRole, utils.AsOwner(cluster))
+
+	err = sdk.Create(collectorRole)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating Log collector privileged role: %v", err)
+	}
+
+	subject := utils.NewSubject(
+		"ServiceAccount",
+		"logcollector",
+	)
+	subject.APIGroup = ""
+
+	collectorRoleBinding := utils.NewRoleBinding(
+		"log-collector-privileged-binding",
+		cluster.Namespace,
+		"log-collector-privileged",
+		utils.NewSubjects(
+			subject,
+		),
+	)
+
+	utils.AddOwnerRefToObject(collectorRoleBinding, utils.AsOwner(cluster))
+
+	err = sdk.Create(collectorRoleBinding)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating Log collector privileged role binding: %v", err)
+	}
+
+	subject = utils.NewSubject(
+		"ServiceAccount",
+		"logcollector",
+	)
+	subject.Namespace = cluster.Namespace
+	subject.APIGroup = ""
+
+	collectorReaderClusterRoleBinding := utils.NewClusterRoleBinding(
+		"openshift-logging-collector-cluster-reader",
+		cluster.Namespace,
+		"cluster-reader",
+		utils.NewSubjects(
+			subject,
+		),
+	)
+
+	utils.AddOwnerRefToObject(collectorReaderClusterRoleBinding, utils.AsOwner(cluster))
+
+	err = sdk.Create(collectorReaderClusterRoleBinding)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating Log collector cluster-reader role binding: %v", err)
 	}
 
 	return nil

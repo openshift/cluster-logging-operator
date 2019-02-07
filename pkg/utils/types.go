@@ -6,6 +6,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	scheduling "k8s.io/api/scheduling/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -269,5 +270,81 @@ func PriorityClass(priorityclassName string, priorityValue int32, globalDefault 
 		Value:         priorityValue,
 		GlobalDefault: globalDefault,
 		Description:   description,
+	}
+}
+
+func NewPolicyRule(apiGroups, resources, resourceNames, verbs []string) rbac.PolicyRule {
+	return rbac.PolicyRule{
+		APIGroups:     apiGroups,
+		Resources:     resources,
+		ResourceNames: resourceNames,
+		Verbs:         verbs,
+	}
+}
+
+func NewPolicyRules(rules ...rbac.PolicyRule) []rbac.PolicyRule {
+	return rules
+}
+
+func NewRole(roleName, namespace string, rules []rbac.PolicyRule) *rbac.Role {
+	return &rbac.Role{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Role",
+			APIVersion: rbac.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleName,
+			Namespace: namespace,
+		},
+		Rules: rules,
+	}
+}
+
+func NewSubject(kind, name string) rbac.Subject {
+	return rbac.Subject{
+		Kind:     kind,
+		Name:     name,
+		APIGroup: rbac.GroupName,
+	}
+}
+
+func NewSubjects(subjects ...rbac.Subject) []rbac.Subject {
+	return subjects
+}
+
+func NewRoleBinding(bindingName, namespace, roleName string, subjects []rbac.Subject) *rbac.RoleBinding {
+	return &rbac.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: rbac.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      bindingName,
+			Namespace: namespace,
+		},
+		RoleRef: rbac.RoleRef{
+			Kind:     "Role",
+			Name:     roleName,
+			APIGroup: rbac.GroupName,
+		},
+		Subjects: subjects,
+	}
+}
+
+func NewClusterRoleBinding(bindingName, namespace, roleName string, subjects []rbac.Subject) *rbac.ClusterRoleBinding {
+	return &rbac.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRoleBinding",
+			APIVersion: rbac.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: bindingName,
+		},
+		RoleRef: rbac.RoleRef{
+			Kind:     "ClusterRole",
+			Name:     roleName,
+			APIGroup: rbac.GroupName,
+		},
+		Subjects: subjects,
 	}
 }

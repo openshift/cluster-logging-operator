@@ -85,10 +85,8 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 			elasticsearch.ElasticsearchRoleData,
 			elasticsearch.ElasticsearchRoleMaster,
 		},
-		Replicas: int32(1),
-		Storage: elasticsearch.ElasticsearchNodeStorageSource{
-			EmptyDir: &v1.EmptyDirVolumeSource{},
-		},
+		NodeCount: int32(1),
+		Storage: elasticsearch.ElasticsearchStorageSpec{ },
 	}
 
 	// create clusterlogging custom resource
@@ -138,7 +136,7 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
 		return fmt.Errorf("failed to get exampleElasticsearch: %v", err)
 	}
-	exampleElasticsearch.Spec.Nodes[0].Replicas = int32(2)
+	exampleElasticsearch.Spec.Nodes[0].NodeCount = int32(2)
 	err = f.Client.Update(goctx.TODO(), exampleElasticsearch)
 	if err != nil {
 		return fmt.Errorf("could not update exampleElasticsearch with 2 replicas: %v", err)
@@ -186,7 +184,7 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
 		return fmt.Errorf("failed to get exampleElasticsearch: %v", err)
 	}
-	exampleElasticsearch.Spec.Nodes[1].Replicas = int32(2)
+	exampleElasticsearch.Spec.Nodes[1].NodeCount = int32(2)
 	err = f.Client.Update(goctx.TODO(), exampleElasticsearch)
 	if err != nil {
 		return fmt.Errorf("could not update exampleElasticsearch with an additional node and replica: %v", err)

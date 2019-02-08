@@ -9,15 +9,13 @@ repo_dir="$(dirname $0)/.."
 
 IMAGE_TAG=${IMAGE_TAG:-"openshift/origin-elasticsearch-operator:latest"}
 
-# probably needs some work for contexts which have '-' in the name and are not IPs
-context=$(oc config current-context)
-API_SERVER=$(python -c \
-    "import re; m=re.match('.*/(.*)/.*',\"${context}\"); print m.group(1).replace('-','.')")
-
 ADMIN_USER=${ADMIN_USER:-admin}
 ADMIN_PSWD=${ADMIN_USER:-admin123}
 NAMESPACE=${NAMESPACE:-openshift-logging}
 REMOTE_REGISTRY=${REMOTE_REGISTRY:-false}
+# set to true if you are not running this on the same machine where
+# elasticsearch is running
+REMOTE_CLUSTER=${REMOTE_CLUSTER:-false}
 
 if [ $REMOTE_REGISTRY = false ] ; then
     : # skip

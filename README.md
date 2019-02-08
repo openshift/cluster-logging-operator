@@ -2,6 +2,16 @@
 An operator to support OKD aggregated cluster logging.  Cluster logging configuration information
 is found in the [configuration](./docs/configuration.md) documentation.
 
+## Quick Start
+To get started with cluster logging and the `cluster-logging-operator`:
+* Ensure Docker is installed on your local system
+```
+$ oc login $CLUSTER -u $ADMIN_USER -p $ADMIN_PASSWD
+$ REMOTE_CLUSTER=true make deploy-example
+```
+This will stand up a cluster logging stack named 'example'.
+
+
 ## Hacking
 
 ### Running the operator

@@ -94,7 +94,7 @@ func (in *ElasticsearchNode) DeepCopyInto(out *ElasticsearchNode) {
 		*out = make([]ElasticsearchNodeRole, len(*in))
 		copy(*out, *in)
 	}
-	in.Spec.DeepCopyInto(&out.Spec)
+	in.Resources.DeepCopyInto(&out.Resources)
 	if in.NodeSelector != nil {
 		in, out := &in.NodeSelector, &out.NodeSelector
 		*out = make(map[string]string, len(*in))

@@ -262,7 +262,7 @@ func (cState *ClusterState) restartCluster(dpl *v1alpha1.Elasticsearch, owner me
 			enableShardAllocation(dpl, masterPod)
 			return err
 		}
-		logrus.Infof("Rolling upgrade: began upgrading node: %v", nodeUnderUpgrade.DeploymentName)
+		logrus.Infof("Rolling restart: began upgrading node: %v", nodeUnderUpgrade.DeploymentName)
 	}
 
 	// wait for node to start and rejoin the cluster
@@ -272,7 +272,7 @@ func (cState *ClusterState) restartCluster(dpl *v1alpha1.Elasticsearch, owner me
 	}
 	if rejoined := nodeRejoinedCluster(dpl, masterPod); !rejoined {
 		if nodeUnderUpgrade.UpgradeStatus.UpgradePhase != v1alpha1.NodeRestarting {
-			logrus.Infof("Rolling upgrade: waiting for node '%s' to rejoin the cluster...", nodeUnderUpgrade.DeploymentName)
+			logrus.Infof("Rolling restart: waiting for node '%s' to rejoin the cluster...", nodeUnderUpgrade.DeploymentName)
 			if retryErr := utils.UpdateNodeUpgradeStatusWithRetry(dpl, nodeUnderUpgrade.DeploymentName, utils.NodeRestarting()); retryErr != nil {
 				return err
 			}
@@ -290,7 +290,7 @@ func (cState *ClusterState) restartCluster(dpl *v1alpha1.Elasticsearch, owner me
 	// wait for rebalancing to finish
 	if health := clusterHealth(dpl); health != "green" {
 		if nodeUnderUpgrade.UpgradeStatus.UpgradePhase != v1alpha1.RecoveringData {
-			logrus.Infof("Rolling upgrade: node '%s' rejoined cluster, recovering its data...", nodeUnderUpgrade.PodName)
+			logrus.Infof("Rolling restart: node '%s' rejoined cluster, recovering its data...", nodeUnderUpgrade.PodName)
 			if retryErr := utils.UpdateNodeUpgradeStatusWithRetry(dpl, nodeUnderUpgrade.DeploymentName, utils.NodeRecoveringData()); retryErr != nil {
 				return err
 			}

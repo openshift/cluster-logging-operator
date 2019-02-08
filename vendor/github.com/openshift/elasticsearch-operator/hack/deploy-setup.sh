@@ -39,7 +39,9 @@ oc create clusterrolebinding elasticsearch-operator-prometheus-rolebinding \
     --serviceaccount=${NAMESPACE}:elasticsearch-operator \
     --clusterrole=prometheus-crd-edit ||:
 
-sudo sysctl -w vm.max_map_count=262144
+if [ "${REMOTE_CLUSTER:-false}" = false ] ; then
+  sudo sysctl -w vm.max_map_count=262144
+fi
 
 if [ "${CREATE_ES_SECRET:-true}" = true ] ; then
   # This is necessary for running the operator with go run

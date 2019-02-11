@@ -402,9 +402,9 @@ func createOrUpdateFluentdDaemonset(cluster *logging.ClusterLogging) (err error)
 	var fluentdPodSpec v1.PodSpec
 
 	if utils.AllInOne(cluster) {
-		fluentdPodSpec = getFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
+		fluentdPodSpec = newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
 	} else {
-		fluentdPodSpec = getFluentdPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
+		fluentdPodSpec = newFluentdPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
 	}
 
 	fluentdDaemonset := utils.DaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
@@ -432,9 +432,9 @@ func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error)
 	var rsyslogPodSpec v1.PodSpec
 
 	if utils.AllInOne(cluster) {
-		rsyslogPodSpec = getRsyslogPodSpec(cluster, "elasticsearch", "elasticsearch")
+		rsyslogPodSpec = newRsyslogPodSpec(cluster, "elasticsearch", "elasticsearch")
 	} else {
-		rsyslogPodSpec = getRsyslogPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
+		rsyslogPodSpec = newRsyslogPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
 	}
 
 	rsyslogDaemonset := utils.DaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
@@ -458,9 +458,18 @@ func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error)
 	return nil
 }
 
-func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
-
-	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.Logs.FluentdSpec.Resources)
+func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
+	var resources = logging.Spec.Collection.Logs.FluentdSpec.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultFluentdMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultFluentdMemory,
+				v1.ResourceCPU:    defaultFluentdCpuRequest,
+			},
+		}
+	}
+	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, *resources)
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -534,9 +543,17 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	return fluentdPodSpec
 }
 
-func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
-
-	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, logging.Spec.Collection.Logs.RsyslogSpec.Resources)
+func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
+	var resources = logging.Spec.Collection.Logs.RsyslogSpec.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultRsyslogMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultRsyslogMemory,
+				v1.ResourceCPU:    defaultRsyslogCpuRequest,
+			}}
+	}
+	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, *resources)
 
 	rsyslogContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},

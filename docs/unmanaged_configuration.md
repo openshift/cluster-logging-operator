@@ -25,3 +25,39 @@ oc set env dc/fluentd MERGE_JSON_LOG=true
 * Possible log loss due to Elasticsearch rejecting documents due to inconsistent type mappings
 * Potential buffer storage leak caused by rejected message cycling
 * Overwrite of data for field with same names
+
+## ElasticSearch
+### Exposing elasticsearch service with a route
+```
+# Get ElasticSearch pod name
+ESPOD=$( oc get pods -l component=elasticsearch -o name | sed -e "s/pod\///" )
+
+# Extract CA cert.
+oc exec $ESPOD -- cat /etc/openshift/elasticsearch/secret/admin-ca > ./admin-ca
+
+# Create an yaml file for the ElasticSearch service
+cat << EOF > my_es_route.yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: elasticsearch
+  namespace: openshift-logging
+spec:
+  host:
+  to:
+    kind: Service
+    name: elasticsearch
+  tls:
+    termination: reencrypt
+    caCertificate: |-
+EOF
+cat ./admin-ca | sed -e "s/^/      /" >> my_es_route.yaml
+echo "    destinationCACertificate: |-" >> my_es_route.yaml
+cat ./admin-ca | sed -e "s/^/      /" >> my_es_route.yaml
+
+# Create the service
+oc create -f my_es_route.yaml
+
+# Check the ElasticSearch service is exposed
+curl --silent --insecure -H "Authorization: Bearer $( oc whoami -t )" "https://$( oc get route elasticsearch -o jsonpath='{.spec.host}' ):443/.operations.*/_search" | jq
+```

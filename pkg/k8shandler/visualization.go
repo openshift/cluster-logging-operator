@@ -15,7 +15,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
-	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -379,7 +378,19 @@ func createOrUpdateKibanaRoute(cluster *logging.ClusterLogging) error {
 		}
 	}
 
-	sharedRole := createSharedConfigRole(cluster)
+	sharedRole := utils.NewRole(
+		"sharing-config-reader",
+		cluster.Namespace,
+		utils.NewPolicyRules(
+			utils.NewPolicyRule(
+				[]string{""},
+				[]string{"configmaps"},
+				[]string{"sharing-config"},
+				[]string{"get"},
+			),
+		),
+	)
+
 	utils.AddOwnerRefToObject(sharedRole, utils.AsOwner(cluster))
 
 	err := sdk.Create(sharedRole)
@@ -387,7 +398,18 @@ func createOrUpdateKibanaRoute(cluster *logging.ClusterLogging) error {
 		return fmt.Errorf("Failure creating Kibana route shared config role: %v", err)
 	}
 
-	sharedRoleBinding := createSharedConfigRoleBinding(cluster)
+	sharedRoleBinding := utils.NewRoleBinding(
+		"openshift-logging-sharing-config-reader-binding",
+		cluster.Namespace,
+		"sharing-config-reader",
+		utils.NewSubjects(
+			utils.NewSubject(
+				"Group",
+				"system:authenticated",
+			),
+		),
+	)
+
 	utils.AddOwnerRefToObject(sharedRoleBinding, utils.AsOwner(cluster))
 
 	err = sdk.Create(sharedRoleBinding)
@@ -707,50 +729,4 @@ func createSharedConfig(cluster *logging.ClusterLogging, kibanaAppURL, kibanaInf
 			"kibanaInfraURL": kibanaInfraURL,
 		},
 	)
-}
-
-func createSharedConfigRole(cluster *logging.ClusterLogging) *rbac.Role {
-	return &rbac.Role{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Role",
-			APIVersion: rbac.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "sharing-config-reader",
-			Namespace: cluster.Namespace,
-		},
-		Rules: []rbac.PolicyRule{
-			rbac.PolicyRule{
-				APIGroups:     []string{""},
-				Resources:     []string{"configmaps"},
-				ResourceNames: []string{"sharing-config"},
-				Verbs:         []string{"get"},
-			},
-		},
-	}
-}
-
-func createSharedConfigRoleBinding(cluster *logging.ClusterLogging) *rbac.RoleBinding {
-	return &rbac.RoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "RoleBinding",
-			APIVersion: rbac.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "openshift-logging-sharing-config-reader-binding",
-			Namespace: cluster.Namespace,
-		},
-		RoleRef: rbac.RoleRef{
-			Kind:     "Role",
-			Name:     "sharing-config-reader",
-			APIGroup: rbac.GroupName,
-		},
-		Subjects: []rbac.Subject{
-			rbac.Subject{
-				Kind:     "Group",
-				Name:     "system:authenticated",
-				APIGroup: rbac.GroupName,
-			},
-		},
-	}
 }

@@ -2,7 +2,7 @@ package v1alpha1
 
 import (
 	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,14 +40,14 @@ type VisualizationSpec struct {
 }
 
 type KibanaSpec struct {
-	Resources    v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
-	Replicas     int32                   `json:"replicas"`
+	Resources    *v1.ResourceRequirements `json:"resources"`
+	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
+	Replicas     int32                    `json:"replicas"`
 	ProxySpec    `json:"proxy,omitempty"`
 }
 
 type ProxySpec struct {
-	Resources v1.ResourceRequirements `json:"resources"`
+	Resources *v1.ResourceRequirements `json:"resources"`
 }
 
 // This is the struct that will contain information pertinent to Log storage (Elasticsearch)
@@ -57,7 +57,7 @@ type LogStoreSpec struct {
 }
 
 type ElasticsearchSpec struct {
-	Resources        v1.ResourceRequirements           `json:"resources"`
+	Resources        *v1.ResourceRequirements          `json:"resources"`
 	NodeCount        int32                             `json:"nodeCount"`
 	NodeSelector     map[string]string                 `json:"nodeSelector,omitempty"`
 	Storage          v1alpha1.ElasticsearchStorageSpec `json:"storage"`
@@ -80,13 +80,13 @@ type EventCollectionSpec struct {
 }
 
 type FluentdSpec struct {
-	Resources    v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
+	Resources    *v1.ResourceRequirements `json:"resources"`
+	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
 }
 
 type RsyslogSpec struct {
-	Resources    v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
+	Resources    *v1.ResourceRequirements `json:"resources"`
+	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log curation (Curator)
@@ -96,9 +96,9 @@ type CurationSpec struct {
 }
 
 type CuratorSpec struct {
-	Resources    v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
-	Schedule     string                  `json:"schedule"`
+	Resources    *v1.ResourceRequirements `json:"resources"`
+	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
+	Schedule     string                   `json:"schedule"`
 }
 
 type ClusterLoggingStatus struct {

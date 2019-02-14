@@ -7,7 +7,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
@@ -140,7 +140,7 @@ func createOrUpdateKibanaServiceAccount(cluster *logging.ClusterLogging) error {
 func createOrUpdateKibanaDeployment(cluster *logging.ClusterLogging) (err error) {
 
 	if utils.AllInOne(cluster) {
-		kibanaPodSpec := getKibanaPodSpec(cluster, "kibana", "elasticsearch")
+		kibanaPodSpec := newKibanaPodSpec(cluster, "kibana", "elasticsearch")
 		kibanaDeployment := utils.Deployment(
 			"kibana",
 			cluster.Namespace,
@@ -166,7 +166,7 @@ func createOrUpdateKibanaDeployment(cluster *logging.ClusterLogging) (err error)
 		}
 
 	} else {
-		kibanaPodSpec := getKibanaPodSpec(cluster, "kibana-app", "elasticsearch-app")
+		kibanaPodSpec := newKibanaPodSpec(cluster, "kibana-app", "elasticsearch-app")
 		kibanaDeployment := utils.Deployment(
 			"kibana-app",
 			cluster.Namespace,
@@ -191,7 +191,7 @@ func createOrUpdateKibanaDeployment(cluster *logging.ClusterLogging) (err error)
 			}
 		}
 
-		kibanaInfraPodSpec := getKibanaPodSpec(cluster, "kibana-infra", "elasticsearch-infra")
+		kibanaInfraPodSpec := newKibanaPodSpec(cluster, "kibana-infra", "elasticsearch-infra")
 		kibanaInfraDeployment := utils.Deployment(
 			"kibana-infra",
 			cluster.Namespace,
@@ -519,12 +519,22 @@ func createOrUpdateKibanaSecret(cluster *logging.ClusterLogging, oauthSecret []b
 	return nil
 }
 
-func getKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasticsearchName string) v1.PodSpec {
+func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasticsearchName string) v1.PodSpec {
 
+	var kibanaResources = cluster.Spec.Visualization.KibanaSpec.Resources
+	if kibanaResources == nil {
+		kibanaResources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultKibanaMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultKibanaMemory,
+				v1.ResourceCPU:    defaultKibanaCpuRequest,
+			},
+		}
+	}
 	kibanaContainer := utils.Container(
 		"kibana",
 		v1.PullIfNotPresent,
-		cluster.Spec.Visualization.KibanaSpec.Resources,
+		*kibanaResources,
 	)
 
 	var endpoint bytes.Buffer
@@ -560,10 +570,20 @@ func getKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		InitialDelaySeconds: 5, TimeoutSeconds: 4, PeriodSeconds: 5,
 	}
 
+	var kibanaProxyResources = cluster.Spec.Visualization.ProxySpec.Resources
+	if kibanaProxyResources == nil {
+		kibanaProxyResources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultKibanaProxyMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultKibanaProxyMemory,
+				v1.ResourceCPU:    defaultKibanaProxyCpuRequest,
+			},
+		}
+	}
 	kibanaProxyContainer := utils.Container(
 		"kibana-proxy",
 		v1.PullIfNotPresent,
-		cluster.Spec.Visualization.KibanaSpec.ProxySpec.Resources,
+		*kibanaProxyResources,
 	)
 
 	kibanaProxyContainer.Args = []string{

@@ -13,9 +13,10 @@ export IMAGE_TAG_CMD?=docker tag
 export APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-export IMAGE_TAG=openshift/origin-$(APP_NAME):latest
+export IMAGE_TAG=quay.io/openshift/origin-$(APP_NAME):latest
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 export NAMESPACE?=openshift-logging
+PKGS=$(shell go list ./... | grep -v -E '/vendor/|/test|/examples')
 
 OC?=oc
 
@@ -30,7 +31,7 @@ OC?=oc
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-e2e undeploy
+.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-unit test-e2e undeploy
 
 all: build #check install
 
@@ -89,6 +90,8 @@ deploy-no-build: deploy-setup
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
+test-unit: 
+	@go test $(PKGS)
 test-e2e:
 	hack/test-e2e.sh
 

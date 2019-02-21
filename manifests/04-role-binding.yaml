@@ -41,3 +41,17 @@ roleRef:
   kind: ClusterRole
   name: cluster-logging-operator-cluster
   apiGroup: rbac.authorization.k8s.io
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: cluster-logging-operator-cluster-reader-binding
+subjects:
+- kind: ServiceAccount
+  name: cluster-logging-operator
+  namespace: openshift-logging
+roleRef:
+  kind: ClusterRole
+  name: cluster-reader
+  apiGroup: rbac.authorization.k8s.io

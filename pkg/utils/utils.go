@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -86,6 +87,23 @@ func GetFileContents(filePath string) []byte {
 	}
 
 	return contents
+}
+
+func GetWorkingDirFileContents(filePath string) []byte {
+	return GetFileContents(GetWorkingDirFilePath(filePath))
+}
+
+func GetWorkingDirFilePath(toFile string) string {
+	return path.Join(WORKING_DIR, toFile)
+}
+
+func WriteToWorkingDirFile(toFile string, value []byte) error {
+
+	if err := ioutil.WriteFile(GetWorkingDirFilePath(toFile), value, 0644); err != nil {
+		return fmt.Errorf("Unable to write to working dir: %v", err)
+	}
+
+	return nil
 }
 
 func init() {
@@ -435,6 +453,22 @@ func RemoveCronJob(cluster *logging.ClusterLogging, cronjobName string) error {
 	err := sdk.Delete(cronjob)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v cronjob %v", cronjobName, err)
+	}
+
+	return nil
+}
+
+func RemovePriorityClass(cluster *logging.ClusterLogging, priorityclassName string) error {
+	collectionPriorityClass := PriorityClass(
+		priorityclassName,
+		1000000,
+		false,
+		"This priority class is for the Cluster-Logging Collector",
+	)
+
+	err := sdk.Delete(collectionPriorityClass)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v priority class %v", priorityclassName, err)
 	}
 
 	return nil

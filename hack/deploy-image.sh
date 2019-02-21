@@ -10,8 +10,8 @@ source "$(dirname $0)/common"
 
 IMAGE_TAG_CMD=${IMAGE_TAG_CMD:-docker tag}
 LOCAL_PORT=${LOCAL_PORT:-5000}
-
-tag=${tag:-"127.0.0.1:${registry_port}/$IMAGE_TAG"}
+image_tag=$( echo "$IMAGE_TAG" | sed -e 's,quay.io/,,' )
+tag=${tag:-"127.0.0.1:${registry_port}/$image_tag"}
 
 if [ "${USE_IMAGE_STREAM:-false}" = true ] ; then
     oc process \
@@ -20,19 +20,19 @@ if [ "${USE_IMAGE_STREAM:-false}" = true ] ; then
         -f hack/image-stream-build-config-template.yaml | \
       oc -n openshift create -f -
     # wait for is and bc
-    for ii in $(seq 1 10) ; do
+    for ii in $(seq 1 60) ; do
         if oc -n openshift get bc cluster-logging-operator > /dev/null 2>&1 && \
-           oc -n openshift get is cluster-logging-operator > /dev/null 2>&1 ; then
+           oc -n openshift get is origin-cluster-logging-operator > /dev/null 2>&1 ; then
             break
         fi
         sleep 1
     done
-    if [ $ii = 10 ] ; then
+    if [ $ii = 60 ] ; then
         echo ERROR: timeout waiting for cluster-logging-operator buildconfig and imagestream to be available
         exit 1
     fi
-    # wait
-    oc -n openshift logs -f bc/cluster-logging-operator
+    # build and wait
+    oc -n openshift start-build --follow bc/cluster-logging-operator
     exit 0
 fi
 

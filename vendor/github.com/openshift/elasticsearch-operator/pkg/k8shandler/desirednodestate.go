@@ -36,6 +36,7 @@ type desiredNodeState struct {
 	DeployName         string
 	Roles              []v1alpha1.ElasticsearchNodeRole
 	ESNodeSpec         v1alpha1.ElasticsearchNode
+	Image              string
 	SecretName         string
 	NodeNum            int32
 	ReplicaNum         int32
@@ -53,7 +54,6 @@ type actualNodeState struct {
 	Deployment  *apps.Deployment
 	ReplicaSet  *apps.ReplicaSet
 	Pod         *v1.Pod
-	// Roles       []v1alpha1.ElasticsearchNodeRole
 }
 
 func constructNodeSpec(dpl *v1alpha1.Elasticsearch, esNode v1alpha1.ElasticsearchNode, configMapName, serviceAccountName string, nodeNum int32, replicaNum int32, masterNum, dataNum int32) (desiredNodeState, error) {
@@ -79,7 +79,8 @@ func constructNodeSpec(dpl *v1alpha1.Elasticsearch, esNode v1alpha1.Elasticsearc
 	nodeCfg.DeployName = deployName
 	nodeCfg.EnvVars = nodeCfg.getEnvVars()
 
-	nodeCfg.ESNodeSpec.Spec = reconcileNodeSpec(dpl.Spec.Spec, esNode.Spec)
+	nodeCfg.ESNodeSpec.Resources = getResourceRequirements(dpl.Spec.Spec.Resources, esNode.Resources)
+	nodeCfg.Image = getImage(dpl.Spec.Spec.Image)
 	return nodeCfg, nil
 }
 
@@ -101,20 +102,6 @@ func constructDeployName(name string, roles []v1alpha1.ElasticsearchNodeRole, no
 	sort.Strings(nodeType)
 
 	return fmt.Sprintf("%s-%s-%d-%d", name, strings.Join(nodeType, ""), nodeNum, replicaNum), nil
-}
-
-func reconcileNodeSpec(commonSpec, nodeSpec v1alpha1.ElasticsearchNodeSpec) v1alpha1.ElasticsearchNodeSpec {
-	var image string
-	if nodeSpec.Image == "" {
-		image = commonSpec.Image
-	} else {
-		image = nodeSpec.Image
-	}
-	nodeSpec = v1alpha1.ElasticsearchNodeSpec{
-		Image:     image,
-		Resources: getResourceRequirements(commonSpec.Resources, nodeSpec.Resources),
-	}
-	return nodeSpec
 }
 
 // getReplicas returns the desired number of replicas in the deployment/statefulset
@@ -221,12 +208,12 @@ func (cfg *desiredNodeState) PauseNode(owner metav1.OwnerReference) error {
 
 	// TODO: what is allowed to be changed in the StatefulSet ?
 	// Validate Elasticsearch cluster parameters
-	unpaused, err := node.needsPause(cfg)
+	needsPause, err := node.needsPause(cfg)
 	if err != nil {
 		return fmt.Errorf("Failed to see if the node resource is different from what's needed: %v", err)
 	}
 
-	if unpaused {
+	if needsPause {
 		// set it back to being paused
 		cfg.Paused = true
 		nretries := -1
@@ -258,14 +245,13 @@ func (cfg *desiredNodeState) PauseNode(owner metav1.OwnerReference) error {
 
 func (cfg *desiredNodeState) UpdateNode(owner metav1.OwnerReference) error {
 	node := cfg.getNode()
-	err := node.query()
+	if err := node.query(); err != nil {
+		return err
+	}
 
 	// TODO: what is allowed to be changed in the StatefulSet ?
 	// Validate Elasticsearch cluster parameters
-	diff, err := node.isDifferent(cfg)
-	if err != nil {
-		return fmt.Errorf("Failed to see if the node resource is different from what's needed: %v", err)
-	}
+	diff := node.isUpdateNeeded(cfg)
 
 	if diff {
 		cfg.Paused = false
@@ -309,10 +295,7 @@ func (cfg *desiredNodeState) UpdateNode(owner metav1.OwnerReference) error {
 
 			return false, nil
 		})
-		if err != nil {
-			return err
-		}
-
+		return err
 	}
 	return nil
 }
@@ -463,7 +446,7 @@ func (cfg *desiredNodeState) getEnvVars() []v1.EnvVar {
 }
 
 func (cfg *desiredNodeState) getInstanceRAM() string {
-	memory := cfg.ESNodeSpec.Spec.Resources.Limits.Memory()
+	memory := cfg.ESNodeSpec.Resources.Limits.Memory()
 	if !memory.IsZero() {
 		return memory.String()
 	}
@@ -471,16 +454,10 @@ func (cfg *desiredNodeState) getInstanceRAM() string {
 }
 
 func (cfg *desiredNodeState) getESContainer() v1.Container {
-	var image string
-	if cfg.ESNodeSpec.Spec.Image == "" {
-		image = elasticsearchDefaultImage
-	} else {
-		image = cfg.ESNodeSpec.Spec.Image
-	}
 	probe := getReadinessProbe()
 	return v1.Container{
 		Name:            "elasticsearch",
-		Image:           image,
+		Image:           cfg.Image,
 		ImagePullPolicy: "IfNotPresent",
 		Env:             cfg.getEnvVars(),
 		Ports: []v1.ContainerPort{
@@ -497,7 +474,7 @@ func (cfg *desiredNodeState) getESContainer() v1.Container {
 		},
 		ReadinessProbe: &probe,
 		VolumeMounts:   cfg.getVolumeMounts(),
-		Resources:      cfg.ESNodeSpec.Spec.Resources,
+		Resources:      cfg.ESNodeSpec.Resources,
 	}
 }
 
@@ -523,7 +500,7 @@ func (cfg *desiredNodeState) getVolumeMounts() []v1.VolumeMount {
 func (cfg *desiredNodeState) generateMasterPVC() (v1.PersistentVolumeClaim, bool, error) {
 	specVol := cfg.ESNodeSpec.Storage
 	if &specVol.StorageClassName != nil &&
-		&specVol.Size != nil {
+		specVol.Size != nil {
 		pvc := v1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "elasticsearch-storage",
@@ -583,7 +560,7 @@ func (cfg *desiredNodeState) generatePersistentStorage() v1.VolumeSource {
 		}
 
 	default:
-		logrus.Debug("Defaulting volume source to emptyDir for node %q", cfg.DeployName)
+		logrus.Debugf("Defaulting volume source to emptyDir for node %q", cfg.DeployName)
 		volSource.EmptyDir = &v1.EmptyDirVolumeSource{}
 	}
 

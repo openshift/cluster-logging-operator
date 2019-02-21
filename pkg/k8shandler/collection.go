@@ -28,15 +28,27 @@ var (
 
 func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 
-	if err = createOrUpdateCollectionPriorityClass(cluster); err != nil {
-		return
-	}
-
-	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
-		if err = createOrUpdateFluentdServiceAccount(cluster); err != nil {
+	// there is no easier way to check this in golang without writing a helper function
+	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd || cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
+		if err = createOrUpdateCollectionPriorityClass(cluster); err != nil {
 			return
 		}
 
+		if err = createOrUpdateCollectorServiceAccount(cluster); err != nil {
+			return
+		}
+	} else {
+		if err = utils.RemoveServiceAccount(cluster, "logcollector"); err != nil {
+			return
+		}
+
+		if err = utils.RemovePriorityClass(cluster, "cluster-logging"); err != nil {
+			return
+		}
+	}
+
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
 		if err = createOrUpdateFluentdConfigMap(cluster); err != nil {
 			return
 		}
@@ -76,10 +88,6 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
-		if err = createOrUpdateRsyslogServiceAccount(cluster); err != nil {
-			return
-		}
-
 		if err = createOrUpdateRsyslogConfigMap(cluster); err != nil {
 			return
 		}
@@ -123,10 +131,6 @@ func CreateOrUpdateCollection(cluster *logging.ClusterLogging) (err error) {
 
 func removeFluentd(cluster *logging.ClusterLogging) (err error) {
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = utils.RemoveServiceAccount(cluster, "fluentd"); err != nil {
-			return
-		}
-
 		if err = utils.RemoveConfigMap(cluster, "fluentd"); err != nil {
 			return
 		}
@@ -145,10 +149,6 @@ func removeFluentd(cluster *logging.ClusterLogging) (err error) {
 
 func removeRsyslog(cluster *logging.ClusterLogging) (err error) {
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = utils.RemoveServiceAccount(cluster, "rsyslog"); err != nil {
-			return
-		}
-
 		if err = utils.RemoveConfigMap(cluster, "rsyslog-bin"); err != nil {
 			return
 		}
@@ -187,29 +187,81 @@ func createOrUpdateCollectionPriorityClass(logging *logging.ClusterLogging) erro
 	return nil
 }
 
-func createOrUpdateFluentdServiceAccount(logging *logging.ClusterLogging) error {
+func createOrUpdateCollectorServiceAccount(cluster *logging.ClusterLogging) error {
 
-	fluentdServiceAccount := utils.ServiceAccount("fluentd", logging.Namespace)
+	collectorServiceAccount := utils.ServiceAccount("logcollector", cluster.Namespace)
 
-	utils.AddOwnerRefToObject(fluentdServiceAccount, utils.AsOwner(logging))
+	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(cluster))
 
-	err := sdk.Create(fluentdServiceAccount)
+	err := sdk.Create(collectorServiceAccount)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Fluentd service account: %v", err)
+		return fmt.Errorf("Failure creating Log Collector service account: %v", err)
 	}
 
-	return nil
-}
+	// Also create the role and role binding so that the service account has host read access
+	collectorRole := utils.NewRole(
+		"log-collector-privileged",
+		cluster.Namespace,
+		utils.NewPolicyRules(
+			utils.NewPolicyRule(
+				[]string{"security.openshift.io"},
+				[]string{"securitycontextconstraints"},
+				[]string{"privileged"},
+				[]string{"use"},
+			),
+		),
+	)
 
-func createOrUpdateRsyslogServiceAccount(logging *logging.ClusterLogging) error {
+	utils.AddOwnerRefToObject(collectorRole, utils.AsOwner(cluster))
 
-	rsyslogServiceAccount := utils.ServiceAccount("rsyslog", logging.Namespace)
-
-	utils.AddOwnerRefToObject(rsyslogServiceAccount, utils.AsOwner(logging))
-
-	err := sdk.Create(rsyslogServiceAccount)
+	err = sdk.Create(collectorRole)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Rsyslog service account: %v", err)
+		return fmt.Errorf("Failure creating Log collector privileged role: %v", err)
+	}
+
+	subject := utils.NewSubject(
+		"ServiceAccount",
+		"logcollector",
+	)
+	subject.APIGroup = ""
+
+	collectorRoleBinding := utils.NewRoleBinding(
+		"log-collector-privileged-binding",
+		cluster.Namespace,
+		"log-collector-privileged",
+		utils.NewSubjects(
+			subject,
+		),
+	)
+
+	utils.AddOwnerRefToObject(collectorRoleBinding, utils.AsOwner(cluster))
+
+	err = sdk.Create(collectorRoleBinding)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating Log collector privileged role binding: %v", err)
+	}
+
+	subject = utils.NewSubject(
+		"ServiceAccount",
+		"logcollector",
+	)
+	subject.Namespace = cluster.Namespace
+	subject.APIGroup = ""
+
+	collectorReaderClusterRoleBinding := utils.NewClusterRoleBinding(
+		"openshift-logging-collector-cluster-reader",
+		cluster.Namespace,
+		"cluster-reader",
+		utils.NewSubjects(
+			subject,
+		),
+	)
+
+	utils.AddOwnerRefToObject(collectorReaderClusterRoleBinding, utils.AsOwner(cluster))
+
+	err = sdk.Create(collectorReaderClusterRoleBinding)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating Log collector cluster-reader role binding: %v", err)
 	}
 
 	return nil
@@ -303,12 +355,12 @@ func createOrUpdateFluentdSecret(logging *logging.ClusterLogging) error {
 		"fluentd",
 		logging.Namespace,
 		map[string][]byte{
-			"app-ca":     utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"app-key":    utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.key"),
-			"app-cert":   utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.crt"),
-			"infra-ca":   utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"infra-key":  utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.key"),
-			"infra-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.fluentd.crt"),
+			"app-ca":     utils.GetWorkingDirFileContents("ca.crt"),
+			"app-key":    utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
+			"app-cert":   utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
+			"infra-ca":   utils.GetWorkingDirFileContents("ca.crt"),
+			"infra-key":  utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
+			"infra-cert": utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
 		})
 
 	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(logging))
@@ -327,12 +379,12 @@ func createOrUpdateRsyslogSecret(logging *logging.ClusterLogging) error {
 		"rsyslog",
 		logging.Namespace,
 		map[string][]byte{
-			"app-ca":     utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"app-key":    utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.key"),
-			"app-cert":   utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.crt"),
-			"infra-ca":   utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"infra-key":  utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.key"),
-			"infra-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.rsyslog.crt"),
+			"app-ca":     utils.GetWorkingDirFileContents("ca.crt"),
+			"app-key":    utils.GetWorkingDirFileContents("system.logging.rsyslog.key"),
+			"app-cert":   utils.GetWorkingDirFileContents("system.logging.rsyslog.crt"),
+			"infra-ca":   utils.GetWorkingDirFileContents("ca.crt"),
+			"infra-key":  utils.GetWorkingDirFileContents("system.logging.rsyslog.key"),
+			"infra-cert": utils.GetWorkingDirFileContents("system.logging.rsyslog.crt"),
 		})
 
 	utils.AddOwnerRefToObject(rsyslogSecret, utils.AsOwner(logging))
@@ -350,9 +402,9 @@ func createOrUpdateFluentdDaemonset(cluster *logging.ClusterLogging) (err error)
 	var fluentdPodSpec v1.PodSpec
 
 	if utils.AllInOne(cluster) {
-		fluentdPodSpec = getFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
+		fluentdPodSpec = newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
 	} else {
-		fluentdPodSpec = getFluentdPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
+		fluentdPodSpec = newFluentdPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
 	}
 
 	fluentdDaemonset := utils.DaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
@@ -380,9 +432,9 @@ func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error)
 	var rsyslogPodSpec v1.PodSpec
 
 	if utils.AllInOne(cluster) {
-		rsyslogPodSpec = getRsyslogPodSpec(cluster, "elasticsearch", "elasticsearch")
+		rsyslogPodSpec = newRsyslogPodSpec(cluster, "elasticsearch", "elasticsearch")
 	} else {
-		rsyslogPodSpec = getRsyslogPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
+		rsyslogPodSpec = newRsyslogPodSpec(cluster, "elasticsearch-app", "elasticsearch-infra")
 	}
 
 	rsyslogDaemonset := utils.DaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
@@ -406,9 +458,18 @@ func createOrUpdateRsyslogDaemonset(cluster *logging.ClusterLogging) (err error)
 	return nil
 }
 
-func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
-
-	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, logging.Spec.Collection.Logs.FluentdSpec.Resources)
+func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
+	var resources = logging.Spec.Collection.Logs.FluentdSpec.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultFluentdMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultFluentdMemory,
+				v1.ResourceCPU:    defaultFluentdCpuRequest,
+			},
+		}
+	}
+	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, *resources)
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -451,7 +512,7 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	fluentdPodSpec := utils.PodSpec(
-		"fluentd",
+		"logcollector",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{
 			{Name: "runlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/run/log/journal"}}},
@@ -482,9 +543,17 @@ func getFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	return fluentdPodSpec
 }
 
-func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
-
-	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, logging.Spec.Collection.Logs.RsyslogSpec.Resources)
+func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
+	var resources = logging.Spec.Collection.Logs.RsyslogSpec.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultRsyslogMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultRsyslogMemory,
+				v1.ResourceCPU:    defaultRsyslogCpuRequest,
+			}}
+	}
+	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, *resources)
 
 	rsyslogContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -535,7 +604,7 @@ func getRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	rsyslogPodSpec := utils.PodSpec(
-		"rsyslog",
+		"logcollector",
 		[]v1.Container{rsyslogContainer},
 		[]v1.Volume{
 			{Name: "runlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/run/log/journal"}}},

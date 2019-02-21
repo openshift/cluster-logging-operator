@@ -2,12 +2,11 @@ package k8shandler
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	"io/ioutil"
-	"k8s.io/api/core/v1"
 	"os"
 	"os/exec"
-	"path"
+
+	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -82,7 +81,7 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 		if errors.IsNotFound(err) {
 			return err
 		}
-		return fmt.Errorf("Unable to extract secret to file: %v", secretName, err)
+		return fmt.Errorf("Unable to extract secret %s to file: %v", secretName, err)
 	}
 
 	value, ok := secret.Data[key]
@@ -92,11 +91,7 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 		return fmt.Errorf("No secret data \"%s\" found", key)
 	}
 
-	if err = ioutil.WriteFile(path.Join(utils.WORKING_DIR, toFile), value, 0644); err != nil {
-		return fmt.Errorf("Unable to write to working dir: %v", err)
-	}
-
-	return nil
+	return utils.WriteToWorkingDirFile(toFile, value)
 }
 
 func writeSecret(logging *v1alpha1.ClusterLogging) (err error) {
@@ -105,8 +100,8 @@ func writeSecret(logging *v1alpha1.ClusterLogging) (err error) {
 		"master-certs",
 		logging.Namespace,
 		map[string][]byte{
-			"masterca":  utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"masterkey": utils.GetFileContents("/tmp/_working_dir/ca.key"),
+			"masterca":  utils.GetWorkingDirFileContents("ca.crt"),
+			"masterkey": utils.GetWorkingDirFileContents("ca.key"),
 		})
 
 	utils.AddOwnerRefToObject(secret, utils.AsOwner(logging))

@@ -28,8 +28,11 @@ https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prom
 oc create -n openshift-logging -f \
 https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prometheus-operator-crd/servicemonitor.crd.yaml || :
 
-operator-sdk test local \
-  --namespace openshift-logging \
-  --namespaced-manifest ${manifest} \
-  --global-manifest manifests/04-crd.yaml \
-  ./test/e2e
+TEST_NAMESPACE=openshift-logging go test ./test/e2e/... \
+  -root=$(pwd) \
+  -kubeconfig=$HOME/.kube/config \
+  -globalMan manifests/04-crd.yaml \
+  -namespacedMan ${manifest} \
+  -v \
+  -parallel=1 \
+  -singleNamespace

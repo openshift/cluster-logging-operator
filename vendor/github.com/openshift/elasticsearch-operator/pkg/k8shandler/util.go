@@ -93,6 +93,14 @@ func getReadinessProbe() v1.Probe {
 	}
 }
 
+func getImage(commonImage string) string {
+	image := commonImage
+	if image == "" {
+		image = elasticsearchDefaultImage
+	}
+	return image
+}
+
 func getResourceRequirements(commonResRequirements, nodeResRequirements v1.ResourceRequirements) v1.ResourceRequirements {
 	limitCPU := nodeResRequirements.Limits.Cpu()
 	if limitCPU.IsZero() {

@@ -58,7 +58,7 @@ type ElasticsearchSpec struct {
 type ElasticsearchNode struct {
 	Roles        []ElasticsearchNodeRole  `json:"roles"`
 	NodeCount    int32                    `json:"nodeCount"`
-	Spec         ElasticsearchNodeSpec    `json:"nodeSpec"`
+	Resources    v1.ResourceRequirements  `json:"resources"`
 	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
 	Storage      ElasticsearchStorageSpec `json:"storage"`
 }
@@ -70,14 +70,13 @@ type ElasticsearchStorageSpec struct {
 
 // ElasticsearchNodeStatus represents the status of individual Elasticsearch node
 type ElasticsearchNodeStatus struct {
-	DeploymentName  string `json:"deploymentName,omitempty"`
-	ReplicaSetName  string `json:"replicaSetName,omitempty"`
-	StatefulSetName string `json:"statefulSetName,omitempty"`
-	PodName         string `json:"podName,omitempty"`
-	Status          string `json:"status,omitempty"`
-	// UnderUpgrade    UpgradeStatus              `json:"underUpgrade,omitempty"`
-	UpgradeStatus ElasticsearchNodeUpgradeStatus `json:"upgradeStatus,omitempty"`
-	Roles         []ElasticsearchNodeRole        `json:"roles,omitempty"`
+	DeploymentName  string                         `json:"deploymentName,omitempty"`
+	ReplicaSetName  string                         `json:"replicaSetName,omitempty"`
+	StatefulSetName string                         `json:"statefulSetName,omitempty"`
+	PodName         string                         `json:"podName,omitempty"`
+	Status          string                         `json:"status,omitempty"`
+	UpgradeStatus   ElasticsearchNodeUpgradeStatus `json:"upgradeStatus,omitempty"`
+	Roles           []ElasticsearchNodeRole        `json:"roles,omitempty"`
 }
 
 type ElasticsearchNodeUpgradeStatus struct {
@@ -91,9 +90,6 @@ const (
 	NodeRestarting    ElasticsearchUpgradePhase = "nodeRestarting"
 	RecoveringData    ElasticsearchUpgradePhase = "recoveringData"
 	ControllerUpdated ElasticsearchUpgradePhase = "controllerUpdated"
-	// UpgradeInitializing    ElasticsearchUpgradePhase = "upgradeInitializing"
-	// NodeRejoined   ElasticsearchUpgradePhase = "nodeRejoined"
-	// ShardAllocationEnabled ElasticsearchUpgradePhase = "shardAllocationEnabled"
 )
 
 // ElasticsearchNodeSpec represents configuration of an individual Elasticsearch node

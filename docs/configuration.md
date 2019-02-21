@@ -48,6 +48,19 @@ block with valid memory (e.g. 16Gi) and CPU values (e.g 1):
             cpu:
             memory:
 ```
+### Node Selectors
+Each component specification allows the component to target a specific node.  This is defined
+by modifying the `nodeSelector` block to include key/value pairs that correspond
+to specifically labeled nodes:
+```
+  spec:
+    logStore:
+      type: "elasticsearch"
+      elasticsearch:
+        nodeSelector:
+          node-type: infra
+          cluster-logging-component: es
+```
 
 ## Data Aggregation and Storage
 An Elasticsearch cluster is responsible for log aggregation.  Following is a sample

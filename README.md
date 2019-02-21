@@ -2,18 +2,28 @@
 An operator to support OKD aggregated cluster logging.  Cluster logging configuration information
 is found in the [configuration](./docs/configuration.md) documentation.
 
+## Quick Start
+To get started with cluster logging and the `cluster-logging-operator`:
+* Ensure Docker is installed on your local system
+```
+$ oc login $CLUSTER -u $ADMIN_USER -p $ADMIN_PASSWD
+$ REMOTE_CLUSTER=true make deploy-example
+```
+This will stand up a cluster logging stack named 'example'.
+
+
 ## Hacking
 
 ### Running the operator
 
 Running locally outside an OKD cluster:
 ```
- $ ELASTICSEARCH_IMAGE=docker.io/openshift/origin-logging-elasticsearch5:latest \
-   FLUENTD_IMAGE=docker.io/openshift/origin-logging-fluentd:latest \
-   KIBANA_IMAGE=docker.io/openshift/origin-logging-kibana5:latest \
-   CURATOR_IMAGE=docker.io/openshift/origin-logging-curator5:latest \
-   OAUTH_PROXY_IMAGE=docker.io/openshift/oauth-proxy:latest \
-   RSYSLOG_IMAGE=docker.io/viaq/rsyslog:latest \
+ $ ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest \
+   FLUENTD_IMAGE=quay.io/openshift/origin-logging-fluentd:latest \
+   KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana5:latest \
+   CURATOR_IMAGE=quay.io/openshift/origin-logging-curator5:latest \
+   OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
+   RSYSLOG_IMAGE=quay.io/viaq/rsyslog:latest \
    OPERATOR_NAME=cluster-logging-operator \
    WATCH_NAMESPACE=openshift-logging \
    KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig \

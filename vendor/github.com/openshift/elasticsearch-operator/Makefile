@@ -36,7 +36,7 @@ operator-sdk: get-dep
 	fi
 
 imagebuilder:
-	@if ! type -p imagebuilder ; \
+	@if [ $${USE_IMAGE_STREAM:-false} = false ] && ! type -p imagebuilder ; \
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
 	fi
 
@@ -60,9 +60,11 @@ clean:
 	@rm -rf $(TARGET_DIR)
 
 image: imagebuilder
-	$(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS)
+	@if [ $${USE_IMAGE_STREAM:-false} = false ] ; \
+	then $(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS) ; \
+	fi
 
-test-e2e: image operator-sdk
+test-e2e: image
 	hack/test-e2e.sh
 
 fmt:
@@ -74,6 +76,10 @@ simplify:
 	@gofmt -s -l -w $(SRC)
 
 deploy: deploy-setup deploy-image
+	hack/deploy.sh
+.PHONY: deploy
+
+deploy-no-build: deploy-setup
 	hack/deploy.sh
 .PHONY: deploy
 

@@ -2,12 +2,13 @@ package k8shandler
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
-	"reflect"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
@@ -133,12 +134,12 @@ func createOrUpdateCuratorSecret(logging *logging.ClusterLogging) error {
 		"curator",
 		logging.Namespace,
 		map[string][]byte{
-			"ca":       utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"key":      utils.GetFileContents("/tmp/_working_dir/system.logging.curator.key"),
-			"cert":     utils.GetFileContents("/tmp/_working_dir/system.logging.curator.crt"),
-			"ops-ca":   utils.GetFileContents("/tmp/_working_dir/ca.crt"),
-			"ops-key":  utils.GetFileContents("/tmp/_working_dir/system.logging.curator.key"),
-			"ops-cert": utils.GetFileContents("/tmp/_working_dir/system.logging.curator.crt"),
+			"ca":       utils.GetWorkingDirFileContents("ca.crt"),
+			"key":      utils.GetWorkingDirFileContents("system.logging.curator.key"),
+			"cert":     utils.GetWorkingDirFileContents("system.logging.curator.crt"),
+			"ops-ca":   utils.GetWorkingDirFileContents("ca.crt"),
+			"ops-key":  utils.GetWorkingDirFileContents("system.logging.curator.key"),
+			"ops-cert": utils.GetWorkingDirFileContents("system.logging.curator.crt"),
 		})
 
 	utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(logging))
@@ -151,8 +152,18 @@ func createOrUpdateCuratorSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func getCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elasticsearchHost string) *batch.CronJob {
-	curatorContainer := utils.Container("curator", v1.PullIfNotPresent, logging.Spec.Curation.CuratorSpec.Resources)
+func newCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elasticsearchHost string) *batch.CronJob {
+	var resources = logging.Spec.Curation.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultCuratorMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultCuratorMemory,
+				v1.ResourceCPU:    defaultCuratorCpuRequest,
+			},
+		}
+	}
+	curatorContainer := utils.Container("curator", v1.PullIfNotPresent, *resources)
 
 	curatorContainer.Env = []v1.EnvVar{
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc.cluster.local"},
@@ -222,7 +233,7 @@ func getCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elas
 func createOrUpdateCuratorCronJob(cluster *logging.ClusterLogging) (err error) {
 
 	if utils.AllInOne(cluster) {
-		curatorCronJob := getCuratorCronJob(cluster, "curator", "elasticsearch")
+		curatorCronJob := newCuratorCronJob(cluster, "curator", "elasticsearch")
 
 		err = sdk.Create(curatorCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
@@ -238,7 +249,7 @@ func createOrUpdateCuratorCronJob(cluster *logging.ClusterLogging) (err error) {
 			}
 		}
 	} else {
-		curatorCronJob := getCuratorCronJob(cluster, "curator-app", "elasticsearch-app")
+		curatorCronJob := newCuratorCronJob(cluster, "curator-app", "elasticsearch-app")
 
 		err = sdk.Create(curatorCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {
@@ -254,7 +265,7 @@ func createOrUpdateCuratorCronJob(cluster *logging.ClusterLogging) (err error) {
 			}
 		}
 
-		curatorInfraCronJob := getCuratorCronJob(cluster, "curator-infra", "elasticsearch-infra")
+		curatorInfraCronJob := newCuratorCronJob(cluster, "curator-infra", "elasticsearch-infra")
 
 		err = sdk.Create(curatorInfraCronJob)
 		if err != nil && !errors.IsAlreadyExists(err) {

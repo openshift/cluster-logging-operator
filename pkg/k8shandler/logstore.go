@@ -3,11 +3,12 @@ package k8shandler
 import (
 	"fmt"
 
-	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-
-	"k8s.io/client-go/util/retry"
 	"reflect"
+
+	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
@@ -80,13 +81,13 @@ func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
 		"elasticsearch",
 		logging.Namespace,
 		map[string][]byte{
-			"elasticsearch.key": utils.GetFileContents("/tmp/_working_dir/elasticsearch.key"),
-			"elasticsearch.crt": utils.GetFileContents("/tmp/_working_dir/elasticsearch.crt"),
-			"logging-es.key":    utils.GetFileContents("/tmp/_working_dir/logging-es.key"),
-			"logging-es.crt":    utils.GetFileContents("/tmp/_working_dir/logging-es.crt"),
-			"admin-key":         utils.GetFileContents("/tmp/_working_dir/system.admin.key"),
-			"admin-cert":        utils.GetFileContents("/tmp/_working_dir/system.admin.crt"),
-			"admin-ca":          utils.GetFileContents("/tmp/_working_dir/ca.crt"),
+			"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
+			"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
+			"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
+			"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
+			"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
+			"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
+			"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
 		},
 	)
 
@@ -100,18 +101,27 @@ func createOrUpdateElasticsearchSecret(logging *logging.ClusterLogging) error {
 	return nil
 }
 
-func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName string) *v1alpha1.Elasticsearch {
+func newElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName string) *v1alpha1.Elasticsearch {
 
 	var esNodes []v1alpha1.ElasticsearchNode
+
+	var resources = logging.Spec.LogStore.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultEsMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultEsMemory,
+				v1.ResourceCPU:    defaultEsCpuRequest,
+			},
+		}
+	}
 
 	esNode := v1alpha1.ElasticsearchNode{
 		Roles:        []v1alpha1.ElasticsearchNodeRole{"client", "data", "master"},
 		NodeCount:    logging.Spec.LogStore.NodeCount,
 		NodeSelector: logging.Spec.LogStore.NodeSelector,
-		Spec: v1alpha1.ElasticsearchNodeSpec{
-			Resources: logging.Spec.LogStore.Resources,
-		},
-		Storage: logging.Spec.LogStore.ElasticsearchSpec.Storage,
+		Resources:    *resources,
+		Storage:      logging.Spec.LogStore.ElasticsearchSpec.Storage,
 	}
 
 	// build Nodes
@@ -128,7 +138,8 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 		},
 		Spec: v1alpha1.ElasticsearchSpec{
 			Spec: v1alpha1.ElasticsearchNodeSpec{
-				Image: utils.GetComponentImage("elasticsearch"),
+				Image:     utils.GetComponentImage("elasticsearch"),
+				Resources: *resources,
 			},
 			Nodes:            esNodes,
 			ManagementState:  v1alpha1.ManagementStateManaged,
@@ -143,7 +154,7 @@ func getElasticsearchCR(logging *logging.ClusterLogging, elasticsearchName strin
 
 func removeElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName string) error {
 
-	esCr := getElasticsearchCR(cluster, elasticsearchName)
+	esCr := newElasticsearchCR(cluster, elasticsearchName)
 
 	err := sdk.Delete(esCr)
 	if err != nil && !errors.IsNotFound(err) {
@@ -156,7 +167,7 @@ func removeElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName st
 func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) {
 
 	if utils.AllInOne(cluster) {
-		esCR := getElasticsearchCR(cluster, "elasticsearch")
+		esCR := newElasticsearchCR(cluster, "elasticsearch")
 
 		err = sdk.Create(esCR)
 		if err != nil && !errors.IsAlreadyExists(err) {
@@ -172,7 +183,7 @@ func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) 
 			}
 		}
 	} else {
-		esCR := getElasticsearchCR(cluster, "elasticsearch-app")
+		esCR := newElasticsearchCR(cluster, "elasticsearch-app")
 
 		err = sdk.Create(esCR)
 		if err != nil && !errors.IsAlreadyExists(err) {
@@ -188,7 +199,7 @@ func createOrUpdateElasticsearchCR(cluster *logging.ClusterLogging) (err error) 
 			}
 		}
 
-		esInfraCR := getElasticsearchCR(cluster, "elasticsearch-infra")
+		esInfraCR := newElasticsearchCR(cluster, "elasticsearch-infra")
 
 		err = sdk.Create(esInfraCR)
 		if err != nil && !errors.IsAlreadyExists(err) {

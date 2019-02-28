@@ -27,31 +27,16 @@ roleRef:
   kind: Role
   name: cluster-logging-operator
   apiGroup: rbac.authorization.k8s.io
-
 ---
 kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: cluster-logging-operator-cluster-rolebinding
-subjects:
-- kind: ServiceAccount
-  name: cluster-logging-operator
-  namespace: openshift-logging
+  name: cluster-logging-operator-cluster
 roleRef:
+  apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: cluster-logging-operator-cluster
-  apiGroup: rbac.authorization.k8s.io
-
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: cluster-logging-operator-cluster-reader-binding
 subjects:
 - kind: ServiceAccount
   name: cluster-logging-operator
   namespace: openshift-logging
-roleRef:
-  kind: ClusterRole
-  name: cluster-reader
-  apiGroup: rbac.authorization.k8s.io

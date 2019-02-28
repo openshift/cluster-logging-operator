@@ -31,7 +31,7 @@ OC?=oc
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-unit test-e2e undeploy
+.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-unit test-e2e undeploy run
 
 all: build #check install
 
@@ -56,11 +56,23 @@ build: fmt
 	@cp -ru $(CURPATH)/vendor/* $(TARGET_DIR)/src
 	@GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
 
+run:
+	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest \
+	FLUENTD_IMAGE=quay.io/openshift/origin-logging-fluentd:latest \
+	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana5:latest \
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator5:latest \
+	OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
+	RSYSLOG_IMAGE=quay.io/viaq/rsyslog:latest \
+	OPERATOR_NAME=cluster-logging-operator \
+	WATCH_NAMESPACE=openshift-logging \
+	KUBERNETES_CONFIG=$(KUBECONFIG) \
+	go run cmd/cluster-logging-operator/main.go
+
 clean:
 	@rm -rf $(TARGET_DIR)
 
 image: imagebuilder
-	@if [ $${USE_IMAGE_STREAM:-false} = false ] ; \
+	@if [ $${USE_IMAGE_STREAM:-false} = false ] && [ $${SKIP_BUILD:-false} = false ] ; \
 	then $(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS) ; \
 	fi
 

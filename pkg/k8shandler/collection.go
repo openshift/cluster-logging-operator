@@ -241,6 +241,19 @@ func createOrUpdateCollectorServiceAccount(cluster *logging.ClusterLogging) erro
 		return fmt.Errorf("Failure creating Log collector privileged role binding: %v", err)
 	}
 
+	// create clusterrole for logcollector to retrieve metadata
+	clusterrules := utils.NewPolicyRules(
+		utils.NewPolicyRule(
+			[]string{""},
+			[]string{"pods", "namespaces"},
+			nil,
+			[]string{"get", "list", "watch"},
+		),
+	)
+	clusterRole, err := utils.CreateClusterRole("metadata-reader", clusterrules, cluster)
+	if err != nil {
+		return err
+	}
 	subject = utils.NewSubject(
 		"ServiceAccount",
 		"logcollector",
@@ -249,9 +262,8 @@ func createOrUpdateCollectorServiceAccount(cluster *logging.ClusterLogging) erro
 	subject.APIGroup = ""
 
 	collectorReaderClusterRoleBinding := utils.NewClusterRoleBinding(
-		"openshift-logging-collector-cluster-reader",
-		cluster.Namespace,
-		"cluster-reader",
+		"cluster-logging-metadata-reader",
+		clusterRole.Name,
 		utils.NewSubjects(
 			subject,
 		),
@@ -261,7 +273,7 @@ func createOrUpdateCollectorServiceAccount(cluster *logging.ClusterLogging) erro
 
 	err = sdk.Create(collectorReaderClusterRoleBinding)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Log collector cluster-reader role binding: %v", err)
+		return fmt.Errorf("Failure creating Log collector %q cluster role binding: %v", collectorReaderClusterRoleBinding.Name, err)
 	}
 
 	return nil

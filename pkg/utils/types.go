@@ -331,7 +331,7 @@ func NewRoleBinding(bindingName, namespace, roleName string, subjects []rbac.Sub
 	}
 }
 
-func NewClusterRoleBinding(bindingName, namespace, roleName string, subjects []rbac.Subject) *rbac.ClusterRoleBinding {
+func NewClusterRoleBinding(bindingName, roleName string, subjects []rbac.Subject) *rbac.ClusterRoleBinding {
 	return &rbac.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRoleBinding",

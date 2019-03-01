@@ -16,6 +16,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
 	core "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
@@ -71,6 +72,28 @@ func GetComponentImage(component string) string {
 	}
 	logrus.Debugf("Setting component image for '%s' to: '%s'", component, imageTag)
 	return imageTag
+}
+
+// CreateClusterRole creates a cluser role or returns error
+func CreateClusterRole(name string, rules []rbac.PolicyRule, cluster *logging.ClusterLogging) (*rbac.ClusterRole, error) {
+	clusterRole := &rbac.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: rbac.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Rules: rules,
+	}
+
+	AddOwnerRefToObject(clusterRole, AsOwner(cluster))
+
+	err := sdk.Create(clusterRole)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return nil, fmt.Errorf("Failure creating '%s' clusterrole: %v", name, err)
+	}
+	return clusterRole, nil
 }
 
 func GetFileContents(filePath string) []byte {

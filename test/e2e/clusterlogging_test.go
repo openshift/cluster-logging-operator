@@ -8,12 +8,10 @@ import (
 
 	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/api/core/v1"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
-	rbac "k8s.io/api/rbac/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -54,69 +52,6 @@ func TestClusterLogging(t *testing.T) {
 		time.Sleep(time.Minute * 1) // wait for objects to be deleted/cleaned up
 		t.Run("Cluster with rsyslog", ClusterLoggingClusterRsyslog)
 	})
-}
-
-func createRequiredClusterRoleAndBinding(f *framework.Framework, ctx *framework.TestCtx) error {
-	namespace, err := ctx.GetNamespace()
-	if err != nil {
-		return fmt.Errorf("Could not get namespace: %v", err)
-	}
-
-	clusterRole := &rbac.ClusterRole{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterRole",
-			APIVersion: rbac.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster-logging-operator-cluster",
-		},
-		Rules: []rbac.PolicyRule{
-			rbac.PolicyRule{
-				APIGroups: []string{"scheduling.k8s.io"},
-				Resources: []string{"priorityclasses"},
-				Verbs:     []string{"*"},
-			},
-			rbac.PolicyRule{
-				APIGroups: []string{"oauth.openshift.io"},
-				Resources: []string{"oauthclients"},
-				Verbs:     []string{"*"},
-			},
-		},
-	}
-
-	err = f.Client.Create(goctx.TODO(), clusterRole, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-
-	clusterRoleBinding := &rbac.ClusterRoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterRoleBinding",
-			APIVersion: rbac.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "cluster-logging-operator-cluster-rolebinding",
-		},
-		Subjects: []rbac.Subject{
-			rbac.Subject{
-				Kind:      "ServiceAccount",
-				Name:      "cluster-logging-operator",
-				Namespace: namespace,
-			},
-		},
-		RoleRef: rbac.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     "cluster-logging-operator-cluster",
-		},
-	}
-
-	err = f.Client.Create(goctx.TODO(), clusterRoleBinding, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
-	}
-
-	return nil
 }
 
 func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, collector string) error {
@@ -221,10 +156,6 @@ func waitForOperatorToBeReady(t *testing.T, ctx *framework.TestCtx) error {
 	// wait for cluster-logging-operator to be ready
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "cluster-logging-operator", 1, retryInterval, timeout)
 	if err != nil {
-		return err
-	}
-
-	if err = createRequiredClusterRoleAndBinding(f, ctx); err != nil {
 		return err
 	}
 

@@ -247,14 +247,26 @@ func isElasticsearchCRDifferent(current *v1alpha1.Elasticsearch, desired *v1alph
 	different := false
 
 	if current.Spec.Spec.Image != desired.Spec.Spec.Image {
-		logrus.Infof("Elasticsearch image change found, updating %q", current.Name)
+		logrus.Infof("Elasticsearch image change found, updating %v", current.Name)
 		current.Spec.Spec.Image = desired.Spec.Spec.Image
 		different = true
 	}
 
 	if current.Spec.RedundancyPolicy != desired.Spec.RedundancyPolicy {
-		logrus.Infof("Elasticsearch redundancy policy change found, updating %q", current.Name)
+		logrus.Infof("Elasticsearch redundancy policy change found, updating %v", current.Name)
 		current.Spec.RedundancyPolicy = desired.Spec.RedundancyPolicy
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.Spec.Spec.Resources, desired.Spec.Spec.Resources) {
+		logrus.Infof("Elasticsearch resources change found, updating %v", current.Name)
+		current.Spec.Spec.Resources = desired.Spec.Spec.Resources
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.Spec.Nodes, desired.Spec.Nodes) {
+	 	logrus.Infof("Elasticsearch node configuration change found, updating %v", current.Name)
+		current.Spec.Nodes = desired.Spec.Nodes
 		different = true
 	}
 

@@ -90,8 +90,8 @@ deploy-no-build: deploy-setup
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-unit: 
-	@go test $(PKGS)
+test-unit:
+	@go test -v $(PKGS)
 test-e2e:
 	hack/test-e2e.sh
 

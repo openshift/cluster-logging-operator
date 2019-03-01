@@ -78,3 +78,66 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 		t.Errorf("Exp. the default CPU request to be %v", requestCPU)
 	}
 }
+
+func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+				},
+			},
+		},
+	}
+	elasticsearch := newElasticsearchCR(cluster, "test-app-name")
+
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					Resources: newResourceRequirements("10Gi", "", "12Gi", "500m"),
+				},
+			},
+		},
+	}
+	elasticsearch2 := newElasticsearchCR(cluster, "test-app-name")
+
+	_, different := isElasticsearchCRDifferent(elasticsearch, elasticsearch2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to resource change")
+	}
+}
+
+func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 1,
+				},
+			},
+		},
+	}
+	elasticsearch := newElasticsearchCR(cluster, "test-app-name")
+
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 2,
+				},
+			},
+		},
+	}
+	elasticsearch2 := newElasticsearchCR(cluster, "test-app-name")
+
+	_, different := isElasticsearchCRDifferent(elasticsearch, elasticsearch2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to node count change")
+	}
+}

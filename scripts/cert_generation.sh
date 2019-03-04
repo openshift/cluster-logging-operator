@@ -50,7 +50,7 @@ dir                     = ${WORKING_DIR}               # Top dir
 [ req ]
 default_bits            = 2048                  # RSA key size
 encrypt_key             = yes                   # Protect private key
-default_md              = sha1                  # MD to use
+default_md              = sha512                # MD to use
 utf8                    = yes                   # Input is UTF-8
 string_mask             = utf8only              # Emit UTF-8 strings
 prompt                  = no                    # Don't prompt for DN
@@ -85,7 +85,7 @@ crlnumber               = \$dir/ca.crl.srl # CRL number file
 database                = \$dir/ca.db # Index file
 unique_subject          = no                    # Require unique subject
 default_days            = 730                   # How long to certify for
-default_md              = sha1                  # MD to use
+default_md              = sha512                # MD to use
 policy                  = any_pol             # Default naming policy
 email_in_dn             = no                    # Add email to cert DN
 preserve                = no                    # Keep passed DN ordering
@@ -163,7 +163,7 @@ function generate_cert_config() {
 default_bits = 2048
 prompt = no
 encrypt_key = yes
-default_md = sha1
+default_md = sha512
 distinguished_name = dn
 req_extensions = req_ext
 [ dn ]
@@ -179,7 +179,7 @@ EOF
 default_bits = 2048
 prompt = no
 encrypt_key = yes
-default_md = sha1
+default_md = sha512
 distinguished_name = dn
 [ dn ]
 CN = ${component}
@@ -261,6 +261,6 @@ generate_certs 'system.logging.curator'
 generate_certs 'system.admin'
 
 # TODO: get es SAN DNS, IP values from es service names
-generate_certs 'kibana-internal' "$(generate_extensions false false kibana kibana-infra kibana-apps)"
-generate_certs 'elasticsearch' "$(generate_extensions true true elasticsearch elasticsearch-infra elasticsearch-apps)"
-generate_certs 'logging-es' "$(generate_extensions false true {elasticsearch,elasticsearch-infra,elasticsearch-apps}{,-cluster}{,.${NAMESPACE}.svc.cluster.local})"
+generate_certs 'kibana-internal' "$(generate_extensions false false kibana)"
+generate_certs 'elasticsearch' "$(generate_extensions true true elasticsearch)"
+generate_certs 'logging-es' "$(generate_extensions false true elasticsearch{,-cluster}{,.${NAMESPACE}.svc.cluster.local})"

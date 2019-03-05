@@ -328,6 +328,30 @@ func RemoveServiceAccount(namespace string, serviceAccountName string) error {
 	return nil
 }
 
+func RemoveServiceMonitor(namespace string, smName string) error {
+
+	serviceMonitor := ServiceMonitor(smName, namespace)
+
+	err := sdk.Delete(serviceMonitor)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v service monitor: %v", serviceMonitor, err)
+	}
+
+	return nil
+}
+
+func RemovePrometheusRule(namespace string, ruleName string) error {
+
+	promRule := PrometheusRule(ruleName, namespace)
+
+	err := sdk.Delete(promRule)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %v prometheus rule: %v", promRule, err)
+	}
+
+	return nil
+}
+
 func RemoveConfigMap(namespace string, configmapName string) error {
 
 	configMap := ConfigMap(

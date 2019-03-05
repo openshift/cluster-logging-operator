@@ -4,6 +4,7 @@ package utils
 // various OpenShift structs
 
 import (
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	oauth "github.com/openshift/api/oauth/v1"
 	route "github.com/openshift/api/route/v1"
 	apps "k8s.io/api/apps/v1"
@@ -361,5 +362,31 @@ func NewClusterRoleBinding(bindingName, roleName string, subjects []rbac.Subject
 			APIGroup: rbac.GroupName,
 		},
 		Subjects: subjects,
+	}
+}
+
+func ServiceMonitor(serviceMonitorName, namespace string) *monitoringv1.ServiceMonitor {
+	return &monitoringv1.ServiceMonitor{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       monitoringv1.ServiceMonitorsKind,
+			APIVersion: monitoringv1.Group + "/" + monitoringv1.Version,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceMonitorName,
+			Namespace: namespace,
+		},
+	}
+}
+
+func PrometheusRule(ruleName, namespace string) *monitoringv1.PrometheusRule {
+	return &monitoringv1.PrometheusRule{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       monitoringv1.PrometheusRuleKind,
+			APIVersion: monitoringv1.Group + "/" + monitoringv1.Version,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ruleName,
+			Namespace: namespace,
+		},
 	}
 }

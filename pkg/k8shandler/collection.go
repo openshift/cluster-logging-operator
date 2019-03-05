@@ -8,11 +8,14 @@ import (
 	"strings"
 	"time"
 
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
@@ -23,6 +26,10 @@ import (
 
 const (
 	clusterLoggingPriorityClassName = "cluster-logging"
+	metricsPort                     = int32(24231)
+	metricsPortName                 = "metrics"
+	prometheusCAFile                = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
+	metricsVolumeName               = "fluentd-metrics"
 )
 
 var (
@@ -58,6 +65,18 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 		}
 
 		if err = createOrUpdateFluentdSecret(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateFluentdService(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateServiceMonitor(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdatePrometheusRule(cluster); err != nil {
 			return
 		}
 
@@ -135,6 +154,18 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 
 func removeFluentd(cluster *ClusterLogging) (err error) {
 	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+
+		if err = utils.RemoveService(cluster.Namespace, "fluentd"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveServiceMonitor(cluster.Namespace, "fluentd"); err != nil {
+			return
+		}
+
+		if err = utils.RemovePrometheusRule(cluster.Namespace, "fluentd"); err != nil {
+			return
+		}
 
 		if err = utils.RemoveConfigMap(cluster.Namespace, "fluentd"); err != nil {
 			return
@@ -390,6 +421,89 @@ func createOrUpdateFluentdSecret(logging *ClusterLogging) error {
 	return nil
 }
 
+func createOrUpdateServiceMonitor(cluster *ClusterLogging) error {
+	serviceMonitor := utils.ServiceMonitor("fluentd", cluster.Namespace)
+
+	endpoint := monitoringv1.Endpoint{
+		Port:   metricsPortName,
+		Path:   "/metrics",
+		Scheme: "https",
+		TLSConfig: &monitoringv1.TLSConfig{
+			CAFile:     prometheusCAFile,
+			ServerName: fmt.Sprintf("%s.%s.svc", "fluentd", cluster.Namespace),
+			// ServerName can be e.g. fluentd.openshift-logging.svc
+		},
+	}
+
+	labelSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"logging-infra": "support",
+		},
+	}
+
+	serviceMonitor.Spec = monitoringv1.ServiceMonitorSpec{
+		JobLabel:  "monitor-fluentd",
+		Endpoints: []monitoringv1.Endpoint{endpoint},
+		Selector:  labelSelector,
+		NamespaceSelector: monitoringv1.NamespaceSelector{
+			MatchNames: []string{cluster.Namespace},
+		},
+	}
+
+	utils.AddOwnerRefToObject(serviceMonitor, utils.AsOwner(cluster))
+
+	err := sdk.Create(serviceMonitor)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating the fluentd ServiceMonitor: %v", err)
+	}
+
+	return nil
+}
+
+func createOrUpdatePrometheusRule(cluster *ClusterLogging) error {
+	promRule, err := BuildPrometheusRule("fluentd", cluster.Namespace)
+	if err != nil {
+		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
+	}
+
+	utils.AddOwnerRefToObject(promRule, utils.AsOwner(cluster))
+
+	err = sdk.Create(promRule)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
+	}
+
+	return nil
+}
+
+func createOrUpdateFluentdService(cluster *ClusterLogging) error {
+	service := utils.Service(
+		"fluentd",
+		cluster.Namespace,
+		"fluentd",
+		[]v1.ServicePort{
+			{
+				Port:       metricsPort,
+				TargetPort: intstr.FromString(metricsPortName),
+				Name:       metricsPortName,
+			},
+		},
+	)
+
+	service.Annotations = map[string]string{
+		"service.alpha.openshift.io/serving-cert-secret-name": metricsVolumeName,
+	}
+
+	utils.AddOwnerRefToObject(service, utils.AsOwner(cluster))
+
+	err := sdk.Create(service)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating the fluentd service: %v", err)
+	}
+
+	return nil
+}
+
 func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 
 	rsyslogSecret := utils.Secret(
@@ -480,6 +594,14 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, *resources)
 
+	fluentdContainer.Ports = []v1.ContainerPort{
+		v1.ContainerPort{
+			Name:          metricsPortName,
+			ContainerPort: metricsPort,
+			Protocol:      v1.ProtocolTCP,
+		},
+	}
+
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
@@ -488,6 +610,8 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "ES_CLIENT_CERT", Value: "/etc/fluent/keys/app-cert"},
 		{Name: "ES_CLIENT_KEY", Value: "/etc/fluent/keys/app-key"},
 		{Name: "ES_CA", Value: "/etc/fluent/keys/app-ca"},
+		{Name: "METRICS_CERT", Value: "/etc/fluent/metrics/tls.crt"},
+		{Name: "METRICS_KEY", Value: "/etc/fluent/metrics/tls.key"},
 		{Name: "OPS_HOST", Value: elasticsearchInfraName},
 		{Name: "OPS_PORT", Value: "9200"},
 		{Name: "OPS_CLIENT_CERT", Value: "/etc/fluent/keys/infra-cert"},
@@ -514,6 +638,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "dockercfg", ReadOnly: true, MountPath: "/etc/sysconfig/docker"},
 		{Name: "dockerdaemoncfg", ReadOnly: true, MountPath: "/etc/docker"},
 		{Name: "filebufferstorage", MountPath: "/var/lib/fluentd"},
+		{Name: metricsVolumeName, MountPath: "/etc/fluent/metrics"},
 	}
 
 	fluentdContainer.SecurityContext = &v1.SecurityContext{
@@ -534,6 +659,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "dockercfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/sysconfig/docker"}}},
 			{Name: "dockerdaemoncfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/docker"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/fluentd"}}},
+			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: metricsVolumeName}}},
 		},
 	)
 

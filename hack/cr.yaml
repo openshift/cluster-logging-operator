@@ -10,6 +10,7 @@ spec:
       nodeCount: 1
       storage: {}
       redundancyPolicy: "ZeroRedundancy"
+      resources: {}
   visualization:
     type: "kibana"
     kibana:

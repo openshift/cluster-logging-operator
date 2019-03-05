@@ -1,0 +1,84 @@
+---
+groups:
+- name: logging_fluentd.alerts
+  rules:
+  - alert: FluentdNodeDown
+    annotations:
+      message: Prometheus could not scrape fluentd {{ $labels.instance }} for more than 10 minutes
+      summary: fluentd cannot be scraped
+    expr: |
+      up{job="fluentd"} == 0
+    for: 10m
+    labels:
+      service: fluentd
+      severity: warning
+  - alert: FluentdNodeDown
+    annotations:
+      message: Prometheus could not scrape fluentd {{ $labels.instance }} for more than 30 minutes
+      summary: fluentd cannot be scraped
+    expr: |
+      up{job="fluentd"} == 0
+    for: 30m
+    labels:
+      service: fluentd
+      severity: critical
+  - alert: FluentdQueueLengthBurst
+    annotations:
+      message: In the last 5 minutes, fluentd {{ $labels.instance }} buffer queue length increased more than 50%. Current value is {{ $value }}.
+      summary: fluentd has a buffer problem
+    expr: |
+      rate(fluentd_output_status_buffer_queue_length[5m]) > 0.5
+    for: 1m
+    labels:
+      service: fluentd
+      severity: alert
+  - alert: FluentdQueueLengthIncreased
+    annotations:
+      message: In the last 30 minutes, fluentd {{ $labels.instance }} buffer queue length constantly increased more than 10% per 5 min. Current value is {{ $value }}.
+      summary: fluentd is too busy
+    expr: |
+      rate(fluentd_output_status_buffer_queue_length[5m]) > 0.1
+    for: 30m
+    labels:
+      service: fluentd
+      severity: warning
+  - alert: FluentdQueueLengthIncreased
+    annotations:
+      message: In the last 120 minutes, fluentd {{ $labels.instance }} buffer queue length constantly increased more than 10% per 5 min. Current value is {{ $value }}.
+      summary: fluentd is over capacity
+    expr: |
+      rate(fluentd_output_status_buffer_queue_length[5m]) > 0.1
+    for: 120m
+    labels:
+      service: fluentd
+      severity: alert
+  - alert: FluentdQueueTotalBytesBurst
+    annotations:
+      message: In the last 5 minutes, fluentd {{ $labels.instance }} total buffer size increased more than 50%. Current value is {{ $value }}.
+      summary: fluentd has a buffer problem
+    expr: |
+      rate(fluentd_output_status_buffer_total_bytes[5m]) > 0.5
+    for: 1m
+    labels:
+      service: fluentd
+      severity: alert
+  - alert: FluentdQueueTotalBytesIncreased
+    annotations:
+      message: In the last 30 minutes, fluentd {{ $labels.instance }} total buffer size constantly increased more than 10% per 5 min. Current value is {{ $value }}.
+      summary: fluentd is too busy
+    expr: |
+      rate(fluentd_output_status_buffer_total_bytes[5m]) > 0.1
+    for: 30m
+    labels:
+      service: fluentd
+      severity: warning
+  - alert: FluentdQueueTotalBytesIncreased
+    annotations:
+      message: In the last 120 minutes, fluentd {{ $labels.instance }} total buffer size constantly increased more than 10% per 5 min. Current value is {{ $value }}.
+      summary: fluentd is over capacity
+    expr: |
+      rate(fluentd_output_status_buffer_total_bytes[5m]) > 0.1
+    for: 120m
+    labels:
+      service: fluentd
+      severity: alert

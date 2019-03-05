@@ -21,7 +21,7 @@ function generate_signing_ca() {
   if [ ! -f ${WORKING_DIR}/ca.crt ] || [ ! -f ${WORKING_DIR}/ca.key ] || ! openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/ca.crt; then
     openssl req -x509 \
                 -new \
-                -newkey rsa:2048 \
+                -newkey rsa:4096 \
                 -keyout ${WORKING_DIR}/ca.key \
                 -nodes \
                 -days 1825 \
@@ -48,7 +48,7 @@ dir                     = ${WORKING_DIR}               # Top dir
 # certificate.
 
 [ req ]
-default_bits            = 2048                  # RSA key size
+default_bits            = 4096                  # RSA key size
 encrypt_key             = yes                   # Protect private key
 default_md              = sha512                # MD to use
 utf8                    = yes                   # Input is UTF-8
@@ -160,7 +160,7 @@ function generate_cert_config() {
   if [ "$extensions" != "" ]; then
     cat <<EOF > "${WORKING_DIR}/${component}.conf"
 [ req ]
-default_bits = 2048
+default_bits = 4096
 prompt = no
 encrypt_key = yes
 default_md = sha512
@@ -176,7 +176,7 @@ EOF
   else
     cat <<EOF > "${WORKING_DIR}/${component}.conf"
 [ req ]
-default_bits = 2048
+default_bits = 4096
 prompt = no
 encrypt_key = yes
 default_md = sha512
@@ -194,7 +194,7 @@ function generate_request() {
 
   openssl req -new                                        \
           -out ${WORKING_DIR}/${component}.csr            \
-          -newkey rsa:2048                                \
+          -newkey rsa:4096                                \
           -keyout ${WORKING_DIR}/${component}.key         \
           -config ${WORKING_DIR}/${component}.conf        \
           -days 712                                       \

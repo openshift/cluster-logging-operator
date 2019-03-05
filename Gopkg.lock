@@ -20,6 +20,12 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  name = "github.com/coreos/prometheus-operator"
+  packages = ["pkg/client/monitoring/v1"]
+  revision = "82a6ad2071ff653e38b3b4719ecb789d73f3ab05"
+  version = "v0.25.0"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
@@ -31,8 +37,8 @@
     ".",
     "log"
   ]
-  revision = "85d198d05a92d31823b852b4a5928114912e8949"
-  version = "v2.9.0"
+  revision = "e64cccdfee8896c036b8a88d560c5e3ae15d904d"
+  version = "v2.9.1"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -53,10 +59,10 @@
   version = "v0.18.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-openapi/spec"
   packages = ["."]
-  revision = "5b6cdde3200976e3ecceb2868706ee39b6aff3e4"
-  version = "v0.18.0"
+  revision = "53d776530bf78a11b03a7b52dd8a083086b045e5"
 
 [[projects]]
   name = "github.com/go-openapi/swag"
@@ -184,13 +190,13 @@
     "oauth/v1",
     "route/v1"
   ]
-  revision = "6820a28f1dcf8f036f94a56164dfaeb842e6b28a"
+  revision = "963e1402ed59e6843598ca035cfdd243d01b49e0"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "b8b3e00a65dc44ccfcd99aab059f2a8fd9b5cded"
+  revision = "8ec8d6f022f9b3693b920f2e8620e96bd556f92a"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -217,6 +223,12 @@
   packages = ["."]
   revision = "5f041e8faa004a95c88a202771f4cc3e991971e6"
   version = "v2.0.1"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   name = "github.com/prometheus/client_golang"
@@ -272,7 +284,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "a1f597ede03a7bef967a422b5b3a5bd08805a01e"
+  revision = "b7391e95e576cacdcdd422573063bc057239113d"
 
 [[projects]]
   branch = "master"
@@ -292,7 +304,7 @@
     "unix",
     "windows"
   ]
-  revision = "6c81ef8f67ca3f42fc9cd71dfbd5f35b0c4b5771"
+  revision = "f7bb7a8bee54210937e93ec56d007d892c1f0580"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -339,7 +351,7 @@
     "internal/module",
     "internal/semver"
   ]
-  revision = "3f1ed9edd1b43b011064eb59e5c9e73f5537ddd9"
+  revision = "36c10c0a621fb2fede4686e8ae7bb1d900735d53"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -447,6 +459,7 @@
 [[projects]]
   name = "k8s.io/client-go"
   packages = [
+    "deprecated-dynamic",
     "discovery",
     "discovery/cached",
     "dynamic",
@@ -564,7 +577,6 @@
   version = "v0.2.0"
 
 [[projects]]
-  branch = "master"
   name = "k8s.io/kube-openapi"
   packages = [
     "cmd/openapi-gen/args",
@@ -573,7 +585,7 @@
     "pkg/generators/rules",
     "pkg/util/sets"
   ]
-  revision = "15615b16d372105f0c69ff47dfe7402926a65aaa"
+  revision = "0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803"
 
 [[projects]]
   name = "sigs.k8s.io/controller-runtime"
@@ -586,6 +598,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f98a4ebc20ffb5e19a90557849d0fa029d94b08493c0dd7e1d652fe68782d258"
+  inputs-digest = "2ac97fc409471ddc35561efd7b21739cd96b6540c50081f9d665a2e58dc45707"
   solver-name = "gps-cdcl"
   solver-version = 1

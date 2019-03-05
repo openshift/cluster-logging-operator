@@ -20,6 +20,10 @@ import (
 
 const (
 	clusterLoggingPriorityClassName = "cluster-logging"
+	metricsPort                     = int32(24231)
+	metricsPortName                 = "metrics"
+	prometheusCAFile                = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
+	metricsVolumeName               = "fluentd-metrics"
 )
 
 var (
@@ -56,6 +60,18 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 		}
 
 		if err = createOrUpdateFluentdSecret(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateFluentdService(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateServiceMonitor(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdatePrometheusRule(cluster); err != nil {
 			return
 		}
 

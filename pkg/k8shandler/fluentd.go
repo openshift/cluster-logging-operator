@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
@@ -221,6 +222,34 @@ func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 		if err = sdk.Update(desired); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func createOrUpdateFluentdService(cluster *ClusterLogging) error {
+	service := utils.NewService(
+		"fluentd",
+		cluster.Namespace,
+		"fluentd",
+		[]v1.ServicePort{
+			{
+				Port:       metricsPort,
+				TargetPort: intstr.FromString(metricsPortName),
+				Name:       metricsPortName,
+			},
+		},
+	)
+
+	service.Annotations = map[string]string{
+		"service.alpha.openshift.io/serving-cert-secret-name": metricsVolumeName,
+	}
+
+	utils.AddOwnerRefToObject(service, utils.AsOwner(cluster))
+
+	err := sdk.Create(service)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating the fluentd service: %v", err)
 	}
 
 	return nil

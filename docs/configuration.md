@@ -96,6 +96,7 @@ using the size and storage class name from the spec.
 
 ### Data Dedundancy
 The policy that defines how shards are replicated across data nodes in the cluster
+
 |Policy | Description |
 |----- | ----- |
 |`FullRedundancy` | The shards for each index are fully replicated to every data node|

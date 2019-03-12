@@ -48,7 +48,7 @@ func TestNewCuratorCronJobWhenResourcesAreDefined(t *testing.T) {
 	podSpec := cronJob.Spec.JobTemplate.Spec.Template.Spec
 
 	if len(podSpec.Containers) != 1 {
-		t.Error("Exp. there to be 1 fluentd container")
+		t.Error("Exp. there to be 1 curator container")
 	}
 
 	resources := podSpec.Containers[0].Resources
@@ -60,5 +60,51 @@ func TestNewCuratorCronJobWhenResourcesAreDefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != requestCPU {
 		t.Errorf("Exp. the spec CPU request to be %v", requestCPU)
+	}
+}
+
+func TestNewCuratorCronJobWhenNoScheduleDefined(t *testing.T) {
+
+	defaultSchedule := "30 3,9,15,21 * * *"
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Curation: logging.CurationSpec{
+				Type:        "curator",
+				CuratorSpec: logging.CuratorSpec{},
+			},
+		},
+	}
+
+	cronJob := newCuratorCronJob(cluster, "test-app-name", "elasticsearch")
+
+	schedule := cronJob.Spec.Schedule
+
+	if schedule != defaultSchedule {
+		t.Errorf("Exp. the cronjob schedule to be: %v, act. is: %v", defaultSchedule, schedule)
+	}
+}
+
+func TestNewCuratorCronJobWhenScheduleDefined(t *testing.T) {
+
+	desiredSchedule := "30 */4 * * *"
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Curation: logging.CurationSpec{
+				Type: "curator",
+				CuratorSpec: logging.CuratorSpec{
+					Schedule: desiredSchedule,
+				},
+			},
+		},
+	}
+
+	cronJob := newCuratorCronJob(cluster, "test-app-name", "elasticsearch")
+
+	schedule := cronJob.Spec.Schedule
+
+	if schedule != desiredSchedule {
+		t.Errorf("Exp. the cronjob schedule to be: %v, act. is: %v", desiredSchedule, schedule)
 	}
 }

@@ -20,6 +20,8 @@ import (
 // Note: this will eventually be deprecated and functionality will be moved into the ES operator
 //   in the case of Curator. Other curation deployments may not be supported in the future
 
+const defaultSchedule = "30 3,9,15,21 * * *"
+
 func CreateOrUpdateCuration(cluster *logging.ClusterLogging) (err error) {
 
 	if cluster.Spec.Curation.Type == logging.CurationTypeCurator {
@@ -195,6 +197,11 @@ func newCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elas
 	curatorPodSpec.RestartPolicy = v1.RestartPolicyNever
 	curatorPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(600)
 
+	schedule := logging.Spec.Curation.CuratorSpec.Schedule
+	if schedule == "" {
+		schedule = defaultSchedule
+	}
+
 	curatorCronJob := utils.CronJob(
 		curatorName,
 		logging.Namespace,
@@ -203,7 +210,7 @@ func newCuratorCronJob(logging *logging.ClusterLogging, curatorName string, elas
 		batch.CronJobSpec{
 			SuccessfulJobsHistoryLimit: utils.GetInt32(1),
 			FailedJobsHistoryLimit:     utils.GetInt32(1),
-			Schedule:                   logging.Spec.Curation.CuratorSpec.Schedule,
+			Schedule:                   schedule,
 			JobTemplate: batch.JobTemplateSpec{
 				Spec: batchv1.JobSpec{
 					BackoffLimit: utils.GetInt32(0),

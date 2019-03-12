@@ -265,7 +265,7 @@ func isElasticsearchCRDifferent(current *v1alpha1.Elasticsearch, desired *v1alph
 	}
 
 	if !reflect.DeepEqual(current.Spec.Nodes, desired.Spec.Nodes) {
-	 	logrus.Infof("Elasticsearch node configuration change found, updating %v", current.Name)
+		logrus.Infof("Elasticsearch node configuration change found, updating %v", current.Name)
 		current.Spec.Nodes = desired.Spec.Nodes
 		different = true
 	}

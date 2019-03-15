@@ -249,6 +249,7 @@ func OAuthClient(oauthClientName, namespace, oauthSecret string, redirectURIs, s
 		},
 		Secret:       oauthSecret,
 		RedirectURIs: redirectURIs,
+		GrantMethod:  oauth.GrantHandlerPrompt,
 		ScopeRestrictions: []oauth.ScopeRestriction{
 			oauth.ScopeRestriction{
 				ExactValues: scopeRestrictions,

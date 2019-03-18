@@ -94,7 +94,7 @@ using the size and storage class name from the spec.
         redundancyPolicy: "SingleRedundancy"
 ```
 
-### Data Dedundancy
+### Data Redundancy
 The policy that defines how shards are replicated across data nodes in the cluster
 
 |Policy | Description |

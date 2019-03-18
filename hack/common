@@ -6,7 +6,7 @@ fi
 alias oc=${OC:-oc}
 
 repo_dir="$(dirname $0)/.."
-ELASTICSEARCH_OP_REPO=${ELASTICSEARCH_OP_REPO:-${repo_dir}/../elasticsearch-operator}
+ELASTICSEARCH_OP_REPO=${ELASTICSEARCH_OP_REPO:-${repo_dir}/vendor/github.com/openshift/elasticsearch-operator}
 
 ADMIN_USER=${ADMIN_USER:-kubeadmin}
 ADMIN_PSWD=${ADMIN_USER:-admin123}

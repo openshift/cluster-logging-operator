@@ -21,5 +21,4 @@ ENTRYPOINT ["/usr/bin/cluster-logging-operator"]
 LABEL io.k8s.display-name="OpenShift cluster-logging-operator" \
       io.k8s.description="This is a component of OpenShift Container Platform that manages the lifecycle of the Aggregated logging stack." \
       io.openshift.tags="openshift,logging,cluster-logging" \
-      io.openshift.release.operator=true \
       maintainer="AOS Logging <aos-logging@redhat.com>"

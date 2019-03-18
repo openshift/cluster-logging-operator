@@ -6,8 +6,17 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/runtime"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
+	"k8s.io/client-go/util/retry"
 )
+
+const (
+	singletonName    = "instance"
+	singletonMessage = "ClusterLogging is a singleton. Only an instance named 'instance' is allowed"
+)
+
+var defaultRuntime = runtime.New()
 
 func NewHandler() sdk.Handler {
 	return &Handler{}
@@ -27,10 +36,35 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 
 	switch o := event.Object.(type) {
 	case *logging.ClusterLogging:
-		return Reconcile(o)
+		if allowedToReconcile(o) {
+			return Reconcile(o)
+		}
+		return updateStatusToIgnore(o, defaultRuntime)
 	}
 
 	return nil
+}
+
+func updateStatusToIgnore(spec *logging.ClusterLogging, runtime *runtime.OperatorRuntime) error {
+	status := logging.ClusterLoggingStatus{
+		Message: singletonMessage,
+	}
+
+	updateStatus := func() error {
+		if spec.Status.Message != status.Message {
+			spec.Status = status
+			return runtime.Update(spec)
+		}
+		return nil
+	}
+	if retryErr := runtime.RetryOnConflict(retry.DefaultRetry, updateStatus); retryErr != nil {
+		return fmt.Errorf("Failed to update status for ClusterLogging %q: %v", spec.Name, retryErr)
+	}
+	return nil
+}
+
+func allowedToReconcile(spec *logging.ClusterLogging) bool {
+	return spec.Name == singletonName
 }
 
 // Reconcile deploys or updates cluster logging to match its spec

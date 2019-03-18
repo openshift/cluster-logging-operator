@@ -106,6 +106,7 @@ type ClusterLoggingStatus struct {
 	LogStore      LogStoreStatus      `json:"logStore"`
 	Collection    CollectionStatus    `json:"collection"`
 	Curation      CurationStatus      `json:"curation"`
+	Message       string              `json:"message"`
 }
 
 type VisualizationStatus struct {

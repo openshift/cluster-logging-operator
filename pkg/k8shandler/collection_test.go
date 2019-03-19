@@ -3,14 +3,14 @@ package k8shandler
 import (
 	"testing"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestNewFluentdPodSpecWhenResourcesAreUndefined(t *testing.T) {
 
-	cluster := &logging.ClusterLogging{}
+	cluster := &v1alpha1.ClusterLogging{}
 	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
 
 	if len(podSpec.Containers) != 1 {
@@ -32,12 +32,12 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
 	requestCPU := resource.MustParse("500m")
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
-				logging.LogCollectionSpec{
+	cluster := &v1alpha1.ClusterLogging{
+		Spec: v1alpha1.ClusterLoggingSpec{
+			Collection: v1alpha1.CollectionSpec{
+				v1alpha1.LogCollectionSpec{
 					Type: "fluentd",
-					FluentdSpec: logging.FluentdSpec{
+					FluentdSpec: v1alpha1.FluentdSpec{
 						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
 					},
 				},
@@ -63,7 +63,7 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 }
 func TestNewRsyslogPodSpecWhenResourcesAreUndefined(t *testing.T) {
 
-	cluster := &logging.ClusterLogging{}
+	cluster := &v1alpha1.ClusterLogging{}
 	podSpec := newRsyslogPodSpec(cluster, "test-app-name", "test-infra-name")
 
 	if len(podSpec.Containers) != 1 {
@@ -85,12 +85,12 @@ func TestNewRsyslogPodSpecWhenResourcesAreDefined(t *testing.T) {
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
 	requestCPU := resource.MustParse("500m")
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
-				logging.LogCollectionSpec{
+	cluster := &v1alpha1.ClusterLogging{
+		Spec: v1alpha1.ClusterLoggingSpec{
+			Collection: v1alpha1.CollectionSpec{
+				v1alpha1.LogCollectionSpec{
 					Type: "rsyslog",
-					RsyslogSpec: logging.RsyslogSpec{
+					RsyslogSpec: v1alpha1.RsyslogSpec{
 						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
 					},
 				},

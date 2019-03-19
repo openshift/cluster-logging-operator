@@ -7,17 +7,17 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func getCuratorStatus(namespace string) ([]v1alpha1.CuratorStatus, error) {
+func (cluster *ClusterLogging) getCuratorStatus() ([]v1alpha1.CuratorStatus, error) {
 
 	status := []v1alpha1.CuratorStatus{}
 
-	curatorCronJobList, err := utils.GetCronJobList(namespace, "logging-infra=curator")
+	curatorCronJobList, err := utils.GetCronJobList(cluster.Namespace, "logging-infra=curator")
 	if err != nil {
 		return status, err
 	}
@@ -90,11 +90,11 @@ func getRsyslogCollectorStatus(namespace string) (v1alpha1.RsyslogCollectorStatu
 	return rsyslogStatus, nil
 }
 
-func getKibanaStatus(namespace string) ([]v1alpha1.KibanaStatus, error) {
+func (cluster *ClusterLogging) getKibanaStatus() ([]v1alpha1.KibanaStatus, error) {
 
 	status := []v1alpha1.KibanaStatus{}
 
-	kibanaDeploymentList, err := utils.GetDeploymentList(namespace, "logging-infra=kibana")
+	kibanaDeploymentList, err := utils.GetDeploymentList(cluster.Namespace, "logging-infra=kibana")
 	if err != nil {
 		return status, err
 	}
@@ -110,14 +110,14 @@ func getKibanaStatus(namespace string) ([]v1alpha1.KibanaStatus, error) {
 			Replicas:   *deployment.Spec.Replicas,
 		}
 
-		replicaSetList, _ := utils.GetReplicaSetList(namespace, selectorValue.String())
+		replicaSetList, _ := utils.GetReplicaSetList(cluster.Namespace, selectorValue.String())
 		replicaNames := []string{}
 		for _, replicaSet := range replicaSetList.Items {
 			replicaNames = append(replicaNames, replicaSet.Name)
 		}
 		kibanaStatus.ReplicaSets = replicaNames
 
-		podList, _ := utils.GetPodList(namespace, selectorValue.String())
+		podList, _ := utils.GetPodList(cluster.Namespace, selectorValue.String())
 		kibanaStatus.Pods = podStateMap(podList.Items)
 
 		status = append(status, kibanaStatus)
@@ -126,7 +126,7 @@ func getKibanaStatus(namespace string) ([]v1alpha1.KibanaStatus, error) {
 	return status, nil
 }
 
-func getElasticsearchStatus(namespace string) ([]v1alpha1.ElasticsearchStatus, error) {
+func (cluster *ClusterLogging) getElasticsearchStatus() ([]v1alpha1.ElasticsearchStatus, error) {
 
 	// we can scrape the status provided by the elasticsearch-operator
 	// get list of elasticsearch objects
@@ -137,7 +137,7 @@ func getElasticsearchStatus(namespace string) ([]v1alpha1.ElasticsearchStatus, e
 		},
 	}
 
-	err := sdk.List(namespace, esList)
+	err := sdk.List(cluster.Namespace, esList)
 	status := []v1alpha1.ElasticsearchStatus{}
 
 	if err != nil {

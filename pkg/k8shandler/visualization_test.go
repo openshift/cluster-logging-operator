@@ -10,8 +10,8 @@ import (
 
 func TestNewKibanaPodSpecWhenResourcesAreUndefined(t *testing.T) {
 
-	cluster := &logging.ClusterLogging{}
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch")
+	cluster := &ClusterLogging{&logging.ClusterLogging{}}
+	podSpec := cluster.newKibanaPodSpec("test-app-name", "elasticsearch")
 
 	if len(podSpec.Containers) != 2 {
 		t.Error("Exp. there to be 2 container")
@@ -42,20 +42,22 @@ func TestNewKibanaPodSpecWhenResourcesAreUndefined(t *testing.T) {
 }
 
 func TestNewKibanaPodSpecWhenResourcesAreDefined(t *testing.T) {
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
-				Type: "kibana",
-				KibanaSpec: logging.KibanaSpec{
-					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
-					ProxySpec: logging.ProxySpec{
-						Resources: newResourceRequirements("200Gi", "", "220Gi", "2500m"),
+	cluster := &ClusterLogging{
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				Visualization: logging.VisualizationSpec{
+					Type: "kibana",
+					KibanaSpec: logging.KibanaSpec{
+						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+						ProxySpec: logging.ProxySpec{
+							Resources: newResourceRequirements("200Gi", "", "220Gi", "2500m"),
+						},
 					},
 				},
 			},
 		},
 	}
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch")
+	podSpec := cluster.newKibanaPodSpec("test-app-name", "elasticsearch")
 
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")

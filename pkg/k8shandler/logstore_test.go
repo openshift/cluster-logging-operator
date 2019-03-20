@@ -11,7 +11,7 @@ import (
 
 func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 
-	cluster := &ClusterLogging{&logging.ClusterLogging{}}
+	cluster := NewClusterLogging(&logging.ClusterLogging{})
 	elasticsearch := cluster.newElasticsearchCR("test-app-name")
 
 	//check defaults
@@ -43,7 +43,7 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 	expSelector := map[string]string{
 		"foo": "bar",
 	}
-	cluster := &ClusterLogging{
+	cluster := NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				LogStore: logging.LogStoreSpec{
@@ -54,7 +54,7 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 	elasticsearch := cluster.newElasticsearchCR("test-app-name")
 
 	for _, node := range elasticsearch.Spec.Nodes {
@@ -66,7 +66,7 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 }
 
 func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
-	cluster := &ClusterLogging{
+	cluster := NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				LogStore: logging.LogStoreSpec{
@@ -77,7 +77,7 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 	elasticsearch := cluster.newElasticsearchCR("test-app-name")
 
 	limitMemory := resource.MustParse("100Gi")
@@ -110,7 +110,7 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 
 func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 
-	cluster := &ClusterLogging{
+	cluster := NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				LogStore: logging.LogStoreSpec{
@@ -121,10 +121,10 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 	elasticsearch := cluster.newElasticsearchCR("test-app-name")
 
-	cluster = &ClusterLogging{
+	cluster = NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				LogStore: logging.LogStoreSpec{
@@ -135,7 +135,7 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 	elasticsearch2 := cluster.newElasticsearchCR("test-app-name")
 
 	_, different := isElasticsearchCRDifferent(elasticsearch, elasticsearch2)
@@ -145,7 +145,7 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 }
 
 func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
-	cluster := &ClusterLogging{
+	cluster := NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				LogStore: logging.LogStoreSpec{
@@ -156,10 +156,10 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 	elasticsearch := cluster.newElasticsearchCR("test-app-name")
 
-	cluster = &ClusterLogging{
+	cluster = NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				LogStore: logging.LogStoreSpec{
@@ -170,7 +170,7 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 	elasticsearch2 := cluster.newElasticsearchCR("test-app-name")
 
 	_, different := isElasticsearchCRDifferent(elasticsearch, elasticsearch2)

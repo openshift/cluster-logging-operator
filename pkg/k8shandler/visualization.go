@@ -22,7 +22,11 @@ import (
 func (cluster *ClusterLogging) CreateOrUpdateVisualization() (err error) {
 
 	if cluster.Spec.Visualization.Type == logging.VisualizationTypeKibana {
-		if err = cluster.createOrUpdateKibanaServiceAccount(); err != nil {
+		if err = cluster.CreateOrUpdateServiceAccount("kibana"); err != nil {
+			return
+		}
+
+		if err = cluster.createKibanaProxyClusterRoleBinding(); err != nil {
 			return
 		}
 
@@ -126,15 +130,25 @@ func (cluster *ClusterLogging) removeKibana() (err error) {
 	return nil
 }
 
-func (cluster *ClusterLogging) createOrUpdateKibanaServiceAccount() error {
+func (cluster *ClusterLogging) createKibanaProxyClusterRoleBinding() (err error) {
 
-	kibanaServiceAccount := utils.NewServiceAccount("kibana", cluster.Namespace)
+	subject := utils.NewSubject(
+		"ServiceAccount",
+		"kibana",
+	)
+	subject.Namespace = cluster.Namespace
+	subject.APIGroup = ""
 
-	cluster.AddOwnerRefTo(kibanaServiceAccount)
+	clusterRoleBinding := utils.NewClusterRoleBinding(
+		"kibana-proxy-oauth-delegator",
+		"system:auth-delegator",
+		utils.NewSubjects(subject),
+	)
+	cluster.AddOwnerRefTo(clusterRoleBinding)
 
-	err := sdk.Create(kibanaServiceAccount)
+	err = cluster.Runtime.Create(clusterRoleBinding)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana service account for %q: %v", cluster.Name, err)
+		return fmt.Errorf("Failure creating Kibana clusterrolebinding %q: %v", clusterRoleBinding.Name, err)
 	}
 
 	return nil
@@ -446,6 +460,8 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 		"-tls-key=/secret/server-key",
 		"-pass-access-token",
 		"-skip-provider-button",
+		"-openshift-sar={\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}",
+		"-openshift-delegate-urls={\"/\": {\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}}",
 	}
 
 	kibanaProxyContainer.Env = []v1.EnvVar{

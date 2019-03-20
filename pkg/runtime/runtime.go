@@ -12,11 +12,15 @@ type RetryOnConflict func(backoff wait.Backoff, fn func() error) error
 //SdkUpdate is a place holder for "github.com/operator-framework/operator-sdk/pkg/sdk#Update"
 type SdkUpdate func(object sdk.Object) error
 
+//SdkCreate is a place holder for "github.com/operator-framework/operator-sdk/pkg/sdk#Create"
+type SdkCreate func(object sdk.Object) error
+
 //OperatorRuntime is an adapter to the underlying runtime for the operator to
 //all mocking for testing
 type OperatorRuntime struct {
 	RetryOnConflict RetryOnConflict
 	Update          SdkUpdate
+	Create          SdkCreate
 }
 
 //New returns the default runtime
@@ -24,5 +28,6 @@ func New() *OperatorRuntime {
 	return &OperatorRuntime{
 		RetryOnConflict: retry.RetryOnConflict,
 		Update:          sdk.Update,
+		Create:          sdk.Create,
 	}
 }

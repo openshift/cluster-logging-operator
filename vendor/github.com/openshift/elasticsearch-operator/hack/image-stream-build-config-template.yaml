@@ -14,8 +14,8 @@ objects:
   kind: ImageStream
   metadata:
     labels:
-      build: elasticsearch-operator
-    name: elasticsearch-operator
+      build: origin-elasticsearch-operator
+    name: origin-elasticsearch-operator
   spec: {}
 - apiVersion: v1
   kind: BuildConfig
@@ -27,7 +27,7 @@ objects:
     output:
       to:
         kind: ImageStreamTag
-        name: elasticsearch-operator:latest
+        name: origin-elasticsearch-operator:latest
     resources: {}
     source:
       git:

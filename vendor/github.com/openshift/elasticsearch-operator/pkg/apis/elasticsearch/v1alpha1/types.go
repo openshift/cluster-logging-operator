@@ -64,7 +64,7 @@ type ElasticsearchNode struct {
 }
 
 type ElasticsearchStorageSpec struct {
-	StorageClassName string             `json:"storageClassName,omitempty"`
+	StorageClassName *string            `json:"storageClassName,omitempty"`
 	Size             *resource.Quantity `json:"size,omitempty"`
 }
 
@@ -80,8 +80,10 @@ type ElasticsearchNodeStatus struct {
 }
 
 type ElasticsearchNodeUpgradeStatus struct {
-	UnderUpgrade UpgradeStatus             `json:"underUpgrade,omitempty"`
-	UpgradePhase ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
+	ScheduledForUpgrade  v1.ConditionStatus        `json:"scheduledUpgrade,omitempty"`
+	ScheduledForRedeploy v1.ConditionStatus        `json:"scheduledRedeploy,omitempty"`
+	UnderUpgrade         v1.ConditionStatus        `json:"underUpgrade,omitempty"`
+	UpgradePhase         ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
 }
 
 type ElasticsearchUpgradePhase string
@@ -97,13 +99,6 @@ type ElasticsearchNodeSpec struct {
 	Image     string                  `json:"image,omitempty"`
 	Resources v1.ResourceRequirements `json:"resources"`
 }
-
-type UpgradeStatus string
-
-const (
-	UnderUpgradeTrue  UpgradeStatus = "True"
-	UnderUpgradeFalse UpgradeStatus = "False"
-)
 
 type ElasticsearchRequiredAction string
 
@@ -127,8 +122,9 @@ const (
 type ShardAllocationState string
 
 const (
-	ShardAllocationTrue  ShardAllocationState = "True"
-	ShardAllocationFalse ShardAllocationState = "False"
+	ShardAllocationAll     ShardAllocationState = "all"
+	ShardAllocationNone    ShardAllocationState = "none"
+	ShardAllocationUnknown ShardAllocationState = "shard allocation unknown"
 )
 
 // ElasticsearchStatus represents the status of Elasticsearch cluster
@@ -165,7 +161,7 @@ type ClusterCondition struct {
 	// Type is the type of the condition.
 	Type ClusterConditionType `json:"type"`
 	// Status is the status of the condition.
-	Status ConditionStatus `json:"status"`
+	Status v1.ConditionStatus `json:"status"`
 	// Last time the condition transitioned from one status to another.
 	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
 	// Unique, one-word, CamelCase reason for the condition's last transition.
@@ -183,14 +179,6 @@ const (
 	ScalingUp        ClusterConditionType = "ScalingUp"
 	ScalingDown      ClusterConditionType = "ScalingDown"
 	Restarting       ClusterConditionType = "Restarting"
-)
-
-type ConditionStatus string
-
-const (
-	ConditionTrue    ConditionStatus = "True"
-	ConditionFalse   ConditionStatus = "False"
-	ConditionUnknown ConditionStatus = "Unknown"
 )
 
 type ClusterEvent string

@@ -10,6 +10,20 @@ const (
 	modeUnique    = "unique"
 	modeSharedOps = "shared_ops"
 	defaultMode   = modeSharedOps
+
+	defaultMasterCPULimit     = "100m"
+	defaultMasterCPURequest   = "100m"
+	defaultCPULimit           = "4000m"
+	defaultCPURequest         = "100m"
+	defaultMemoryLimit        = "4Gi"
+	defaultMemoryRequest      = "1Gi"
+	elasticsearchDefaultImage = "quay.io/openshift/origin-logging-elasticsearch5"
+
+	maxMasterCount = 3
+
+	elasticsearchCertsPath  = "/etc/openshift/elasticsearch/secret"
+	elasticsearchConfigPath = "/usr/share/java/elasticsearch/config"
+	heapDumpLocation        = "/elasticsearch/persistent/heapdump.hprof"
 )
 
 func kibanaIndexMode(mode string) (string, error) {
@@ -22,8 +36,8 @@ func kibanaIndexMode(mode string) (string, error) {
 	return "", fmt.Errorf("invalid kibana index mode provided [%s]", mode)
 }
 
-func esUnicastHost(clusterName string) string {
-	return clusterName + "-cluster"
+func esUnicastHost(clusterName, namespace string) string {
+	return fmt.Sprintf("%v-cluster.%v.svc", clusterName, namespace)
 }
 
 func rootLogger() string {

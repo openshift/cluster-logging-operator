@@ -6,11 +6,12 @@ import (
 	"io/ioutil"
 	"os"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"k8s.io/apimachinery/pkg/api/errors"
+
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
+	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -22,7 +23,7 @@ const (
 
 func CreateOrUpdatePrometheusRules(dpl *v1alpha1.Elasticsearch) error {
 	ruleName := fmt.Sprintf("%s-%s", dpl.Name, "prometheus-rules")
-	owner := asOwner(dpl)
+	owner := getOwnerRef(dpl)
 
 	promRule, err := buildPrometheusRule(ruleName, dpl.Namespace, dpl.Labels)
 	if err != nil {

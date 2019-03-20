@@ -1,17 +1,17 @@
 package e2e
 
 import (
-	goctx "context"
 	"fmt"
 	"testing"
 	"time"
 
-	"github.com/openshift/elasticsearch-operator/pkg/utils"
+	"github.com/openshift/elasticsearch-operator/test/utils"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
-	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 
+	goctx "context"
+	v1 "k8s.io/api/core/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +22,7 @@ var (
 	timeout              = time.Second * 300
 	cleanupRetryInterval = time.Second * 1
 	cleanupTimeout       = time.Second * 5
+	elasticsearchCRName  = "example-elasticsearch"
 )
 
 func TestElasticsearch(t *testing.T) {
@@ -49,7 +50,7 @@ func createRequiredSecret(f *framework.Framework, ctx *framework.TestCtx) error 
 	}
 
 	elasticsearchSecret := utils.Secret(
-		"elasticsearch",
+		elasticsearchCRName,
 		namespace,
 		map[string][]byte{
 			"elasticsearch.key": utils.GetFileContents("test/files/elasticsearch.key"),
@@ -79,14 +80,23 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 	cpuValue, _ := resource.ParseQuantity("500m")
 	memValue, _ := resource.ParseQuantity("2Gi")
 
-	esNode := elasticsearch.ElasticsearchNode{
+	esDataNode := elasticsearch.ElasticsearchNode{
 		Roles: []elasticsearch.ElasticsearchNodeRole{
 			elasticsearch.ElasticsearchRoleClient,
 			elasticsearch.ElasticsearchRoleData,
 			elasticsearch.ElasticsearchRoleMaster,
 		},
 		NodeCount: int32(1),
-		Storage: elasticsearch.ElasticsearchStorageSpec{ },
+		Storage:   elasticsearch.ElasticsearchStorageSpec{},
+	}
+
+	esNonDataNode := elasticsearch.ElasticsearchNode{
+		Roles: []elasticsearch.ElasticsearchNodeRole{
+			elasticsearch.ElasticsearchRoleClient,
+			elasticsearch.ElasticsearchRoleMaster,
+		},
+		NodeCount: int32(1),
+		Storage:   elasticsearch.ElasticsearchStorageSpec{},
 	}
 
 	// create clusterlogging custom resource
@@ -96,12 +106,12 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 			APIVersion: elasticsearch.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-elasticsearch",
+			Name:      elasticsearchCRName,
 			Namespace: namespace,
 		},
 		Spec: elasticsearch.ElasticsearchSpec{
 			Spec: elasticsearch.ElasticsearchNodeSpec{
-				Image: "openshift/origin-logging-elasticsearch5:latest",
+				Image: "",
 				Resources: v1.ResourceRequirements{
 					Limits: v1.ResourceList{
 						v1.ResourceCPU:    cpuValue,
@@ -114,7 +124,7 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 				},
 			},
 			Nodes: []elasticsearch.ElasticsearchNode{
-				esNode,
+				esDataNode,
 			},
 			ManagementState: elasticsearch.ManagementStateManaged,
 		},
@@ -132,7 +142,7 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 
 	// Scale up current node
 	// then look for example-elasticsearch-clientdatamaster-0-2 and prior node
-	exampleName := types.NamespacedName{Name: "example-elasticsearch", Namespace: namespace}
+	exampleName := types.NamespacedName{Name: elasticsearchCRName, Namespace: namespace}
 	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
 		return fmt.Errorf("failed to get exampleElasticsearch: %v", err)
 	}
@@ -156,7 +166,7 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
 		return fmt.Errorf("failed to get exampleElasticsearch: %v", err)
 	}
-	exampleElasticsearch.Spec.Nodes = append(exampleElasticsearch.Spec.Nodes, esNode)
+	exampleElasticsearch.Spec.Nodes = append(exampleElasticsearch.Spec.Nodes, esNonDataNode)
 	err = f.Client.Update(goctx.TODO(), exampleElasticsearch)
 	if err != nil {
 		return fmt.Errorf("could not update exampleElasticsearch with an additional node: %v", err)
@@ -174,11 +184,11 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 		return fmt.Errorf("timed out waiting for Deployment example-elasticsearch-clientdatamaster-0-2: %v", err)
 	}
 
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-1-1", 1, retryInterval, timeout)
+	err = utils.WaitForStatefulset(t, f.KubeClient, namespace, "example-elasticsearch-clientmaster-1", 1, retryInterval, timeout)
 	if err != nil {
-		return fmt.Errorf("timed out waiting for Deployment example-elasticsearch-clientdatamaster-1-1: %v", err)
+		return fmt.Errorf("timed out waiting for Statefulset example-elasticsearch-clientmaster-1: %v", err)
 	}
-	t.Log("Created 3 deployments")
+	t.Log("Created non-data statefulset")
 
 	// Incorrect scale up and verify we don't see a 4th master created
 	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
@@ -187,12 +197,12 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 	exampleElasticsearch.Spec.Nodes[1].NodeCount = int32(2)
 	err = f.Client.Update(goctx.TODO(), exampleElasticsearch)
 	if err != nil {
-		return fmt.Errorf("could not update exampleElasticsearch with an additional node and replica: %v", err)
+		return fmt.Errorf("could not update exampleElasticsearch with an additional statefulset replica: %v", err)
 	}
 
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-elasticsearch-clientdatamaster-1-2", 0, retryInterval, time.Second*30)
+	err = utils.WaitForStatefulset(t, f.KubeClient, namespace, "example-elasticsearch-clientmaster-1", 2, retryInterval, time.Second*30)
 	if err == nil {
-		return fmt.Errorf("unexpected deployment example-elasticsearch-clientdatamaster-1-2 found")
+		return fmt.Errorf("unexpected statefulset replica count for example-elasticsearch-clientmaster-1 found")
 	}
 
 	t.Log("Finished successfully")

@@ -77,7 +77,7 @@ func (cluster *ClusterLogging) removeElasticsearch() (err error) {
 
 func (cluster *ClusterLogging) createOrUpdateElasticsearchSecret() error {
 
-	esSecret := utils.Secret(
+	esSecret := utils.NewSecret(
 		"elasticsearch",
 		cluster.Namespace,
 		map[string][]byte{

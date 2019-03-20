@@ -128,7 +128,7 @@ func (cluster *ClusterLogging) removeKibana() (err error) {
 
 func (cluster *ClusterLogging) createOrUpdateKibanaServiceAccount() error {
 
-	kibanaServiceAccount := utils.ServiceAccount("kibana", cluster.Namespace)
+	kibanaServiceAccount := utils.NewServiceAccount("kibana", cluster.Namespace)
 
 	cluster.AddOwnerRefTo(kibanaServiceAccount)
 
@@ -143,7 +143,7 @@ func (cluster *ClusterLogging) createOrUpdateKibanaServiceAccount() error {
 func (cluster *ClusterLogging) createOrUpdateKibanaDeployment() (err error) {
 
 	kibanaPodSpec := cluster.newKibanaPodSpec("kibana", "elasticsearch")
-	kibanaDeployment := utils.Deployment(
+	kibanaDeployment := utils.NewDeployment(
 		"kibana",
 		cluster.Namespace,
 		"kibana",
@@ -187,7 +187,7 @@ func (cluster *ClusterLogging) createOrUpdateOauthClient(oauthSecret string) (er
 		kibanaURL,
 	}
 
-	oauthClient := utils.OAuthClient(
+	oauthClient := utils.NewOAuthClient(
 		"kibana-proxy",
 		cluster.Namespace,
 		oauthSecret,
@@ -236,7 +236,7 @@ func (cluster *ClusterLogging) createOrUpdateOauthClient(oauthSecret string) (er
 
 func (cluster *ClusterLogging) createOrUpdateKibanaRoute() error {
 
-	kibanaRoute := utils.Route(
+	kibanaRoute := utils.NewRoute(
 		"kibana",
 		cluster.Namespace,
 		"kibana",
@@ -307,7 +307,7 @@ func (cluster *ClusterLogging) createOrUpdateKibanaRoute() error {
 
 func (cluster *ClusterLogging) createOrUpdateKibanaService() error {
 
-	kibanaService := utils.Service(
+	kibanaService := utils.NewService(
 		"kibana",
 		cluster.Namespace,
 		"kibana",
@@ -330,7 +330,7 @@ func (cluster *ClusterLogging) createOrUpdateKibanaService() error {
 
 func (cluster *ClusterLogging) createOrUpdateKibanaSecret(oauthSecret []byte) error {
 
-	kibanaSecret := utils.Secret(
+	kibanaSecret := utils.NewSecret(
 		"kibana",
 		cluster.Namespace,
 		map[string][]byte{
@@ -346,7 +346,7 @@ func (cluster *ClusterLogging) createOrUpdateKibanaSecret(oauthSecret []byte) er
 		return err
 	}
 
-	proxySecret := utils.Secret(
+	proxySecret := utils.NewSecret(
 		"kibana-proxy",
 		cluster.Namespace,
 		map[string][]byte{
@@ -378,7 +378,7 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 			},
 		}
 	}
-	kibanaContainer := utils.Container(
+	kibanaContainer := utils.NewContainer(
 		"kibana",
 		v1.PullIfNotPresent,
 		*kibanaResources,
@@ -427,7 +427,7 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 			},
 		}
 	}
-	kibanaProxyContainer := utils.Container(
+	kibanaProxyContainer := utils.NewContainer(
 		"kibana-proxy",
 		v1.PullIfNotPresent,
 		*kibanaProxyResources,
@@ -468,7 +468,7 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 		{Name: "kibana-proxy", ReadOnly: true, MountPath: "/secret"},
 	}
 
-	kibanaPodSpec := utils.PodSpec(
+	kibanaPodSpec := utils.NewPodSpec(
 		"kibana",
 		[]v1.Container{kibanaContainer, kibanaProxyContainer},
 		[]v1.Volume{
@@ -588,7 +588,7 @@ func updateCurrentImages(current *apps.Deployment, desired *apps.Deployment) *ap
 }
 
 func createSharedConfig(namespace, kibanaAppURL, kibanaInfraURL string) *v1.ConfigMap {
-	return utils.ConfigMap(
+	return utils.NewConfigMap(
 		"sharing-config",
 		namespace,
 		map[string]string{

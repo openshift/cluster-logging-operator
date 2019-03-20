@@ -194,7 +194,7 @@ func createOrUpdateCollectionPriorityClass(logging *ClusterLogging) error {
 
 func (cluster *ClusterLogging) createOrUpdateCollectorServiceAccount() error {
 
-	collectorServiceAccount := utils.ServiceAccount("logcollector", cluster.Namespace)
+	collectorServiceAccount := utils.NewServiceAccount("logcollector", cluster.Namespace)
 
 	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(cluster))
 
@@ -286,7 +286,7 @@ func (cluster *ClusterLogging) createOrUpdateCollectorServiceAccount() error {
 
 func createOrUpdateFluentdConfigMap(logging *ClusterLogging) error {
 
-	fluentdConfigMap := utils.ConfigMap(
+	fluentdConfigMap := utils.NewConfigMap(
 		"fluentd",
 		logging.Namespace,
 		map[string]string{
@@ -313,7 +313,7 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 	// - one for main rsyslog.conf file - rsyslog-main
 	// - one for the actual config files - rsyslog
 	rsyslogConfigMaps := make(map[string]*v1.ConfigMap)
-	rsyslogBinConfigMap := utils.ConfigMap(
+	rsyslogBinConfigMap := utils.NewConfigMap(
 		"rsyslog-bin",
 		logging.Namespace,
 		map[string]string{
@@ -322,7 +322,7 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 	)
 	rsyslogConfigMaps["rsyslog-bin"] = rsyslogBinConfigMap
 
-	rsyslogMainConfigMap := utils.ConfigMap(
+	rsyslogMainConfigMap := utils.NewConfigMap(
 		"rsyslog-main",
 		logging.Namespace,
 		map[string]string{
@@ -348,7 +348,7 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 		fullname := "files/rsyslog/" + fileInfo.Name()
 		rsyslogConfigMapFiles[fileInfo.Name()] = string(utils.GetFileContents(fullname))
 	}
-	rsyslogConfigMap := utils.ConfigMap(
+	rsyslogConfigMap := utils.NewConfigMap(
 		"rsyslog",
 		logging.Namespace,
 		rsyslogConfigMapFiles,
@@ -368,7 +368,7 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 
 func createOrUpdateFluentdSecret(logging *ClusterLogging) error {
 
-	fluentdSecret := utils.Secret(
+	fluentdSecret := utils.NewSecret(
 		"fluentd",
 		logging.Namespace,
 		map[string][]byte{
@@ -392,7 +392,7 @@ func createOrUpdateFluentdSecret(logging *ClusterLogging) error {
 
 func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 
-	rsyslogSecret := utils.Secret(
+	rsyslogSecret := utils.NewSecret(
 		"rsyslog",
 		logging.Namespace,
 		map[string][]byte{
@@ -420,7 +420,7 @@ func createOrUpdateFluentdDaemonset(cluster *ClusterLogging) (err error) {
 
 	fluentdPodSpec = newFluentdPodSpec(cluster.ClusterLogging, "elasticsearch", "elasticsearch")
 
-	fluentdDaemonset := utils.DaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
+	fluentdDaemonset := utils.NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	cluster.AddOwnerRefTo(fluentdDaemonset)
 
 	err = sdk.Create(fluentdDaemonset)
@@ -446,7 +446,7 @@ func createOrUpdateRsyslogDaemonset(cluster *ClusterLogging) (err error) {
 
 	rsyslogPodSpec = newRsyslogPodSpec(cluster.ClusterLogging, "elasticsearch", "elasticsearch")
 
-	rsyslogDaemonset := utils.DaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
+	rsyslogDaemonset := utils.NewDaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
 
 	utils.AddOwnerRefToObject(rsyslogDaemonset, utils.AsOwner(cluster))
 
@@ -478,7 +478,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			},
 		}
 	}
-	fluentdContainer := utils.Container("fluentd", v1.PullIfNotPresent, *resources)
+	fluentdContainer := utils.NewContainer("fluentd", v1.PullIfNotPresent, *resources)
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -562,7 +562,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 				v1.ResourceCPU:    defaultRsyslogCpuRequest,
 			}}
 	}
-	rsyslogContainer := utils.Container("rsyslog", v1.PullIfNotPresent, *resources)
+	rsyslogContainer := utils.NewContainer("rsyslog", v1.PullIfNotPresent, *resources)
 
 	rsyslogContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},

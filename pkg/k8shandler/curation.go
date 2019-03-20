@@ -97,7 +97,7 @@ func (cluster *ClusterLogging) removeCurator() (err error) {
 
 func (cluster *ClusterLogging) createOrUpdateCuratorServiceAccount() error {
 
-	curatorServiceAccount := utils.ServiceAccount("curator", cluster.Namespace)
+	curatorServiceAccount := utils.NewServiceAccount("curator", cluster.Namespace)
 	cluster.AddOwnerRefTo(curatorServiceAccount)
 
 	err := sdk.Create(curatorServiceAccount)
@@ -110,7 +110,7 @@ func (cluster *ClusterLogging) createOrUpdateCuratorServiceAccount() error {
 
 func (cluster *ClusterLogging) createOrUpdateCuratorConfigMap() error {
 
-	curatorConfigMap := utils.ConfigMap(
+	curatorConfigMap := utils.NewConfigMap(
 		"curator",
 		cluster.Namespace,
 		map[string]string{
@@ -132,7 +132,7 @@ func (cluster *ClusterLogging) createOrUpdateCuratorConfigMap() error {
 
 func (cluster *ClusterLogging) createOrUpdateCuratorSecret() error {
 
-	curatorSecret := utils.Secret(
+	curatorSecret := utils.NewSecret(
 		"curator",
 		cluster.Namespace,
 		map[string][]byte{
@@ -166,7 +166,7 @@ func (cluster *ClusterLogging) newCuratorCronJob(curatorName string, elasticsear
 			},
 		}
 	}
-	curatorContainer := utils.Container("curator", v1.PullIfNotPresent, *resources)
+	curatorContainer := utils.NewContainer("curator", v1.PullIfNotPresent, *resources)
 
 	curatorContainer.Env = []v1.EnvVar{
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc.cluster.local"},
@@ -186,7 +186,7 @@ func (cluster *ClusterLogging) newCuratorCronJob(curatorName string, elasticsear
 		{Name: "config", ReadOnly: true, MountPath: "/etc/curator/settings"},
 	}
 
-	curatorPodSpec := utils.PodSpec(
+	curatorPodSpec := utils.NewPodSpec(
 		"curator",
 		[]v1.Container{curatorContainer},
 		[]v1.Volume{
@@ -203,7 +203,7 @@ func (cluster *ClusterLogging) newCuratorCronJob(curatorName string, elasticsear
 		schedule = defaultSchedule
 	}
 
-	curatorCronJob := utils.CronJob(
+	curatorCronJob := utils.NewCronJob(
 		curatorName,
 		cluster.Namespace,
 		"curator",

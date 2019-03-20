@@ -17,5 +17,4 @@ ENTRYPOINT ["elasticsearch-operator"]
 LABEL io.k8s.display-name="OpenShift elasticsearch-operator" \
       io.k8s.description="This is the component that manages an Elasticsearch cluster on a kubernetes based platform" \
       io.openshift.tags="openshift,logging,elasticsearch" \
-      io.openshift.release.operator=true \
       maintainer="AOS Logging <aos-logging@redhat.com>"

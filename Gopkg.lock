@@ -4,8 +4,8 @@
 [[projects]]
   name = "github.com/PuerkitoBio/purell"
   packages = ["."]
-  revision = "0bcb03f4b4d0a9428594752bd2a3b9aa0a9d4bd4"
-  version = "v1.1.0"
+  revision = "44968752391892e1b0d0b821ee79e9a85fa13049"
+  version = "v1.1.1"
 
 [[projects]]
   branch = "master"
@@ -31,8 +31,8 @@
     ".",
     "log"
   ]
-  revision = "e37671aced663c8d3a395bd301857e26dcf4340c"
-  version = "v2.8.1"
+  revision = "85d198d05a92d31823b852b4a5928114912e8949"
+  version = "v2.9.0"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -70,8 +70,8 @@
     "proto",
     "sortkeys"
   ]
-  revision = "4cbf7e384e768b4e01799441fdf2a706a5635ae7"
-  version = "v1.2.0"
+  revision = "ba06b47c162d49f2af050fb4c75bcbc86a159d5c"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -88,8 +88,8 @@
     "ptypes/duration",
     "ptypes/timestamp"
   ]
-  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
-  version = "v1.2.0"
+  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
+  version = "v1.3.1"
 
 [[projects]]
   branch = "master"
@@ -120,7 +120,7 @@
     ".",
     "diskcache"
   ]
-  revision = "c63ab54fda8f77302f8d414e19933f2b6026a089"
+  revision = "3befbb6ad0cc97d4c25d851e9528915809e1a22f"
 
 [[projects]]
   name = "github.com/hashicorp/golang-lru"
@@ -128,8 +128,8 @@
     ".",
     "simplelru"
   ]
-  revision = "20f1fb78b0740ba8c3cb143a61e86ba5c8669768"
-  version = "v0.5.0"
+  revision = "7087cb70de9f7a8bc0a10c375cb0d2280a8edf9c"
+  version = "v0.5.1"
 
 [[projects]]
   name = "github.com/imdario/mergo"
@@ -140,14 +140,14 @@
 [[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
-  revision = "1624edc4454b8682399def8740d46db5e4362ba4"
-  version = "v1.1.5"
+  revision = "0ff49de124c6f76f8494e194af75bde0f1a49a29"
+  version = "v1.1.6"
 
 [[projects]]
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
-  revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
-  version = "v1.0.1"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
 
 [[projects]]
   branch = "master"
@@ -157,7 +157,7 @@
     "jlexer",
     "jwriter"
   ]
-  revision = "60711f1a8329503b04e1c88535f419d0bb440bff"
+  revision = "1de009706dbeb9d05f18586f0735fcdb7c524481"
 
 [[projects]]
   name = "github.com/matttproud/golang_protobuf_extensions"
@@ -184,13 +184,13 @@
     "oauth/v1",
     "route/v1"
   ]
-  revision = "bbc4289c54e0f41709ed1ad57b96cd1a858005e0"
+  revision = "6820a28f1dcf8f036f94a56164dfaeb842e6b28a"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "cb47da4222852478aab7d53f6c9b3149d05062ff"
+  revision = "b8b3e00a65dc44ccfcd99aab059f2a8fd9b5cded"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -232,7 +232,7 @@
   branch = "master"
   name = "github.com/prometheus/client_model"
   packages = ["go"]
-  revision = "56726106282f1985ea77d5305743db7231b0c0a8"
+  revision = "fd36f4220a901265f90734c3183c5f0c91daa0b8"
 
 [[projects]]
   name = "github.com/prometheus/common"
@@ -250,16 +250,17 @@
   packages = [
     ".",
     "internal/util",
+    "iostats",
     "nfs",
     "xfs"
   ]
-  revision = "bf6a532e95b1f7a62adf0ab5050a5bb2237ad2f4"
+  revision = "40f3c57fb1983891f95378042bd0bfd590f52384"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "e1e72e9de974bd926e5c56f83753fba2df402ce5"
-  version = "v1.3.0"
+  revision = "dae0fa8d5b0c810a8ab733fbd5510c7cae84eca4"
+  version = "v1.4.0"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -271,7 +272,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "bf88e3f4ba724b9852073e3d792ab18358069896"
+  revision = "a1f597ede03a7bef967a422b5b3a5bd08805a01e"
 
 [[projects]]
   branch = "master"
@@ -282,7 +283,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf"
+  revision = "1272bf9dcd53ea65c09668fb4c76e65deb740072"
 
 [[projects]]
   branch = "master"
@@ -291,7 +292,7 @@
     "unix",
     "windows"
   ]
-  revision = "302c3dd5f1cc82baae8e44d9c3178e89b6e2b345"
+  revision = "6c81ef8f67ca3f42fc9cd71dfbd5f35b0c4b5771"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -319,7 +320,7 @@
   branch = "master"
   name = "golang.org/x/time"
   packages = ["rate"]
-  revision = "85acf8d2951cb2a3bde7632f9ff273ef0379bcbd"
+  revision = "9d24e82272b4f38b78bc8cff74fa936d31ccd8ef"
 
 [[projects]]
   branch = "master"
@@ -338,7 +339,7 @@
     "internal/module",
     "internal/semver"
   ]
-  revision = "0a99049195aff55f007fc4dfd48e3ec2b4d5f602"
+  revision = "3f1ed9edd1b43b011064eb59e5c9e73f5537ddd9"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -554,13 +555,13 @@
     "parser",
     "types"
   ]
-  revision = "0689ccc1d7d65d9dd1bedcc3b0b1ed7df91ba266"
+  revision = "bc9033e9ec9e0cec1552e9af7c079cb878dfc511"
 
 [[projects]]
   name = "k8s.io/klog"
   packages = ["."]
-  revision = "a5bc97fbc634d635061f3146511332c7e313a55a"
-  version = "v0.1.0"
+  revision = "71442cd4037d612096940ceb0f3fec3f7fff66e0"
+  version = "v0.2.0"
 
 [[projects]]
   branch = "master"
@@ -572,7 +573,7 @@
     "pkg/generators/rules",
     "pkg/util/sets"
   ]
-  revision = "ced9eb3070a5f1c548ef46e8dfe2a97c208d9f03"
+  revision = "15615b16d372105f0c69ff47dfe7402926a65aaa"
 
 [[projects]]
   name = "sigs.k8s.io/controller-runtime"
@@ -585,6 +586,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "185d7a1879db58f418324c89407e9fe7f970c637d1f4eabf92e71b7dc68e676e"
+  inputs-digest = "f98a4ebc20ffb5e19a90557849d0fa029d94b08493c0dd7e1d652fe68782d258"
   solver-name = "gps-cdcl"
   solver-version = 1

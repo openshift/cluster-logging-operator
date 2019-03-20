@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
+	"html/template"
+	"io"
 	"strconv"
 
+	"github.com/operator-framework/operator-sdk/pkg/sdk"
+	"github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 
 	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
-	"github.com/openshift/elasticsearch-operator/pkg/utils"
-	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -23,115 +24,131 @@ const (
 	indexSettingsConfig = "index_settings"
 )
 
-// CreateOrUpdateConfigMaps ensures the existence of ConfigMaps with Elasticsearch configuration
-func CreateOrUpdateConfigMaps(dpl *v1alpha1.Elasticsearch) (string, error) {
-	owner := asOwner(dpl)
-	configMapName := v1alpha1.ConfigMapName
+// esYmlStruct is used to render esYmlTmpl to a proper elasticsearch.yml format
+type esYmlStruct struct {
+	KibanaIndexMode       string
+	EsUnicastHost         string
+	NodeQuorum            string
+	RecoverExpectedShards string
+}
 
+type log4j2PropertiesStruct struct {
+	RootLogger string
+}
+
+type indexSettingsStruct struct {
+	PrimaryShards string
+	ReplicaShards string
+}
+
+// CreateOrUpdateConfigMaps ensures the existence of ConfigMaps with Elasticsearch configuration
+func CreateOrUpdateConfigMaps(dpl *v1alpha1.Elasticsearch) (err error) {
 	kibanaIndexMode, err := kibanaIndexMode("")
 	if err != nil {
-		return "", err
+		return err
 	}
 	dataNodeCount := int((getDataCount(dpl)))
 	masterNodeCount := int((getMasterCount(dpl)))
 
-	primaryShardsCount := strconv.Itoa(dataNodeCount)
-	replicaShardsCount := strconv.Itoa(calculateReplicaCount(dpl))
-	recoverExpectedShards := strconv.Itoa(dataNodeCount)
-	nodeQuorum := strconv.Itoa(masterNodeCount/2 + 1)
+	configmap := newConfigMap(
+		dpl.Name,
+		dpl.Namespace,
+		dpl.Labels,
+		kibanaIndexMode,
+		esUnicastHost(dpl.Name, dpl.Namespace),
+		rootLogger(),
+		strconv.Itoa(masterNodeCount/2+1),
+		strconv.Itoa(dataNodeCount),
+		strconv.Itoa(dataNodeCount),
+		strconv.Itoa(calculateReplicaCount(dpl)),
+	)
 
-	esUnicastHost := esUnicastHost(dpl.Name)
-	rootLogger := rootLogger()
+	addOwnerRefToObject(configmap, getOwnerRef(dpl))
 
-	err = createOrUpdateConfigMap(dpl, configMapName, dpl.Namespace, dpl.Name, kibanaIndexMode, esUnicastHost, rootLogger, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount, owner, dpl.Labels)
+	err = sdk.Create(configmap)
 	if err != nil {
-		return configMapName, fmt.Errorf("Failure creating ConfigMap %v", err)
-	}
-	return configMapName, nil
-}
-
-func createOrUpdateConfigMap(dpl *v1alpha1.Elasticsearch, configMapName, namespace, clusterName, kibanaIndexMode, esUnicastHost, rootLogger, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount string,
-	owner metav1.OwnerReference, labels map[string]string) error {
-	elasticsearchCM, err := createConfigMap(configMapName, namespace, clusterName, kibanaIndexMode, esUnicastHost, rootLogger, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount, labels)
-	if err != nil {
-		return err
-	}
-	addOwnerRefToObject(elasticsearchCM, owner)
-	err = sdk.Create(elasticsearchCM)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Elasticsearch ConfigMap: %v", err)
-	} else if errors.IsAlreadyExists(err) {
-		// Get existing configMap to check if it is same as what we want
-		existingCM := configMap(configMapName, namespace, labels)
-		err = sdk.Get(existingCM)
-		if err != nil {
-			return fmt.Errorf("Unable to get Elasticsearch cluster configMap: %v", err)
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure constructing Elasticsearch ConfigMap: %v", err)
 		}
 
-		if configMapContentChanged(existingCM, elasticsearchCM) {
-			// Cluster settings has changed, make sure it doesnt go unnoticed
-			if err := utils.UpdateConditionWithRetry(dpl, v1alpha1.ConditionTrue, utils.UpdateUpdatingSettingsCondition); err != nil {
-				return fmt.Errorf("Unable to update Elasticsearch cluster status: %v", err)
+		if errors.IsAlreadyExists(err) {
+			// Get existing configMap to check if it is same as what we want
+			current := configmap.DeepCopy()
+			err = sdk.Get(current)
+			if err != nil {
+				return fmt.Errorf("Unable to get Elasticsearch cluster configMap: %v", err)
 			}
 
-			return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				if getErr := sdk.Get(existingCM); getErr != nil {
-					logrus.Debugf("Could not get Elasticsearch %v: %v", dpl.Name, getErr)
-					return getErr
+			if configMapContentChanged(current, configmap) {
+				// Cluster settings has changed, make sure it doesnt go unnoticed
+				if err := updateConditionWithRetry(dpl, v1.ConditionTrue, updateUpdatingSettingsCondition); err != nil {
+					return err
 				}
 
-				existingCM.Data[esConfig] = elasticsearchCM.Data[esConfig]
-				existingCM.Data[log4jConfig] = elasticsearchCM.Data[log4jConfig]
-				existingCM.Data[indexSettingsConfig] = elasticsearchCM.Data[indexSettingsConfig]
+				return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+					if getErr := sdk.Get(current); getErr != nil {
+						logrus.Debugf("Could not get Elasticsearch configmap %v: %v", configmap.Name, getErr)
+						return getErr
+					}
 
-				if updateErr := sdk.Update(existingCM); updateErr != nil {
-					logrus.Debugf("Failed to update Elasticsearch %v status: %v", dpl.Name, updateErr)
-					return updateErr
-				}
-				return nil
-			})
+					current.Data = configmap.Data
+					if updateErr := sdk.Update(current); updateErr != nil {
+						logrus.Debugf("Failed to update Elasticsearch configmap %v: %v", configmap.Name, updateErr)
+						return updateErr
+					}
+					return nil
+				})
+			}
 		}
 	}
+
 	return nil
 }
 
-func createConfigMap(configMapName, namespace, clusterName, kibanaIndexMode, esUnicastHost, rootLogger, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount string,
-	labels map[string]string) (*v1.ConfigMap, error) {
-	cm := configMap(configMapName, namespace, labels)
-	cm.Data = map[string]string{}
+func renderData(kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount, rootLogger string) (error, map[string]string) {
+
+	data := map[string]string{}
 	buf := &bytes.Buffer{}
 	if err := renderEsYml(buf, kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards); err != nil {
-		return cm, err
+		return err, data
 	}
-	cm.Data[esConfig] = buf.String()
+	data[esConfig] = buf.String()
 
 	buf = &bytes.Buffer{}
 	if err := renderLog4j2Properties(buf, rootLogger); err != nil {
-		return cm, err
+		return err, data
 	}
-	cm.Data[log4jConfig] = buf.String()
+	data[log4jConfig] = buf.String()
 
 	buf = &bytes.Buffer{}
 	if err := renderIndexSettings(buf, primaryShardsCount, replicaShardsCount); err != nil {
-		return cm, err
+		return err, data
 	}
-	cm.Data[indexSettingsConfig] = buf.String()
+	data[indexSettingsConfig] = buf.String()
 
-	return cm, nil
+	return nil, data
 }
 
-// configMap returns a v1.ConfigMap object
-func configMap(configMapName string, namespace string, labels map[string]string) *v1.ConfigMap {
+// newConfigMap returns a v1.ConfigMap object
+func newConfigMap(configMapName, namespace string, labels map[string]string,
+	kibanaIndexMode, esUnicastHost, rootLogger, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount string) *v1.ConfigMap {
+
+	err, data := renderData(kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount, rootLogger)
+	if err != nil {
+		return nil
+	}
+
 	return &v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
-			APIVersion: "v1",
+			APIVersion: v1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
 			Namespace: namespace,
 			Labels:    labels,
 		},
+		Data: data,
 	}
 }
 
@@ -158,4 +175,95 @@ func configMapContentChanged(old, new *v1.ConfigMap) bool {
 	}
 
 	return false
+}
+
+func renderEsYml(w io.Writer, kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards string) error {
+	t := template.New("elasticsearch.yml")
+	config := esYmlTmpl
+	t, err := t.Parse(config)
+	if err != nil {
+		return err
+	}
+	esy := esYmlStruct{
+		KibanaIndexMode:       kibanaIndexMode,
+		EsUnicastHost:         esUnicastHost,
+		NodeQuorum:            nodeQuorum,
+		RecoverExpectedShards: recoverExpectedShards,
+	}
+
+	return t.Execute(w, esy)
+}
+
+func renderLog4j2Properties(w io.Writer, rootLogger string) error {
+	t := template.New("log4j2.properties")
+	t, err := t.Parse(log4j2PropertiesTmpl)
+	if err != nil {
+		return err
+	}
+
+	log4jProp := log4j2PropertiesStruct{
+		RootLogger: rootLogger,
+	}
+
+	return t.Execute(w, log4jProp)
+}
+
+func renderIndexSettings(w io.Writer, primaryShardsCount, replicaShardsCount string) error {
+	t := template.New("index_settings")
+	t, err := t.Parse(indexSettingsTmpl)
+	if err != nil {
+		return err
+	}
+
+	indexSettings := indexSettingsStruct{
+		PrimaryShards: primaryShardsCount,
+		ReplicaShards: replicaShardsCount,
+	}
+
+	return t.Execute(w, indexSettings)
+}
+
+func getConfigmap(configmapName, namespace string) *v1.ConfigMap {
+
+	configMap := v1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: v1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configmapName,
+			Namespace: namespace,
+		},
+	}
+
+	err := sdk.Get(&configMap)
+
+	if err != nil {
+		// check if doesn't exist
+	}
+
+	return &configMap
+}
+
+func getConfigmapDataHash(configmapName, namespace string) string {
+
+	hash := ""
+
+	configMap := getConfigmap(configmapName, namespace)
+
+	dataHashes := make(map[string][32]byte)
+
+	for key, data := range configMap.Data {
+		if key != "index_settings" {
+			dataHashes[key] = sha256.Sum256([]byte(data))
+		}
+	}
+
+	sortedKeys := sortDataHashKeys(dataHashes)
+
+	for _, key := range sortedKeys {
+		hash = fmt.Sprintf("%s%s", hash, dataHashes[key])
+	}
+
+	return hash
 }

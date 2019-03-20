@@ -180,6 +180,7 @@ var (
 	rangeType      = reflect.TypeOf(Range{})
 	fsetType       = reflect.TypeOf((*token.FileSet)(nil))
 	regexType      = reflect.TypeOf((*regexp.Regexp)(nil))
+	exportedType   = reflect.TypeOf((*Exported)(nil))
 )
 
 // converter converts from a marker's argument parsed from the comment to
@@ -210,6 +211,10 @@ func (e *Exported) buildConverter(pt reflect.Type) (converter, error) {
 		return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
 			return reflect.ValueOf(e.fset), args, nil
 		}, nil
+	case pt == exportedType:
+		return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
+			return reflect.ValueOf(e), args, nil
+		}, nil
 	case pt == posType:
 		return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
 			r, remains, err := e.rangeConverter(n, args)
@@ -236,6 +241,9 @@ func (e *Exported) buildConverter(pt reflect.Type) (converter, error) {
 		}, nil
 	case pt == identifierType:
 		return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
+			if len(args) < 1 {
+				return reflect.Value{}, nil, fmt.Errorf("missing argument")
+			}
 			arg := args[0]
 			args = args[1:]
 			switch arg := arg.(type) {
@@ -248,6 +256,9 @@ func (e *Exported) buildConverter(pt reflect.Type) (converter, error) {
 
 	case pt == regexType:
 		return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
+			if len(args) < 1 {
+				return reflect.Value{}, nil, fmt.Errorf("missing argument")
+			}
 			arg := args[0]
 			args = args[1:]
 			if _, ok := arg.(*regexp.Regexp); !ok {
@@ -258,6 +269,9 @@ func (e *Exported) buildConverter(pt reflect.Type) (converter, error) {
 
 	case pt.Kind() == reflect.String:
 		return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
+			if len(args) < 1 {
+				return reflect.Value{}, nil, fmt.Errorf("missing argument")
+			}
 			arg := args[0]
 			args = args[1:]
 			switch arg := arg.(type) {
@@ -271,6 +285,9 @@ func (e *Exported) buildConverter(pt reflect.Type) (converter, error) {
 		}, nil
 	case pt.Kind() == reflect.Int64:
 		return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
+			if len(args) < 1 {
+				return reflect.Value{}, nil, fmt.Errorf("missing argument")
+			}
 			arg := args[0]
 			args = args[1:]
 			switch arg := arg.(type) {
@@ -282,6 +299,9 @@ func (e *Exported) buildConverter(pt reflect.Type) (converter, error) {
 		}, nil
 	case pt.Kind() == reflect.Bool:
 		return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
+			if len(args) < 1 {
+				return reflect.Value{}, nil, fmt.Errorf("missing argument")
+			}
 			arg := args[0]
 			args = args[1:]
 			b, ok := arg.(bool)
@@ -310,6 +330,9 @@ func (e *Exported) buildConverter(pt reflect.Type) (converter, error) {
 	default:
 		if pt.Kind() == reflect.Interface && pt.NumMethod() == 0 {
 			return func(n *expect.Note, args []interface{}) (reflect.Value, []interface{}, error) {
+				if len(args) < 1 {
+					return reflect.Value{}, nil, fmt.Errorf("missing argument")
+				}
 				return reflect.ValueOf(args[0]), args[1:], nil
 			}, nil
 		}

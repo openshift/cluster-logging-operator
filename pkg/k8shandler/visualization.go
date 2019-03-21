@@ -485,6 +485,7 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 			},
 			},
 		},
+		cluster.Spec.Visualization.KibanaSpec.NodeSelector,
 	)
 
 	kibanaPodSpec.Affinity = &v1.Affinity{

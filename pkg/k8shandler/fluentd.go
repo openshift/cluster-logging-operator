@@ -146,6 +146,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "dockerdaemoncfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/docker"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/fluentd"}}},
 		},
+		logging.Spec.Collection.Logs.FluentdSpec.NodeSelector,
 	)
 
 	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName

@@ -193,6 +193,7 @@ func (cluster *ClusterLogging) newCuratorCronJob(curatorName string, elasticsear
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "curator"}}}},
 			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "curator"}}},
 		},
+		cluster.Spec.Curation.NodeSelector,
 	)
 
 	curatorPodSpec.RestartPolicy = v1.RestartPolicyNever

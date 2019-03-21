@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"reflect"
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -35,6 +36,32 @@ func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != defaultEsCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultEsCpuRequest)
+	}
+}
+
+func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
+	expSelector := map[string]string{
+		"foo": "bar",
+	}
+	cluster := &ClusterLogging{
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeSelector: expSelector,
+					},
+				},
+			},
+		},
+	}
+	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+
+	for _, node := range elasticsearch.Spec.Nodes {
+		if !reflect.DeepEqual(node.NodeSelector, expSelector) {
+			t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, node.NodeSelector)
+		}
+
 	}
 }
 

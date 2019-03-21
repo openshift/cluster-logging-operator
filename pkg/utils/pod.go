@@ -7,11 +7,12 @@ import (
 )
 
 //NewPodSpec is a constructor to instansiate a new PodSpec
-func NewPodSpec(serviceAccountName string, containers []core.Container, volumes []core.Volume) core.PodSpec {
+func NewPodSpec(serviceAccountName string, containers []core.Container, volumes []core.Volume, nodeSelector map[string]string) core.PodSpec {
 	return core.PodSpec{
 		Containers:         containers,
 		ServiceAccountName: serviceAccountName,
 		Volumes:            volumes,
+		NodeSelector:       nodeSelector,
 	}
 }
 

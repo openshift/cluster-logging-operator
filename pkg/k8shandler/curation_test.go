@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"reflect"
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -8,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func TestNewCuratorCronJobWhenResourcesAreUndefined(t *testing.T) {
+func TestNewCuratorCronJobWhenFieldsAreUndefined(t *testing.T) {
 
 	cluster := &ClusterLogging{&logging.ClusterLogging{}}
 	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
@@ -27,6 +28,9 @@ func TestNewCuratorCronJobWhenResourcesAreUndefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != defaultFluentdCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultCuratorCpuRequest)
+	}
+	if podSpec.NodeSelector != nil {
+		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
 	}
 }
 
@@ -112,5 +116,29 @@ func TestNewCuratorCronJobWhenScheduleDefined(t *testing.T) {
 
 	if schedule != desiredSchedule {
 		t.Errorf("Exp. the cronjob schedule to be: %v, act. is: %v", desiredSchedule, schedule)
+	}
+}
+func TestNewCuratorCronJobWhenNodeSelectorDefined(t *testing.T) {
+	expSelector := map[string]string{
+		"foo": "bar",
+	}
+	cluster := &ClusterLogging{
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				Curation: logging.CurationSpec{
+					Type: "curator",
+					CuratorSpec: logging.CuratorSpec{
+						NodeSelector: expSelector,
+					},
+				},
+			},
+		},
+	}
+
+	job := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
+	selector := job.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
+
+	if !reflect.DeepEqual(selector, expSelector) {
+		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, selector)
 	}
 }

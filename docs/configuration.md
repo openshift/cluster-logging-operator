@@ -6,6 +6,9 @@ defines a complete cluster logging deployment that includes all the subcomponent
 of the logging stack to collect, store and visualize logs.  The `cluster-logging-operator`
 watches the a `ClusterLogging` CustomResources and adjusts the logging deployment accordingly.
 
+**Note:** The cluster-logging-operator **will only** handle a `ClusterLogging` instance named `instance`.  This
+is to enforce a single ClusterLogging deployment for the entire OKD cluster.
+
 ## Management State
 Cluster logging is managed by the `cluster-logging-operator`.  It can be placed
 into an unmanaged state allowing an administrator to assume full control of individual

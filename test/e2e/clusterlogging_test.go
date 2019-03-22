@@ -85,7 +85,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 			APIVersion: logging.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-cluster-logging",
+			Name:      "instance",
 			Namespace: namespace,
 		},
 		Spec: logging.ClusterLoggingSpec{

@@ -18,6 +18,8 @@ MAIN_PKG=cmd/$(APP_NAME)/main.go
 export NAMESPACE?=openshift-logging
 PKGS=$(shell go list ./... | grep -v -E '/vendor/|/test|/examples')
 
+TEST_OPTIONS?=
+
 OC?=oc
 
 # These will be provided to the target
@@ -103,7 +105,7 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-unit:
-	@go test -v $(PKGS)
+	@go test $(TEST_OPTIONS) $(PKGS)
 test-e2e:
 	hack/test-e2e.sh
 

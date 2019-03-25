@@ -58,7 +58,7 @@ func (cluster *ClusterLogging) CreateOrUpdateCuration() (err error) {
 						printUpdateMessage = false
 					}
 					cluster.Status.Curation.CuratorStatus = curatorStatus
-					return sdk.Update(cluster)
+					return sdk.Update(cluster.ClusterLogging)
 				}
 			}
 			return nil

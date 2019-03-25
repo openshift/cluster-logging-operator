@@ -46,7 +46,7 @@ func (cluster *ClusterLogging) CreateOrUpdateLogStore() (err error) {
 						printUpdateMessage = false
 					}
 					cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
-					return sdk.Update(cluster)
+					return sdk.Update(cluster.ClusterLogging)
 				}
 			}
 			return nil

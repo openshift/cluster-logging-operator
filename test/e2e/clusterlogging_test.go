@@ -140,6 +140,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 }
 
 func waitForOperatorToBeReady(t *testing.T, ctx *framework.TestCtx) error {
+	t.Log("Initializing cluster resources...")
 	err := ctx.InitializeClusterResources(&framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		return err

@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"reflect"
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -8,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func TestNewKibanaPodSpecWhenResourcesAreUndefined(t *testing.T) {
+func TestNewKibanaPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
 	cluster := &ClusterLogging{&logging.ClusterLogging{}}
 	podSpec := cluster.newKibanaPodSpec("test-app-name", "elasticsearch")
@@ -38,6 +39,9 @@ func TestNewKibanaPodSpecWhenResourcesAreUndefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != defaultKibanaCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultKibanaCpuRequest)
+	}
+	if podSpec.NodeSelector != nil {
+		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
 	}
 }
 
@@ -92,6 +96,30 @@ func TestNewKibanaPodSpecWhenResourcesAreDefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != requestCPU {
 		t.Errorf("Exp. the default CPU request to be %v", requestCPU)
+	}
+
+}
+func TestNewKibanaPodSpecWhenNodeSelectorIsDefined(t *testing.T) {
+	expSelector := map[string]string{
+		"foo": "bar",
+	}
+	cluster := &ClusterLogging{
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				Visualization: logging.VisualizationSpec{
+					Type: "kibana",
+					KibanaSpec: logging.KibanaSpec{
+						NodeSelector: expSelector,
+					},
+				},
+			},
+		},
+	}
+	podSpec := cluster.newKibanaPodSpec("test-app-name", "elasticsearch")
+
+	//check kibana
+	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
+		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, podSpec.NodeSelector)
 	}
 
 }

@@ -227,6 +227,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "machineid", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/machine-id"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/rsyslog.pod"}}},
 		},
+		logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector,
 	)
 
 	rsyslogPodSpec.PriorityClassName = clusterLoggingPriorityClassName

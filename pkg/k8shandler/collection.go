@@ -77,7 +77,7 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 						printUpdateMessage = false
 					}
 					cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
-					return sdk.Update(cluster)
+					return sdk.Update(cluster.ClusterLogging)
 				}
 			}
 			return nil
@@ -116,7 +116,7 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 						printUpdateMessage = false
 					}
 					cluster.Status.Collection.Logs.RsyslogStatus = rsyslogStatus
-					return sdk.Update(cluster)
+					return sdk.Update(cluster.ClusterLogging)
 				}
 			}
 			return nil

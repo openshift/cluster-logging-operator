@@ -67,7 +67,7 @@ func (cluster *ClusterLogging) CreateOrUpdateVisualization() (err error) {
 						printUpdateMessage = false
 					}
 					cluster.Status.Visualization.KibanaStatus = kibanaStatus
-					return sdk.Update(cluster)
+					return sdk.Update(cluster.ClusterLogging)
 				}
 			}
 			return nil

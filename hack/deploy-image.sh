@@ -55,5 +55,5 @@ if [ $ii = 10 ] ; then
 fi
 
 echo "Pushing image ${tag}..."
-docker login --tls-verify=false 127.0.0.1:${LOCAL_PORT} -u ${ADMIN_USER} -p $(oc whoami -t)
-docker push --tls-verify=false ${tag}
+docker login 127.0.0.1:${LOCAL_PORT} -u ${ADMIN_USER} -p $(oc whoami -t)
+docker push ${tag}

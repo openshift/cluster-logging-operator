@@ -90,5 +90,5 @@ on which the operator runs or can be pulled from a visible registry.
 **Note:** It is necessary to set the `IMAGE_CLUSTER_LOGGING_OPERATOR` environment variable to a valid pull spec
 in order to run this test against local changes to the `cluster-logging-operator`. For example:
 ```
-$ make deploy-image && IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc/openshift/origin-cluster-logging-operator:latest make test-e2e
+$ make deploy-image && IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest make test-e2e
 ```

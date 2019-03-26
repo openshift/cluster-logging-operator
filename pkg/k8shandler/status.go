@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	v1 "k8s.io/api/core/v1"
@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cluster *ClusterLogging) getCuratorStatus() ([]v1alpha1.CuratorStatus, error) {
+func (cluster *ClusterLogging) getCuratorStatus() ([]logging.CuratorStatus, error) {
 
-	status := []v1alpha1.CuratorStatus{}
+	status := []logging.CuratorStatus{}
 
 	curatorCronJobList, err := utils.GetCronJobList(cluster.Namespace, "logging-infra=curator")
 	if err != nil {
@@ -24,7 +24,7 @@ func (cluster *ClusterLogging) getCuratorStatus() ([]v1alpha1.CuratorStatus, err
 
 	for _, cronjob := range curatorCronJobList.Items {
 
-		curatorStatus := v1alpha1.CuratorStatus{
+		curatorStatus := logging.CuratorStatus{
 			CronJob:   cronjob.Name,
 			Schedule:  cronjob.Spec.Schedule,
 			Suspended: *cronjob.Spec.Suspend,
@@ -36,9 +36,9 @@ func (cluster *ClusterLogging) getCuratorStatus() ([]v1alpha1.CuratorStatus, err
 	return status, nil
 }
 
-func getFluentdCollectorStatus(namespace string) (v1alpha1.FluentdCollectorStatus, error) {
+func getFluentdCollectorStatus(namespace string) (logging.FluentdCollectorStatus, error) {
 
-	fluentdStatus := v1alpha1.FluentdCollectorStatus{}
+	fluentdStatus := logging.FluentdCollectorStatus{}
 
 	fluentdDaemonsetList, err := utils.GetDaemonSetList(namespace, "logging-infra=fluentd")
 	if err != nil {
@@ -63,9 +63,9 @@ func getFluentdCollectorStatus(namespace string) (v1alpha1.FluentdCollectorStatu
 	return fluentdStatus, nil
 }
 
-func getRsyslogCollectorStatus(namespace string) (v1alpha1.RsyslogCollectorStatus, error) {
+func getRsyslogCollectorStatus(namespace string) (logging.RsyslogCollectorStatus, error) {
 
-	rsyslogStatus := v1alpha1.RsyslogCollectorStatus{}
+	rsyslogStatus := logging.RsyslogCollectorStatus{}
 
 	rsyslogDaemonsetList, err := utils.GetDaemonSetList(namespace, "logging-infra=rsyslog")
 	if err != nil {
@@ -90,9 +90,9 @@ func getRsyslogCollectorStatus(namespace string) (v1alpha1.RsyslogCollectorStatu
 	return rsyslogStatus, nil
 }
 
-func (cluster *ClusterLogging) getKibanaStatus() ([]v1alpha1.KibanaStatus, error) {
+func (cluster *ClusterLogging) getKibanaStatus() ([]logging.KibanaStatus, error) {
 
-	status := []v1alpha1.KibanaStatus{}
+	status := []logging.KibanaStatus{}
 
 	kibanaDeploymentList, err := utils.GetDeploymentList(cluster.Namespace, "logging-infra=kibana")
 	if err != nil {
@@ -105,7 +105,7 @@ func (cluster *ClusterLogging) getKibanaStatus() ([]v1alpha1.KibanaStatus, error
 		selectorValue.WriteString("component=")
 		selectorValue.WriteString(deployment.Name)
 
-		kibanaStatus := v1alpha1.KibanaStatus{
+		kibanaStatus := logging.KibanaStatus{
 			Deployment: deployment.Name,
 			Replicas:   *deployment.Spec.Replicas,
 		}
@@ -126,7 +126,7 @@ func (cluster *ClusterLogging) getKibanaStatus() ([]v1alpha1.KibanaStatus, error
 	return status, nil
 }
 
-func (cluster *ClusterLogging) getElasticsearchStatus() ([]v1alpha1.ElasticsearchStatus, error) {
+func (cluster *ClusterLogging) getElasticsearchStatus() ([]logging.ElasticsearchStatus, error) {
 
 	// we can scrape the status provided by the elasticsearch-operator
 	// get list of elasticsearch objects
@@ -138,7 +138,7 @@ func (cluster *ClusterLogging) getElasticsearchStatus() ([]v1alpha1.Elasticsearc
 	}
 
 	err := sdk.List(cluster.Namespace, esList)
-	status := []v1alpha1.ElasticsearchStatus{}
+	status := []logging.ElasticsearchStatus{}
 
 	if err != nil {
 		return status, fmt.Errorf("Unable to get Elasticsearches: %v", err)
@@ -147,7 +147,7 @@ func (cluster *ClusterLogging) getElasticsearchStatus() ([]v1alpha1.Elasticsearc
 	if len(esList.Items) != 0 {
 		for _, node := range esList.Items {
 
-			nodeStatus := v1alpha1.ElasticsearchStatus{
+			nodeStatus := logging.ElasticsearchStatus{
 				ClusterName:   node.Name,
 				NodeCount:     node.Spec.Nodes[0].NodeCount,
 				Deployments:   getDeploymentNames(node.Status),
@@ -164,21 +164,21 @@ func (cluster *ClusterLogging) getElasticsearchStatus() ([]v1alpha1.Elasticsearc
 	return status, nil
 }
 
-func getPodMap(node elasticsearch.ElasticsearchStatus) map[v1alpha1.ElasticsearchRoleType]v1alpha1.PodStateMap {
+func getPodMap(node elasticsearch.ElasticsearchStatus) map[logging.ElasticsearchRoleType]logging.PodStateMap {
 
-	return map[v1alpha1.ElasticsearchRoleType]v1alpha1.PodStateMap{
-		v1alpha1.ElasticsearchRoleTypeClient: translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleClient]),
-		v1alpha1.ElasticsearchRoleTypeData:   translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleData]),
-		v1alpha1.ElasticsearchRoleTypeMaster: translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleMaster]),
+	return map[logging.ElasticsearchRoleType]logging.PodStateMap{
+		logging.ElasticsearchRoleTypeClient: translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleClient]),
+		logging.ElasticsearchRoleTypeData:   translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleData]),
+		logging.ElasticsearchRoleTypeMaster: translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleMaster]),
 	}
 }
 
-func translatePodMap(podStateMap elasticsearch.PodStateMap) v1alpha1.PodStateMap {
+func translatePodMap(podStateMap elasticsearch.PodStateMap) logging.PodStateMap {
 
-	return v1alpha1.PodStateMap{
-		v1alpha1.PodStateTypeReady:    podStateMap[elasticsearch.PodStateTypeReady],
-		v1alpha1.PodStateTypeNotReady: podStateMap[elasticsearch.PodStateTypeNotReady],
-		v1alpha1.PodStateTypeFailed:   podStateMap[elasticsearch.PodStateTypeFailed],
+	return logging.PodStateMap{
+		logging.PodStateTypeReady:    podStateMap[elasticsearch.PodStateTypeReady],
+		logging.PodStateTypeNotReady: podStateMap[elasticsearch.PodStateTypeNotReady],
+		logging.PodStateTypeFailed:   podStateMap[elasticsearch.PodStateTypeFailed],
 	}
 }
 
@@ -215,25 +215,25 @@ func getStatefulSetNames(node elasticsearch.ElasticsearchStatus) []string {
 	return statefulsetNames
 }
 
-func podStateMap(podList []v1.Pod) v1alpha1.PodStateMap {
-	stateMap := map[v1alpha1.PodStateType][]string{
-		v1alpha1.PodStateTypeReady:    []string{},
-		v1alpha1.PodStateTypeNotReady: []string{},
-		v1alpha1.PodStateTypeFailed:   []string{},
+func podStateMap(podList []v1.Pod) logging.PodStateMap {
+	stateMap := map[logging.PodStateType][]string{
+		logging.PodStateTypeReady:    []string{},
+		logging.PodStateTypeNotReady: []string{},
+		logging.PodStateTypeFailed:   []string{},
 	}
 
 	for _, pod := range podList {
 		switch pod.Status.Phase {
 		case v1.PodPending:
-			stateMap[v1alpha1.PodStateTypeNotReady] = append(stateMap[v1alpha1.PodStateTypeNotReady], pod.Name)
+			stateMap[logging.PodStateTypeNotReady] = append(stateMap[logging.PodStateTypeNotReady], pod.Name)
 		case v1.PodRunning:
 			if isPodReady(pod) {
-				stateMap[v1alpha1.PodStateTypeReady] = append(stateMap[v1alpha1.PodStateTypeReady], pod.Name)
+				stateMap[logging.PodStateTypeReady] = append(stateMap[logging.PodStateTypeReady], pod.Name)
 			} else {
-				stateMap[v1alpha1.PodStateTypeNotReady] = append(stateMap[v1alpha1.PodStateTypeNotReady], pod.Name)
+				stateMap[logging.PodStateTypeNotReady] = append(stateMap[logging.PodStateTypeNotReady], pod.Name)
 			}
 		case v1.PodFailed:
-			stateMap[v1alpha1.PodStateTypeFailed] = append(stateMap[v1alpha1.PodStateTypeFailed], pod.Name)
+			stateMap[logging.PodStateTypeFailed] = append(stateMap[logging.PodStateTypeFailed], pod.Name)
 		}
 	}
 

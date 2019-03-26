@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/runtime"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"

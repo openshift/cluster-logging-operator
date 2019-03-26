@@ -75,7 +75,7 @@ clean:
 
 image: imagebuilder
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] && [ $${SKIP_BUILD:-false} = false ] ; \
-	then $(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS) ; \
+	then $(IMAGE_BUILDER) $(IMAGE_BUILDER_OPTS) -t $(IMAGE_TAG) . ; \
 	fi
 
 fmt:

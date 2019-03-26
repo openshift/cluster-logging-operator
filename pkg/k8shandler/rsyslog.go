@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

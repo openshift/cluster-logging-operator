@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

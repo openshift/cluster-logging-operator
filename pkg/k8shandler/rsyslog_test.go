@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -13,12 +13,12 @@ func TestNewRsyslogPodSpecWhenSelectorIsDefined(t *testing.T) {
 	expSelector := map[string]string{
 		"foo": "bar",
 	}
-	cluster := &v1alpha1.ClusterLogging{
-		Spec: v1alpha1.ClusterLoggingSpec{
-			Collection: v1alpha1.CollectionSpec{
-				v1alpha1.LogCollectionSpec{
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
 					Type: "rsyslog",
-					RsyslogSpec: v1alpha1.RsyslogSpec{
+					RsyslogSpec: logging.RsyslogSpec{
 						NodeSelector: expSelector,
 					},
 				},
@@ -33,7 +33,7 @@ func TestNewRsyslogPodSpecWhenSelectorIsDefined(t *testing.T) {
 }
 func TestNewRsyslogPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
-	cluster := &v1alpha1.ClusterLogging{}
+	cluster := &logging.ClusterLogging{}
 	podSpec := newRsyslogPodSpec(cluster, "test-app-name", "test-infra-name")
 
 	if len(podSpec.Containers) != 1 {
@@ -58,12 +58,12 @@ func TestNewRsyslogPodSpecWhenResourcesAreDefined(t *testing.T) {
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
 	requestCPU := resource.MustParse("500m")
-	cluster := &v1alpha1.ClusterLogging{
-		Spec: v1alpha1.ClusterLoggingSpec{
-			Collection: v1alpha1.CollectionSpec{
-				v1alpha1.LogCollectionSpec{
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
 					Type: "rsyslog",
-					RsyslogSpec: v1alpha1.RsyslogSpec{
+					RsyslogSpec: logging.RsyslogSpec{
 						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
 					},
 				},

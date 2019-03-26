@@ -2,6 +2,7 @@
 
 CFG_DIR=/etc/rsyslog.d
 ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"false"}
+export MERGE_JSON_LOG=${MERGE_JSON_LOG:-true}
 
 rsyslogargs="-f /etc/rsyslog/conf/rsyslog.conf -n"
 if [[ $VERBOSE ]]; then

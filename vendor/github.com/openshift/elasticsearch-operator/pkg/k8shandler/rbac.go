@@ -7,13 +7,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/util/retry"
 
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	rbac "k8s.io/api/rbac/v1"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func CreateOrUpdateRBAC(dpl *v1alpha1.Elasticsearch) error {
+func CreateOrUpdateRBAC(dpl *api.Elasticsearch) error {
 
 	owner := getOwnerRef(dpl)
 

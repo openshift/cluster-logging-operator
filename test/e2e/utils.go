@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -148,7 +148,7 @@ func CheckForCronJobImageName(t *testing.T, kubeclient kubernetes.Interface, nam
 }
 
 func CheckForElasticsearchImageName(t *testing.T, client framework.FrameworkClient, namespace, name string, imageName string, retryInterval, timeout time.Duration) error {
-	elasticsearch := &v1alpha1.Elasticsearch{}
+	elasticsearch := &elasticsearch.Elasticsearch{}
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		err = client.Get(context.Background(), dynclient.ObjectKey{

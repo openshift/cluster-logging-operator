@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	"github.com/openshift/elasticsearch-operator/pkg/k8shandler"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 
@@ -20,7 +20,7 @@ type Handler struct{}
 func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 
 	switch o := event.Object.(type) {
-	case *v1alpha1.Elasticsearch:
+	case *api.Elasticsearch:
 		if event.Deleted {
 			Flush(o)
 			return nil
@@ -31,15 +31,15 @@ func (h *Handler) Handle(ctx context.Context, event sdk.Event) error {
 	return nil
 }
 
-func Flush(cluster *v1alpha1.Elasticsearch) {
+func Flush(cluster *api.Elasticsearch) {
 	logrus.Infof("Flushing nodes for cluster %v in %v", cluster.Name, cluster.Namespace)
 	k8shandler.FlushNodes(cluster.Name, cluster.Namespace)
 }
 
 // Reconcile reconciles the cluster's state to the spec specified
-func Reconcile(cluster *v1alpha1.Elasticsearch) (err error) {
+func Reconcile(cluster *api.Elasticsearch) (err error) {
 
-	if cluster.Spec.ManagementState == v1alpha1.ManagementStateUnmanaged {
+	if cluster.Spec.ManagementState == api.ManagementStateUnmanaged {
 		return nil
 	}
 

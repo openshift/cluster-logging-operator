@@ -31,8 +31,8 @@
     ".",
     "log"
   ]
-  revision = "85d198d05a92d31823b852b4a5928114912e8949"
-  version = "v2.9.0"
+  revision = "e64cccdfee8896c036b8a88d560c5e3ae15d904d"
+  version = "v2.9.1"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -44,25 +44,25 @@
   name = "github.com/go-openapi/jsonpointer"
   packages = ["."]
   revision = "ef5f0afec364d3b9396b7b77b43dbe26bf1f8004"
-  version = "v0.18.0"
+  version = "v0.19.0"
 
 [[projects]]
   name = "github.com/go-openapi/jsonreference"
   packages = ["."]
   revision = "8483a886a90412cd6858df4ea3483dce9c8e35a3"
-  version = "v0.18.0"
+  version = "v0.19.0"
 
 [[projects]]
   name = "github.com/go-openapi/spec"
   packages = ["."]
-  revision = "5b6cdde3200976e3ecceb2868706ee39b6aff3e4"
-  version = "v0.18.0"
+  revision = "53d776530bf78a11b03a7b52dd8a083086b045e5"
+  version = "v0.19.0"
 
 [[projects]]
   name = "github.com/go-openapi/swag"
   packages = ["."]
-  revision = "1d29f06aebd59ccdf11ae04aa0334ded96e2d909"
-  version = "v0.18.0"
+  revision = "b3e2804c8535ee0d1b89320afd98474d5b8e9e3b"
+  version = "v0.19.0"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -92,10 +92,10 @@
   version = "v1.3.1"
 
 [[projects]]
-  branch = "master"
   name = "github.com/google/btree"
   packages = ["."]
   revision = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -184,13 +184,13 @@
     "oauth/v1",
     "route/v1"
   ]
-  revision = "6820a28f1dcf8f036f94a56164dfaeb842e6b28a"
+  revision = "ad6339a9e4ce20fffe56b91dc9c9ee7a4d04ebd7"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
-  packages = ["pkg/apis/elasticsearch/v1alpha1"]
-  revision = "b8b3e00a65dc44ccfcd99aab059f2a8fd9b5cded"
+  packages = ["pkg/apis/elasticsearch/v1"]
+  revision = "91b07bf55d9cb724a57052a2330867694a173c69"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -254,7 +254,7 @@
     "nfs",
     "xfs"
   ]
-  revision = "40f3c57fb1983891f95378042bd0bfd590f52384"
+  revision = "55ae3d9d557340b5bc24cd8aa5f6fa2c2ab31352"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -272,7 +272,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "a1f597ede03a7bef967a422b5b3a5bd08805a01e"
+  revision = "a5d413f7728c81fb97d96a2b722368945f651e78"
 
 [[projects]]
   branch = "master"
@@ -283,7 +283,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "1272bf9dcd53ea65c09668fb4c76e65deb740072"
+  revision = "710a502c58a2a4b2d7417a4e24ccb96d8dc13fa3"
 
 [[projects]]
   branch = "master"
@@ -292,7 +292,7 @@
     "unix",
     "windows"
   ]
-  revision = "6c81ef8f67ca3f42fc9cd71dfbd5f35b0c4b5771"
+  revision = "f49334f85ddcf0f08d7fb6dd7363e9e6d6b777eb"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -328,7 +328,6 @@
   packages = [
     "go/ast/astutil",
     "go/gcexportdata",
-    "go/internal/cgo",
     "go/internal/gcimporter",
     "go/internal/packagesdriver",
     "go/packages",
@@ -339,7 +338,7 @@
     "internal/module",
     "internal/semver"
   ]
-  revision = "3f1ed9edd1b43b011064eb59e5c9e73f5537ddd9"
+  revision = "79af862e6737e9b6ea995ccf9e8eaccd41ef1523"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -573,7 +572,7 @@
     "pkg/generators/rules",
     "pkg/util/sets"
   ]
-  revision = "15615b16d372105f0c69ff47dfe7402926a65aaa"
+  revision = "5e45bb682580c9be5ffa4d27d367f0eeba125c7b"
 
 [[projects]]
   name = "sigs.k8s.io/controller-runtime"
@@ -586,6 +585,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f98a4ebc20ffb5e19a90557849d0fa029d94b08493c0dd7e1d652fe68782d258"
+  inputs-digest = "f3e4fa93bef5fe2944818dfb6fb6654b3811832f92ef49d8caf6b54c3c52af92"
   solver-name = "gps-cdcl"
   solver-version = 1

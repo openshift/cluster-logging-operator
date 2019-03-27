@@ -4,14 +4,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
-	cluster := &v1alpha1.ClusterLogging{}
+	cluster := &logging.ClusterLogging{}
 	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
 
 	if len(podSpec.Containers) != 1 {
@@ -38,12 +38,12 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
 	requestCPU := resource.MustParse("500m")
-	cluster := &v1alpha1.ClusterLogging{
-		Spec: v1alpha1.ClusterLoggingSpec{
-			Collection: v1alpha1.CollectionSpec{
-				v1alpha1.LogCollectionSpec{
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
 					Type: "fluentd",
-					FluentdSpec: v1alpha1.FluentdSpec{
+					FluentdSpec: logging.FluentdSpec{
 						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
 					},
 				},
@@ -72,12 +72,12 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 	expSelector := map[string]string{
 		"foo": "bar",
 	}
-	cluster := &v1alpha1.ClusterLogging{
-		Spec: v1alpha1.ClusterLoggingSpec{
-			Collection: v1alpha1.CollectionSpec{
-				v1alpha1.LogCollectionSpec{
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
 					Type: "fluentd",
-					FluentdSpec: v1alpha1.FluentdSpec{
+					FluentdSpec: logging.FluentdSpec{
 						NodeSelector: expSelector,
 					},
 				},

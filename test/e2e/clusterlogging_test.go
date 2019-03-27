@@ -10,7 +10,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	v1 "k8s.io/api/core/v1"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

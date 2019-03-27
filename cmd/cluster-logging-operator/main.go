@@ -22,7 +22,7 @@ func printVersion() {
 func main() {
 	printVersion()
 
-	resource := "logging.openshift.io/v1alpha1"
+	resource := "logging.openshift.io/v1"
 	kind := "ClusterLogging"
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {

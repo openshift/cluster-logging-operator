@@ -11,9 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	goctx "context"
-	v1 "k8s.io/api/core/v1"
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -126,7 +126,8 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 			Nodes: []elasticsearch.ElasticsearchNode{
 				esDataNode,
 			},
-			ManagementState: elasticsearch.ManagementStateManaged,
+			ManagementState:  elasticsearch.ManagementStateManaged,
+			RedundancyPolicy: elasticsearch.ZeroRedundancy,
 		},
 	}
 	err = f.Client.Create(goctx.TODO(), exampleElasticsearch, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
@@ -203,6 +204,19 @@ func elasticsearchFullClusterTest(t *testing.T, f *framework.Framework, ctx *fra
 	err = utils.WaitForStatefulset(t, f.KubeClient, namespace, "example-elasticsearch-clientmaster-1", 2, retryInterval, time.Second*30)
 	if err == nil {
 		return fmt.Errorf("unexpected statefulset replica count for example-elasticsearch-clientmaster-1 found")
+	}
+
+	if err = f.Client.Get(goctx.TODO(), exampleName, exampleElasticsearch); err != nil {
+		return fmt.Errorf("failed to get exampleElasticsearch: %v", err)
+	}
+
+	for _, condition := range exampleElasticsearch.Status.Conditions {
+		if condition.Type == elasticsearch.InvalidMasters {
+			if condition.Status == v1.ConditionFalse ||
+				condition.Status == "" {
+				return fmt.Errorf("unexpected status condition for example-elasticsearch found: %v", condition.Status)
+			}
+		}
 	}
 
 	t.Log("Finished successfully")

@@ -6,12 +6,12 @@ import (
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -28,9 +28,9 @@ type statefulSetNode struct {
 	priorReplicaCount int32
 }
 
-func (statefulSetNode *statefulSetNode) populateReference(nodeName string, node v1alpha1.ElasticsearchNode, cluster *v1alpha1.Elasticsearch, roleMap map[v1alpha1.ElasticsearchNodeRole]bool, replicas int32) {
+func (statefulSetNode *statefulSetNode) populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32) {
 
-	labels := newLabels(cluster.Name, roleMap)
+	labels := newLabels(cluster.Name, nodeName, roleMap)
 
 	statefulSet := apps.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -49,7 +49,7 @@ func (statefulSetNode *statefulSetNode) populateReference(nodeName string, node 
 	statefulSet.Spec = apps.StatefulSetSpec{
 		Replicas: &replicas,
 		Selector: &metav1.LabelSelector{
-			MatchLabels: newLabelSelector(cluster.Name, roleMap),
+			MatchLabels: newLabelSelector(cluster.Name, nodeName, roleMap),
 		},
 		Template: newPodTemplateSpec(nodeName, cluster.Name, cluster.Namespace, node, cluster.Spec.Spec, labels, roleMap),
 		UpdateStrategy: apps.StatefulSetUpdateStrategy{
@@ -71,9 +71,9 @@ func (current *statefulSetNode) updateReference(desired NodeTypeInterface) {
 	current.self = desired.(*statefulSetNode).self
 }
 
-func (node *statefulSetNode) state() v1alpha1.ElasticsearchNodeStatus {
-	rolloutForReload := v1.ConditionFalse
-	rolloutForUpdate := v1.ConditionFalse
+func (node *statefulSetNode) state() api.ElasticsearchNodeStatus {
+	var rolloutForReload v1.ConditionStatus
+	var rolloutForUpdate v1.ConditionStatus
 
 	// see if we need to update the deployment object
 	if node.isChanged() {
@@ -92,9 +92,9 @@ func (node *statefulSetNode) state() v1alpha1.ElasticsearchNodeStatus {
 		rolloutForReload = v1.ConditionTrue
 	}
 
-	return v1alpha1.ElasticsearchNodeStatus{
+	return api.ElasticsearchNodeStatus{
 		StatefulSetName: node.self.Name,
-		UpgradeStatus: v1alpha1.ElasticsearchNodeUpgradeStatus{
+		UpgradeStatus: api.ElasticsearchNodeUpgradeStatus{
 			ScheduledForUpgrade:  rolloutForUpdate,
 			ScheduledForRedeploy: rolloutForReload,
 		},
@@ -207,7 +207,7 @@ func (node *statefulSetNode) replicaCount() (error, int32) {
 	return nil, node.self.Status.Replicas
 }
 
-func (node *statefulSetNode) restart(upgradeStatus *v1alpha1.ElasticsearchNodeStatus) {
+func (node *statefulSetNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) {
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
 		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
@@ -233,14 +233,14 @@ func (node *statefulSetNode) restart(upgradeStatus *v1alpha1.ElasticsearchNodeSt
 	}
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
-		upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.ControllerUpdated {
+		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
 
 		// nothing to do here -- just maintaing a framework structure
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.NodeRestarting
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
 	}
 
-	if upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.NodeRestarting {
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
 
 		err, ordinal := node.partition()
 		if err != nil {
@@ -281,13 +281,13 @@ func (node *statefulSetNode) restart(upgradeStatus *v1alpha1.ElasticsearchNodeSt
 
 		node.refreshHashes()
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.RecoveringData
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.RecoveringData
 	}
 
-	if upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.RecoveringData {
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.ControllerUpdated
-		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionFalse
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
+		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
 	}
 }
 
@@ -308,7 +308,7 @@ func (node *statefulSetNode) create() error {
 	return nil
 }
 
-func (node *statefulSetNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeStatus) error {
+func (node *statefulSetNode) update(upgradeStatus *api.ElasticsearchNodeStatus) error {
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
 		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
 			logrus.Infof("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
@@ -332,7 +332,7 @@ func (node *statefulSetNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeSta
 	}
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
-		upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.ControllerUpdated {
+		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
 
 		// see if we need to update the deployment object and verify we have latest to update
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -354,10 +354,10 @@ func (node *statefulSetNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeSta
 			return retryErr
 		}
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.NodeRestarting
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
 	}
 
-	if upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.NodeRestarting {
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
 
 		err, ordinal := node.partition()
 		if err != nil {
@@ -394,13 +394,13 @@ func (node *statefulSetNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeSta
 
 		node.refreshHashes()
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.RecoveringData
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.RecoveringData
 	}
 
-	if upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.RecoveringData {
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.ControllerUpdated
-		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionFalse
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
+		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
 	}
 
 	return nil
@@ -427,8 +427,6 @@ func (node *statefulSetNode) scale() {
 		// if it doesn't exist, return true
 		return
 	}
-
-	logrus.Infof("Replica for desired: %d ; replica for current: %d", *desired.Spec.Replicas, *node.self.Spec.Replicas)
 
 	if *desired.Spec.Replicas != *node.self.Spec.Replicas {
 		node.self.Spec.Replicas = desired.Spec.Replicas

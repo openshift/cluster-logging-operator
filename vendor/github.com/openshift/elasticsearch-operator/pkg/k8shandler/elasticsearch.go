@@ -12,11 +12,13 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 
-	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +37,7 @@ type esCurlStruct struct {
 	Error        error
 }
 
-func SetShardAllocation(clusterName, namespace string, state v1alpha1.ShardAllocationState) (bool, error) {
+func SetShardAllocation(clusterName, namespace string, state api.ShardAllocationState) (bool, error) {
 
 	payload := &esCurlStruct{
 		Method:      http.MethodPut,
@@ -62,23 +64,206 @@ func GetShardAllocation(clusterName, namespace string) (string, error) {
 	curlESService(clusterName, namespace, payload)
 
 	allocation := ""
-	if payload.ResponseBody["transient"] != nil {
-		transientBody := payload.ResponseBody["transient"].(map[string]interface{})
-		if transientBody["cluster"] != nil {
-			clusterBody := transientBody["cluster"].(map[string]interface{})
-			if clusterBody["routing"] != nil {
-				routingBody := clusterBody["routing"].(map[string]interface{})
-				if routingBody["allocation"] != nil {
-					allocationBody := routingBody["allocation"].(map[string]interface{})
-					if allocationBody["enable"] != nil {
-						allocation = allocationBody["enable"].(string)
-					}
-				}
+	value := walkInterfaceMap("transient.cluster.routing.allocation.enable", payload.ResponseBody)
+
+	if value != nil {
+		allocation = value.(string)
+	}
+
+	return allocation, payload.Error
+}
+
+func GetNodeDiskUsage(clusterName, namespace, nodeName string) (string, float64, error) {
+
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		Uri:    "_cat/nodes?h=name,du,dup",
+	}
+
+	curlESService(clusterName, namespace, payload)
+
+	usage := ""
+	percentUsage := float64(-1)
+
+	if payload.ResponseBody["results"] != nil {
+		response := parseNodeDiskUsage(payload.ResponseBody["results"].(string))
+		if nodeResponse, ok := response[nodeName]; ok {
+			nodeResponseBody := nodeResponse.(map[string]interface{})
+
+			if nodeResponseBody["used"] != nil {
+				usage = nodeResponseBody["used"].(string)
+			}
+
+			if nodeResponseBody["used_percent"] != nil {
+				percentUsage = nodeResponseBody["used_percent"].(float64)
 			}
 		}
 	}
 
-	return allocation, payload.Error
+	return usage, percentUsage, payload.Error
+}
+
+func GetThresholdEnabled(clusterName, namespace string) (bool, error) {
+
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		Uri:    "_cluster/settings?include_defaults=true&filter_path=defaults.cluster.routing.allocation.disk",
+	}
+
+	curlESService(clusterName, namespace, payload)
+
+	var enabled interface{}
+
+	if value := walkInterfaceMap(
+		"defaults.cluster.routing.allocation.disk.threshold_enabled",
+		payload.ResponseBody); enabled != nil {
+
+		enabled = value
+	}
+
+	if value := walkInterfaceMap(
+		"persistent.cluster.routing.allocation.disk.threshold_enabled",
+		payload.ResponseBody); value != nil {
+
+		enabled = value
+	}
+
+	if value := walkInterfaceMap(
+		"transient.cluster.routing.allocation.disk.threshold_enabled",
+		payload.ResponseBody); value != nil {
+
+		enabled = value
+	}
+
+	if enabled != nil {
+		enabled, _ = strconv.ParseBool(enabled.(string))
+	} else {
+		enabled = false
+	}
+
+	return enabled.(bool), payload.Error
+}
+
+func GetDiskWatermarks(clusterName, namespace string) (interface{}, interface{}, error) {
+
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		Uri:    "_cluster/settings?include_defaults=true&filter_path=defaults.cluster.routing.allocation.disk",
+	}
+
+	curlESService(clusterName, namespace, payload)
+
+	var low interface{}
+	var high interface{}
+
+	if value := walkInterfaceMap(
+		"defaults.cluster.routing.allocation.disk.watermark.low",
+		payload.ResponseBody); value != nil {
+
+		low = value
+	}
+
+	if value := walkInterfaceMap(
+		"defaults.cluster.routing.allocation.disk.watermark.high",
+		payload.ResponseBody); value != nil {
+
+		high = value
+	}
+
+	if value := walkInterfaceMap(
+		"persistent.cluster.routing.allocation.disk.watermark.low",
+		payload.ResponseBody); value != nil {
+
+		low = value
+	}
+
+	if value := walkInterfaceMap(
+		"persistent.cluster.routing.allocation.disk.watermark.high",
+		payload.ResponseBody); value != nil {
+
+		high = value
+	}
+
+	if value := walkInterfaceMap(
+		"transient.cluster.routing.allocation.disk.watermark.low",
+		payload.ResponseBody); value != nil {
+
+		low = value
+	}
+
+	if value := walkInterfaceMap(
+		"transient.cluster.routing.allocation.disk.watermark.high",
+		payload.ResponseBody); value != nil {
+
+		high = value
+	}
+
+	if low != nil {
+		if strings.HasSuffix(low.(string), "%") {
+			low, _ = strconv.ParseFloat(strings.TrimSuffix(low.(string), "%"), 64)
+		} else {
+			if strings.HasSuffix(low.(string), "b") {
+				low = strings.TrimSuffix(low.(string), "b")
+			}
+		}
+	}
+
+	if high != nil {
+		if strings.HasSuffix(high.(string), "%") {
+			high, _ = strconv.ParseFloat(strings.TrimSuffix(high.(string), "%"), 64)
+		} else {
+			if strings.HasSuffix(high.(string), "b") {
+				high = strings.TrimSuffix(high.(string), "b")
+			}
+		}
+	}
+
+	return low, high, payload.Error
+}
+
+func walkInterfaceMap(path string, interfaceMap map[string]interface{}) interface{} {
+
+	current := interfaceMap
+	keys := strings.Split(path, ".")
+	keyCount := len(keys)
+
+	for index, key := range keys {
+		if current[key] != nil {
+			if index+1 < keyCount {
+				current = current[key].(map[string]interface{})
+			} else {
+				return current[key]
+			}
+		} else {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func parseNodeDiskUsage(results string) map[string]interface{} {
+
+	nodeDiskUsage := make(map[string]interface{})
+
+	for _, result := range strings.Split(results, "\n") {
+		fields := strings.Split(result, " ")
+
+		if len(fields) == 3 {
+
+			percent, err := strconv.ParseFloat(fields[2], 64)
+			if err != nil {
+				percent = float64(-1)
+			}
+
+			nodeDiskUsage[fields[0]] = map[string]interface{}{
+				"used":         strings.ToUpper(strings.TrimSuffix(fields[1], "b")),
+				"used_percent": percent,
+			}
+		}
+	}
+
+	return nodeDiskUsage
 }
 
 func SetMinMasterNodes(clusterName, namespace string, numberMasters int32) (bool, error) {
@@ -245,7 +430,8 @@ func getMapFromBody(body io.ReadCloser) map[string]interface{} {
 	var results map[string]interface{}
 	err := json.Unmarshal([]byte(buf.String()), &results)
 	if err != nil {
-
+		results = make(map[string]interface{})
+		results["results"] = buf.String()
 	}
 
 	return results

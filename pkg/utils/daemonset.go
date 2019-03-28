@@ -11,7 +11,12 @@ import (
 )
 
 //NewDaemonSet stubs an instance of a daemonset
-func NewDaemonSet(daemonsetName string, namespace string, loggingComponent string, component string, podSpec core.PodSpec) *apps.DaemonSet {
+func NewDaemonSet(daemonsetName, namespace, loggingComponent, component string, podSpec core.PodSpec) *apps.DaemonSet {
+	labels := map[string]string{
+		"provider":      "openshift",
+		"component":     component,
+		"logging-infra": loggingComponent,
+	}
 	return &apps.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
@@ -20,28 +25,16 @@ func NewDaemonSet(daemonsetName string, namespace string, loggingComponent strin
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      daemonsetName,
 			Namespace: namespace,
-			Labels: map[string]string{
-				"provider":      "openshift",
-				"component":     component,
-				"logging-infra": loggingComponent,
-			},
+			Labels:    labels,
 		},
 		Spec: apps.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"provider":      "openshift",
-					"component":     component,
-					"logging-infra": loggingComponent,
-				},
+				MatchLabels: labels,
 			},
 			Template: core.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: daemonsetName,
-					Labels: map[string]string{
-						"provider":      "openshift",
-						"component":     component,
-						"logging-infra": loggingComponent,
-					},
+					Name:   daemonsetName,
+					Labels: labels,
 					Annotations: map[string]string{
 						"scheduler.alpha.kubernetes.io/critical-pod": "",
 					},
@@ -52,7 +45,6 @@ func NewDaemonSet(daemonsetName string, namespace string, loggingComponent strin
 				Type:          apps.RollingUpdateDaemonSetStrategyType,
 				RollingUpdate: &apps.RollingUpdateDaemonSet{},
 			},
-			MinReadySeconds: 600,
 		},
 	}
 }

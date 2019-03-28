@@ -14,7 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const fluentdAlertsFile = "/usr/bin/files/fluentd_prometheus_alerts.yaml"
+const fluentdAlertsFile = "/etc/fluentd/prometheus/fluentd_prometheus_alerts.yaml"
+
 
 func BuildPrometheusRule(ruleName string, namespace string) (*monitoringv1.PrometheusRule, error) {
 	alertsRuleFile, ok := os.LookupEnv("ALERTS_FILE_PATH")
@@ -22,19 +23,19 @@ func BuildPrometheusRule(ruleName string, namespace string) (*monitoringv1.Prome
 		alertsRuleFile = fluentdAlertsFile
 	}
 
-	alertsRuleSpec, err := ruleSpec(alertsRuleFile)
+	alertsRuleSpec, err := newPrometheusRuleSpecFrom(alertsRuleFile)
 	if err != nil {
 		return nil, err
 	}
 
-	rule := utils.PrometheusRule(ruleName, namespace)
+	rule := utils.NewPrometheusRule(ruleName, namespace)
 	rule.Spec = *alertsRuleSpec
 
 	return rule, nil
 }
 
-func ruleSpec(filePath string) (*monitoringv1.PrometheusRuleSpec, error) {
-	if err := checkFile(filePath); err != nil {
+func newPrometheusRuleSpecFrom(filePath string) (*monitoringv1.PrometheusRuleSpec, error) {
+	if err := verifyFileExists(filePath); err != nil {
 		return nil, err
 	}
 	fileContent, err := ioutil.ReadFile(filePath)
@@ -48,7 +49,7 @@ func ruleSpec(filePath string) (*monitoringv1.PrometheusRuleSpec, error) {
 	return &ruleSpec, nil
 }
 
-func checkFile(filePath string) error {
+func verifyFileExists(filePath string) error {
 	_, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -60,7 +61,7 @@ func checkFile(filePath string) error {
 }
 
 func createOrUpdateServiceMonitor(cluster *ClusterLogging) error {
-	serviceMonitor := utils.ServiceMonitor("fluentd", cluster.Namespace)
+	serviceMonitor := utils.NewServiceMonitor("fluentd", cluster.Namespace)
 
 	endpoint := monitoringv1.Endpoint{
 		Port:   metricsPortName,

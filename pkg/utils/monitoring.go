@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func ServiceMonitor(serviceMonitorName, namespace string) *monitoringv1.ServiceMonitor {
+func NewServiceMonitor(serviceMonitorName, namespace string) *monitoringv1.ServiceMonitor {
 	return &monitoringv1.ServiceMonitor{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       monitoringv1.ServiceMonitorsKind,
@@ -26,7 +26,7 @@ func ServiceMonitor(serviceMonitorName, namespace string) *monitoringv1.ServiceM
 
 func RemoveServiceMonitor(namespace string, smName string) error {
 
-	serviceMonitor := ServiceMonitor(smName, namespace)
+	serviceMonitor := NewServiceMonitor(smName, namespace)
 
 	err := sdk.Delete(serviceMonitor)
 	if err != nil && !errors.IsNotFound(err) {
@@ -36,7 +36,7 @@ func RemoveServiceMonitor(namespace string, smName string) error {
 	return nil
 }
 
-func PrometheusRule(ruleName, namespace string) *monitoringv1.PrometheusRule {
+func NewPrometheusRule(ruleName, namespace string) *monitoringv1.PrometheusRule {
 	return &monitoringv1.PrometheusRule{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       monitoringv1.PrometheusRuleKind,
@@ -51,7 +51,7 @@ func PrometheusRule(ruleName, namespace string) *monitoringv1.PrometheusRule {
 
 func RemovePrometheusRule(namespace string, ruleName string) error {
 
-	promRule := PrometheusRule(ruleName, namespace)
+	promRule := NewPrometheusRule(ruleName, namespace)
 
 	err := sdk.Delete(promRule)
 	if err != nil && !errors.IsNotFound(err) {

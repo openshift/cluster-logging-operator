@@ -98,13 +98,6 @@ func (c *convert) insertTypeDef(name string, model proto.Schema) {
 func (c *convert) makeRef(model proto.Schema) schema.TypeRef {
 	var tr schema.TypeRef
 	if r, ok := model.(*proto.Ref); ok {
-		if r.Reference() == "io.k8s.apimachinery.pkg.runtime.RawExtension" {
-			return schema.TypeRef{
-				Inlined: schema.Atom{
-					Untyped: &schema.Untyped{},
-				},
-			}
-		}
 		// reference a named type
 		_, n := path.Split(r.Reference())
 		tr.NamedType = &n
@@ -220,18 +213,10 @@ func (c *convert) VisitPrimitive(p *proto.Primitive) {
 	case proto.Number:
 		a.Scalar = ptr(schema.Numeric)
 	case proto.String:
-		switch p.Format {
-		case "":
+		if p.Format == "int-or-string" {
+			a.Untyped = &schema.Untyped{}
+		} else {
 			a.Scalar = ptr(schema.String)
-		case "byte":
-			// byte really means []byte and is encoded as a string.
-			a.Scalar = ptr(schema.String)
-		case "int-or-string":
-			a.Untyped = &schema.Untyped{}
-		case "date-time":
-			a.Untyped = &schema.Untyped{}
-		default:
-			a.Untyped = &schema.Untyped{}
 		}
 	case proto.Boolean:
 		a.Scalar = ptr(schema.Boolean)

@@ -28,8 +28,7 @@ import (
 )
 
 var (
-	openAPIPath           = filepath.Join("testdata", "swagger.json")
-	fakeSchema            = prototesting.Fake{Path: openAPIPath}
+	fakeSchema            = prototesting.Fake{Path: filepath.Join("testdata", "swagger.json")}
 	expectedNewSchemaPath = filepath.Join("testdata", "new-schema.yaml")
 )
 
@@ -51,6 +50,7 @@ func TestToSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Log(string(got))
 
 	expect, err := ioutil.ReadFile(expectedNewSchemaPath)
 	if err != nil {
@@ -59,10 +59,6 @@ func TestToSchema(t *testing.T) {
 
 	if string(expect) != string(got) {
 		t.Errorf("Computed schema did not match %q.", expectedNewSchemaPath)
-		t.Logf("To recompute this file, run:\n\tgo run ./cmd/openapi2smd/openapi2smd.go < %q > %q",
-			filepath.Join("pkg", "schemaconv", openAPIPath),
-			filepath.Join("pkg", "schemaconv", expectedNewSchemaPath),
-		)
-		t.Log("You can then use `git diff` to see the changes.")
+		t.Logf("To recompute this file, run:\n\tgo run ./cmd/openapi2smd/openapi2smd.go < pkg/util/proto/testdata/swagger.json > pkg/schemaconv/testdata/new-schema.yaml")
 	}
 }

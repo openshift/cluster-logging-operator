@@ -40,7 +40,7 @@ objects:
                     fieldPath: metadata.namespace
               - name: OPERATOR_NAME
                 value: "elasticsearch-operator"
-- apiVersion: "logging.openshift.io/v1alpha1"
+- apiVersion: "logging.openshift.io/v1"
   kind: "Elasticsearch"
   metadata:
     name: ${ELASTICSEARCH_CLUSTER_NAME}

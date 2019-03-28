@@ -6,10 +6,10 @@ import (
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/retry"
 
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 )
 
 var wrongConfig bool
@@ -24,7 +24,7 @@ func nodeMapKey(clusterName, namespace string) string {
 }
 
 // CreateOrUpdateElasticsearchCluster creates an Elasticsearch deployment
-func CreateOrUpdateElasticsearchCluster(cluster *v1alpha1.Elasticsearch) error {
+func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 
 	// Verify that we didn't scale up too many masters
 	err := isValidConf(cluster)
@@ -171,7 +171,7 @@ func CreateOrUpdateElasticsearchCluster(cluster *v1alpha1.Elasticsearch) error {
 	return UpdateClusterStatus(cluster)
 }
 
-func updateMinMasters(cluster *v1alpha1.Elasticsearch) {
+func updateMinMasters(cluster *api.Elasticsearch) {
 	// do as best effort -- whenever we create a node update min masters (if required)
 
 	currentMasterCount, err := GetMinMasterNodes(cluster.Name, cluster.Namespace)
@@ -192,7 +192,7 @@ func updateMinMasters(cluster *v1alpha1.Elasticsearch) {
 	}
 }
 
-func getNodeUpgradeInProgress(cluster *v1alpha1.Elasticsearch) NodeTypeInterface {
+func getNodeUpgradeInProgress(cluster *api.Elasticsearch) NodeTypeInterface {
 	for _, node := range cluster.Status.Nodes {
 		if node.UpgradeStatus.UnderUpgrade == v1.ConditionTrue {
 			for _, nodeTypeInterface := range nodes[nodeMapKey(cluster.Name, cluster.Namespace)] {
@@ -207,7 +207,7 @@ func getNodeUpgradeInProgress(cluster *v1alpha1.Elasticsearch) NodeTypeInterface
 	return nil
 }
 
-func getNodes(cluster *v1alpha1.Elasticsearch) {
+func getNodes(cluster *api.Elasticsearch) {
 
 	if nodes == nil {
 		nodes = make(map[string][]NodeTypeInterface)
@@ -229,7 +229,7 @@ func getNodes(cluster *v1alpha1.Elasticsearch) {
 	}
 }
 
-func getScheduledUpgradeNodes(cluster *v1alpha1.Elasticsearch) []NodeTypeInterface {
+func getScheduledUpgradeNodes(cluster *api.Elasticsearch) []NodeTypeInterface {
 	upgradeNodes := []NodeTypeInterface{}
 
 	for _, node := range cluster.Status.Nodes {
@@ -246,12 +246,13 @@ func getScheduledUpgradeNodes(cluster *v1alpha1.Elasticsearch) []NodeTypeInterfa
 	return upgradeNodes
 }
 
-func getScheduledRedeployOnlyNodes(cluster *v1alpha1.Elasticsearch) []NodeTypeInterface {
+func getScheduledRedeployOnlyNodes(cluster *api.Elasticsearch) []NodeTypeInterface {
 	redeployNodes := []NodeTypeInterface{}
 
 	for _, node := range cluster.Status.Nodes {
 		if node.UpgradeStatus.ScheduledForRedeploy == v1.ConditionTrue &&
-			node.UpgradeStatus.ScheduledForUpgrade == v1.ConditionFalse {
+			(node.UpgradeStatus.ScheduledForUpgrade == v1.ConditionFalse ||
+				node.UpgradeStatus.ScheduledForUpgrade == "") {
 			for _, nodeTypeInterface := range nodes[nodeMapKey(cluster.Name, cluster.Namespace)] {
 				if node.DeploymentName == nodeTypeInterface.name() ||
 					node.StatefulSetName == nodeTypeInterface.name() {
@@ -264,7 +265,7 @@ func getScheduledRedeployOnlyNodes(cluster *v1alpha1.Elasticsearch) []NodeTypeIn
 	return redeployNodes
 }
 
-func updateNodeStatus(cluster *v1alpha1.Elasticsearch, status v1alpha1.ElasticsearchStatus) error {
+func updateNodeStatus(cluster *api.Elasticsearch, status api.ElasticsearchStatus) error {
 	// if there is nothing to update, don't
 	if reflect.DeepEqual(cluster.Status, status) {
 		return nil

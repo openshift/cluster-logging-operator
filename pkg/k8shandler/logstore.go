@@ -5,7 +5,7 @@ import (
 
 	"reflect"
 
-	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
@@ -101,9 +101,9 @@ func (cluster *ClusterLogging) createOrUpdateElasticsearchSecret() error {
 	return nil
 }
 
-func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *v1alpha1.Elasticsearch {
+func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *elasticsearch.Elasticsearch {
 
-	var esNodes []v1alpha1.ElasticsearchNode
+	var esNodes []elasticsearch.ElasticsearchNode
 
 	var resources = cluster.Spec.LogStore.Resources
 	if resources == nil {
@@ -116,8 +116,8 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *v1a
 		}
 	}
 
-	esNode := v1alpha1.ElasticsearchNode{
-		Roles:        []v1alpha1.ElasticsearchNodeRole{"client", "data", "master"},
+	esNode := elasticsearch.ElasticsearchNode{
+		Roles:        []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
 		NodeCount:    cluster.Spec.LogStore.NodeCount,
 		NodeSelector: cluster.Spec.LogStore.NodeSelector,
 		Resources:    *resources,
@@ -127,22 +127,22 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *v1a
 	// build Nodes
 	esNodes = append(esNodes, esNode)
 
-	cr := &v1alpha1.Elasticsearch{
+	cr := &elasticsearch.Elasticsearch{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      elasticsearchName,
 			Namespace: cluster.Namespace,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: elasticsearch.SchemeGroupVersion.String(),
 		},
-		Spec: v1alpha1.ElasticsearchSpec{
-			Spec: v1alpha1.ElasticsearchNodeSpec{
+		Spec: elasticsearch.ElasticsearchSpec{
+			Spec: elasticsearch.ElasticsearchNodeSpec{
 				Image:     utils.GetComponentImage("elasticsearch"),
 				Resources: *resources,
 			},
 			Nodes:            esNodes,
-			ManagementState:  v1alpha1.ManagementStateManaged,
+			ManagementState:  elasticsearch.ManagementStateManaged,
 			RedundancyPolicy: cluster.Spec.LogStore.ElasticsearchSpec.RedundancyPolicy,
 		},
 	}
@@ -184,7 +184,7 @@ func (cluster *ClusterLogging) createOrUpdateElasticsearchCR() (err error) {
 	return nil
 }
 
-func updateElasticsearchCRIfRequired(desired *v1alpha1.Elasticsearch) (err error) {
+func updateElasticsearchCRIfRequired(desired *elasticsearch.Elasticsearch) (err error) {
 	current := desired.DeepCopy()
 
 	if err = sdk.Get(current); err != nil {
@@ -207,7 +207,7 @@ func updateElasticsearchCRIfRequired(desired *v1alpha1.Elasticsearch) (err error
 	return nil
 }
 
-func isElasticsearchCRDifferent(current *v1alpha1.Elasticsearch, desired *v1alpha1.Elasticsearch) (*v1alpha1.Elasticsearch, bool) {
+func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *elasticsearch.Elasticsearch) (*elasticsearch.Elasticsearch, bool) {
 
 	different := false
 

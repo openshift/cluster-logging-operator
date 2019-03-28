@@ -4,17 +4,17 @@ import (
 	"fmt"
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CreateOrUpdateServices ensures the existence of the services for Elasticsearch cluster
-func CreateOrUpdateServices(dpl *v1alpha1.Elasticsearch) error {
+func CreateOrUpdateServices(dpl *api.Elasticsearch) error {
 	ownerRef := getOwnerRef(dpl)
 	annotations := make(map[string]string)
 

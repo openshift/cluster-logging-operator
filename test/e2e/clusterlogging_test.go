@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	v1 "k8s.io/api/core/v1"
 
@@ -34,13 +34,13 @@ func TestClusterLogging(t *testing.T) {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
 
-	elasticsearchList := &v1alpha1.ElasticsearchList{
+	elasticsearchList := &elasticsearch.ElasticsearchList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
+			APIVersion: elasticsearch.SchemeGroupVersion.String(),
 		},
 	}
-	err = framework.AddToFrameworkScheme(v1alpha1.AddToScheme, elasticsearchList)
+	err = framework.AddToFrameworkScheme(elasticsearch.AddToScheme, elasticsearchList)
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}

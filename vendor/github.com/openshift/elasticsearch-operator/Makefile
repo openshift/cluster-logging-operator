@@ -36,7 +36,10 @@ operator-sdk: get-dep
 	  make dep ; \
 	  make install || sudo make install || cd commands/operator-sdk && sudo go install ; \
 	fi
-
+	
+gendeepcopy: operator-sdk
+	@operator-sdk generate k8s
+	
 imagebuilder:
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] && ! type -p imagebuilder ; \
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
@@ -63,7 +66,7 @@ clean:
 
 image: imagebuilder
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] ; \
-	then $(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS) ; \
+	then $(IMAGE_BUILDER) $(IMAGE_BUILDER_OPTS) -t $(IMAGE_TAG) . ; \
 	fi
 
 test-e2e:

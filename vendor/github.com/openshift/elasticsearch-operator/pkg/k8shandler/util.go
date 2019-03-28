@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -90,19 +90,42 @@ func isValidDataCount(dpl *api.Elasticsearch) bool {
 
 func isValidRedundancyPolicy(dpl *api.Elasticsearch) bool {
 	dataCount := int(getDataCount(dpl))
+
 	return !(dataCount == 1 && dpl.Spec.RedundancyPolicy == api.SingleRedundancy)
 }
 
 func isValidConf(dpl *api.Elasticsearch) error {
 	if !isValidMasterCount(dpl) {
+		if err := updateConditionWithRetry(dpl, v1.ConditionTrue, updateInvalidMasterCountCondition); err != nil {
+			return err
+		}
 		return fmt.Errorf("Invalid master nodes count. Please ensure there are no more than %v total nodes with master roles", maxMasterCount)
+	} else {
+		if err := updateConditionWithRetry(dpl, v1.ConditionFalse, updateInvalidMasterCountCondition); err != nil {
+			return err
+		}
 	}
 	if !isValidDataCount(dpl) {
+		if err := updateConditionWithRetry(dpl, v1.ConditionTrue, updateInvalidDataCountCondition); err != nil {
+			return err
+		}
 		return fmt.Errorf("No data nodes requested. Please ensure there is at least 1 node with data roles")
+	} else {
+		if err := updateConditionWithRetry(dpl, v1.ConditionFalse, updateInvalidDataCountCondition); err != nil {
+			return err
+		}
 	}
 	if !isValidRedundancyPolicy(dpl) {
+		if err := updateConditionWithRetry(dpl, v1.ConditionTrue, updateInvalidReplicationCondition); err != nil {
+			return err
+		}
 		return fmt.Errorf("Wrong RedundancyPolicy selected. Choose different RedundancyPolicy or add more nodes with data roles")
+	} else {
+		if err := updateConditionWithRetry(dpl, v1.ConditionFalse, updateInvalidReplicationCondition); err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 

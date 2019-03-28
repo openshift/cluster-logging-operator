@@ -2,15 +2,16 @@ package k8shandler
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"sort"
 	"strconv"
 
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -308,7 +309,8 @@ func newEnvVars(nodeName, clusterName, instanceRam string, roleMap map[api.Elast
 	}
 }
 
-func newLabels(clusterName string, roleMap map[api.ElasticsearchNodeRole]bool) map[string]string {
+// TODO: add isChanged check for labels and label selector
+func newLabels(clusterName, nodeName string, roleMap map[api.ElasticsearchNodeRole]bool) map[string]string {
 
 	return map[string]string{
 		"es-node-client":                   strconv.FormatBool(roleMap[api.ElasticsearchRoleClient]),
@@ -317,16 +319,18 @@ func newLabels(clusterName string, roleMap map[api.ElasticsearchNodeRole]bool) m
 		"cluster-name":                     clusterName,
 		"component":                        clusterName,
 		"tuned.openshift.io/elasticsearch": "true",
+		"node-name":                        nodeName,
 	}
 }
 
-func newLabelSelector(clusterName string, roleMap map[api.ElasticsearchNodeRole]bool) map[string]string {
+func newLabelSelector(clusterName, nodeName string, roleMap map[api.ElasticsearchNodeRole]bool) map[string]string {
 
 	return map[string]string{
 		"es-node-client": strconv.FormatBool(roleMap[api.ElasticsearchRoleClient]),
 		"es-node-data":   strconv.FormatBool(roleMap[api.ElasticsearchRoleData]),
 		"es-node-master": strconv.FormatBool(roleMap[api.ElasticsearchRoleMaster]),
 		"cluster-name":   clusterName,
+		"node-name":      nodeName,
 	}
 }
 

@@ -6,13 +6,13 @@ import (
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	apps "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,9 +30,9 @@ type deploymentNode struct {
 	clusterSize int32
 }
 
-func (deploymentNode *deploymentNode) populateReference(nodeName string, node v1alpha1.ElasticsearchNode, cluster *v1alpha1.Elasticsearch, roleMap map[v1alpha1.ElasticsearchNodeRole]bool, replicas int32) {
+func (deploymentNode *deploymentNode) populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32) {
 
-	labels := newLabels(cluster.Name, roleMap)
+	labels := newLabels(cluster.Name, nodeName, roleMap)
 
 	deployment := apps.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -51,7 +51,7 @@ func (deploymentNode *deploymentNode) populateReference(nodeName string, node v1
 	deployment.Spec = apps.DeploymentSpec{
 		Replicas: &replicas,
 		Selector: &metav1.LabelSelector{
-			MatchLabels: newLabelSelector(cluster.Name, roleMap),
+			MatchLabels: newLabelSelector(cluster.Name, nodeName, roleMap),
 		},
 		Strategy: apps.DeploymentStrategy{
 			Type: "Recreate",
@@ -75,10 +75,10 @@ func (node *deploymentNode) name() string {
 	return node.self.Name
 }
 
-func (node *deploymentNode) state() v1alpha1.ElasticsearchNodeStatus {
+func (node *deploymentNode) state() api.ElasticsearchNodeStatus {
 
-	rolloutForReload := v1.ConditionFalse
-	rolloutForUpdate := v1.ConditionFalse
+	var rolloutForReload v1.ConditionStatus
+	var rolloutForUpdate v1.ConditionStatus
 
 	// see if we need to update the deployment object
 	if node.isChanged() {
@@ -97,9 +97,9 @@ func (node *deploymentNode) state() v1alpha1.ElasticsearchNodeStatus {
 		rolloutForReload = v1.ConditionTrue
 	}
 
-	return v1alpha1.ElasticsearchNodeStatus{
+	return api.ElasticsearchNodeStatus{
 		DeploymentName: node.self.Name,
-		UpgradeStatus: v1alpha1.ElasticsearchNodeUpgradeStatus{
+		UpgradeStatus: api.ElasticsearchNodeUpgradeStatus{
 			ScheduledForUpgrade:  rolloutForUpdate,
 			ScheduledForRedeploy: rolloutForReload,
 		},
@@ -277,7 +277,7 @@ func (node *deploymentNode) waitForNodeLeaveCluster() (error, bool) {
 	return err, (err == nil)
 }
 
-func (node *deploymentNode) restart(upgradeStatus *v1alpha1.ElasticsearchNodeStatus) {
+func (node *deploymentNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) {
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
 		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
@@ -295,7 +295,7 @@ func (node *deploymentNode) restart(upgradeStatus *v1alpha1.ElasticsearchNodeSta
 	}
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
-		upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.ControllerUpdated {
+		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
 
 		err, replicas := node.replicaCount()
 		if err != nil {
@@ -309,7 +309,7 @@ func (node *deploymentNode) restart(upgradeStatus *v1alpha1.ElasticsearchNodeSta
 			}
 
 			// disable shard allocation
-			if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, v1alpha1.ShardAllocationNone); !ok {
+			if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationNone); !ok {
 				logrus.Warnf("Unable to disable shard allocation: %v", err)
 				return
 			}
@@ -328,10 +328,10 @@ func (node *deploymentNode) restart(upgradeStatus *v1alpha1.ElasticsearchNodeSta
 			return
 		}
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.NodeRestarting
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
 	}
 
-	if upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.NodeRestarting {
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
 
 		if err := node.setReplicaCount(1); err != nil {
 			logrus.Warnf("Unable to scale up %v", node.name())
@@ -346,27 +346,27 @@ func (node *deploymentNode) restart(upgradeStatus *v1alpha1.ElasticsearchNodeSta
 		node.refreshHashes()
 
 		// reenable shard allocation
-		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, v1alpha1.ShardAllocationAll); !ok {
+		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationAll); !ok {
 			logrus.Warnf("Unable to enable shard allocation: %v", err)
 			return
 		}
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.RecoveringData
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.RecoveringData
 	}
 
-	if upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.RecoveringData {
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
 		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
 			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
 			return
 		}
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.ControllerUpdated
-		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionFalse
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
+		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
 	}
 }
 
-func (node *deploymentNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeStatus) error {
+func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) error {
 
 	// set our state to being under upgrade
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
@@ -385,7 +385,7 @@ func (node *deploymentNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeStat
 
 	// use UpgradePhase to gate what we work on, update phase when we complete a task
 	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
-		upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.ControllerUpdated {
+		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
 
 		if ok, err := DoSynchronizedFlush(node.clusterName, node.self.Namespace); !ok {
 			logrus.Warnf("Unable to perform synchronized flush: %v", err)
@@ -393,7 +393,7 @@ func (node *deploymentNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeStat
 		}
 
 		// disable shard allocation
-		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, v1alpha1.ShardAllocationNone); !ok {
+		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationNone); !ok {
 			logrus.Warnf("Unable to disable shard allocation: %v", err)
 			return err
 		}
@@ -418,11 +418,11 @@ func (node *deploymentNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeStat
 			return retryErr
 		}
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.NodeRestarting
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
 		node.currentRevision = node.nodeRevision()
 	}
 
-	if upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.NodeRestarting {
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
 
 		// do a unpause, wait, and pause again
 		node.unpause()
@@ -446,23 +446,23 @@ func (node *deploymentNode) update(upgradeStatus *v1alpha1.ElasticsearchNodeStat
 		}
 
 		// reenable shard allocation
-		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, v1alpha1.ShardAllocationAll); !ok {
+		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationAll); !ok {
 			logrus.Warnf("Unable to enable shard allocation: %v", err)
 			return err
 		}
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.RecoveringData
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.RecoveringData
 	}
 
-	if upgradeStatus.UpgradeStatus.UpgradePhase == v1alpha1.RecoveringData {
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
 		if status, err := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
 			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
 			return err
 		}
 
-		upgradeStatus.UpgradeStatus.UpgradePhase = v1alpha1.ControllerUpdated
-		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionFalse
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
+		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
 	}
 
 	return nil

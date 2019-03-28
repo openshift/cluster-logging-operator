@@ -107,7 +107,7 @@ func Main() int {
 	}
 	printVersion()
 
-	resource := "logging.openshift.io/v1alpha1"
+	resource := "logging.openshift.io/v1"
 	kind := "Elasticsearch"
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {

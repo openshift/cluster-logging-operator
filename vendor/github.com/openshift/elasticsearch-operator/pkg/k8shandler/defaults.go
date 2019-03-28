@@ -3,7 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 )
 
 const (
@@ -44,17 +44,17 @@ func rootLogger() string {
 	return "rolling"
 }
 
-func calculateReplicaCount(dpl *v1alpha1.Elasticsearch) int {
+func calculateReplicaCount(dpl *api.Elasticsearch) int {
 	dataNodeCount := int((getDataCount(dpl)))
 	repType := dpl.Spec.RedundancyPolicy
 	switch repType {
-	case v1alpha1.FullRedundancy:
+	case api.FullRedundancy:
 		return dataNodeCount - 1
-	case v1alpha1.MultipleRedundancy:
+	case api.MultipleRedundancy:
 		return (dataNodeCount - 1) / 2
-	case v1alpha1.SingleRedundancy:
+	case api.SingleRedundancy:
 		return 1
-	case v1alpha1.ZeroRedundancy:
+	case api.ZeroRedundancy:
 		return 0
 	default:
 		return 1

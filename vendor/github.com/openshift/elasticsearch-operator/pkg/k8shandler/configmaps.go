@@ -10,11 +10,11 @@ import (
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,7 +42,7 @@ type indexSettingsStruct struct {
 }
 
 // CreateOrUpdateConfigMaps ensures the existence of ConfigMaps with Elasticsearch configuration
-func CreateOrUpdateConfigMaps(dpl *v1alpha1.Elasticsearch) (err error) {
+func CreateOrUpdateConfigMaps(dpl *api.Elasticsearch) (err error) {
 	kibanaIndexMode, err := kibanaIndexMode("")
 	if err != nil {
 		return err
@@ -98,6 +98,10 @@ func CreateOrUpdateConfigMaps(dpl *v1alpha1.Elasticsearch) (err error) {
 					}
 					return nil
 				})
+			} else {
+				if err := updateConditionWithRetry(dpl, v1.ConditionFalse, updateUpdatingSettingsCondition); err != nil {
+					return err
+				}
 			}
 		}
 	}

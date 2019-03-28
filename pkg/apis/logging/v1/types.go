@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -57,11 +57,11 @@ type LogStoreSpec struct {
 }
 
 type ElasticsearchSpec struct {
-	Resources        *v1.ResourceRequirements          `json:"resources"`
-	NodeCount        int32                             `json:"nodeCount"`
-	NodeSelector     map[string]string                 `json:"nodeSelector,omitempty"`
-	Storage          v1alpha1.ElasticsearchStorageSpec `json:"storage"`
-	RedundancyPolicy v1alpha1.RedundancyPolicyType     `json:"redundancyPolicy"`
+	Resources        *v1.ResourceRequirements               `json:"resources"`
+	NodeCount        int32                                  `json:"nodeCount"`
+	NodeSelector     map[string]string                      `json:"nodeSelector,omitempty"`
+	Storage          elasticsearch.ElasticsearchStorageSpec `json:"storage"`
+	RedundancyPolicy elasticsearch.RedundancyPolicyType     `json:"redundancyPolicy"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection

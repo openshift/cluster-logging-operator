@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CreateOrUpdateServiceAccount ensures the existence of the serviceaccount for Elasticsearch cluster
-func CreateOrUpdateServiceAccount(dpl *v1alpha1.Elasticsearch) (err error) {
+func CreateOrUpdateServiceAccount(dpl *api.Elasticsearch) (err error) {
 
 	err = createOrUpdateServiceAccount(dpl.Name, dpl.Namespace, getOwnerRef(dpl))
 	if err != nil {

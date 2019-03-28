@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/runtime"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
@@ -14,10 +15,15 @@ import (
 
 type ClusterLogging struct {
 	*logging.ClusterLogging
+	Runtime *runtime.OperatorRuntime
 }
 
+//NewClusterLogging wrappers api.ClusterLogging including the default runtime
 func NewClusterLogging(cluster *logging.ClusterLogging) *ClusterLogging {
-	return &ClusterLogging{cluster}
+	return &ClusterLogging{
+		cluster,
+		runtime.New(),
+	}
 }
 
 func (cluster *ClusterLogging) Type() metav1.TypeMeta {

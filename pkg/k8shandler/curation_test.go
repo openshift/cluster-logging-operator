@@ -11,7 +11,7 @@ import (
 
 func TestNewCuratorCronJobWhenFieldsAreUndefined(t *testing.T) {
 
-	cluster := &ClusterLogging{&logging.ClusterLogging{}}
+	cluster := NewClusterLogging(&logging.ClusterLogging{})
 	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
 	podSpec := cronJob.Spec.JobTemplate.Spec.Template.Spec
 
@@ -38,7 +38,7 @@ func TestNewCuratorCronJobWhenResourcesAreDefined(t *testing.T) {
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
 	requestCPU := resource.MustParse("500m")
-	cluster := &ClusterLogging{
+	cluster := NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				Curation: logging.CurationSpec{
@@ -49,7 +49,7 @@ func TestNewCuratorCronJobWhenResourcesAreDefined(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
 	podSpec := cronJob.Spec.JobTemplate.Spec.Template.Spec
 
@@ -73,7 +73,7 @@ func TestNewCuratorCronJobWhenNoScheduleDefined(t *testing.T) {
 
 	defaultSchedule := "30 3,9,15,21 * * *"
 
-	cluster := &ClusterLogging{
+	cluster := NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				Curation: logging.CurationSpec{
@@ -82,7 +82,7 @@ func TestNewCuratorCronJobWhenNoScheduleDefined(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 
 	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
 
@@ -97,7 +97,7 @@ func TestNewCuratorCronJobWhenScheduleDefined(t *testing.T) {
 
 	desiredSchedule := "30 */4 * * *"
 
-	cluster := &ClusterLogging{
+	cluster := NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				Curation: logging.CurationSpec{
@@ -108,7 +108,7 @@ func TestNewCuratorCronJobWhenScheduleDefined(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 
 	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
 
@@ -122,7 +122,7 @@ func TestNewCuratorCronJobWhenNodeSelectorDefined(t *testing.T) {
 	expSelector := map[string]string{
 		"foo": "bar",
 	}
-	cluster := &ClusterLogging{
+	cluster := NewClusterLogging(
 		&logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{
 				Curation: logging.CurationSpec{
@@ -133,7 +133,7 @@ func TestNewCuratorCronJobWhenNodeSelectorDefined(t *testing.T) {
 				},
 			},
 		},
-	}
+	)
 
 	job := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
 	selector := job.Spec.JobTemplate.Spec.Template.Spec.NodeSelector

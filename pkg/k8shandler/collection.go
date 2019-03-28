@@ -51,6 +51,14 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
+		if err = createOrUpdateFluentdService(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateFluentdServiceMonitor(cluster); err != nil {
+			return
+		}
+
 		if err = createOrUpdateFluentdConfigMap(cluster); err != nil {
 			return
 		}

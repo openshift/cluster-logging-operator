@@ -78,6 +78,12 @@ rules:
   - "privileged"
   verbs:
   - use
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - "*"
 
 ---
 kind: ClusterRole

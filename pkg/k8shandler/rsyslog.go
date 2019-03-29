@@ -248,6 +248,8 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current := desired.DeepCopy()
 
+	current.Spec = apps.DaemonSetSpec{}
+
 	if err = sdk.Get(current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled

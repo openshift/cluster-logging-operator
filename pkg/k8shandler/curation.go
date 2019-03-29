@@ -263,6 +263,8 @@ func (cluster *ClusterLogging) createOrUpdateCuratorCronJob() (err error) {
 func updateCuratorIfRequired(desired *batch.CronJob) (err error) {
 	current := desired.DeepCopy()
 
+	current.Spec = batch.CronJobSpec{}
+
 	if err = sdk.Get(current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
@@ -286,6 +288,12 @@ func updateCuratorIfRequired(desired *batch.CronJob) (err error) {
 func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.CronJob, bool) {
 
 	different := false
+
+	if !utils.AreSelectorsSame(current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector) {
+		logrus.Infof("Invalid Curator nodeSelector change found, updating '%s'", current.Name)
+		current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector = desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
+		different = true
+	}
 
 	// Check schedule
 	if current.Spec.Schedule != desired.Spec.Schedule {

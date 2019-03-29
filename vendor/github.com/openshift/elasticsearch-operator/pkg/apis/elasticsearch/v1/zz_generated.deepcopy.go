@@ -103,6 +103,11 @@ func (in *ElasticsearchNode) DeepCopyInto(out *ElasticsearchNode) {
 		}
 	}
 	in.Storage.DeepCopyInto(&out.Storage)
+	if in.GenUUID != nil {
+		in, out := &in.GenUUID, &out.GenUUID
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 
@@ -120,6 +125,13 @@ func (in *ElasticsearchNode) DeepCopy() *ElasticsearchNode {
 func (in *ElasticsearchNodeSpec) DeepCopyInto(out *ElasticsearchNodeSpec) {
 	*out = *in
 	in.Resources.DeepCopyInto(&out.Resources)
+	if in.NodeSelector != nil {
+		in, out := &in.NodeSelector, &out.NodeSelector
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 

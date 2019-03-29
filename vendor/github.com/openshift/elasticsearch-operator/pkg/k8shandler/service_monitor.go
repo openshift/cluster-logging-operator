@@ -3,10 +3,11 @@ package k8shandler
 import (
 	"fmt"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"k8s.io/apimachinery/pkg/api/errors"
+
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
+	v1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,13 +16,13 @@ const (
 )
 
 // CreateOrUpdateServiceMonitors ensures the existence of ServiceMonitors for Elasticsearch cluster
-func CreateOrUpdateServiceMonitors(dpl *v1alpha1.Elasticsearch) error {
+func CreateOrUpdateServiceMonitors(dpl *v1.Elasticsearch) error {
 	serviceMonitorName := fmt.Sprintf("monitor-%s-%s", dpl.Name, "cluster")
-	owner := asOwner(dpl)
+	owner := getOwnerRef(dpl)
 
 	labelsWithDefault := appendDefaultLabel(dpl.Name, dpl.Labels)
 
-	elasticsearchScMonitor := createServiceMonitor(serviceMonitorName, dpl.Namespace, labelsWithDefault)
+	elasticsearchScMonitor := createServiceMonitor(serviceMonitorName, dpl.Name, dpl.Namespace, labelsWithDefault)
 	addOwnerRefToObject(elasticsearchScMonitor, owner)
 	err := sdk.Create(elasticsearchScMonitor)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -33,16 +34,18 @@ func CreateOrUpdateServiceMonitors(dpl *v1alpha1.Elasticsearch) error {
 	return nil
 }
 
-func createServiceMonitor(serviceMonitorName, namespace string, labels map[string]string) *monitoringv1.ServiceMonitor {
+func createServiceMonitor(serviceMonitorName, clusterName, namespace string, labels map[string]string) *monitoringv1.ServiceMonitor {
 	svcMonitor := serviceMonitor(serviceMonitorName, namespace, labels)
 	labelSelector := metav1.LabelSelector{
 		MatchLabels: labels,
 	}
 	tlsConfig := monitoringv1.TLSConfig{
-		CAFile: prometheusCAFile,
+		CAFile:     prometheusCAFile,
+		ServerName: fmt.Sprintf("%s-%s.%s.svc", clusterName, "metrics", namespace),
+		// ServerName can be e.g. elasticsearch-metrics.openshift-logging.svc
 	}
 	endpoint := monitoringv1.Endpoint{
-		Port:            "restapi",
+		Port:            fmt.Sprintf("%s-%s", clusterName, "metrics"),
 		Path:            "/_prometheus/metrics",
 		Scheme:          "https",
 		BearerTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
@@ -52,6 +55,9 @@ func createServiceMonitor(serviceMonitorName, namespace string, labels map[strin
 		JobLabel:  "monitor-elasticsearch",
 		Endpoints: []monitoringv1.Endpoint{endpoint},
 		Selector:  labelSelector,
+		NamespaceSelector: monitoringv1.NamespaceSelector{
+			MatchNames: []string{namespace},
+		},
 	}
 	return svcMonitor
 }

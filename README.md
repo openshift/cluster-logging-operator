@@ -18,16 +18,7 @@ This will stand up a cluster logging stack named 'example'.
 
 Running locally outside an OKD cluster:
 ```
- $ ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest \
-   FLUENTD_IMAGE=quay.io/openshift/origin-logging-fluentd:latest \
-   KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana5:latest \
-   CURATOR_IMAGE=quay.io/openshift/origin-logging-curator5:latest \
-   OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
-   RSYSLOG_IMAGE=quay.io/viaq/rsyslog:latest \
-   OPERATOR_NAME=cluster-logging-operator \
-   WATCH_NAMESPACE=openshift-logging \
-   KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig \
-   go run cmd/cluster-logging-operator/main.go
+ $ make run
 ```
 ### `make` targets
 Various `make` targets are included to simplify building and deploying the operator
@@ -48,9 +39,8 @@ The deployment can be optionally modified using any of the following:
 |`IMAGE_BUILDER`|`imagebuilder`| The command to build the container image|
 |`EXCLUSIONS`|none|The list of manifest files that should will be ignored|
 |`OC`|`oc` in `PATH`| The openshift binary to use to deploy resources|
-|`REMOTE_REGISTRY`|false|`true` if you are running the cluster on a different machine
-    than the one you are developing on|
-  
+|`REMOTE_REGISTRY`|false|`true` if you are running the cluster on a different machine than the one you are developing on|
+
 **Note:** Use `REMOTE_REGISTRY=true`, for example, if you are running a cluster in a
     local libvirt or minishift environment; you may want to build the image on the host
     and push them to the cluster running in the VM. This requires a username with a password (i.e. not the default `system:admin` user).
@@ -100,5 +90,5 @@ on which the operator runs or can be pulled from a visible registry.
 **Note:** It is necessary to set the `IMAGE_CLUSTER_LOGGING_OPERATOR` environment variable to a valid pull spec
 in order to run this test against local changes to the `cluster-logging-operator`. For example:
 ```
-$ make deploy-image && IMAGE_CLUSTER_LOGGING_OPERATOR=openshift/origin-cluster-logging-operator:latest make test-e2e
+$ make deploy-image && IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest make test-e2e
 ```

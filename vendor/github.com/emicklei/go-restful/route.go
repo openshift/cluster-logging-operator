@@ -38,6 +38,7 @@ type Route struct {
 	Operation               string
 	ParameterDocs           []*Parameter
 	ResponseErrors          map[int]ResponseError
+	DefaultResponse         *ResponseError
 	ReadSample, WriteSample interface{} // structs that model an example request or response payload
 
 	// Extra information used to store custom information about the route.
@@ -45,6 +46,9 @@ type Route struct {
 
 	// marks a route as deprecated
 	Deprecated bool
+
+	//Overrides the container.contentEncodingEnabled
+	contentEncodingEnabled *bool
 }
 
 // Initialize for Route
@@ -146,4 +150,9 @@ func tokenizePath(path string) []string {
 // for debugging
 func (r Route) String() string {
 	return r.Method + " " + r.Path
+}
+
+// EnableContentEncoding (default=false) allows for GZIP or DEFLATE encoding of responses. Overrides the container.contentEncodingEnabled value.
+func (r Route) EnableContentEncoding(enabled bool) {
+	r.contentEncodingEnabled = &enabled
 }

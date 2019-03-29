@@ -11,4 +11,4 @@ spec:
     plural: elasticsearches
     singular: elasticsearch
   scope: Namespaced
-  version: v1alpha1
+  version: v1

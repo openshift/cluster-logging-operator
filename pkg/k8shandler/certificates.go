@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -94,17 +93,17 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 	return utils.WriteToWorkingDirFile(toFile, value)
 }
 
-func writeSecret(logging *v1alpha1.ClusterLogging) (err error) {
+func (cluster *ClusterLogging) writeSecret() (err error) {
 
-	secret := utils.Secret(
+	secret := utils.NewSecret(
 		"master-certs",
-		logging.Namespace,
+		cluster.Namespace,
 		map[string][]byte{
 			"masterca":  utils.GetWorkingDirFileContents("ca.crt"),
 			"masterkey": utils.GetWorkingDirFileContents("ca.key"),
 		})
 
-	utils.AddOwnerRefToObject(secret, utils.AsOwner(logging))
+	cluster.AddOwnerRefTo(secret)
 
 	err = utils.CreateOrUpdateSecret(secret)
 	if err != nil {
@@ -114,10 +113,10 @@ func writeSecret(logging *v1alpha1.ClusterLogging) (err error) {
 	return nil
 }
 
-func readSecrets(logging *v1alpha1.ClusterLogging) (err error) {
+func (cluster *ClusterLogging) readSecrets() (err error) {
 
 	for secretName, certMap := range secretCertificates {
-		if err = extractCertificates(logging.Namespace, secretName, certMap); err != nil {
+		if err = extractCertificates(cluster.Namespace, secretName, certMap); err != nil {
 			return
 		}
 	}
@@ -139,7 +138,8 @@ func extractCertificates(namespace, secretName string, certs map[string]string) 
 	return nil
 }
 
-func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) (err error) {
+//CreateOrUpdateCertificates for a cluster logging instance
+func (cluster *ClusterLogging) CreateOrUpdateCertificates() (err error) {
 
 	// Pull master signing cert out from secret in logging.Spec.SecretName
 	namespace, err := k8sutil.GetWatchNamespace()
@@ -147,7 +147,7 @@ func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) (err error) {
 		return fmt.Errorf("Failed to get watch namespace: %v", err)
 	}
 
-	if err = readSecrets(logging); err != nil {
+	if err = cluster.readSecrets(); err != nil {
 		return
 	}
 
@@ -159,7 +159,7 @@ func CreateOrUpdateCertificates(logging *v1alpha1.ClusterLogging) (err error) {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 
-	if err = writeSecret(logging); err != nil {
+	if err = cluster.writeSecret(); err != nil {
 		return
 	}
 

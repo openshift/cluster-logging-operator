@@ -5,7 +5,8 @@ set -euxo pipefail
 source "$(dirname $0)/common"
 
 if [ $REMOTE_REGISTRY = false ] ; then
-    oc create -n ${NAMESPACE} -f manifests/05-deployment.yaml
+    $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'dep' \
+    |  oc create -f -
 else
     if [ "${USE_IMAGE_STREAM_FOR_LOGGING:-false}" = false ] ; then
         fix_images() { cat ; }
@@ -16,10 +17,10 @@ else
         }
     fi
     image_tag=$( echo "$IMAGE_TAG" | sed -e 's,quay.io/,,' )
-    cat manifests/05-deployment.yaml | \
+    $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'dep' | \
         sed -e "s,${IMAGE_TAG},${registry_host}:5000/${image_tag}," | \
         fix_images | \
-	    oc create -n ${NAMESPACE} -f -
+	    oc create -f -
 fi
 
 if [ "${NO_BUILD:-false}" = true ] ; then

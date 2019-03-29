@@ -8,5 +8,5 @@ vendor/k8s.io/code-generator/generate-groups.sh \
 deepcopy \
 github.com/openshift/elasticsearch-operator/pkg/generated \
 github.com/openshift/elasticsearch-operator/pkg/apis \
-elasticsearch:v1alpha1 \
+elasticsearch:v1 \
 --go-header-file "./tmp/codegen/boilerplate.go.txt"

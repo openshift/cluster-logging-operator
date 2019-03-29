@@ -20,7 +20,7 @@ objects:
       plural: elasticsearches
       singular: elasticsearch
     scope: Namespaced
-    version: v1alpha1
+    version: v1
 - kind: Role
   apiVersion: rbac.authorization.k8s.io/v1beta1
   metadata:

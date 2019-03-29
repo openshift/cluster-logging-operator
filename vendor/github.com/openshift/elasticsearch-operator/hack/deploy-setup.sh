@@ -7,6 +7,20 @@ set -euxo pipefail
 
 source "$(dirname $0)/common"
 
+if [[ -z `oc get project ${NAMESPACE} 2> /dev/null` ]] ; then
+cat <<EOF | oc create -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${NAMESPACE}
+  annotations:
+    openshift.io/node-selector: ""
+  labels:
+    openshift.io/cluster-logging: "true"
+    openshift.io/cluster-monitoring: "true"
+EOF
+fi
+
 load_manifest() {
   local repo=$1
   local namespace=${2:-}
@@ -23,12 +37,11 @@ load_manifest() {
   popd
 }
 
-oc create namespace ${NAMESPACE} ||:
 load_manifest ${repo_dir} ${NAMESPACE}
 
 #hack openshift-monitoring
 pushd vendor/github.com/coreos/prometheus-operator/example/prometheus-operator-crd
-  for file in prometheusrule.crd.yaml servicemonitor.crd.yaml; do 
+  for file in prometheusrule.crd.yaml servicemonitor.crd.yaml; do
     oc create -n ${NAMESPACE} -f ${file} ||:
   done
 popd

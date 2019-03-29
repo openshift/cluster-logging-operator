@@ -2,219 +2,534 @@ package k8shandler
 
 import (
 	"fmt"
-
-	v1alpha1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1alpha1"
-	"github.com/sirupsen/logrus"
+	"time"
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
+
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	apps "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type deploymentNode struct {
-	resource apps.Deployment
+	self apps.Deployment
+	// prior hash for configmap content
+	configmapHash string
+	// prior hash for secret content
+	secretHash string
+
+	clusterName string
+
+	currentRevision string
+
+	clusterSize int32
 }
 
-func (node *deploymentNode) getResource() runtime.Object {
-	return &node.resource
-}
+func (deploymentNode *deploymentNode) populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32) {
 
-func (node *deploymentNode) getRevision(cfg *desiredNodeState) (string, error) {
-	val, ok := node.resource.ObjectMeta.Annotations["deployment.kubernetes.io/revision"]
+	labels := newLabels(cluster.Name, nodeName, roleMap)
 
-	if ok {
-		return val, nil
-	}
-
-	return "", fmt.Errorf("Unable to find revision annotation value for %v", cfg.DeployName)
-}
-
-func (node *deploymentNode) awaitingRollout(cfg *desiredNodeState, currentRevision string) (bool, error) {
-
-	actualRevision, err := node.getRevision(cfg)
-	if err != nil {
-		return true, err
-	}
-
-	return actualRevision == currentRevision, nil
-}
-
-// needsPause determines whether a Deployment needs to be paused
-// A Deployment doesn't need to be paused if it is already paused.
-// Otherwise it need to be paused.
-func (node *deploymentNode) needsPause(cfg *desiredNodeState) (bool, error) {
-
-	if node.resource.Spec.Paused == false {
-		logrus.Debugf("Deployment %v is not currently paused.", node.resource.Name)
-		return true, nil
-	}
-
-	return false, nil
-}
-
-// Since this is called as part of doing an upgrade we check if deployments need to be
-// paused again as a separate call to avoid unnecessary rollouts
-func (node *deploymentNode) isDifferent(cfg *desiredNodeState) (bool, error) {
-
-	// Check replicas number
-	actualReplicas := *node.resource.Spec.Replicas
-	if cfg.getReplicas() != actualReplicas {
-		logrus.Debugf("Different number of replicas detected, updating deployment %q", cfg.DeployName)
-		return true, nil
-	}
-
-	// Check if labels are correct
-	for label, value := range cfg.Labels {
-		val, ok := node.resource.Labels[label]
-		if !ok || val != value {
-			logrus.Debugf("Different labels detected, updating deployment %q", node.resource.GetName())
-			return true, nil
-		}
-	}
-
-	// Check if the Variables are the desired ones
-	envVars := node.resource.Spec.Template.Spec.Containers[0].Env
-	desiredVars := cfg.EnvVars
-	if len(envVars) != len(desiredVars) {
-		logrus.Debugf("Different environmental variables detected, updating deployment %q", node.resource.GetName())
-		return true, nil
-	}
-	for index, value := range envVars {
-		if value.ValueFrom == nil {
-			if desiredVars[index] != value {
-				logrus.Debugf("Different environmental variables detected, updating deployment %q", node.resource.GetName())
-				return true, nil
-			}
-		} else {
-			if desiredVars[index].ValueFrom.FieldRef.FieldPath != value.ValueFrom.FieldRef.FieldPath {
-				logrus.Debugf("Different environmental variables detected, updating deployment %q", node.resource.GetName())
-				return true, nil
-			}
-		}
-	}
-
-	// Check that storage configuration is the same
-	// Maybe this needs to be split into a separate method since this
-	// may indicate that we need a new cluster spin up, not rolling restart
-	for _, volume := range node.resource.Spec.Template.Spec.Volumes {
-		if volume.Name == "elasticsearch-storage" {
-			switch {
-			case volume.PersistentVolumeClaim != nil && &cfg.ESNodeSpec.Storage.StorageClassName != nil:
-				desiredClaimName := fmt.Sprintf("%s-%s", cfg.ClusterName, cfg.DeployName)
-				if volume.PersistentVolumeClaim.ClaimName == desiredClaimName {
-					return false, nil
-				}
-
-				logrus.Warn("Detected change in storage")
-				return true, nil
-			case volume.EmptyDir != nil && cfg.ESNodeSpec.Storage == v1alpha1.ElasticsearchStorageSpec{}:
-				return false, nil
-			default:
-				logrus.Warn("Detected change in storage")
-				return true, nil
-			}
-		}
-	}
-	return false, nil
-}
-
-// isUpdateNeeded compares existing Deployment resource and its desired state.
-// If a difference is found the existing resource will be updated. This triggers
-// a new rollout, which is handeled by the operator in rolling fashion.
-// Currently only Image and CPU & memory Resources trigger rolling restart
-func (node *deploymentNode) isUpdateNeeded(cfg *desiredNodeState) bool {
-	// Only Image and Resources (CPU & memory) differences trigger rolling restart
-	for _, container := range node.resource.Spec.Template.Spec.Containers {
-		if container.Name == "elasticsearch" {
-			// Check image of Elasticsearch container
-			if container.Image != cfg.Image {
-				logrus.Debugf("Resource '%s' has different container image than desired", node.resource.Name)
-				return true
-			}
-			// Check CPU limits
-			if cfg.ESNodeSpec.Resources.Limits.Cpu().Cmp(*container.Resources.Limits.Cpu()) != 0 {
-				logrus.Debugf("Resource '%s' has different CPU limit than desired", node.resource.Name)
-				return true
-			}
-			// Check memory limits
-			if cfg.ESNodeSpec.Resources.Limits.Memory().Cmp(*container.Resources.Limits.Memory()) != 0 {
-				logrus.Debugf("Resource '%s' has different Memory limit than desired", node.resource.Name)
-				return true
-			}
-			// Check CPU requests
-			if cfg.ESNodeSpec.Resources.Requests.Cpu().Cmp(*container.Resources.Requests.Cpu()) != 0 {
-				logrus.Debugf("Resource '%s' has different CPU Request than desired", node.resource.Name)
-				return true
-			}
-			// Check memory requests
-			if cfg.ESNodeSpec.Resources.Requests.Memory().Cmp(*container.Resources.Requests.Memory()) != 0 {
-				logrus.Debugf("Resource '%s' has different Memory Request than desired", node.resource.Name)
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func (node *deploymentNode) query() error {
-	err := sdk.Get(&node.resource)
-	return err
-}
-
-// constructNodeDeployment creates the deployment for the node
-func (node *deploymentNode) constructNodeResource(cfg *desiredNodeState, owner metav1.OwnerReference) (runtime.Object, error) {
-
-	// Check if deployment exists
-
-	// FIXME: remove hardcode
-
-	replicas := cfg.getReplicas()
-
-	// deployment := node.resource
 	deployment := apps.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",
-			APIVersion: "apps/v1",
+			APIVersion: apps.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cfg.DeployName,
-			Namespace: cfg.Namespace,
+			Name:      nodeName,
+			Namespace: cluster.Namespace,
+			Labels:    labels,
 		},
 	}
 
 	progressDeadlineSeconds := int32(1800)
-	deployment.ObjectMeta.Labels = cfg.getLabels()
+
 	deployment.Spec = apps.DeploymentSpec{
 		Replicas: &replicas,
 		Selector: &metav1.LabelSelector{
-			MatchLabels: cfg.getLabelSelector(),
+			MatchLabels: newLabelSelector(cluster.Name, nodeName, roleMap),
 		},
 		Strategy: apps.DeploymentStrategy{
 			Type: "Recreate",
 		},
 		ProgressDeadlineSeconds: &progressDeadlineSeconds,
-		Template:                cfg.constructPodTemplateSpec(),
-		Paused:                  cfg.Paused,
+		Paused:                  false,
+		Template:                newPodTemplateSpec(nodeName, cluster.Name, cluster.Namespace, node, cluster.Spec.Spec, labels, roleMap),
 	}
 
-	// if storageClass != "default" {
-	// 	deployment.Spec.VolumeClaimTemplates[0].Annotations = map[string]string{
-	// 		"volume.beta.kubernetes.io/storage-class": storageClass,
-	// 	}
-	// }
-	// sset, _ := json.Marshal(deployment)
-	// s := string(sset[:])
+	addOwnerRefToObject(&deployment, getOwnerRef(cluster))
 
-	addOwnerRefToObject(&deployment, owner)
-
-	return &deployment, nil
+	deploymentNode.self = deployment
+	deploymentNode.clusterName = cluster.Name
 }
 
-func (node *deploymentNode) delete() error {
-	err := sdk.Delete(&node.resource)
-	if err != nil {
-		return fmt.Errorf("Unable to delete Deployment %v: ", err)
+func (current *deploymentNode) updateReference(node NodeTypeInterface) {
+	current.self = node.(*deploymentNode).self
+}
+
+func (node *deploymentNode) name() string {
+	return node.self.Name
+}
+
+func (node *deploymentNode) state() api.ElasticsearchNodeStatus {
+
+	var rolloutForReload v1.ConditionStatus
+	var rolloutForUpdate v1.ConditionStatus
+
+	// see if we need to update the deployment object
+	if node.isChanged() {
+		rolloutForUpdate = v1.ConditionTrue
 	}
+
+	// check if the configmapHash changed
+	/*newConfigmapHash := getConfigmapDataHash(node.clusterName, node.self.Namespace)
+	if newConfigmapHash != node.configmapHash {
+		rolloutForReload = v1.ConditionTrue
+	}*/
+
+	// check if the secretHash changed
+	newSecretHash := getSecretDataHash(node.clusterName, node.self.Namespace)
+	if newSecretHash != node.secretHash {
+		rolloutForReload = v1.ConditionTrue
+	}
+
+	return api.ElasticsearchNodeStatus{
+		DeploymentName: node.self.Name,
+		UpgradeStatus: api.ElasticsearchNodeUpgradeStatus{
+			ScheduledForUpgrade:  rolloutForUpdate,
+			ScheduledForRedeploy: rolloutForReload,
+		},
+	}
+}
+
+func (node *deploymentNode) create() error {
+
+	err := sdk.Create(&node.self)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Could not create node resource: %v", err)
+		} else {
+			// node already exists, make sure the deployment is paused
+			return node.pause()
+		}
+	}
+
+	// created unpaused, pause after deployment...
+	// wait until we have a revision annotation...
+	if err = node.waitForInitialRollout(); err != nil {
+		return err
+	}
+
+	if err = node.pause(); err != nil {
+		return err
+	}
+
+	// update the hashmaps
+	node.configmapHash = getConfigmapDataHash(node.clusterName, node.self.Namespace)
+	node.secretHash = getSecretDataHash(node.clusterName, node.self.Namespace)
+
 	return nil
+}
+
+func (node *deploymentNode) waitForInitialRollout() error {
+	err := wait.Poll(time.Second*1, time.Second*30, func() (done bool, err error) {
+		if getErr := sdk.Get(&node.self); getErr != nil {
+			logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, getErr)
+			return false, getErr
+		}
+
+		_, ok := node.self.ObjectMeta.Annotations["deployment.kubernetes.io/revision"]
+		if ok {
+			return true, nil
+		}
+
+		return false, nil
+	})
+	return err
+}
+
+func (node *deploymentNode) nodeRevision() string {
+	val, ok := node.self.ObjectMeta.Annotations["deployment.kubernetes.io/revision"]
+
+	if ok {
+		return val
+	}
+
+	return ""
+}
+
+func (node *deploymentNode) waitForNodeRollout(currentRevision string) error {
+	err := wait.Poll(time.Second*1, time.Second*30, func() (done bool, err error) {
+		if getErr := sdk.Get(&node.self); getErr != nil {
+			logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, getErr)
+			return false, getErr
+		}
+
+		revision := node.nodeRevision()
+
+		return (revision != currentRevision), nil
+	})
+	return err
+}
+
+func (node *deploymentNode) pause() error {
+	return node.setPaused(true)
+}
+
+func (node *deploymentNode) unpause() error {
+	return node.setPaused(false)
+}
+
+func (node *deploymentNode) setPaused(paused bool) error {
+	nretries := -1
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		nretries++
+		if getErr := sdk.Get(&node.self); getErr != nil {
+			logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, getErr)
+			return getErr
+		}
+
+		if node.self.Spec.Paused == paused {
+			return nil
+		}
+
+		node.self.Spec.Paused = paused
+
+		if updateErr := sdk.Update(&node.self); updateErr != nil {
+			logrus.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
+			return updateErr
+		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Error: could not update Elasticsearch node %v after %v retries: %v", node.self.Name, nretries, retryErr)
+	}
+
+	return nil
+}
+
+func (node *deploymentNode) setReplicaCount(replicas int32) error {
+	nretries := -1
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		nretries++
+		if getErr := sdk.Get(&node.self); getErr != nil {
+			logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, getErr)
+			return getErr
+		}
+
+		if *node.self.Spec.Replicas == replicas {
+			return nil
+		}
+
+		node.self.Spec.Replicas = &replicas
+
+		if updateErr := sdk.Update(&node.self); updateErr != nil {
+			logrus.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
+			return updateErr
+		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Error: could not update Elasticsearch node %v after %v retries: %v", node.self.Name, nretries, retryErr)
+	}
+
+	return nil
+}
+
+func (node *deploymentNode) replicaCount() (error, int32) {
+	if err := sdk.Get(&node.self); err != nil {
+		logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, err)
+		return err, -1
+	}
+
+	return nil, node.self.Status.Replicas
+}
+
+func (node *deploymentNode) waitForNodeRejoinCluster() (error, bool) {
+	err := wait.Poll(time.Second*1, time.Second*60, func() (done bool, err error) {
+		clusterSize, getErr := GetClusterNodeCount(node.clusterName, node.self.Namespace)
+		if err != nil {
+			logrus.Warnf("Unable to get cluster size waiting for %v to rejoin cluster", node.name())
+			return false, getErr
+		}
+
+		return (node.clusterSize <= clusterSize), nil
+	})
+
+	return err, (err == nil)
+}
+
+func (node *deploymentNode) waitForNodeLeaveCluster() (error, bool) {
+	err := wait.Poll(time.Second*1, time.Second*60, func() (done bool, err error) {
+		clusterSize, getErr := GetClusterNodeCount(node.clusterName, node.self.Namespace)
+		if err != nil {
+			logrus.Warnf("Unable to get cluster size waiting for %v to leave cluster", node.name())
+			return false, getErr
+		}
+
+		return (node.clusterSize > clusterSize), nil
+	})
+
+	return err, (err == nil)
+}
+
+func (node *deploymentNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) {
+
+	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
+		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
+			logrus.Infof("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
+			return
+		}
+
+		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace)
+		if err != nil {
+			logrus.Warnf("Unable to get cluster size prior to restart for %v", node.name())
+			return
+		}
+		node.clusterSize = size
+		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionTrue
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
+		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
+
+		err, replicas := node.replicaCount()
+		if err != nil {
+			logrus.Warnf("Unable to get replica count for %v", node.name())
+		}
+
+		if replicas > 0 {
+			if ok, err := DoSynchronizedFlush(node.clusterName, node.self.Namespace); !ok {
+				logrus.Warnf("Unable to perform synchronized flush: %v", err)
+				return
+			}
+
+			// disable shard allocation
+			if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationNone); !ok {
+				logrus.Warnf("Unable to disable shard allocation: %v", err)
+				return
+			}
+
+			// check for available replicas empty
+			// node.self.Status.Replicas
+			// if we aren't at 0, then we need to scale down to 0
+			if err = node.setReplicaCount(0); err != nil {
+				logrus.Warnf("Unable to scale down %v", node.name())
+				return
+			}
+		}
+
+		if err, _ = node.waitForNodeLeaveCluster(); err != nil {
+			logrus.Infof("Timed out waiting for %v to leave the cluster", node.name())
+			return
+		}
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
+
+		if err := node.setReplicaCount(1); err != nil {
+			logrus.Warnf("Unable to scale up %v", node.name())
+			return
+		}
+
+		if err, _ := node.waitForNodeRejoinCluster(); err != nil {
+			logrus.Infof("Timed out waiting for %v to rejoin cluster", node.name())
+			return
+		}
+
+		node.refreshHashes()
+
+		// reenable shard allocation
+		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationAll); !ok {
+			logrus.Warnf("Unable to enable shard allocation: %v", err)
+			return
+		}
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.RecoveringData
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
+
+		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
+			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
+			return
+		}
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
+		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
+	}
+}
+
+func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) error {
+
+	// set our state to being under upgrade
+	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
+		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
+			logrus.Infof("Waiting for cluster to be fully recovered before upgrading %v: %v / green", node.name(), status)
+			return fmt.Errorf("Cluster not in green state before beginning upgrade: %v", status)
+		}
+
+		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace)
+		if err != nil {
+			logrus.Warnf("Unable to get cluster size prior to update for %v", node.name())
+		}
+		node.clusterSize = size
+		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionTrue
+	}
+
+	// use UpgradePhase to gate what we work on, update phase when we complete a task
+	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
+		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
+
+		if ok, err := DoSynchronizedFlush(node.clusterName, node.self.Namespace); !ok {
+			logrus.Warnf("Unable to perform synchronized flush: %v", err)
+			return err
+		}
+
+		// disable shard allocation
+		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationNone); !ok {
+			logrus.Warnf("Unable to disable shard allocation: %v", err)
+			return err
+		}
+
+		// see if we need to update the deployment object and verify we have latest to update
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// isChanged() will get the latest revision from the apiserver
+			// and return false if there is nothing to change and will update the node object if required
+			if node.isChanged() {
+				if updateErr := sdk.Update(&node.self); updateErr != nil {
+					logrus.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
+					return updateErr
+				}
+
+				return nil
+			} else {
+				return nil
+			}
+		})
+
+		if retryErr != nil {
+			return retryErr
+		}
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
+		node.currentRevision = node.nodeRevision()
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
+
+		// do a unpause, wait, and pause again
+		node.unpause()
+
+		// wait for rollout
+		if err := node.waitForNodeRollout(node.currentRevision); err != nil {
+			logrus.Infof("Timed out waiting for node %v to rollout", node.name())
+			return err
+		}
+
+		// pause again
+		node.pause()
+
+		// once we've restarted this is taken care of
+		node.refreshHashes()
+
+		// wait for node to rejoin cluster
+		if err, _ := node.waitForNodeRejoinCluster(); err != nil {
+			logrus.Infof("Timed out waiting for %v to rejoin cluster", node.name())
+			return fmt.Errorf("Node %v has not rejoined cluster %v yet", node.name(), node.clusterName)
+		}
+
+		// reenable shard allocation
+		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationAll); !ok {
+			logrus.Warnf("Unable to enable shard allocation: %v", err)
+			return err
+		}
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.RecoveringData
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
+
+		if status, err := GetClusterHealth(node.clusterName, node.self.Namespace); status != "green" {
+			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
+			return err
+		}
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
+		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
+	}
+
+	return nil
+}
+
+func (node *deploymentNode) refreshHashes() {
+	newConfigmapHash := getConfigmapDataHash(node.clusterName, node.self.Namespace)
+	if newConfigmapHash != node.configmapHash {
+		node.configmapHash = newConfigmapHash
+	}
+
+	newSecretHash := getSecretDataHash(node.clusterName, node.self.Namespace)
+	if newSecretHash != node.secretHash {
+		node.secretHash = newSecretHash
+	}
+}
+
+func (node *deploymentNode) isChanged() bool {
+
+	changed := false
+
+	desired := node.self.DeepCopy()
+	err := sdk.Get(&node.self)
+	// error check that it exists, etc
+	if err != nil {
+		// if it doesn't exist, return true
+		return false
+	}
+
+	// Only Image and Resources (CPU & memory) differences trigger rolling restart
+	// we will only have one container, no need to do range
+	nodeContainer := node.self.Spec.Template.Spec.Containers[0]
+	desiredContainer := desired.Spec.Template.Spec.Containers[0]
+
+	// check that both exist
+
+	if nodeContainer.Image != desiredContainer.Image {
+		logrus.Debugf("Resource '%s' has different container image than desired", node.self.Name)
+		nodeContainer.Image = desiredContainer.Image
+		changed = true
+	}
+
+	if desiredContainer.Resources.Limits.Cpu().Cmp(*nodeContainer.Resources.Limits.Cpu()) != 0 {
+		logrus.Debugf("Resource '%s' has different CPU limit than desired", node.self.Name)
+		nodeContainer.Resources.Limits[v1.ResourceCPU] = *desiredContainer.Resources.Limits.Cpu()
+		changed = true
+	}
+	// Check memory limits
+	if desiredContainer.Resources.Limits.Memory().Cmp(*nodeContainer.Resources.Limits.Memory()) != 0 {
+		logrus.Debugf("Resource '%s' has different Memory limit than desired", node.self.Name)
+		nodeContainer.Resources.Limits[v1.ResourceMemory] = *desiredContainer.Resources.Limits.Memory()
+		changed = true
+	}
+	// Check CPU requests
+	if desiredContainer.Resources.Requests.Cpu().Cmp(*nodeContainer.Resources.Requests.Cpu()) != 0 {
+		logrus.Debugf("Resource '%s' has different CPU Request than desired", node.self.Name)
+		nodeContainer.Resources.Requests[v1.ResourceCPU] = *desiredContainer.Resources.Requests.Cpu()
+		changed = true
+	}
+	// Check memory requests
+	if desiredContainer.Resources.Requests.Memory().Cmp(*nodeContainer.Resources.Requests.Memory()) != 0 {
+		logrus.Debugf("Resource '%s' has different Memory Request than desired", node.self.Name)
+		nodeContainer.Resources.Requests[v1.ResourceMemory] = *desiredContainer.Resources.Requests.Memory()
+		changed = true
+	}
+
+	node.self.Spec.Template.Spec.Containers[0] = nodeContainer
+
+	return changed
 }

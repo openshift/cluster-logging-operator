@@ -15,26 +15,27 @@ if [ "${USE_IMAGE_STREAM:-false}" = true ] ; then
         -f hack/image-stream-build-config-template.yaml | \
       oc -n openshift create -f -
     # wait for is and bc
-    for ii in $(seq 1 10) ; do
+    for ii in $(seq 1 60) ; do
         if oc -n openshift get bc elasticsearch-operator > /dev/null 2>&1 && \
-           oc -n openshift get is elasticsearch-operator > /dev/null 2>&1 ; then
+           oc -n openshift get is origin-elasticsearch-operator > /dev/null 2>&1 ; then
             break
         fi
         sleep 1
     done
-    if [ $ii = 10 ] ; then
+    if [ $ii = 60 ] ; then
         echo ERROR: timeout waiting for elasticsearch-operator buildconfig and imagestream to be available
         exit 1
     fi
     # wait
-    oc -n openshift logs -f bc/elasticsearch-operator
+    oc -n openshift start-build --follow bc/elasticsearch-operator
     exit 0
 fi
 
 IMAGE_TAGGER=${IMAGE_TAGGER:-docker tag}
 LOCAL_PORT=${LOCAL_PORT:-5000}
 
-tag=${tag:-"127.0.0.1:${registry_port}/$IMAGE_TAG"}
+image_tag=$( echo "$IMAGE_TAG" | sed -e 's,quay.io/,,' )
+tag=${tag:-"127.0.0.1:${registry_port}/$image_tag"}
 
 ${IMAGE_TAGGER} ${IMAGE_TAG} ${tag}
 

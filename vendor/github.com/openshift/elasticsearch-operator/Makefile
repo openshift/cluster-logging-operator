@@ -10,12 +10,14 @@ IMAGE_BUILD=$(IMAGE_BUILDER)
 export IMAGE_TAGGER?=docker tag
 
 export APP_NAME=elasticsearch-operator
+export IMAGE_TAG=quay.io/openshift/origin-$(APP_NAME):latest
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-export IMAGE_TAG=openshift/origin-$(APP_NAME):latest
+KUBECONFIG?=$(HOME)/.kube/config
 MAIN_PKG=cmd/$(APP_NAME)/main.go
 RUN_LOG?=elasticsearch-operator.log
 RUN_PID?=elasticsearch-operator.pid
+
 
 # go source files, ignore vendor directory
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
@@ -34,7 +36,10 @@ operator-sdk: get-dep
 	  make dep ; \
 	  make install || sudo make install || cd commands/operator-sdk && sudo go install ; \
 	fi
-
+	
+gendeepcopy: operator-sdk
+	@operator-sdk generate k8s
+	
 imagebuilder:
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] && ! type -p imagebuilder ; \
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
@@ -61,10 +66,10 @@ clean:
 
 image: imagebuilder
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] ; \
-	then $(IMAGE_BUILDER) -t $(IMAGE_TAG) . $(IMAGE_BUILDER_OPTS) ; \
+	then $(IMAGE_BUILDER) $(IMAGE_BUILDER_OPTS) -t $(IMAGE_TAG) . ; \
 	fi
 
-test-e2e: image
+test-e2e:
 	hack/test-e2e.sh
 
 fmt:

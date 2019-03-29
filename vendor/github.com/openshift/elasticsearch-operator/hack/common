@@ -7,7 +7,7 @@ alias oc=${OC:-oc}
 
 repo_dir="$(dirname $0)/.."
 
-IMAGE_TAG=${IMAGE_TAG:-"openshift/origin-elasticsearch-operator:latest"}
+IMAGE_TAG=${IMAGE_TAG:-"quay.io/openshift/origin-elasticsearch-operator:latest"}
 
 ADMIN_USER=${ADMIN_USER:-admin}
 ADMIN_PSWD=${ADMIN_USER:-admin123}

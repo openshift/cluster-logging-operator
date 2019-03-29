@@ -1,17 +1,18 @@
 package k8shandler
 
 import (
+	"reflect"
 	"testing"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func TestNewCuratorCronJobWhenResourcesAreUndefined(t *testing.T) {
+func TestNewCuratorCronJobWhenFieldsAreUndefined(t *testing.T) {
 
-	cluster := &logging.ClusterLogging{}
-	cronJob := newCuratorCronJob(cluster, "test-app-name", "elasticsearch")
+	cluster := NewClusterLogging(&logging.ClusterLogging{})
+	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
 	podSpec := cronJob.Spec.JobTemplate.Spec.Template.Spec
 
 	if len(podSpec.Containers) != 1 {
@@ -28,27 +29,32 @@ func TestNewCuratorCronJobWhenResourcesAreUndefined(t *testing.T) {
 	if resources.Requests[v1.ResourceCPU] != defaultFluentdCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultCuratorCpuRequest)
 	}
+	if podSpec.NodeSelector != nil {
+		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
+	}
 }
 
 func TestNewCuratorCronJobWhenResourcesAreDefined(t *testing.T) {
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
 	requestCPU := resource.MustParse("500m")
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			Curation: logging.CurationSpec{
-				Type: "curator",
-				CuratorSpec: logging.CuratorSpec{
-					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				Curation: logging.CurationSpec{
+					Type: "curator",
+					CuratorSpec: logging.CuratorSpec{
+						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+					},
 				},
 			},
 		},
-	}
-	cronJob := newCuratorCronJob(cluster, "test-app-name", "elasticsearch")
+	)
+	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
 	podSpec := cronJob.Spec.JobTemplate.Spec.Template.Spec
 
 	if len(podSpec.Containers) != 1 {
-		t.Error("Exp. there to be 1 fluentd container")
+		t.Error("Exp. there to be 1 curator container")
 	}
 
 	resources := podSpec.Containers[0].Resources
@@ -60,5 +66,79 @@ func TestNewCuratorCronJobWhenResourcesAreDefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != requestCPU {
 		t.Errorf("Exp. the spec CPU request to be %v", requestCPU)
+	}
+}
+
+func TestNewCuratorCronJobWhenNoScheduleDefined(t *testing.T) {
+
+	defaultSchedule := "30 3,9,15,21 * * *"
+
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				Curation: logging.CurationSpec{
+					Type:        "curator",
+					CuratorSpec: logging.CuratorSpec{},
+				},
+			},
+		},
+	)
+
+	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
+
+	schedule := cronJob.Spec.Schedule
+
+	if schedule != defaultSchedule {
+		t.Errorf("Exp. the cronjob schedule to be: %v, act. is: %v", defaultSchedule, schedule)
+	}
+}
+
+func TestNewCuratorCronJobWhenScheduleDefined(t *testing.T) {
+
+	desiredSchedule := "30 */4 * * *"
+
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				Curation: logging.CurationSpec{
+					Type: "curator",
+					CuratorSpec: logging.CuratorSpec{
+						Schedule: desiredSchedule,
+					},
+				},
+			},
+		},
+	)
+
+	cronJob := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
+
+	schedule := cronJob.Spec.Schedule
+
+	if schedule != desiredSchedule {
+		t.Errorf("Exp. the cronjob schedule to be: %v, act. is: %v", desiredSchedule, schedule)
+	}
+}
+func TestNewCuratorCronJobWhenNodeSelectorDefined(t *testing.T) {
+	expSelector := map[string]string{
+		"foo": "bar",
+	}
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				Curation: logging.CurationSpec{
+					Type: "curator",
+					CuratorSpec: logging.CuratorSpec{
+						NodeSelector: expSelector,
+					},
+				},
+			},
+		},
+	)
+
+	job := cluster.newCuratorCronJob("test-app-name", "elasticsearch")
+	selector := job.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
+
+	if !reflect.DeepEqual(selector, expSelector) {
+		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, selector)
 	}
 }

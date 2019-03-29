@@ -16,7 +16,7 @@ spec:
       serviceAccountName: elasticsearch-operator
       containers:
         - name: elasticsearch-operator
-          image: openshift/origin-elasticsearch-operator:latest
+          image: quay.io/openshift/origin-elasticsearch-operator:latest
           imagePullPolicy: IfNotPresent
           command:
           - elasticsearch-operator
@@ -25,8 +25,8 @@ spec:
             name: metrics
           env:
             - name: WATCH_NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
+              value: ""
             - name: OPERATOR_NAME
               value: "elasticsearch-operator"
+            - name: PROXY_IMAGE
+              value: "quay.io/openshift/origin-oauth-proxy:v4.0.0"

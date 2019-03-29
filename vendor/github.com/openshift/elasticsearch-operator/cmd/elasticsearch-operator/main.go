@@ -10,13 +10,13 @@ import (
 	"strings"
 	"time"
 
-	stub "github.com/openshift/elasticsearch-operator/pkg/stub"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
+	"github.com/sirupsen/logrus"
+
+	stub "github.com/openshift/elasticsearch-operator/pkg/stub"
 	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	k8sutil "github.com/operator-framework/operator-sdk/pkg/util/k8sutil"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
-
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -107,9 +107,7 @@ func Main() int {
 	}
 	printVersion()
 
-	sdk.ExposeMetricsPort()
-
-	resource := "logging.openshift.io/v1alpha1"
+	resource := "logging.openshift.io/v1"
 	kind := "Elasticsearch"
 	namespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {

@@ -26,7 +26,7 @@ objects:
         serviceAccountName: elasticsearch-operator
         containers:
           - name: elasticsearch-operator
-            image: openshift/origin-elasticsearch-operator:latest
+            image: quay.io/openshift/origin-elasticsearch-operator:latest
             imagePullPolicy: IfNotPresent
             command:
             - elasticsearch-operator
@@ -40,14 +40,14 @@ objects:
                     fieldPath: metadata.namespace
               - name: OPERATOR_NAME
                 value: "elasticsearch-operator"
-- apiVersion: "logging.openshift.io/v1alpha1"
+- apiVersion: "logging.openshift.io/v1"
   kind: "Elasticsearch"
   metadata:
     name: ${ELASTICSEARCH_CLUSTER_NAME}
     namespace: ${NAMESPACE}
   spec:
     nodeSpec:
-      image: openshift/origin-logging-elasticsearch5:latest
+      image: quay.io/openshift/origin-logging-elasticsearch5:latest
     nodes:
       - roles:
         - client

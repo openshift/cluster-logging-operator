@@ -3,28 +3,23 @@ package k8shandler
 import (
 	"fmt"
 
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	"github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func createOrUpdatePersistentVolumeClaim(pvc v1.PersistentVolumeClaimSpec, newName string, namespace string) error {
-	claim := persistentVolumeClaim(newName, namespace)
-	err := sdk.Get(claim)
+
+	claim := createPersistentVolumeClaim(newName, namespace, pvc)
+	err := sdk.Create(claim)
 	if err != nil {
-		// PVC doesn't exists, needs to be created.
-		claim = createPersistentVolumeClaim(newName, namespace, pvc)
-		logrus.Infof("Creating new PVC: %v", newName)
-		err = sdk.Create(claim)
-		if err != nil {
+		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Unable to create PVC: %v", err)
 		}
-	} else {
-		logrus.Infof("Reusing existing PVC: %s", newName)
-		// TODO for updates, don't forget to use retry.RetryOnConflict
 	}
+
 	return nil
 }
 

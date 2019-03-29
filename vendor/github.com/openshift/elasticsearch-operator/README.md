@@ -9,7 +9,7 @@ Operator uses [Operator Framework SDK](https://github.com/operator-framework/ope
 
 ## Why Use An Operator?
 
-Operator is designed to provide self-service for the Elasticsearch cluster operations. See the [diagram](https://github.com/operator-framework/operator-sdk/blob/master/doc/images/Operator-Maturity-Model.png) on operator maturity model.
+Operator is designed to provide self-service for the Elasticsearch cluster operations. See the [diagram](https://github.com/operator-framework/operator-sdk/blob/master/doc/images/operator-maturity-model.png) on operator maturity model.
 
 - Elasticsearch operator ensures proper layout of the pods
 - Elasticsearch operator enables proper rolling cluster restarts
@@ -119,7 +119,7 @@ file `$(RUN_PID)` (default `elasticsearch-operator.pid`) e.g. `kill $(cat elasti
 
 ### Image customization
 
-The operator is designed to work with `openshift/origin-logging-elasticsearch5` image.  To use
+The operator is designed to work with `quay.io/openshift/origin-logging-elasticsearch5` image.  To use
 a different image, edit `manifests/image-references` before deployment, or edit the elasticsearch
 cr after deployment e.g. `oc edit elasticsearch elasticsearch`.
 
@@ -140,6 +140,17 @@ Decide how many nodes you want to run.
 ### Elasticsearch node configuration customization
 
 TODO
+
+### Exposing elasticsearch service with a route
+
+Obtain the CA cert from Elasticsearch.
+```
+oc extract secret/elasticsearch --to=. --keys=admin-ca
+```
+Create a [re-encrypt route](https://docs.openshift.com/container-platform/3.11/architecture/networking/routes.html#secured-routes).
+
+In the Re-encrypt termination example, use the contents of the file `admin-ca` for spec.tls.destinationCACertificate.
+You do not need to set the spec.tls.key, spec.tls.certificate and spec.tls.caCertificate parameters shown in the example.
 
 ## Supported features
 
@@ -177,6 +188,17 @@ To run the e2e tests, install the above CRDs and from the repo directory, run:
 ```
 make test-e2e
 ```
+This assumes:
+
+* the operator-sdk installed (e.g. `make operator-sdk`)
+* the operator image is built (e.g. `make image`) and available to the OKD cluster
+
+**Note:** It is necessary to set the `IMAGE_ELASTICSEARCH_OPERATOR` environment variable to a valid pull spec in order to run this test against local changes to the `elasticsearch-operator`. For example:
+```	
+make deploy-image && \
+IMAGE_ELASTICSEARCH_OPERATOR=quay.io/openshift/origin-elasticsearch-operator:latest make test-e2e
+```
+
 
 ### Dev Testing
 You should first ensure that you have commands such as `imagebuilder` and `operator-sdk`
@@ -190,7 +212,7 @@ ELASTICSEARCH_OPERATOR=$GOPATH/src/github.com/openshift/elasticsearch-operator
 [REMOTE_REGISTRY=true] make deploy-example
 ```
 
-To test on an OCP cluster, you can run:
+To test on an OKD cluster, you can run:
 
     make go-run
 
@@ -198,3 +220,4 @@ To remove created API objects:
 ```
 make undeploy
 ```
+

@@ -120,10 +120,9 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 	}
 
 	esNode := elasticsearch.ElasticsearchNode{
-		Roles:        []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
-		NodeCount:    cluster.Spec.LogStore.NodeCount,
-		NodeSelector: cluster.Spec.LogStore.NodeSelector,
-		Storage:      cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+		Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+		NodeCount: cluster.Spec.LogStore.NodeCount,
+		Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
 	}
 
 	redundancyPolicy := cluster.Spec.LogStore.ElasticsearchSpec.RedundancyPolicy
@@ -145,8 +144,9 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 		},
 		Spec: elasticsearch.ElasticsearchSpec{
 			Spec: elasticsearch.ElasticsearchNodeSpec{
-				Image:     utils.GetComponentImage("elasticsearch"),
-				Resources: *resources,
+				Image:        utils.GetComponentImage("elasticsearch"),
+				Resources:    *resources,
+				NodeSelector: cluster.Spec.LogStore.NodeSelector,
 			},
 			Nodes:            esNodes,
 			ManagementState:  elasticsearch.ManagementStateManaged,
@@ -194,6 +194,8 @@ func (cluster *ClusterLogging) createOrUpdateElasticsearchCR() (err error) {
 func updateElasticsearchCRIfRequired(desired *elasticsearch.Elasticsearch) (err error) {
 	current := desired.DeepCopy()
 
+	current.Spec = elasticsearch.ElasticsearchSpec{}
+
 	if err = sdk.Get(current); err != nil {
 		if apierrors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
@@ -217,6 +219,12 @@ func updateElasticsearchCRIfRequired(desired *elasticsearch.Elasticsearch) (err 
 func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *elasticsearch.Elasticsearch) (*elasticsearch.Elasticsearch, bool) {
 
 	different := false
+
+	if !utils.AreSelectorsSame(current.Spec.Spec.NodeSelector, desired.Spec.Spec.NodeSelector) {
+		logrus.Infof("Elasticsearch nodeSelector change found, updating '%s'", current.Name)
+		current.Spec.Spec.NodeSelector = desired.Spec.Spec.NodeSelector
+		different = true
+	}
 
 	if current.Spec.Spec.Image != desired.Spec.Spec.Image {
 		logrus.Infof("Elasticsearch image change found, updating %v", current.Name)

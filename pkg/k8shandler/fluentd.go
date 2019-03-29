@@ -288,6 +288,8 @@ func createOrUpdateFluentdDaemonset(cluster *ClusterLogging) (err error) {
 func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current := desired.DeepCopy()
 
+	current.Spec = apps.DaemonSetSpec{}
+
 	if err = sdk.Get(current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled

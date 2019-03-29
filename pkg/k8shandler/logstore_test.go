@@ -1,17 +1,18 @@
 package k8shandler
 
 import (
+	"reflect"
 	"testing"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 
-	cluster := &logging.ClusterLogging{}
-	elasticsearch := newElasticsearchCR(cluster, "test-app-name")
+	cluster := NewClusterLogging(&logging.ClusterLogging{})
+	elasticsearch := cluster.newElasticsearchCR("test-app-name")
 
 	//check defaults
 	resources := elasticsearch.Spec.Spec.Resources
@@ -38,18 +39,46 @@ func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 	}
 }
 
-func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
-				Type: "elasticsearch",
-				ElasticsearchSpec: logging.ElasticsearchSpec{
-					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
+	expSelector := map[string]string{
+		"foo": "bar",
+	}
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeSelector: expSelector,
+					},
 				},
 			},
 		},
+	)
+	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+
+	for _, node := range elasticsearch.Spec.Nodes {
+		if !reflect.DeepEqual(node.NodeSelector, expSelector) {
+			t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, node.NodeSelector)
+		}
+
 	}
-	elasticsearch := newElasticsearchCR(cluster, "test-app-name")
+}
+
+func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+					},
+				},
+			},
+		},
+	)
+	elasticsearch := cluster.newElasticsearchCR("test-app-name")
 
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
@@ -76,5 +105,76 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != requestCPU {
 		t.Errorf("Exp. the default CPU request to be %v", requestCPU)
+	}
+}
+
+func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
+
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+					},
+				},
+			},
+		},
+	)
+	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+
+	cluster = NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						Resources: newResourceRequirements("10Gi", "", "12Gi", "500m"),
+					},
+				},
+			},
+		},
+	)
+	elasticsearch2 := cluster.newElasticsearchCR("test-app-name")
+
+	_, different := isElasticsearchCRDifferent(elasticsearch, elasticsearch2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to resource change")
+	}
+}
+
+func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeCount: 1,
+					},
+				},
+			},
+		},
+	)
+	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+
+	cluster = NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeCount: 2,
+					},
+				},
+			},
+		},
+	)
+	elasticsearch2 := cluster.newElasticsearchCR("test-app-name")
+
+	_, different := isElasticsearchCRDifferent(elasticsearch, elasticsearch2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to node count change")
 	}
 }

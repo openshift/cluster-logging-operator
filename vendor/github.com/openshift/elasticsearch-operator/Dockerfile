@@ -10,6 +10,7 @@ ENV RULES_FILE_PATH="/etc/elasticsearch-operator/files/prometheus_rules.yml"
 
 COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/_output/bin/elasticsearch-operator /usr/bin/
 COPY files/ /etc/elasticsearch-operator/files/
+ADD controller-manifests /manifests
 
 WORKDIR /usr/bin
 ENTRYPOINT ["elasticsearch-operator"]
@@ -17,5 +18,5 @@ ENTRYPOINT ["elasticsearch-operator"]
 LABEL io.k8s.display-name="OpenShift elasticsearch-operator" \
       io.k8s.description="This is the component that manages an Elasticsearch cluster on a kubernetes based platform" \
       io.openshift.tags="openshift,logging,elasticsearch" \
-      io.openshift.release.operator=true \
+      com.redhat.delivery.appregistry=true \
       maintainer="AOS Logging <aos-logging@redhat.com>"

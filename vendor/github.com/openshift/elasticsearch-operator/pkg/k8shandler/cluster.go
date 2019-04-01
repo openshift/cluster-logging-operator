@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -130,8 +131,7 @@ func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 					index, nodeStatus := getNodeStatus(node.name(), clusterStatus)
 
 					// Verify that we didn't scale up too many masters
-					err := isValidConf(cluster)
-					if err != nil {
+					if err := isValidConf(cluster); err != nil {
 						// if wrongConfig=true then we've already print out error message
 						// don't flood the stderr of the operator with the same message
 						if wrongConfig {
@@ -141,7 +141,9 @@ func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 						return err
 					}
 
-					node.create()
+					if err := node.create(); err != nil {
+						return err
+					}
 					nodeState := node.state()
 
 					nodeStatus.UpgradeStatus.ScheduledForUpgrade = nodeState.UpgradeStatus.ScheduledForUpgrade
@@ -207,16 +209,64 @@ func getNodeUpgradeInProgress(cluster *api.Elasticsearch) NodeTypeInterface {
 	return nil
 }
 
+func setUUIDs(cluster *api.Elasticsearch) {
+
+	for index := 0; index < len(cluster.Spec.Nodes); index++ {
+		if cluster.Spec.Nodes[index].GenUUID == nil {
+			uuid, err := utils.RandStringBytes(8)
+			if err != nil {
+				continue
+			}
+
+			// update the node to set uuid
+			cluster.Spec.Nodes[index].GenUUID = &uuid
+
+			nretries := -1
+			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				nretries++
+				if getErr := sdk.Get(cluster); getErr != nil {
+					logrus.Debugf("Could not get Elasticsearch %v: %v", cluster.Name, getErr)
+					return getErr
+				}
+
+				if cluster.Spec.Nodes[index].GenUUID != nil {
+					return nil
+				}
+
+				cluster.Spec.Nodes[index].GenUUID = &uuid
+
+				if updateErr := sdk.Update(cluster); updateErr != nil {
+					logrus.Debugf("Failed to update Elasticsearch %s status. Reason: %v. Trying again...", cluster.Name, updateErr)
+					return updateErr
+				}
+				return nil
+			})
+
+			if retryErr != nil {
+				logrus.Errorf("Error: could not update status for Elasticsearch %v after %v retries: %v", cluster.Name, nretries, retryErr)
+			}
+			logrus.Debugf("Updated Elasticsearch %v after %v retries", cluster.Name, nretries)
+		}
+	}
+
+}
+
 func getNodes(cluster *api.Elasticsearch) {
+
+	setUUIDs(cluster)
 
 	if nodes == nil {
 		nodes = make(map[string][]NodeTypeInterface)
 	}
 
 	// get list of client only nodes, and collapse node info into the node (self field) if needed
-	for index, node := range cluster.Spec.Nodes {
+	for _, node := range cluster.Spec.Nodes {
+
+		// TODO: collect UUIDs processed -- compare them against ones in status
+		//  check if someone updated a UUID of an already created node?
+
 		// build the NodeTypeInterface list
-		for _, nodeTypeInterface := range GetNodeTypeInterface(index, node, cluster) {
+		for _, nodeTypeInterface := range GetNodeTypeInterface(*node.GenUUID, node, cluster) {
 
 			nodeIndex, ok := containsNodeTypeInterface(nodeTypeInterface, nodes[nodeMapKey(cluster.Name, cluster.Namespace)])
 			if !ok {

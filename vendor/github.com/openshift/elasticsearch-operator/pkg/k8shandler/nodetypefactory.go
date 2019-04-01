@@ -21,14 +21,14 @@ type NodeTypeInterface interface {
 type NodeTypeFactory func(name, namespace string) NodeTypeInterface
 
 // this can potentially return a list if we have replicas > 1 for a data node
-func GetNodeTypeInterface(nodeIndex int, node api.ElasticsearchNode, cluster *api.Elasticsearch) []NodeTypeInterface {
+func GetNodeTypeInterface(uuid string, node api.ElasticsearchNode, cluster *api.Elasticsearch) []NodeTypeInterface {
 
 	nodes := []NodeTypeInterface{}
 
 	roleMap := getNodeRoleMap(node)
 
 	// common spec => cluster.Spec.Spec
-	nodeName := fmt.Sprintf("%s-%s", cluster.Name, getNodeSuffix(nodeIndex, roleMap))
+	nodeName := fmt.Sprintf("%s-%s", cluster.Name, getNodeSuffix(uuid, roleMap))
 
 	// if we have a data node then we need to create one deployment per replica
 	if isDataNode(node) {
@@ -47,22 +47,22 @@ func GetNodeTypeInterface(nodeIndex int, node api.ElasticsearchNode, cluster *ap
 	return nodes
 }
 
-func getNodeSuffix(nodeIndex int, roleMap map[api.ElasticsearchNodeRole]bool) string {
+func getNodeSuffix(uuid string, roleMap map[api.ElasticsearchNodeRole]bool) string {
 
 	suffix := ""
 	if roleMap[api.ElasticsearchRoleClient] {
-		suffix = fmt.Sprintf("%s%s", suffix, "client")
+		suffix = fmt.Sprintf("%s%s", suffix, "c")
 	}
 
 	if roleMap[api.ElasticsearchRoleData] {
-		suffix = fmt.Sprintf("%s%s", suffix, "data")
+		suffix = fmt.Sprintf("%s%s", suffix, "d")
 	}
 
 	if roleMap[api.ElasticsearchRoleMaster] {
-		suffix = fmt.Sprintf("%s%s", suffix, "master")
+		suffix = fmt.Sprintf("%s%s", suffix, "m")
 	}
 
-	return fmt.Sprintf("%s-%d", suffix, nodeIndex)
+	return fmt.Sprintf("%s-%s", suffix, uuid)
 }
 
 func addDataNodeSuffix(nodeName string, replicaNumber int32) string {

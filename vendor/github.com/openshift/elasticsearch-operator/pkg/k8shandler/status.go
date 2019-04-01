@@ -91,7 +91,7 @@ func getNodeStatus(name string, status *api.ElasticsearchStatus) (int, *api.Elas
 
 func rolePodStateMap(namespace string, clusterName string) map[api.ElasticsearchNodeRole]api.PodStateMap {
 
-	baseSelector := fmt.Sprintf("component=%s", clusterName)
+	baseSelector := fmt.Sprintf("component=elasticsearch,cluster-name=%v", clusterName)
 	clientList, _ := GetPodList(namespace, fmt.Sprintf("%s,%s", baseSelector, "es-node-client=true"))
 	dataList, _ := GetPodList(namespace, fmt.Sprintf("%s,%s", baseSelector, "es-node-data=true"))
 	masterList, _ := GetPodList(namespace, fmt.Sprintf("%s,%s", baseSelector, "es-node-master=true"))
@@ -142,7 +142,7 @@ func isPodReady(pod v1.Pod) bool {
 func updateNodeConditions(clusterName, namespace string, status *api.ElasticsearchStatus) {
 	// Get all pods based on status.Nodes[] and check their conditions
 	// get pod with label 'node-name=node.getName()'
-	baseSelector := fmt.Sprintf("component=%s", clusterName)
+	baseSelector := fmt.Sprintf("component=elasticsearch,cluster-name=%s", clusterName)
 
 	thresholdEnabled, err := GetThresholdEnabled(clusterName, namespace)
 	if err != nil {
@@ -573,6 +573,28 @@ func updateInvalidDataCountCondition(status *api.ElasticsearchStatus, value v1.C
 		Reason:  reason,
 		Message: message,
 	})
+}
+
+func updateInvalidUUIDChangeCondition(cluster *api.Elasticsearch, value v1.ConditionStatus, message string) error {
+	var reason string
+	if value == v1.ConditionTrue {
+		reason = "Invalid Spec"
+	} else {
+		reason = ""
+	}
+
+	return updateConditionWithRetry(
+		cluster,
+		value,
+		func(status *api.ElasticsearchStatus, value v1.ConditionStatus) bool {
+			return updateESNodeCondition(&cluster.Status, &api.ClusterCondition{
+				Type:    api.InvalidUUID,
+				Status:  value,
+				Reason:  reason,
+				Message: message,
+			})
+		},
+	)
 }
 
 func updateInvalidReplicationCondition(status *api.ElasticsearchStatus, value v1.ConditionStatus) bool {

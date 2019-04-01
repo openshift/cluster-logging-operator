@@ -30,3 +30,22 @@ func RandStringBase64(length int) (string, error) {
 
 	return randStringBase64, nil
 }
+
+const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+func RandStringBytes(length int) (string, error) {
+	if length <= 0 {
+		return "", fmt.Errorf("Can't generate random strings of length: %d", length)
+	}
+
+	randString := make([]byte, length)
+	_, err := rand.Read(randString)
+	if err != nil {
+		return "", fmt.Errorf("Failed to generate random string: %v", err)
+	}
+
+	for i, b := range randString {
+		randString[i] = letters[b%byte(len(letters))]
+	}
+	return string(randString), nil
+}

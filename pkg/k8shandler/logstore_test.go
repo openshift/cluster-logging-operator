@@ -20,17 +20,8 @@ func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 	if resources.Limits[v1.ResourceMemory] != defaultEsMemory {
 		t.Errorf("Exp. the default memory limit to be %v", defaultEsMemory)
 	}
-	if resources.Requests[v1.ResourceMemory] != defaultEsMemory {
-		t.Errorf("Exp. the default memory request to be %v", defaultEsMemory)
-	}
-	if resources.Requests[v1.ResourceCPU] != defaultEsCpuRequest {
-		t.Errorf("Exp. the default CPU request to be %v", defaultEsCpuRequest)
-	}
-
-	//check node overrides
-	resources = elasticsearchCR.Spec.Nodes[0].Resources
-	if resources.Limits[v1.ResourceMemory] != defaultEsMemory {
-		t.Errorf("Exp. the default memory limit to be %v", defaultEsMemory)
+	if resources.Limits[v1.ResourceCPU] != defaultEsCpuRequest {
+		t.Errorf("Exp. the default CPU limit to be %v", defaultEsCpuRequest)
 	}
 	if resources.Requests[v1.ResourceMemory] != defaultEsMemory {
 		t.Errorf("Exp. the default memory request to be %v", defaultEsMemory)
@@ -89,17 +80,8 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 	if resources.Limits[v1.ResourceMemory] != limitMemory {
 		t.Errorf("Exp. the default memory limit to be %v", limitMemory)
 	}
-	if resources.Requests[v1.ResourceMemory] != requestMemory {
-		t.Errorf("Exp. the default memory request to be %v", requestMemory)
-	}
-	if resources.Requests[v1.ResourceCPU] != requestCPU {
-		t.Errorf("Exp. the default CPU request to be %v", requestCPU)
-	}
-
-	//check node overrides
-	resources = elasticsearchCR.Spec.Nodes[0].Resources
-	if resources.Limits[v1.ResourceMemory] != limitMemory {
-		t.Errorf("Exp. the default memory limit to be %v", limitMemory)
+	if resources.Requests[v1.ResourceCPU] == defaultEsCpuRequest {
+		t.Errorf("Exp. the default CPU limit to not be %v", defaultEsCpuRequest)
 	}
 	if resources.Requests[v1.ResourceMemory] != requestMemory {
 		t.Errorf("Exp. the default memory request to be %v", requestMemory)

@@ -10,6 +10,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/openshift/elasticsearch-operator/pkg/utils"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -61,4 +63,14 @@ func WaitForStatefulset(t *testing.T, kubeclient kubernetes.Interface, namespace
 	}
 	t.Logf("Statefulset available (%d/%d)\n", replicas, replicas)
 	return nil
+}
+
+func GenerateUUID() string {
+
+	uuid, err := utils.RandStringBytes(8)
+	if err != nil {
+		return ""
+	}
+
+	return uuid
 }

@@ -108,7 +108,10 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 	var resources = cluster.Spec.LogStore.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
-			Limits: v1.ResourceList{v1.ResourceMemory: defaultEsMemory},
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: defaultEsMemory,
+				v1.ResourceCPU:    defaultEsCpuRequest,
+			},
 			Requests: v1.ResourceList{
 				v1.ResourceMemory: defaultEsMemory,
 				v1.ResourceCPU:    defaultEsCpuRequest,
@@ -120,7 +123,6 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 		Roles:        []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
 		NodeCount:    cluster.Spec.LogStore.NodeCount,
 		NodeSelector: cluster.Spec.LogStore.NodeSelector,
-		Resources:    *resources,
 		Storage:      cluster.Spec.LogStore.ElasticsearchSpec.Storage,
 	}
 
@@ -234,9 +236,102 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 		different = true
 	}
 
-	if !reflect.DeepEqual(current.Spec.Nodes, desired.Spec.Nodes) {
+	if nodes, ok := areNodesDifferent(current.Spec.Nodes, desired.Spec.Nodes); ok {
 		logrus.Infof("Elasticsearch node configuration change found, updating %v", current.Name)
-		current.Spec.Nodes = desired.Spec.Nodes
+		current.Spec.Nodes = nodes
+		different = true
+	}
+
+	return current, different
+}
+
+func areNodesDifferent(current, desired []elasticsearch.ElasticsearchNode) ([]elasticsearch.ElasticsearchNode, bool) {
+
+	different := false
+
+	// nodes were removed
+	if len(current) == 0 {
+		return desired, true
+	}
+
+	foundRoleMatch := false
+	for nodeIndex := 0; nodeIndex < len(desired); nodeIndex++ {
+		for _, node := range current {
+			if areNodeRolesSame(node, desired[nodeIndex]) {
+				if updatedNode, isDifferent := isNodeDifferent(node, desired[nodeIndex]); isDifferent {
+					desired[nodeIndex] = updatedNode
+					different = true
+				}
+				foundRoleMatch = true
+			}
+		}
+	}
+
+	// if we didn't find a role match, then that means changes were made
+	if !foundRoleMatch {
+		different = true
+	}
+
+	return desired, different
+}
+
+func areNodeRolesSame(lhs, rhs elasticsearch.ElasticsearchNode) bool {
+
+	if len(lhs.Roles) != len(rhs.Roles) {
+		return false
+	}
+
+	lhsClient := false
+	lhsData := false
+	lhsMaster := false
+
+	rhsClient := false
+	rhsData := false
+	rhsMaster := false
+
+	for _, role := range lhs.Roles {
+		if role == elasticsearch.ElasticsearchRoleClient {
+			lhsClient = true
+		}
+
+		if role == elasticsearch.ElasticsearchRoleData {
+			lhsData = true
+		}
+
+		if role == elasticsearch.ElasticsearchRoleMaster {
+			lhsMaster = true
+		}
+	}
+
+	for _, role := range rhs.Roles {
+		if role == elasticsearch.ElasticsearchRoleClient {
+			rhsClient = true
+		}
+
+		if role == elasticsearch.ElasticsearchRoleData {
+			rhsData = true
+		}
+
+		if role == elasticsearch.ElasticsearchRoleMaster {
+			rhsMaster = true
+		}
+	}
+
+	return (lhsClient == rhsClient) && (lhsData == rhsData) && (lhsMaster == rhsMaster)
+}
+
+func isNodeDifferent(current, desired elasticsearch.ElasticsearchNode) (elasticsearch.ElasticsearchNode, bool) {
+
+	different := false
+
+	// check the different components that we normally set instead of using reflect
+	// ignore the GenUUID if we aren't setting it.
+	if desired.GenUUID == nil {
+		desired.GenUUID = current.GenUUID
+	}
+
+	if !reflect.DeepEqual(current, desired) {
+		current = desired
 		different = true
 	}
 

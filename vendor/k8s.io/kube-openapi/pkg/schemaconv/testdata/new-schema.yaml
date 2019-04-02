@@ -229,7 +229,7 @@ types:
         scalar: string
     - name: data
       type:
-        untyped: {}
+        namedType: io.k8s.apimachinery.pkg.runtime.RawExtension
     - name: kind
       type:
         scalar: string
@@ -753,7 +753,7 @@ types:
         scalar: string
     - name: data
       type:
-        untyped: {}
+        namedType: io.k8s.apimachinery.pkg.runtime.RawExtension
     - name: kind
       type:
         scalar: string
@@ -1124,7 +1124,7 @@ types:
         scalar: string
     - name: data
       type:
-        untyped: {}
+        namedType: io.k8s.apimachinery.pkg.runtime.RawExtension
     - name: kind
       type:
         scalar: string
@@ -9729,7 +9729,7 @@ types:
       type:
         scalar: string
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.MicroTime
-  untyped: {}
+  scalar: string
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta
   struct:
     fields:
@@ -9895,13 +9895,13 @@ types:
       type:
         scalar: string
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.Time
-  untyped: {}
+  scalar: string
 - name: io.k8s.apimachinery.pkg.apis.meta.v1.WatchEvent
   struct:
     fields:
     - name: object
       type:
-        untyped: {}
+        namedType: io.k8s.apimachinery.pkg.runtime.RawExtension
     - name: type
       type:
         scalar: string

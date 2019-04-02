@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -12,10 +13,10 @@ import (
 func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 
 	cluster := NewClusterLogging(&logging.ClusterLogging{})
-	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
 
 	//check defaults
-	resources := elasticsearch.Spec.Spec.Resources
+	resources := elasticsearchCR.Spec.Spec.Resources
 	if resources.Limits[v1.ResourceMemory] != defaultEsMemory {
 		t.Errorf("Exp. the default memory limit to be %v", defaultEsMemory)
 	}
@@ -27,7 +28,7 @@ func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 	}
 
 	//check node overrides
-	resources = elasticsearch.Spec.Nodes[0].Resources
+	resources = elasticsearchCR.Spec.Nodes[0].Resources
 	if resources.Limits[v1.ResourceMemory] != defaultEsMemory {
 		t.Errorf("Exp. the default memory limit to be %v", defaultEsMemory)
 	}
@@ -55,9 +56,9 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 			},
 		},
 	)
-	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
 
-	for _, node := range elasticsearch.Spec.Nodes {
+	for _, node := range elasticsearchCR.Spec.Nodes {
 		if !reflect.DeepEqual(node.NodeSelector, expSelector) {
 			t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, node.NodeSelector)
 		}
@@ -78,13 +79,13 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 			},
 		},
 	)
-	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
 
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
 	requestCPU := resource.MustParse("500m")
 	//check defaults
-	resources := elasticsearch.Spec.Spec.Resources
+	resources := elasticsearchCR.Spec.Spec.Resources
 	if resources.Limits[v1.ResourceMemory] != limitMemory {
 		t.Errorf("Exp. the default memory limit to be %v", limitMemory)
 	}
@@ -96,7 +97,7 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 	}
 
 	//check node overrides
-	resources = elasticsearch.Spec.Nodes[0].Resources
+	resources = elasticsearchCR.Spec.Nodes[0].Resources
 	if resources.Limits[v1.ResourceMemory] != limitMemory {
 		t.Errorf("Exp. the default memory limit to be %v", limitMemory)
 	}
@@ -122,7 +123,7 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 			},
 		},
 	)
-	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
 
 	cluster = NewClusterLogging(
 		&logging.ClusterLogging{
@@ -136,9 +137,9 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 			},
 		},
 	)
-	elasticsearch2 := cluster.newElasticsearchCR("test-app-name")
+	elasticsearchCR2 := cluster.newElasticsearchCR("test-app-name")
 
-	_, different := isElasticsearchCRDifferent(elasticsearch, elasticsearch2)
+	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
 		t.Errorf("Expected that difference would be found due to resource change")
 	}
@@ -157,7 +158,7 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 			},
 		},
 	)
-	elasticsearch := cluster.newElasticsearchCR("test-app-name")
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
 
 	cluster = NewClusterLogging(
 		&logging.ClusterLogging{
@@ -171,10 +172,48 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 			},
 		},
 	)
-	elasticsearch2 := cluster.newElasticsearchCR("test-app-name")
+	elasticsearchCR2 := cluster.newElasticsearchCR("test-app-name")
 
-	_, different := isElasticsearchCRDifferent(elasticsearch, elasticsearch2)
+	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
 		t.Errorf("Expected that difference would be found due to node count change")
+	}
+}
+
+func TestDefaultRedundancyUsedWhenOmitted(t *testing.T) {
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type:              "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{},
+				},
+			},
+		},
+	)
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
+
+	if !reflect.DeepEqual(elasticsearchCR.Spec.RedundancyPolicy, elasticsearch.ZeroRedundancy) {
+		t.Errorf("Exp. the redundancyPolicy to be %q but was %q", elasticsearch.ZeroRedundancy, elasticsearchCR.Spec.RedundancyPolicy)
+	}
+}
+
+func TestUseRedundancyWhenSpecified(t *testing.T) {
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						RedundancyPolicy: elasticsearch.SingleRedundancy,
+					},
+				},
+			},
+		},
+	)
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
+
+	if !reflect.DeepEqual(elasticsearchCR.Spec.RedundancyPolicy, elasticsearch.SingleRedundancy) {
+		t.Errorf("Exp. the redundancyPolicy to be %q but was %q", elasticsearch.SingleRedundancy, elasticsearchCR.Spec.RedundancyPolicy)
 	}
 }

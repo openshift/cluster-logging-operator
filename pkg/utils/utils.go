@@ -149,3 +149,14 @@ func GetReplicaSetList(namespace string, selector string) (*apps.ReplicaSetList,
 
 	return list, err
 }
+
+func CheckFileExists(filePath string) error {
+	_, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("'%s' not found", filePath)
+		}
+		return err
+	}
+	return nil
+}

@@ -199,7 +199,7 @@
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1"]
-  revision = "c7ad857e4d71f454a6e160fc6873746260405579"
+  revision = "7e39ced7031f0904075f2e2763dc6f48bb6e1f98"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -341,7 +341,7 @@
     "internal/module",
     "internal/semver"
   ]
-  revision = "4fc9f0bfa59af25ec747132b66fc7887a8c34490"
+  revision = "4c644d7e323d3b4a3883d4e238b908fe615f7586"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -574,7 +574,7 @@
     "pkg/generators/rules",
     "pkg/util/sets"
   ]
-  revision = "c59034cc13d587f5ef4e85ca0ade0c1866ae8e1d"
+  revision = "94e1e7b7574c44c4c0f2007de6fe617e259191f3"
 
 [[projects]]
   name = "sigs.k8s.io/controller-runtime"

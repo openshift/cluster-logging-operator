@@ -49,11 +49,8 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 	)
 	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
 
-	for _, node := range elasticsearchCR.Spec.Nodes {
-		if !reflect.DeepEqual(node.NodeSelector, expSelector) {
-			t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, node.NodeSelector)
-		}
-
+	if !reflect.DeepEqual(elasticsearchCR.Spec.Spec.NodeSelector, expSelector) {
+		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, elasticsearchCR.Spec.Spec.NodeSelector)
 	}
 }
 

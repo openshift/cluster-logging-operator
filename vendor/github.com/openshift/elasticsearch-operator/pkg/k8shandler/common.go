@@ -354,7 +354,7 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 				),
 				proxyContainer,
 			},
-			NodeSelector:       node.NodeSelector,
+			NodeSelector:       mergeSelectors(node.NodeSelector, commonSpec.NodeSelector),
 			ServiceAccountName: clusterName,
 			Volumes:            newVolumes(clusterName, nodeName, namespace, node),
 		},

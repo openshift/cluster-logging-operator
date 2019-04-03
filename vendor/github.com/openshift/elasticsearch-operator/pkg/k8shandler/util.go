@@ -37,6 +37,35 @@ func appendDefaultLabel(clusterName string, labels map[string]string) map[string
 	return labels
 }
 
+func areSelectorsSame(lhs, rhs map[string]string) bool {
+
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	for lhsKey, lhsVal := range lhs {
+		rhsVal, ok := rhs[lhsKey]
+		if !ok || lhsVal != rhsVal {
+			return false
+		}
+	}
+
+	return true
+}
+
+func mergeSelectors(nodeSelectors, commonSelectors map[string]string) map[string]string {
+
+	if commonSelectors == nil {
+		commonSelectors = make(map[string]string)
+	}
+
+	for k, v := range nodeSelectors {
+		commonSelectors[k] = v
+	}
+
+	return commonSelectors
+}
+
 // getPodNames returns the pod names of the array of pods passed in
 func getPodNames(pods []v1.Pod) []string {
 	var podNames []string

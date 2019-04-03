@@ -532,6 +532,8 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 func updateKibanaIfRequired(desired *apps.Deployment) (err error) {
 	current := desired.DeepCopy()
 
+	current.Spec = apps.DeploymentSpec{}
+
 	if err = sdk.Get(current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
@@ -555,6 +557,12 @@ func updateKibanaIfRequired(desired *apps.Deployment) (err error) {
 func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*apps.Deployment, bool) {
 
 	different := false
+
+	if !utils.AreSelectorsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
+		logrus.Infof("Invalid Kibana nodeSelector change found, updating '%s'", current.Name)
+		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
+		different = true
+	}
 
 	if *current.Spec.Replicas != *desired.Spec.Replicas {
 		logrus.Infof("Invalid Kibana replica count found, updating %q", current.Name)

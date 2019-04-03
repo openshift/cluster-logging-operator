@@ -317,7 +317,7 @@ func newLabels(clusterName, nodeName string, roleMap map[api.ElasticsearchNodeRo
 		"es-node-data":                     strconv.FormatBool(roleMap[api.ElasticsearchRoleData]),
 		"es-node-master":                   strconv.FormatBool(roleMap[api.ElasticsearchRoleMaster]),
 		"cluster-name":                     clusterName,
-		"component":                        clusterName,
+		"component":                        "elasticsearch",
 		"tuned.openshift.io/elasticsearch": "true",
 		"node-name":                        nodeName,
 	}
@@ -362,41 +362,132 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 }
 
 func newResourceRequirements(nodeResRequirements, commonResRequirements v1.ResourceRequirements) v1.ResourceRequirements {
-	limitCPU := nodeResRequirements.Limits.Cpu()
-	if limitCPU.IsZero() {
-		if commonResRequirements.Limits.Cpu().IsZero() {
-			CPU, _ := resource.ParseQuantity(defaultCPULimit)
-			limitCPU = &CPU
+	// if only one resource (cpu or memory) is specified as a limit/request use it for the other value as well instead of
+	//  using the defaults.
+
+	var requestMem *resource.Quantity
+	var limitMem *resource.Quantity
+	var requestCPU *resource.Quantity
+	var limitCPU *resource.Quantity
+
+	// first check if either limit or resource is left off
+	// Mem
+	nodeLimitMem := nodeResRequirements.Limits.Memory()
+	nodeRequestMem := nodeResRequirements.Requests.Memory()
+	commonLimitMem := commonResRequirements.Limits.Memory()
+	commonRequestMem := commonResRequirements.Requests.Memory()
+
+	if commonRequestMem.IsZero() && commonLimitMem.IsZero() {
+		// no common memory settings
+		if nodeRequestMem.IsZero() && nodeLimitMem.IsZero() {
+			// no node settings, use defaults
+			lMem, _ := resource.ParseQuantity(defaultMemoryLimit)
+			limitMem = &lMem
+
+			rMem, _ := resource.ParseQuantity(defaultMemoryRequest)
+			requestMem = &rMem
 		} else {
-			limitCPU = commonResRequirements.Limits.Cpu()
+			// either one is not zero or both aren't zero but common is empty
+			if nodeRequestMem.IsZero() {
+				// request is zero use limit for both
+				requestMem = nodeLimitMem
+				limitMem = nodeLimitMem
+			} else {
+				if nodeLimitMem.IsZero() {
+					// limit is zero use request for both
+					requestMem = nodeRequestMem
+					limitMem = nodeRequestMem
+				} else {
+					// both aren't zero
+					requestMem = nodeRequestMem
+					limitMem = nodeLimitMem
+				}
+			}
 		}
-	}
-	limitMem := nodeResRequirements.Limits.Memory()
-	if limitMem.IsZero() {
-		if commonResRequirements.Limits.Memory().IsZero() {
-			Mem, _ := resource.ParseQuantity(defaultMemoryLimit)
-			limitMem = &Mem
+	} else {
+		// either one is not zero or both aren't zero (common)
+
+		//check node for override
+		if nodeRequestMem.IsZero() {
+			// no node request mem, check that common has it
+			if commonRequestMem.IsZero() {
+				requestMem = commonLimitMem
+			} else {
+				requestMem = commonRequestMem
+			}
 		} else {
-			limitMem = commonResRequirements.Limits.Memory()
+			requestMem = nodeRequestMem
 		}
 
-	}
-	requestCPU := nodeResRequirements.Requests.Cpu()
-	if requestCPU.IsZero() {
-		if commonResRequirements.Requests.Cpu().IsZero() {
-			CPU, _ := resource.ParseQuantity(defaultCPURequest)
-			requestCPU = &CPU
+		if nodeLimitMem.IsZero() {
+			// no node request mem, check that common has it
+			if commonLimitMem.IsZero() {
+				limitMem = commonRequestMem
+			} else {
+				limitMem = commonLimitMem
+			}
 		} else {
-			requestCPU = commonResRequirements.Requests.Cpu()
+			limitMem = nodeLimitMem
 		}
 	}
-	requestMem := nodeResRequirements.Requests.Memory()
-	if requestMem.IsZero() {
-		if commonResRequirements.Requests.Memory().IsZero() {
-			Mem, _ := resource.ParseQuantity(defaultMemoryRequest)
-			requestMem = &Mem
+
+	// CPU
+	nodeLimitCPU := nodeResRequirements.Limits.Cpu()
+	nodeRequestCPU := nodeResRequirements.Requests.Cpu()
+	commonLimitCPU := commonResRequirements.Limits.Cpu()
+	commonRequestCPU := commonResRequirements.Requests.Cpu()
+
+	if commonRequestCPU.IsZero() && commonLimitCPU.IsZero() {
+		// no common memory settings
+		if nodeRequestCPU.IsZero() && nodeLimitCPU.IsZero() {
+			// no node settings, use defaults
+			lCPU, _ := resource.ParseQuantity(defaultCPULimit)
+			limitCPU = &lCPU
+
+			rCPU, _ := resource.ParseQuantity(defaultCPURequest)
+			requestCPU = &rCPU
 		} else {
-			requestMem = commonResRequirements.Requests.Memory()
+			// either one is not zero or both aren't zero but common is empty
+			if nodeRequestCPU.IsZero() {
+				// request is zero use limit for both
+				requestCPU = nodeLimitCPU
+				limitCPU = nodeLimitCPU
+			} else {
+				if nodeLimitCPU.IsZero() {
+					// limit is zero use request for both
+					requestCPU = nodeRequestCPU
+					limitCPU = nodeRequestCPU
+				} else {
+					// both aren't zero
+					requestCPU = nodeRequestCPU
+					limitCPU = nodeLimitCPU
+				}
+			}
+		}
+	} else {
+		// either one is not zero or both aren't zero (common)
+
+		//check node for override
+		if nodeRequestCPU.IsZero() {
+			// no node request mem, check that common has it
+			if commonRequestCPU.IsZero() {
+				requestCPU = commonLimitCPU
+			} else {
+				requestCPU = commonRequestCPU
+			}
+		} else {
+			requestCPU = nodeRequestCPU
+		}
+
+		if nodeLimitCPU.IsZero() {
+			// no node request mem, check that common has it
+			if commonLimitCPU.IsZero() {
+				limitCPU = commonRequestCPU
+			} else {
+				limitCPU = commonLimitCPU
+			}
+		} else {
+			limitCPU = nodeLimitCPU
 		}
 	}
 

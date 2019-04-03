@@ -460,8 +460,9 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 		"-tls-key=/secret/server-key",
 		"-pass-access-token",
 		"-skip-provider-button",
-		"-openshift-sar={\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}",
-		"-openshift-delegate-urls={\"/\": {\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}}",
+        // FIX: https://bugzilla.redhat.com/show_bug.cgi?id=1693957 or revert 1666674 completely
+		//		"-openshift-sar={\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}",
+		//		"-openshift-delegate-urls={\"/\": {\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}}",
 	}
 
 	kibanaProxyContainer.Env = []v1.EnvVar{

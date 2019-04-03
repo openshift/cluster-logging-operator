@@ -315,5 +315,10 @@ func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.
 		different = true
 	}
 
+	if utils.AreResourcesDifferent(current, desired) {
+		logrus.Infof("Curator resources change found, updating %q", current.Name)
+		different = true
+	}
+
 	return current, different
 }

@@ -124,6 +124,11 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 		Storage:      cluster.Spec.LogStore.ElasticsearchSpec.Storage,
 	}
 
+	redundancyPolicy := cluster.Spec.LogStore.ElasticsearchSpec.RedundancyPolicy
+	if redundancyPolicy == "" {
+		redundancyPolicy = elasticsearch.ZeroRedundancy
+	}
+
 	// build Nodes
 	esNodes = append(esNodes, esNode)
 
@@ -143,7 +148,7 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 			},
 			Nodes:            esNodes,
 			ManagementState:  elasticsearch.ManagementStateManaged,
-			RedundancyPolicy: cluster.Spec.LogStore.ElasticsearchSpec.RedundancyPolicy,
+			RedundancyPolicy: redundancyPolicy,
 		},
 	}
 

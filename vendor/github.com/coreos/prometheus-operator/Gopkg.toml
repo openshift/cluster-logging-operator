@@ -1,0 +1,77 @@
+# Gopkg.toml example
+#
+# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# for detailed Gopkg.toml documentation.
+#
+# required = ["github.com/user/thing/cmd/thing"]
+# ignored = ["github.com/user/project/pkgX", "bitbucket.org/user/project/pkgA/pkgY"]
+#
+# [[constraint]]
+#   name = "github.com/user/project"
+#   version = "1.0.0"
+#
+# [[constraint]]
+#   name = "github.com/user/project2"
+#   branch = "dev"
+#   source = "github.com/myfork/project2"
+#
+# [[override]]
+#  name = "github.com/x/y"
+#  version = "2.4.0"
+
+
+[[constraint]]
+  name = "github.com/Jeffail/gabs"
+  version = "1.0.0"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/ant31/crd-validation"
+
+[[constraint]]
+  name = "github.com/blang/semver"
+  version = "3.5.1"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/go-openapi/spec"
+
+[[constraint]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.13.0"
+
+[[constraint]]
+  name = "k8s.io/apiextensions-apiserver"
+  version = "kubernetes-1.13.0"
+
+[[constraint]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.13.0"
+
+[[constraint]]
+  name = "k8s.io/client-go"
+  version = "=v10.0.0"
+
+[[constraint]]
+  name = "k8s.io/kube-openapi"
+  revision = "c59034cc13d587f5ef4e85ca0ade0c1866ae8e1d"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/kylelemons/godebug"
+
+[[override]]
+  name = "github.com/json-iterator/go"
+  revision = "ab8a2e0c74be9d3be70b3184d9acc634935ded82"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/mitchellh/hashstructure"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/prometheus/client_golang"
+
+[[constraint]]
+  name = "github.com/improbable-eng/thanos"
+  revision = "cd7963372a11cea93a832584be099d2bfa0ac19a"

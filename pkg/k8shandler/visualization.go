@@ -26,10 +26,6 @@ func (cluster *ClusterLogging) CreateOrUpdateVisualization() (err error) {
 			return
 		}
 
-		if err = cluster.createKibanaProxyClusterRoleBinding(); err != nil {
-			return
-		}
-
 		if err = cluster.createOrUpdateKibanaService(); err != nil {
 			return
 		}
@@ -125,30 +121,6 @@ func (cluster *ClusterLogging) removeKibana() (err error) {
 		if err = utils.RemoveOAuthClient(cluster.Namespace, proxyName); err != nil {
 			return
 		}
-	}
-
-	return nil
-}
-
-func (cluster *ClusterLogging) createKibanaProxyClusterRoleBinding() (err error) {
-
-	subject := utils.NewSubject(
-		"ServiceAccount",
-		"kibana",
-	)
-	subject.Namespace = cluster.Namespace
-	subject.APIGroup = ""
-
-	clusterRoleBinding := utils.NewClusterRoleBinding(
-		"kibana-proxy-oauth-delegator",
-		"system:auth-delegator",
-		utils.NewSubjects(subject),
-	)
-	cluster.AddOwnerRefTo(clusterRoleBinding)
-
-	err = cluster.Runtime.Create(clusterRoleBinding)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana clusterrolebinding %q: %v", clusterRoleBinding.Name, err)
 	}
 
 	return nil
@@ -460,9 +432,6 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 		"-tls-key=/secret/server-key",
 		"-pass-access-token",
 		"-skip-provider-button",
-		// FIX: https://bugzilla.redhat.com/show_bug.cgi?id=1693957 or revert 1666674 completely
-		//		"-openshift-sar={\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}",
-		//		"-openshift-delegate-urls={\"/\": {\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}}",
 	}
 
 	kibanaProxyContainer.Env = []v1.EnvVar{

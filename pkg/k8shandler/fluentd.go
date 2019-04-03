@@ -22,6 +22,7 @@ const (
 	metricsPortName   = "metrics"
 	prometheusCAFile  = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
 	metricsVolumeName = "fluentd-metrics"
+	alertsFile        = "/usr/share/logging/fluentd/fluentd_prometheus_alerts.yaml"
 )
 
 func removeFluentd(cluster *ClusterLogging) (err error) {
@@ -34,6 +35,11 @@ func removeFluentd(cluster *ClusterLogging) (err error) {
 		if err = utils.RemoveServiceMonitor(cluster.Namespace, "fluentd"); err != nil {
 			return
 		}
+
+		if err = utils.RemovePrometheusRule(cluster.Namespace, "fluentd"); err != nil {
+			return
+		}
+
 
 		if err = utils.RemoveConfigMap(cluster.Namespace, "fluentd"); err != nil {
 			return
@@ -118,15 +124,35 @@ func createOrUpdateFluentdServiceMonitor(cluster *ClusterLogging) error {
 	return nil
 }
 
+func createOrUpdateFluentdPrometheusRule(cluster *ClusterLogging) error {
+	promRule := utils.NewPrometheusRule("fluentd", cluster.Namespace)
+
+	promRuleSpec, err := utils.NewPrometheusRuleSpecFrom(alertsFile)
+	if err != nil {
+		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
+	}
+
+	promRule.Spec = *promRuleSpec
+
+	utils.AddOwnerRefToObject(promRule, utils.AsOwner(cluster))
+
+	err = sdk.Create(promRule)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
+	}
+
+	return nil
+}
+
 func createOrUpdateFluentdConfigMap(cluster *ClusterLogging) error {
 
 	fluentdConfigMap := utils.NewConfigMap(
 		"fluentd",
 		cluster.Namespace,
 		map[string]string{
-			"fluent.conf":          string(utils.GetFileContents("files/fluent.conf")),
-			"throttle-config.yaml": string(utils.GetFileContents("files/fluentd-throttle-config.yaml")),
-			"secure-forward.conf":  string(utils.GetFileContents("files/secure-forward.conf")),
+			"fluent.conf":          string(utils.GetFileContents("/usr/share/logging/fluentd/fluent.conf")),
+			"throttle-config.yaml": string(utils.GetFileContents("/usr/share/logging/fluentd/fluentd-throttle-config.yaml")),
+			"secure-forward.conf":  string(utils.GetFileContents("/usr/share/logging/fluentd/secure-forward.conf")),
 		},
 	)
 

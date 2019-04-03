@@ -114,9 +114,9 @@ func (cluster *ClusterLogging) createOrUpdateCuratorConfigMap() error {
 		"curator",
 		cluster.Namespace,
 		map[string]string{
-			"actions.yaml":  string(utils.GetFileContents("files/curator-actions.yaml")),
-			"curator5.yaml": string(utils.GetFileContents("files/curator5-config.yaml")),
-			"config.yaml":   string(utils.GetFileContents("files/curator-config.yaml")),
+			"actions.yaml":  string(utils.GetFileContents("/usr/share/logging/curator/curator-actions.yaml")),
+			"curator5.yaml": string(utils.GetFileContents("/usr/share/logging/curator/curator5-config.yaml")),
+			"config.yaml":   string(utils.GetFileContents("/usr/share/logging/curator/curator-config.yaml")),
 		},
 	)
 

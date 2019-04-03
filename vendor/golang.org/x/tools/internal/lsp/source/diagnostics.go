@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/asmdecl"
@@ -54,11 +53,11 @@ const (
 func Diagnostics(ctx context.Context, v View, uri span.URI) (map[span.URI][]Diagnostic, error) {
 	f, err := v.GetFile(ctx, uri)
 	if err != nil {
-		return nil, err
+		return singleDiagnostic(uri, "no file found for %s", uri), nil
 	}
 	pkg := f.GetPackage(ctx)
 	if pkg == nil {
-		return nil, fmt.Errorf("no package found for %v", f.URI())
+		return singleDiagnostic(uri, "%s is not part of a package", uri), nil
 	}
 	// Prepare the reports we will send for this package.
 	reports := make(map[span.URI][]Diagnostic)
@@ -90,7 +89,8 @@ func Diagnostics(ctx context.Context, v View, uri span.URI) (map[span.URI][]Diag
 			if diagFile, err := v.GetFile(ctx, spn.URI()); err == nil {
 				tok := diagFile.GetToken(ctx)
 				if tok == nil {
-					continue // ignore errors
+					v.Logger().Errorf(ctx, "Could not matching tokens for diagnostic: %v", diagFile.URI())
+					continue
 				}
 				content := diagFile.GetContent(ctx)
 				c := span.NewTokenConverter(diagFile.GetFileSet(ctx), tok)
@@ -124,7 +124,7 @@ func Diagnostics(ctx context.Context, v View, uri span.URI) (map[span.URI][]Diag
 		if err != nil {
 			//TODO: we could not process the diag.Pos, and thus have no valid span
 			//we don't have anywhere to put this error though
-			log.Print(err)
+			v.Logger().Errorf(ctx, "%v", err)
 		}
 		category := a.Name
 		if diag.Category != "" {
@@ -140,6 +140,17 @@ func Diagnostics(ctx context.Context, v View, uri span.URI) (map[span.URI][]Diag
 	})
 
 	return reports, nil
+}
+
+func singleDiagnostic(uri span.URI, format string, a ...interface{}) map[span.URI][]Diagnostic {
+	return map[span.URI][]Diagnostic{
+		uri: []Diagnostic{{
+			Source:   "LSP",
+			Span:     span.New(uri, span.Point{}, span.Point{}),
+			Message:  fmt.Sprintf(format, a...),
+			Severity: SeverityError,
+		}},
+	}
 }
 
 func runAnalyses(ctx context.Context, v View, pkg Package, report func(a *analysis.Analyzer, diag analysis.Diagnostic)) error {

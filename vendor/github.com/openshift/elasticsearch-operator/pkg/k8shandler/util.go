@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	v1 "k8s.io/api/core/v1"
@@ -126,7 +127,91 @@ func isValidConf(dpl *api.Elasticsearch) error {
 		}
 	}
 
+	if ok, msg := hasValidUUIDs(dpl); !ok {
+		if err := updateInvalidUUIDChangeCondition(dpl, v1.ConditionTrue, msg); err != nil {
+			return err
+		}
+		return fmt.Errorf("Unsupported change to UUIDs made: %v", msg)
+	} else {
+		if err := updateInvalidUUIDChangeCondition(dpl, v1.ConditionFalse, ""); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func hasValidUUIDs(dpl *api.Elasticsearch) (bool, string) {
+
+	// TODO:
+	// check that someone didn't update a uuid
+	// check status.nodes[*].deploymentName for list of used uuids
+	// deploymentName should match pattern {cluster.Name}-{uuid}[-replica]
+	// if any in that list aren't found in spec.Nodes[*].GenUUID then someone did something bad...
+	// somehow rollback the cluster object change and update message?
+	// no way to rollback, but maybe maintain a last known "good state" and update SPEC to that?
+	// update status message to be very descriptive of this
+
+	prefix := fmt.Sprintf("%s-", dpl.Name)
+
+	var knownUUIDs []string
+	for _, node := range dpl.Status.Nodes {
+
+		var nodeName string
+		if node.DeploymentName != "" {
+			nodeName = node.DeploymentName
+		}
+
+		if node.StatefulSetName != "" {
+			nodeName = node.StatefulSetName
+		}
+
+		parts := strings.Split(strings.TrimPrefix(nodeName, prefix), "-")
+
+		if len(parts) < 2 {
+			return false, fmt.Sprintf("Invalid name found for %q", nodeName)
+		}
+
+		uuid := parts[1]
+
+		if !sliceContainsString(knownUUIDs, uuid) {
+			knownUUIDs = append(knownUUIDs, uuid)
+		}
+	}
+
+	// make sure all known UUIDs are found amongst spec.nodes[*].genuuid
+	for _, uuid := range knownUUIDs {
+		if !isUUIDFound(uuid, dpl.Spec.Nodes) {
+			return false, fmt.Sprintf("Previously used GenUUID %q is no longer found in Spec.Nodes", uuid)
+		}
+	}
+
+	return true, ""
+}
+
+func isUUIDFound(uuid string, nodes []api.ElasticsearchNode) bool {
+
+	for _, node := range nodes {
+
+		if node.GenUUID != nil {
+			if *node.GenUUID == uuid {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func sliceContainsString(slice []string, value string) bool {
+
+	for _, s := range slice {
+		if value == s {
+			return true
+		}
+	}
+
+	return false
 }
 
 func DeletePod(podName, namespace string) error {

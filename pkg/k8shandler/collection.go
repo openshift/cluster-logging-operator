@@ -250,14 +250,19 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 	different := false
 
 	if !utils.AreSelectorsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
-		logrus.Infof("Daemonset nodeSelector change found, updating '%s'", current.Name)
+		logrus.Infof("Collector nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
 		different = true
 	}
 
 	if isDaemonsetImageDifference(current, desired) {
-		logrus.Infof("Daemonset image change found, updating %q", current.Name)
+		logrus.Infof("Collector image change found, updating %q", current.Name)
 		current = updateCurrentDaemonsetImages(current, desired)
+		different = true
+	}
+
+	if utils.AreResourcesDifferent(current, desired) {
+		logrus.Infof("Collector resource(s) change found, updating %q", current.Name)
 		different = true
 	}
 

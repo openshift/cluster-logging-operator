@@ -545,6 +545,11 @@ func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*app
 		different = true
 	}
 
+	if utils.AreResourcesDifferent(current, desired) {
+		logrus.Infof("Kibana resource(s) change found, updating %q", current.Name)
+		different = true
+	}
+
 	return current, different
 }
 

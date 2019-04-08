@@ -292,7 +292,7 @@ func (node *deploymentNode) waitForNodeLeaveCluster() (error, bool) {
 func (node *deploymentNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) {
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
-		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace, node.client); status != "green" {
+		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
 			logrus.Infof("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
 			return
 		}
@@ -368,7 +368,7 @@ func (node *deploymentNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) 
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
-		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace, node.client); status != "green" {
+		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
 			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
 			return
 		}
@@ -382,7 +382,7 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 
 	// set our state to being under upgrade
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
-		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace, node.client); status != "green" {
+		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
 			logrus.Infof("Waiting for cluster to be fully recovered before upgrading %v: %v / green", node.name(), status)
 			return fmt.Errorf("Cluster not in green state before beginning upgrade: %v", status)
 		}
@@ -451,7 +451,7 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
-		if status, err := GetClusterHealth(node.clusterName, node.self.Namespace, node.client); status != "green" {
+		if status, err := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
 			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
 			return err
 		}

@@ -2,4 +2,4 @@
 packageName: elasticsearch-operator
 channels:
 - name: preview
-  currentCSV: elasticsearch-operator.v4.1.0
+  currentCSV: elasticsearch-operator.v4.2.0

@@ -67,12 +67,7 @@ func GetShardAllocation(clusterName, namespace string, client client.Client) (st
 
 	curlESService(clusterName, namespace, payload, client)
 
-	allocation := ""
-	value := walkInterfaceMap("transient.cluster.routing.allocation.enable", payload.ResponseBody)
-
-	if allocationString, ok := value.(string); ok {
-		allocation = allocationString
-	}
+	allocation := parseString("transient.cluster.routing.allocation.enable", payload.ResponseBody)
 
 	return allocation, payload.Error
 }
@@ -224,6 +219,40 @@ func GetDiskWatermarks(clusterName, namespace string, client client.Client) (int
 	return low, high, payload.Error
 }
 
+func parseBool(path string, interfaceMap map[string]interface{}) bool {
+	value := walkInterfaceMap(path, interfaceMap)
+
+	if parsedBool, ok := value.(bool); ok {
+		return parsedBool
+	} else {
+		return false
+	}
+}
+
+func parseString(path string, interfaceMap map[string]interface{}) string {
+	value := walkInterfaceMap(path, interfaceMap)
+
+	if parsedString, ok := value.(string); ok {
+		return parsedString
+	} else {
+		return ""
+	}
+}
+
+func parseInt32(path string, interfaceMap map[string]interface{}) int32 {
+	return int32(parseFloat64(path, interfaceMap))
+}
+
+func parseFloat64(path string, interfaceMap map[string]interface{}) float64 {
+	value := walkInterfaceMap(path, interfaceMap)
+
+	if parsedFloat, ok := value.(float64); ok {
+		return parsedFloat
+	} else {
+		return float64(-1)
+	}
+}
+
 func walkInterfaceMap(path string, interfaceMap map[string]interface{}) interface{} {
 
 	current := interfaceMap
@@ -322,7 +351,35 @@ func GetMinMasterNodes(clusterName, namespace string, client client.Client) (int
 	return masterCount, payload.Error
 }
 
-func GetClusterHealth(clusterName, namespace string, client client.Client) (string, error) {
+func GetClusterHealth(clusterName, namespace string, client client.Client) (api.ClusterHealth, error) {
+
+	clusterHealth := api.ClusterHealth{}
+
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		URI:    "_cluster/health",
+	}
+
+	curlESService(clusterName, namespace, payload, client)
+
+	if payload.Error != nil {
+		return clusterHealth, payload.Error
+	}
+
+	clusterHealth.Status = parseString("status", payload.ResponseBody)
+	clusterHealth.NumNodes = parseInt32("number_of_nodes", payload.ResponseBody)
+	clusterHealth.NumDataNodes = parseInt32("number_of_data_nodes", payload.ResponseBody)
+	clusterHealth.ActivePrimaryShards = parseInt32("active_primary_shards", payload.ResponseBody)
+	clusterHealth.ActiveShards = parseInt32("active_shards", payload.ResponseBody)
+	clusterHealth.RelocatingShards = parseInt32("relocating_shards", payload.ResponseBody)
+	clusterHealth.InitializingShards = parseInt32("initializing_shards", payload.ResponseBody)
+	clusterHealth.UnassignedShards = parseInt32("unassigned_shards", payload.ResponseBody)
+	clusterHealth.PendingTasks = parseInt32("number_of_pending_tasks", payload.ResponseBody)
+
+	return clusterHealth, nil
+}
+
+func GetClusterHealthStatus(clusterName, namespace string, client client.Client) (string, error) {
 
 	payload := &esCurlStruct{
 		Method: http.MethodGet,

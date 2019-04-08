@@ -222,7 +222,7 @@ func (node *statefulSetNode) replicaCount() (int32, error) {
 func (node *statefulSetNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) {
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
-		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace, node.client); status != "green" {
+		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
 			logrus.Infof("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
 			return
 		}
@@ -343,7 +343,7 @@ func (node *statefulSetNode) executeUpdate() error {
 
 func (node *statefulSetNode) update(upgradeStatus *api.ElasticsearchNodeStatus) error {
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
-		if status, _ := GetClusterHealth(node.clusterName, node.self.Namespace, node.client); status != "green" {
+		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
 			logrus.Infof("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
 			return fmt.Errorf("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
 		}

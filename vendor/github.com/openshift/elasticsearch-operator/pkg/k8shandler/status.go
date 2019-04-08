@@ -33,9 +33,9 @@ func (elasticsearchRequest *ElasticsearchRequest) UpdateClusterStatus() error {
 
 	health, err := GetClusterHealth(cluster.Name, cluster.Namespace, elasticsearchRequest.client)
 	if err != nil {
-		health = healthUnknown
+		health.Status = healthUnknown
 	}
-	clusterStatus.ClusterHealth = health
+	clusterStatus.Cluster = health
 
 	allocation, err := GetShardAllocation(cluster.Name, cluster.Namespace, elasticsearchRequest.client)
 	switch {
@@ -60,7 +60,7 @@ func (elasticsearchRequest *ElasticsearchRequest) UpdateClusterStatus() error {
 				return getErr
 			}
 
-			cluster.Status.ClusterHealth = clusterStatus.ClusterHealth
+			cluster.Status.Cluster = clusterStatus.Cluster
 			cluster.Status.Conditions = clusterStatus.Conditions
 			cluster.Status.Pods = clusterStatus.Pods
 			cluster.Status.ShardAllocationEnabled = clusterStatus.ShardAllocationEnabled

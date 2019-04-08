@@ -18,7 +18,7 @@ export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
 export CSV_FILE=$(CURPATH)/manifests/latest
 export NAMESPACE?=openshift-logging
-export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/controller-manifests/elasticsearch-operator.v4.1.0.clusterserviceversion.yaml
+export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/latest
 
 PKGS=$(shell go list ./... | grep -v -E '/vendor/|/test|/examples')
 

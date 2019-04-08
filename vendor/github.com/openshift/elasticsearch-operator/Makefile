@@ -10,7 +10,8 @@ IMAGE_BUILD=$(IMAGE_BUILDER)
 export IMAGE_TAGGER?=docker tag
 
 export APP_NAME=elasticsearch-operator
-export IMAGE_TAG=quay.io/openshift/origin-$(APP_NAME):latest
+IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
+export IMAGE_TAG
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 KUBECONFIG?=$(HOME)/.kube/config

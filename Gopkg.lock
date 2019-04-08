@@ -372,13 +372,13 @@
   version = "v3.9.0"
 
 [[projects]]
-  branch = "master-post-release"
+  branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = [
     "pkg/apis",
     "pkg/apis/logging/v1"
   ]
-  revision = "8277848ad2e56dd1c660fa889f6e3df32b2395ec"
+  revision = "e40983a4e4b9a0506a758b1912b989a840362d51"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -1058,6 +1058,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f83b834b36d9ad1334604ffc4a2a7114e81badd97287c3765a5dbcc3c9cc2fef"
+  inputs-digest = "c50b635f491130c2c9ef10f305a7ff28c321842f8e48a415fb7e645a11e13ba3"
   solver-name = "gps-cdcl"
   solver-version = 1

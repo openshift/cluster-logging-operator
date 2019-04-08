@@ -39,13 +39,6 @@ load_manifest() {
 
 load_manifest ${repo_dir} ${NAMESPACE}
 
-#hack openshift-monitoring
-pushd vendor/github.com/coreos/prometheus-operator/example/prometheus-operator-crd
-  for file in prometheusrule.crd.yaml servicemonitor.crd.yaml; do
-    oc create -n ${NAMESPACE} -f ${file} ||:
-  done
-popd
-
 oc create -f hack/prometheus-operator-crd-cluster-roles.yaml ||:
 
 oc create clusterrolebinding elasticsearch-operator-prometheus-rolebinding \

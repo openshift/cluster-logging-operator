@@ -51,7 +51,7 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 		"rsyslog-bin",
 		logging.Namespace,
 		map[string]string{
-			"rsyslog.sh": string(utils.GetFileContents("files/rsyslog/rsyslog.sh")),
+			"rsyslog.sh": string(utils.GetFileContents("/usr/share/logging/rsyslog/rsyslog.sh")),
 		},
 	)
 	rsyslogConfigMaps["rsyslog-bin"] = rsyslogBinConfigMap
@@ -60,15 +60,15 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 		"rsyslog-main",
 		logging.Namespace,
 		map[string]string{
-			"rsyslog.conf": string(utils.GetFileContents("files/rsyslog/rsyslog.conf")),
+			"rsyslog.conf": string(utils.GetFileContents("/usr/share/logging/rsyslog/rsyslog.conf")),
 		},
 	)
 	rsyslogConfigMaps["rsyslog-main"] = rsyslogMainConfigMap
 
 	rsyslogConfigMapFiles := make(map[string]string)
-	readerDir, err := ioutil.ReadDir("files/rsyslog")
+	readerDir, err := ioutil.ReadDir("/usr/share/logging/rsyslog")
 	if err != nil {
-		return fmt.Errorf("Failure %v to read files from directory 'files/rsyslog' for Rsyslog configmap", err)
+		return fmt.Errorf("Failure %v to read files from directory '/usr/share/logging/rsyslog' for Rsyslog configmap", err)
 	}
 	for _, fileInfo := range readerDir {
 		// exclude files provided by other configmaps
@@ -79,7 +79,7 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 			continue
 		}
 		// include all other files
-		fullname := "files/rsyslog/" + fileInfo.Name()
+		fullname := "/usr/share/logging/rsyslog/" + fileInfo.Name()
 		rsyslogConfigMapFiles[fileInfo.Name()] = string(utils.GetFileContents(fullname))
 	}
 	rsyslogConfigMap := utils.NewConfigMap(

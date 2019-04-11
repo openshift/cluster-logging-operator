@@ -36,8 +36,8 @@ func TestNewRsyslogPodSpecWhenFieldsAreUndefined(t *testing.T) {
 	cluster := &logging.ClusterLogging{}
 	podSpec := newRsyslogPodSpec(cluster, "test-app-name", "test-infra-name")
 
-	if len(podSpec.Containers) != 1 {
-		t.Error("Exp. there to be 1 fluentd container")
+	if len(podSpec.Containers) != 2 {
+		t.Error("Exp. there to be 2 rsyslog containers")
 	}
 
 	resources := podSpec.Containers[0].Resources
@@ -72,8 +72,8 @@ func TestNewRsyslogPodSpecWhenResourcesAreDefined(t *testing.T) {
 	}
 	podSpec := newRsyslogPodSpec(cluster, "test-app-name", "test-infra-name")
 
-	if len(podSpec.Containers) != 1 {
-		t.Error("Exp. there to be 1 fluentd container")
+	if len(podSpec.Containers) != 2 {
+		t.Error("Exp. there to be 2 rsyslog containers")
 	}
 
 	resources := podSpec.Containers[0].Resources

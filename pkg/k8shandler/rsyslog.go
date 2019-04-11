@@ -28,6 +28,14 @@ func removeRsyslog(cluster *ClusterLogging) (err error) {
 			return
 		}
 
+		if err = utils.RemoveConfigMap(cluster.Namespace, "logrotate-bin"); err != nil {
+			return
+		}
+
+		if err = utils.RemoveConfigMap(cluster.Namespace, "logrotate-crontab"); err != nil {
+			return
+		}
+
 		if err = utils.RemoveSecret(cluster.Namespace, "rsyslog"); err != nil {
 			return
 		}
@@ -100,6 +108,44 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 	return nil
 }
 
+func createOrUpdateLogrotateConfigMap(logging *ClusterLogging) error {
+
+	// need two configmaps
+	// - one for logrotate cron.sh, logrotate.sh and logrotate_pod.sh script - bin
+	// - one for logrotate crontab - crontab
+	logrotateConfigMaps := make(map[string]*v1.ConfigMap)
+	logrotateBinConfigMap := utils.NewConfigMap(
+		"logrotate-bin",
+		logging.Namespace,
+		map[string]string{
+			"cron.sh": string(utils.GetFileContents("/usr/share/logging/logrotate/cron.sh")),
+			"logrotate.sh": string(utils.GetFileContents("/usr/share/logging/logrotate/logrotate.sh")),
+			"logrotate_pod.sh": string(utils.GetFileContents("/usr/share/logging/logrotate/logrotate_pod.sh")),
+		},
+	)
+	logrotateConfigMaps["logrotate-bin"] = logrotateBinConfigMap
+
+	logrotateCrontabConfigMap := utils.NewConfigMap(
+		"logrotate-crontab",
+		logging.Namespace,
+		map[string]string{
+			"logrotate": string(utils.GetFileContents("/usr/share/logging/logrotate/logrotate")),
+		},
+	)
+	logrotateConfigMaps["logrotate-crontab"] = logrotateCrontabConfigMap
+
+	for name, cm := range logrotateConfigMaps {
+		logging.AddOwnerRefTo(cm)
+
+		err := sdk.Create(cm)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure constructing Logrotate configmap %v: %v", name, err)
+		}
+	}
+
+	return nil
+}
+
 func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 
 	rsyslogSecret := utils.NewSecret(
@@ -161,7 +207,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 				v1.ResourceCPU:    defaultRsyslogCpuRequest,
 			}}
 	}
-	rsyslogContainer := utils.NewContainer("rsyslog", v1.PullIfNotPresent, *resources)
+	rsyslogContainer := utils.NewContainer("rsyslog", "rsyslog", v1.PullIfNotPresent, *resources)
 
 	rsyslogContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -183,11 +229,13 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "RSYSLOG_CPU_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "rsyslog", Resource: "limits.cpu"}}},
 		{Name: "RSYSLOG_MEMORY_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "rsyslog", Resource: "limits.memory"}}},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "status.hostIP"}}},
+		{Name: "RSYSLOG_WORKDIRECTORY", Value: "/var/lib/rsyslog.pod"},
 	}
 
 	rsyslogContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: "runlogjournal", MountPath: "/run/log/journal"},
 		{Name: "varlog", MountPath: "/var/log"},
+		{Name: "varrun", MountPath: "/var/run"},
 		{Name: "varlibdockercontainers", ReadOnly: true, MountPath: "/var/lib/docker"},
 		{Name: "bin", ReadOnly: true, MountPath: "/opt/app-root/bin"},
 		{Name: "main", ReadOnly: true, MountPath: "/etc/rsyslog/conf"},
@@ -211,12 +259,43 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		"/opt/app-root/bin/rsyslog.sh",
 	}
 
+	logrotateContainer := utils.NewContainer("logrotate", "rsyslog", v1.PullIfNotPresent, *resources)
+
+	logrotateContainer.Env = []v1.EnvVar{
+		{Name: "LOGGING_FILE_PATH", Value: "/var/log/rsyslog/rsyslog.log"},
+		{Name: "LOGGING_FILE_SIZE", Value: "1024000"},
+		{Name: "LOGGING_FILE_AGE", Value: "10"},
+		{Name: "CROND_OPTIONS", Value: ""},
+		{Name: "RSYSLOG_WORKDIRECTORY", Value: "/var/lib/rsyslog.pod"},
+	}
+
+	logrotateContainer.VolumeMounts = []v1.VolumeMount{
+		{Name: "logrotate-bin", ReadOnly: true, MountPath: "/opt/app-root/bin"},
+		{Name: "logrotate-crontab", ReadOnly: true, MountPath: "/etc/cron.d"},
+		{Name: "varlog", MountPath: "/var/log"},
+		{Name: "varrun", MountPath: "/var/run"},
+		{Name: "filebufferstorage", MountPath: "/var/lib/rsyslog.pod"},
+	}
+
+	logrotateContainer.SecurityContext = &v1.SecurityContext{
+		Privileged: utils.GetBool(true),
+	}
+
+	logrotateContainer.Command = []string{
+		"/bin/sh",
+	}
+
+	logrotateContainer.Args = []string{
+		"/opt/app-root/bin/cron.sh",
+	}
+
 	rsyslogPodSpec := utils.NewPodSpec(
 		"logcollector",
-		[]v1.Container{rsyslogContainer},
+		[]v1.Container{rsyslogContainer, logrotateContainer},
 		[]v1.Volume{
 			{Name: "runlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/run/log/journal"}}},
 			{Name: "varlog", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log"}}},
+			{Name: "varrun", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/run"}}},
 			{Name: "varlibdockercontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/docker"}}},
 			{Name: "bin", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "rsyslog-bin"}}}},
 			{Name: "main", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "rsyslog-main"}}}},
@@ -226,6 +305,8 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "localtime", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/localtime"}}},
 			{Name: "machineid", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/machine-id"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/rsyslog.pod"}}},
+			{Name: "logrotate-bin", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "logrotate-bin"}}}},
+			{Name: "logrotate-crontab", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "logrotate-crontab"}}}},
 		},
 		logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector,
 	)
@@ -241,6 +322,9 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			Effect:   v1.TaintEffectNoSchedule,
 		},
 	}
+
+	b := bool(true)
+	rsyslogPodSpec.ShareProcessNamespace = &b
 
 	return rsyslogPodSpec
 }

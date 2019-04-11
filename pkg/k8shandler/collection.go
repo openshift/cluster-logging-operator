@@ -106,6 +106,10 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 			return
 		}
 
+		if err = createOrUpdateLogrotateConfigMap(cluster); err != nil {
+			return
+		}
+
 		if err = createOrUpdateRsyslogSecret(cluster); err != nil {
 			return
 		}

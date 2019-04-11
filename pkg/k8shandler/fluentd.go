@@ -200,7 +200,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			},
 		}
 	}
-	fluentdContainer := utils.NewContainer("fluentd", v1.PullIfNotPresent, *resources)
+	fluentdContainer := utils.NewContainer("fluentd", "fluentd", v1.PullIfNotPresent, *resources)
 
 	fluentdContainer.Ports = []v1.ContainerPort{
 		v1.ContainerPort{

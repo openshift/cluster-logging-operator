@@ -400,6 +400,7 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 	}
 	kibanaContainer := NewContainer(
 		"kibana",
+		"kibana",
 		v1.PullIfNotPresent,
 		*kibanaResources,
 	)
@@ -448,6 +449,7 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		}
 	}
 	kibanaProxyContainer := NewContainer(
+		"kibana-proxy",
 		"kibana-proxy",
 		v1.PullIfNotPresent,
 		*kibanaProxyResources,

@@ -110,6 +110,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
+		if err = clusterRequest.createOrUpdateLogrotateConfigMap(); err != nil {
+			return
+		}
+
 		if err = clusterRequest.createOrUpdateRsyslogDaemonset(); err != nil {
 			return
 		}

@@ -166,7 +166,7 @@ func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elas
 			},
 		}
 	}
-	curatorContainer := NewContainer("curator", v1.PullIfNotPresent, *resources)
+	curatorContainer := NewContainer("curator", "curator", v1.PullIfNotPresent, *resources)
 
 	curatorContainer.Env = []v1.EnvVar{
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc.cluster.local"},

@@ -18,10 +18,10 @@ func NewPodSpec(serviceAccountName string, containers []core.Container, volumes 
 }
 
 //NewContainer stubs an instance of a Container
-func NewContainer(containerName string, pullPolicy core.PullPolicy, resources core.ResourceRequirements) core.Container {
+func NewContainer(containerName string, imageName string, pullPolicy core.PullPolicy, resources core.ResourceRequirements) core.Container {
 	return core.Container{
 		Name:            containerName,
-		Image:           utils.GetComponentImage(containerName),
+		Image:           utils.GetComponentImage(imageName),
 		ImagePullPolicy: pullPolicy,
 		Resources:       resources,
 	}

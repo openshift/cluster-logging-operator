@@ -137,6 +137,8 @@ func (cluster *ClusterLogging) createOrUpdateKibanaDeployment() (err error) {
 		kibanaPodSpec,
 	)
 
+	kibanaDeployment.Spec.Replicas = &cluster.Spec.Visualization.KibanaSpec.Replicas
+
 	cluster.AddOwnerRefTo(kibanaDeployment)
 
 	err = sdk.Create(kibanaDeployment)

@@ -5,7 +5,7 @@ import (
 
 	"reflect"
 
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"

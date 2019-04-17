@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	core "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

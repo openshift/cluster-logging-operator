@@ -1,0 +1,3 @@
+apiVersion: logging.openshift.io/v1
+kind: Elasticsearch
+projectName: openshift-logging

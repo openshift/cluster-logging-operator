@@ -1,23 +1,23 @@
 package k8shandler
 
 import (
-	"bytes"
 	"fmt"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/operator-framework/operator-sdk/pkg/sdk"
-	v1 "k8s.io/api/core/v1"
-
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (cluster *ClusterLogging) getCuratorStatus() ([]logging.CuratorStatus, error) {
+func (clusterRequest *ClusterLoggingRequest) getCuratorStatus() ([]logging.CuratorStatus, error) {
 
 	status := []logging.CuratorStatus{}
 
-	curatorCronJobList, err := utils.GetCronJobList(cluster.Namespace, "logging-infra=curator")
+	curatorCronJobList, err := clusterRequest.GetCronJobList(
+		map[string]string{
+			"logging-infra": "curator",
+		},
+	)
 	if err != nil {
 		return status, err
 	}
@@ -36,11 +36,15 @@ func (cluster *ClusterLogging) getCuratorStatus() ([]logging.CuratorStatus, erro
 	return status, nil
 }
 
-func getFluentdCollectorStatus(namespace string) (logging.FluentdCollectorStatus, error) {
+func (clusterRequest *ClusterLoggingRequest) getFluentdCollectorStatus() (logging.FluentdCollectorStatus, error) {
 
 	fluentdStatus := logging.FluentdCollectorStatus{}
+	selector := map[string]string{
+		"logging-infra": "fluentd",
+	}
 
-	fluentdDaemonsetList, err := utils.GetDaemonSetList(namespace, "logging-infra=fluentd")
+	fluentdDaemonsetList, err := clusterRequest.GetDaemonSetList(selector)
+
 	if err != nil {
 		return fluentdStatus, err
 	}
@@ -51,7 +55,8 @@ func getFluentdCollectorStatus(namespace string) (logging.FluentdCollectorStatus
 		fluentdStatus.DaemonSet = daemonset.Name
 
 		// use map to represent {pod: node}
-		podList, _ := utils.GetPodList(namespace, "logging-infra=fluentd")
+		podList, _ := clusterRequest.GetPodList(selector)
+
 		podNodeMap := make(map[string]string)
 		for _, pod := range podList.Items {
 			podNodeMap[pod.Name] = pod.Spec.NodeName
@@ -63,11 +68,15 @@ func getFluentdCollectorStatus(namespace string) (logging.FluentdCollectorStatus
 	return fluentdStatus, nil
 }
 
-func getRsyslogCollectorStatus(namespace string) (logging.RsyslogCollectorStatus, error) {
+func (clusterRequest *ClusterLoggingRequest) getRsyslogCollectorStatus() (logging.RsyslogCollectorStatus, error) {
 
 	rsyslogStatus := logging.RsyslogCollectorStatus{}
+	selector := map[string]string{
+		"logging-infra": "rsyslog",
+	}
 
-	rsyslogDaemonsetList, err := utils.GetDaemonSetList(namespace, "logging-infra=rsyslog")
+	rsyslogDaemonsetList, err := clusterRequest.GetDaemonSetList(selector)
+
 	if err != nil {
 		return rsyslogStatus, err
 	}
@@ -78,7 +87,8 @@ func getRsyslogCollectorStatus(namespace string) (logging.RsyslogCollectorStatus
 		rsyslogStatus.DaemonSet = daemonset.Name
 
 		// use map to represent {pod: node}
-		podList, _ := utils.GetPodList(namespace, "logging-infra=rsyslog")
+		podList, _ := clusterRequest.GetPodList(selector)
+
 		podNodeMap := make(map[string]string)
 		for _, pod := range podList.Items {
 			podNodeMap[pod.Name] = pod.Spec.NodeName
@@ -90,34 +100,35 @@ func getRsyslogCollectorStatus(namespace string) (logging.RsyslogCollectorStatus
 	return rsyslogStatus, nil
 }
 
-func (cluster *ClusterLogging) getKibanaStatus() ([]logging.KibanaStatus, error) {
+func (clusterRequest *ClusterLoggingRequest) getKibanaStatus() ([]logging.KibanaStatus, error) {
 
 	status := []logging.KibanaStatus{}
+	selector := map[string]string{
+		"logging-infra": "kibana",
+	}
 
-	kibanaDeploymentList, err := utils.GetDeploymentList(cluster.Namespace, "logging-infra=kibana")
+	kibanaDeploymentList, err := clusterRequest.GetDeploymentList(selector)
 	if err != nil {
 		return status, err
 	}
 
 	for _, deployment := range kibanaDeploymentList.Items {
 
-		var selectorValue bytes.Buffer
-		selectorValue.WriteString("component=")
-		selectorValue.WriteString(deployment.Name)
+		selector["component"] = deployment.Name
 
 		kibanaStatus := logging.KibanaStatus{
 			Deployment: deployment.Name,
 			Replicas:   *deployment.Spec.Replicas,
 		}
 
-		replicaSetList, _ := utils.GetReplicaSetList(cluster.Namespace, selectorValue.String())
+		replicaSetList, _ := clusterRequest.GetReplicaSetList(selector)
 		replicaNames := []string{}
 		for _, replicaSet := range replicaSetList.Items {
 			replicaNames = append(replicaNames, replicaSet.Name)
 		}
 		kibanaStatus.ReplicaSets = replicaNames
 
-		podList, _ := utils.GetPodList(cluster.Namespace, selectorValue.String())
+		podList, _ := clusterRequest.GetPodList(selector)
 		kibanaStatus.Pods = podStateMap(podList.Items)
 
 		status = append(status, kibanaStatus)
@@ -126,7 +137,7 @@ func (cluster *ClusterLogging) getKibanaStatus() ([]logging.KibanaStatus, error)
 	return status, nil
 }
 
-func (cluster *ClusterLogging) getElasticsearchStatus() ([]logging.ElasticsearchStatus, error) {
+func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging.ElasticsearchStatus, error) {
 
 	// we can scrape the status provided by the elasticsearch-operator
 	// get list of elasticsearch objects
@@ -137,7 +148,7 @@ func (cluster *ClusterLogging) getElasticsearchStatus() ([]logging.Elasticsearch
 		},
 	}
 
-	err := sdk.List(cluster.Namespace, esList)
+	err := clusterRequest.List(map[string]string{}, esList)
 	status := []logging.ElasticsearchStatus{}
 
 	if err != nil {
@@ -193,14 +204,11 @@ func getDeploymentNames(node elasticsearch.ElasticsearchStatus) []string {
 	return deploymentNames
 }
 
+// We are no longer going to populate this field, however since it is in the
+// status spec we cannot just remove it.
 func getReplicaSetNames(node elasticsearch.ElasticsearchStatus) []string {
 
 	replicasetNames := []string{}
-
-	for _, nodeStatus := range node.Nodes {
-		replicasetNames = append(replicasetNames, nodeStatus.ReplicaSetName)
-	}
-
 	return replicasetNames
 }
 

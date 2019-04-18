@@ -7,19 +7,14 @@ import (
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type ClusterLoggingRequest struct {
-	client  client.Client
-	cluster *logging.ClusterLogging
-}
-
-func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client) error {
+func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client) (err error) {
 
 	clusterLoggingRequest := ClusterLoggingRequest{
 		client:  requestClient,
 		cluster: requestCluster,
 	}
 
-  // Reconcile certs
+	// Reconcile certs
 	if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
 		return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.cluster.Name, err)
 	}

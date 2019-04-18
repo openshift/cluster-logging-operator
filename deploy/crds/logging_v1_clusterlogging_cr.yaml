@@ -1,7 +1,0 @@
-apiVersion: logging.openshift.io/v1
-kind: ClusterLogging
-metadata:
-  name: example-clusterlogging
-spec:
-  # Add fields here
-  size: 3

@@ -1,0 +1,205 @@
+package v1
+
+import (
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	ServiceAccountName string = "elasticsearch"
+	ConfigMapName      string = "elasticsearch"
+	SecretName         string = "elasticsearch"
+)
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// Elasticsearch is the Schema for the elasticsearches API
+// +k8s:openapi-gen=true
+type Elasticsearch struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   ElasticsearchSpec   `json:"spec,omitempty"`
+	Status ElasticsearchStatus `json:"status,omitempty"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ElasticsearchList contains a list of Elasticsearch
+type ElasticsearchList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Elasticsearch `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&Elasticsearch{}, &ElasticsearchList{})
+}
+
+// ElasticsearchSpec defines the desired state of Elasticsearch
+// +k8s:openapi-gen=true
+// ManagementState indicates whether and how the operator should manage the component
+type ElasticsearchSpec struct {
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	ManagementState  ManagementState       `json:"managementState"`
+	RedundancyPolicy RedundancyPolicyType  `json:"redundancyPolicy"`
+	Nodes            []ElasticsearchNode   `json:"nodes"`
+	Spec             ElasticsearchNodeSpec `json:"nodeSpec"`
+}
+
+// ElasticsearchStatus defines the observed state of Elasticsearch
+// +k8s:openapi-gen=true
+type ElasticsearchStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	Nodes                  []ElasticsearchNodeStatus             `json:"nodes"`
+	ClusterHealth          string                                `json:"clusterHealth"`
+	ShardAllocationEnabled ShardAllocationState                  `json:"shardAllocationEnabled"`
+	Pods                   map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
+	Conditions             []ClusterCondition                    `json:"conditions"`
+}
+
+// ElasticsearchNode struct represents individual node in Elasticsearch cluster
+// GenUUID will be populated by the operator if not provided
+type ElasticsearchNode struct {
+	Roles        []ElasticsearchNodeRole  `json:"roles"`
+	NodeCount    int32                    `json:"nodeCount"`
+	Resources    v1.ResourceRequirements  `json:"resources"`
+	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
+	Storage      ElasticsearchStorageSpec `json:"storage"`
+	GenUUID      *string                  `json:"genUUID,omitempty"`
+}
+
+// ElasticsearchNodeSpec represents configuration of an individual Elasticsearch node
+type ElasticsearchNodeSpec struct {
+	Image        string                  `json:"image,omitempty"`
+	Resources    v1.ResourceRequirements `json:"resources"`
+	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
+}
+
+type ElasticsearchStorageSpec struct {
+	StorageClassName *string            `json:"storageClassName,omitempty"`
+	Size             *resource.Quantity `json:"size,omitempty"`
+}
+
+// ElasticsearchNodeStatus represents the status of individual Elasticsearch node
+type ElasticsearchNodeStatus struct {
+	DeploymentName  string                         `json:"deploymentName,omitempty"`
+	StatefulSetName string                         `json:"statefulSetName,omitempty"`
+	Status          string                         `json:"status,omitempty"`
+	UpgradeStatus   ElasticsearchNodeUpgradeStatus `json:"upgradeStatus,omitempty"`
+	Roles           []ElasticsearchNodeRole        `json:"roles,omitempty"`
+	Conditions      []ClusterCondition             `json:"conditions,omitempty"`
+}
+
+type ElasticsearchNodeUpgradeStatus struct {
+	ScheduledForUpgrade  v1.ConditionStatus        `json:"scheduledUpgrade,omitempty"`
+	ScheduledForRedeploy v1.ConditionStatus        `json:"scheduledRedeploy,omitempty"`
+	UnderUpgrade         v1.ConditionStatus        `json:"underUpgrade,omitempty"`
+	UpgradePhase         ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
+}
+
+// ClusterCondition contains details for the current condition of this elasticsearch cluster.
+// Status: the status of the condition.
+// LastTransitionTime: Last time the condition transitioned from one status to another.
+// Reason: Unique, one-word, CamelCase reason for the condition's last transition.
+// Message: Human-readable message indicating details about last transition.
+type ClusterCondition struct {
+	Type               ClusterConditionType `json:"type"`
+	Status             v1.ConditionStatus   `json:"status"`
+	LastTransitionTime metav1.Time          `json:"lastTransitionTime"`
+	Reason             string               `json:"reason,omitempty" protobuf:"bytes,5,opt,name=reason"`
+	Message            string               `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
+}
+
+// RedundancyPolicyType controls number of elasticsearch replica shards
+// FullRedundancy - each index is fully replicated on every Data node in the cluster
+// MultipleRedundancy - each index is spread over half of the Data nodes
+// SingleRedundancy - one replica shard
+// ZeroRedundancy - no replica shards
+type RedundancyPolicyType string
+
+const (
+	FullRedundancy     RedundancyPolicyType = "FullRedundancy"
+	MultipleRedundancy RedundancyPolicyType = "MultipleRedundancy"
+	SingleRedundancy   RedundancyPolicyType = "SingleRedundancy"
+	ZeroRedundancy     RedundancyPolicyType = "ZeroRedundancy"
+)
+
+type ElasticsearchNodeRole string
+
+const (
+	ElasticsearchRoleClient ElasticsearchNodeRole = "client"
+	ElasticsearchRoleData   ElasticsearchNodeRole = "data"
+	ElasticsearchRoleMaster ElasticsearchNodeRole = "master"
+)
+
+type ShardAllocationState string
+
+const (
+	ShardAllocationAll     ShardAllocationState = "all"
+	ShardAllocationNone    ShardAllocationState = "none"
+	ShardAllocationUnknown ShardAllocationState = "shard allocation unknown"
+)
+
+type PodStateMap map[PodStateType][]string
+
+type PodStateType string
+
+const (
+	PodStateTypeReady    PodStateType = "ready"
+	PodStateTypeNotReady PodStateType = "notReady"
+	PodStateTypeFailed   PodStateType = "failed"
+)
+
+type ElasticsearchUpgradePhase string
+
+const (
+	NodeRestarting    ElasticsearchUpgradePhase = "nodeRestarting"
+	RecoveringData    ElasticsearchUpgradePhase = "recoveringData"
+	ControllerUpdated ElasticsearchUpgradePhase = "controllerUpdated"
+)
+
+// Managed means that the operator is actively managing its resources and trying to keep the component active.
+// It will only upgrade the component if it is safe to do so
+// Unmanaged means that the operator will not take any action related to the component
+type ManagementState string
+
+const (
+	ManagementStateManaged   ManagementState = "Managed"
+	ManagementStateUnmanaged ManagementState = "Unmanaged"
+)
+
+// ClusterConditionType is a valid value for ClusterCondition.Type
+type ClusterConditionType string
+
+const (
+	UpdatingSettings         ClusterConditionType = "UpdatingSettings"
+	ScalingUp                ClusterConditionType = "ScalingUp"
+	ScalingDown              ClusterConditionType = "ScalingDown"
+	Restarting               ClusterConditionType = "Restarting"
+	InvalidMasters           ClusterConditionType = "InvalidMasters"
+	InvalidData              ClusterConditionType = "InvalidData"
+	InvalidRedundancy        ClusterConditionType = "InvalidRedundancy"
+	InvalidUUID              ClusterConditionType = "InvalidUUID"
+	ESContainerWaiting       ClusterConditionType = "ElasticsearchContainerWaiting"
+	ESContainerTerminated    ClusterConditionType = "ElasticsearchContainerTerminated"
+	ProxyContainerWaiting    ClusterConditionType = "ProxyContainerWaiting"
+	ProxyContainerTerminated ClusterConditionType = "ProxyContainerTerminated"
+	Unschedulable            ClusterConditionType = "Unschedulable"
+	NodeStorage              ClusterConditionType = "NodeStorage"
+)
+
+type ClusterEvent string
+
+const (
+	ScaledDown            ClusterEvent = "ScaledDown"
+	ScaledUp              ClusterEvent = "ScaledUp"
+	UpdateClusterSettings ClusterEvent = "UpdateClusterSettings"
+	NoEvent               ClusterEvent = "NoEvent"
+)

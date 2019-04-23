@@ -16,6 +16,12 @@ import (
 type ClusterLogging struct {
 	*logging.ClusterLogging
 	Runtime *runtime.OperatorRuntime
+	// Context ClusterLoggingContext
+}
+
+type ClusterLoggingContext struct {
+	// Pipelines *PipelinesSpec
+	filler string
 }
 
 //NewClusterLogging wrappers api.ClusterLogging including the default runtime

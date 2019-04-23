@@ -19,6 +19,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	elasticsearchResourceName = "elasticsearch"
+	elasticsearchSecretName   = "elasticsearch"
+)
+
 func (cluster *ClusterLogging) CreateOrUpdateLogStore() (err error) {
 
 	if cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
@@ -78,7 +83,7 @@ func (cluster *ClusterLogging) removeElasticsearch() (err error) {
 func (cluster *ClusterLogging) createOrUpdateElasticsearchSecret() error {
 
 	esSecret := utils.NewSecret(
-		"elasticsearch",
+		elasticsearchSecretName,
 		cluster.Namespace,
 		map[string][]byte{
 			"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
@@ -173,7 +178,7 @@ func (cluster *ClusterLogging) removeElasticsearchCR(elasticsearchName string) e
 
 func (cluster *ClusterLogging) createOrUpdateElasticsearchCR() (err error) {
 
-	esCR := cluster.newElasticsearchCR("elasticsearch")
+	esCR := cluster.newElasticsearchCR(elasticsearchResourceName)
 
 	err = sdk.Create(esCR)
 	if err != nil && !errors.IsAlreadyExists(err) {

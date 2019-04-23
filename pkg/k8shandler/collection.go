@@ -40,6 +40,10 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 		if err = cluster.createOrUpdateCollectorServiceAccount(); err != nil {
 			return
 		}
+
+		// if err = cluster.createOrUpdatePipelines(); err != nil {
+		// 	return
+		// }
 	} else {
 		if err = utils.RemoveServiceAccount(cluster.Namespace, "logcollector"); err != nil {
 			return

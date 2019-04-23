@@ -40,7 +40,6 @@ func removeFluentd(cluster *ClusterLogging) (err error) {
 			return
 		}
 
-
 		if err = utils.RemoveConfigMap(cluster.Namespace, "fluentd"); err != nil {
 			return
 		}

@@ -31,6 +31,7 @@ type ClusterLoggingSpec struct {
 	LogStore      LogStoreSpec      `json:"logStore,omitempty"`
 	Collection    CollectionSpec    `json:"collection,omitempty"`
 	Curation      CurationSpec      `json:"curation,omitempty"`
+	Pipelines     *PipelinesSpec    `json:"pipelines,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)

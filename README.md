@@ -21,7 +21,7 @@ to pull images from the UBI registry.
 
 The image build process for UBI based images uses a private yum repo.
 In order to use the private yum repo, you will need access to
-https://github.com/openshift/release/blob/master/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo
+https://github.com/openshift/release/blob/master/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo
 and
 https://github.com/openshift/shared-secrets/blob/master/mirror/ops-mirror.pem
 Note that the latter is private and requires special permission to access.

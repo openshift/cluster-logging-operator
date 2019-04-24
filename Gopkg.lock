@@ -40,8 +40,8 @@
     ".",
     "log"
   ]
-  revision = "e64cccdfee8896c036b8a88d560c5e3ae15d904d"
-  version = "v2.9.1"
+  revision = "b9bbc5664f49b6deec52393bd68f39830687a347"
+  version = "v2.9.3"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -193,13 +193,13 @@
     "oauth/v1",
     "route/v1"
   ]
-  revision = "ad6339a9e4ce20fffe56b91dc9c9ee7a4d04ebd7"
+  revision = "e8532c51d46fdc99060e3357da9282a3c588ee94"
 
 [[projects]]
   branch = "master"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1"]
-  revision = "91b07bf55d9cb724a57052a2330867694a173c69"
+  revision = "7e39ced7031f0904075f2e2763dc6f48bb6e1f98"
 
 [[projects]]
   name = "github.com/operator-framework/operator-sdk"
@@ -256,14 +256,8 @@
 [[projects]]
   branch = "master"
   name = "github.com/prometheus/procfs"
-  packages = [
-    ".",
-    "internal/util",
-    "iostats",
-    "nfs",
-    "xfs"
-  ]
-  revision = "55ae3d9d557340b5bc24cd8aa5f6fa2c2ab31352"
+  packages = ["."]
+  revision = "af7bedc223fba51343f25a6fa7aba84355d0357a"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -292,7 +286,7 @@
     "http2/hpack",
     "idna"
   ]
-  revision = "710a502c58a2a4b2d7417a4e24ccb96d8dc13fa3"
+  revision = "74de082e2cca95839e88aa0aeee5aadf6ce7710f"
 
 [[projects]]
   branch = "master"
@@ -301,7 +295,7 @@
     "unix",
     "windows"
   ]
-  revision = "f49334f85ddcf0f08d7fb6dd7363e9e6d6b777eb"
+  revision = "9eb1bfa1ce65ae8a6ff3114b0aaf9a41a6cf3560"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -347,7 +341,7 @@
     "internal/module",
     "internal/semver"
   ]
-  revision = "79af862e6737e9b6ea995ccf9e8eaccd41ef1523"
+  revision = "4c644d7e323d3b4a3883d4e238b908fe615f7586"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
@@ -563,7 +557,7 @@
     "parser",
     "types"
   ]
-  revision = "bc9033e9ec9e0cec1552e9af7c079cb878dfc511"
+  revision = "e17681d19d3ac4837a019ece36c2a0ec31ffe985"
 
 [[projects]]
   name = "k8s.io/klog"
@@ -580,7 +574,7 @@
     "pkg/generators/rules",
     "pkg/util/sets"
   ]
-  revision = "c59034cc13d587f5ef4e85ca0ade0c1866ae8e1d"
+  revision = "94e1e7b7574c44c4c0f2007de6fe617e259191f3"
 
 [[projects]]
   name = "sigs.k8s.io/controller-runtime"

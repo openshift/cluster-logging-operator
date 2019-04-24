@@ -263,6 +263,8 @@ func (cluster *ClusterLogging) createOrUpdateCuratorCronJob() (err error) {
 func updateCuratorIfRequired(desired *batch.CronJob) (err error) {
 	current := desired.DeepCopy()
 
+	current.Spec = batch.CronJobSpec{}
+
 	if err = sdk.Get(current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
@@ -287,6 +289,12 @@ func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.
 
 	different := false
 
+	if !utils.AreSelectorsSame(current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector) {
+		logrus.Infof("Invalid Curator nodeSelector change found, updating '%s'", current.Name)
+		current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector = desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
+		different = true
+	}
+
 	// Check schedule
 	if current.Spec.Schedule != desired.Spec.Schedule {
 		logrus.Infof("Invalid Curator schedule found, updating %q", current.Name)
@@ -304,6 +312,11 @@ func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.
 	if current.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image != desired.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image {
 		logrus.Infof("Curator image change found, updating %q", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image = desired.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image
+		different = true
+	}
+
+	if utils.AreResourcesDifferent(current, desired) {
+		logrus.Infof("Curator resources change found, updating %q", current.Name)
 		different = true
 	}
 

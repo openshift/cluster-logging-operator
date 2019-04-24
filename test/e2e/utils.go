@@ -7,6 +7,7 @@ import (
 
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
+	core "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -67,6 +68,7 @@ func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, 
 }
 
 func CheckForDaemonSetImageName(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, imageName string, retryInterval, timeout time.Duration) error {
+	t.Logf("Checking operator updates %s daemonset to image: %q\n", name, imageName)
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		daemonset, err := kubeclient.AppsV1().DaemonSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
@@ -94,6 +96,7 @@ func CheckForDaemonSetImageName(t *testing.T, kubeclient kubernetes.Interface, n
 }
 
 func CheckForDeploymentImageName(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, imageName string, retryInterval, timeout time.Duration) error {
+	t.Logf("Checking operator updates %s deployment to image: %q\n", name, imageName)
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
@@ -121,6 +124,7 @@ func CheckForDeploymentImageName(t *testing.T, kubeclient kubernetes.Interface, 
 }
 
 func CheckForCronJobImageName(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, imageName string, retryInterval, timeout time.Duration) error {
+	t.Logf("Checking operator updates %s cronjob to image: %q\n", name, imageName)
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		cronjob, err := kubeclient.BatchV1beta1().CronJobs(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
@@ -148,6 +152,7 @@ func CheckForCronJobImageName(t *testing.T, kubeclient kubernetes.Interface, nam
 }
 
 func CheckForElasticsearchImageName(t *testing.T, client framework.FrameworkClient, namespace, name string, imageName string, retryInterval, timeout time.Duration) error {
+	t.Logf("Checking operator updates %s elasticsearch CR to image: %q\n", name, imageName)
 	elasticsearch := &elasticsearch.Elasticsearch{}
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
@@ -175,4 +180,13 @@ func CheckForElasticsearchImageName(t *testing.T, client framework.FrameworkClie
 	}
 	t.Logf("Elasticsearch image found (%q)\n", imageName)
 	return nil
+}
+
+func getValueFromEnvVar(envVars []core.EnvVar, name string) string {
+	for _, envVar := range envVars {
+		if envVar.Name == name {
+			return envVar.Value
+		}
+	}
+	return ""
 }

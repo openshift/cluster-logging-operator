@@ -14,6 +14,30 @@ This will stand up a cluster logging stack named 'example'.
 
 ## Hacking
 
+### Building a Universal Base Image (UBI) based image
+
+You must first `oc login api.ci.openshift.org`.  You'll need these credentials in order
+to pull images from the UBI registry.
+
+The image build process for UBI based images uses a private yum repo.
+In order to use the private yum repo, you will need access to
+https://github.com/openshift/release/blob/master/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo
+and
+https://github.com/openshift/shared-secrets/blob/master/mirror/ops-mirror.pem
+Note that the latter is private and requires special permission to access.
+
+The best approach is to clone these repos under `$GOPATH/src/github.com/openshift`
+which the build scripts will pick up automatically.  If you do not, the build script
+will attempt to clone them to a temporary directory.
+
+### Running a full integration test with a 4.x cluster
+
+If you have a local clone of [origin-aggregated-logging](https://github.com/openshift/origin-aggregated-logging)
+under `$GOPATH/github.com/openshift/origin-aggregated-logging` you can use its `hack/get-cluster-run-tests.sh`
+to build the logging, elasticsearch-operator, and cluster-logging-operator images; deploy a 4.x cluster;
+push the images to the cluster; deploy logging; and launch the logging CI tests.
+
+
 ### Running the operator
 
 Running locally outside an OKD cluster:
@@ -40,6 +64,9 @@ The deployment can be optionally modified using any of the following:
 |`EXCLUSIONS`|none|The list of manifest files that should will be ignored|
 |`OC`|`oc` in `PATH`| The openshift binary to use to deploy resources|
 |`REMOTE_REGISTRY`|false|`true` if you are running the cluster on a different machine than the one you are developing on|
+|`PUSH_USER`|none|The name of the user e.g. `kubeadmin` used to push images to the remote registry|
+|`PUSH_PASSWORD`|none|The password for `PUSH_USER`|
+|`SKIP_BUILD`|false|`true` if you are pushing an image to a remote registry and want to skip building it again|
 
 **Note:** Use `REMOTE_REGISTRY=true`, for example, if you are running a cluster in a
     local libvirt or minishift environment; you may want to build the image on the host
@@ -54,11 +81,20 @@ create a user and assign it rights:
 If you used the new `openshift-installer`, it creates a user named `kubeadmin`
     with the password in the file `installer/auth/kubeadmin_password`.
 
-```oc login --username=kubeadmin --password=$( cat ../installer/auth/kubeadmin_password )```
+To push the image to the remote registry, set `REMOTE_REGISTRY=true`, `PUSH_USER=kubeadmin`,
+`KUBECONFIG=/path/to/installer/auth/kubeconfig`, and
+`PUSH_PASSWORD=$( cat /path/to/installer/auth/kubeadmin_password )`.  You do not have to
+`oc login` to the cluster.  If you already built the image, use `SKIP_BUILD=true` to do
+a push only.
 
-The user should already have `cluster-admin` rights.
+```bash
+REMOTE_REGISTRY=true PUSH_USER=kubeadmin SKIP_BUILD=true \
+KUBECONFIG=/path/to/installer/auth/kubeconfig \
+PUSH_PASSWORD=$( cat /path/to/installer/auth/kubeadmin_password ) \
+make deploy-image
+```
 
-**Note:** If you are using `REMOTE_REGISTRY=true`, ensure you have `docker` package installed and `docker` daemon up and running on the workstation you are running these commands.
+**Note:** If you are using `REMOTE_REGISTRY=true`, ensure you have `docker` package installed and `docker` daemon up and running on the workstation you are running these commands.  Also ensure you have `podman` (`docker` may be deprecated in the future).
 
 
 **Note:**  If while hacking you find your changes are not being applied, use

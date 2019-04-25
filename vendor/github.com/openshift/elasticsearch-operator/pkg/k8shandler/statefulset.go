@@ -292,18 +292,21 @@ func (node *statefulSetNode) restart(upgradeStatus *api.ElasticsearchNodeStatus)
 }
 
 func (node *statefulSetNode) create() error {
-	err := sdk.Create(&node.self)
-	if err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Could not create node resource: %v", err)
-		} else {
-			node.scale()
-		}
-	}
 
-	// update the hashmaps
-	node.configmapHash = getConfigmapDataHash(node.clusterName, node.self.Namespace)
-	node.secretHash = getSecretDataHash(node.clusterName, node.self.Namespace)
+	if node.self.ObjectMeta.ResourceVersion == "" {
+		err := sdk.Create(&node.self)
+		if err != nil {
+			if !errors.IsAlreadyExists(err) {
+				return fmt.Errorf("Could not create node resource: %v", err)
+			}
+		}
+
+		// update the hashmaps
+		node.configmapHash = getConfigmapDataHash(node.clusterName, node.self.Namespace)
+		node.secretHash = getSecretDataHash(node.clusterName, node.self.Namespace)
+	} else {
+		node.scale()
+	}
 
 	return nil
 }
@@ -441,6 +444,10 @@ func (node *statefulSetNode) isChanged() bool {
 	changed := false
 
 	desired := node.self.DeepCopy()
+
+	// we want to blank this out before a get to ensure we get the correct information back (possible sdk issue with maps?)
+	node.self.Spec = apps.StatefulSetSpec{}
+
 	err := sdk.Get(&node.self)
 	// error check that it exists, etc
 	if err != nil {
@@ -448,43 +455,52 @@ func (node *statefulSetNode) isChanged() bool {
 		return false
 	}
 
-	// we will only have one container, no need to do range
-	nodeContainer := node.self.Spec.Template.Spec.Containers[0]
-	desiredContainer := desired.Spec.Template.Spec.Containers[0]
-
-	// check that both exist
-
-	if nodeContainer.Image != desiredContainer.Image {
-		logrus.Debugf("Resource '%s' has different container image than desired", node.self.Name)
-		nodeContainer.Image = desiredContainer.Image
+	// check the pod's nodeselector
+	if !areSelectorsSame(node.self.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
+		logrus.Debugf("Resource '%s' has different nodeSelector than desired", node.self.Name)
+		node.self.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
 		changed = true
 	}
 
-	if desiredContainer.Resources.Limits.Cpu().Cmp(*nodeContainer.Resources.Limits.Cpu()) != 0 {
-		logrus.Debugf("Resource '%s' has different CPU limit than desired", node.self.Name)
-		nodeContainer.Resources.Limits[v1.ResourceCPU] = *desiredContainer.Resources.Limits.Cpu()
-		changed = true
-	}
-	// Check memory limits
-	if desiredContainer.Resources.Limits.Memory().Cmp(*nodeContainer.Resources.Limits.Memory()) != 0 {
-		logrus.Debugf("Resource '%s' has different Memory limit than desired", node.self.Name)
-		nodeContainer.Resources.Limits[v1.ResourceMemory] = *desiredContainer.Resources.Limits.Memory()
-		changed = true
-	}
-	// Check CPU requests
-	if desiredContainer.Resources.Requests.Cpu().Cmp(*nodeContainer.Resources.Requests.Cpu()) != 0 {
-		logrus.Debugf("Resource '%s' has different CPU Request than desired", node.self.Name)
-		nodeContainer.Resources.Requests[v1.ResourceCPU] = *desiredContainer.Resources.Requests.Cpu()
-		changed = true
-	}
-	// Check memory requests
-	if desiredContainer.Resources.Requests.Memory().Cmp(*nodeContainer.Resources.Requests.Memory()) != 0 {
-		logrus.Debugf("Resource '%s' has different Memory Request than desired", node.self.Name)
-		nodeContainer.Resources.Requests[v1.ResourceMemory] = *desiredContainer.Resources.Requests.Memory()
-		changed = true
-	}
+	// Only Image and Resources (CPU & memory) differences trigger rolling restart
+	for index := 0; index < len(node.self.Spec.Template.Spec.Containers); index++ {
+		nodeContainer := node.self.Spec.Template.Spec.Containers[index]
+		desiredContainer := desired.Spec.Template.Spec.Containers[index]
 
-	node.self.Spec.Template.Spec.Containers[0] = nodeContainer
+		// check that both exist
+
+		if nodeContainer.Image != desiredContainer.Image {
+			logrus.Debugf("Resource '%s' has different container image than desired", node.self.Name)
+			nodeContainer.Image = desiredContainer.Image
+			changed = true
+		}
+
+		if desiredContainer.Resources.Limits.Cpu().Cmp(*nodeContainer.Resources.Limits.Cpu()) != 0 {
+			logrus.Debugf("Resource '%s' has different CPU limit than desired", node.self.Name)
+			nodeContainer.Resources.Limits[v1.ResourceCPU] = *desiredContainer.Resources.Limits.Cpu()
+			changed = true
+		}
+		// Check memory limits
+		if desiredContainer.Resources.Limits.Memory().Cmp(*nodeContainer.Resources.Limits.Memory()) != 0 {
+			logrus.Debugf("Resource '%s' has different Memory limit than desired", node.self.Name)
+			nodeContainer.Resources.Limits[v1.ResourceMemory] = *desiredContainer.Resources.Limits.Memory()
+			changed = true
+		}
+		// Check CPU requests
+		if desiredContainer.Resources.Requests.Cpu().Cmp(*nodeContainer.Resources.Requests.Cpu()) != 0 {
+			logrus.Debugf("Resource '%s' has different CPU Request than desired", node.self.Name)
+			nodeContainer.Resources.Requests[v1.ResourceCPU] = *desiredContainer.Resources.Requests.Cpu()
+			changed = true
+		}
+		// Check memory requests
+		if desiredContainer.Resources.Requests.Memory().Cmp(*nodeContainer.Resources.Requests.Memory()) != 0 {
+			logrus.Debugf("Resource '%s' has different Memory Request than desired", node.self.Name)
+			nodeContainer.Resources.Requests[v1.ResourceMemory] = *desiredContainer.Resources.Requests.Memory()
+			changed = true
+		}
+
+		node.self.Spec.Template.Spec.Containers[index] = nodeContainer
+	}
 
 	return changed
 }

@@ -61,6 +61,8 @@ type ElasticsearchNode struct {
 	Resources    v1.ResourceRequirements  `json:"resources"`
 	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
 	Storage      ElasticsearchStorageSpec `json:"storage"`
+	GenUUID      *string                  `json:"genUUID,omitempty"`
+	// GenUUID will be populated by the operator if not provided
 }
 
 type ElasticsearchStorageSpec struct {
@@ -97,8 +99,9 @@ const (
 
 // ElasticsearchNodeSpec represents configuration of an individual Elasticsearch node
 type ElasticsearchNodeSpec struct {
-	Image     string                  `json:"image,omitempty"`
-	Resources v1.ResourceRequirements `json:"resources"`
+	Image        string                  `json:"image,omitempty"`
+	Resources    v1.ResourceRequirements `json:"resources"`
+	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
 }
 
 type ElasticsearchRequiredAction string
@@ -184,6 +187,7 @@ const (
 	InvalidMasters    ClusterConditionType = "InvalidMasters"
 	InvalidData       ClusterConditionType = "InvalidData"
 	InvalidRedundancy ClusterConditionType = "InvalidRedundancy"
+	InvalidUUID       ClusterConditionType = "InvalidUUID"
 
 	ESContainerWaiting       ClusterConditionType = "ElasticsearchContainerWaiting"
 	ESContainerTerminated    ClusterConditionType = "ElasticsearchContainerTerminated"

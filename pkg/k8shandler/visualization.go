@@ -26,10 +26,6 @@ func (cluster *ClusterLogging) CreateOrUpdateVisualization() (err error) {
 			return
 		}
 
-		if err = cluster.createKibanaProxyClusterRoleBinding(); err != nil {
-			return
-		}
-
 		if err = cluster.createOrUpdateKibanaService(); err != nil {
 			return
 		}
@@ -130,30 +126,6 @@ func (cluster *ClusterLogging) removeKibana() (err error) {
 	return nil
 }
 
-func (cluster *ClusterLogging) createKibanaProxyClusterRoleBinding() (err error) {
-
-	subject := utils.NewSubject(
-		"ServiceAccount",
-		"kibana",
-	)
-	subject.Namespace = cluster.Namespace
-	subject.APIGroup = ""
-
-	clusterRoleBinding := utils.NewClusterRoleBinding(
-		"kibana-proxy-oauth-delegator",
-		"system:auth-delegator",
-		utils.NewSubjects(subject),
-	)
-	cluster.AddOwnerRefTo(clusterRoleBinding)
-
-	err = cluster.Runtime.Create(clusterRoleBinding)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana clusterrolebinding %q: %v", clusterRoleBinding.Name, err)
-	}
-
-	return nil
-}
-
 func (cluster *ClusterLogging) createOrUpdateKibanaDeployment() (err error) {
 
 	kibanaPodSpec := cluster.newKibanaPodSpec("kibana", "elasticsearch")
@@ -164,6 +136,8 @@ func (cluster *ClusterLogging) createOrUpdateKibanaDeployment() (err error) {
 		"kibana",
 		kibanaPodSpec,
 	)
+
+	kibanaDeployment.Spec.Replicas = &cluster.Spec.Visualization.KibanaSpec.Replicas
 
 	cluster.AddOwnerRefTo(kibanaDeployment)
 
@@ -460,9 +434,6 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 		"-tls-key=/secret/server-key",
 		"-pass-access-token",
 		"-skip-provider-button",
-        // FIX: https://bugzilla.redhat.com/show_bug.cgi?id=1693957 or revert 1666674 completely
-		//		"-openshift-sar={\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}",
-		//		"-openshift-delegate-urls={\"/\": {\"resource\": \"selfsubjectaccessreviews\", \"verb\": \"create\", \"group\": \"authorization.k8s.io\"}}",
 	}
 
 	kibanaProxyContainer.Env = []v1.EnvVar{
@@ -532,6 +503,8 @@ func (cluster *ClusterLogging) newKibanaPodSpec(kibanaName string, elasticsearch
 func updateKibanaIfRequired(desired *apps.Deployment) (err error) {
 	current := desired.DeepCopy()
 
+	current.Spec = apps.DeploymentSpec{}
+
 	if err = sdk.Get(current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
@@ -556,6 +529,12 @@ func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*app
 
 	different := false
 
+	if !utils.AreSelectorsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
+		logrus.Infof("Invalid Kibana nodeSelector change found, updating '%s'", current.Name)
+		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
+		different = true
+	}
+
 	if *current.Spec.Replicas != *desired.Spec.Replicas {
 		logrus.Infof("Invalid Kibana replica count found, updating %q", current.Name)
 		current.Spec.Replicas = desired.Spec.Replicas
@@ -565,6 +544,11 @@ func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*app
 	if isDeploymentImageDifference(current, desired) {
 		logrus.Infof("Kibana image(s) change found, updating %q", current.Name)
 		current = updateCurrentImages(current, desired)
+		different = true
+	}
+
+	if utils.AreResourcesDifferent(current, desired) {
+		logrus.Infof("Kibana resource(s) change found, updating %q", current.Name)
 		different = true
 	}
 

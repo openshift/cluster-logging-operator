@@ -3,6 +3,7 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -46,15 +47,33 @@ func TestClusterLogging(t *testing.T) {
 	}
 
 	// run subtests
-	t.Run("clusterlogging-group", func(t *testing.T) {
+	t.Run("collectors", func(t *testing.T) {
 
-		t.Run("Cluster with fluentd", ClusterLoggingClusterFluentd)
-		time.Sleep(time.Minute * 1) // wait for objects to be deleted/cleaned up
-		t.Run("Cluster with rsyslog", ClusterLoggingClusterRsyslog)
+		for _, collector := range []string{"fluentd", "rsyslog"} {
+			t.Run(collector, func(t *testing.T) {
+				t.Parallel()
+				ctx := framework.NewTestCtx(t)
+				defer ctx.Cleanup()
+				err := waitForOperatorToBeReady(t, ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if err = clusterLoggingInitialDeploymentTest(t, framework.Global, ctx, collector); err != nil {
+					t.Fatal(err)
+				}
+
+				if err = clusterLoggingUpgradeTest(t, framework.Global, ctx, collector); err != nil {
+					t.Fatal(err)
+				}
+			})
+			time.Sleep(time.Minute * 1) // wait for objects to be deleted/cleaned up
+		}
 	})
 }
 
-func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, collector string) error {
+func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, collector string) error {
+	t.Log("Starting ClusterLogging initial deployment test...")
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("Could not get namespace: %v", err)
@@ -130,11 +149,7 @@ func clusterLoggingFullClusterTest(t *testing.T, f *framework.Framework, ctx *fr
 	if err != nil {
 		return err
 	}
-
-	err = clusterLoggingUpgradeClusterTest(t, f, ctx, collector)
-	if err != nil {
-		return err
-	}
+	t.Log("Completed ClusterLogging initial deployment test")
 
 	return nil
 }
@@ -155,6 +170,7 @@ func waitForOperatorToBeReady(t *testing.T, ctx *framework.TestCtx) error {
 	// get global framework variables
 	f := framework.Global
 	// wait for cluster-logging-operator to be ready
+	t.Log("Waiting for cluster-logging-operator to be ready...")
 	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "cluster-logging-operator", 1, retryInterval, timeout)
 	if err != nil {
 		return err
@@ -163,36 +179,8 @@ func waitForOperatorToBeReady(t *testing.T, ctx *framework.TestCtx) error {
 	return nil
 }
 
-func ClusterLoggingClusterFluentd(t *testing.T) {
-	t.Parallel()
-	ctx := framework.NewTestCtx(t)
-	defer ctx.Cleanup()
-	err := waitForOperatorToBeReady(t, ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err = clusterLoggingFullClusterTest(t, framework.Global, ctx, "fluentd"); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func ClusterLoggingClusterRsyslog(t *testing.T) {
-	t.Parallel()
-	ctx := framework.NewTestCtx(t)
-	defer ctx.Cleanup()
-	err := waitForOperatorToBeReady(t, ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err = clusterLoggingFullClusterTest(t, framework.Global, ctx, "rsyslog"); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, collector string) error {
-
+func clusterLoggingUpgradeTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, collector string) error {
+	t.Log("Starting ClusterLogging upgrade test...")
 	namespace, err := ctx.GetNamespace()
 	if err != nil {
 		return fmt.Errorf("Could not get namespace: %v", err)
@@ -203,7 +191,6 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 		return fmt.Errorf("failed to get currentOperator: %v", err)
 	}
 
-	currentEnv := currentOperator.Spec.Template.Spec.Containers[0].Env
 	newEnv := []v1.EnvVar{
 		{Name: "WATCH_NAMESPACE", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.namespace"}}},
 		{Name: "OPERATOR_NAME", Value: "cluster-logging-operator"},
@@ -215,78 +202,37 @@ func clusterLoggingUpgradeClusterTest(t *testing.T, f *framework.Framework, ctx 
 		{Name: "RSYSLOG_IMAGE", Value: "quay.io/viaq/rsyslog:upgraded"},
 	}
 
+	t.Logf("Modified image ENV variables to force upgrade: %q", newEnv)
 	currentOperator.Spec.Template.Spec.Containers[0].Env = newEnv
 	err = f.Client.Update(goctx.TODO(), currentOperator)
 	if err != nil {
 		return fmt.Errorf("could not update cluster-logging-operator with updated image values %v", err)
 	}
 
-	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "quay.io/openshift/origin-logging-elasticsearch5:upgraded", retryInterval, timeout)
+	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", getValueFromEnvVar(newEnv, "ELASTICSEARCH_IMAGE"), retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", "quay.io/openshift/origin-logging-kibana5:upgraded", retryInterval, timeout)
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", getValueFromEnvVar(newEnv, "KIBANA_IMAGE"), retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", getValueFromEnvVar(newEnv, "OAUTH_PROXY_IMAGE"), retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", "quay.io/openshift/origin-logging-curator5:upgraded", retryInterval, timeout)
+	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", getValueFromEnvVar(newEnv, "CURATOR_IMAGE"), retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+	envKeyName := strings.ToUpper(collector) + "_IMAGE"
+	err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, getValueFromEnvVar(newEnv, envKeyName), retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	if collector == "rsyslog" {
-		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "quay.io/viaq/rsyslog:upgraded", retryInterval, timeout)
-		if err != nil {
-			return err
-		}
-	}
-	if collector == "fluentd" {
-		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "quay.io/openshift/origin-logging-fluentd:upgraded", retryInterval, timeout)
-		if err != nil {
-			return err
-		}
-	}
-
-	currentOperator, err = f.KubeClient.AppsV1().Deployments(namespace).Get("cluster-logging-operator", metav1.GetOptions{IncludeUninitialized: true})
-	if err != nil {
-		return fmt.Errorf("failed to get currentOperator: %v", err)
-	}
-
-	currentOperator.Spec.Template.Spec.Containers[0].Env = currentEnv
-	err = f.Client.Update(goctx.TODO(), currentOperator)
-	if err != nil {
-		return fmt.Errorf("could not update cluster-logging-operator with prior image values %v", err)
-	}
-
-	err = CheckForElasticsearchImageName(t, f.Client, namespace, "elasticsearch", "quay.io/openshift/origin-logging-elasticsearch5:latest", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = CheckForDeploymentImageName(t, f.KubeClient, namespace, "kibana", "quay.io/openshift/origin-logging-kibana5:latest", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	err = CheckForCronJobImageName(t, f.KubeClient, namespace, "curator", "quay.io/openshift/origin-logging-curator5:latest", retryInterval, timeout)
-	if err != nil {
-		return err
-	}
-
-	if collector == "rsyslog" {
-		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "quay.io/viaq/rsyslog:latest", retryInterval, timeout)
-		if err != nil {
-			return err
-		}
-	}
-	if collector == "fluentd" {
-		err = CheckForDaemonSetImageName(t, f.KubeClient, namespace, collector, "quay.io/openshift/origin-logging-fluentd:latest", retryInterval, timeout)
-		if err != nil {
-			return err
-		}
-	}
-
+	t.Log("Completed ClusterLogging upgrade test")
 	return nil
 }

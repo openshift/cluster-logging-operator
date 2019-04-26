@@ -47,3 +47,11 @@ required = [
 [[override]]
   name = "sigs.k8s.io/controller-runtime"
   revision = "5fd1e9e9fac5261e9ad9d47c375afc014fc31d21"
+
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+
+[[constraint]]
+  name = "github.com/onsi/ginkgo"
+  version = "1.8.0"

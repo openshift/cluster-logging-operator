@@ -64,13 +64,14 @@ func TestClusterLogging(t *testing.T) {
 					t.Fatal(err)
 				}
 
+				if err = changeLoggingCollectorTest(t, framework.Global, ctx, collector); err != nil {
+					t.Fatal(err)
+				}
+
 				if err = clusterLoggingUpgradeTest(t, framework.Global, ctx, collector); err != nil {
 					t.Fatal(err)
 				}
 
-				if err = changeLoggingCollectorTest(t, framework.Global, ctx, collector); err != nil {
-					t.Fatal(err)
-				}
 			})
 			time.Sleep(time.Minute * 1) // wait for objects to be deleted/cleaned up
 		}

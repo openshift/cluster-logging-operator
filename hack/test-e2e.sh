@@ -2,6 +2,10 @@
 set -e
 
 ARTIFACT_DIR=${ARTIFACT_DIR:-_output}
+
+rm -rf $ARTIFACT_DIR
+mkdir $ARTIFACT_DIR
+
 manifest=$(mktemp)
 global_manifest=$(mktemp)
 

@@ -63,7 +63,7 @@ func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, 
 	if err != nil {
 		return err
 	}
-	t.Logf("Daemonset available (%d/%d)\n", nodeCount, nodeCount)
+	t.Logf("Daemonset %s available (%d/%d)\n", name, nodeCount, nodeCount)
 	return nil
 }
 

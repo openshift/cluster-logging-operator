@@ -14,6 +14,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var (
@@ -51,7 +52,7 @@ func TestClusterLogging(t *testing.T) {
 
 		for _, collector := range []string{"fluentd", "rsyslog"} {
 			t.Run(collector, func(t *testing.T) {
-				t.Parallel()
+				//				t.Parallel()
 				ctx := framework.NewTestCtx(t)
 				defer ctx.Cleanup()
 				err := waitForOperatorToBeReady(t, ctx)
@@ -64,6 +65,10 @@ func TestClusterLogging(t *testing.T) {
 				}
 
 				if err = clusterLoggingUpgradeTest(t, framework.Global, ctx, collector); err != nil {
+					t.Fatal(err)
+				}
+
+				if err = changeLoggingCollectorTest(t, framework.Global, ctx, collector); err != nil {
 					t.Fatal(err)
 				}
 			})
@@ -111,7 +116,8 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 			LogStore: logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
 				ElasticsearchSpec: logging.ElasticsearchSpec{
-					NodeCount: 1,
+					NodeCount:        1,
+					RedundancyPolicy: elasticsearch.ZeroRedundancy,
 				},
 			},
 			Visualization: logging.VisualizationSpec{
@@ -234,5 +240,51 @@ func clusterLoggingUpgradeTest(t *testing.T, f *framework.Framework, ctx *framew
 	}
 
 	t.Log("Completed ClusterLogging upgrade test")
+	return nil
+}
+
+func changeLoggingCollectorTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx, collector string) error {
+	t.Log("Starting change logging collector test...")
+	t.Logf("Logging Collection type is: %s", collector)
+	namespace, err := ctx.GetNamespace()
+	if err != nil {
+		return fmt.Errorf("Could not get namespace: %v", err)
+	}
+	newcollector := ""
+	exampleClusterLogging := &logging.ClusterLogging{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterLogging",
+			APIVersion: logging.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "instance",
+			Namespace: namespace,
+		},
+	}
+
+	exampleName := types.NamespacedName{Name: exampleClusterLogging.GetName(), Namespace: namespace}
+	if err = f.Client.Get(goctx.TODO(), exampleName, exampleClusterLogging); err != nil {
+		return fmt.Errorf("failed to get exampleClusterLogging: %v", err)
+	}
+
+	if exampleClusterLogging.Spec.Collection.Logs.Type == "fluentd" {
+		exampleClusterLogging.Spec.Collection.Logs.Type = "rsyslog"
+		newcollector = "rsyslog"
+	} else if exampleClusterLogging.Spec.Collection.Logs.Type == "rsyslog" {
+		exampleClusterLogging.Spec.Collection.Logs.Type = "fluentd"
+		newcollector = "fluentd"
+	}
+
+	err = f.Client.Update(goctx.TODO(), exampleClusterLogging)
+	if err != nil {
+		return fmt.Errorf("could not update exampleClusterLogging collection type: %v", err)
+	}
+
+	err = WaitForDaemonSet(t, f.KubeClient, namespace, newcollector, retryInterval, timeout)
+	if err != nil {
+		return err
+	}
+
+	t.Log("Completed changing ClusterLogging collection type test")
 	return nil
 }

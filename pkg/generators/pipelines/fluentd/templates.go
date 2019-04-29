@@ -1,5 +1,56 @@
 package fluentd
 
+var templateRegistry = []string{
+	fluentConfTemplate,
+	outputLabelConfTemplate,
+	storeElasticsearchTemplate,
+	outputLabelMatchTemplate,
+	sourceLabelCopyTemplate,
+}
+
+const fluentConfTemplate = `{{define "fluentConf" -}}
+## CLO GENERATED CONFIGURATION ### 
+# This file is a copy of the fluentd configuration entrypoint
+# which should normally be supplied in a configmap.
+
+@include configs.d/openshift/system.conf
+
+# In each section below, pre- and post- includes don't include anything initially;
+# they exist to enable future additions to openshift conf as needed.
+
+## sources
+## ordered so that syslog always runs last...
+@include configs.d/openshift/input-pre-*.conf
+@include configs.d/dynamic/input-docker-*.conf
+@include configs.d/dynamic/input-syslog-*.conf
+@include configs.d/openshift/input-post-*.conf
+##
+
+<label @INGRESS>
+## filters
+  @include configs.d/openshift/filter-pre-*.conf
+  @include configs.d/openshift/filter-retag-journal.conf
+  @include configs.d/openshift/filter-k8s-meta.conf
+  @include configs.d/openshift/filter-kibana-transform.conf
+  @include configs.d/openshift/filter-k8s-record-transform.conf
+  @include configs.d/openshift/filter-syslog-record-transform.conf
+  @include configs.d/openshift/filter-viaq-data-model.conf
+
+  {{range .SourceMatchers -}}
+  {{ . }}
+  {{ end}}
+  </label>
+  
+  {{range .CopyLabels -}}
+  {{ . }}
+  {{- end}}
+
+  {{range .StoreLabels -}}
+  {{ . }}
+  {{- end}}
+
+{{- end}}`
+
 const outputLabelMatchTemplate = `{{define "outputLabelMatch" -}}
 <match {{.Tags}}>
     @type relabel

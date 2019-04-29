@@ -1,6 +1,20 @@
 package v1
 
-//PipelinesSpec specifies log pipelines from a defined sourct to dest endpoings
+type PipelineSourceType string
+
+const (
+	PipelineSourceTypeLogsApp   PipelineSourceType = "logs.app"
+	PipelineSourceTypeLogsInfra PipelineSourceType = "logs.infra"
+)
+
+func (p *PipelinesSpec) Map() map[string]*PipelineTargetsSpec {
+	m := make(map[string]*PipelineTargetsSpec)
+	m[string(PipelineSourceTypeLogsApp)] = p.LogsApp
+	m[string(PipelineSourceTypeLogsInfra)] = p.LogsInfra
+	return m
+}
+
+//PipelinesSpec specifies log pipelines from a defined sourct to dest endpoints
 type PipelinesSpec struct {
 	LogsApp   *PipelineTargetsSpec `json:"logs.app,omitempty"`
 	LogsInfra *PipelineTargetsSpec `json:"logs.infra,omitempty"`
@@ -18,9 +32,9 @@ type PipelineTargetSpec struct {
 	Certificates *PipelineTargetCertificatesSpec `json:"certificates,omitempty"`
 }
 
-//PipelineTargetCertificatesSpec specifies secretes for pipelines
+//PipelineTargetCertificatesSpec specifies secrets for pipelines
 type PipelineTargetCertificatesSpec struct {
-	SecreteName string `json:"secretName"`
+	SecretName string `json:"secretName"`
 }
 
 //PipelineTargetType defines the type of endpoint that will receive messages

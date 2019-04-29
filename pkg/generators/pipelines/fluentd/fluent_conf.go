@@ -60,7 +60,7 @@ func (conf *outputLabelConf) BufferPath() string {
 	return fmt.Sprintf("/var/lib/fluentd/%s", conf.StoreID())
 }
 func (conf *outputLabelConf) SecretPath(file string) string {
-	return fmt.Sprintf("/var/run/ocp-collector/secrets/%s/%s", conf.Target.Certificates.SecreteName, file)
+	return fmt.Sprintf("/var/run/ocp-collector/secrets/%s/%s", conf.Target.Certificates.SecretName, file)
 }
 
 func (conf *outputLabelConf) LabelName() string {
@@ -122,7 +122,7 @@ func newSourceLabelCopyConf(source string, targets []logging.PipelineTargetSpec)
 		if counter, ok := counters.bump(target.Type); ok {
 			targetLabels = append(targetLabels, reLabelName(source, target.Type, counter))
 		} else {
-			logrus.Warnf("Pipline targets include an unrecognized type: %s", target.Type)
+			logrus.Warnf("Pipeline targets include an unrecognized type: %s", target.Type)
 		}
 	}
 	return &sourceLabelCopyConf{

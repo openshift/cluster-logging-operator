@@ -7,7 +7,7 @@ import (
 	test "github.com/openshift/cluster-logging-operator/test"
 )
 
-var _ = Describe("Generating fluentd configs", func() {
+var _ = Describe("Generating fluentd config blocks", func() {
 
 	var (
 		targets   []logging.PipelineTargetSpec
@@ -21,7 +21,7 @@ var _ = Describe("Generating fluentd configs", func() {
 
 	It("should produce well formed @OUTPUT label match stanza", func() {
 		Expect(generator).To(Not(BeNil()))
-		results, err := generator.GenerateOutputLabelMatchStanzas(newSourceTags("logs.app", "**_foo_bar**", "**_xyz_abc**"))
+		results, err := generator.generateSourceMatchBlocks(newSourceTags("logs.app", "**_foo_bar**", "**_xyz_abc**"))
 		Expect(err).To(BeNil())
 		Expect(len(results) > 0).To(BeTrue())
 		test.Expect(results[0]).ToEqual(`<match **_foo_bar** **_xyz_abc**>
@@ -38,7 +38,7 @@ var _ = Describe("Generating fluentd configs", func() {
 					Type:     logging.PipelineTargetTypeElasticsearch,
 					Endpoint: "es.svc.messaging.cluster.local:9654",
 					Certificates: &logging.PipelineTargetCertificatesSpec{
-						SecreteName: "my-es-secret",
+						SecretName: "my-es-secret",
 					},
 				},
 			}
@@ -49,11 +49,11 @@ var _ = Describe("Generating fluentd configs", func() {
 				Type:     logging.PipelineTargetTypeElasticsearch,
 				Endpoint: "es.svc.second.instance:9654",
 				Certificates: &logging.PipelineTargetCertificatesSpec{
-					SecreteName: "my-other-secret",
+					SecretName: "my-other-secret",
 				},
 			})
 			Expect(generator).To(Not(BeNil()))
-			results, err := generator.GenerateSourceLabelCopyStanzas("logs.app", targets)
+			results, err := generator.generateLabelCopyBlocks("logs.app", targets)
 			Expect(err).To(BeNil())
 			Expect(len(results) > 0).To(BeTrue())
 			test.Expect(results[0]).ToEqual(`<label @LOGS_APP>
@@ -72,7 +72,7 @@ var _ = Describe("Generating fluentd configs", func() {
 		})
 
 		It("should produce well formed output label config", func() {
-			results, err := generator.GenerateOutputLabelConf("logs.app", targets)
+			results, err := generator.generateStoreLabelBlocks("logs.app", targets)
 			Expect(err).To(BeNil())
 			test.Expect(results[0]).ToEqual(`<label @LOGS_APP_ELASTICSEARCH0>
 	<match retry_logs_app>
@@ -174,7 +174,7 @@ var _ = Describe("Generating fluentd configs", func() {
 			}
 		})
 		It("should produce well formed output label config", func() {
-			results, err := generator.GenerateOutputLabelConf("logs.app", targets)
+			results, err := generator.generateStoreLabelBlocks("logs.app", targets)
 			Expect(err).To(BeNil())
 			test.Expect(results[0]).ToEqual(`<label @LOGS_APP_ELASTICSEARCH0>
 	<match retry_logs_app>

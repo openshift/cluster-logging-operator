@@ -45,12 +45,13 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:c98ef6a2b14f439346f66ad3b066413d1e3d90f024f5826ebdbd17161aa78a47"
+  digest = "1:d15ee97f6ed1c0bcf513ebf49d59dcc3a2f724288122f4f55866943a68ce040d"
   name = "github.com/emicklei/go-restful"
   packages = [
     ".",
     "log",
   ]
+  pruneopts = ""
   revision = "b9bbc5664f49b6deec52393bd68f39830687a347"
   version = "v2.9.3"
 
@@ -257,13 +258,6 @@
   packages = [
     ".",
     "config",
-    "ginkgo",
-    "ginkgo/convert",
-    "ginkgo/interrupthandler",
-    "ginkgo/nodot",
-    "ginkgo/testrunner",
-    "ginkgo/testsuite",
-    "ginkgo/watch",
     "internal/codelocation",
     "internal/containernode",
     "internal/failer",
@@ -308,19 +302,21 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:62fc0f9bb29a957458ad4f0948207db3c7813c90726a441d135dcbbf2db77261"
+  digest = "1:c3015358b5ba3742445ed83e1ba161ae05e6e5b55943f2110d534d8c96fbe9bb"
   name = "github.com/openshift/api"
   packages = [
     "oauth/v1",
     "route/v1",
   ]
+  pruneopts = ""
   revision = "e8532c51d46fdc99060e3357da9282a3c588ee94"
 
 [[projects]]
   branch = "master"
-  digest = "1:23eb8640a51d877ebf8bf75a08870fb288aad192428497b66b1428ec68a1441f"
+  digest = "1:66b56bbee76bb648ff3e1b75a93f165489b609dc389c8ee4a3664d7ce2b9f41a"
   name = "github.com/openshift/elasticsearch-operator"
   packages = ["pkg/apis/elasticsearch/v1"]
+  pruneopts = ""
   revision = "7e39ced7031f0904075f2e2763dc6f48bb6e1f98"
 
 [[projects]]
@@ -389,9 +385,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5dff64a37ab1e65130c24f01d5fbda61226b73cc61b6f0c8af24373509a89b73"
+  digest = "1:6326cc7b48adc2a0ae4f9b8decc12c6545ebbd4a07e3a6a25c86ebd22a1af4d0"
   name = "github.com/prometheus/procfs"
   packages = ["."]
+  pruneopts = ""
   revision = "af7bedc223fba51343f25a6fa7aba84355d0357a"
 
 [[projects]]
@@ -420,7 +417,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:43bfad8e9461c3d7263ee81f7fee874aa0635555d5631af29be28707cb048c38"
+  digest = "1:adcb9e84ce154ef1d45851b57c40f8a211db3e36373a65b7c4f10c79b7428718"
   name = "golang.org/x/net"
   packages = [
     "html",
@@ -431,16 +428,18 @@
     "http2/hpack",
     "idna",
   ]
+  pruneopts = ""
   revision = "74de082e2cca95839e88aa0aeee5aadf6ce7710f"
 
 [[projects]]
   branch = "master"
-  digest = "1:919aaa36fe27d6fba3bea8067d0dea806269c45c8e5f329713eef4e2637dc2f4"
+  digest = "1:1b0de777d8ddd63356d5a4d76799ea8f47e811aa9dda85ddc72b2a061c799cc9"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
+  pruneopts = ""
   revision = "9eb1bfa1ce65ae8a6ff3114b0aaf9a41a6cf3560"
 
 [[projects]]
@@ -489,7 +488,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0e317ea37ec75dc22b887c6280c44dd9406c237eccd96506f228292877f128f5"
+  digest = "1:18923112db2c437758404f7115f30d2cbb4559a0f71db26b5c780eede0a97f81"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -504,6 +503,7 @@
     "internal/module",
     "internal/semver",
   ]
+  pruneopts = ""
   revision = "4c644d7e323d3b4a3883d4e238b908fe615f7586"
 
 [[projects]]
@@ -740,7 +740,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7375c6d53c468de9bbf54015da058e9de0523bbd24e9c62b7cee9268e08ec886"
+  digest = "1:6a2a63e09a59caff3fd2d36d69b7b92c2fe7cf783390f0b7349fb330820f9a8e"
   name = "k8s.io/gengo"
   packages = [
     "args",
@@ -752,6 +752,7 @@
     "parser",
     "types",
   ]
+  pruneopts = ""
   revision = "e17681d19d3ac4837a019ece36c2a0ec31ffe985"
 
 [[projects]]
@@ -772,7 +773,8 @@
     "pkg/generators/rules",
     "pkg/util/sets",
   ]
-  revision = "94e1e7b7574c44c4c0f2007de6fe617e259191f3"
+  pruneopts = ""
+  revision = "c59034cc13d587f5ef4e85ca0ade0c1866ae8e1d"
 
 [[projects]]
   digest = "1:9e859df288d941d0d740cc923766890a5a3b4d01f9161a26829ad945b17fe750"
@@ -790,7 +792,6 @@
   input-imports = [
     "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1",
     "github.com/onsi/ginkgo",
-    "github.com/onsi/ginkgo/ginkgo",
     "github.com/onsi/gomega",
     "github.com/openshift/api/oauth/v1",
     "github.com/openshift/api/route/v1",

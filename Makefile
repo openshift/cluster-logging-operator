@@ -15,7 +15,7 @@ APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 export IMAGE_TAG=quay.io/openshift/origin-$(APP_NAME):latest
 MAIN_PKG=cmd/$(APP_NAME)/main.go
-export CSV_FILE=$(CURPATH)/controller-manifests/cluster-logging.v4.1.0.clusterserviceversion.yaml
+export CSV_FILE=$(CURPATH)/manifests/latest
 export NAMESPACE?=openshift-logging
 export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/controller-manifests/elasticsearch-operator.v4.1.0.clusterserviceversion.yaml
 

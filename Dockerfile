@@ -4,6 +4,7 @@ COPY . .
 RUN make
 
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
+ARG CSV=4.1
 RUN INSTALL_PKGS=" \
       openssl \
       " && \
@@ -12,10 +13,11 @@ RUN INSTALL_PKGS=" \
     yum clean all && \
     mkdir /tmp/_working_dir && \
     chmod og+w /tmp/_working_dir
-COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/_output/bin/cluster-logging-operator /usr/bin/
-COPY scripts/* /usr/bin/scripts/
-COPY files/ /usr/bin/files/
-ADD controller-manifests /manifests
+COPY --from=builder _output/bin/cluster-logging-operator /usr/bin/
+COPY --from=builder scripts/* /usr/bin/scripts/
+COPY --from=builder files/ /usr/bin/files/
+COPY --from=builder manifests/cluster-logging-package.yaml /manifests/
+COPY --from=builder manifests/$CSV /manifests/$CSV
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
 ENTRYPOINT ["/usr/bin/cluster-logging-operator"]

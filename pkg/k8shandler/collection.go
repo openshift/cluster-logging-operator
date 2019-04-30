@@ -20,6 +20,10 @@ import (
 
 const (
 	clusterLoggingPriorityClassName = "cluster-logging"
+	metricsPort                     = int32(24231)
+	metricsPortName                 = "metrics"
+	metricsVolumeName               = "collector-metrics"
+	prometheusCAFile                = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
 )
 
 var (
@@ -102,6 +106,18 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
+		if err = createOrUpdateRsyslogService(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateRsyslogServiceMonitor(cluster); err != nil {
+			return
+		}
+
+		if err = createOrUpdateRsyslogPrometheusRule(cluster); err != nil {
+			return
+		}
+
 		if err = createOrUpdateRsyslogConfigMap(cluster); err != nil {
 			return
 		}

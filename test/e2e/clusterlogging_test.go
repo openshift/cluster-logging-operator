@@ -51,8 +51,9 @@ func TestClusterLogging(t *testing.T) {
 	t.Run("collectors", func(t *testing.T) {
 
 		for _, collector := range []string{"fluentd", "rsyslog"} {
+			collector := collector
 			t.Run(collector, func(t *testing.T) {
-				//				t.Parallel()
+				t.Parallel()
 				ctx := framework.NewTestCtx(t)
 				defer ctx.Cleanup()
 				err := waitForOperatorToBeReady(t, ctx)
@@ -200,12 +201,12 @@ func clusterLoggingUpgradeTest(t *testing.T, f *framework.Framework, ctx *framew
 	newEnv := []v1.EnvVar{
 		{Name: "WATCH_NAMESPACE", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.namespace"}}},
 		{Name: "OPERATOR_NAME", Value: "cluster-logging-operator"},
-		{Name: "ELASTICSEARCH_IMAGE", Value: "quay.io/openshift/origin-logging-elasticsearch5:upgraded"},
-		{Name: "FLUENTD_IMAGE", Value: "quay.io/openshift/origin-logging-fluentd:upgraded"},
-		{Name: "KIBANA_IMAGE", Value: "quay.io/openshift/origin-logging-kibana5:upgraded"},
-		{Name: "CURATOR_IMAGE", Value: "quay.io/openshift/origin-logging-curator5:upgraded"},
-		{Name: "OAUTH_PROXY_IMAGE", Value: "quay.io/openshift/origin-oauth-proxy:latest"},
-		{Name: "RSYSLOG_IMAGE", Value: "quay.io/viaq/rsyslog:upgraded"},
+		{Name: "ELASTICSEARCH_IMAGE", Value: "quay.io/openshift/origin-logging-elasticsearch5:v4.0"},
+		{Name: "FLUENTD_IMAGE", Value: "quay.io/openshift/origin-logging-fluentd:v4.0"},
+		{Name: "KIBANA_IMAGE", Value: "quay.io/openshift/origin-logging-kibana5:v4.0"},
+		{Name: "CURATOR_IMAGE", Value: "quay.io/openshift/origin-logging-curator5:v4.0"},
+		{Name: "OAUTH_PROXY_IMAGE", Value: "quay.io/openshift/origin-oauth-proxy:v4.0"},
+		{Name: "RSYSLOG_IMAGE", Value: "docker.io/viaq/rsyslog:latest"},
 	}
 
 	t.Logf("Modified image ENV variables to force upgrade: %q", newEnv)
@@ -267,11 +268,11 @@ func changeLoggingCollectorTest(t *testing.T, f *framework.Framework, ctx *frame
 		return fmt.Errorf("failed to get exampleClusterLogging: %v", err)
 	}
 
-	if exampleClusterLogging.Spec.Collection.Logs.Type == "fluentd" {
-		exampleClusterLogging.Spec.Collection.Logs.Type = "rsyslog"
+	if exampleClusterLogging.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
+		exampleClusterLogging.Spec.Collection.Logs.Type = logging.LogCollectionTypeRsyslog
 		newcollector = "rsyslog"
-	} else if exampleClusterLogging.Spec.Collection.Logs.Type == "rsyslog" {
-		exampleClusterLogging.Spec.Collection.Logs.Type = "fluentd"
+	} else if exampleClusterLogging.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
+		exampleClusterLogging.Spec.Collection.Logs.Type = logging.LogCollectionTypeFluentd
 		newcollector = "fluentd"
 	}
 

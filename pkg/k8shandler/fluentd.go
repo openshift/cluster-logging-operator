@@ -17,11 +17,7 @@ import (
 )
 
 const (
-	metricsPort       = int32(24231)
-	metricsPortName   = "metrics"
-	prometheusCAFile  = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
-	metricsVolumeName = "fluentd-metrics"
-	alertsFile        = "fluentd/fluentd_prometheus_alerts.yaml"
+	fluentdAlertsFile = "fluentd/fluentd_prometheus_alerts.yaml"
 )
 
 func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
@@ -131,7 +127,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 
 	promRule := NewPrometheusRule("fluentd", cluster.Namespace)
 
-	promRuleSpec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + alertsFile)
+	promRuleSpec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + fluentdAlertsFile)
 	if err != nil {
 		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
 	}

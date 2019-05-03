@@ -14,10 +14,10 @@ RUN INSTALL_PKGS=" \
     mkdir /tmp/_working_dir && \
     chmod og+w /tmp/_working_dir
 COPY --from=builder _output/bin/cluster-logging-operator /usr/bin/
-COPY --from=builder scripts/* /usr/bin/scripts/
-COPY --from=builder files/ /usr/bin/files/
-COPY --from=builder manifests/$CSV /manifests/$CSV
-COPY --from=builder manifests/cluster-logging-package.yaml /manifests/
+COPY scripts/* /usr/bin/scripts/
+COPY files/ /usr/bin/files/
+COPY manifests/$CSV /manifests/$CSV
+COPY manifests/cluster-logging.package.yaml /manifests/
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
 ENTRYPOINT ["/usr/bin/cluster-logging-operator"]

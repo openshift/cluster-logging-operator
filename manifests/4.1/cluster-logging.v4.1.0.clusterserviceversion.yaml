@@ -237,7 +237,7 @@ spec:
                   - name: OAUTH_PROXY_IMAGE
                     value: "quay.io/openshift/origin-oauth-proxy:latest"
                   - name: RSYSLOG_IMAGE
-                    value: "docker.io/viaq/rsyslog:latest"
+                    value: "quay.io/openshift/origin-logging-rsyslog:latest"
   version: 4.1.0
   customresourcedefinitions:
     owned:

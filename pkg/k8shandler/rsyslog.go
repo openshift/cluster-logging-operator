@@ -176,7 +176,6 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "OPS_CLIENT_CERT", Value: "/etc/rsyslog/keys/infra-cert"},
 		{Name: "OPS_CLIENT_KEY", Value: "/etc/rsyslog/keys/infra-key"},
 		{Name: "OPS_CA", Value: "/etc/rsyslog/keys/infra-ca"},
-		{Name: "JOURNAL_READ_FROM_HEAD", Value: ""},
 		{Name: "BUFFER_QUEUE_LIMIT", Value: "32"},
 		{Name: "BUFFER_SIZE_LIMIT", Value: "8m"},
 		{Name: "FILE_BUFFER_LIMIT", Value: "256Mi"},

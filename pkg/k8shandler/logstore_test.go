@@ -196,3 +196,110 @@ func TestUseRedundancyWhenSpecified(t *testing.T) {
 		t.Errorf("Exp. the redundancyPolicy to be %q but was %q", elasticsearch.SingleRedundancy, elasticsearchCR.Spec.RedundancyPolicy)
 	}
 }
+
+func TestNotSplitRolesWhenNodeCountIsLt3(t *testing.T) {
+	createAndCheckSingleNodeWithNodeCount(t, 2)
+}
+
+func TestNotSplitRolesWhenNodeCountIsEq3(t *testing.T) {
+	createAndCheckSingleNodeWithNodeCount(t, 3)
+}
+
+func TestSplitRolesWhenNodeCountIsGt3(t *testing.T) {
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeCount: 4,
+					},
+				},
+			},
+		},
+	)
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
+
+	// verify that we have two nodes
+	if len(elasticsearchCR.Spec.Nodes) != 2 {
+		t.Errorf("Exp. the number of ES nodes to be %q but was %q", 2, len(elasticsearchCR.Spec.Nodes))
+	}
+
+	clientDataMasterFound := false
+	clientDataFound := false
+
+	for _, val := range elasticsearchCR.Spec.Nodes {
+		// check that one is client + master (size 3)
+		if val.NodeCount == 1 {
+			// check that one is client + data (size 4)
+			expectedNode := elasticsearch.ElasticsearchNode{
+				Roles: []elasticsearch.ElasticsearchNodeRole{"client", "data"},
+			}
+
+			if !areNodeRolesSame(expectedNode, val) {
+				t.Errorf("Exp. the roles to be %q but was %q", expectedNode.Roles, val.Roles)
+			} else {
+				clientDataFound = true
+			}
+		} else {
+			if val.NodeCount == 3 {
+				expectedNode := elasticsearch.ElasticsearchNode{
+					Roles: []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+				}
+
+				if !areNodeRolesSame(expectedNode, val) {
+					t.Errorf("Exp. the roles to be %q but was %q", expectedNode.Roles, val.Roles)
+				} else {
+					clientDataMasterFound = true
+				}
+			} else {
+				t.Errorf("Exp. the NodeCount to be %q or %q but was %q", 3, 1, val.NodeCount)
+			}
+		}
+	}
+
+	if !clientDataMasterFound {
+		t.Errorf("Exp. client data master node was not found")
+	}
+
+	if !clientDataFound {
+		t.Errorf("Exp. client data node was not found")
+	}
+}
+
+func createAndCheckSingleNodeWithNodeCount(t *testing.T, expectedNodeCount int32) {
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeCount: expectedNodeCount,
+					},
+				},
+			},
+		},
+	)
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
+
+	// verify that we have two nodes
+	if len(elasticsearchCR.Spec.Nodes) != 1 {
+		t.Errorf("Exp. the number of ES nodes to be %q but was %q", 1, len(elasticsearchCR.Spec.Nodes))
+	}
+
+	for _, val := range elasticsearchCR.Spec.Nodes {
+		// check that one is client + master (size 3)
+		if val.NodeCount == expectedNodeCount {
+			// check that one is client + data (size 4)
+			expectedNode := elasticsearch.ElasticsearchNode{
+				Roles: []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+			}
+
+			if !areNodeRolesSame(expectedNode, val) {
+				t.Errorf("Exp. the roles to be %q but was %q", expectedNode.Roles, val.Roles)
+			}
+		} else {
+			t.Errorf("Exp. the NodeCount to be %q but was %q", expectedNodeCount, val.NodeCount)
+		}
+	}
+}

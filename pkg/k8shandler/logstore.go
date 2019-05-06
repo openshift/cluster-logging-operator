@@ -119,19 +119,40 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 		}
 	}
 
-	esNode := elasticsearch.ElasticsearchNode{
-		Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
-		NodeCount: cluster.Spec.LogStore.NodeCount,
-		Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+	if cluster.Spec.LogStore.NodeCount > 3 {
+
+		dataNode := elasticsearch.ElasticsearchNode{
+			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
+			NodeCount: cluster.Spec.LogStore.NodeCount - 3,
+			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+		}
+
+		esNodes = append(esNodes, dataNode)
+
+		masterNode := elasticsearch.ElasticsearchNode{
+			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+			NodeCount: 3,
+			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+		}
+
+		esNodes = append(esNodes, masterNode)
+
+	} else {
+
+		esNode := elasticsearch.ElasticsearchNode{
+			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+			NodeCount: cluster.Spec.LogStore.NodeCount,
+			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+		}
+
+		// build Nodes
+		esNodes = append(esNodes, esNode)
 	}
 
 	redundancyPolicy := cluster.Spec.LogStore.ElasticsearchSpec.RedundancyPolicy
 	if redundancyPolicy == "" {
 		redundancyPolicy = elasticsearch.ZeroRedundancy
 	}
-
-	// build Nodes
-	esNodes = append(esNodes, esNode)
 
 	cr := &elasticsearch.Elasticsearch{
 		ObjectMeta: metav1.ObjectMeta{

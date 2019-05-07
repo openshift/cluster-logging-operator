@@ -26,7 +26,3 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-oauth-proxy:latest
-  - name: logging-rsyslog
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-logging-rsyslog:latest

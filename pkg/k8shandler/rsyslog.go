@@ -240,6 +240,11 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
 		},
+		v1.Toleration{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
 	}
 
 	return rsyslogPodSpec

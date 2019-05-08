@@ -199,8 +199,6 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "OPS_CLIENT_CERT", Value: "/etc/fluent/keys/infra-cert"},
 		{Name: "OPS_CLIENT_KEY", Value: "/etc/fluent/keys/infra-key"},
 		{Name: "OPS_CA", Value: "/etc/fluent/keys/infra-ca"},
-		{Name: "JOURNAL_SOURCE", Value: ""},
-		{Name: "JOURNAL_READ_FROM_HEAD", Value: ""},
 		{Name: "BUFFER_QUEUE_LIMIT", Value: "32"},
 		{Name: "BUFFER_SIZE_LIMIT", Value: "8m"},
 		{Name: "FILE_BUFFER_LIMIT", Value: "256Mi"},

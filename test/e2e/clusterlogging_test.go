@@ -51,7 +51,6 @@ func TestClusterLogging(t *testing.T) {
 
 		for _, collector := range []string{"fluentd", "rsyslog"} {
 			t.Run(collector, func(t *testing.T) {
-				t.Parallel()
 				ctx := framework.NewTestCtx(t)
 				defer ctx.Cleanup()
 				err := waitForOperatorToBeReady(t, ctx)

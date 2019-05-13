@@ -12,7 +12,7 @@ else
         fix_images() { cat ; }
     else
         fix_images() {
-            sed -e "s,docker.io/openshift/origin-logging,$registry_host:5000/openshift/logging,"
+            sed -e "s,docker.io/openshift/origin-logging,$registry_host:5000/openshift/logging," \
                 -e "s,quay.io/openshift/origin-logging,$registry_host:5000/openshift/logging,"
         }
     fi

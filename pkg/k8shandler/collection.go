@@ -59,6 +59,10 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 			return
 		}
 
+		if err = createOrUpdateFluentdPrometheusRule(cluster); err != nil {
+			return
+		}
+
 		if err = createOrUpdateFluentdConfigMap(cluster); err != nil {
 			return
 		}

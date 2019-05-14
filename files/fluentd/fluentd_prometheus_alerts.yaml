@@ -1,0 +1,43 @@
+"groups":
+- "name": "logging_fluentd.alerts"
+  "rules":
+  - "alert": "FluentdNodeDown"
+    "annotations":
+      "message": "Prometheus could not scrape fluentd {{ $labels.instance }} for more than 10m."
+      "summary": "Fluentd cannot be scraped"
+    "expr": |
+      absent(up{job="fluentd"} == 1)
+    "for": "10m"
+    "labels":
+      "service": "fluentd"
+      "severity": "critical"
+  - "alert": "FluentdQueueLengthBurst"
+    "annotations":
+      "message": "In the last minute, fluentd {{ $labels.instance }} buffer queue length increased more than 32. Current value is {{ $value }}."
+      "summary": "Fluentd is overwhelmed"
+    "expr": |
+      delta(fluentd_output_status_buffer_queue_length[1m]) > 32
+    "for": "1m"
+    "labels":
+      "service": "fluentd"
+      "severity": "warning"
+  - "alert": "FluentdQueueLengthIncreasing"
+    "annotations":
+      "message": "In the last 12h, fluentd {{ $labels.instance }} buffer queue length constantly increased more than 1. Current value is {{ $value }}."
+      "summary": "Fluentd file buffer usage issue"
+    "expr": |
+      delta(fluentd_output_status_buffer_queue_length[1m]) > 1
+    "for": "12h"
+    "labels":
+      "service": "fluentd"
+      "severity": "critical"
+  - "alert": "FluentdErrorsHigh"
+    "annotations":
+      "message": "In the last minute, {{ $value }} errors reported by fluentd {{ $labels.instance }}."
+      "summary": "Fluentd reports high number of errors"
+    "expr": |
+      sum by(instance, job) (rate(fluentd_output_status_num_errors[1m])) > 10
+    "for": "1m"
+    "labels":
+      "service": "fluentd"
+      "severity": "critical"

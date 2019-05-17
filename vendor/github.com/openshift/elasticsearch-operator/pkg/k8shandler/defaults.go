@@ -3,7 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 
 const (
@@ -57,6 +57,9 @@ func calculateReplicaCount(dpl *api.Elasticsearch) int {
 	case api.ZeroRedundancy:
 		return 0
 	default:
+		if dataNodeCount == 1 {
+			return 0
+		}
 		return 1
 	}
 }

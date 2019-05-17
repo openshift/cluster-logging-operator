@@ -3,18 +3,16 @@ package k8shandler
 import (
 	"fmt"
 	"reflect"
-
 	"strings"
 	"time"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
-	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
 )
 
@@ -28,69 +26,70 @@ var (
 )
 
 //CreateOrUpdateCollection component of the cluster
-func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
+
+	cluster := clusterRequest.cluster
 
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd || cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
-		if err = createOrUpdateCollectionPriorityClass(cluster); err != nil {
+		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
 			return
 		}
 
-		if err = cluster.createOrUpdateCollectorServiceAccount(); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
 			return
 		}
 	} else {
-		if err = utils.RemoveServiceAccount(cluster.Namespace, "logcollector"); err != nil {
+		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
 			return
 		}
 
-		if err = utils.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
+		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
 			return
 		}
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
-		if err = createOrUpdateFluentdService(cluster); err != nil {
+
+		if err = clusterRequest.createOrUpdateFluentdService(); err != nil {
 			return
 		}
 
-		if err = createOrUpdateFluentdServiceMonitor(cluster); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdServiceMonitor(); err != nil {
 			return
 		}
 
-		if err = createOrUpdateFluentdPrometheusRule(cluster); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdPrometheusRule(); err != nil {
 			return
 		}
 
-		if err = createOrUpdateFluentdConfigMap(cluster); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdConfigMap(); err != nil {
 			return
 		}
 
-		if err = createOrUpdateFluentdSecret(cluster); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
 			return
 		}
 
-		if err = createOrUpdateFluentdDaemonset(cluster); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdDaemonset(); err != nil {
 			return
 		}
 
-		fluentdStatus, err := getFluentdCollectorStatus(cluster.Namespace)
+		fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
 		if err != nil {
 			return fmt.Errorf("Failed to get status of Fluentd: %v", err)
 		}
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if exists := cluster.Exists(); exists {
-				if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
-					if printUpdateMessage {
-						logrus.Info("Updating status of Fluentd")
-						printUpdateMessage = false
-					}
-					cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
-					return sdk.Update(cluster.ClusterLogging)
+			if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
+				if printUpdateMessage {
+					logrus.Info("Updating status of Fluentd")
+					printUpdateMessage = false
 				}
+				cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
+				return clusterRequest.Update(cluster)
 			}
 			return nil
 		})
@@ -98,38 +97,37 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 			return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", retryErr)
 		}
 	} else {
-		removeFluentd(cluster)
+		clusterRequest.removeFluentd()
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
-		if err = createOrUpdateRsyslogConfigMap(cluster); err != nil {
+
+		if err = clusterRequest.createOrUpdateRsyslogConfigMap(); err != nil {
 			return
 		}
 
-		if err = createOrUpdateRsyslogSecret(cluster); err != nil {
+		if err = clusterRequest.createOrUpdateRsyslogSecret(); err != nil {
 			return
 		}
 
-		if err = createOrUpdateRsyslogDaemonset(cluster); err != nil {
+		if err = clusterRequest.createOrUpdateRsyslogDaemonset(); err != nil {
 			return
 		}
 
-		rsyslogStatus, err := getRsyslogCollectorStatus(cluster.Namespace)
+		rsyslogStatus, err := clusterRequest.getRsyslogCollectorStatus()
 		if err != nil {
 			return fmt.Errorf("Failed to get status of Rsyslog: %v", err)
 		}
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if exists := cluster.Exists(); exists {
-				if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.Logs.RsyslogStatus) {
-					if printUpdateMessage {
-						logrus.Info("Updating status of Rsyslog")
-						printUpdateMessage = false
-					}
-					cluster.Status.Collection.Logs.RsyslogStatus = rsyslogStatus
-					return sdk.Update(cluster.ClusterLogging)
+			if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.Logs.RsyslogStatus) {
+				if printUpdateMessage {
+					logrus.Info("Updating status of Rsyslog")
+					printUpdateMessage = false
 				}
+				cluster.Status.Collection.Logs.RsyslogStatus = rsyslogStatus
+				return clusterRequest.Update(cluster)
 			}
 			return nil
 		})
@@ -137,19 +135,19 @@ func (cluster *ClusterLogging) CreateOrUpdateCollection() (err error) {
 			return fmt.Errorf("Failed to update Cluster Logging Rsyslog status: %v", retryErr)
 		}
 	} else {
-		removeRsyslog(cluster)
+		clusterRequest.removeRsyslog()
 	}
 
 	return nil
 }
 
-func createOrUpdateCollectionPriorityClass(logging *ClusterLogging) error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityClass() error {
 
-	collectionPriorityClass := utils.NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging Collector")
+	collectionPriorityClass := NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging Collector")
 
-	logging.AddOwnerRefTo(collectionPriorityClass)
+	utils.AddOwnerRefToObject(collectionPriorityClass, utils.AsOwner(clusterRequest.cluster))
 
-	err := sdk.Create(collectionPriorityClass)
+	err := clusterRequest.Create(collectionPriorityClass)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Collection priority class: %v", err)
 	}
@@ -157,23 +155,25 @@ func createOrUpdateCollectionPriorityClass(logging *ClusterLogging) error {
 	return nil
 }
 
-func (cluster *ClusterLogging) createOrUpdateCollectorServiceAccount() error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccount() error {
 
-	collectorServiceAccount := utils.NewServiceAccount("logcollector", cluster.Namespace)
+	cluster := clusterRequest.cluster
 
-	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(cluster))
+	collectorServiceAccount := NewServiceAccount("logcollector", cluster.Namespace)
 
-	err := sdk.Create(collectorServiceAccount)
+	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(clusterRequest.cluster))
+
+	err := clusterRequest.Create(collectorServiceAccount)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Log Collector service account: %v", err)
 	}
 
 	// Also create the role and role binding so that the service account has host read access
-	collectorRole := utils.NewRole(
+	collectorRole := NewRole(
 		"log-collector-privileged",
 		cluster.Namespace,
-		utils.NewPolicyRules(
-			utils.NewPolicyRule(
+		NewPolicyRules(
+			NewPolicyRule(
 				[]string{"security.openshift.io"},
 				[]string{"securitycontextconstraints"},
 				[]string{"privileged"},
@@ -184,64 +184,64 @@ func (cluster *ClusterLogging) createOrUpdateCollectorServiceAccount() error {
 
 	utils.AddOwnerRefToObject(collectorRole, utils.AsOwner(cluster))
 
-	err = sdk.Create(collectorRole)
+	err = clusterRequest.Create(collectorRole)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Log collector privileged role: %v", err)
 	}
 
-	subject := utils.NewSubject(
+	subject := NewSubject(
 		"ServiceAccount",
 		"logcollector",
 	)
 	subject.APIGroup = ""
 
-	collectorRoleBinding := utils.NewRoleBinding(
+	collectorRoleBinding := NewRoleBinding(
 		"log-collector-privileged-binding",
 		cluster.Namespace,
 		"log-collector-privileged",
-		utils.NewSubjects(
+		NewSubjects(
 			subject,
 		),
 	)
 
 	utils.AddOwnerRefToObject(collectorRoleBinding, utils.AsOwner(cluster))
 
-	err = sdk.Create(collectorRoleBinding)
+	err = clusterRequest.Create(collectorRoleBinding)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Log collector privileged role binding: %v", err)
 	}
 
 	// create clusterrole for logcollector to retrieve metadata
-	clusterrules := utils.NewPolicyRules(
-		utils.NewPolicyRule(
+	clusterrules := NewPolicyRules(
+		NewPolicyRule(
 			[]string{""},
 			[]string{"pods", "namespaces"},
 			nil,
 			[]string{"get", "list", "watch"},
 		),
 	)
-	clusterRole, err := utils.CreateClusterRole("metadata-reader", clusterrules, cluster.ClusterLogging)
+	clusterRole, err := clusterRequest.CreateClusterRole("metadata-reader", clusterrules, cluster)
 	if err != nil {
 		return err
 	}
-	subject = utils.NewSubject(
+	subject = NewSubject(
 		"ServiceAccount",
 		"logcollector",
 	)
 	subject.Namespace = cluster.Namespace
 	subject.APIGroup = ""
 
-	collectorReaderClusterRoleBinding := utils.NewClusterRoleBinding(
+	collectorReaderClusterRoleBinding := NewClusterRoleBinding(
 		"cluster-logging-metadata-reader",
 		clusterRole.Name,
-		utils.NewSubjects(
+		NewSubjects(
 			subject,
 		),
 	)
 
 	utils.AddOwnerRefToObject(collectorReaderClusterRoleBinding, utils.AsOwner(cluster))
 
-	err = sdk.Create(collectorReaderClusterRoleBinding)
+	err = clusterRequest.Create(collectorReaderClusterRoleBinding)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Log collector %q cluster role binding: %v", collectorReaderClusterRoleBinding.Name, err)
 	}
@@ -273,10 +273,10 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 	return current, different
 }
 
-func waitForDaemonSetReady(ds *apps.DaemonSet) error {
+func (clusterRequest *ClusterLoggingRequest) waitForDaemonSetReady(ds *apps.DaemonSet) error {
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		err = sdk.Get(ds)
+		err = clusterRequest.Get(ds.Name, ds)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				return false, fmt.Errorf("Failed to get Fluentd daemonset: %v", err)

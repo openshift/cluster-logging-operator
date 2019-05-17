@@ -182,6 +182,10 @@ spec:
                       valueFrom:
                         fieldRef:
                           fieldPath: metadata.annotations['olm.targetNamespaces']
+                    - name: POD_NAME
+                      valueFrom:
+                        fieldRef:
+                          fieldPath: metadata.name
                     - name: OPERATOR_NAME
                       value: "elasticsearch-operator"
                     - name: PROXY_IMAGE

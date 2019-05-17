@@ -10,29 +10,28 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
-	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
 )
 
-func removeRsyslog(cluster *ClusterLogging) (err error) {
-	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog-bin"); err != nil {
+func (clusterRequest *ClusterLoggingRequest) removeRsyslog() (err error) {
+	if clusterRequest.isManaged() {
+		if err = clusterRequest.RemoveConfigMap("rsyslog-bin"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog-main"); err != nil {
+		if err = clusterRequest.RemoveConfigMap("rsyslog-main"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog"); err != nil {
+		if err = clusterRequest.RemoveConfigMap("rsyslog"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveSecret(cluster.Namespace, "rsyslog"); err != nil {
+		if err = clusterRequest.RemoveSecret("rsyslog"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveDaemonset(cluster.Namespace, "rsyslog"); err != nil {
+		if err = clusterRequest.RemoveDaemonset("rsyslog"); err != nil {
 			return
 		}
 	}
@@ -40,25 +39,25 @@ func removeRsyslog(cluster *ClusterLogging) (err error) {
 	return nil
 }
 
-func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogConfigMap() error {
 
 	// need three configmaps
 	// - one for rsyslog run.sh script - rsyslog-bin
 	// - one for main rsyslog.conf file - rsyslog-main
 	// - one for the actual config files - rsyslog
 	rsyslogConfigMaps := make(map[string]*v1.ConfigMap)
-	rsyslogBinConfigMap := utils.NewConfigMap(
+	rsyslogBinConfigMap := NewConfigMap(
 		"rsyslog-bin",
-		logging.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string]string{
 			"rsyslog.sh": string(utils.GetFileContents("/usr/share/logging/rsyslog/rsyslog.sh")),
 		},
 	)
 	rsyslogConfigMaps["rsyslog-bin"] = rsyslogBinConfigMap
 
-	rsyslogMainConfigMap := utils.NewConfigMap(
+	rsyslogMainConfigMap := NewConfigMap(
 		"rsyslog-main",
-		logging.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string]string{
 			"rsyslog.conf": string(utils.GetFileContents("/usr/share/logging/rsyslog/rsyslog.conf")),
 		},
@@ -82,16 +81,16 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 		fullname := "/usr/share/logging/rsyslog/" + fileInfo.Name()
 		rsyslogConfigMapFiles[fileInfo.Name()] = string(utils.GetFileContents(fullname))
 	}
-	rsyslogConfigMap := utils.NewConfigMap(
+	rsyslogConfigMap := NewConfigMap(
 		"rsyslog",
-		logging.Namespace,
+		clusterRequest.cluster.Namespace,
 		rsyslogConfigMapFiles,
 	)
 	rsyslogConfigMaps["rsyslog"] = rsyslogConfigMap
 	for name, cm := range rsyslogConfigMaps {
-		logging.AddOwnerRefTo(cm)
+		utils.AddOwnerRefToObject(cm, utils.AsOwner(clusterRequest.cluster))
 
-		err = sdk.Create(cm)
+		err = clusterRequest.Create(cm)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Rsyslog configmap %v: %v", name, err)
 		}
@@ -100,11 +99,11 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogSecret() error {
 
-	rsyslogSecret := utils.NewSecret(
+	rsyslogSecret := NewSecret(
 		"rsyslog",
-		logging.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string][]byte{
 			"app-ca":     utils.GetWorkingDirFileContents("ca.crt"),
 			"app-key":    utils.GetWorkingDirFileContents("system.logging.rsyslog.key"),
@@ -114,9 +113,9 @@ func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 			"infra-cert": utils.GetWorkingDirFileContents("system.logging.rsyslog.crt"),
 		})
 
-	logging.AddOwnerRefTo(rsyslogSecret)
+	utils.AddOwnerRefToObject(rsyslogSecret, utils.AsOwner(clusterRequest.cluster))
 
-	err := utils.CreateOrUpdateSecret(rsyslogSecret)
+	err := clusterRequest.CreateOrUpdateSecret(rsyslogSecret)
 	if err != nil {
 		return err
 	}
@@ -124,24 +123,26 @@ func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateRsyslogDaemonset(cluster *ClusterLogging) (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogDaemonset() (err error) {
+
+	cluster := clusterRequest.cluster
 
 	var rsyslogPodSpec v1.PodSpec
 
-	rsyslogPodSpec = newRsyslogPodSpec(cluster.ClusterLogging, "elasticsearch", "elasticsearch")
+	rsyslogPodSpec = newRsyslogPodSpec(cluster, "elasticsearch", "elasticsearch")
 
-	rsyslogDaemonset := utils.NewDaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
+	rsyslogDaemonset := NewDaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
 
 	utils.AddOwnerRefToObject(rsyslogDaemonset, utils.AsOwner(cluster))
 
-	err = sdk.Create(rsyslogDaemonset)
+	err = clusterRequest.Create(rsyslogDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Rsyslog Daemonset %v", err)
 	}
 
-	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+	if clusterRequest.isManaged() {
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			return updateRsyslogDaemonsetIfRequired(rsyslogDaemonset)
+			return clusterRequest.updateRsyslogDaemonsetIfRequired(rsyslogDaemonset)
 		})
 		if retryErr != nil {
 			return retryErr
@@ -161,7 +162,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 				v1.ResourceCPU:    defaultRsyslogCpuRequest,
 			}}
 	}
-	rsyslogContainer := utils.NewContainer("rsyslog", v1.PullIfNotPresent, *resources)
+	rsyslogContainer := NewContainer("rsyslog", v1.PullIfNotPresent, *resources)
 
 	rsyslogContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -210,7 +211,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		"/opt/app-root/bin/rsyslog.sh",
 	}
 
-	rsyslogPodSpec := utils.NewPodSpec(
+	rsyslogPodSpec := NewPodSpec(
 		"logcollector",
 		[]v1.Container{rsyslogContainer},
 		[]v1.Volume{
@@ -249,12 +250,10 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	return rsyslogPodSpec
 }
 
-func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
+func (clusterRequest *ClusterLoggingRequest) updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current := desired.DeepCopy()
 
-	current.Spec = apps.DaemonSetSpec{}
-
-	if err = sdk.Get(current); err != nil {
+	if err = clusterRequest.Get(desired.Name, current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
 			// recreate it on the next time through if necessary
@@ -266,7 +265,7 @@ func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current, different := isDaemonsetDifferent(current, desired)
 
 	if different {
-		if err = sdk.Update(current); err != nil {
+		if err = clusterRequest.Update(current); err != nil {
 			return err
 		}
 	}

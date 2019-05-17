@@ -55,6 +55,19 @@ if [ $ii = 10 ] ; then
     exit 1
 fi
 
-echo "Pushing image ${tag}..."
-docker login 127.0.0.1:${LOCAL_PORT} -u ${ADMIN_USER} -p $(oc whoami -t)
-docker push ${tag}
+login_to_registry "127.0.0.1:${LOCAL_PORT}"
+echo "Pushing image ${IMAGE_TAG} to ${tag} ..."
+rc=0
+for ii in $( seq 1 5 ) ; do
+    if push_image ${IMAGE_TAG} ${tag} ; then
+        rc=0
+        break
+    fi
+    echo push failed - retrying
+    rc=1
+    sleep 1
+done
+if [ $rc = 1 -a $ii = 5 ] ; then
+    echo ERROR: giving up push of ${IMAGE_TAG} to ${tag} after 5 tries
+    exit 1
+fi

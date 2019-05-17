@@ -1,13 +1,12 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/client/monitoring/v1"
-	v1 "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -16,15 +15,18 @@ const (
 )
 
 // CreateOrUpdateServiceMonitors ensures the existence of ServiceMonitors for Elasticsearch cluster
-func CreateOrUpdateServiceMonitors(dpl *v1.Elasticsearch) error {
+func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServiceMonitors() error {
+
+	dpl := elasticsearchRequest.cluster
 	serviceMonitorName := fmt.Sprintf("monitor-%s-%s", dpl.Name, "cluster")
 	owner := getOwnerRef(dpl)
 
 	labelsWithDefault := appendDefaultLabel(dpl.Name, dpl.Labels)
+	labelsWithDefault["scrape-metrics"] = "enabled"
 
 	elasticsearchScMonitor := createServiceMonitor(serviceMonitorName, dpl.Name, dpl.Namespace, labelsWithDefault)
 	addOwnerRefToObject(elasticsearchScMonitor, owner)
-	err := sdk.Create(elasticsearchScMonitor)
+	err := elasticsearchRequest.client.Create(context.TODO(), elasticsearchScMonitor)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure constructing Elasticsearch ServiceMonitor: %v", err)
 	}
@@ -45,7 +47,7 @@ func createServiceMonitor(serviceMonitorName, clusterName, namespace string, lab
 		// ServerName can be e.g. elasticsearch-metrics.openshift-logging.svc
 	}
 	endpoint := monitoringv1.Endpoint{
-		Port:            fmt.Sprintf("%s-%s", clusterName, "metrics"),
+		Port:            clusterName,
 		Path:            "/_prometheus/metrics",
 		Scheme:          "https",
 		BearerTokenFile: "/var/run/secrets/kubernetes.io/serviceaccount/token",
@@ -65,8 +67,8 @@ func createServiceMonitor(serviceMonitorName, clusterName, namespace string, lab
 func serviceMonitor(serviceMonitorName string, namespace string, labels map[string]string) *monitoringv1.ServiceMonitor {
 	return &monitoringv1.ServiceMonitor{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       monitoringv1.ServiceMonitorsKind,
-			APIVersion: monitoringv1.Group + "/" + monitoringv1.Version,
+			Kind:       monitoringv1.DefaultCrdKinds.ServiceMonitor.Kind,
+			APIVersion: monitoringv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceMonitorName,

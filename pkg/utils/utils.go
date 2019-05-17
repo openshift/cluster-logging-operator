@@ -10,13 +10,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
-	apps "k8s.io/api/apps/v1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const WORKING_DIR = "/tmp/_working_dir"
-const SPLIT_ANNOTATION = "io.openshift.clusterlogging.alpha/splitinstallation"
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
@@ -28,19 +26,12 @@ var COMPONENT_IMAGES = map[string]string{
 	"rsyslog":       "RSYSLOG_IMAGE",
 }
 
-//KubernetesResource is an adapter between public and private impl of ClusterLogging
-type KubernetesResource interface {
-	SchemeGroupVersion() string
-	Type() metav1.TypeMeta
-	Meta() metav1.ObjectMeta
-}
-
-func AsOwner(o KubernetesResource) metav1.OwnerReference {
+func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion: o.SchemeGroupVersion(),
-		Kind:       o.Type().Kind,
-		Name:       o.Meta().Name,
-		UID:        o.Meta().UID,
+		APIVersion: logging.SchemeGroupVersion.String(),
+		Kind:       "ClusterLogging",
+		Name:       o.Name,
+		UID:        o.UID,
 		Controller: GetBool(true),
 	}
 }
@@ -145,25 +136,6 @@ func GetInt32(value int32) *int32 {
 func GetInt64(value int64) *int64 {
 	i := value
 	return &i
-}
-
-func GetReplicaSetList(namespace string, selector string) (*apps.ReplicaSetList, error) {
-	list := &apps.ReplicaSetList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ReplicaSet",
-			APIVersion: apps.SchemeGroupVersion.String(),
-		},
-	}
-
-	err := sdk.List(
-		namespace,
-		list,
-		sdk.WithListOptions(&metav1.ListOptions{
-			LabelSelector: selector,
-		}),
-	)
-
-	return list, err
 }
 
 func CheckFileExists(filePath string) error {

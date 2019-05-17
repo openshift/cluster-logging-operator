@@ -14,7 +14,7 @@ export APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 export IMAGE_TAG=quay.io/openshift/origin-$(APP_NAME):latest
-MAIN_PKG=cmd/$(APP_NAME)/main.go
+MAIN_PKG=cmd/manager/main.go
 export CSV_FILE=$(CURPATH)/manifests/latest
 export NAMESPACE?=openshift-logging
 export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/controller-manifests/elasticsearch-operator.v4.1.0.clusterserviceversion.yaml
@@ -71,7 +71,7 @@ run:
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=openshift-logging \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
-	go run cmd/cluster-logging-operator/main.go
+	go run ${MAIN_PKG}
 
 clean:
 	@rm -rf $(TARGET_DIR)

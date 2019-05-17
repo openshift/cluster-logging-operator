@@ -236,6 +236,10 @@ spec:
                     valueFrom:
                       fieldRef:
                         fieldPath: metadata.annotations['olm.targetNamespaces']
+                  - name: POD_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
                   - name: OPERATOR_NAME
                     value: "cluster-logging-operator"
                   - name: ELASTICSEARCH_IMAGE

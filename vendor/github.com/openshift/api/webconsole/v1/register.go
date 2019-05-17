@@ -1,38 +1,31 @@
 package v1
 
 import (
-	configv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var (
-	GroupName     = "webconsole.config.openshift.io"
-	GroupVersion  = schema.GroupVersion{Group: GroupName, Version: "v1"}
-	schemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, configv1.Install)
-	// Install is a function which adds this version to a scheme
-	Install = schemeBuilder.AddToScheme
-
-	// SchemeGroupVersion generated code relies on this name
-	// Deprecated
-	SchemeGroupVersion = GroupVersion
-	// AddToScheme exists solely to keep the old generators creating valid code
-	// DEPRECATED
-	AddToScheme = schemeBuilder.AddToScheme
+const (
+	GroupName = "webconsole.config.openshift.io"
 )
 
-// Resource generated code relies on this being here, but it logically belongs to the group
-// DEPRECATED
+// SchemeGroupVersion is group version used to register these objects
+var (
+	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1"}
+	SchemeBuilder      = runtime.NewSchemeBuilder(addKnownTypes)
+	AddToScheme        = SchemeBuilder.AddToScheme
+)
+
 func Resource(resource string) schema.GroupResource {
-	return schema.GroupResource{Group: GroupName, Resource: resource}
+	return SchemeGroupVersion.WithResource(resource).GroupResource()
 }
 
 // Adds the list of known types to api.Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(GroupVersion,
+	scheme.AddKnownTypes(SchemeGroupVersion,
 		&WebConsoleConfiguration{},
 	)
-	metav1.AddToGroupVersion(scheme, GroupVersion)
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

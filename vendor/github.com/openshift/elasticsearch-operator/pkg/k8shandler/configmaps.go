@@ -2,19 +2,20 @@ package k8shandler
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"html/template"
 	"io"
 	"strconv"
 
-	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,7 +43,10 @@ type indexSettingsStruct struct {
 }
 
 // CreateOrUpdateConfigMaps ensures the existence of ConfigMaps with Elasticsearch configuration
-func CreateOrUpdateConfigMaps(dpl *api.Elasticsearch) (err error) {
+func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateConfigMaps() (err error) {
+
+	dpl := elasticsearchRequest.cluster
+
 	kibanaIndexMode, err := kibanaIndexMode("")
 	if err != nil {
 		return err
@@ -65,7 +69,7 @@ func CreateOrUpdateConfigMaps(dpl *api.Elasticsearch) (err error) {
 
 	addOwnerRefToObject(configmap, getOwnerRef(dpl))
 
-	err = sdk.Create(configmap)
+	err = elasticsearchRequest.client.Create(context.TODO(), configmap)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Elasticsearch ConfigMap: %v", err)
@@ -74,32 +78,32 @@ func CreateOrUpdateConfigMaps(dpl *api.Elasticsearch) (err error) {
 		if errors.IsAlreadyExists(err) {
 			// Get existing configMap to check if it is same as what we want
 			current := configmap.DeepCopy()
-			err = sdk.Get(current)
+			err = elasticsearchRequest.client.Get(context.TODO(), types.NamespacedName{Name: current.Name, Namespace: current.Namespace}, current)
 			if err != nil {
 				return fmt.Errorf("Unable to get Elasticsearch cluster configMap: %v", err)
 			}
 
 			if configMapContentChanged(current, configmap) {
 				// Cluster settings has changed, make sure it doesnt go unnoticed
-				if err := updateConditionWithRetry(dpl, v1.ConditionTrue, updateUpdatingSettingsCondition); err != nil {
+				if err := updateConditionWithRetry(dpl, v1.ConditionTrue, updateUpdatingSettingsCondition, elasticsearchRequest.client); err != nil {
 					return err
 				}
 
 				return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-					if getErr := sdk.Get(current); getErr != nil {
+					if getErr := elasticsearchRequest.client.Get(context.TODO(), types.NamespacedName{Name: current.Name, Namespace: current.Namespace}, current); getErr != nil {
 						logrus.Debugf("Could not get Elasticsearch configmap %v: %v", configmap.Name, getErr)
 						return getErr
 					}
 
 					current.Data = configmap.Data
-					if updateErr := sdk.Update(current); updateErr != nil {
+					if updateErr := elasticsearchRequest.client.Update(context.TODO(), current); updateErr != nil {
 						logrus.Debugf("Failed to update Elasticsearch configmap %v: %v", configmap.Name, updateErr)
 						return updateErr
 					}
 					return nil
 				})
 			} else {
-				if err := updateConditionWithRetry(dpl, v1.ConditionFalse, updateUpdatingSettingsCondition); err != nil {
+				if err := updateConditionWithRetry(dpl, v1.ConditionFalse, updateUpdatingSettingsCondition, elasticsearchRequest.client); err != nil {
 					return err
 				}
 			}
@@ -227,7 +231,7 @@ func renderIndexSettings(w io.Writer, primaryShardsCount, replicaShardsCount str
 	return t.Execute(w, indexSettings)
 }
 
-func getConfigmap(configmapName, namespace string) *v1.ConfigMap {
+func getConfigmap(configmapName, namespace string, client client.Client) *v1.ConfigMap {
 
 	configMap := v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -240,7 +244,7 @@ func getConfigmap(configmapName, namespace string) *v1.ConfigMap {
 		},
 	}
 
-	err := sdk.Get(&configMap)
+	err := client.Get(context.TODO(), types.NamespacedName{Name: configMap.Name, Namespace: configMap.Namespace}, &configMap)
 
 	if err != nil {
 		// check if doesn't exist
@@ -249,11 +253,11 @@ func getConfigmap(configmapName, namespace string) *v1.ConfigMap {
 	return &configMap
 }
 
-func getConfigmapDataHash(configmapName, namespace string) string {
+func getConfigmapDataHash(configmapName, namespace string, client client.Client) string {
 
 	hash := ""
 
-	configMap := getConfigmap(configmapName, namespace)
+	configMap := getConfigmap(configmapName, namespace, client)
 
 	dataHashes := make(map[string][32]byte)
 

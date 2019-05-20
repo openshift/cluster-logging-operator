@@ -24,10 +24,10 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis"
-	routev1 "github.com/openshift/api/route/v1"
-	oauth "github.com/openshift/api/oauth/v1"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	oauth "github.com/openshift/api/oauth/v1"
+	routev1 "github.com/openshift/api/route/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -112,14 +112,14 @@ func main() {
 	}
 
 	if err := routev1.AddToScheme(mgr.GetScheme()); err != nil {
-    log.Error(err, "")
-    os.Exit(1)
-  }
+		log.Error(err, "")
+		os.Exit(1)
+	}
 
 	if err := oauth.AddToScheme(mgr.GetScheme()); err != nil {
-    log.Error(err, "")
-    os.Exit(1)
-  }
+		log.Error(err, "")
+		os.Exit(1)
+	}
 
 	if err := monitoringv1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "")

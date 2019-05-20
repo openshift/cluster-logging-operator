@@ -24,7 +24,7 @@ else
 fi
 
 if [ "${NO_BUILD:-false}" = true ] ; then
-    CREATE_ES_SECRET=false NAMESPACE=openshift-logging make -C ${ELASTICSEARCH_OP_REPO} deploy-no-build
+    CREATE_ES_SECRET=false NAMESPACE=openshift-logging IMAGE_TAG=${EO_IMAGE_TAG:-} make -C ${ELASTICSEARCH_OP_REPO} deploy-no-build
 else
     CREATE_ES_SECRET=false NAMESPACE=openshift-logging make -C ${ELASTICSEARCH_OP_REPO} deploy
 fi

@@ -21,8 +21,9 @@ if [ -n "${IMAGE_CLUSTER_LOGGING_OPERATOR:-}" ] ; then
 fi
 if [ -n "${IMAGE_FORMAT:-}" ] ; then
   IMAGE_CLUSTER_LOGGING_OPERATOR=$(sed -e "s,\${component},cluster-logging-operator," <(echo $IMAGE_FORMAT))
+else
+  IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift/origin-cluster-logging-operator:latest}
 fi
-IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift/origin-cluster-logging-operator:latest}
 
 KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
@@ -36,6 +37,12 @@ $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'ns' | oc create -f
 
 $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} >> ${manifest}
 sed -i "s,quay.io/openshift/origin-cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," ${manifest}
+if [ -n "${IMAGE_FORMAT:-}" ] ; then
+  for comp in logging-curator5 logging-elasticsearch5 logging-fluentd logging-kibana5 logging-oauth-proxy logging-rsyslog ; do
+    img=$(sed -e "s,\${component},$comp," <(echo $IMAGE_FORMAT))
+    sed -i "s,quay.io/openshift/origin-${comp}:latest,${img}," ${manifest}
+  done
+fi
 
 $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'crd' >> ${global_manifest}
 $repo_dir/hack/gen-olm-artifacts.sh ${EO_CSV_FILE} ${NAMESPACE} 'crd' >> ${global_manifest}

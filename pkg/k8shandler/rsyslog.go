@@ -58,7 +58,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogConfigMap() er
 		"rsyslog-bin",
 		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"rsyslog.sh": string(utils.GetFileContents("/usr/share/logging/rsyslog/rsyslog.sh")),
+			"rsyslog.sh": string(utils.GetFileContents(utils.GetShareDir() + "/rsyslog/rsyslog.sh")),
 		},
 	)
 	rsyslogConfigMaps["rsyslog-bin"] = rsyslogBinConfigMap
@@ -67,15 +67,15 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogConfigMap() er
 		"rsyslog-main",
 		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"rsyslog.conf": string(utils.GetFileContents("/usr/share/logging/rsyslog/rsyslog.conf")),
+			"rsyslog.conf": string(utils.GetFileContents(utils.GetShareDir() + "/rsyslog/rsyslog.conf")),
 		},
 	)
 	rsyslogConfigMaps["rsyslog-main"] = rsyslogMainConfigMap
 
 	rsyslogConfigMapFiles := make(map[string]string)
-	readerDir, err := ioutil.ReadDir("/usr/share/logging/rsyslog")
+	readerDir, err := ioutil.ReadDir(utils.GetShareDir() + "/rsyslog")
 	if err != nil {
-		return fmt.Errorf("Failure %v to read files from directory '/usr/share/logging/rsyslog' for Rsyslog configmap", err)
+		return fmt.Errorf("Failure %v to read files from directory '%v/rsyslog' for Rsyslog configmap", err, utils.GetShareDir())
 	}
 	for _, fileInfo := range readerDir {
 		// exclude files provided by other configmaps
@@ -86,7 +86,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogConfigMap() er
 			continue
 		}
 		// include all other files
-		fullname := "/usr/share/logging/rsyslog/" + fileInfo.Name()
+		fullname := utils.GetShareDir() + "/rsyslog/" + fileInfo.Name()
 		rsyslogConfigMapFiles[fileInfo.Name()] = string(utils.GetFileContents(fullname))
 	}
 	rsyslogConfigMap := NewConfigMap(
@@ -117,9 +117,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateLogrotateConfigMap() 
 		"logrotate-bin",
 		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"cron.sh": string(utils.GetFileContents("/usr/share/logging/logrotate/cron.sh")),
-			"logrotate.sh": string(utils.GetFileContents("/usr/share/logging/logrotate/logrotate.sh")),
-			"logrotate_pod.sh": string(utils.GetFileContents("/usr/share/logging/logrotate/logrotate_pod.sh")),
+			"cron.sh":          string(utils.GetFileContents(utils.GetShareDir() + "/logrotate/cron.sh")),
+			"logrotate.sh":     string(utils.GetFileContents(utils.GetShareDir() + "/logrotate/logrotate.sh")),
+			"logrotate_pod.sh": string(utils.GetFileContents(utils.GetShareDir() + "/logrotate/logrotate_pod.sh")),
 		},
 	)
 	logrotateConfigMaps["logrotate-bin"] = logrotateBinConfigMap
@@ -128,7 +128,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateLogrotateConfigMap() 
 		"logrotate-crontab",
 		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"logrotate": string(utils.GetFileContents("/usr/share/logging/logrotate/logrotate")),
+			"logrotate": string(utils.GetFileContents(utils.GetShareDir() + "/logrotate/logrotate")),
 		},
 	)
 	logrotateConfigMaps["logrotate-crontab"] = logrotateCrontabConfigMap

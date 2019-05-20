@@ -13,7 +13,8 @@ export IMAGE_TAG_CMD?=docker tag
 export APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
-export IMAGE_TAG=quay.io/openshift/origin-$(APP_NAME):latest
+IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
+export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
 export CSV_FILE=$(CURPATH)/manifests/latest
 export NAMESPACE?=openshift-logging

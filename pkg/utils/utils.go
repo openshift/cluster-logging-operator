@@ -92,6 +92,14 @@ func GetFileContents(filePath string) []byte {
 	return contents
 }
 
+func GetShareDir() string {
+	shareDir := os.Getenv("LOGGING_SHARE_DIR")
+	if shareDir == "" {
+		return "/usr/share/logging"
+	}
+	return shareDir
+}
+
 func GetWorkingDirFileContents(filePath string) []byte {
 	return GetFileContents(GetWorkingDirFilePath(filePath))
 }

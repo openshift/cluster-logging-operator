@@ -21,7 +21,7 @@ const (
 	metricsPortName   = "metrics"
 	prometheusCAFile  = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
 	metricsVolumeName = "fluentd-metrics"
-	alertsFile        = "/usr/share/logging/fluentd/fluentd_prometheus_alerts.yaml"
+	alertsFile        = "fluentd/fluentd_prometheus_alerts.yaml"
 )
 
 func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
@@ -131,7 +131,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 
 	promRule := NewPrometheusRule("fluentd", cluster.Namespace)
 
-	promRuleSpec, err := NewPrometheusRuleSpecFrom(alertsFile)
+	promRuleSpec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + alertsFile)
 	if err != nil {
 		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
 	}
@@ -154,9 +154,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap() er
 		"fluentd",
 		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"fluent.conf":          string(utils.GetFileContents("/usr/share/logging/fluentd/fluent.conf")),
-			"throttle-config.yaml": string(utils.GetFileContents("/usr/share/logging/fluentd/fluentd-throttle-config.yaml")),
-			"secure-forward.conf":  string(utils.GetFileContents("/usr/share/logging/fluentd/secure-forward.conf")),
+			"fluent.conf":          string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/fluent.conf")),
+			"throttle-config.yaml": string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/fluentd-throttle-config.yaml")),
+			"secure-forward.conf":  string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/secure-forward.conf")),
 		},
 	)
 

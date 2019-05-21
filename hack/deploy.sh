@@ -29,7 +29,7 @@ else
     $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'dep' | \
         replace_image | \
         fix_images | \
-	    oc create -f -
+	    oc -n $NAMESPACE create -f -
 fi
 
 if [ "${NO_BUILD:-false}" = true ] ; then

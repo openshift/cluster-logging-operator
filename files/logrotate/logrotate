@@ -1,0 +1,6 @@
+# crontab
+# login as root
+# run logrotate (/var/log/rsyslog/*.log) at 2am everyday
+# run logrotate_pod (/var/lib/rsyslog.pod) at 3am everyday
+0 2 * * *       root /usr/bin/bash /opt/app-root/bin/logrotate.sh
+0 3 * * *       root /usr/bin/bash /opt/app-root/bin/logrotate_pod.sh

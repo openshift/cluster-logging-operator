@@ -3,8 +3,27 @@
 CFG_DIR=/etc/rsyslog.d
 ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"false"}
 export MERGE_JSON_LOG=${MERGE_JSON_LOG:-true}
+export LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/rsyslog/rsyslog.log"}
+export RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
+if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
+    mkdir -p $RSYSLOG_WORKDIRECTORY
+fi
 
-rsyslogargs="-f /etc/rsyslog/conf/rsyslog.conf -n"
+if [ ${LOGGING_FILE_PATH} != "console" ] ; then
+    echo "============================="
+    echo "Rsyslog logs have been redirected to: $LOGGING_FILE_PATH"
+    echo "If you want to print out the logs, use command:"
+    echo "oc exec <pod_name> -- logs"
+    echo "============================="
+
+    dirname=$( dirname $LOGGING_FILE_PATH )
+    if [ ! -d $dirname ] ; then
+        mkdir -p $dirname
+    fi
+    touch $LOGGING_FILE_PATH; exec >> $LOGGING_FILE_PATH 2>&1
+fi
+
+rsyslogargs="-i /var/run/rsyslogd.pid -f /etc/rsyslog/conf/rsyslog.conf -n"
 if [[ $VERBOSE ]]; then
   set -ex
   rsyslogargs="$rsyslogargs -d"
@@ -83,11 +102,6 @@ ES_REBIND_INTERVAL=${ES_REBIND_INTERVAL:-200}
 OPS_REBIND_INTERVAL=${OPS_REBIND_INTERVAL:-$ES_REBIND_INTERVAL}
 export ES_REBIND_INTERVAL OPS_REBIND_INTERVAL
 
-# If FILE_BUFFER_PATH exists and it is not a directory, mkdir fails with the error.
-RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
-if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
-    mkdir -p $RSYSLOG_WORKDIRECTORY
-fi
 RSYSLOG_SPOOLDIRECTORY=${RSYSLOG_SPOOLDIRECTORY:-$RSYSLOG_WORKDIRECTORY}
 RSYSLOG_BULK_ERRORS=${RSYSLOG_BULK_ERRORS:-"$RSYSLOG_WORKDIRECTORY/es-bulk-errors.log"}
 RSYSLOG_IMJOURNAL_STATE=${RSYSLOG_IMJOURNAL_STATE:-"$RSYSLOG_WORKDIRECTORY/imjournal.state"}
@@ -96,7 +110,7 @@ RSYSLOG_IMPSTATS_FILE=${RSYSLOG_IMPSTATS_FILE:-"$RSYSLOG_WORKDIRECTORY/impstats.
 RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL=${RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL:-0}
 # 3600 seconds = 1 hour - same as fluent-plugin-k8s
 RSYSLOG_K8S_CACHE_ENTRY_TTL=${RSYSLOG_K8S_CACHE_ENTRY_TTL:-3600}
-export RSYSLOG_WORKDIRECTORY RSYSLOG_SPOOLDIRECTORY RSYSLOG_BULK_ERRORS \
+export RSYSLOG_SPOOLDIRECTORY RSYSLOG_BULK_ERRORS \
   RSYSLOG_IMJOURNAL_STATE RSYSLOG_IMPSTATS_FILE RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL \
   RSYSLOG_K8S_CACHE_ENTRY_TTL
 FILE_BUFFER_PATH=${FILE_BUFFER_PATH:-$RSYSLOG_WORKDIRECTORY}
@@ -208,7 +222,11 @@ mkdir -p /var/log/rsyslog/
 issue_deprecation_warnings
 
 if [[ $DEBUG ]] ; then
-    exec /usr/sbin/rsyslogd $rsyslogargs > /var/log/rsyslog.log 2>&1
+    exec /usr/sbin/rsyslogd $rsyslogargs > /var/log/rsyslog/rsyslog.debug.log 2>&1
 else
-    exec /usr/sbin/rsyslogd $rsyslogargs
+    if [ ${LOGGING_FILE_PATH} = "console" ] ; then
+        exec /usr/sbin/rsyslogd $rsyslogargs
+    else
+        exec /usr/sbin/rsyslogd $rsyslogargs > /dev/null 2>&1
+    fi
 fi

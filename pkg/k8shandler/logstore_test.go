@@ -20,8 +20,8 @@ func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 	if resources.Limits[v1.ResourceMemory] != defaultEsMemory {
 		t.Errorf("Exp. the default memory limit to be %v", defaultEsMemory)
 	}
-	if resources.Limits[v1.ResourceCPU] != defaultEsCpuRequest {
-		t.Errorf("Exp. the default CPU limit to be %v", defaultEsCpuRequest)
+	if cpu, isPresent := resources.Limits[v1.ResourceCPU]; isPresent {
+		t.Errorf("Exp. no default CPU limit, but got %v", cpu.String())
 	}
 	if resources.Requests[v1.ResourceMemory] != defaultEsMemory {
 		t.Errorf("Exp. the default memory request to be %v", defaultEsMemory)

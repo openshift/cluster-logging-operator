@@ -113,9 +113,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorConfigMap() er
 		"curator",
 		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"actions.yaml":  string(utils.GetFileContents("/usr/share/logging/curator/curator-actions.yaml")),
-			"curator5.yaml": string(utils.GetFileContents("/usr/share/logging/curator/curator5-config.yaml")),
-			"config.yaml":   string(utils.GetFileContents("/usr/share/logging/curator/curator-config.yaml")),
+			"actions.yaml":  string(utils.GetFileContents(utils.GetShareDir() + "/curator/curator-actions.yaml")),
+			"curator5.yaml": string(utils.GetFileContents(utils.GetShareDir() + "/curator/curator5-config.yaml")),
+			"config.yaml":   string(utils.GetFileContents(utils.GetShareDir() + "/curator/curator-config.yaml")),
 		},
 	)
 

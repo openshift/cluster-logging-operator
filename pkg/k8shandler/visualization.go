@@ -562,13 +562,13 @@ func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*app
 	different := false
 
 	if !utils.AreSelectorsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
-		logrus.Infof("Invalid Kibana nodeSelector change found, updating '%s'", current.Name)
+		logrus.Infof("Kibana nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
 		different = true
 	}
 
 	if *current.Spec.Replicas != *desired.Spec.Replicas {
-		logrus.Infof("Invalid Kibana replica count found, updating %q", current.Name)
+		logrus.Infof("Kibana replica count change found, updating %q", current.Name)
 		current.Spec.Replicas = desired.Spec.Replicas
 		different = true
 	}

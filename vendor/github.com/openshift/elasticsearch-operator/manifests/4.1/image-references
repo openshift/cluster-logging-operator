@@ -4,10 +4,14 @@ apiVersion: image.openshift.io/v1
 spec:
   tags:
   - name: elasticsearch-operator
-     from:
+    from:
       kind: DockerImage
       name: quay.io/openshift/origin-elasticsearch-operator:latest
   - name: logging-elasticsearch5
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-logging-elasticsearch5:latest
+  - name: oauth-proxy
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-oauth-proxy:latest

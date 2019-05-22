@@ -27,10 +27,8 @@ type ClusterLoggingStatus struct {
 	LogStore      LogStoreStatus      `json:"logStore"`
 	Collection    CollectionStatus    `json:"collection"`
 	Curation      CurationStatus      `json:"curation"`
-	Message       string              `json:"message"`
+	Conditions    []ClusterCondition  `json:"clusterConditions,omitempty"`
 }
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)
 type VisualizationSpec struct {
@@ -100,6 +98,7 @@ type CuratorSpec struct {
 	Schedule     string                   `json:"schedule"`
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // ClusterLogging is the Schema for the clusterloggings API
 // +k8s:openapi-gen=true
 type ClusterLogging struct {
@@ -115,10 +114,11 @@ type VisualizationStatus struct {
 }
 
 type KibanaStatus struct {
-	Replicas    int32       `json:"replicas"`
-	Deployment  string      `json:"deployment"`
-	ReplicaSets []string    `json:"replicaSets"`
-	Pods        PodStateMap `json:"pods"`
+	Replicas    int32                         `json:"replicas"`
+	Deployment  string                        `json:"deployment"`
+	ReplicaSets []string                      `json:"replicaSets"`
+	Pods        PodStateMap                   `json:"pods"`
+	Conditions  map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
 }
 
 type LogStoreStatus struct {
@@ -126,13 +126,17 @@ type LogStoreStatus struct {
 }
 
 type ElasticsearchStatus struct {
-	ClusterName   string                                `json:"clusterName"`
-	NodeCount     int32                                 `json:"nodeCount"`
-	ReplicaSets   []string                              `json:"replicaSets"`
-	Deployments   []string                              `json:"deployments"`
-	StatefulSets  []string                              `json:"statefulSets"`
-	ClusterHealth string                                `json:"clusterHealth"`
-	Pods          map[ElasticsearchRoleType]PodStateMap `json:"pods"`
+	ClusterName            string                                      `json:"clusterName"`
+	NodeCount              int32                                       `json:"nodeCount"`
+	ReplicaSets            []string                                    `json:"replicaSets,omitempty"`
+	Deployments            []string                                    `json:"deployments,omitempty"`
+	StatefulSets           []string                                    `json:"statefulSets,omitempty"`
+	ClusterHealth          string                                      `json:"clusterHealth,omitempty"`
+	Cluster                elasticsearch.ClusterHealth                 `json:"cluster"`
+	Pods                   map[ElasticsearchRoleType]PodStateMap       `json:"pods"`
+	ShardAllocationEnabled elasticsearch.ShardAllocationState          `json:shardAllocationEnabled`
+	ClusterConditions      []elasticsearch.ClusterCondition            `json:"clusterConditions,omitempty"`
+	NodeConditions         map[string][]elasticsearch.ClusterCondition `json:"nodeConditions,omitempty"`
 }
 
 type CollectionStatus struct {
@@ -148,21 +152,24 @@ type EventCollectionStatus struct {
 }
 
 type FluentdCollectorStatus struct {
-	DaemonSet string            `json:"daemonSet"`
-	Nodes     map[string]string `json:"nodes"`
-	Pods      PodStateMap       `json:"pods"`
+	DaemonSet  string                        `json:"daemonSet"`
+	Nodes      map[string]string             `json:"nodes"`
+	Pods       PodStateMap                   `json:"pods"`
+	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
 }
 
 type RsyslogCollectorStatus struct {
-	DaemonSet string            `json:"daemonSet"`
-	Nodes     map[string]string `json:"Nodes"`
-	Pods      PodStateMap       `json:"pods"`
+	DaemonSet  string                        `json:"daemonSet"`
+	Nodes      map[string]string             `json:"Nodes"`
+	Pods       PodStateMap                   `json:"pods"`
+	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
 }
 
 type FluentdNormalizerStatus struct {
-	Replicas    int32       `json:"replicas"`
-	ReplicaSets []string    `json:"replicaSets"`
-	Pods        PodStateMap `json:"pods"`
+	Replicas    int32                         `json:"replicas"`
+	ReplicaSets []string                      `json:"replicaSets"`
+	Pods        PodStateMap                   `json:"pods"`
+	Conditions  map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
 }
 
 type NormalizerStatus struct {
@@ -174,9 +181,10 @@ type CurationStatus struct {
 }
 
 type CuratorStatus struct {
-	CronJob   string `json:"cronJobs"`
-	Schedule  string `json:"schedules"`
-	Suspended bool   `json:"suspended"`
+	CronJob    string                        `json:"cronJobs"`
+	Schedule   string                        `json:"schedules"`
+	Suspended  bool                          `json:"suspended"`
+	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
 }
 
 type PodStateMap map[PodStateType][]string
@@ -234,6 +242,30 @@ const (
 	ManagementStateManaged ManagementState = "Managed"
 	// Unmanaged means that the operator will not take any action related to the component
 	ManagementStateUnmanaged ManagementState = "Unmanaged"
+)
+
+// ConditionStatus contains details for the current condition of this elasticsearch cluster.
+// Status: the status of the condition.
+// LastTransitionTime: Last time the condition transitioned from one status to another.
+// Reason: Unique, one-word, CamelCase reason for the condition's last transition.
+// Message: Human-readable message indicating details about last transition.
+type ClusterCondition struct {
+	Type               ClusterConditionType `json:"type"`
+	Status             v1.ConditionStatus   `json:"status"`
+	LastTransitionTime metav1.Time          `json:"lastTransitionTime"`
+	Reason             string               `json:"reason,omitempty" protobuf:"bytes,5,opt,name=reason"`
+	Message            string               `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
+}
+
+// ClusterConditionType is a valid value for ClusterCondition.Type
+type ClusterConditionType string
+
+const (
+	IncorrectCRName     ClusterConditionType = "IncorrectCRName"
+	ContainerWaiting    ClusterConditionType = "ContainerWaiting"
+	ContainerTerminated ClusterConditionType = "ContainerTerminated"
+	Unschedulable       ClusterConditionType = "Unschedulable"
+	NodeStorage         ClusterConditionType = "NodeStorage"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

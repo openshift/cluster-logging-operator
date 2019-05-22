@@ -26,7 +26,7 @@ func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 func getImage(commonImage string) string {
 	image := commonImage
 	if image == "" {
-		image = elasticsearchDefaultImage
+		image = utils.LookupEnvWithDefault("ELASTICSEARCH_IMAGE", elasticsearchDefaultImage)
 	}
 	return image
 }
@@ -214,6 +214,17 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 	if err != nil {
 		return v1.Container{}, err
 	}
+
+	cpuLimit, err := resource.ParseQuantity("100m")
+	if err != nil {
+		return v1.Container{}, err
+	}
+
+	memoryLimit, err := resource.ParseQuantity("64Mi")
+	if err != nil {
+		return v1.Container{}, err
+	}
+
 	container := v1.Container{
 		Name:            "proxy",
 		Image:           imageName,
@@ -247,6 +258,15 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 			`-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get"}}`,
 			"--pass-user-bearer-token",
 			fmt.Sprintf("--cookie-secret=%s", proxyCookieSecret),
+		},
+		Resources: v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				"memory": memoryLimit,
+			},
+			Requests: v1.ResourceList{
+				"cpu":    cpuLimit,
+				"memory": memoryLimit,
+			},
 		},
 	}
 	return container, nil
@@ -358,6 +378,13 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 			NodeSelector:       mergeSelectors(node.NodeSelector, commonSpec.NodeSelector),
 			ServiceAccountName: clusterName,
 			Volumes:            newVolumes(clusterName, nodeName, namespace, node, client),
+			Tolerations: []v1.Toleration{
+				v1.Toleration{
+					Key:      "node.kubernetes.io/disk-pressure",
+					Operator: v1.TolerationOpExists,
+					Effect:   v1.TaintEffectNoSchedule,
+				},
+			},
 		},
 	}
 }

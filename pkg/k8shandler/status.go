@@ -5,6 +5,7 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	core "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,6 +30,8 @@ func (clusterRequest *ClusterLoggingRequest) getCuratorStatus() ([]logging.Curat
 			Schedule:  cronjob.Spec.Schedule,
 			Suspended: *cronjob.Spec.Suspend,
 		}
+
+		curatorStatus.Conditions = clusterRequest.getPodConditions("curator")
 
 		status = append(status, curatorStatus)
 	}
@@ -63,6 +66,8 @@ func (clusterRequest *ClusterLoggingRequest) getFluentdCollectorStatus() (loggin
 		}
 		fluentdStatus.Pods = podStateMap(podList.Items)
 		fluentdStatus.Nodes = podNodeMap
+
+		fluentdStatus.Conditions = clusterRequest.getPodConditions("fluentd")
 	}
 
 	return fluentdStatus, nil
@@ -95,6 +100,8 @@ func (clusterRequest *ClusterLoggingRequest) getRsyslogCollectorStatus() (loggin
 		}
 		rsyslogStatus.Pods = podStateMap(podList.Items)
 		rsyslogStatus.Nodes = podNodeMap
+
+		rsyslogStatus.Conditions = clusterRequest.getPodConditions("rsyslog")
 	}
 
 	return rsyslogStatus, nil
@@ -131,6 +138,8 @@ func (clusterRequest *ClusterLoggingRequest) getKibanaStatus() ([]logging.Kibana
 		podList, _ := clusterRequest.GetPodList(selector)
 		kibanaStatus.Pods = podStateMap(podList.Items)
 
+		kibanaStatus.Conditions = clusterRequest.getPodConditions("kibana")
+
 		status = append(status, kibanaStatus)
 	}
 
@@ -156,17 +165,39 @@ func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging
 	}
 
 	if len(esList.Items) != 0 {
-		for _, node := range esList.Items {
+		for _, cluster := range esList.Items {
+
+			nodeConditions := make(map[string][]elasticsearch.ClusterCondition)
 
 			nodeStatus := logging.ElasticsearchStatus{
-				ClusterName:   node.Name,
-				NodeCount:     node.Spec.Nodes[0].NodeCount,
-				Deployments:   getDeploymentNames(node.Status),
-				ReplicaSets:   getReplicaSetNames(node.Status),
-				StatefulSets:  getStatefulSetNames(node.Status),
-				Pods:          getPodMap(node.Status),
-				ClusterHealth: node.Status.ClusterHealth,
+				ClusterName:            cluster.Name,
+				NodeCount:              cluster.Spec.Nodes[0].NodeCount,
+				ClusterHealth:          cluster.Status.ClusterHealth,
+				Cluster:                cluster.Status.Cluster,
+				Pods:                   getPodMap(cluster.Status),
+				ClusterConditions:      cluster.Status.Conditions,
+				ShardAllocationEnabled: cluster.Status.ShardAllocationEnabled,
 			}
+
+			for _, node := range cluster.Status.Nodes {
+				nodeName := ""
+
+				if node.DeploymentName != "" {
+					nodeName = node.DeploymentName
+				}
+
+				if node.StatefulSetName != "" {
+					nodeName = node.StatefulSetName
+				}
+
+				if node.Conditions != nil {
+					nodeConditions[nodeName] = node.Conditions
+				} else {
+					nodeConditions[nodeName] = []elasticsearch.ClusterCondition{}
+				}
+			}
+
+			nodeStatus.NodeConditions = nodeConditions
 
 			status = append(status, nodeStatus)
 		}
@@ -257,4 +288,72 @@ func isPodReady(pod v1.Pod) bool {
 	}
 
 	return true
+}
+
+func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) map[string][]logging.ClusterCondition {
+	// Get all pods based on status.Nodes[] and check their conditions
+	// get pod with label 'node-name=node.getName()'
+	podConditions := make(map[string][]logging.ClusterCondition)
+
+	nodePodList := &core.PodList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Pod",
+			APIVersion: core.SchemeGroupVersion.String(),
+		},
+	}
+
+	clusterRequest.List(
+		map[string]string{
+			"component": component,
+		},
+		nodePodList,
+	)
+
+	for _, nodePod := range nodePodList.Items {
+
+		conditions := []logging.ClusterCondition{}
+
+		isUnschedulable := false
+		for _, podCondition := range nodePod.Status.Conditions {
+			if podCondition.Type == v1.PodScheduled && podCondition.Status == v1.ConditionFalse {
+				conditions = append(conditions, logging.ClusterCondition{
+					Type:               logging.Unschedulable,
+					Status:             v1.ConditionTrue,
+					Reason:             podCondition.Reason,
+					Message:            podCondition.Message,
+					LastTransitionTime: podCondition.LastTransitionTime,
+				})
+				isUnschedulable = true
+			}
+		}
+
+		if !isUnschedulable {
+			for _, containerStatus := range nodePod.Status.ContainerStatuses {
+				if containerStatus.State.Waiting != nil {
+					conditions = append(conditions, logging.ClusterCondition{
+						Type:               logging.ContainerWaiting,
+						Status:             v1.ConditionTrue,
+						Reason:             containerStatus.State.Waiting.Reason,
+						Message:            containerStatus.State.Waiting.Message,
+						LastTransitionTime: metav1.Now(),
+					})
+				}
+				if containerStatus.State.Terminated != nil {
+					conditions = append(conditions, logging.ClusterCondition{
+						Type:               logging.ContainerTerminated,
+						Status:             v1.ConditionTrue,
+						Reason:             containerStatus.State.Terminated.Reason,
+						Message:            containerStatus.State.Terminated.Message,
+						LastTransitionTime: metav1.Now(),
+					})
+				}
+			}
+		}
+
+		if len(conditions) > 0 {
+			podConditions[nodePod.Name] = conditions
+		}
+	}
+
+	return podConditions
 }

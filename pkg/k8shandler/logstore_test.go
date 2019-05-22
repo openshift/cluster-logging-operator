@@ -303,3 +303,73 @@ func createAndCheckSingleNodeWithNodeCount(t *testing.T, expectedNodeCount int32
 		}
 	}
 }
+
+func TestDifferenceFoundWhenNodeCountExceeds3(t *testing.T) {
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeCount: 3,
+					},
+				},
+			},
+		},
+	)
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
+
+	cluster = NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeCount: 4,
+					},
+				},
+			},
+		},
+	)
+	elasticsearchCR2 := cluster.newElasticsearchCR("test-app-name")
+
+	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to node count change")
+	}
+}
+
+func TestDifferenceFoundWhenNodeCountExceeds4(t *testing.T) {
+	cluster := NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeCount: 4,
+					},
+				},
+			},
+		},
+	)
+	elasticsearchCR := cluster.newElasticsearchCR("test-app-name")
+
+	cluster = NewClusterLogging(
+		&logging.ClusterLogging{
+			Spec: logging.ClusterLoggingSpec{
+				LogStore: logging.LogStoreSpec{
+					Type: "elasticsearch",
+					ElasticsearchSpec: logging.ElasticsearchSpec{
+						NodeCount: 5,
+					},
+				},
+			},
+		},
+	)
+	elasticsearchCR2 := cluster.newElasticsearchCR("test-app-name")
+
+	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to node count change")
+	}
+}

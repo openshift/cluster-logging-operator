@@ -59,9 +59,22 @@ type ElasticsearchStatus struct {
 
 	Nodes                  []ElasticsearchNodeStatus             `json:"nodes"`
 	ClusterHealth          string                                `json:"clusterHealth"`
+	Cluster                ClusterHealth                         `json:"cluster"`
 	ShardAllocationEnabled ShardAllocationState                  `json:"shardAllocationEnabled"`
 	Pods                   map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
 	Conditions             []ClusterCondition                    `json:"conditions"`
+}
+
+type ClusterHealth struct {
+	Status              string `json:"status"`
+	NumNodes            int32  `json:"numNodes"`
+	NumDataNodes        int32  `json:"numDataNodes"`
+	ActivePrimaryShards int32  `json:"activePrimaryShards"`
+	ActiveShards        int32  `json:"activeShards"`
+	RelocatingShards    int32  `json:"relocatingShards"`
+	InitializingShards  int32  `json:"initializingShards"`
+	UnassignedShards    int32  `json:"unassignedShards"`
+	PendingTasks        int32  `json:"pendingTasks"`
 }
 
 // ElasticsearchNode struct represents individual node in Elasticsearch cluster

@@ -118,14 +118,6 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 
 	if cluster.Spec.LogStore.NodeCount > 3 {
 
-		dataNode := elasticsearch.ElasticsearchNode{
-			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
-			NodeCount: cluster.Spec.LogStore.NodeCount - 3,
-			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
-		}
-
-		esNodes = append(esNodes, dataNode)
-
 		masterNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
 			NodeCount: 3,
@@ -133,6 +125,14 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		}
 
 		esNodes = append(esNodes, masterNode)
+
+		dataNode := elasticsearch.ElasticsearchNode{
+			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
+			NodeCount: cluster.Spec.LogStore.NodeCount - 3,
+			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+		}
+
+		esNodes = append(esNodes, dataNode)
 
 	} else {
 
@@ -273,6 +273,10 @@ func areNodesDifferent(current, desired []elasticsearch.ElasticsearchNode) ([]el
 
 	// nodes were removed
 	if len(current) == 0 {
+		return desired, true
+	}
+
+	if len(current) != len(desired) {
 		return desired, true
 	}
 

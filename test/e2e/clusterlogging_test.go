@@ -15,6 +15,7 @@ import (
 	loggingapi "github.com/openshift/cluster-logging-operator/pkg/apis"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -98,6 +99,14 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 		}
 	}
 
+	// good default values for aws testing environment
+	esResources := &v1.ResourceRequirements{
+		Requests: v1.ResourceList{
+			v1.ResourceMemory: resource.MustParse("4Gi"),
+			v1.ResourceCPU:    resource.MustParse("500m"),
+		},
+	}
+
 	// create clusterlogging custom resource
 	exampleClusterLogging := &logging.ClusterLogging{
 		TypeMeta: metav1.TypeMeta{
@@ -113,6 +122,7 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 				Type: logging.LogStoreTypeElasticsearch,
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 1,
+					Resources: esResources,
 				},
 			},
 			Visualization: logging.VisualizationSpec{

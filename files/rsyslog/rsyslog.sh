@@ -5,6 +5,12 @@ ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"false"}
 export MERGE_JSON_LOG=${MERGE_JSON_LOG:-true}
 export LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/rsyslog/rsyslog.log"}
 export RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
+export CDM_USE_UNDEFINED=${CDM_USE_UNDEFINED:-false}
+export DEFAULT_KEEP_FIELDS=${DEFAULT_KEEP_FIELDS:-CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id}
+export EXTRA_KEEP_FIELDS=${EXTRA_KEEP_FIELDS:-""}
+export CDM_UNDEFINED_NAME=${CDM_UNDEFINED_NAME:-"undefined"}
+export KEEP_EMPTY_FIELDS=${KEEP_EMPTY_FIELDS:-""}
+export UNDEFINED_TO_STRING=${UNDEFINED_TO_STRING:-false}
 if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
     mkdir -p $RSYSLOG_WORKDIRECTORY
 fi
@@ -114,9 +120,10 @@ RSYSLOG_K8S_CACHE_ENTRY_TTL=${RSYSLOG_K8S_CACHE_ENTRY_TTL:-3600}
 # big relative to the memory limit of the pod, OOMKilled
 # figure about 10k per record + some room for overhead
 RSYSLOG_MAIN_QUEUE_SIZE=${RSYSLOG_MAIN_QUEUE_SIZE:-$( expr ${RSYSLOG_MEMORY_LIMIT:-250000000} / 10240 )}
+RSYSLOG_EXTRACONFIG="${RSYSLOG_WORKDIRECTORY}/*.conf"
 export RSYSLOG_SPOOLDIRECTORY RSYSLOG_BULK_ERRORS \
   RSYSLOG_IMJOURNAL_STATE RSYSLOG_IMPSTATS_FILE RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL \
-  RSYSLOG_K8S_CACHE_ENTRY_TTL RSYSLOG_MAIN_QUEUE_SIZE
+  RSYSLOG_K8S_CACHE_ENTRY_TTL RSYSLOG_MAIN_QUEUE_SIZE RSYSLOG_EXTRACONFIG
 FILE_BUFFER_PATH=${FILE_BUFFER_PATH:-$RSYSLOG_WORKDIRECTORY}
 mkdir -p $FILE_BUFFER_PATH
 
@@ -227,6 +234,107 @@ fi
 
 # make sure there is not one left over from a previous run
 rm -f /var/run/rsyslogd.pid
+
+# Generate a config file to keep undefined fields
+keep_fields_conf=${RSYSLOG_WORKDIRECTORY}/10-keep_fields.conf
+rm -f $keep_fields_conf
+
+# Moving undefined fields to \$!undefined
+cat > $keep_fields_conf <<EOF
+template(name="firstFieldTemplate" type="list") {
+    constant(value="\\"") property(name="\$.ii!key") constant(value="\\":\\"")
+    property(name="\$.ii!value") constant(value="\\"")
+}
+
+template(name="firstFieldTemplateNoEscape" type="list") {
+    constant(value="\\"") property(name="\$.ii!key") constant(value="\\":")
+    property(name="\$.ii!value")
+}
+
+template(name="addFieldTemplate" type="list") {
+    property(name="\$.undef")
+    constant(value=",\\"") property(name="\$.ii!key") constant(value="\\":\\"")
+    property(name="\$.ii!value") constant(value="\\"")
+}
+
+template(name="addFieldTemplateNoEscape" type="list") {
+    property(name="\$.undef")
+    constant(value=",\\"") property(name="\$.ii!key") constant(value="\\":")
+    property(name="\$.ii!value")
+}
+
+template(name="makeJsonTemplate" type="list") {
+    constant(value="\\"{") property(name="\$.undef") constant(value="}\\"")
+}
+
+if (strlen(\`echo \$CDM_USE_UNDEFINED\`) > 0) and (\`echo \$CDM_USE_UNDEFINED\` == "true") then {
+EOF
+
+for field in $( echo $DEFAULT_KEEP_FIELDS $EXTRA_KEEP_FIELDS | sed -e "s/,/ /g" ) ; do
+    if [ -z "$KEEP_EMPTY_FIELDS" ] ; then
+        cat >> $keep_fields_conf <<EOF
+    if strlen(\$.all!$field) > 0 then {
+        action(type="mmnormalize" ruleBase="/etc/rsyslog.d/parse_json_skip_empty.rulebase" variable="\$.all!$field" path="\$!$field")
+        unset \$.all!$field;
+    }
+EOF
+    else
+        keepEmpty=false
+        for empty in $( echo $KEEP_EMPTY_FIELDS | sed -e "s/,/ /g" ) ; do
+            if [ "$empty" == "$field" ] ; then
+                keepEmpty=true
+            fi
+        done
+        if [ "$keepEmpty" == "true" ]; then
+                cat >> $keep_fields_conf <<EOF
+    if strlen(\$.all!$field) > 0 then {
+        set \$!$field = \$.all!$field;
+        unset \$.all!$field;
+    }
+EOF
+        else
+                cat >> $keep_fields_conf <<EOF
+    if strlen(\$.all!$field) > 0 then {
+        action(type="mmnormalize" ruleBase="/etc/rsyslog.d/parse_json_skip_empty.rulebase" variable="\$.all!$field" path="\$!$field")
+        unset \$.all!$field;
+    }
+EOF
+        fi
+    fi
+done
+if [ "$UNDEFINED_TO_STRING" == "true" ]; then
+cat >> $keep_fields_conf <<EOF
+    action(type="mmnormalize" ruleBase="/etc/rsyslog.d/parse_json_skip_empty.rulebase" variable="\$.all" path="\$.tmp_undef")
+    set \$.firsttime = "true";
+    foreach (\$.ii in \$.tmp_undef) do {
+        if \$.firsttime == "true" then {
+            if \$.ii!value startswith "{" then {
+                set \$.undef = exec_template('firstFieldTemplateNoEscape');
+            } else {
+                set \$.undef = exec_template('firstFieldTemplate');
+            }
+            set \$.firsttime = "false";
+        } else {
+            if \$.ii!value startswith "{" then {
+                set \$.undef = exec_template('addFieldTemplateNoEscape');
+            } else {
+                set \$.undef = exec_template('addFieldTemplate');
+            }
+        }
+    }
+    set \$!${CDM_UNDEFINED_NAME} = exec_template('makeJsonTemplate');
+EOF
+else
+cat >> $keep_fields_conf <<EOF
+    action(type="mmnormalize" ruleBase="/etc/rsyslog.d/parse_json_skip_empty.rulebase" variable="\$.all" path="\$!${CDM_UNDEFINED_NAME}")
+EOF
+fi
+cat >> $keep_fields_conf <<EOF
+} else {
+    action(type="mmnormalize" ruleBase="/etc/rsyslog.d/parse_json_skip_empty.rulebase" variable="\$.all" path="\$!")
+}
+action(type="omfile" template="RSYSLOG_DebugFormat" file="/var/tmp/rsyslog_debug.log")
+EOF
 
 issue_deprecation_warnings
 

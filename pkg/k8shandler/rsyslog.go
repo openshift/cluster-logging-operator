@@ -348,6 +348,12 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "RSYSLOG_MEMORY_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "rsyslog", Resource: "limits.memory"}}},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "status.hostIP"}}},
 		{Name: "RSYSLOG_WORKDIRECTORY", Value: "/var/lib/rsyslog.pod"},
+		{Name: "CDM_USE_UNDEFINED", Value: "false"},
+		{Name: "DEFAULT_KEEP_FIELDS", Value: "CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id"},
+		{Name: "EXTRA_KEEP_FIELDS", Value: ""},
+		{Name: "CDM_UNDEFINED_NAME", Value: "undefined"},
+		{Name: "KEEP_EMPTY_FIELDS", Value: ""},
+		{Name: "UNDEFINED_TO_STRING", Value: "false"},
 	}
 
 	rsyslogContainer.VolumeMounts = []v1.VolumeMount{

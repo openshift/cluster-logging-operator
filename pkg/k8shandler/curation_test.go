@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -29,8 +30,9 @@ func TestNewCuratorCronJobWhenFieldsAreUndefined(t *testing.T) {
 	if resources.Requests[v1.ResourceCPU] != defaultFluentdCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultCuratorCpuRequest)
 	}
-	if podSpec.NodeSelector != nil {
-		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
+	// check node selecor
+	if podSpec.NodeSelector == nil {
+		t.Errorf("Exp. the nodeSelector to contains the linux allocation selector but was %T", podSpec.NodeSelector)
 	}
 }
 
@@ -114,7 +116,8 @@ func TestNewCuratorCronJobWhenScheduleDefined(t *testing.T) {
 }
 func TestNewCuratorCronJobWhenNodeSelectorDefined(t *testing.T) {
 	expSelector := map[string]string{
-		"foo": "bar",
+		"foo":             "bar",
+		utils.OsNodeLabel: utils.LinuxValue,
 	}
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{

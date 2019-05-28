@@ -490,7 +490,7 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		{Name: "kibana-proxy", ReadOnly: true, MountPath: "/secret"},
 	}
 
-	kibanaPodSpec := NewPodSpec(
+	kibanaPodSpec := NewPodSpecForLinuxNode(
 		"kibana",
 		[]v1.Container{kibanaContainer, kibanaProxyContainer},
 		[]v1.Volume{

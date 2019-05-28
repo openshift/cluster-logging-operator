@@ -186,7 +186,7 @@ func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elas
 		{Name: "config", ReadOnly: true, MountPath: "/etc/curator/settings"},
 	}
 
-	curatorPodSpec := NewPodSpec(
+	curatorPodSpec := NewPodSpecForLinuxNode(
 		"curator",
 		[]v1.Container{curatorContainer},
 		[]v1.Volume{

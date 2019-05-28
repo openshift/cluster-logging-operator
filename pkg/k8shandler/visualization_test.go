@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 
 	v1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
@@ -35,6 +36,16 @@ func TestNewKibanaPodSpecWhenFieldsAreUndefined(t *testing.T) {
 		t.Error("Exp. there to be 2 container")
 	}
 
+	// check pod node selector
+	if podSpec.NodeSelector == nil {
+		t.Errorf("Exp. the nodeSelector to contain the linux allocation selector but was %T", podSpec.NodeSelector)
+	}
+	if len(podSpec.NodeSelector) != 1 {
+		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
+	}
+	if podSpec.NodeSelector[utils.OS_NODE_LABEL] != utils.LINUX_NODE_LABEL_VALUE {
+		t.Errorf("Exp. the nodeSelector to contains %s: %s pair", utils.OS_NODE_LABEL, utils.LINUX_NODE_LABEL_VALUE)
+	}
 	//check kibana
 	resources := podSpec.Containers[0].Resources
 	if resources.Limits[v1.ResourceMemory] != defaultKibanaMemory {
@@ -56,9 +67,6 @@ func TestNewKibanaPodSpecWhenFieldsAreUndefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != defaultKibanaCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultKibanaCpuRequest)
-	}
-	if podSpec.NodeSelector != nil {
-		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
 	}
 }
 
@@ -116,7 +124,8 @@ func TestNewKibanaPodSpecWhenResourcesAreDefined(t *testing.T) {
 }
 func TestNewKibanaPodSpecWhenNodeSelectorIsDefined(t *testing.T) {
 	expSelector := map[string]string{
-		"foo": "bar",
+		"foo":               "bar",
+		utils.OS_NODE_LABEL: utils.LINUX_NODE_LABEL_VALUE,
 	}
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{

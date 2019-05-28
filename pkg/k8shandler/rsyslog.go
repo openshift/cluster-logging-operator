@@ -408,7 +408,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		"/opt/app-root/bin/cron.sh",
 	}
 
-	rsyslogPodSpec := NewPodSpec(
+	rsyslogPodSpec := NewPodSpecForLinuxNode(
 		"logcollector",
 		[]v1.Container{rsyslogContainer, logrotateContainer},
 		[]v1.Volume{

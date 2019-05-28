@@ -251,7 +251,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		Privileged: utils.GetBool(true),
 	}
 
-	fluentdPodSpec := NewPodSpec(
+	fluentdPodSpec := NewPodSpecForLinuxNode(
 		"logcollector",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{

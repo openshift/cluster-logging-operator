@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -14,6 +15,17 @@ func TestNewCuratorCronJobWhenFieldsAreUndefined(t *testing.T) {
 	cluster := &logging.ClusterLogging{}
 	cronJob := newCuratorCronJob(cluster, "test-app-name", "elasticsearch")
 	podSpec := cronJob.Spec.JobTemplate.Spec.Template.Spec
+
+	// check pod node selector
+	if podSpec.NodeSelector == nil {
+		t.Errorf("Exp. the nodeSelector to contain the linux allocation selector but was %T", podSpec.NodeSelector)
+	}
+	if len(podSpec.NodeSelector) != 1 {
+		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
+	}
+	if podSpec.NodeSelector[utils.OS_NODE_LABEL] != utils.LINUX_NODE_LABEL_VALUE {
+		t.Errorf("Exp. the nodeSelector to contains %s: %s pair", utils.OS_NODE_LABEL, utils.LINUX_NODE_LABEL_VALUE)
+	}
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 container")
@@ -28,9 +40,6 @@ func TestNewCuratorCronJobWhenFieldsAreUndefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != defaultFluentdCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultCuratorCpuRequest)
-	}
-	if podSpec.NodeSelector != nil {
-		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
 	}
 }
 
@@ -114,7 +123,8 @@ func TestNewCuratorCronJobWhenScheduleDefined(t *testing.T) {
 }
 func TestNewCuratorCronJobWhenNodeSelectorDefined(t *testing.T) {
 	expSelector := map[string]string{
-		"foo": "bar",
+		"foo":               "bar",
+		utils.OS_NODE_LABEL: utils.LINUX_NODE_LABEL_VALUE,
 	}
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{

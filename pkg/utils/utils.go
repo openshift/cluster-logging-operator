@@ -14,7 +14,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const WORKING_DIR = "/tmp/_working_dir"
+const (
+	WORKING_DIR            = "/tmp/_working_dir"
+	OS_NODE_LABEL          = "kubernetes.io/os"
+	LINUX_NODE_LABEL_VALUE = "linux"
+)
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
@@ -50,6 +54,32 @@ func AreSelectorsSame(lhs, rhs map[string]string) bool {
 	}
 
 	return true
+}
+
+// ForceLinuxNodeSelector takes given selector map and returns a selector map with linux node selector added into it.
+// If there is already a node type selector and is different from "linux" then it is overridden to "linux" type.
+// See https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#interlude-built-in-node-labels
+func ForceLinuxNodeSelector(selectors map[string]string) map[string]string {
+	if os, ok := selectors[OS_NODE_LABEL]; ok {
+		if os == LINUX_NODE_LABEL_VALUE {
+			return selectors
+		}
+		// Can this not be "linux"?
+		logrus.Warnf("Unexpected node selector value: %s=%s", OS_NODE_LABEL, os)
+		return selectors
+	}
+	newSelectors := make(map[string]string)
+	if selectors == nil {
+		newSelectors = map[string]string{}
+	}
+
+	for k, v := range selectors {
+		newSelectors[k] = v
+	}
+
+	newSelectors[OS_NODE_LABEL] = LINUX_NODE_LABEL_VALUE
+
+	return newSelectors
 }
 
 //AddOwnerRefToObject adds the parent as an owner to the child

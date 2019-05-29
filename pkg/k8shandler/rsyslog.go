@@ -82,7 +82,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogService() erro
 	)
 
 	service.Annotations = map[string]string{
-		"service.alpha.openshift.io/serving-cert-secret-name": metricsVolumeName,
+		"service.alpha.openshift.io/serving-cert-secret-name": "rsyslog-metrics",
 	}
 
 	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.cluster))
@@ -426,7 +426,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/rsyslog.pod"}}},
 			{Name: "logrotate-bin", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "logrotate-bin"}}}},
 			{Name: "logrotate-crontab", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "logrotate-crontab"}}}},
-			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: metricsVolumeName}}},
+			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "rsyslog-metrics"}}},
 		},
 		logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector,
 	)

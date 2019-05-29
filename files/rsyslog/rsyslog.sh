@@ -110,9 +110,13 @@ RSYSLOG_IMPSTATS_FILE=${RSYSLOG_IMPSTATS_FILE:-"$RSYSLOG_WORKDIRECTORY/impstats.
 RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL=${RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL:-0}
 # 3600 seconds = 1 hour - same as fluent-plugin-k8s
 RSYSLOG_K8S_CACHE_ENTRY_TTL=${RSYSLOG_K8S_CACHE_ENTRY_TTL:-3600}
+# default queue size - depends on how much ram there is - if this is too
+# big relative to the memory limit of the pod, OOMKilled
+# figure about 10k per record + some room for overhead
+RSYSLOG_MAIN_QUEUE_SIZE=${RSYSLOG_MAIN_QUEUE_SIZE:-$( expr ${RSYSLOG_MEMORY_LIMIT:-250000000} / 10240 )}
 export RSYSLOG_SPOOLDIRECTORY RSYSLOG_BULK_ERRORS \
   RSYSLOG_IMJOURNAL_STATE RSYSLOG_IMPSTATS_FILE RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL \
-  RSYSLOG_K8S_CACHE_ENTRY_TTL
+  RSYSLOG_K8S_CACHE_ENTRY_TTL RSYSLOG_MAIN_QUEUE_SIZE
 FILE_BUFFER_PATH=${FILE_BUFFER_PATH:-$RSYSLOG_WORKDIRECTORY}
 mkdir -p $FILE_BUFFER_PATH
 
@@ -217,7 +221,12 @@ if [ "${ENABLE_PROMETHEUS_ENDPOINT}" != "true" ] ; then
 fi
 
 # Create a directory for log files
-mkdir -p /var/log/rsyslog/
+if [ ! -d /var/log/rsyslog ] ; then
+    mkdir -p /var/log/rsyslog
+fi
+
+# make sure there is not one left over from a previous run
+rm -f /var/run/rsyslogd.pid
 
 issue_deprecation_warnings
 

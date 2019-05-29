@@ -66,7 +66,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdService() erro
 	)
 
 	service.Annotations = map[string]string{
-		"service.alpha.openshift.io/serving-cert-secret-name": metricsVolumeName,
+		"service.alpha.openshift.io/serving-cert-secret-name": "fluentd-metrics",
 	}
 
 	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.cluster))
@@ -265,7 +265,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "dockercfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/sysconfig/docker"}}},
 			{Name: "dockerdaemoncfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/docker"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/fluentd"}}},
-			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: metricsVolumeName}}},
+			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd-metrics"}}},
 		},
 		logging.Spec.Collection.Logs.FluentdSpec.NodeSelector,
 	)

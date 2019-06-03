@@ -14,7 +14,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const WORKING_DIR = "/tmp/_working_dir"
+const (
+	WORKING_DIR = "/tmp/_working_dir"
+	OsNodeLabel = "kubernetes.io/os"
+	LinuxValue  = "linux"
+)
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
@@ -50,6 +54,24 @@ func AreSelectorsSame(lhs, rhs map[string]string) bool {
 	}
 
 	return true
+}
+
+// EnsureLinuxNodeSelector takes given selector map and returns a selector map with linux node selector added into it.
+// If there is already a node type selector and is different from "linux" then it is overridden and warning is logged.
+// See https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#interlude-built-in-node-labels
+func EnsureLinuxNodeSelector(selectors map[string]string) map[string]string {
+	if selectors == nil {
+		return map[string]string{OsNodeLabel: LinuxValue}
+	}
+	if os, ok := selectors[OsNodeLabel]; ok {
+		if os == LinuxValue {
+			return selectors
+		}
+		// Selector is provided but is not "linux"
+		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, os, LinuxValue)
+	}
+	selectors[OsNodeLabel] = LinuxValue
+	return selectors
 }
 
 //AddOwnerRefToObject adds the parent as an owner to the child

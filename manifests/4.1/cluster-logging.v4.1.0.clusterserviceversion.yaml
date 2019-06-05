@@ -3,7 +3,7 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: clusterlogging.v4.1.0
+  name: clusterlogging.v4.1.1
   namespace: placeholder
   annotations:
     capabilities: Seamless Upgrades
@@ -15,6 +15,7 @@ metadata:
     containerImage: quay.io/openshift/origin-cluster-logging-operator:latest
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
+    olm.skipRange: ">=4.1.0 <4.1.1"
     alm-examples: |-
         [
             {
@@ -247,7 +248,7 @@ spec:
                     value: "quay.io/openshift/origin-oauth-proxy:latest"
                   - name: RSYSLOG_IMAGE
                     value: "quay.io/openshift/origin-logging-rsyslog:latest"
-  version: 4.1.0
+  version: 4.1.1
   customresourcedefinitions:
     owned:
     - name: clusterloggings.logging.openshift.io

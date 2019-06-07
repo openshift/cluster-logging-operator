@@ -433,8 +433,6 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 	rsyslogPodSpec.PriorityClassName = clusterLoggingPriorityClassName
 
-	rsyslogPodSpec.NodeSelector = logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector
-
 	rsyslogPodSpec.Tolerations = []v1.Toleration{
 		v1.Toleration{
 			Key:      "node-role.kubernetes.io/master",

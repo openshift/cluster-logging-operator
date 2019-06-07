@@ -4,8 +4,23 @@ import (
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	core "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 )
+
+// Call this method if you want to test that podSpec's node selectors contain only the linux one.
+// Note: This method gets called from other tests. That is why we made it public to other packages.
+func CheckIfThereIsOnlyTheLinuxSelector(podSpec core.PodSpec, t *testing.T) {
+	if podSpec.NodeSelector == nil {
+		t.Errorf("Exp. the nodeSelector to contains the linux allocation selector but was %T", podSpec.NodeSelector)
+	}
+	if len(podSpec.NodeSelector) != 1 {
+		t.Errorf("Exp. single nodeSelector but %d were found", len(podSpec.NodeSelector))
+	}
+	if podSpec.NodeSelector[utils.OsNodeLabel] != utils.LinuxValue {
+		t.Errorf("Exp. the nodeSelector to contains %s: %s pair", utils.OsNodeLabel, utils.LinuxValue)
+	}
+}
 
 func TestNodeAllocationLabelsForPod(t *testing.T) {
 
@@ -18,15 +33,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 		nil,
 	)
 
-	if podSpec.NodeSelector == nil {
-		t.Errorf("Exp. the nodeSelector to contains the linux allocation selector but was %T", podSpec.NodeSelector)
-	}
-	if len(podSpec.NodeSelector) != 1 {
-		t.Errorf("Exp. single nodeSelector but %d were found", len(podSpec.NodeSelector))
-	}
-	if podSpec.NodeSelector[utils.OsNodeLabel] != utils.LinuxValue {
-		t.Errorf("Exp. the nodeSelector to contains %s: %s pair", utils.OsNodeLabel, utils.LinuxValue)
-	}
+	CheckIfThereIsOnlyTheLinuxSelector(podSpec, t)
 
 	// Create pod with some "foo" selector, we expect a new linux box selector will be added
 	// while existing selectors will be left intact.

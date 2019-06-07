@@ -51,9 +51,7 @@ func TestNewRsyslogPodSpecWhenFieldsAreUndefined(t *testing.T) {
 	if resources.Requests[v1.ResourceCPU] != defaultFluentdCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultRsyslogCpuRequest)
 	}
-	if podSpec.NodeSelector != nil {
-		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
-	}
+	CheckIfThereIsOnlyTheLinuxSelector(podSpec, t)
 }
 
 func TestRsyslogPodSpecHasTaintTolerations(t *testing.T) {

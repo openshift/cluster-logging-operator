@@ -272,8 +272,6 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName
 
-	fluentdPodSpec.NodeSelector = logging.Spec.Collection.Logs.FluentdSpec.NodeSelector
-
 	fluentdPodSpec.Tolerations = []v1.Toleration{
 		v1.Toleration{
 			Key:      "node-role.kubernetes.io/master",

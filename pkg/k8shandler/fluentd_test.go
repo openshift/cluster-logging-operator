@@ -29,9 +29,7 @@ func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 		t.Errorf("Exp. the default CPU request to be %v", defaultFluentdCpuRequest)
 	}
 
-	if podSpec.NodeSelector != nil {
-		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
-	}
+	CheckIfThereIsOnlyTheLinuxSelector(podSpec, t)
 }
 
 func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {

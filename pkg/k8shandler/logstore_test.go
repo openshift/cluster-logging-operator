@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -29,6 +30,13 @@ func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 	if resources.Requests[v1.ResourceCPU] != defaultEsCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultEsCpuRequest)
 	}
+	nodeSelectors := elasticsearchCR.Spec.Spec.NodeSelector
+	if len(nodeSelectors) != 1 {
+		t.Errorf("Exp. the node Selector to contain 1 item but it contains %d items", len(nodeSelectors))
+	}
+	if nodeSelectors[utils.OsNodeLabel] != utils.LinuxValue {
+		t.Errorf("Exp. the nodeSelector to contains %s: %s pair", utils.OsNodeLabel, utils.LinuxValue)
+	}
 }
 
 func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
@@ -50,7 +58,12 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 	if !reflect.DeepEqual(elasticsearchCR.Spec.Spec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, elasticsearchCR.Spec.Spec.NodeSelector)
 	}
-
+	if len(expSelector) != 2 {
+		t.Errorf("Exp. the node Selector to contain 2 items but it contains %d items", len(expSelector))
+	}
+	if expSelector[utils.OsNodeLabel] != utils.LinuxValue {
+		t.Errorf("Exp. the nodeSelector to contains %s: %s pair", utils.OsNodeLabel, utils.LinuxValue)
+	}
 }
 
 func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {

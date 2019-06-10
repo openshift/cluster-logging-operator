@@ -162,9 +162,10 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		},
 		Spec: elasticsearch.ElasticsearchSpec{
 			Spec: elasticsearch.ElasticsearchNodeSpec{
-				Image:        utils.GetComponentImage("elasticsearch"),
-				Resources:    *resources,
-				NodeSelector: cluster.Spec.LogStore.NodeSelector,
+				Image:     utils.GetComponentImage("elasticsearch"),
+				Resources: *resources,
+				// We always want to ensure the "linux" node selector is used, see LOG-411
+				NodeSelector: utils.EnsureLinuxNodeSelector(cluster.Spec.LogStore.NodeSelector),
 			},
 			Nodes:            esNodes,
 			ManagementState:  elasticsearch.ManagementStateManaged,

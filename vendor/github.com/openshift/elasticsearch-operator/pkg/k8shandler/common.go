@@ -10,8 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,7 +26,7 @@ func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 func getImage(commonImage string) string {
 	image := commonImage
 	if image == "" {
-		image = elasticsearchDefaultImage
+		image = utils.LookupEnvWithDefault("ELASTICSEARCH_IMAGE", elasticsearchDefaultImage)
 	}
 	return image
 }
@@ -60,7 +61,7 @@ func getOwnerRef(v *api.Elasticsearch) metav1.OwnerReference {
 	trueVar := true
 	return metav1.OwnerReference{
 		APIVersion: api.SchemeGroupVersion.String(),
-		Kind:       v.Kind,
+		Kind:       "Elasticsearch",
 		Name:       v.Name,
 		UID:        v.UID,
 		Controller: &trueVar,
@@ -213,6 +214,17 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 	if err != nil {
 		return v1.Container{}, err
 	}
+
+	cpuLimit, err := resource.ParseQuantity("100m")
+	if err != nil {
+		return v1.Container{}, err
+	}
+
+	memoryLimit, err := resource.ParseQuantity("64Mi")
+	if err != nil {
+		return v1.Container{}, err
+	}
+
 	container := v1.Container{
 		Name:            "proxy",
 		Image:           imageName,
@@ -246,6 +258,15 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 			`-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get"}}`,
 			"--pass-user-bearer-token",
 			fmt.Sprintf("--cookie-secret=%s", proxyCookieSecret),
+		},
+		Resources: v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				"memory": memoryLimit,
+			},
+			Requests: v1.ResourceList{
+				"cpu":    cpuLimit,
+				"memory": memoryLimit,
+			},
 		},
 	}
 	return container, nil
@@ -334,7 +355,7 @@ func newLabelSelector(clusterName, nodeName string, roleMap map[api.Elasticsearc
 	}
 }
 
-func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.ElasticsearchNode, commonSpec api.ElasticsearchNodeSpec, labels map[string]string, roleMap map[api.ElasticsearchNodeRole]bool) v1.PodTemplateSpec {
+func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.ElasticsearchNode, commonSpec api.ElasticsearchNodeSpec, labels map[string]string, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) v1.PodTemplateSpec {
 
 	resourceRequirements := newResourceRequirements(node.Resources, commonSpec.Resources)
 	proxyImage := utils.LookupEnvWithDefault("PROXY_IMAGE", "quay.io/openshift/origin-oauth-proxy:latest")
@@ -356,7 +377,14 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 			},
 			NodeSelector:       mergeSelectors(node.NodeSelector, commonSpec.NodeSelector),
 			ServiceAccountName: clusterName,
-			Volumes:            newVolumes(clusterName, nodeName, namespace, node),
+			Volumes:            newVolumes(clusterName, nodeName, namespace, node, client),
+			Tolerations: []v1.Toleration{
+				v1.Toleration{
+					Key:      "node.kubernetes.io/disk-pressure",
+					Operator: v1.TolerationOpExists,
+					Effect:   v1.TaintEffectNoSchedule,
+				},
+			},
 		},
 	}
 }
@@ -503,7 +531,7 @@ func newResourceRequirements(nodeResRequirements, commonResRequirements v1.Resou
 	}
 }
 
-func newVolumes(clusterName, nodeName, namespace string, node api.ElasticsearchNode) []v1.Volume {
+func newVolumes(clusterName, nodeName, namespace string, node api.ElasticsearchNode, client client.Client) []v1.Volume {
 	return []v1.Volume{
 		v1.Volume{
 			Name: "elasticsearch-config",
@@ -517,7 +545,7 @@ func newVolumes(clusterName, nodeName, namespace string, node api.ElasticsearchN
 		},
 		v1.Volume{
 			Name:         "elasticsearch-storage",
-			VolumeSource: newVolumeSource(clusterName, nodeName, namespace, node),
+			VolumeSource: newVolumeSource(clusterName, nodeName, namespace, node, client),
 		},
 		v1.Volume{
 			Name: "certificates",
@@ -538,7 +566,7 @@ func newVolumes(clusterName, nodeName, namespace string, node api.ElasticsearchN
 	}
 }
 
-func newVolumeSource(clusterName, nodeName, namespace string, node api.ElasticsearchNode) v1.VolumeSource {
+func newVolumeSource(clusterName, nodeName, namespace string, node api.ElasticsearchNode, client client.Client) v1.VolumeSource {
 
 	specVol := node.Storage
 	volSource := v1.VolumeSource{}
@@ -562,7 +590,7 @@ func newVolumeSource(clusterName, nodeName, namespace string, node api.Elasticse
 			StorageClassName: specVol.StorageClassName,
 		}
 
-		err := createOrUpdatePersistentVolumeClaim(volSpec, claimName, namespace)
+		err := createOrUpdatePersistentVolumeClaim(volSpec, claimName, namespace, client)
 		if err != nil {
 			logrus.Errorf("Unable to create PersistentVolumeClaim: %v", err)
 		}

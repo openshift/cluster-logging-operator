@@ -7,12 +7,15 @@ import (
 	"testing"
 	"time"
 
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	elasticsearchapi "github.com/openshift/elasticsearch-operator/pkg/apis"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	v1 "k8s.io/api/core/v1"
 
+	loggingapi "github.com/openshift/cluster-logging-operator/pkg/apis"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -31,7 +34,7 @@ func TestClusterLogging(t *testing.T) {
 			APIVersion: logging.SchemeGroupVersion.String(),
 		},
 	}
-	err := framework.AddToFrameworkScheme(logging.AddToScheme, clusterloggingList)
+	err := framework.AddToFrameworkScheme(loggingapi.AddToScheme, clusterloggingList)
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
@@ -42,7 +45,7 @@ func TestClusterLogging(t *testing.T) {
 			APIVersion: elasticsearch.SchemeGroupVersion.String(),
 		},
 	}
-	err = framework.AddToFrameworkScheme(elasticsearch.AddToScheme, elasticsearchList)
+	err = framework.AddToFrameworkScheme(elasticsearchapi.AddToScheme, elasticsearchList)
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
@@ -53,7 +56,6 @@ func TestClusterLogging(t *testing.T) {
 		for _, collector := range []string{"fluentd", "rsyslog"} {
 			collector := collector
 			t.Run(collector, func(t *testing.T) {
-				t.Parallel()
 				ctx := framework.NewTestCtx(t)
 				defer ctx.Cleanup()
 				err := waitForOperatorToBeReady(t, ctx)
@@ -103,6 +105,14 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 		}
 	}
 
+	// good default values for aws testing environment
+	esResources := &v1.ResourceRequirements{
+		Requests: v1.ResourceList{
+			v1.ResourceMemory: resource.MustParse("4Gi"),
+			v1.ResourceCPU:    resource.MustParse("500m"),
+		},
+	}
+
 	// create clusterlogging custom resource
 	exampleClusterLogging := &logging.ClusterLogging{
 		TypeMeta: metav1.TypeMeta{
@@ -117,8 +127,8 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 			LogStore: logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
 				ElasticsearchSpec: logging.ElasticsearchSpec{
-					NodeCount:        1,
-					RedundancyPolicy: elasticsearch.ZeroRedundancy,
+					NodeCount: 1,
+					Resources: esResources,
 				},
 			},
 			Visualization: logging.VisualizationSpec{
@@ -200,6 +210,7 @@ func clusterLoggingUpgradeTest(t *testing.T, f *framework.Framework, ctx *framew
 
 	newEnv := []v1.EnvVar{
 		{Name: "WATCH_NAMESPACE", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.namespace"}}},
+		{Name: "POD_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.name"}}},
 		{Name: "OPERATOR_NAME", Value: "cluster-logging-operator"},
 		{Name: "ELASTICSEARCH_IMAGE", Value: "quay.io/openshift/origin-logging-elasticsearch5:v4.0"},
 		{Name: "FLUENTD_IMAGE", Value: "quay.io/openshift/origin-logging-fluentd:v4.0"},

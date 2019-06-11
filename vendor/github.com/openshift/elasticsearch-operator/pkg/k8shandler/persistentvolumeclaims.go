@@ -1,19 +1,20 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func createOrUpdatePersistentVolumeClaim(pvc v1.PersistentVolumeClaimSpec, newName string, namespace string) error {
+func createOrUpdatePersistentVolumeClaim(pvc v1.PersistentVolumeClaimSpec, newName, namespace string, client client.Client) error {
 
 	claim := createPersistentVolumeClaim(newName, namespace, pvc)
-	err := sdk.Create(claim)
+	err := client.Create(context.TODO(), claim)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Unable to create PVC: %v", err)

@@ -5,14 +5,8 @@ import (
 	"os"
 	"os/exec"
 
-	v1 "k8s.io/api/core/v1"
-
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-
-	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
-	k8sutil "github.com/operator-framework/operator-sdk/pkg/util/k8sutil"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // golang doesn't allow for const maps
@@ -65,18 +59,9 @@ var secretCertificates = map[string]map[string]string{
 	},
 }
 
-func extractSecretToFile(namespace string, secretName string, key string, toFile string) (err error) {
-	secret := &v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: v1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-	}
-	if err = sdk.Get(secret); err != nil {
+func (clusterRequest *ClusterLoggingRequest) extractSecretToFile(secretName string, key string, toFile string) (err error) {
+	secret, err := clusterRequest.GetSecret(secretName)
+	if err != nil {
 		if errors.IsNotFound(err) {
 			return err
 		}
@@ -93,19 +78,19 @@ func extractSecretToFile(namespace string, secretName string, key string, toFile
 	return utils.WriteToWorkingDirFile(toFile, value)
 }
 
-func (cluster *ClusterLogging) writeSecret() (err error) {
+func (clusterRequest *ClusterLoggingRequest) writeSecret() (err error) {
 
-	secret := utils.NewSecret(
+	secret := NewSecret(
 		"master-certs",
-		cluster.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string][]byte{
 			"masterca":  utils.GetWorkingDirFileContents("ca.crt"),
 			"masterkey": utils.GetWorkingDirFileContents("ca.key"),
 		})
 
-	cluster.AddOwnerRefTo(secret)
+	utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.cluster))
 
-	err = utils.CreateOrUpdateSecret(secret)
+	err = clusterRequest.CreateOrUpdateSecret(secret)
 	if err != nil {
 		return
 	}
@@ -113,10 +98,10 @@ func (cluster *ClusterLogging) writeSecret() (err error) {
 	return nil
 }
 
-func (cluster *ClusterLogging) readSecrets() (err error) {
+func (clusterRequest *ClusterLoggingRequest) readSecrets() (err error) {
 
 	for secretName, certMap := range secretCertificates {
-		if err = extractCertificates(cluster.Namespace, secretName, certMap); err != nil {
+		if err = clusterRequest.extractCertificates(secretName, certMap); err != nil {
 			return
 		}
 	}
@@ -124,10 +109,10 @@ func (cluster *ClusterLogging) readSecrets() (err error) {
 	return nil
 }
 
-func extractCertificates(namespace, secretName string, certs map[string]string) (err error) {
+func (clusterRequest *ClusterLoggingRequest) extractCertificates(secretName string, certs map[string]string) (err error) {
 
 	for secretKey, certPath := range certs {
-		if err = extractSecretToFile(namespace, secretName, secretKey, certPath); err != nil {
+		if err = clusterRequest.extractSecretToFile(secretName, secretKey, certPath); err != nil {
 			if errors.IsNotFound(err) {
 				return nil
 			}
@@ -139,27 +124,22 @@ func extractCertificates(namespace, secretName string, certs map[string]string) 
 }
 
 //CreateOrUpdateCertificates for a cluster logging instance
-func (cluster *ClusterLogging) CreateOrUpdateCertificates() (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err error) {
 
 	// Pull master signing cert out from secret in logging.Spec.SecretName
-	namespace, err := k8sutil.GetWatchNamespace()
-	if err != nil {
-		return fmt.Errorf("Failed to get watch namespace: %v", err)
-	}
-
-	if err = cluster.readSecrets(); err != nil {
+	if err = clusterRequest.readSecrets(); err != nil {
 		return
 	}
 
 	cmd := exec.Command("bash", "scripts/cert_generation.sh")
 	cmd.Env = append(os.Environ(),
-		"NAMESPACE="+namespace,
+		"NAMESPACE="+clusterRequest.cluster.Namespace,
 	)
 	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 
-	if err = cluster.writeSecret(); err != nil {
+	if err = clusterRequest.writeSecret(); err != nil {
 		return
 	}
 

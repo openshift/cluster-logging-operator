@@ -11,11 +11,12 @@ source "$(dirname $0)/common"
 rm -rf /tmp/_working_dir
 mkdir /tmp/_working_dir
 
+export LOGGING_SHARE_DIR=$(dirname $0)/../files
+
 manifest=$(mktemp)
 if ! oc get project openshift-logging > /dev/null 2>&1 ; then
   $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'ns' >> $manifest
 fi
 $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'sa,role,clusterrole,crd'  >> $manifest
-oc create -f $manifest
-
-CREATE_ES_SECRET=false NAMESPACE=openshift-logging make -C ${ELASTICSEARCH_OP_REPO} deploy-setup
+oc -n $NAMESPACE create -f $manifest
+CREATE_ES_SECRET=false NAMESPACE=openshift-logging IMAGE_OVERRIDE=${EO_IMAGE_OVERRIDE:-} make -C ${ELASTICSEARCH_OP_REPO} deploy-setup

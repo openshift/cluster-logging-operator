@@ -14,6 +14,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -113,12 +114,19 @@ func (app *Application) Run(ctx context.Context, args ...string) error {
 func (app *Application) commands() []tool.Application {
 	return []tool.Application{
 		&app.Serve,
-		&query{app: app},
 		&check{app: app},
+		&format{app: app},
+		&query{app: app},
 	}
 }
 
-func (app *Application) connect(ctx context.Context, client protocol.Client) (protocol.Server, error) {
+type cmdClient interface {
+	protocol.Client
+
+	prepare(app *Application, server protocol.Server)
+}
+
+func (app *Application) connect(ctx context.Context, client cmdClient) (protocol.Server, error) {
 	var server protocol.Server
 	switch app.Remote {
 	case "":
@@ -138,18 +146,15 @@ func (app *Application) connect(ctx context.Context, client protocol.Client) (pr
 		stream := jsonrpc2.NewHeaderStream(conn, conn)
 		var jc *jsonrpc2.Conn
 		jc, server, _ = protocol.NewClient(stream, client)
-		if err != nil {
-			return nil, err
-		}
 		go jc.Run(ctx)
 	}
+
 	params := &protocol.InitializeParams{}
 	params.RootURI = string(span.FileURI(app.Config.Dir))
-	params.Capabilities = map[string]interface{}{
-		"workspace": map[string]interface{}{
-			"configuration": true,
-		},
-	}
+	params.Capabilities.Workspace.Configuration = true
+	params.Capabilities.TextDocument.Hover.ContentFormat = []protocol.MarkupKind{protocol.PlainText}
+
+	client.prepare(app, server)
 	if _, err := server.Initialize(ctx, params); err != nil {
 		return nil, err
 	}
@@ -161,7 +166,9 @@ func (app *Application) connect(ctx context.Context, client protocol.Client) (pr
 
 type baseClient struct {
 	protocol.Server
-	app *Application
+	app    *Application
+	server protocol.Server
+	fset   *token.FileSet
 }
 
 func (c *baseClient) ShowMessage(ctx context.Context, p *protocol.ShowMessageParams) error { return nil }
@@ -183,7 +190,7 @@ func (c *baseClient) LogMessage(ctx context.Context, p *protocol.LogMessageParam
 	}
 	return nil
 }
-func (c *baseClient) Telemetry(ctx context.Context, t interface{}) error { return nil }
+func (c *baseClient) Event(ctx context.Context, t *interface{}) error { return nil }
 func (c *baseClient) RegisterCapability(ctx context.Context, p *protocol.RegistrationParams) error {
 	return nil
 }
@@ -211,9 +218,36 @@ func (c *baseClient) Configuration(ctx context.Context, p *protocol.Configuratio
 	}
 	return results, nil
 }
-func (c *baseClient) ApplyEdit(ctx context.Context, p *protocol.ApplyWorkspaceEditParams) (bool, error) {
-	return false, nil
+func (c *baseClient) ApplyEdit(ctx context.Context, p *protocol.ApplyWorkspaceEditParams) (*protocol.ApplyWorkspaceEditResponse, error) {
+	return &protocol.ApplyWorkspaceEditResponse{Applied: false, FailureReason: "not implemented"}, nil
 }
 func (c *baseClient) PublishDiagnostics(ctx context.Context, p *protocol.PublishDiagnosticsParams) error {
 	return nil
+}
+
+func (c *baseClient) prepare(app *Application, server protocol.Server) {
+	c.app = app
+	c.server = server
+	c.fset = token.NewFileSet()
+}
+
+func (c *baseClient) AddFile(ctx context.Context, uri span.URI) (*protocol.ColumnMapper, error) {
+	fname, err := uri.Filename()
+	if err != nil {
+		return nil, fmt.Errorf("%v: %v", uri, err)
+	}
+	content, err := ioutil.ReadFile(fname)
+	if err != nil {
+		return nil, fmt.Errorf("%v: %v", uri, err)
+	}
+	f := c.fset.AddFile(fname, -1, len(content))
+	f.SetLinesForContent(content)
+	m := protocol.NewColumnMapper(uri, c.fset, f, content)
+	p := &protocol.DidOpenTextDocumentParams{}
+	p.TextDocument.URI = string(uri)
+	p.TextDocument.Text = string(content)
+	if err := c.server.DidOpen(ctx, p); err != nil {
+		return nil, fmt.Errorf("%v: %v", uri, err)
+	}
+	return m, nil
 }

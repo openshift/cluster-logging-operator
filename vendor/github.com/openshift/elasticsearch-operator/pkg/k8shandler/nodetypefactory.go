@@ -3,16 +3,19 @@ package k8shandler
 import (
 	"fmt"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NodeTypeInterface interace represents individual Elasticsearch node
 type NodeTypeInterface interface {
-	populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32)
+	populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32, client client.Client)
 	state() api.ElasticsearchNodeStatus                      // this will get the current -- used for status
 	create() error                                           // this will create the node in the case where it is new
 	update(upgradeStatus *api.ElasticsearchNodeStatus) error // this will handle updates
 	restart(upgradeStatus *api.ElasticsearchNodeStatus)
+	progressUnshedulableNode(upgradeStatus *api.ElasticsearchNodeStatus) error
 	name() string
 	updateReference(node NodeTypeInterface)
 }
@@ -21,11 +24,13 @@ type NodeTypeInterface interface {
 type NodeTypeFactory func(name, namespace string) NodeTypeInterface
 
 // this can potentially return a list if we have replicas > 1 for a data node
-func GetNodeTypeInterface(uuid string, node api.ElasticsearchNode, cluster *api.Elasticsearch) []NodeTypeInterface {
+func (elasticsearchRequest *ElasticsearchRequest) GetNodeTypeInterface(uuid string, node api.ElasticsearchNode) []NodeTypeInterface {
 
 	nodes := []NodeTypeInterface{}
 
 	roleMap := getNodeRoleMap(node)
+
+	cluster := elasticsearchRequest.cluster
 
 	// common spec => cluster.Spec.Spec
 	nodeName := fmt.Sprintf("%s-%s", cluster.Name, getNodeSuffix(uuid, roleMap))
@@ -36,11 +41,11 @@ func GetNodeTypeInterface(uuid string, node api.ElasticsearchNode, cluster *api.
 		//   it is 1 instead of 0 because of legacy code
 		for replicaIndex := int32(1); replicaIndex <= node.NodeCount; replicaIndex++ {
 			dataNodeName := addDataNodeSuffix(nodeName, replicaIndex)
-			node := newDeploymentNode(dataNodeName, node, cluster, roleMap)
+			node := newDeploymentNode(dataNodeName, node, cluster, roleMap, elasticsearchRequest.client)
 			nodes = append(nodes, node)
 		}
 	} else {
-		node := newStatefulSetNode(nodeName, node, cluster, roleMap)
+		node := newStatefulSetNode(nodeName, node, cluster, roleMap, elasticsearchRequest.client)
 		nodes = append(nodes, node)
 	}
 
@@ -70,19 +75,19 @@ func addDataNodeSuffix(nodeName string, replicaNumber int32) string {
 }
 
 // newDeploymentNode constructs deploymentNode struct for data nodes
-func newDeploymentNode(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool) NodeTypeInterface {
+func newDeploymentNode(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) NodeTypeInterface {
 	deploymentNode := deploymentNode{}
 
-	deploymentNode.populateReference(nodeName, node, cluster, roleMap, int32(1))
+	deploymentNode.populateReference(nodeName, node, cluster, roleMap, int32(1), client)
 
 	return &deploymentNode
 }
 
 // newStatefulSetNode constructs statefulSetNode struct for non-data nodes
-func newStatefulSetNode(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool) NodeTypeInterface {
+func newStatefulSetNode(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) NodeTypeInterface {
 	statefulSetNode := statefulSetNode{}
 
-	statefulSetNode.populateReference(nodeName, node, cluster, roleMap, node.NodeCount)
+	statefulSetNode.populateReference(nodeName, node, cluster, roleMap, node.NodeCount, client)
 
 	return &statefulSetNode
 }

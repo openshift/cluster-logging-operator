@@ -3,8 +3,27 @@
 CFG_DIR=/etc/rsyslog.d
 ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"false"}
 export MERGE_JSON_LOG=${MERGE_JSON_LOG:-true}
+export LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/rsyslog/rsyslog.log"}
+export RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
+if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
+    mkdir -p $RSYSLOG_WORKDIRECTORY
+fi
 
-rsyslogargs="-f /etc/rsyslog/conf/rsyslog.conf -n"
+if [ ${LOGGING_FILE_PATH} != "console" ] ; then
+    echo "============================="
+    echo "Rsyslog logs have been redirected to: $LOGGING_FILE_PATH"
+    echo "If you want to print out the logs, use command:"
+    echo "oc exec <pod_name> -- logs"
+    echo "============================="
+
+    dirname=$( dirname $LOGGING_FILE_PATH )
+    if [ ! -d $dirname ] ; then
+        mkdir -p $dirname
+    fi
+    touch $LOGGING_FILE_PATH; exec >> $LOGGING_FILE_PATH 2>&1
+fi
+
+rsyslogargs="-i /var/run/rsyslogd.pid -f /etc/rsyslog/conf/rsyslog.conf -n"
 if [[ $VERBOSE ]]; then
   set -ex
   rsyslogargs="$rsyslogargs -d"
@@ -83,11 +102,6 @@ ES_REBIND_INTERVAL=${ES_REBIND_INTERVAL:-200}
 OPS_REBIND_INTERVAL=${OPS_REBIND_INTERVAL:-$ES_REBIND_INTERVAL}
 export ES_REBIND_INTERVAL OPS_REBIND_INTERVAL
 
-# If FILE_BUFFER_PATH exists and it is not a directory, mkdir fails with the error.
-RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
-if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
-    mkdir -p $RSYSLOG_WORKDIRECTORY
-fi
 RSYSLOG_SPOOLDIRECTORY=${RSYSLOG_SPOOLDIRECTORY:-$RSYSLOG_WORKDIRECTORY}
 RSYSLOG_BULK_ERRORS=${RSYSLOG_BULK_ERRORS:-"$RSYSLOG_WORKDIRECTORY/es-bulk-errors.log"}
 RSYSLOG_IMJOURNAL_STATE=${RSYSLOG_IMJOURNAL_STATE:-"$RSYSLOG_WORKDIRECTORY/imjournal.state"}
@@ -96,9 +110,13 @@ RSYSLOG_IMPSTATS_FILE=${RSYSLOG_IMPSTATS_FILE:-"$RSYSLOG_WORKDIRECTORY/impstats.
 RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL=${RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL:-0}
 # 3600 seconds = 1 hour - same as fluent-plugin-k8s
 RSYSLOG_K8S_CACHE_ENTRY_TTL=${RSYSLOG_K8S_CACHE_ENTRY_TTL:-3600}
-export RSYSLOG_WORKDIRECTORY RSYSLOG_SPOOLDIRECTORY RSYSLOG_BULK_ERRORS \
+# default queue size - depends on how much ram there is - if this is too
+# big relative to the memory limit of the pod, OOMKilled
+# figure about 10k per record + some room for overhead
+RSYSLOG_MAIN_QUEUE_SIZE=${RSYSLOG_MAIN_QUEUE_SIZE:-$( expr ${RSYSLOG_MEMORY_LIMIT:-250000000} / 10240 )}
+export RSYSLOG_SPOOLDIRECTORY RSYSLOG_BULK_ERRORS \
   RSYSLOG_IMJOURNAL_STATE RSYSLOG_IMPSTATS_FILE RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL \
-  RSYSLOG_K8S_CACHE_ENTRY_TTL
+  RSYSLOG_K8S_CACHE_ENTRY_TTL RSYSLOG_MAIN_QUEUE_SIZE
 FILE_BUFFER_PATH=${FILE_BUFFER_PATH:-$RSYSLOG_WORKDIRECTORY}
 mkdir -p $FILE_BUFFER_PATH
 
@@ -171,8 +189,13 @@ ES_QUEUE_MAXFILESIZE=${ES_QUEUE_MAXFILESIZE:-$BUFFER_SIZE_LIMIT}
 OPS_QUEUE_MAXFILESIZE=${OPS_QUEUE_MAXFILESIZE:-$ES_QUEUE_MAXFILESIZE}
 ES_QUEUE_CHECKPOINTINTERVAL=${ES_QUEUE_CHECKPOINTINTERVAL:-1000}
 OPS_QUEUE_CHECKPOINTINTERVAL=${OPS_QUEUE_CHECKPOINTINTERVAL:-$ES_QUEUE_CHECKPOINTINTERVAL}
+# not yet supported - action.resumeIntervalMax not supported in our version of rsyslog
+#ES_RETRY_WAIT=${ES_RETRY_WAIT:-300}
+#OPS_RETRY_WAIT=${OPS_RETRY_WAIT:-$ES_RETRY_WAIT}
 export ES_QUEUE_TYPE OPS_QUEUE_TYPE ES_QUEUE_MAXDISKSPACE OPS_QUEUE_MAXDISKSPACE ES_QUEUE_MAXFILESIZE \
     OPS_QUEUE_MAXFILESIZE ES_QUEUE_CHECKPOINTINTERVAL OPS_QUEUE_CHECKPOINTINTERVAL
+
+#    ES_RETRY_WAIT OPS_RETRY_WAIT
 
 # bug https://bugzilla.redhat.com/show_bug.cgi?id=1437952
 # pods unable to be terminated because collector has them busy
@@ -198,12 +221,21 @@ if [ "${ENABLE_PROMETHEUS_ENDPOINT}" != "true" ] ; then
 fi
 
 # Create a directory for log files
-mkdir -p /var/log/rsyslog/
+if [ ! -d /var/log/rsyslog ] ; then
+    mkdir -p /var/log/rsyslog
+fi
+
+# make sure there is not one left over from a previous run
+rm -f /var/run/rsyslogd.pid
 
 issue_deprecation_warnings
 
 if [[ $DEBUG ]] ; then
-    exec /usr/sbin/rsyslogd $rsyslogargs > /var/log/rsyslog.log 2>&1
+    exec /usr/sbin/rsyslogd $rsyslogargs > /var/log/rsyslog/rsyslog.debug.log 2>&1
 else
-    exec /usr/sbin/rsyslogd $rsyslogargs
+    if [ ${LOGGING_FILE_PATH} = "console" ] ; then
+        exec /usr/sbin/rsyslogd $rsyslogargs
+    else
+        exec /usr/sbin/rsyslogd $rsyslogargs > /dev/null 2>&1
+    fi
 fi

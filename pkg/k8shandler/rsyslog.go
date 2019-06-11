@@ -4,35 +4,62 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
-	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
-func removeRsyslog(cluster *ClusterLogging) (err error) {
-	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
-		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog-bin"); err != nil {
+const (
+	rsyslogAlertsFile = "rsyslog/rsyslog_prometheus_alerts.yaml"
+)
+
+func (clusterRequest *ClusterLoggingRequest) removeRsyslog() (err error) {
+	if clusterRequest.isManaged() {
+
+		if err = clusterRequest.RemoveService("rsyslog"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog-main"); err != nil {
+		if err = clusterRequest.RemoveServiceMonitor("rsyslog"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveConfigMap(cluster.Namespace, "rsyslog"); err != nil {
+		if err = clusterRequest.RemovePrometheusRule("rsyslog"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveSecret(cluster.Namespace, "rsyslog"); err != nil {
+		if err = clusterRequest.RemoveConfigMap("rsyslog-bin"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveDaemonset(cluster.Namespace, "rsyslog"); err != nil {
+		if err = clusterRequest.RemoveConfigMap("rsyslog-main"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveConfigMap("rsyslog"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveConfigMap("logrotate-bin"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveConfigMap("logrotate-crontab"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveSecret("rsyslog"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveDaemonset("rsyslog"); err != nil {
 			return
 		}
 	}
@@ -40,35 +67,127 @@ func removeRsyslog(cluster *ClusterLogging) (err error) {
 	return nil
 }
 
-func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogService() error {
+	service := NewService(
+		"rsyslog",
+		clusterRequest.cluster.Namespace,
+		"rsyslog",
+		[]v1.ServicePort{
+			{
+				Port:       metricsPort,
+				TargetPort: intstr.FromString(metricsPortName),
+				Name:       metricsPortName,
+			},
+		},
+	)
 
+	service.Annotations = map[string]string{
+		"service.alpha.openshift.io/serving-cert-secret-name": "rsyslog-metrics",
+	}
+
+	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.cluster))
+
+	err := clusterRequest.Create(service)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating the rsyslog service: %v", err)
+	}
+
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogServiceMonitor() error {
+
+	cluster := clusterRequest.cluster
+
+	serviceMonitor := NewServiceMonitor("rsyslog", cluster.Namespace)
+
+	endpoint := monitoringv1.Endpoint{
+		Port:   metricsPortName,
+		Path:   "/metrics",
+		Scheme: "https",
+		TLSConfig: &monitoringv1.TLSConfig{
+			CAFile:     prometheusCAFile,
+			ServerName: fmt.Sprintf("%s.%s.svc", "rsyslog", cluster.Namespace),
+			// ServerName can be e.g. rsyslog.openshift-logging.svc
+		},
+	}
+
+	labelSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"logging-infra": "support",
+		},
+	}
+
+	serviceMonitor.Spec = monitoringv1.ServiceMonitorSpec{
+		JobLabel:  "monitor-rsyslog",
+		Endpoints: []monitoringv1.Endpoint{endpoint},
+		Selector:  labelSelector,
+		NamespaceSelector: monitoringv1.NamespaceSelector{
+			MatchNames: []string{cluster.Namespace},
+		},
+	}
+
+	utils.AddOwnerRefToObject(serviceMonitor, utils.AsOwner(cluster))
+
+	err := clusterRequest.Create(serviceMonitor)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating the rsyslog ServiceMonitor: %v", err)
+	}
+
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogPrometheusRule() error {
+
+	cluster := clusterRequest.cluster
+
+	promRule := NewPrometheusRule("rsyslog", cluster.Namespace)
+
+	promRuleSpec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + rsyslogAlertsFile)
+	if err != nil {
+		return fmt.Errorf("Failure creating the rsyslog PrometheusRule: %v", err)
+	}
+
+	promRule.Spec = *promRuleSpec
+
+	utils.AddOwnerRefToObject(promRule, utils.AsOwner(cluster))
+
+	err = clusterRequest.Create(promRule)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating the rsyslog PrometheusRule: %v", err)
+	}
+
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogConfigMap() error {
 	// need three configmaps
 	// - one for rsyslog run.sh script - rsyslog-bin
 	// - one for main rsyslog.conf file - rsyslog-main
 	// - one for the actual config files - rsyslog
 	rsyslogConfigMaps := make(map[string]*v1.ConfigMap)
-	rsyslogBinConfigMap := utils.NewConfigMap(
+	rsyslogBinConfigMap := NewConfigMap(
 		"rsyslog-bin",
-		logging.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"rsyslog.sh": string(utils.GetFileContents("files/rsyslog/rsyslog.sh")),
+			"rsyslog.sh": string(utils.GetFileContents(utils.GetShareDir() + "/rsyslog/rsyslog.sh")),
 		},
 	)
 	rsyslogConfigMaps["rsyslog-bin"] = rsyslogBinConfigMap
 
-	rsyslogMainConfigMap := utils.NewConfigMap(
+	rsyslogMainConfigMap := NewConfigMap(
 		"rsyslog-main",
-		logging.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"rsyslog.conf": string(utils.GetFileContents("files/rsyslog/rsyslog.conf")),
+			"rsyslog.conf": string(utils.GetFileContents(utils.GetShareDir() + "/rsyslog/rsyslog.conf")),
 		},
 	)
 	rsyslogConfigMaps["rsyslog-main"] = rsyslogMainConfigMap
 
 	rsyslogConfigMapFiles := make(map[string]string)
-	readerDir, err := ioutil.ReadDir("files/rsyslog")
+	readerDir, err := ioutil.ReadDir(utils.GetShareDir() + "/rsyslog")
 	if err != nil {
-		return fmt.Errorf("Failure %v to read files from directory 'files/rsyslog' for Rsyslog configmap", err)
+		return fmt.Errorf("Failure %v to read files from directory '%v/rsyslog' for Rsyslog configmap", err, utils.GetShareDir())
 	}
 	for _, fileInfo := range readerDir {
 		// exclude files provided by other configmaps
@@ -79,19 +198,19 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 			continue
 		}
 		// include all other files
-		fullname := "files/rsyslog/" + fileInfo.Name()
+		fullname := utils.GetShareDir() + "/rsyslog/" + fileInfo.Name()
 		rsyslogConfigMapFiles[fileInfo.Name()] = string(utils.GetFileContents(fullname))
 	}
-	rsyslogConfigMap := utils.NewConfigMap(
+	rsyslogConfigMap := NewConfigMap(
 		"rsyslog",
-		logging.Namespace,
+		clusterRequest.cluster.Namespace,
 		rsyslogConfigMapFiles,
 	)
 	rsyslogConfigMaps["rsyslog"] = rsyslogConfigMap
 	for name, cm := range rsyslogConfigMaps {
-		logging.AddOwnerRefTo(cm)
+		utils.AddOwnerRefToObject(cm, utils.AsOwner(clusterRequest.cluster))
 
-		err = sdk.Create(cm)
+		err = clusterRequest.Create(cm)
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure constructing Rsyslog configmap %v: %v", name, err)
 		}
@@ -100,11 +219,49 @@ func createOrUpdateRsyslogConfigMap(logging *ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateLogrotateConfigMap() error {
 
-	rsyslogSecret := utils.NewSecret(
+	// need two configmaps
+	// - one for logrotate cron.sh, logrotate.sh and logrotate_pod.sh script - bin
+	// - one for logrotate crontab - crontab
+	logrotateConfigMaps := make(map[string]*v1.ConfigMap)
+	logrotateBinConfigMap := NewConfigMap(
+		"logrotate-bin",
+		clusterRequest.cluster.Namespace,
+		map[string]string{
+			"cron.sh":          string(utils.GetFileContents(utils.GetShareDir() + "/logrotate/cron.sh")),
+			"logrotate.sh":     string(utils.GetFileContents(utils.GetShareDir() + "/logrotate/logrotate.sh")),
+			"logrotate_pod.sh": string(utils.GetFileContents(utils.GetShareDir() + "/logrotate/logrotate_pod.sh")),
+		},
+	)
+	logrotateConfigMaps["logrotate-bin"] = logrotateBinConfigMap
+
+	logrotateCrontabConfigMap := NewConfigMap(
+		"logrotate-crontab",
+		clusterRequest.cluster.Namespace,
+		map[string]string{
+			"logrotate": string(utils.GetFileContents(utils.GetShareDir() + "/logrotate/logrotate")),
+		},
+	)
+	logrotateConfigMaps["logrotate-crontab"] = logrotateCrontabConfigMap
+
+	for name, cm := range logrotateConfigMaps {
+		utils.AddOwnerRefToObject(cm, utils.AsOwner(clusterRequest.cluster))
+
+		err := clusterRequest.Create(cm)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure constructing Logrotate configmap %v: %v", name, err)
+		}
+	}
+
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogSecret() error {
+
+	rsyslogSecret := NewSecret(
 		"rsyslog",
-		logging.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string][]byte{
 			"app-ca":     utils.GetWorkingDirFileContents("ca.crt"),
 			"app-key":    utils.GetWorkingDirFileContents("system.logging.rsyslog.key"),
@@ -114,9 +271,9 @@ func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 			"infra-cert": utils.GetWorkingDirFileContents("system.logging.rsyslog.crt"),
 		})
 
-	logging.AddOwnerRefTo(rsyslogSecret)
+	utils.AddOwnerRefToObject(rsyslogSecret, utils.AsOwner(clusterRequest.cluster))
 
-	err := utils.CreateOrUpdateSecret(rsyslogSecret)
+	err := clusterRequest.CreateOrUpdateSecret(rsyslogSecret)
 	if err != nil {
 		return err
 	}
@@ -124,24 +281,24 @@ func createOrUpdateRsyslogSecret(logging *ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateRsyslogDaemonset(cluster *ClusterLogging) (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogDaemonset() (err error) {
 
-	var rsyslogPodSpec v1.PodSpec
+	cluster := clusterRequest.cluster
 
-	rsyslogPodSpec = newRsyslogPodSpec(cluster.ClusterLogging, "elasticsearch", "elasticsearch")
+	rsyslogPodSpec := newRsyslogPodSpec(clusterRequest.cluster, "elasticsearch", "elasticsearch")
 
-	rsyslogDaemonset := utils.NewDaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
+	rsyslogDaemonset := NewDaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
 
 	utils.AddOwnerRefToObject(rsyslogDaemonset, utils.AsOwner(cluster))
 
-	err = sdk.Create(rsyslogDaemonset)
+	err = clusterRequest.Create(rsyslogDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Rsyslog Daemonset %v", err)
 	}
 
-	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+	if clusterRequest.isManaged() {
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			return updateRsyslogDaemonsetIfRequired(rsyslogDaemonset)
+			return clusterRequest.updateRsyslogDaemonsetIfRequired(rsyslogDaemonset)
 		})
 		if retryErr != nil {
 			return retryErr
@@ -161,7 +318,15 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 				v1.ResourceCPU:    defaultRsyslogCpuRequest,
 			}}
 	}
-	rsyslogContainer := utils.NewContainer("rsyslog", v1.PullIfNotPresent, *resources)
+	rsyslogContainer := NewContainer("rsyslog", "rsyslog", v1.PullIfNotPresent, *resources)
+
+	rsyslogContainer.Ports = []v1.ContainerPort{
+		v1.ContainerPort{
+			Name:          metricsPortName,
+			ContainerPort: metricsPort,
+			Protocol:      v1.ProtocolTCP,
+		},
+	}
 
 	rsyslogContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
@@ -176,18 +341,19 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "OPS_CLIENT_CERT", Value: "/etc/rsyslog/keys/infra-cert"},
 		{Name: "OPS_CLIENT_KEY", Value: "/etc/rsyslog/keys/infra-key"},
 		{Name: "OPS_CA", Value: "/etc/rsyslog/keys/infra-ca"},
-		{Name: "JOURNAL_READ_FROM_HEAD", Value: ""},
 		{Name: "BUFFER_QUEUE_LIMIT", Value: "32"},
 		{Name: "BUFFER_SIZE_LIMIT", Value: "8m"},
 		{Name: "FILE_BUFFER_LIMIT", Value: "256Mi"},
 		{Name: "RSYSLOG_CPU_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "rsyslog", Resource: "limits.cpu"}}},
 		{Name: "RSYSLOG_MEMORY_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "rsyslog", Resource: "limits.memory"}}},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "status.hostIP"}}},
+		{Name: "RSYSLOG_WORKDIRECTORY", Value: "/var/lib/rsyslog.pod"},
 	}
 
 	rsyslogContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: "runlogjournal", MountPath: "/run/log/journal"},
 		{Name: "varlog", MountPath: "/var/log"},
+		{Name: "varrun", MountPath: "/var/run"},
 		{Name: "varlibdockercontainers", ReadOnly: true, MountPath: "/var/lib/docker"},
 		{Name: "bin", ReadOnly: true, MountPath: "/opt/app-root/bin"},
 		{Name: "main", ReadOnly: true, MountPath: "/etc/rsyslog/conf"},
@@ -197,6 +363,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "localtime", ReadOnly: true, MountPath: "/etc/localtime"},
 		{Name: "machineid", ReadOnly: true, MountPath: "/etc/machine-id"},
 		{Name: "filebufferstorage", MountPath: "/var/lib/rsyslog.pod"},
+		{Name: metricsVolumeName, MountPath: "/etc/rsyslog/metrics"},
 	}
 
 	rsyslogContainer.SecurityContext = &v1.SecurityContext{
@@ -211,12 +378,43 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		"/opt/app-root/bin/rsyslog.sh",
 	}
 
-	rsyslogPodSpec := utils.NewPodSpec(
+	logrotateContainer := NewContainer("logrotate", "rsyslog", v1.PullIfNotPresent, *resources)
+
+	logrotateContainer.Env = []v1.EnvVar{
+		{Name: "LOGGING_FILE_PATH", Value: "/var/log/rsyslog/rsyslog.log"},
+		{Name: "LOGGING_FILE_SIZE", Value: "1024000"},
+		{Name: "LOGGING_FILE_AGE", Value: "10"},
+		{Name: "CROND_OPTIONS", Value: ""},
+		{Name: "RSYSLOG_WORKDIRECTORY", Value: "/var/lib/rsyslog.pod"},
+	}
+
+	logrotateContainer.VolumeMounts = []v1.VolumeMount{
+		{Name: "logrotate-bin", ReadOnly: true, MountPath: "/opt/app-root/bin"},
+		{Name: "logrotate-crontab", ReadOnly: true, MountPath: "/etc/cron.d"},
+		{Name: "varlog", MountPath: "/var/log"},
+		{Name: "varrun", MountPath: "/var/run"},
+		{Name: "filebufferstorage", MountPath: "/var/lib/rsyslog.pod"},
+	}
+
+	logrotateContainer.SecurityContext = &v1.SecurityContext{
+		Privileged: utils.GetBool(true),
+	}
+
+	logrotateContainer.Command = []string{
+		"/bin/sh",
+	}
+
+	logrotateContainer.Args = []string{
+		"/opt/app-root/bin/cron.sh",
+	}
+
+	rsyslogPodSpec := NewPodSpec(
 		"logcollector",
-		[]v1.Container{rsyslogContainer},
+		[]v1.Container{rsyslogContainer, logrotateContainer},
 		[]v1.Volume{
 			{Name: "runlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/run/log/journal"}}},
 			{Name: "varlog", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log"}}},
+			{Name: "varrun", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/run"}}},
 			{Name: "varlibdockercontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/docker"}}},
 			{Name: "bin", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "rsyslog-bin"}}}},
 			{Name: "main", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "rsyslog-main"}}}},
@@ -226,13 +424,14 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "localtime", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/localtime"}}},
 			{Name: "machineid", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/machine-id"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/rsyslog.pod"}}},
+			{Name: "logrotate-bin", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "logrotate-bin"}}}},
+			{Name: "logrotate-crontab", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "logrotate-crontab"}}}},
+			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "rsyslog-metrics"}}},
 		},
 		logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector,
 	)
 
 	rsyslogPodSpec.PriorityClassName = clusterLoggingPriorityClassName
-
-	rsyslogPodSpec.NodeSelector = logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector
 
 	rsyslogPodSpec.Tolerations = []v1.Toleration{
 		v1.Toleration{
@@ -240,17 +439,23 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
 		},
+		v1.Toleration{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
 	}
+
+	b := bool(true)
+	rsyslogPodSpec.ShareProcessNamespace = &b
 
 	return rsyslogPodSpec
 }
 
-func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
+func (clusterRequest *ClusterLoggingRequest) updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current := desired.DeepCopy()
 
-	current.Spec = apps.DaemonSetSpec{}
-
-	if err = sdk.Get(current); err != nil {
+	if err = clusterRequest.Get(desired.Name, current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
 			// recreate it on the next time through if necessary
@@ -262,7 +467,7 @@ func updateRsyslogDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current, different := isDaemonsetDifferent(current, desired)
 
 	if different {
-		if err = sdk.Update(current); err != nil {
+		if err = clusterRequest.Update(current); err != nil {
 			return err
 		}
 	}

@@ -1,0 +1,14 @@
+updates:
+  - file: "{MAJOR}.{MINOR}/cluster-logging.v{MAJOR}.{MINOR}.0.clusterserviceversion.yaml" # relative to this file
+    update_list:
+    # replace metadata.name value
+    - search: "clusterlogging.v{MAJOR}.{MINOR}.2"
+      replace: "clusterlogging.{FULL_VER}"
+    # replace entire version line, otherwise would replace 4.1.0 anywhere
+    - search: "version: 4.1.2"
+      replace: "version: {FULL_VER}"
+  - file: "package.yaml"
+    update_list:
+    - search: "currentCSV: cluster-logging.v{MAJOR}.{MINOR}.2"
+      replace: "currentCSV: cluster-logging.{FULL_VER}"
+

@@ -54,7 +54,6 @@ func TestClusterLogging(t *testing.T) {
 	t.Run("collectors", func(t *testing.T) {
 
 		for _, collector := range []string{"fluentd", "rsyslog"} {
-			collector := collector
 			t.Run(collector, func(t *testing.T) {
 				ctx := framework.NewTestCtx(t)
 				defer ctx.Cleanup()

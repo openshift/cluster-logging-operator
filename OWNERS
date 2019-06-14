@@ -5,12 +5,10 @@ approvers:
   - richm
   - lukas-vlcek
   - nhosoi
-  - josefkarasek
   - nkinder
 reviewers:
   - jcantrill
   - ewolinetz
   - richm
   - nhosoi
-  - josefkarasek
   - lukas-vlcek

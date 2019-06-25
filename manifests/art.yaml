@@ -11,6 +11,6 @@ updates:
       replace: 'olm.skipRange: ">=4.1.0 <{FULL_VER}"'
   - file: "cluster-logging.package.yaml"
     update_list:
-    - search: "currentCSV: cluster-logging.v{MAJOR}.{MINOR}.2"
-      replace: "currentCSV: cluster-logging.{FULL_VER}"
+    - search: "currentCSV: clusterlogging.v{MAJOR}.{MINOR}.2"
+      replace: "currentCSV: clusterlogging.{FULL_VER}"
 

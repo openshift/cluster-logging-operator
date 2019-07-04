@@ -37,7 +37,7 @@ OC?=oc
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-unit test-e2e undeploy run
+.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-unit test-e2e test-sec undeploy run
 
 all: build #check install
 
@@ -112,6 +112,9 @@ test-unit:
 	@go test $(TEST_OPTIONS) $(PKGS)
 test-e2e:
 	hack/test-e2e.sh
+test-sec:
+	go get -u github.com/securego/gosec/cmd/gosec
+	gosec -severity medium --confidence medium -quiet ./...
 
 deploy-example-no-build: deploy-no-build
 	oc create -n $(NAMESPACE) -f hack/cr.yaml

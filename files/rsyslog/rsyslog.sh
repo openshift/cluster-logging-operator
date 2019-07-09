@@ -2,9 +2,29 @@
 
 CFG_DIR=/etc/rsyslog.d
 ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"false"}
-export MERGE_JSON_LOG=${MERGE_JSON_LOG:-true}
 export LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/rsyslog/rsyslog.log"}
 export RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
+export MERGE_JSON_LOG=${MERGE_JSON_LOG:-false}
+export UNDEFINED_DEBUG=${UNDEFINED_DEBUG:-false}
+# if false, mmexternal undefined_field won't be called.
+export USE_MMEXTERNAL=${USE_MMEXTERNAL:-true}
+# if true, mmnormalize skipempty is executed.
+# effective when USE_MMEXTERNAL is false.
+export SKIP_EMPTY=${SKIP_EMPTY:-false}
+
+# Create a config file for undefined fields from env vars
+undefined_conf="/var/lib/rsyslog.pod/undefined.json"
+echo "{\"CDM_USE_UNDEFINED\" : ${CDM_USE_UNDEFINED:-false}, \
+\"CDM_DEFAULT_KEEP_FIELDS\" : \"${CDM_DEFAULT_KEEP_FIELDS:-"CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id"}\", \
+\"CDM_EXTRA_KEEP_FIELDS\" : \"${CDM_EXTRA_KEEP_FIELDS:-""}\", \
+\"CDM_UNDEFINED_NAME\" : \"${CDM_UNDEFINED_NAME:-"undefined"}\", \
+\"CDM_KEEP_EMPTY_FIELDS\" : \"${CDM_KEEP_EMPTY_FIELDS:-""}\", \
+\"CDM_UNDEFINED_TO_STRING\" : ${CDM_UNDEFINED_TO_STRING:-false}, \
+\"CDM_UNDEFINED_DOT_REPLACE_CHAR\" : \"${CDM_UNDEFINED_DOT_REPLACE_CHAR:-"UNUSED"}\", \
+\"CDM_UNDEFINED_MAX_NUM_FIELDS\" : ${CDM_UNDEFINED_MAX_NUM_FIELDS:--1}, \
+\"MERGE_JSON_LOG\" : ${MERGE_JSON_LOG}, \
+\"UNDEFINED_DEBUG\" : ${UNDEFINED_DEBUG}}" > $undefined_conf
+
 if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
     mkdir -p $RSYSLOG_WORKDIRECTORY
 fi

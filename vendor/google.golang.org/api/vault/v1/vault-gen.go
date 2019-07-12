@@ -515,10 +515,11 @@ func (s *CorpusQuery) MarshalJSON() ([]byte, error) {
 type DriveExportOptions struct {
 	// IncludeAccessInfo: Set to true to include access level information
 	// for users
-	// with <a
-	// href="https://support.google.com/vault/answer/6099459#metadata">indire
-	// ct access</a>
-	// to files.
+	// with
+	// <a
+	// href="https://support.google.com/vault/answer/6099459#metadata">ind
+	// irect
+	// access</a> to files.
 	IncludeAccessInfo bool `json:"includeAccessInfo,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "IncludeAccessInfo")
@@ -547,6 +548,9 @@ func (s *DriveExportOptions) MarshalJSON() ([]byte, error) {
 
 // DriveOptions: Drive search advanced options
 type DriveOptions struct {
+	// IncludeSharedDrives: Set to true to include shared drive.
+	IncludeSharedDrives bool `json:"includeSharedDrives,omitempty"`
+
 	// IncludeTeamDrives: Set to true to include Team Drive.
 	IncludeTeamDrives bool `json:"includeTeamDrives,omitempty"`
 
@@ -555,7 +559,7 @@ type DriveOptions struct {
 	// rounded down to the given date.
 	VersionDate string `json:"versionDate,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "IncludeTeamDrives")
+	// ForceSendFields is a list of field names (e.g. "IncludeSharedDrives")
 	// to unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -563,7 +567,7 @@ type DriveOptions struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "IncludeTeamDrives") to
+	// NullFields is a list of field names (e.g. "IncludeSharedDrives") to
 	// include in API requests with the JSON null value. By default, fields
 	// with empty values are omitted from API requests. However, any field
 	// with an empty value appearing in NullFields will be sent to the
@@ -921,23 +925,27 @@ func (s *HeldAccount) MarshalJSON() ([]byte, error) {
 
 // HeldDriveQuery: Query options for Drive holds.
 type HeldDriveQuery struct {
+	// IncludeSharedDriveFiles: If true, include files in shared drives in
+	// the hold.
+	IncludeSharedDriveFiles bool `json:"includeSharedDriveFiles,omitempty"`
+
 	// IncludeTeamDriveFiles: If true, include files in Team Drives in the
 	// hold.
 	IncludeTeamDriveFiles bool `json:"includeTeamDriveFiles,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g.
-	// "IncludeTeamDriveFiles") to unconditionally include in API requests.
-	// By default, fields with empty values are omitted from API requests.
-	// However, any non-pointer, non-interface field appearing in
+	// "IncludeSharedDriveFiles") to unconditionally include in API
+	// requests. By default, fields with empty values are omitted from API
+	// requests. However, any non-pointer, non-interface field appearing in
 	// ForceSendFields will be sent to the server regardless of whether the
 	// field is empty or not. This may be used to include empty fields in
 	// Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "IncludeTeamDriveFiles") to
-	// include in API requests with the JSON null value. By default, fields
-	// with empty values are omitted from API requests. However, any field
-	// with an empty value appearing in NullFields will be sent to the
+	// NullFields is a list of field names (e.g. "IncludeSharedDriveFiles")
+	// to include in API requests with the JSON null value. By default,
+	// fields with empty values are omitted from API requests. However, any
+	// field with an empty value appearing in NullFields will be sent to the
 	// server as null. It is an error if a field in this list has a
 	// non-empty value. This may be used to include null fields in Patch
 	// requests.
@@ -1464,7 +1472,8 @@ func (s *Matter) MarshalJSON() ([]byte, error) {
 // resources
 // cease to exist.
 type MatterPermission struct {
-	// AccountId: The account id, as provided by <a
+	// AccountId: The account id, as provided by
+	// <a
 	// href="https://developers.google.com/admin-sdk/">Admin SDK</a>.
 	AccountId string `json:"accountId,omitempty"`
 
@@ -1507,7 +1516,8 @@ func (s *MatterPermission) MarshalJSON() ([]byte, error) {
 type OrgUnitInfo struct {
 	// OrgUnitId: Org unit to search, as provided by the
 	// <a href="https://developers.google.com/admin-sdk/directory/">Admin
-	// SDK Directory API</a>.
+	// SDK
+	// Directory API</a>.
 	OrgUnitId string `json:"orgUnitId,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "OrgUnitId") to
@@ -1578,6 +1588,32 @@ type Query struct {
 	// MailOptions: For mail search, specify more options in this field.
 	MailOptions *MailOptions `json:"mailOptions,omitempty"`
 
+	// Method: The search method to use. This field is similar to the
+	// search_method field
+	// but is introduced to support shared drives. It supports all
+	// search method types. In case the search_method is TEAM_DRIVE the
+	// response
+	// of this field will be SHARED_DRIVE only.
+	//
+	// Possible values:
+	//   "SEARCH_METHOD_UNSPECIFIED" - A search method must be specified. If
+	// a request does not specify a
+	// search method, it will be rejected.
+	//   "ACCOUNT" - Will search all accounts provided in account_info.
+	//   "ORG_UNIT" - Will search all accounts in the OU specified in
+	// org_unit_info.
+	//   "TEAM_DRIVE" - Will search for all accounts in the Team Drive
+	// specified in
+	// team_drive_info.
+	//   "ENTIRE_ORG" - Will search for all accounts in the organization.
+	// No need to set account_info or org_unit_info.
+	//   "ROOM" - Will search in the Room specified in
+	// hangout_chats_info. (read-only)
+	//   "SHARED_DRIVE" - Will search for all accounts in the shared drive
+	// specified in
+	// shared_drive_info.
+	Method string `json:"method,omitempty"`
+
 	// OrgUnitInfo: When 'ORG_UNIT' is chosen as as search method,
 	// org_unit_info needs
 	// to be specified.
@@ -1599,7 +1635,15 @@ type Query struct {
 	// No need to set account_info or org_unit_info.
 	//   "ROOM" - Will search in the Room specified in
 	// hangout_chats_info. (read-only)
+	//   "SHARED_DRIVE" - Will search for all accounts in the shared drive
+	// specified in
+	// shared_drive_info.
 	SearchMethod string `json:"searchMethod,omitempty"`
+
+	// SharedDriveInfo: When 'SHARED_DRIVE' is chosen as search method,
+	// shared_drive_info needs
+	// to be specified.
+	SharedDriveInfo *SharedDriveInfo `json:"sharedDriveInfo,omitempty"`
 
 	// StartTime: The start time range for the search query. These
 	// timestamps are in GMT and
@@ -1612,9 +1656,10 @@ type Query struct {
 	TeamDriveInfo *TeamDriveInfo `json:"teamDriveInfo,omitempty"`
 
 	// Terms: The corpus-specific
-	// <a href="https://support.google.com/vault/answer/2474474">search
-	// operators</a>
-	// used to generate search results.
+	// <a
+	// href="https://support.google.com/vault/answer/2474474">search
+	// operator
+	// s</a> used to generate search results.
 	Terms string `json:"terms,omitempty"`
 
 	// TimeZone: The time zone name.
@@ -1823,6 +1868,37 @@ type SavedQuery struct {
 
 func (s *SavedQuery) MarshalJSON() ([]byte, error) {
 	type NoMethod SavedQuery
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// SharedDriveInfo: Shared drives to search
+type SharedDriveInfo struct {
+	// SharedDriveIds: List of Shared drive ids, as provided by
+	// <a
+	// href="https://developers.google.com/drive">Drive API</a>.
+	SharedDriveIds []string `json:"sharedDriveIds,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "SharedDriveIds") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "SharedDriveIds") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *SharedDriveInfo) MarshalJSON() ([]byte, error) {
+	type NoMethod SharedDriveInfo
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }

@@ -655,6 +655,41 @@ func (s *ApplicationReportingSettings) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// BlockAction: An action to block access to apps and data on a fully
+// managed device or in a work profile. This action also triggers a
+// device or work profile to displays a user-facing notification with
+// information (where possible) on how to correct the compliance issue.
+// Note: wipeAction must also be specified.
+type BlockAction struct {
+	// BlockAfterDays: Number of days the policy is non-compliant before the
+	// device or work profile is blocked. To block access immediately, set
+	// to 0. blockAfterDays must be less than wipeAfterDays.
+	BlockAfterDays int64 `json:"blockAfterDays,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BlockAfterDays") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BlockAfterDays") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *BlockAction) MarshalJSON() ([]byte, error) {
+	type NoMethod BlockAction
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // ChoosePrivateKeyRule: A rule for automatically choosing a private key
 // and certificate to authenticate the device to a server.
 type ChoosePrivateKeyRule struct {
@@ -982,6 +1017,10 @@ type Device struct {
 	//   "PROVISIONING" - The device is being provisioned. Newly enrolled
 	// devices are in this state until they have a policy applied.
 	State string `json:"state,omitempty"`
+
+	// SystemProperties: Map of selected system properties name and value
+	// related to the device.
+	SystemProperties map[string]string `json:"systemProperties,omitempty"`
 
 	// User: The user who owns the device.
 	User *User `json:"user,omitempty"`
@@ -2167,8 +2206,8 @@ type Operation struct {
 
 	// Name: The server-assigned name, which is only unique within the same
 	// service that originally returns it. If you use the default HTTP
-	// mapping, the name should have the format of
-	// operations/some/unique/name.
+	// mapping, the name should be a resource name ending with
+	// operations/{unique_id}.
 	Name string `json:"name,omitempty"`
 
 	// Response: The normal response of the operation in case of success. If
@@ -2518,7 +2557,8 @@ type Policy struct {
 	// ComplianceRules: Rules declaring which mitigating actions to take
 	// when a device is not compliant with its policy. When the conditions
 	// for multiple rules are satisfied, all of the mitigating actions for
-	// the rules are taken. There is a maximum limit of 100 rules.
+	// the rules are taken. There is a maximum limit of 100 rules. Use
+	// policy enforcement rules instead.
 	ComplianceRules []*ComplianceRule `json:"complianceRules,omitempty"`
 
 	// CreateWindowsDisabled: Whether creating windows besides app windows
@@ -2643,6 +2683,9 @@ type Policy struct {
 	// until the device locks. A value of 0 means there is no restriction.
 	MaximumTimeToLock int64 `json:"maximumTimeToLock,omitempty,string"`
 
+	// MinimumApiLevel: The minimum allowed Android API level.
+	MinimumApiLevel int64 `json:"minimumApiLevel,omitempty"`
+
 	// MobileNetworksConfigDisabled: Whether configuring mobile networks is
 	// disabled.
 	MobileNetworksConfigDisabled bool `json:"mobileNetworksConfigDisabled,omitempty"`
@@ -2718,6 +2761,10 @@ type Policy struct {
 	// on the device should be explicitly marked as 'BLOCKED' in the
 	// applications policy.
 	PlayStoreMode string `json:"playStoreMode,omitempty"`
+
+	// PolicyEnforcementRules: Rules that define the behavior when a
+	// particular policy can not be applied on device
+	PolicyEnforcementRules []*PolicyEnforcementRule `json:"policyEnforcementRules,omitempty"`
 
 	// PrivateKeySelectionEnabled: Allows showing UI on a device for a user
 	// to choose a private key alias if there are no matching rules in
@@ -2851,6 +2898,48 @@ type Policy struct {
 
 func (s *Policy) MarshalJSON() ([]byte, error) {
 	type NoMethod Policy
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// PolicyEnforcementRule: A rule that defines the actions to take if a
+// device or work profile is not compliant with the policy specified in
+// settingName.
+type PolicyEnforcementRule struct {
+	// BlockAction: An action to block access to apps and data on a fully
+	// managed device or in a work profile. This action also triggers a
+	// user-facing notification with information (where possible) on how to
+	// correct the compliance issue. Note: wipeAction must also be
+	// specified.
+	BlockAction *BlockAction `json:"blockAction,omitempty"`
+
+	// SettingName: The top-level policy to enforce. For example,
+	// applications or passwordPolicies.
+	SettingName string `json:"settingName,omitempty"`
+
+	// WipeAction: An action to reset a fully managed device or delete a
+	// work profile. Note: blockAction must also be specified.
+	WipeAction *WipeAction `json:"wipeAction,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "BlockAction") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "BlockAction") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *PolicyEnforcementRule) MarshalJSON() ([]byte, error) {
+	type NoMethod PolicyEnforcementRule
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
@@ -3140,43 +3229,11 @@ func (s *SoftwareInfo) MarshalJSON() ([]byte, error) {
 
 // Status: The Status type defines a logical error model that is
 // suitable for different programming environments, including REST APIs
-// and RPC APIs. It is used by gRPC (https://github.com/grpc). The error
-// model is designed to be:
-// Simple to use and understand for most users
-// Flexible enough to meet unexpected needsOverviewThe Status message
-// contains three pieces of data: error code, error message, and error
-// details. The error code should be an enum value of google.rpc.Code,
-// but it may accept additional error codes if needed. The error message
-// should be a developer-facing English message that helps developers
-// understand and resolve the error. If a localized user-facing error
-// message is needed, put the localized message in the error details or
-// localize it in the client. The optional error details may contain
-// arbitrary information about the error. There is a predefined set of
-// error detail types in the package google.rpc that can be used for
-// common error conditions.Language mappingThe Status message is the
-// logical representation of the error model, but it is not necessarily
-// the actual wire format. When the Status message is exposed in
-// different client libraries and different wire protocols, it can be
-// mapped differently. For example, it will likely be mapped to some
-// exceptions in Java, but more likely mapped to some error codes in
-// C.Other usesThe error model and the Status message can be used in a
-// variety of environments, either with or without APIs, to provide a
-// consistent developer experience across different environments.Example
-// uses of this error model include:
-// Partial errors. If a service needs to return partial errors to the
-// client, it may embed the Status in the normal response to indicate
-// the partial errors.
-// Workflow errors. A typical workflow has multiple steps. Each step may
-// have a Status message for error reporting.
-// Batch operations. If a client uses batch request and batch response,
-// the Status message should be used directly inside batch response, one
-// for each error sub-response.
-// Asynchronous operations. If an API call embeds asynchronous operation
-// results in its response, the status of those operations should be
-// represented directly using the Status message.
-// Logging. If some API errors are stored in logs, the message Status
-// could be used directly after any stripping needed for
-// security/privacy reasons.
+// and RPC APIs. It is used by gRPC (https://github.com/grpc). Each
+// Status message contains three pieces of data: error code, error
+// message, and error details.You can find out more about this error
+// model and how to work with it in the API Design Guide
+// (https://cloud.google.com/apis/design/errors).
 type Status struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.
@@ -3579,6 +3636,41 @@ type WebToken struct {
 
 func (s *WebToken) MarshalJSON() ([]byte, error) {
 	type NoMethod WebToken
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// WipeAction: An action to reset a fully managed device or delete a
+// work profile. Note: blockAction must also be specified.
+type WipeAction struct {
+	// PreserveFrp: Whether the factory-reset protection data is preserved
+	// on the device. This setting doesn’t apply to work profiles.
+	PreserveFrp bool `json:"preserveFrp,omitempty"`
+
+	// WipeAfterDays: Number of days the policy is non-compliant before the
+	// device or work profile is wiped. wipeAfterDays must be greater than
+	// blockAfterDays.
+	WipeAfterDays int64 `json:"wipeAfterDays,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "PreserveFrp") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "PreserveFrp") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *WipeAction) MarshalJSON() ([]byte, error) {
+	type NoMethod WipeAction
 	raw := NoMethod(*s)
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }

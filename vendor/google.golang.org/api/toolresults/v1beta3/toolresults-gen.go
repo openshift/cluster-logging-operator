@@ -928,6 +928,7 @@ func (s *Execution) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// FailureDetail: Details for an outcome with a FAILURE outcome summary.
 type FailureDetail struct {
 	// Crashed: If the failure was severe because the system (app) under
 	// test crashed.
@@ -1208,6 +1209,8 @@ func (s *Image) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// InconclusiveDetail: Details for an outcome with an INCONCLUSIVE
+// outcome summary.
 type InconclusiveDetail struct {
 	// AbortedByUser: If the end user aborted the test execution before a
 	// pass or fail could be determined. For example, the user pressed
@@ -1249,6 +1252,11 @@ func (s *InconclusiveDetail) MarshalJSON() ([]byte, error) {
 // IndividualOutcome: Step Id and outcome of each individual step that
 // was run as a group with other steps with the same configuration.
 type IndividualOutcome struct {
+	// MultistepNumber: Unique int given to each step. Ranges from
+	// 0(inclusive) to total number of steps(exclusive). The primary step is
+	// 0.
+	MultistepNumber int64 `json:"multistepNumber,omitempty"`
+
 	// Possible values:
 	//   "failure"
 	//   "flaky"
@@ -1258,9 +1266,12 @@ type IndividualOutcome struct {
 	//   "unset"
 	OutcomeSummary string `json:"outcomeSummary,omitempty"`
 
+	// RunDuration: How long it took for this step to run.
+	RunDuration *Duration `json:"runDuration,omitempty"`
+
 	StepId string `json:"stepId,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "OutcomeSummary") to
+	// ForceSendFields is a list of field names (e.g. "MultistepNumber") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -1268,7 +1279,7 @@ type IndividualOutcome struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "OutcomeSummary") to
+	// NullFields is a list of field names (e.g. "MultistepNumber") to
 	// include in API requests with the JSON null value. By default, fields
 	// with empty values are omitted from API requests. However, any field
 	// with an empty value appearing in NullFields will be sent to the
@@ -2124,6 +2135,7 @@ func (s *ScreenshotCluster) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// SkippedDetail: Details for an outcome with a SKIPPED outcome summary.
 type SkippedDetail struct {
 	// IncompatibleAppVersion: If the App doesn't support the specific API
 	// level.
@@ -2222,60 +2234,13 @@ func (s *StackTrace) MarshalJSON() ([]byte, error) {
 
 // Status: The `Status` type defines a logical error model that is
 // suitable for different programming environments, including REST APIs
-// and RPC APIs. It is used by [gRPC](https://github.com/grpc). The
-// error model is designed to be:
+// and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each
+// `Status` message contains three pieces of data: error code, error
+// message, and error details.
 //
-// - Simple to use and understand for most users - Flexible enough to
-// meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code, error
-// message, and error details. The error code should be an enum value of
-// [google.rpc.Code][], but it may accept additional error codes if
-// needed. The error message should be a developer-facing English
-// message that helps developers *understand* and *resolve* the error.
-// If a localized user-facing error message is needed, put the localized
-// message in the error details or localize it in the client. The
-// optional error details may contain arbitrary information about the
-// error. There is a predefined set of error detail types in the package
-// `google.rpc` that can be used for common error conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error
-// model, but it is not necessarily the actual wire format. When the
-// `Status` message is exposed in different client libraries and
-// different wire protocols, it can be mapped differently. For example,
-// it will likely be mapped to some exceptions in Java, but more likely
-// mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety of
-// environments, either with or without APIs, to provide a consistent
-// developer experience across different environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the
-// client, it may embed the `Status` in the normal response to indicate
-// the partial errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step
-// may have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch
-// response, the `Status` message should be used directly inside batch
-// response, one for each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous
-// operation results in its response, the status of those operations
-// should be represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message
-// `Status` could be used directly after any stripping needed for
-// security/privacy reasons.
+// You can find out more about this error model and how to work with it
+// in the [API Design
+// Guide](https://cloud.google.com/apis/design/errors).
 type Status struct {
 	// Code: The status code, which should be an enum value of
 	// [google.rpc.Code][].
@@ -2593,6 +2558,7 @@ func (s *StepLabelsEntry) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// SuccessDetail: Details for an outcome with a SUCCESS outcome summary.
 type SuccessDetail struct {
 	// OtherNativeCrash: If a native process other than the app crashed.
 	OtherNativeCrash bool `json:"otherNativeCrash,omitempty"`
@@ -2653,6 +2619,7 @@ type TestCase struct {
 	// Possible values:
 	//   "error"
 	//   "failed"
+	//   "flaky"
 	//   "passed"
 	//   "skipped"
 	Status string `json:"status,omitempty"`
@@ -2897,6 +2864,9 @@ func (s *TestIssue) MarshalJSON() ([]byte, error) {
 // is also being used in ExecutionService in a read only mode for the
 // corresponding step.
 type TestSuiteOverview struct {
+	// ElapsedTime: Elapsed time of test suite.
+	ElapsedTime *Duration `json:"elapsedTime,omitempty"`
+
 	// ErrorCount: Number of test cases in error, typically set by the
 	// service by parsing the xml_source.
 	//
@@ -2936,7 +2906,7 @@ type TestSuiteOverview struct {
 	// - In create/response: optional - In update request: never
 	XmlSource *FileReference `json:"xmlSource,omitempty"`
 
-	// ForceSendFields is a list of field names (e.g. "ErrorCount") to
+	// ForceSendFields is a list of field names (e.g. "ElapsedTime") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -2944,10 +2914,10 @@ type TestSuiteOverview struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "ErrorCount") to include in
-	// API requests with the JSON null value. By default, fields with empty
-	// values are omitted from API requests. However, any field with an
-	// empty value appearing in NullFields will be sent to the server as
+	// NullFields is a list of field names (e.g. "ElapsedTime") to include
+	// in API requests with the JSON null value. By default, fields with
+	// empty values are omitted from API requests. However, any field with
+	// an empty value appearing in NullFields will be sent to the server as
 	// null. It is an error if a field in this list has a non-empty value.
 	// This may be used to include null fields in Patch requests.
 	NullFields []string `json:"-"`

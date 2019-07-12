@@ -1001,58 +1001,52 @@ type Entity struct {
 	//   "WORK_OF_ART" - Artwork
 	//   "CONSUMER_GOOD" - Consumer product
 	//   "OTHER" - Other types of entities
-	//   "PHONE_NUMBER" - Phone number<br><br>
+	//   "PHONE_NUMBER" - Phone number
+	//
 	// The metadata lists the phone number, formatted according to
 	// local
-	// convention, plus whichever additional elements appear in the
-	// text:<ul>
-	// <li><code>number</code> &ndash; the actual number, broken down
-	// into
-	// sections as per local convention</li>
-	// <li><code>national_prefix</code>
-	// &ndash; country code, if detected</li> <li><code>area_code</code>
-	// &ndash;
-	// region or area code, if detected</li> <li><code>extension</code>
-	// &ndash;
-	// phone extension (to be dialed after connection), if
-	// detected</li></ul>
-	//   "ADDRESS" - Address<br><br>
+	// convention, plus whichever additional elements appear in the text:
+	//
+	// * `number` - the actual number, broken down into sections as per
+	// local
+	// convention
+	// * `national_prefix` - country code, if detected
+	// * `area_code` - region or area code, if detected
+	// * `extension` - phone extension (to be dialed after connection),
+	// if
+	// detected
+	//   "ADDRESS" - Address
+	//
 	// The metadata identifies the street number and locality plus
 	// whichever
-	// additional elements appear in the
-	// text:<ul>
-	// <li><code>street_number</code> &ndash; street
-	// number</li>
-	// <li><code>locality</code> &ndash; city or
-	// town</li>
-	// <li><code>street_name</code> &ndash; street/route name, if
-	// detected</li>
-	// <li><code>postal_code</code> &ndash; postal code, if
-	// detected</li>
-	// <li><code>country</code> &ndash; country, if
-	// detected</li>
-	// <li><code>broad_region</code> &ndash; administrative area, such as
-	// the
-	// state, if detected</li> <li><code>narrow_region</code> &ndash;
-	// smaller
-	// administrative area, such as county, if
-	// detected</li>
-	// <li><code>sublocality</code> &ndash; used in Asian addresses to
-	// demark a
-	// district within a city, if detected</li></ul>
-	//   "DATE" - Date<br><br>
-	// The metadata identifies the components of the
-	// date:<ul>
-	// <li><code>year</code> &ndash; four digit year, if
-	// detected</li>
-	// <li><code>month</code> &ndash; two digit month number, if
-	// detected</li>
-	// <li><code>day</code> &ndash; two digit day number, if
-	// detected</li></ul>
-	//   "NUMBER" - Number<br><br>
+	// additional elements appear in the text:
+	//
+	// * `street_number` - street number
+	// * `locality` - city or town
+	// * `street_name` - street/route name, if detected
+	// * `postal_code` - postal code, if detected
+	// * `country` - country, if detected<
+	// * `broad_region` - administrative area, such as the state, if
+	// detected
+	// * `narrow_region` - smaller administrative area, such as county,
+	// if
+	// detected
+	// * `sublocality` - used in Asian addresses to demark a district within
+	// a
+	// city, if detected
+	//   "DATE" - Date
+	//
+	// The metadata identifies the components of the date:
+	//
+	// * `year` - four digit year, if detected
+	// * `month` - two digit month number, if detected
+	// * `day` - two digit day number, if detected
+	//   "NUMBER" - Number
+	//
 	// The metadata is the number itself.
-	//   "PRICE" - Price<br><br>
-	// The metadata identifies the `value` and `currency`
+	//   "PRICE" - Price
+	//
+	// The metadata identifies the `value` and `currency`.
 	Type string `json:"type,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Mentions") to
@@ -1461,81 +1455,14 @@ func (s *Sentiment) UnmarshalJSON(data []byte) error {
 // suitable for
 // different programming environments, including REST APIs and RPC APIs.
 // It is
-// used by [gRPC](https://github.com/grpc). The error model is designed
-// to be:
+// used by [gRPC](https://github.com/grpc). Each `Status` message
+// contains
+// three pieces of data: error code, error message, and error
+// details.
 //
-// - Simple to use and understand for most users
-// - Flexible enough to meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code,
-// error
-// message, and error details. The error code should be an enum value
-// of
-// google.rpc.Code, but it may accept additional error codes if needed.
-// The
-// error message should be a developer-facing English message that
-// helps
-// developers *understand* and *resolve* the error. If a localized
-// user-facing
-// error message is needed, put the localized message in the error
-// details or
-// localize it in the client. The optional error details may contain
-// arbitrary
-// information about the error. There is a predefined set of error
-// detail types
-// in the package `google.rpc` that can be used for common error
-// conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error
-// model, but it
-// is not necessarily the actual wire format. When the `Status` message
-// is
-// exposed in different client libraries and different wire protocols,
-// it can be
-// mapped differently. For example, it will likely be mapped to some
-// exceptions
-// in Java, but more likely mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety
-// of
-// environments, either with or without APIs, to provide a
-// consistent developer experience across different
-// environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the
-// client,
-//     it may embed the `Status` in the normal response to indicate the
-// partial
-//     errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step
-// may
-//     have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch
-// response, the
-//     `Status` message should be used directly inside batch response,
-// one for
-//     each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous
-// operation
-//     results in its response, the status of those operations should
-// be
-//     represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message
-// `Status` could
-//     be used directly after any stripping needed for security/privacy
-// reasons.
+// You can find out more about this error model and how to work with it
+// in the
+// [API Design Guide](https://cloud.google.com/apis/design/errors).
 type Status struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.

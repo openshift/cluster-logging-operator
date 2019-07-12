@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"golang.org/x/tools/internal/jsonrpc2"
-	"golang.org/x/tools/internal/lsp/cache"
 	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
 	"golang.org/x/tools/internal/lsp/xlog"
@@ -19,30 +18,32 @@ import (
 )
 
 // NewClientServer
-func NewClientServer(client protocol.Client) *Server {
-	return &Server{
-		client: client,
-		log:    xlog.New(protocol.NewLogger(client)),
+func NewClientServer(ctx context.Context, cache source.Cache, client protocol.Client) (context.Context, *Server) {
+	ctx = xlog.With(ctx, protocol.NewLogger(client))
+	return ctx, &Server{
+		client:  client,
+		session: cache.NewSession(ctx),
 	}
 }
 
 // NewServer starts an LSP server on the supplied stream, and waits until the
 // stream is closed.
-func NewServer(stream jsonrpc2.Stream) *Server {
+func NewServer(ctx context.Context, cache source.Cache, stream jsonrpc2.Stream) (context.Context, *Server) {
 	s := &Server{}
-	s.Conn, s.client, s.log = protocol.NewServer(stream, s)
-	return s
+	ctx, s.Conn, s.client = protocol.NewServer(ctx, stream, s)
+	s.session = cache.NewSession(ctx)
+	return ctx, s
 }
 
 // RunServerOnPort starts an LSP server on the given port and does not exit.
 // This function exists for debugging purposes.
-func RunServerOnPort(ctx context.Context, port int, h func(s *Server)) error {
-	return RunServerOnAddress(ctx, fmt.Sprintf(":%v", port), h)
+func RunServerOnPort(ctx context.Context, cache source.Cache, port int, h func(ctx context.Context, s *Server)) error {
+	return RunServerOnAddress(ctx, cache, fmt.Sprintf(":%v", port), h)
 }
 
 // RunServerOnPort starts an LSP server on the given port and does not exit.
 // This function exists for debugging purposes.
-func RunServerOnAddress(ctx context.Context, addr string, h func(s *Server)) error {
+func RunServerOnAddress(ctx context.Context, cache source.Cache, addr string, h func(ctx context.Context, s *Server)) error {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
@@ -52,10 +53,7 @@ func RunServerOnAddress(ctx context.Context, addr string, h func(s *Server)) err
 		if err != nil {
 			return err
 		}
-		stream := jsonrpc2.NewHeaderStream(conn, conn)
-		s := NewServer(stream)
-		h(s)
-		go s.Run(ctx)
+		h(NewServer(ctx, cache, jsonrpc2.NewHeaderStream(conn, conn)))
 	}
 }
 
@@ -66,7 +64,6 @@ func (s *Server) Run(ctx context.Context) error {
 type Server struct {
 	Conn   *jsonrpc2.Conn
 	client protocol.Client
-	log    xlog.Logger
 
 	initializedMu sync.Mutex
 	isInitialized bool // set once the server has received "initialize" request
@@ -74,15 +71,21 @@ type Server struct {
 	// Configurations.
 	// TODO(rstambler): Separate these into their own struct?
 	usePlaceholders               bool
-	enhancedHover                 bool
+	hoverKind                     source.HoverKind
+	useDeepCompletions            bool
+	wantCompletionDocumentation   bool
 	insertTextFormat              protocol.InsertTextFormat
 	configurationSupported        bool
 	dynamicConfigurationSupported bool
 	preferredContentFormat        protocol.MarkupKind
+	disabledAnalyses              map[string]struct{}
+	wantSuggestedFixes            bool
+
+	supportedCodeActions map[protocol.CodeActionKind]bool
 
 	textDocumentSyncKind protocol.TextDocumentSyncKind
 
-	views []*cache.View
+	session source.Session
 
 	// undelivered is a cache of any diagnostics that the server
 	// failed to deliver for some reason.
@@ -110,8 +113,8 @@ func (s *Server) Exit(ctx context.Context) error {
 
 // Workspace
 
-func (s *Server) DidChangeWorkspaceFolders(context.Context, *protocol.DidChangeWorkspaceFoldersParams) error {
-	return notImplemented("DidChangeWorkspaceFolders")
+func (s *Server) DidChangeWorkspaceFolders(ctx context.Context, params *protocol.DidChangeWorkspaceFoldersParams) error {
+	return s.changeFolders(ctx, params.Event)
 }
 
 func (s *Server) DidChangeConfiguration(context.Context, *protocol.DidChangeConfigurationParams) error {
@@ -133,7 +136,7 @@ func (s *Server) ExecuteCommand(context.Context, *protocol.ExecuteCommandParams)
 // Text Synchronization
 
 func (s *Server) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
-	return s.cacheAndDiagnose(ctx, span.NewURI(params.TextDocument.URI), params.TextDocument.Text)
+	return s.didOpen(ctx, params)
 }
 
 func (s *Server) DidChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {
@@ -162,8 +165,8 @@ func (s *Server) Completion(ctx context.Context, params *protocol.CompletionPara
 	return s.completion(ctx, params)
 }
 
-func (s *Server) CompletionResolve(context.Context, *protocol.CompletionItem) (*protocol.CompletionItem, error) {
-	return nil, notImplemented("CompletionResolve")
+func (s *Server) Resolve(ctx context.Context, item *protocol.CompletionItem) (*protocol.CompletionItem, error) {
+	return nil, notImplemented("completionItem/resolve")
 }
 
 func (s *Server) Hover(ctx context.Context, params *protocol.TextDocumentPositionParams) (*protocol.Hover, error) {
@@ -186,8 +189,8 @@ func (s *Server) Implementation(context.Context, *protocol.TextDocumentPositionP
 	return nil, notImplemented("Implementation")
 }
 
-func (s *Server) References(context.Context, *protocol.ReferenceParams) ([]protocol.Location, error) {
-	return nil, notImplemented("References")
+func (s *Server) References(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
+	return s.references(ctx, params)
 }
 
 func (s *Server) DocumentHighlight(ctx context.Context, params *protocol.TextDocumentPositionParams) ([]protocol.DocumentHighlight, error) {
@@ -238,8 +241,8 @@ func (s *Server) OnTypeFormatting(context.Context, *protocol.DocumentOnTypeForma
 	return nil, notImplemented("OnTypeFormatting")
 }
 
-func (s *Server) Rename(context.Context, *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
-	return nil, notImplemented("Rename")
+func (s *Server) Rename(ctx context.Context, params *protocol.RenameParams) (*protocol.WorkspaceEdit, error) {
+	return s.rename(ctx, params)
 }
 
 func (s *Server) Declaration(context.Context, *protocol.TextDocumentPositionParams) ([]protocol.DeclarationLink, error) {
@@ -258,17 +261,14 @@ func (s *Server) PrepareRename(context.Context, *protocol.TextDocumentPositionPa
 	return nil, notImplemented("PrepareRename")
 }
 
-func (s *Server) Resolve(context.Context, *protocol.CompletionItem) (*protocol.CompletionItem, error) {
-	return nil, notImplemented("Resolve")
-}
-
-func (s *Server) SelectionRange(context.Context, *protocol.SelectionRangeParams) ([][]protocol.SelectionRange, error) {
-	return nil, notImplemented("SelectionRange")
-}
-
 func (s *Server) SetTraceNotification(context.Context, *protocol.SetTraceParams) error {
 	return notImplemented("SetTraceNotification")
 }
+
+func (s *Server) SelectionRange(context.Context, *protocol.SelectionRangeParams) ([]protocol.SelectionRange, error) {
+	return nil, notImplemented("SelectionRange")
+}
+
 func notImplemented(method string) *jsonrpc2.Error {
 	return jsonrpc2.NewErrorf(jsonrpc2.CodeMethodNotFound, "method %q not yet implemented", method)
 }

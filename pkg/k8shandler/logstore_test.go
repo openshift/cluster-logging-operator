@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -345,5 +346,54 @@ func TestDifferenceFoundWhenNodeCountExceeds4(t *testing.T) {
 	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
 		t.Errorf("Expected that difference would be found due to node count change")
+	}
+}
+
+func TestNewESCRNoTolerations(t *testing.T) {
+	expTolerations := []v1.Toleration{}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type:              "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{},
+			},
+		},
+	}
+
+	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	tolerations := elasticsearchCR.Spec.Spec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+	}
+}
+
+func TestNewESCRWithTolerations(t *testing.T) {
+
+	expTolerations := []v1.Toleration{
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					Tolerations: expTolerations,
+				},
+			},
+		},
+	}
+
+	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	tolerations := elasticsearchCR.Spec.Spec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
 	}
 }

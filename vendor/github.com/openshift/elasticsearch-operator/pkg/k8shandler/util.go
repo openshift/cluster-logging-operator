@@ -9,9 +9,33 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const (
+	OsNodeLabel = "kubernetes.io/os"
+	LinuxValue  = "linux"
+)
+
+// ensureLinuxNodeSelector takes given selector map and returns a selector map with linux node selector added into it.
+// If there is already a node type selector and is different from "linux" then it is overridden and warning is logged.
+// See https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#interlude-built-in-node-labels
+func ensureLinuxNodeSelector(selectors map[string]string) map[string]string {
+	if selectors == nil {
+		return map[string]string{OsNodeLabel: LinuxValue}
+	}
+	if os, ok := selectors[OsNodeLabel]; ok {
+		if os == LinuxValue {
+			return selectors
+		}
+		// Selector is provided but is not "linux"
+		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, os, LinuxValue)
+	}
+	selectors[OsNodeLabel] = LinuxValue
+	return selectors
+}
 
 func selectorForES(nodeRole string, clusterName string) map[string]string {
 
@@ -68,6 +92,58 @@ func mergeSelectors(nodeSelectors, commonSelectors map[string]string) map[string
 	return commonSelectors
 }
 
+func areTolerationsSame(lhs, rhs []v1.Toleration) bool {
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	for _, lhsToleration := range lhs {
+		if !containsToleration(lhsToleration, rhs) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func containsToleration(toleration v1.Toleration, tolerations []v1.Toleration) bool {
+	for _, t := range tolerations {
+		if isTolerationSame(t, toleration) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isTolerationSame(lhs, rhs v1.Toleration) bool {
+
+	tolerationSecondsBool := false
+	// check that both are either null or not null
+	if (lhs.TolerationSeconds == nil) == (rhs.TolerationSeconds == nil) {
+		if lhs.TolerationSeconds != nil {
+			// only compare values (attempt to dereference) if pointers aren't nil
+			tolerationSecondsBool = (*lhs.TolerationSeconds == *rhs.TolerationSeconds)
+		} else {
+			tolerationSecondsBool = true
+		}
+	}
+
+	return (lhs.Key == rhs.Key) &&
+		(lhs.Operator == rhs.Operator) &&
+		(lhs.Value == rhs.Value) &&
+		(lhs.Effect == rhs.Effect) &&
+		tolerationSecondsBool
+}
+
+func appendTolerations(nodeTolerations, commonTolerations []v1.Toleration) []v1.Toleration {
+	if commonTolerations == nil {
+		commonTolerations = []v1.Toleration{}
+	}
+
+	return append(commonTolerations, nodeTolerations...)
+}
+
 // getPodNames returns the pod names of the array of pods passed in
 func getPodNames(pods []v1.Pod) []string {
 	var podNames []string
@@ -111,11 +187,21 @@ func getClientCount(dpl *api.Elasticsearch) int32 {
 }
 
 func isValidMasterCount(dpl *api.Elasticsearch) bool {
+
+	if len(dpl.Spec.Nodes) == 0 {
+		return true
+	}
+
 	masterCount := int(getMasterCount(dpl))
 	return (masterCount <= maxMasterCount && masterCount > 0)
 }
 
 func isValidDataCount(dpl *api.Elasticsearch) bool {
+
+	if len(dpl.Spec.Nodes) == 0 {
+		return true
+	}
+
 	dataCount := int(getDataCount(dpl))
 	return dataCount > 0
 }
@@ -151,6 +237,7 @@ func (elasticsearchRequest *ElasticsearchRequest) isValidConf() error {
 			return err
 		}
 	}
+
 	if !isValidDataCount(dpl) {
 		if err := updateConditionWithRetry(dpl, v1.ConditionTrue, updateInvalidDataCountCondition, client); err != nil {
 			return err
@@ -161,6 +248,7 @@ func (elasticsearchRequest *ElasticsearchRequest) isValidConf() error {
 			return err
 		}
 	}
+
 	if !isValidRedundancyPolicy(dpl) {
 		if err := updateConditionWithRetry(dpl, v1.ConditionTrue, updateInvalidReplicationCondition, client); err != nil {
 			return err

@@ -194,6 +194,7 @@ func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elas
 			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "curator"}}},
 		},
 		cluster.Spec.Curation.NodeSelector,
+		cluster.Spec.Curation.Tolerations,
 	)
 
 	curatorPodSpec.RestartPolicy = v1.RestartPolicyNever
@@ -290,6 +291,12 @@ func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.
 	if !utils.AreSelectorsSame(current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector) {
 		logrus.Infof("Invalid Curator nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector = desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
+		different = true
+	}
+
+	if !utils.AreTolerationsSame(current.Spec.JobTemplate.Spec.Template.Spec.Tolerations, desired.Spec.JobTemplate.Spec.Template.Spec.Tolerations) {
+		logrus.Infof("Curator tolerations change found, updating '%s'", current.Name)
+		current.Spec.JobTemplate.Spec.Template.Spec.Tolerations = desired.Spec.JobTemplate.Spec.Template.Spec.Tolerations
 		different = true
 	}
 

@@ -8,7 +8,7 @@
 //
 // This package is DEPRECATED. Use package cloud.google.com/go/dialogflow/apiv2 instead.
 //
-// For product documentation, see: https://cloud.google.com/dialogflow-enterprise/
+// For product documentation, see: https://cloud.google.com/dialogflow/
 //
 // Creating a client
 //
@@ -142,7 +142,7 @@ func (s *Service) userAgent() string {
 
 func NewProjectsService(s *Service) *ProjectsService {
 	rs := &ProjectsService{s: s}
-	rs.Agent = NewProjectsAgentService(s)
+	rs.Agent_ = NewProjectsAgentService(s)
 	rs.KnowledgeBases = NewProjectsKnowledgeBasesService(s)
 	rs.Operations = NewProjectsOperationsService(s)
 	return rs
@@ -151,7 +151,7 @@ func NewProjectsService(s *Service) *ProjectsService {
 type ProjectsService struct {
 	s *Service
 
-	Agent *ProjectsAgentService
+	Agent_ *ProjectsAgentService
 
 	KnowledgeBases *ProjectsKnowledgeBasesService
 
@@ -436,8 +436,8 @@ type GoogleCloudDialogflowV2Context struct {
 	// this context.
 	// Refer to
 	// [this
-	// doc](https://cloud.google.com/dialogflow-enterprise/docs/intents
-	// -actions-parameters)
+	// doc](https://cloud.google.com/dialogflow/docs/intents-actions-pa
+	// rameters)
 	// for syntax.
 	Parameters googleapi.RawMessage `json:"parameters,omitempty"`
 
@@ -601,8 +601,8 @@ func (s *GoogleCloudDialogflowV2EntityTypeEntity) MarshalJSON() ([]byte, error) 
 type GoogleCloudDialogflowV2EventInput struct {
 	// LanguageCode: Required. The language of this query. See
 	// [Language
-	// Support](https://cloud.google.com/dialogflow-enterprise/docs
-	// /reference/language)
+	// Support](https://cloud.google.com/dialogflow/docs/reference/
+	// language)
 	// for a list of the currently supported language codes. Note that
 	// queries in
 	// the same session do not necessarily need to specify the same
@@ -701,8 +701,9 @@ type GoogleCloudDialogflowV2Intent struct {
 	Action string `json:"action,omitempty"`
 
 	// DefaultResponsePlatforms: Optional. The list of platforms for which
-	// the first response will be
-	// taken from among the messages assigned to the DEFAULT_PLATFORM.
+	// the first responses will be
+	// copied from the messages in PLATFORM_UNSPECIFIED (i.e. default
+	// platform).
 	//
 	// Possible values:
 	//   "PLATFORM_UNSPECIFIED" - Not specified.
@@ -781,6 +782,7 @@ type GoogleCloudDialogflowV2Intent struct {
 	//     "intent": "actions.intent.OPTION"
 	//   }
 	// }</pre>
+	//   "GOOGLE_HANGOUTS" - Google Hangouts.
 	DefaultResponsePlatforms []string `json:"defaultResponsePlatforms,omitempty"`
 
 	// DisplayName: Required. The name of this intent.
@@ -1066,6 +1068,7 @@ type GoogleCloudDialogflowV2IntentMessage struct {
 	//     "intent": "actions.intent.OPTION"
 	//   }
 	// }</pre>
+	//   "GOOGLE_HANGOUTS" - Google Hangouts.
 	Platform string `json:"platform,omitempty"`
 
 	// QuickReplies: The quick replies response.
@@ -1755,7 +1758,7 @@ type GoogleCloudDialogflowV2IntentParameter struct {
 
 	// Prompts: Optional. The collection of prompts that the agent can
 	// present to the
-	// user in order to collect value for the parameter.
+	// user in order to collect a value for the parameter.
 	Prompts []string `json:"prompts,omitempty"`
 
 	// Value: Optional. The definition of the parameter value. It can be:
@@ -1989,6 +1992,7 @@ type GoogleCloudDialogflowV2QueryResult struct {
 	Action string `json:"action,omitempty"`
 
 	// AllRequiredParamsPresent: This field is set to:
+	//
 	// - `false` if the matched intent has required parameters and not all
 	// of
 	//    the required parameter values have been collected.
@@ -2033,8 +2037,8 @@ type GoogleCloudDialogflowV2QueryResult struct {
 	// detection.
 	// See
 	// [Language
-	// Support](https://cloud.google.com/dialogflow-enterprise/docs
-	// /reference/language)
+	// Support](https://cloud.google.com/dialogflow/docs/reference/
+	// language)
 	// for a list of the currently supported language codes.
 	LanguageCode string `json:"languageCode,omitempty"`
 
@@ -2050,6 +2054,7 @@ type GoogleCloudDialogflowV2QueryResult struct {
 	Parameters googleapi.RawMessage `json:"parameters,omitempty"`
 
 	// QueryText: The original conversational query text:
+	//
 	// - If natural language text was provided as input, `query_text`
 	// contains
 	//   a copy of the input.
@@ -2058,7 +2063,9 @@ type GoogleCloudDialogflowV2QueryResult struct {
 	//   contains the speech recognition result. If speech recognizer
 	// produced
 	//   multiple alternatives, a particular one is picked.
-	// - If an event was provided as input, `query_text` is not set.
+	// - If automatic spell correction is enabled, `query_text` will contain
+	// the
+	//   corrected user input.
 	QueryText string `json:"queryText,omitempty"`
 
 	// SentimentAnalysisResult: The sentiment analysis result, which depends
@@ -2276,6 +2283,9 @@ type GoogleCloudDialogflowV2WebhookResponse struct {
 	// FollowupEventInput: Optional. Makes the platform immediately invoke
 	// another `DetectIntent` call
 	// internally with the specified event as input.
+	// When this field is set, Dialogflow ignores the
+	// `fulfillment_text`,
+	// `fulfillment_messages`, and `payload` fields.
 	FollowupEventInput *GoogleCloudDialogflowV2EventInput `json:"followupEventInput,omitempty"`
 
 	// FulfillmentMessages: Optional. The collection of rich messages to
@@ -2353,12 +2363,27 @@ func (s *GoogleCloudDialogflowV2WebhookResponse) MarshalJSON() ([]byte, error) {
 
 // GoogleCloudDialogflowV2beta1Agent: Represents a conversational agent.
 type GoogleCloudDialogflowV2beta1Agent struct {
+	// ApiVersion: Optional. API version displayed in Dialogflow console. If
+	// not specified,
+	// V2 API is assumed. Clients are free to query different service
+	// endpoints
+	// for different API versions. However, bots connectors and webhook
+	// calls will
+	// follow the specified API version.
+	//
+	// Possible values:
+	//   "API_VERSION_UNSPECIFIED" - Not specified.
+	//   "API_VERSION_V1" - Legacy V1 API.
+	//   "API_VERSION_V2" - V2 API.
+	//   "API_VERSION_V2_BETA_1" - V2beta1 API.
+	ApiVersion string `json:"apiVersion,omitempty"`
+
 	// AvatarUri: Optional. The URI of the agent's avatar.
 	// Avatars are used throughout the Dialogflow console and in the
 	// self-hosted
 	// [Web
-	// Demo](https://cloud.google.com/dialogflow-enterprise/
-	// docs/integrations/web-demo)
+	// Demo](https://cloud.google.com/dialogflow/docs/integr
+	// ations/web-demo)
 	// integration.
 	AvatarUri string `json:"avatarUri,omitempty"`
 
@@ -2381,8 +2406,8 @@ type GoogleCloudDialogflowV2beta1Agent struct {
 	// language tag.
 	// See
 	// [Language
-	// Support](https://cloud.google.com/dialogflow-enterprise/
-	// docs/reference/language)
+	// Support](https://cloud.google.com/dialogflow/docs/refere
+	// nce/language)
 	// for a list of the currently supported language codes. This field
 	// cannot be
 	// set by the `Update` method.
@@ -2422,6 +2447,17 @@ type GoogleCloudDialogflowV2beta1Agent struct {
 	// `default_language_code`).
 	SupportedLanguageCodes []string `json:"supportedLanguageCodes,omitempty"`
 
+	// Tier: Optional. The agent tier. If not specified, TIER_STANDARD is
+	// assumed.
+	//
+	// Possible values:
+	//   "TIER_UNSPECIFIED" - Not specified. This value should never be
+	// used.
+	//   "TIER_STANDARD" - Standard tier.
+	//   "TIER_ENTERPRISE" - Enterprise tier (Essentials).
+	//   "TIER_ENTERPRISE_PLUS" - Enterprise tier (Plus).
+	Tier string `json:"tier,omitempty"`
+
 	// TimeZone: Required. The time zone of this agent from the
 	// [time zone database](https://www.iana.org/time-zones),
 	// e.g.,
@@ -2432,7 +2468,7 @@ type GoogleCloudDialogflowV2beta1Agent struct {
 	// server.
 	googleapi.ServerResponse `json:"-"`
 
-	// ForceSendFields is a list of field names (e.g. "AvatarUri") to
+	// ForceSendFields is a list of field names (e.g. "ApiVersion") to
 	// unconditionally include in API requests. By default, fields with
 	// empty values are omitted from API requests. However, any non-pointer,
 	// non-interface field appearing in ForceSendFields will be sent to the
@@ -2440,7 +2476,7 @@ type GoogleCloudDialogflowV2beta1Agent struct {
 	// used to include empty fields in Patch requests.
 	ForceSendFields []string `json:"-"`
 
-	// NullFields is a list of field names (e.g. "AvatarUri") to include in
+	// NullFields is a list of field names (e.g. "ApiVersion") to include in
 	// API requests with the JSON null value. By default, fields with empty
 	// values are omitted from API requests. However, any field with an
 	// empty value appearing in NullFields will be sent to the server as
@@ -2480,8 +2516,8 @@ type GoogleCloudDialogflowV2beta1BatchCreateEntitiesRequest struct {
 	// specified, the agent's default language is
 	// used.
 	// [Many
-	// languages](https://cloud.google.com/dialogflow-enterprise/
-	// docs/reference/language)
+	// languages](https://cloud.google.com/dialogflow/docs/refere
+	// nce/language)
 	// are supported. Note: languages must be enabled in the agent before
 	// they can
 	// be used.
@@ -2525,8 +2561,8 @@ type GoogleCloudDialogflowV2beta1BatchDeleteEntitiesRequest struct {
 	// specified, the agent's default language is
 	// used.
 	// [Many
-	// languages](https://cloud.google.com/dialogflow-enterprise/
-	// docs/reference/language)
+	// languages](https://cloud.google.com/dialogflow/docs/refere
+	// nce/language)
 	// are supported. Note: languages must be enabled in the agent before
 	// they can
 	// be used.
@@ -2629,8 +2665,8 @@ type GoogleCloudDialogflowV2beta1BatchUpdateEntitiesRequest struct {
 	// specified, the agent's default language is
 	// used.
 	// [Many
-	// languages](https://cloud.google.com/dialogflow-enterprise/
-	// docs/reference/language)
+	// languages](https://cloud.google.com/dialogflow/docs/refere
+	// nce/language)
 	// are supported. Note: languages must be enabled in the agent before
 	// they can
 	// be used.
@@ -2683,8 +2719,8 @@ type GoogleCloudDialogflowV2beta1BatchUpdateEntityTypesRequest struct {
 	// specified, the agent's default language is
 	// used.
 	// [Many
-	// languages](https://cloud.google.com/dialogflow-enterprise/
-	// docs/reference/language)
+	// languages](https://cloud.google.com/dialogflow/docs/refere
+	// nce/language)
 	// are supported. Note: languages must be enabled in the agent before
 	// they can
 	// be used.
@@ -2775,8 +2811,8 @@ type GoogleCloudDialogflowV2beta1BatchUpdateIntentsRequest struct {
 	// is
 	// used.
 	// [Many
-	// languages](https://cloud.google.com/dialogflow-enterprise/docs/r
-	// eference/language)
+	// languages](https://cloud.google.com/dialogflow/docs/reference/la
+	// nguage)
 	// are supported. Note: languages must be enabled in the agent before
 	// they can
 	// be used.
@@ -2871,8 +2907,8 @@ type GoogleCloudDialogflowV2beta1Context struct {
 	// this context.
 	// Refer to
 	// [this
-	// doc](https://cloud.google.com/dialogflow-enterprise/docs/intents
-	// -actions-parameters)
+	// doc](https://cloud.google.com/dialogflow/docs/intents-actions-pa
+	// rameters)
 	// for syntax.
 	Parameters googleapi.RawMessage `json:"parameters,omitempty"`
 
@@ -2990,11 +3026,8 @@ type GoogleCloudDialogflowV2beta1DetectIntentResponse struct {
 	// generated audio content will be empty.
 	OutputAudio string `json:"outputAudio,omitempty"`
 
-	// OutputAudioConfig: Instructs the speech synthesizer how to generate
-	// the output audio. This
-	// field is populated from the agent-level speech synthesizer
-	// configuration,
-	// if enabled.
+	// OutputAudioConfig: The config used by the speech synthesizer to
+	// generate the output audio.
 	OutputAudioConfig *GoogleCloudDialogflowV2beta1OutputAudioConfig `json:"outputAudioConfig,omitempty"`
 
 	// QueryResult: The selected results of the conversational query or
@@ -3042,9 +3075,9 @@ func (s *GoogleCloudDialogflowV2beta1DetectIntentResponse) MarshalJSON() ([]byte
 
 // GoogleCloudDialogflowV2beta1Document: A document resource.
 //
-// Note: resource `projects.agent.knowledgeBases.documents` is
-// deprecated,
-// please use `projects.knowledgeBases.documents` instead.
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 type GoogleCloudDialogflowV2beta1Document struct {
 	// Content: The raw content of the document. This field is only
 	// permitted for
@@ -3308,8 +3341,8 @@ func (s *GoogleCloudDialogflowV2beta1EntityTypeEntity) MarshalJSON() ([]byte, er
 type GoogleCloudDialogflowV2beta1EventInput struct {
 	// LanguageCode: Required. The language of this query. See
 	// [Language
-	// Support](https://cloud.google.com/dialogflow-enterprise/docs
-	// /reference/language)
+	// Support](https://cloud.google.com/dialogflow/docs/reference/
+	// language)
 	// for a list of the currently supported language codes. Note that
 	// queries in
 	// the same session do not necessarily need to specify the same
@@ -3480,7 +3513,7 @@ func (s *GoogleCloudDialogflowV2beta1ImportAgentRequest) MarshalJSON() ([]byte, 
 }
 
 // GoogleCloudDialogflowV2beta1InputAudioConfig: Instructs the speech
-// recognizer how to process the audio content.
+// recognizer on how to process the audio content.
 type GoogleCloudDialogflowV2beta1InputAudioConfig struct {
 	// AudioEncoding: Required. Audio encoding of the audio content to
 	// process.
@@ -3535,12 +3568,21 @@ type GoogleCloudDialogflowV2beta1InputAudioConfig struct {
 	// wideband is supported. `sample_rate_hertz` must be 16000.
 	AudioEncoding string `json:"audioEncoding,omitempty"`
 
+	// EnableWordInfo: Optional. If `true`, Dialogflow returns
+	// SpeechWordInfo in
+	// StreamingRecognitionResult with information about the recognized
+	// speech
+	// words, e.g. start and end time offsets. If false or unspecified,
+	// Speech
+	// doesn't return any word-level information.
+	EnableWordInfo bool `json:"enableWordInfo,omitempty"`
+
 	// LanguageCode: Required. The language of the supplied audio.
 	// Dialogflow does not do
 	// translations. See
 	// [Language
-	// Support](https://cloud.google.com/dialogflow-enterprise/docs
-	// /reference/language)
+	// Support](https://cloud.google.com/dialogflow/docs/reference/
+	// language)
 	// for a list of the currently supported language codes. Note that
 	// queries in
 	// the same session do not necessarily need to specify the same
@@ -3568,14 +3610,55 @@ type GoogleCloudDialogflowV2beta1InputAudioConfig struct {
 	// for more details.
 	Model string `json:"model,omitempty"`
 
-	// PhraseHints: Optional. The collection of phrase hints which are used
-	// to boost accuracy
-	// of speech recognition.
-	// Refer to
-	// [Cloud Speech
-	// API
-	// documentation](https://cloud.google.com/speech-to-text/docs/basics
-	// #phrase-hints)
+	// ModelVariant: Optional. Which variant of the Speech model to use.
+	//
+	// Possible values:
+	//   "SPEECH_MODEL_VARIANT_UNSPECIFIED" - No model variant specified. In
+	// this case Dialogflow defaults to
+	// USE_BEST_AVAILABLE.
+	//   "USE_BEST_AVAILABLE" - Use the best available variant of the
+	// Speech
+	// model that the caller is eligible for.
+	//
+	// Please see the
+	// [Dialogflow
+	// docs](https://cloud.google.com/dialogflow/docs/data-loggin
+	// g) for
+	// how to make your project eligible for enhanced models.
+	//   "USE_STANDARD" - Use standard model variant even if an enhanced
+	// model is available.  See the
+	// [Cloud
+	// Speech
+	// documentation](https://cloud.google.com/speech-to-text/docs/enh
+	// anced-models)
+	// for details about enhanced models.
+	//   "USE_ENHANCED" - Use an enhanced model variant:
+	//
+	// * If an enhanced variant does not exist for the given
+	//   model and request language, Dialogflow falls
+	//   back to the standard variant.
+	//
+	//   The [Cloud Speech
+	//
+	// documentation](https://cloud.google.com/speech-to-text/docs/enhanced-m
+	// odels)
+	//   describes which models have enhanced variants.
+	//
+	// * If the API caller isn't eligible for enhanced models, Dialogflow
+	// returns
+	//   an error.  Please see the [Dialogflow
+	//   docs](https://cloud.google.com/dialogflow/docs/data-logging)
+	//   for how to make your project eligible.
+	ModelVariant string `json:"modelVariant,omitempty"`
+
+	// PhraseHints: Optional. A list of strings containing words and phrases
+	// that the speech
+	// recognizer should recognize with higher likelihood.
+	//
+	// See [the Cloud
+	// Speech
+	// documentation](https://cloud.google.com/speech-to-text/docs/bas
+	// ics#phrase-hints)
 	// for more details.
 	PhraseHints []string `json:"phraseHints,omitempty"`
 
@@ -3623,8 +3706,9 @@ type GoogleCloudDialogflowV2beta1Intent struct {
 	Action string `json:"action,omitempty"`
 
 	// DefaultResponsePlatforms: Optional. The list of platforms for which
-	// the first response will be
-	// taken from among the messages assigned to the DEFAULT_PLATFORM.
+	// the first responses will be
+	// copied from the messages in PLATFORM_UNSPECIFIED (i.e. default
+	// platform).
 	//
 	// Possible values:
 	//   "PLATFORM_UNSPECIFIED" - Not specified.
@@ -3704,6 +3788,7 @@ type GoogleCloudDialogflowV2beta1Intent struct {
 	//   }
 	// }</pre>
 	//   "TELEPHONY" - Telephony Gateway.
+	//   "GOOGLE_HANGOUTS" - Google Hangouts.
 	DefaultResponsePlatforms []string `json:"defaultResponsePlatforms,omitempty"`
 
 	// DisplayName: Required. The name of this intent.
@@ -4047,6 +4132,7 @@ type GoogleCloudDialogflowV2beta1IntentMessage struct {
 	//   }
 	// }</pre>
 	//   "TELEPHONY" - Telephony Gateway.
+	//   "GOOGLE_HANGOUTS" - Google Hangouts.
 	Platform string `json:"platform,omitempty"`
 
 	// QuickReplies: Displays quick replies.
@@ -4872,7 +4958,7 @@ type GoogleCloudDialogflowV2beta1IntentParameter struct {
 
 	// Prompts: Optional. The collection of prompts that the agent can
 	// present to the
-	// user in order to collect value for the parameter.
+	// user in order to collect a value for the parameter.
 	Prompts []string `json:"prompts,omitempty"`
 
 	// Value: Optional. The definition of the parameter value. It can be:
@@ -5164,9 +5250,9 @@ func (s *GoogleCloudDialogflowV2beta1KnowledgeAnswersAnswer) UnmarshalJSON(data 
 // GoogleCloudDialogflowV2beta1KnowledgeBase: Represents knowledge base
 // resource.
 //
-// Note: resource `projects.agent.knowledgeBases` is deprecated, please
-// use
-// `projects.knowledgeBases` instead.
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 type GoogleCloudDialogflowV2beta1KnowledgeBase struct {
 	// DisplayName: Required. The display name of the knowledge base. The
 	// name must be 1024
@@ -5601,7 +5687,7 @@ func (s *GoogleCloudDialogflowV2beta1OutputAudioConfig) MarshalJSON() ([]byte, e
 //     instructs the speech recognizer how to process the speech
 // audio.
 //
-// 2.  A conversational query in the form of text,.
+// 2.  A conversational query in the form of text.
 //
 // 3.  An event that specifies which intent to trigger.
 type GoogleCloudDialogflowV2beta1QueryInput struct {
@@ -5720,6 +5806,7 @@ type GoogleCloudDialogflowV2beta1QueryResult struct {
 	Action string `json:"action,omitempty"`
 
 	// AllRequiredParamsPresent: This field is set to:
+	//
 	// - `false` if the matched intent has required parameters and not all
 	// of
 	//    the required parameter values have been collected.
@@ -5769,8 +5856,8 @@ type GoogleCloudDialogflowV2beta1QueryResult struct {
 	// detection.
 	// See
 	// [Language
-	// Support](https://cloud.google.com/dialogflow-enterprise/docs
-	// /reference/language)
+	// Support](https://cloud.google.com/dialogflow/docs/reference/
+	// language)
 	// for a list of the currently supported language codes.
 	LanguageCode string `json:"languageCode,omitempty"`
 
@@ -5786,6 +5873,7 @@ type GoogleCloudDialogflowV2beta1QueryResult struct {
 	Parameters googleapi.RawMessage `json:"parameters,omitempty"`
 
 	// QueryText: The original conversational query text:
+	//
 	// - If natural language text was provided as input, `query_text`
 	// contains
 	//   a copy of the input.
@@ -5794,7 +5882,9 @@ type GoogleCloudDialogflowV2beta1QueryResult struct {
 	//   contains the speech recognition result. If speech recognizer
 	// produced
 	//   multiple alternatives, a particular one is picked.
-	// - If an event was provided as input, `query_text` is not set.
+	// - If automatic spell correction is enabled, `query_text` will contain
+	// the
+	//   corrected user input.
 	QueryText string `json:"queryText,omitempty"`
 
 	// SentimentAnalysisResult: The sentiment analysis result, which depends
@@ -6265,8 +6355,8 @@ type GoogleCloudDialogflowV2beta1TextInput struct {
 	// LanguageCode: Required. The language of this conversational query.
 	// See
 	// [Language
-	// Support](https://cloud.google.com/dialogflow-enterprise/docs
-	// /reference/language)
+	// Support](https://cloud.google.com/dialogflow/docs/reference/
+	// language)
 	// for a list of the currently supported language codes. Note that
 	// queries in
 	// the same session do not necessarily need to specify the same
@@ -6427,6 +6517,9 @@ type GoogleCloudDialogflowV2beta1WebhookResponse struct {
 	// FollowupEventInput: Optional. Makes the platform immediately invoke
 	// another `DetectIntent` call
 	// internally with the specified event as input.
+	// When this field is set, Dialogflow ignores the
+	// `fulfillment_text`,
+	// `fulfillment_messages`, and `payload` fields.
 	FollowupEventInput *GoogleCloudDialogflowV2beta1EventInput `json:"followupEventInput,omitempty"`
 
 	// FulfillmentMessages: Optional. The collection of rich messages to
@@ -6530,7 +6623,8 @@ type GoogleLongrunningOperation struct {
 	// service that
 	// originally returns it. If you use the default HTTP mapping,
 	// the
-	// `name` should have the format of `operations/some/unique/name`.
+	// `name` should be a resource name ending with
+	// `operations/{unique_id}`.
 	Name string `json:"name,omitempty"`
 
 	// Response: The normal response of the operation in case of success.
@@ -6599,81 +6693,14 @@ type GoogleProtobufEmpty struct {
 // is suitable for
 // different programming environments, including REST APIs and RPC APIs.
 // It is
-// used by [gRPC](https://github.com/grpc). The error model is designed
-// to be:
+// used by [gRPC](https://github.com/grpc). Each `Status` message
+// contains
+// three pieces of data: error code, error message, and error
+// details.
 //
-// - Simple to use and understand for most users
-// - Flexible enough to meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code,
-// error
-// message, and error details. The error code should be an enum value
-// of
-// google.rpc.Code, but it may accept additional error codes if needed.
-// The
-// error message should be a developer-facing English message that
-// helps
-// developers *understand* and *resolve* the error. If a localized
-// user-facing
-// error message is needed, put the localized message in the error
-// details or
-// localize it in the client. The optional error details may contain
-// arbitrary
-// information about the error. There is a predefined set of error
-// detail types
-// in the package `google.rpc` that can be used for common error
-// conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error
-// model, but it
-// is not necessarily the actual wire format. When the `Status` message
-// is
-// exposed in different client libraries and different wire protocols,
-// it can be
-// mapped differently. For example, it will likely be mapped to some
-// exceptions
-// in Java, but more likely mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety
-// of
-// environments, either with or without APIs, to provide a
-// consistent developer experience across different
-// environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the
-// client,
-//     it may embed the `Status` in the normal response to indicate the
-// partial
-//     errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step
-// may
-//     have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch
-// response, the
-//     `Status` message should be used directly inside batch response,
-// one for
-//     each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous
-// operation
-//     results in its response, the status of those operations should
-// be
-//     represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message
-// `Status` could
-//     be used directly after any stripping needed for security/privacy
-// reasons.
+// You can find out more about this error model and how to work with it
+// in the
+// [API Design Guide](https://cloud.google.com/apis/design/errors).
 type GoogleRpcStatus struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.
@@ -6769,6 +6796,290 @@ func (s *GoogleTypeLatLng) UnmarshalJSON(data []byte) error {
 	s.Latitude = float64(s1.Latitude)
 	s.Longitude = float64(s1.Longitude)
 	return nil
+}
+
+// method id "dialogflow.projects.agent":
+
+type ProjectsAgentCall struct {
+	s                                 *Service
+	parent                            string
+	googleclouddialogflowv2beta1agent *GoogleCloudDialogflowV2beta1Agent
+	urlParams_                        gensupport.URLParams
+	ctx_                              context.Context
+	header_                           http.Header
+}
+
+// Agent: Creates/updates the specified agent.
+func (r *ProjectsService) Agent(parent string, googleclouddialogflowv2beta1agent *GoogleCloudDialogflowV2beta1Agent) *ProjectsAgentCall {
+	c := &ProjectsAgentCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	c.googleclouddialogflowv2beta1agent = googleclouddialogflowv2beta1agent
+	return c
+}
+
+// UpdateMask sets the optional parameter "updateMask": The mask to
+// control which fields get updated.
+func (c *ProjectsAgentCall) UpdateMask(updateMask string) *ProjectsAgentCall {
+	c.urlParams_.Set("updateMask", updateMask)
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsAgentCall) Fields(s ...googleapi.Field) *ProjectsAgentCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsAgentCall) Context(ctx context.Context) *ProjectsAgentCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsAgentCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsAgentCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	body, err := googleapi.WithoutDataWrapper.JSONReader(c.googleclouddialogflowv2beta1agent)
+	if err != nil {
+		return nil, err
+	}
+	reqHeaders.Set("Content-Type", "application/json")
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2beta1/{+parent}/agent")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("POST", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "dialogflow.projects.agent" call.
+// Exactly one of *GoogleCloudDialogflowV2beta1Agent or error will be
+// non-nil. Any non-2xx status code is an error. Response headers are in
+// either *GoogleCloudDialogflowV2beta1Agent.ServerResponse.Header or
+// (if a response was returned at all) in
+// error.(*googleapi.Error).Header. Use googleapi.IsNotModified to check
+// whether the returned error was because http.StatusNotModified was
+// returned.
+func (c *ProjectsAgentCall) Do(opts ...googleapi.CallOption) (*GoogleCloudDialogflowV2beta1Agent, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &GoogleCloudDialogflowV2beta1Agent{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Creates/updates the specified agent.",
+	//   "flatPath": "v2beta1/projects/{projectsId}/agent",
+	//   "httpMethod": "POST",
+	//   "id": "dialogflow.projects.agent",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. The project of this agent.\nFormat: `projects/\u003cProject ID\u003e`.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     },
+	//     "updateMask": {
+	//       "description": "Optional. The mask to control which fields get updated.",
+	//       "format": "google-fieldmask",
+	//       "location": "query",
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v2beta1/{+parent}/agent",
+	//   "request": {
+	//     "$ref": "GoogleCloudDialogflowV2beta1Agent"
+	//   },
+	//   "response": {
+	//     "$ref": "GoogleCloudDialogflowV2beta1Agent"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/dialogflow"
+	//   ]
+	// }
+
+}
+
+// method id "dialogflow.projects.deleteAgent":
+
+type ProjectsDeleteAgentCall struct {
+	s          *Service
+	parent     string
+	urlParams_ gensupport.URLParams
+	ctx_       context.Context
+	header_    http.Header
+}
+
+// DeleteAgent: Deletes the specified agent.
+func (r *ProjectsService) DeleteAgent(parent string) *ProjectsDeleteAgentCall {
+	c := &ProjectsDeleteAgentCall{s: r.s, urlParams_: make(gensupport.URLParams)}
+	c.parent = parent
+	return c
+}
+
+// Fields allows partial responses to be retrieved. See
+// https://developers.google.com/gdata/docs/2.0/basics#PartialResponse
+// for more information.
+func (c *ProjectsDeleteAgentCall) Fields(s ...googleapi.Field) *ProjectsDeleteAgentCall {
+	c.urlParams_.Set("fields", googleapi.CombineFields(s))
+	return c
+}
+
+// Context sets the context to be used in this call's Do method. Any
+// pending HTTP request will be aborted if the provided context is
+// canceled.
+func (c *ProjectsDeleteAgentCall) Context(ctx context.Context) *ProjectsDeleteAgentCall {
+	c.ctx_ = ctx
+	return c
+}
+
+// Header returns an http.Header that can be modified by the caller to
+// add HTTP headers to the request.
+func (c *ProjectsDeleteAgentCall) Header() http.Header {
+	if c.header_ == nil {
+		c.header_ = make(http.Header)
+	}
+	return c.header_
+}
+
+func (c *ProjectsDeleteAgentCall) doRequest(alt string) (*http.Response, error) {
+	reqHeaders := make(http.Header)
+	for k, v := range c.header_ {
+		reqHeaders[k] = v
+	}
+	reqHeaders.Set("User-Agent", c.s.userAgent())
+	var body io.Reader = nil
+	c.urlParams_.Set("alt", alt)
+	c.urlParams_.Set("prettyPrint", "false")
+	urls := googleapi.ResolveRelative(c.s.BasePath, "v2beta1/{+parent}/agent")
+	urls += "?" + c.urlParams_.Encode()
+	req, err := http.NewRequest("DELETE", urls, body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = reqHeaders
+	googleapi.Expand(req.URL, map[string]string{
+		"parent": c.parent,
+	})
+	return gensupport.SendRequest(c.ctx_, c.s.client, req)
+}
+
+// Do executes the "dialogflow.projects.deleteAgent" call.
+// Exactly one of *GoogleProtobufEmpty or error will be non-nil. Any
+// non-2xx status code is an error. Response headers are in either
+// *GoogleProtobufEmpty.ServerResponse.Header or (if a response was
+// returned at all) in error.(*googleapi.Error).Header. Use
+// googleapi.IsNotModified to check whether the returned error was
+// because http.StatusNotModified was returned.
+func (c *ProjectsDeleteAgentCall) Do(opts ...googleapi.CallOption) (*GoogleProtobufEmpty, error) {
+	gensupport.SetOptions(c.urlParams_, opts...)
+	res, err := c.doRequest("json")
+	if res != nil && res.StatusCode == http.StatusNotModified {
+		if res.Body != nil {
+			res.Body.Close()
+		}
+		return nil, &googleapi.Error{
+			Code:   res.StatusCode,
+			Header: res.Header,
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer googleapi.CloseBody(res)
+	if err := googleapi.CheckResponse(res); err != nil {
+		return nil, err
+	}
+	ret := &GoogleProtobufEmpty{
+		ServerResponse: googleapi.ServerResponse{
+			Header:         res.Header,
+			HTTPStatusCode: res.StatusCode,
+		},
+	}
+	target := &ret
+	if err := gensupport.DecodeResponse(target, res); err != nil {
+		return nil, err
+	}
+	return ret, nil
+	// {
+	//   "description": "Deletes the specified agent.",
+	//   "flatPath": "v2beta1/projects/{projectsId}/agent",
+	//   "httpMethod": "DELETE",
+	//   "id": "dialogflow.projects.deleteAgent",
+	//   "parameterOrder": [
+	//     "parent"
+	//   ],
+	//   "parameters": {
+	//     "parent": {
+	//       "description": "Required. The project that the agent to delete is associated with.\nFormat: `projects/\u003cProject ID\u003e`.",
+	//       "location": "path",
+	//       "pattern": "^projects/[^/]+$",
+	//       "required": true,
+	//       "type": "string"
+	//     }
+	//   },
+	//   "path": "v2beta1/{+parent}/agent",
+	//   "response": {
+	//     "$ref": "GoogleProtobufEmpty"
+	//   },
+	//   "scopes": [
+	//     "https://www.googleapis.com/auth/cloud-platform",
+	//     "https://www.googleapis.com/auth/dialogflow"
+	//   ]
+	// }
+
 }
 
 // method id "dialogflow.projects.getAgent":
@@ -8011,8 +8322,8 @@ func (r *ProjectsAgentEntityTypesService) Create(parent string, googleclouddialo
 // specified, the agent's default language is
 // used.
 // [Many
-// languages](https://cloud.google.com/dialogflow-enterprise/
-// docs/reference/language)
+// languages](https://cloud.google.com/dialogflow/docs/refere
+// nce/language)
 // are supported. Note: languages must be enabled in the agent before
 // they can
 // be used.
@@ -8121,7 +8432,7 @@ func (c *ProjectsAgentEntityTypesCreateCall) Do(opts ...googleapi.CallOption) (*
 	//   ],
 	//   "parameters": {
 	//     "languageCode": {
-	//       "description": "Optional. The language of entity synonyms defined in `entity_type`. If not\nspecified, the agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow-enterprise/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
+	//       "description": "Optional. The language of entity synonyms defined in `entity_type`. If not\nspecified, the agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -8301,8 +8612,8 @@ func (r *ProjectsAgentEntityTypesService) Get(name string) *ProjectsAgentEntityT
 // the agent's default language is
 // used.
 // [Many
-// languages](https://cloud.google.com/dialogflow-enterprise/
-// docs/reference/language)
+// languages](https://cloud.google.com/dialogflow/docs/refere
+// nce/language)
 // are supported. Note: languages must be enabled in the agent before
 // they can
 // be used.
@@ -8419,7 +8730,7 @@ func (c *ProjectsAgentEntityTypesGetCall) Do(opts ...googleapi.CallOption) (*Goo
 	//   ],
 	//   "parameters": {
 	//     "languageCode": {
-	//       "description": "Optional. The language to retrieve entity synonyms for. If not specified,\nthe agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow-enterprise/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
+	//       "description": "Optional. The language to retrieve entity synonyms for. If not specified,\nthe agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -8466,8 +8777,8 @@ func (r *ProjectsAgentEntityTypesService) List(parent string) *ProjectsAgentEnti
 // the agent's default language is
 // used.
 // [Many
-// languages](https://cloud.google.com/dialogflow-enterprise/
-// docs/reference/language)
+// languages](https://cloud.google.com/dialogflow/docs/refere
+// nce/language)
 // are supported. Note: languages must be enabled in the agent before
 // they can
 // be used.
@@ -8600,7 +8911,7 @@ func (c *ProjectsAgentEntityTypesListCall) Do(opts ...googleapi.CallOption) (*Go
 	//   ],
 	//   "parameters": {
 	//     "languageCode": {
-	//       "description": "Optional. The language to list entity synonyms for. If not specified,\nthe agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow-enterprise/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
+	//       "description": "Optional. The language to list entity synonyms for. If not specified,\nthe agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -8680,8 +8991,8 @@ func (r *ProjectsAgentEntityTypesService) Patch(nameid string, googleclouddialog
 // specified, the agent's default language is
 // used.
 // [Many
-// languages](https://cloud.google.com/dialogflow-enterprise/
-// docs/reference/language)
+// languages](https://cloud.google.com/dialogflow/docs/refere
+// nce/language)
 // are supported. Note: languages must be enabled in the agent before
 // they can
 // be used.
@@ -8797,7 +9108,7 @@ func (c *ProjectsAgentEntityTypesPatchCall) Do(opts ...googleapi.CallOption) (*G
 	//   ],
 	//   "parameters": {
 	//     "languageCode": {
-	//       "description": "Optional. The language of entity synonyms defined in `entity_type`. If not\nspecified, the agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow-enterprise/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
+	//       "description": "Optional. The language of entity synonyms defined in `entity_type`. If not\nspecified, the agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -9518,7 +9829,7 @@ func (c *ProjectsAgentEnvironmentsUsersSessionsDetectIntentCall) Do(opts ...goog
 	//   ],
 	//   "parameters": {
 	//     "session": {
-	//       "description": "Required. The name of the session this query is sent to. Format:\n`projects/\u003cProject ID\u003e/agent/sessions/\u003cSession ID\u003e`, or\n`projects/\u003cProject ID\u003e/agent/environments/\u003cEnvironment ID\u003e/users/\u003cUser\nID\u003e/sessions/\u003cSession ID\u003e`. If `Environment ID` is not specified, we assume\ndefault 'draft' environment. If `User ID` is not specified, we are using\n\"-\". It’s up to the API caller to choose an appropriate `Session ID` and\n`User Id`. They can be a random numbers or some type of user and session\nidentifiers (preferably hashed). The length of the `Session ID` and\n`User ID` must not exceed 36 characters.",
+	//       "description": "Required. The name of the session this query is sent to. Format:\n`projects/\u003cProject ID\u003e/agent/sessions/\u003cSession ID\u003e`, or\n`projects/\u003cProject ID\u003e/agent/environments/\u003cEnvironment ID\u003e/users/\u003cUser\nID\u003e/sessions/\u003cSession ID\u003e`. If `Environment ID` is not specified, we assume\ndefault 'draft' environment. If `User ID` is not specified, we are using\n\"-\". It's up to the API caller to choose an appropriate `Session ID` and\n`User Id`. They can be a random numbers or some type of user and session\nidentifiers (preferably hashed). The length of the `Session ID` and\n`User ID` must not exceed 36 characters.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/agent/environments/[^/]+/users/[^/]+/sessions/[^/]+$",
 	//       "required": true,
@@ -11398,8 +11709,8 @@ func (c *ProjectsAgentIntentsCreateCall) IntentView(intentView string) *Projects
 // is
 // used.
 // [Many
-// languages](https://cloud.google.com/dialogflow-enterprise/docs/r
-// eference/language)
+// languages](https://cloud.google.com/dialogflow/docs/reference/la
+// nguage)
 // are supported. Note: languages must be enabled in the agent before
 // they can
 // be used.
@@ -11517,7 +11828,7 @@ func (c *ProjectsAgentIntentsCreateCall) Do(opts ...googleapi.CallOption) (*Goog
 	//       "type": "string"
 	//     },
 	//     "languageCode": {
-	//       "description": "Optional. The language of training phrases, parameters and rich messages\ndefined in `intent`. If not specified, the agent's default language is\nused. [Many\nlanguages](https://cloud.google.com/dialogflow-enterprise/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
+	//       "description": "Optional. The language of training phrases, parameters and rich messages\ndefined in `intent`. If not specified, the agent's default language is\nused. [Many\nlanguages](https://cloud.google.com/dialogflow/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -11709,8 +12020,8 @@ func (c *ProjectsAgentIntentsGetCall) IntentView(intentView string) *ProjectsAge
 // messages for. If not specified, the agent's default language is
 // used.
 // [Many
-// languages](https://cloud.google.com/dialogflow-enterprise/
-// docs/reference/language)
+// languages](https://cloud.google.com/dialogflow/docs/refere
+// nce/language)
 // are supported. Note: languages must be enabled in the agent before
 // they can
 // be used.
@@ -11836,7 +12147,7 @@ func (c *ProjectsAgentIntentsGetCall) Do(opts ...googleapi.CallOption) (*GoogleC
 	//       "type": "string"
 	//     },
 	//     "languageCode": {
-	//       "description": "Optional. The language to retrieve training phrases, parameters and rich\nmessages for. If not specified, the agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow-enterprise/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
+	//       "description": "Optional. The language to retrieve training phrases, parameters and rich\nmessages for. If not specified, the agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -11894,8 +12205,8 @@ func (c *ProjectsAgentIntentsListCall) IntentView(intentView string) *ProjectsAg
 // messages for. If not specified, the agent's default language is
 // used.
 // [Many
-// languages](https://cloud.google.com/dialogflow-enterprise/
-// docs/reference/language)
+// languages](https://cloud.google.com/dialogflow/docs/refere
+// nce/language)
 // are supported. Note: languages must be enabled in the agent before
 // they can
 // be used.
@@ -12037,7 +12348,7 @@ func (c *ProjectsAgentIntentsListCall) Do(opts ...googleapi.CallOption) (*Google
 	//       "type": "string"
 	//     },
 	//     "languageCode": {
-	//       "description": "Optional. The language to list training phrases, parameters and rich\nmessages for. If not specified, the agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow-enterprise/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
+	//       "description": "Optional. The language to list training phrases, parameters and rich\nmessages for. If not specified, the agent's default language is used.\n[Many\nlanguages](https://cloud.google.com/dialogflow/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -12129,8 +12440,8 @@ func (c *ProjectsAgentIntentsPatchCall) IntentView(intentView string) *ProjectsA
 // is
 // used.
 // [Many
-// languages](https://cloud.google.com/dialogflow-enterprise/docs/r
-// eference/language)
+// languages](https://cloud.google.com/dialogflow/docs/reference/la
+// nguage)
 // are supported. Note: languages must be enabled in the agent before
 // they can
 // be used.
@@ -12255,7 +12566,7 @@ func (c *ProjectsAgentIntentsPatchCall) Do(opts ...googleapi.CallOption) (*Googl
 	//       "type": "string"
 	//     },
 	//     "languageCode": {
-	//       "description": "Optional. The language of training phrases, parameters and rich messages\ndefined in `intent`. If not specified, the agent's default language is\nused. [Many\nlanguages](https://cloud.google.com/dialogflow-enterprise/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
+	//       "description": "Optional. The language of training phrases, parameters and rich messages\ndefined in `intent`. If not specified, the agent's default language is\nused. [Many\nlanguages](https://cloud.google.com/dialogflow/docs/reference/language)\nare supported. Note: languages must be enabled in the agent before they can\nbe used.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -12300,6 +12611,10 @@ type ProjectsAgentKnowledgeBasesCreateCall struct {
 }
 
 // Create: Creates a knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsAgentKnowledgeBasesService) Create(parent string, googleclouddialogflowv2beta1knowledgebase *GoogleCloudDialogflowV2beta1KnowledgeBase) *ProjectsAgentKnowledgeBasesCreateCall {
 	c := &ProjectsAgentKnowledgeBasesCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -12399,7 +12714,7 @@ func (c *ProjectsAgentKnowledgeBasesCreateCall) Do(opts ...googleapi.CallOption)
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a knowledge base.",
+	//   "description": "Creates a knowledge base.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases",
 	//   "httpMethod": "POST",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.create",
@@ -12441,6 +12756,10 @@ type ProjectsAgentKnowledgeBasesDeleteCall struct {
 }
 
 // Delete: Deletes the specified knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsAgentKnowledgeBasesService) Delete(name string) *ProjectsAgentKnowledgeBasesDeleteCall {
 	c := &ProjectsAgentKnowledgeBasesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -12540,7 +12859,7 @@ func (c *ProjectsAgentKnowledgeBasesDeleteCall) Do(opts ...googleapi.CallOption)
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes the specified knowledge base.",
+	//   "description": "Deletes the specified knowledge base.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.delete",
@@ -12585,6 +12904,10 @@ type ProjectsAgentKnowledgeBasesGetCall struct {
 }
 
 // Get: Retrieves the specified knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsAgentKnowledgeBasesService) Get(name string) *ProjectsAgentKnowledgeBasesGetCall {
 	c := &ProjectsAgentKnowledgeBasesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -12691,7 +13014,7 @@ func (c *ProjectsAgentKnowledgeBasesGetCall) Do(opts ...googleapi.CallOption) (*
 	}
 	return ret, nil
 	// {
-	//   "description": "Retrieves the specified knowledge base.",
+	//   "description": "Retrieves the specified knowledge base.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}",
 	//   "httpMethod": "GET",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.get",
@@ -12730,7 +13053,12 @@ type ProjectsAgentKnowledgeBasesListCall struct {
 	header_      http.Header
 }
 
-// List: Returns the list of all knowledge bases of the specified agent.
+// List: Returns the list of all knowledge bases of the specified
+// agent.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsAgentKnowledgeBasesService) List(parent string) *ProjectsAgentKnowledgeBasesListCall {
 	c := &ProjectsAgentKnowledgeBasesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -12853,7 +13181,7 @@ func (c *ProjectsAgentKnowledgeBasesListCall) Do(opts ...googleapi.CallOption) (
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns the list of all knowledge bases of the specified agent.",
+	//   "description": "Returns the list of all knowledge bases of the specified agent.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases",
 	//   "httpMethod": "GET",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.list",
@@ -12925,6 +13253,10 @@ type ProjectsAgentKnowledgeBasesPatchCall struct {
 }
 
 // Patch: Updates the specified knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsAgentKnowledgeBasesService) Patch(name string, googleclouddialogflowv2beta1knowledgebase *GoogleCloudDialogflowV2beta1KnowledgeBase) *ProjectsAgentKnowledgeBasesPatchCall {
 	c := &ProjectsAgentKnowledgeBasesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -13034,7 +13366,7 @@ func (c *ProjectsAgentKnowledgeBasesPatchCall) Do(opts ...googleapi.CallOption) 
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates the specified knowledge base.",
+	//   "description": "Updates the specified knowledge base.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}",
 	//   "httpMethod": "PATCH",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.patch",
@@ -13083,6 +13415,10 @@ type ProjectsAgentKnowledgeBasesDocumentsCreateCall struct {
 }
 
 // Create: Creates a new document.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 //
 // Operation <response: Document,
 //            metadata: KnowledgeOperationMetadata>
@@ -13183,7 +13519,7 @@ func (c *ProjectsAgentKnowledgeBasesDocumentsCreateCall) Do(opts ...googleapi.Ca
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new document.\n\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
+	//   "description": "Creates a new document.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.\n\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}/documents",
 	//   "httpMethod": "POST",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.documents.create",
@@ -13225,6 +13561,10 @@ type ProjectsAgentKnowledgeBasesDocumentsDeleteCall struct {
 }
 
 // Delete: Deletes the specified document.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 //
 // Operation <response: google.protobuf.Empty,
 //            metadata: KnowledgeOperationMetadata>
@@ -13319,7 +13659,7 @@ func (c *ProjectsAgentKnowledgeBasesDocumentsDeleteCall) Do(opts ...googleapi.Ca
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes the specified document.\n\nOperation \u003cresponse: google.protobuf.Empty,\n           metadata: KnowledgeOperationMetadata\u003e",
+	//   "description": "Deletes the specified document.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.\n\nOperation \u003cresponse: google.protobuf.Empty,\n           metadata: KnowledgeOperationMetadata\u003e",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}/documents/{documentsId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.documents.delete",
@@ -13359,6 +13699,10 @@ type ProjectsAgentKnowledgeBasesDocumentsGetCall struct {
 }
 
 // Get: Retrieves the specified document.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 func (r *ProjectsAgentKnowledgeBasesDocumentsService) Get(name string) *ProjectsAgentKnowledgeBasesDocumentsGetCall {
 	c := &ProjectsAgentKnowledgeBasesDocumentsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -13464,7 +13808,7 @@ func (c *ProjectsAgentKnowledgeBasesDocumentsGetCall) Do(opts ...googleapi.CallO
 	}
 	return ret, nil
 	// {
-	//   "description": "Retrieves the specified document.",
+	//   "description": "Retrieves the specified document.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}/documents/{documentsId}",
 	//   "httpMethod": "GET",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.documents.get",
@@ -13504,6 +13848,10 @@ type ProjectsAgentKnowledgeBasesDocumentsListCall struct {
 }
 
 // List: Returns the list of all documents of the knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 func (r *ProjectsAgentKnowledgeBasesDocumentsService) List(parent string) *ProjectsAgentKnowledgeBasesDocumentsListCall {
 	c := &ProjectsAgentKnowledgeBasesDocumentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -13625,7 +13973,7 @@ func (c *ProjectsAgentKnowledgeBasesDocumentsListCall) Do(opts ...googleapi.Call
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns the list of all documents of the knowledge base.",
+	//   "description": "Returns the list of all documents of the knowledge base.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}/documents",
 	//   "httpMethod": "GET",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.documents.list",
@@ -13697,6 +14045,11 @@ type ProjectsAgentKnowledgeBasesDocumentsPatchCall struct {
 }
 
 // Patch: Updates the specified document.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
+//
 // Operation <response: Document,
 //            metadata: KnowledgeOperationMetadata>
 func (r *ProjectsAgentKnowledgeBasesDocumentsService) Patch(name string, googleclouddialogflowv2beta1document *GoogleCloudDialogflowV2beta1Document) *ProjectsAgentKnowledgeBasesDocumentsPatchCall {
@@ -13806,7 +14159,7 @@ func (c *ProjectsAgentKnowledgeBasesDocumentsPatchCall) Do(opts ...googleapi.Cal
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates the specified document.\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
+	//   "description": "Updates the specified document.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.\n\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}/documents/{documentsId}",
 	//   "httpMethod": "PATCH",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.documents.patch",
@@ -13862,6 +14215,11 @@ type ProjectsAgentKnowledgeBasesDocumentsReloadCall struct {
 // still
 // may be side effects because of internal implementation
 // changes.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
+//
 // Operation <response: Document,
 //            metadata: KnowledgeOperationMetadata>
 func (r *ProjectsAgentKnowledgeBasesDocumentsService) Reload(name string, googleclouddialogflowv2beta1reloaddocumentrequest *GoogleCloudDialogflowV2beta1ReloadDocumentRequest) *ProjectsAgentKnowledgeBasesDocumentsReloadCall {
@@ -13961,7 +14319,7 @@ func (c *ProjectsAgentKnowledgeBasesDocumentsReloadCall) Do(opts ...googleapi.Ca
 	}
 	return ret, nil
 	// {
-	//   "description": "Reloads the specified document from its specified source, content_uri or\ncontent. The previously loaded content of the document will be deleted.\nNote: Even when the content of the document has not changed, there still\nmay be side effects because of internal implementation changes.\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
+	//   "description": "Reloads the specified document from its specified source, content_uri or\ncontent. The previously loaded content of the document will be deleted.\nNote: Even when the content of the document has not changed, there still\nmay be side effects because of internal implementation changes.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.\n\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
 	//   "flatPath": "v2beta1/projects/{projectsId}/agent/knowledgeBases/{knowledgeBasesId}/documents/{documentsId}:reload",
 	//   "httpMethod": "POST",
 	//   "id": "dialogflow.projects.agent.knowledgeBases.documents.reload",
@@ -14248,7 +14606,7 @@ func (c *ProjectsAgentSessionsDetectIntentCall) Do(opts ...googleapi.CallOption)
 	//   ],
 	//   "parameters": {
 	//     "session": {
-	//       "description": "Required. The name of the session this query is sent to. Format:\n`projects/\u003cProject ID\u003e/agent/sessions/\u003cSession ID\u003e`, or\n`projects/\u003cProject ID\u003e/agent/environments/\u003cEnvironment ID\u003e/users/\u003cUser\nID\u003e/sessions/\u003cSession ID\u003e`. If `Environment ID` is not specified, we assume\ndefault 'draft' environment. If `User ID` is not specified, we are using\n\"-\". It’s up to the API caller to choose an appropriate `Session ID` and\n`User Id`. They can be a random numbers or some type of user and session\nidentifiers (preferably hashed). The length of the `Session ID` and\n`User ID` must not exceed 36 characters.",
+	//       "description": "Required. The name of the session this query is sent to. Format:\n`projects/\u003cProject ID\u003e/agent/sessions/\u003cSession ID\u003e`, or\n`projects/\u003cProject ID\u003e/agent/environments/\u003cEnvironment ID\u003e/users/\u003cUser\nID\u003e/sessions/\u003cSession ID\u003e`. If `Environment ID` is not specified, we assume\ndefault 'draft' environment. If `User ID` is not specified, we are using\n\"-\". It's up to the API caller to choose an appropriate `Session ID` and\n`User Id`. They can be a random numbers or some type of user and session\nidentifiers (preferably hashed). The length of the `Session ID` and\n`User ID` must not exceed 36 characters.",
 	//       "location": "path",
 	//       "pattern": "^projects/[^/]+/agent/sessions/[^/]+$",
 	//       "required": true,
@@ -15819,6 +16177,10 @@ type ProjectsKnowledgeBasesCreateCall struct {
 }
 
 // Create: Creates a knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsKnowledgeBasesService) Create(parent string, googleclouddialogflowv2beta1knowledgebase *GoogleCloudDialogflowV2beta1KnowledgeBase) *ProjectsKnowledgeBasesCreateCall {
 	c := &ProjectsKnowledgeBasesCreateCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -15918,7 +16280,7 @@ func (c *ProjectsKnowledgeBasesCreateCall) Do(opts ...googleapi.CallOption) (*Go
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a knowledge base.",
+	//   "description": "Creates a knowledge base.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases",
 	//   "httpMethod": "POST",
 	//   "id": "dialogflow.projects.knowledgeBases.create",
@@ -15960,6 +16322,10 @@ type ProjectsKnowledgeBasesDeleteCall struct {
 }
 
 // Delete: Deletes the specified knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsKnowledgeBasesService) Delete(name string) *ProjectsKnowledgeBasesDeleteCall {
 	c := &ProjectsKnowledgeBasesDeleteCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -16059,7 +16425,7 @@ func (c *ProjectsKnowledgeBasesDeleteCall) Do(opts ...googleapi.CallOption) (*Go
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes the specified knowledge base.",
+	//   "description": "Deletes the specified knowledge base.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "dialogflow.projects.knowledgeBases.delete",
@@ -16104,6 +16470,10 @@ type ProjectsKnowledgeBasesGetCall struct {
 }
 
 // Get: Retrieves the specified knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsKnowledgeBasesService) Get(name string) *ProjectsKnowledgeBasesGetCall {
 	c := &ProjectsKnowledgeBasesGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -16210,7 +16580,7 @@ func (c *ProjectsKnowledgeBasesGetCall) Do(opts ...googleapi.CallOption) (*Googl
 	}
 	return ret, nil
 	// {
-	//   "description": "Retrieves the specified knowledge base.",
+	//   "description": "Retrieves the specified knowledge base.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}",
 	//   "httpMethod": "GET",
 	//   "id": "dialogflow.projects.knowledgeBases.get",
@@ -16249,7 +16619,12 @@ type ProjectsKnowledgeBasesListCall struct {
 	header_      http.Header
 }
 
-// List: Returns the list of all knowledge bases of the specified agent.
+// List: Returns the list of all knowledge bases of the specified
+// agent.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsKnowledgeBasesService) List(parent string) *ProjectsKnowledgeBasesListCall {
 	c := &ProjectsKnowledgeBasesListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -16372,7 +16747,7 @@ func (c *ProjectsKnowledgeBasesListCall) Do(opts ...googleapi.CallOption) (*Goog
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns the list of all knowledge bases of the specified agent.",
+	//   "description": "Returns the list of all knowledge bases of the specified agent.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases",
 	//   "httpMethod": "GET",
 	//   "id": "dialogflow.projects.knowledgeBases.list",
@@ -16444,6 +16819,10 @@ type ProjectsKnowledgeBasesPatchCall struct {
 }
 
 // Patch: Updates the specified knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases` resource is
+// deprecated;
+// only use `projects.knowledgeBases`.
 func (r *ProjectsKnowledgeBasesService) Patch(name string, googleclouddialogflowv2beta1knowledgebase *GoogleCloudDialogflowV2beta1KnowledgeBase) *ProjectsKnowledgeBasesPatchCall {
 	c := &ProjectsKnowledgeBasesPatchCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -16553,7 +16932,7 @@ func (c *ProjectsKnowledgeBasesPatchCall) Do(opts ...googleapi.CallOption) (*Goo
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates the specified knowledge base.",
+	//   "description": "Updates the specified knowledge base.\n\nNote: The `projects.agent.knowledgeBases` resource is deprecated;\nonly use `projects.knowledgeBases`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}",
 	//   "httpMethod": "PATCH",
 	//   "id": "dialogflow.projects.knowledgeBases.patch",
@@ -16602,6 +16981,10 @@ type ProjectsKnowledgeBasesDocumentsCreateCall struct {
 }
 
 // Create: Creates a new document.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 //
 // Operation <response: Document,
 //            metadata: KnowledgeOperationMetadata>
@@ -16702,7 +17085,7 @@ func (c *ProjectsKnowledgeBasesDocumentsCreateCall) Do(opts ...googleapi.CallOpt
 	}
 	return ret, nil
 	// {
-	//   "description": "Creates a new document.\n\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
+	//   "description": "Creates a new document.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.\n\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}/documents",
 	//   "httpMethod": "POST",
 	//   "id": "dialogflow.projects.knowledgeBases.documents.create",
@@ -16744,6 +17127,10 @@ type ProjectsKnowledgeBasesDocumentsDeleteCall struct {
 }
 
 // Delete: Deletes the specified document.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 //
 // Operation <response: google.protobuf.Empty,
 //            metadata: KnowledgeOperationMetadata>
@@ -16838,7 +17225,7 @@ func (c *ProjectsKnowledgeBasesDocumentsDeleteCall) Do(opts ...googleapi.CallOpt
 	}
 	return ret, nil
 	// {
-	//   "description": "Deletes the specified document.\n\nOperation \u003cresponse: google.protobuf.Empty,\n           metadata: KnowledgeOperationMetadata\u003e",
+	//   "description": "Deletes the specified document.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.\n\nOperation \u003cresponse: google.protobuf.Empty,\n           metadata: KnowledgeOperationMetadata\u003e",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}/documents/{documentsId}",
 	//   "httpMethod": "DELETE",
 	//   "id": "dialogflow.projects.knowledgeBases.documents.delete",
@@ -16878,6 +17265,10 @@ type ProjectsKnowledgeBasesDocumentsGetCall struct {
 }
 
 // Get: Retrieves the specified document.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 func (r *ProjectsKnowledgeBasesDocumentsService) Get(name string) *ProjectsKnowledgeBasesDocumentsGetCall {
 	c := &ProjectsKnowledgeBasesDocumentsGetCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.name = name
@@ -16983,7 +17374,7 @@ func (c *ProjectsKnowledgeBasesDocumentsGetCall) Do(opts ...googleapi.CallOption
 	}
 	return ret, nil
 	// {
-	//   "description": "Retrieves the specified document.",
+	//   "description": "Retrieves the specified document.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}/documents/{documentsId}",
 	//   "httpMethod": "GET",
 	//   "id": "dialogflow.projects.knowledgeBases.documents.get",
@@ -17023,6 +17414,10 @@ type ProjectsKnowledgeBasesDocumentsListCall struct {
 }
 
 // List: Returns the list of all documents of the knowledge base.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
 func (r *ProjectsKnowledgeBasesDocumentsService) List(parent string) *ProjectsKnowledgeBasesDocumentsListCall {
 	c := &ProjectsKnowledgeBasesDocumentsListCall{s: r.s, urlParams_: make(gensupport.URLParams)}
 	c.parent = parent
@@ -17144,7 +17539,7 @@ func (c *ProjectsKnowledgeBasesDocumentsListCall) Do(opts ...googleapi.CallOptio
 	}
 	return ret, nil
 	// {
-	//   "description": "Returns the list of all documents of the knowledge base.",
+	//   "description": "Returns the list of all documents of the knowledge base.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}/documents",
 	//   "httpMethod": "GET",
 	//   "id": "dialogflow.projects.knowledgeBases.documents.list",
@@ -17216,6 +17611,11 @@ type ProjectsKnowledgeBasesDocumentsPatchCall struct {
 }
 
 // Patch: Updates the specified document.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
+//
 // Operation <response: Document,
 //            metadata: KnowledgeOperationMetadata>
 func (r *ProjectsKnowledgeBasesDocumentsService) Patch(name string, googleclouddialogflowv2beta1document *GoogleCloudDialogflowV2beta1Document) *ProjectsKnowledgeBasesDocumentsPatchCall {
@@ -17325,7 +17725,7 @@ func (c *ProjectsKnowledgeBasesDocumentsPatchCall) Do(opts ...googleapi.CallOpti
 	}
 	return ret, nil
 	// {
-	//   "description": "Updates the specified document.\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
+	//   "description": "Updates the specified document.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.\n\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}/documents/{documentsId}",
 	//   "httpMethod": "PATCH",
 	//   "id": "dialogflow.projects.knowledgeBases.documents.patch",
@@ -17381,6 +17781,11 @@ type ProjectsKnowledgeBasesDocumentsReloadCall struct {
 // still
 // may be side effects because of internal implementation
 // changes.
+//
+// Note: The `projects.agent.knowledgeBases.documents` resource is
+// deprecated;
+// only use `projects.knowledgeBases.documents`.
+//
 // Operation <response: Document,
 //            metadata: KnowledgeOperationMetadata>
 func (r *ProjectsKnowledgeBasesDocumentsService) Reload(name string, googleclouddialogflowv2beta1reloaddocumentrequest *GoogleCloudDialogflowV2beta1ReloadDocumentRequest) *ProjectsKnowledgeBasesDocumentsReloadCall {
@@ -17480,7 +17885,7 @@ func (c *ProjectsKnowledgeBasesDocumentsReloadCall) Do(opts ...googleapi.CallOpt
 	}
 	return ret, nil
 	// {
-	//   "description": "Reloads the specified document from its specified source, content_uri or\ncontent. The previously loaded content of the document will be deleted.\nNote: Even when the content of the document has not changed, there still\nmay be side effects because of internal implementation changes.\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
+	//   "description": "Reloads the specified document from its specified source, content_uri or\ncontent. The previously loaded content of the document will be deleted.\nNote: Even when the content of the document has not changed, there still\nmay be side effects because of internal implementation changes.\n\nNote: The `projects.agent.knowledgeBases.documents` resource is deprecated;\nonly use `projects.knowledgeBases.documents`.\n\nOperation \u003cresponse: Document,\n           metadata: KnowledgeOperationMetadata\u003e",
 	//   "flatPath": "v2beta1/projects/{projectsId}/knowledgeBases/{knowledgeBasesId}/documents/{documentsId}:reload",
 	//   "httpMethod": "POST",
 	//   "id": "dialogflow.projects.knowledgeBases.documents.reload",

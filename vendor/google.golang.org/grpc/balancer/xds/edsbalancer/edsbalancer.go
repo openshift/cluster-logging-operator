@@ -1,5 +1,3 @@
-// +build go1.12
-
 /*
  * Copyright 2019 gRPC authors.
  *
@@ -22,7 +20,6 @@ package edsbalancer
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net"
 	"reflect"
 	"strconv"
@@ -30,8 +27,11 @@ import (
 
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/roundrobin"
+	"google.golang.org/grpc/balancer/xds/internal"
 	edspb "google.golang.org/grpc/balancer/xds/internal/proto/envoy/api/v2/eds"
+	endpointpb "google.golang.org/grpc/balancer/xds/internal/proto/envoy/api/v2/endpoint/endpoint"
 	percentpb "google.golang.org/grpc/balancer/xds/internal/proto/envoy/type/percent"
+	"google.golang.org/grpc/balancer/xds/lrs"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/grpclog"
@@ -55,7 +55,8 @@ type EDSBalancer struct {
 
 	bg                 *balancerGroup
 	subBalancerBuilder balancer.Builder
-	lidToConfig        map[string]*localityConfig
+	lidToConfig        map[internal.Locality]*localityConfig
+	loadStore          lrs.Store
 
 	pickerMu    sync.Mutex
 	drops       []*dropper
@@ -64,12 +65,13 @@ type EDSBalancer struct {
 }
 
 // NewXDSBalancer create a new EDSBalancer.
-func NewXDSBalancer(cc balancer.ClientConn) *EDSBalancer {
+func NewXDSBalancer(cc balancer.ClientConn, loadStore lrs.Store) *EDSBalancer {
 	xdsB := &EDSBalancer{
 		ClientConn:         cc,
 		subBalancerBuilder: balancer.Get(roundrobin.Name),
 
-		lidToConfig: make(map[string]*localityConfig),
+		lidToConfig: make(map[internal.Locality]*localityConfig),
+		loadStore:   loadStore,
 	}
 	// Don't start balancer group here. Start it when handling the first EDS
 	// response. Otherwise the balancer group will be started with round-robin,
@@ -138,7 +140,7 @@ func (xdsB *EDSBalancer) updateDrops(dropPolicies []*edspb.ClusterLoadAssignment
 		case percentpb.FractionalPercent_MILLION:
 			denominator = 1000000
 		}
-		newDrops = append(newDrops, newDropper(numerator, denominator))
+		newDrops = append(newDrops, newDropper(numerator, denominator, dropPolicy.GetCategory()))
 
 		// The following reading xdsB.drops doesn't need mutex because it can only
 		// be updated by the code following.
@@ -158,7 +160,7 @@ func (xdsB *EDSBalancer) updateDrops(dropPolicies []*edspb.ClusterLoadAssignment
 		xdsB.drops = newDrops
 		if xdsB.innerPicker != nil {
 			// Update picker with old inner picker, new drops.
-			xdsB.ClientConn.UpdateBalancerState(xdsB.innerState, newDropPicker(xdsB.innerPicker, newDrops))
+			xdsB.ClientConn.UpdateBalancerState(xdsB.innerState, newDropPicker(xdsB.innerPicker, newDrops, xdsB.loadStore))
 		}
 		xdsB.pickerMu.Unlock()
 	}
@@ -172,7 +174,7 @@ func (xdsB *EDSBalancer) HandleEDSResponse(edsResp *edspb.ClusterLoadAssignment)
 	// Create balancer group if it's never created (this is the first EDS
 	// response).
 	if xdsB.bg == nil {
-		xdsB.bg = newBalancerGroup(xdsB)
+		xdsB.bg = newBalancerGroup(xdsB, xdsB.loadStore)
 	}
 
 	// TODO: Unhandled fields from EDS response:
@@ -186,10 +188,27 @@ func (xdsB *EDSBalancer) HandleEDSResponse(edsResp *edspb.ClusterLoadAssignment)
 
 	xdsB.updateDrops(edsResp.GetPolicy().GetDropOverloads())
 
+	// Filter out all localities with weight 0.
+	//
+	// Locality weighted load balancer can be enabled by setting an option in
+	// CDS, and the weight of each locality. Currently, without the guarantee
+	// that CDS is always sent, we assume locality weighted load balance is
+	// always enabled, and ignore all weight 0 localities.
+	//
+	// In the future, we should look at the config in CDS response and decide
+	// whether locality weight matters.
+	newEndpoints := make([]*endpointpb.LocalityLbEndpoints, 0, len(edsResp.Endpoints))
+	for _, locality := range edsResp.Endpoints {
+		if locality.GetLoadBalancingWeight().GetValue() == 0 {
+			continue
+		}
+		newEndpoints = append(newEndpoints, locality)
+	}
+
 	// newLocalitiesSet contains all names of localitis in the new EDS response.
 	// It's used to delete localities that are removed in the new EDS response.
-	newLocalitiesSet := make(map[string]struct{})
-	for _, locality := range edsResp.Endpoints {
+	newLocalitiesSet := make(map[internal.Locality]struct{})
+	for _, locality := range newEndpoints {
 		// One balancer for each locality.
 
 		l := locality.GetLocality()
@@ -197,15 +216,14 @@ func (xdsB *EDSBalancer) HandleEDSResponse(edsResp *edspb.ClusterLoadAssignment)
 			grpclog.Warningf("xds: received LocalityLbEndpoints with <nil> Locality")
 			continue
 		}
-		lid := fmt.Sprintf("%s-%s-%s", l.Region, l.Zone, l.SubZone)
+		lid := internal.Locality{
+			Region:  l.Region,
+			Zone:    l.Zone,
+			SubZone: l.SubZone,
+		}
 		newLocalitiesSet[lid] = struct{}{}
 
 		newWeight := locality.GetLoadBalancingWeight().GetValue()
-		if newWeight == 0 {
-			// Weight can never be 0.
-			newWeight = 1
-		}
-
 		var newAddrs []resolver.Address
 		for _, lbEndpoint := range locality.GetLbEndpoints() {
 			socketAddress := lbEndpoint.GetEndpoint().GetAddress().GetSocketAddress()
@@ -269,38 +287,46 @@ func (xdsB *EDSBalancer) UpdateBalancerState(s connectivity.State, p balancer.Pi
 	xdsB.innerPicker = p
 	xdsB.innerState = s
 	// Don't reset drops when it's a state change.
-	xdsB.ClientConn.UpdateBalancerState(s, newDropPicker(p, xdsB.drops))
+	xdsB.ClientConn.UpdateBalancerState(s, newDropPicker(p, xdsB.drops, xdsB.loadStore))
 }
 
 // Close closes the balancer.
 func (xdsB *EDSBalancer) Close() {
-	xdsB.bg.close()
+	if xdsB.bg != nil {
+		xdsB.bg.close()
+	}
 }
 
 type dropPicker struct {
-	drops []*dropper
-	p     balancer.Picker
+	drops     []*dropper
+	p         balancer.Picker
+	loadStore lrs.Store
 }
 
-func newDropPicker(p balancer.Picker, drops []*dropper) *dropPicker {
+func newDropPicker(p balancer.Picker, drops []*dropper, loadStore lrs.Store) *dropPicker {
 	return &dropPicker{
-		drops: drops,
-		p:     p,
+		drops:     drops,
+		p:         p,
+		loadStore: loadStore,
 	}
 }
 
 func (d *dropPicker) Pick(ctx context.Context, opts balancer.PickOptions) (conn balancer.SubConn, done func(balancer.DoneInfo), err error) {
-	var drop bool
+	var (
+		drop     bool
+		category string
+	)
 	for _, dp := range d.drops {
-		// It's necessary to call drop on all droppers if the droppers are
-		// stateful. For example, if the second drop only drops 1/2, and only
-		// drops even number picks, we need to call it's drop() even if the
-		// first dropper already returned true.
-		//
-		// It won't be necessary if droppers are stateless, like toss a coin.
-		drop = drop || dp.drop()
+		if dp.drop() {
+			drop = true
+			category = dp.category
+			break
+		}
 	}
 	if drop {
+		if d.loadStore != nil {
+			d.loadStore.CallDropped(category)
+		}
 		return nil, nil, status.Errorf(codes.Unavailable, "RPC is dropped")
 	}
 	// TODO: (eds) don't drop unless the inner picker is READY. Similar to

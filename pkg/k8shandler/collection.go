@@ -282,6 +282,12 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 		different = true
 	}
 
+	if !utils.AreTolerationsSame(current.Spec.Template.Spec.Tolerations, desired.Spec.Template.Spec.Tolerations) {
+		logrus.Infof("Collector tolerations change found, updating '%s'", current.Name)
+		current.Spec.Template.Spec.Tolerations = desired.Spec.Template.Spec.Tolerations
+		different = true
+	}
+
 	if isDaemonsetImageDifference(current, desired) {
 		logrus.Infof("Collector image change found, updating %q", current.Name)
 		current = updateCurrentDaemonsetImages(current, desired)

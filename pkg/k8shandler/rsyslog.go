@@ -408,6 +408,22 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		"/opt/app-root/bin/cron.sh",
 	}
 
+	tolerations := utils.AppendTolerations(
+		logging.Spec.Collection.Logs.RsyslogSpec.Tolerations,
+		[]v1.Toleration{
+			v1.Toleration{
+				Key:      "node-role.kubernetes.io/master",
+				Operator: v1.TolerationOpExists,
+				Effect:   v1.TaintEffectNoSchedule,
+			},
+			v1.Toleration{
+				Key:      "node.kubernetes.io/disk-pressure",
+				Operator: v1.TolerationOpExists,
+				Effect:   v1.TaintEffectNoSchedule,
+			},
+		},
+	)
+
 	rsyslogPodSpec := NewPodSpec(
 		"logcollector",
 		[]v1.Container{rsyslogContainer, logrotateContainer},
@@ -429,22 +445,10 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "rsyslog-metrics"}}},
 		},
 		logging.Spec.Collection.Logs.RsyslogSpec.NodeSelector,
+		tolerations,
 	)
 
 	rsyslogPodSpec.PriorityClassName = clusterLoggingPriorityClassName
-
-	rsyslogPodSpec.Tolerations = []v1.Toleration{
-		v1.Toleration{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-		v1.Toleration{
-			Key:      "node.kubernetes.io/disk-pressure",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
 
 	b := bool(true)
 	rsyslogPodSpec.ShareProcessNamespace = &b

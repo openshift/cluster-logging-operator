@@ -620,9 +620,9 @@ type Finding struct {
 
 	// EventTime: The time at which the event took place. For example, if
 	// the finding
-	// represents an open firewall it would capture the time the open
-	// firewall was
-	// detected.
+	// represents an open firewall it would capture the time the detector
+	// believes
+	// the firewall became open. The accuracy is determined by the detector.
 	EventTime string `json:"eventTime,omitempty"`
 
 	// ExternalUri: The URI that, if available, points to a web page outside
@@ -871,20 +871,18 @@ type GroupAssetsRequest struct {
 	// * boolean literals `true` and `false` without quotes.
 	//
 	// The following field and operator combinations are supported:
-	// name | `=`
-	// update_time | `>`, `<`, `>=`, `<=`
-	// iam_policy.policy_blob | '=', ':'
-	// resource_properties | '=', ':', `>`, `<`, `>=`, `<=`
-	// security_marks | '=', ':'
-	// security_center_properties.resource_name | '=',
-	// ':'
-	// security_center_properties.resource_type | '=',
-	// ':'
-	// security_center_properties.resource_parent | '=',
-	// ':'
-	// security_center_properties.resource_project | '=',
-	// ':'
-	// security_center_properties.resource_owners | '=', ':'
+	//
+	// * name: `=`
+	// * update_time: `>`, `<`, `>=`, `<=`, `=`
+	// * create_time: `>`, `<`, `>=`, `<=`, `=`
+	// * iam_policy.policy_blob: `=`, `:`
+	// * resource_properties: `=`, `:`, `>`, `<`, `>=`, `<=`
+	// * security_marks: `=`, `:`
+	// * security_center_properties.resource_name: `=`, `:`
+	// * security_center_properties.resource_type: `=`, `:`
+	// * security_center_properties.resource_parent: `=`, `:`
+	// * security_center_properties.resource_project: `=`, `:`
+	// * security_center_properties.resource_owners: `=`, `:`
 	//
 	// For example, `resource_properties.size = 100` is a valid filter
 	// string.
@@ -1078,15 +1076,16 @@ type GroupFindingsRequest struct {
 	// * boolean literals `true` and `false` without quotes.
 	//
 	// The following field and operator combinations are supported:
-	// name | `=`
-	// parent | '=', ':'
-	// resource_name | '=', ':'
-	// state | '=', ':'
-	// category | '=', ':'
-	// external_uri | '=', ':'
-	// event_time | `>`, `<`, `>=`, `<=`
-	// security_marks | '=', ':'
-	// source_properties | '=', ':', `>`, `<`, `>=`, `<=`
+	//
+	// * name: `=`
+	// * parent: `=`, `:`
+	// * resource_name: `=`, `:`
+	// * state: `=`, `:`
+	// * category: `=`, `:`
+	// * external_uri: `=`, `:`
+	// * event_time: `>`, `<`, `>=`, `<=`
+	// * security_marks: `=`, `:`
+	// * source_properties: `=`, `:`, `>`, `<`, `>=`, `<=`
 	//
 	// For example, `source_properties.size = 100` is a valid filter string.
 	Filter string `json:"filter,omitempty"`
@@ -1543,7 +1542,8 @@ type Operation struct {
 	// service that
 	// originally returns it. If you use the default HTTP mapping,
 	// the
-	// `name` should have the format of `operations/some/unique/name`.
+	// `name` should be a resource name ending with
+	// `operations/{unique_id}`.
 	Name string `json:"name,omitempty"`
 
 	// Response: The normal response of the operation in case of success.
@@ -1980,13 +1980,9 @@ type Source struct {
 	// example,
 	// two sources with the same parent can't share the same display
 	// name.
-	// The display name must start and end with a letter or digit, may
-	// contain
-	// letters, digits, spaces, hyphens, and underscores, and can be no
-	// longer
-	// than 32 characters. This is captured by the regular
-	// expression:
-	// [\p{L}\p{N}]({\p{L}\p{N}_- ]{0,30}[\p{L}\p{N}])?.
+	// The display name must have a length between 1 and 64
+	// characters
+	// (inclusive).
 	DisplayName string `json:"displayName,omitempty"`
 
 	// Name: The relative resource name of this source.
@@ -2028,81 +2024,14 @@ func (s *Source) MarshalJSON() ([]byte, error) {
 // suitable for
 // different programming environments, including REST APIs and RPC APIs.
 // It is
-// used by [gRPC](https://github.com/grpc). The error model is designed
-// to be:
+// used by [gRPC](https://github.com/grpc). Each `Status` message
+// contains
+// three pieces of data: error code, error message, and error
+// details.
 //
-// - Simple to use and understand for most users
-// - Flexible enough to meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code,
-// error
-// message, and error details. The error code should be an enum value
-// of
-// google.rpc.Code, but it may accept additional error codes if needed.
-// The
-// error message should be a developer-facing English message that
-// helps
-// developers *understand* and *resolve* the error. If a localized
-// user-facing
-// error message is needed, put the localized message in the error
-// details or
-// localize it in the client. The optional error details may contain
-// arbitrary
-// information about the error. There is a predefined set of error
-// detail types
-// in the package `google.rpc` that can be used for common error
-// conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error
-// model, but it
-// is not necessarily the actual wire format. When the `Status` message
-// is
-// exposed in different client libraries and different wire protocols,
-// it can be
-// mapped differently. For example, it will likely be mapped to some
-// exceptions
-// in Java, but more likely mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety
-// of
-// environments, either with or without APIs, to provide a
-// consistent developer experience across different
-// environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the
-// client,
-//     it may embed the `Status` in the normal response to indicate the
-// partial
-//     errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step
-// may
-//     have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch
-// response, the
-//     `Status` message should be used directly inside batch response,
-// one for
-//     each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous
-// operation
-//     results in its response, the status of those operations should
-// be
-//     represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message
-// `Status` could
-//     be used directly after any stripping needed for security/privacy
-// reasons.
+// You can find out more about this error model and how to work with it
+// in the
+// [API Design Guide](https://cloud.google.com/apis/design/errors).
 type Status struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.
@@ -2771,20 +2700,17 @@ func (c *OrganizationsAssetsListCall) FieldMask(fieldMask string) *Organizations
 // * boolean literals `true` and `false` without quotes.
 //
 // The following are the allowed field and operator combinations:
-// name | `=`
-// update_time | `>`, `<`, `>=`, `<=`
-// iam_policy.policy_blob | '=', ':'
-// resource_properties | '=', ':', `>`, `<`, `>=`, `<=`
-// security_marks | '=', ':'
-// security_center_properties.resource_name | '=',
-// ':'
-// security_center_properties.resource_type | '=',
-// ':'
-// security_center_properties.resource_parent | '=',
-// ':'
-// security_center_properties.resource_project | '=',
-// ':'
-// security_center_properties.resource_owners | '=', ':'
+//
+// * name: `=`
+// * update_time: `>`, `<`, `>=`, `<=`
+// * iam_policy.policy_blob: `=`, `:`
+// * resource_properties: `=`, `:`, `>`, `<`, `>=`, `<=`
+// * security_marks: `=`, `:`
+// * security_center_properties.resource_name: `=`, `:`
+// * security_center_properties.resource_type: `=`, `:`
+// * security_center_properties.resource_parent: `=`, `:`
+// * security_center_properties.resource_project: `=`, `:`
+// * security_center_properties.resource_owners: `=`, `:`
 //
 // For example, `resource_properties.size = 100` is a valid filter
 // string.
@@ -2976,7 +2902,7 @@ func (c *OrganizationsAssetsListCall) Do(opts ...googleapi.CallOption) (*ListAss
 	//       "type": "string"
 	//     },
 	//     "filter": {
-	//       "description": "Expression that defines the filter to apply across assets.\nThe expression is a list of zero or more restrictions combined via logical\noperators `AND` and `OR`.\nParentheses are supported, and `OR` has higher precedence than `AND`.\n\nRestrictions have the form `\u003cfield\u003e \u003coperator\u003e \u003cvalue\u003e` and may have a `-`\ncharacter in front of them to indicate negation. The fields map to those\ndefined in the Asset resource. Examples include:\n\n* name\n* security_center_properties.resource_name\n* resource_properties.a_property\n* security_marks.marks.marka\n\nThe supported operators are:\n\n* `=` for all value types.\n* `\u003e`, `\u003c`, `\u003e=`, `\u003c=` for integer values.\n* `:`, meaning substring matching, for strings.\n\nThe supported value types are:\n\n* string literals in quotes.\n* integer literals without quotes.\n* boolean literals `true` and `false` without quotes.\n\nThe following are the allowed field and operator combinations:\nname | `=`\nupdate_time | `\u003e`, `\u003c`, `\u003e=`, `\u003c=`\niam_policy.policy_blob | '=', ':'\nresource_properties | '=', ':', `\u003e`, `\u003c`, `\u003e=`, `\u003c=`\nsecurity_marks | '=', ':'\nsecurity_center_properties.resource_name | '=', ':'\nsecurity_center_properties.resource_type | '=', ':'\nsecurity_center_properties.resource_parent | '=', ':'\nsecurity_center_properties.resource_project | '=', ':'\nsecurity_center_properties.resource_owners | '=', ':'\n\nFor example, `resource_properties.size = 100` is a valid filter string.",
+	//       "description": "Expression that defines the filter to apply across assets.\nThe expression is a list of zero or more restrictions combined via logical\noperators `AND` and `OR`.\nParentheses are supported, and `OR` has higher precedence than `AND`.\n\nRestrictions have the form `\u003cfield\u003e \u003coperator\u003e \u003cvalue\u003e` and may have a `-`\ncharacter in front of them to indicate negation. The fields map to those\ndefined in the Asset resource. Examples include:\n\n* name\n* security_center_properties.resource_name\n* resource_properties.a_property\n* security_marks.marks.marka\n\nThe supported operators are:\n\n* `=` for all value types.\n* `\u003e`, `\u003c`, `\u003e=`, `\u003c=` for integer values.\n* `:`, meaning substring matching, for strings.\n\nThe supported value types are:\n\n* string literals in quotes.\n* integer literals without quotes.\n* boolean literals `true` and `false` without quotes.\n\nThe following are the allowed field and operator combinations:\n\n* name: `=`\n* update_time: `\u003e`, `\u003c`, `\u003e=`, `\u003c=`\n* iam_policy.policy_blob: `=`, `:`\n* resource_properties: `=`, `:`, `\u003e`, `\u003c`, `\u003e=`, `\u003c=`\n* security_marks: `=`, `:`\n* security_center_properties.resource_name: `=`, `:`\n* security_center_properties.resource_type: `=`, `:`\n* security_center_properties.resource_parent: `=`, `:`\n* security_center_properties.resource_project: `=`, `:`\n* security_center_properties.resource_owners: `=`, `:`\n\nFor example, `resource_properties.size = 100` is a valid filter string.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },
@@ -5478,15 +5404,16 @@ func (c *OrganizationsSourcesFindingsListCall) FieldMask(fieldMask string) *Orga
 // * boolean literals `true` and `false` without quotes.
 //
 // The following field and operator combinations are supported:
-// name | `=`
-// parent | '=', ':'
-// resource_name | '=', ':'
-// state | '=', ':'
-// category | '=', ':'
-// external_uri | '=', ':'
-// event_time | `>`, `<`, `>=`, `<=`
-// security_marks | '=', ':'
-// source_properties | '=', ':', `>`, `<`, `>=`, `<=`
+//
+// name: `=`
+// parent: `=`, `:`
+// resource_name: `=`, `:`
+// state: `=`, `:`
+// category: `=`, `:`
+// external_uri: `=`, `:`
+// event_time: `>`, `<`, `>=`, `<=`
+// security_marks: `=`, `:`
+// source_properties: `=`, `:`, `>`, `<`, `>=`, `<=`
 //
 // For example, `source_properties.size = 100` is a valid filter string.
 func (c *OrganizationsSourcesFindingsListCall) Filter(filter string) *OrganizationsSourcesFindingsListCall {
@@ -5675,7 +5602,7 @@ func (c *OrganizationsSourcesFindingsListCall) Do(opts ...googleapi.CallOption) 
 	//       "type": "string"
 	//     },
 	//     "filter": {
-	//       "description": "Expression that defines the filter to apply across findings.\nThe expression is a list of one or more restrictions combined via logical\noperators `AND` and `OR`.\nParentheses are supported, and `OR` has higher precedence than `AND`.\n\nRestrictions have the form `\u003cfield\u003e \u003coperator\u003e \u003cvalue\u003e` and may have a `-`\ncharacter in front of them to indicate negation. Examples include:\n\n * name\n * source_properties.a_property\n * security_marks.marks.marka\n\nThe supported operators are:\n\n* `=` for all value types.\n* `\u003e`, `\u003c`, `\u003e=`, `\u003c=` for integer values.\n* `:`, meaning substring matching, for strings.\n\nThe supported value types are:\n\n* string literals in quotes.\n* integer literals without quotes.\n* boolean literals `true` and `false` without quotes.\n\nThe following field and operator combinations are supported:\nname | `=`\nparent | '=', ':'\nresource_name | '=', ':'\nstate | '=', ':'\ncategory | '=', ':'\nexternal_uri | '=', ':'\nevent_time | `\u003e`, `\u003c`, `\u003e=`, `\u003c=`\nsecurity_marks | '=', ':'\nsource_properties | '=', ':', `\u003e`, `\u003c`, `\u003e=`, `\u003c=`\n\nFor example, `source_properties.size = 100` is a valid filter string.",
+	//       "description": "Expression that defines the filter to apply across findings.\nThe expression is a list of one or more restrictions combined via logical\noperators `AND` and `OR`.\nParentheses are supported, and `OR` has higher precedence than `AND`.\n\nRestrictions have the form `\u003cfield\u003e \u003coperator\u003e \u003cvalue\u003e` and may have a `-`\ncharacter in front of them to indicate negation. Examples include:\n\n * name\n * source_properties.a_property\n * security_marks.marks.marka\n\nThe supported operators are:\n\n* `=` for all value types.\n* `\u003e`, `\u003c`, `\u003e=`, `\u003c=` for integer values.\n* `:`, meaning substring matching, for strings.\n\nThe supported value types are:\n\n* string literals in quotes.\n* integer literals without quotes.\n* boolean literals `true` and `false` without quotes.\n\nThe following field and operator combinations are supported:\n\nname: `=`\nparent: `=`, `:`\nresource_name: `=`, `:`\nstate: `=`, `:`\ncategory: `=`, `:`\nexternal_uri: `=`, `:`\nevent_time: `\u003e`, `\u003c`, `\u003e=`, `\u003c=`\nsecurity_marks: `=`, `:`\nsource_properties: `=`, `:`, `\u003e`, `\u003c`, `\u003e=`, `\u003c=`\n\nFor example, `source_properties.size = 100` is a valid filter string.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },

@@ -139,3 +139,52 @@ func TestNewKibanaPodSpecWhenNodeSelectorIsDefined(t *testing.T) {
 	}
 
 }
+
+func TestNewKibanaPodNoTolerations(t *testing.T) {
+	expTolerations := []v1.Toleration{}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Visualization: logging.VisualizationSpec{
+				Type:       "kibana",
+				KibanaSpec: logging.KibanaSpec{},
+			},
+		},
+	}
+
+	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name")
+	tolerations := podSpec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+	}
+}
+
+func TestNewKibanaPodWithTolerations(t *testing.T) {
+
+	expTolerations := []v1.Toleration{
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Visualization: logging.VisualizationSpec{
+				Type: "kibana",
+				KibanaSpec: logging.KibanaSpec{
+					Tolerations: expTolerations,
+				},
+			},
+		},
+	}
+
+	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name")
+	tolerations := podSpec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+	}
+}

@@ -112,6 +112,10 @@ func (node *deploymentNode) state() api.ElasticsearchNodeStatus {
 	}
 }
 
+func (node *deploymentNode) delete() {
+	node.client.Delete(context.TODO(), &node.self)
+}
+
 func (node *deploymentNode) create() error {
 
 	if node.self.ObjectMeta.ResourceVersion == "" {
@@ -535,6 +539,13 @@ func (node *deploymentNode) isChanged() bool {
 	if !areSelectorsSame(node.self.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
 		logrus.Debugf("Resource '%s' has different nodeSelector than desired", node.self.Name)
 		node.self.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
+		changed = true
+	}
+
+	// check the pod's tolerations
+	if !areTolerationsSame(node.self.Spec.Template.Spec.Tolerations, desired.Spec.Template.Spec.Tolerations) {
+		logrus.Debugf("Resource '%s' has different tolerations than desired", node.self.Name)
+		node.self.Spec.Template.Spec.Tolerations = desired.Spec.Template.Spec.Tolerations
 		changed = true
 	}
 

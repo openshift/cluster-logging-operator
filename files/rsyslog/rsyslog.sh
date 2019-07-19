@@ -100,6 +100,12 @@ if [ -z $ES_PORT ]; then
     exit 1
 fi
 
+# Check bearer_token_file for fluent-plugin-kubernetes_metadata_filter.
+if [ ! -s /var/run/secrets/kubernetes.io/serviceaccount/token ] ; then
+    echo "ERROR: Bearer_token_file (/var/run/secrets/kubernetes.io/serviceaccount/token) to access the Kubernetes API server is missing or empty."
+    exit 1
+fi
+
 OPS_HOST=${OPS_HOST:-$ES_HOST}
 OPS_PORT=${OPS_PORT:-$ES_PORT}
 OPS_CA=${OPS_CA:-$ES_CA}

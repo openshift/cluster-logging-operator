@@ -144,10 +144,10 @@
   version = "v0.19.0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/go-openapi/spec"
   packages = ["."]
-  revision = "53d776530bf78a11b03a7b52dd8a083086b045e5"
-  version = "v0.19.0"
+  revision = "b2056d62a953adee01fed8ee65a046bd8f0419d5"
 
 [[projects]]
   name = "github.com/go-openapi/swag"

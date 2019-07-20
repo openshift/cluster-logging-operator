@@ -496,6 +496,33 @@ type HttpTarget struct {
 	//   "OPTIONS" - HTTP OPTIONS
 	HttpMethod string `json:"httpMethod,omitempty"`
 
+	// OauthToken: If specified, an
+	// [OAuth
+	// token](https://developers.google.com/identity/protocols/OAuth2)
+	// will be generated and attached as an `Authorization` header in the
+	// HTTP
+	// request.
+	//
+	// This type of authorization should generally only be used when
+	// calling
+	// Google APIs hosted on *.googleapis.com.
+	OauthToken *OAuthToken `json:"oauthToken,omitempty"`
+
+	// OidcToken: If specified,
+	// an
+	// [OIDC](https://developers.google.com/identity/protocols/OpenIDConne
+	// ct)
+	// token will be generated and attached as an `Authorization` header in
+	// the
+	// HTTP request.
+	//
+	// This type of authorization can be used for many scenarios,
+	// including
+	// calling Cloud Run, or endpoints where you intend to validate the
+	// token
+	// yourself.
+	OidcToken *OidcToken `json:"oidcToken,omitempty"`
+
 	// Uri: Required.
 	//
 	// The full URI path that the request will be sent to. This string
@@ -537,6 +564,21 @@ func (s *HttpTarget) MarshalJSON() ([]byte, error) {
 type Job struct {
 	// AppEngineHttpTarget: App Engine HTTP target.
 	AppEngineHttpTarget *AppEngineHttpTarget `json:"appEngineHttpTarget,omitempty"`
+
+	// AttemptDeadline: The deadline for job attempts. If the request
+	// handler does not respond by
+	// this deadline then the request is cancelled and the attempt is marked
+	// as a
+	// `DEADLINE_EXCEEDED` failure. The failed attempt can be viewed
+	// in
+	// execution logs. Cloud Scheduler will retry the job according
+	// to the RetryConfig.
+	//
+	// The allowed duration for this deadline is:
+	// * For HTTP targets, between 15 seconds and 30 minutes.
+	// * For App Engine HTTP targets, between 15
+	//   seconds and 24 hours.
+	AttemptDeadline string `json:"attemptDeadline,omitempty"`
 
 	// Description: Optionally caller-specified in CreateJob
 	// or
@@ -819,6 +861,99 @@ func (s *Location) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// OAuthToken: Contains information needed for generating an
+// [OAuth
+// token](https://developers.google.com/identity/protocols/OAuth2).
+// This type of authorization should generally only be used when calling
+// Google
+// APIs hosted on *.googleapis.com.
+type OAuthToken struct {
+	// Scope: OAuth scope to be used for generating OAuth access token.
+	// If not specified,
+	// "https://www.googleapis.com/auth/cloud-platform"
+	// will be used.
+	Scope string `json:"scope,omitempty"`
+
+	// ServiceAccountEmail: [Service account
+	// email](https://cloud.google.com/iam/docs/service-accounts)
+	// to be used for generating OAuth token.
+	// The service account must be within the same project as the job. The
+	// caller
+	// must have iam.serviceAccounts.actAs permission for the service
+	// account.
+	ServiceAccountEmail string `json:"serviceAccountEmail,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Scope") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Scope") to include in API
+	// requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *OAuthToken) MarshalJSON() ([]byte, error) {
+	type NoMethod OAuthToken
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
+// OidcToken: Contains information needed for generating an
+// [OpenID
+// Connect
+// token](https://developers.google.com/identity/protocols/OpenID
+// Connect).
+// This type of authorization can be used for many scenarios,
+// including
+// calling Cloud Run, or endpoints where you intend to validate the
+// token
+// yourself.
+type OidcToken struct {
+	// Audience: Audience to be used when generating OIDC token. If not
+	// specified, the URI
+	// specified in target will be used.
+	Audience string `json:"audience,omitempty"`
+
+	// ServiceAccountEmail: [Service account
+	// email](https://cloud.google.com/iam/docs/service-accounts)
+	// to be used for generating OIDC token.
+	// The service account must be within the same project as the job. The
+	// caller
+	// must have iam.serviceAccounts.actAs permission for the service
+	// account.
+	ServiceAccountEmail string `json:"serviceAccountEmail,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g. "Audience") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "Audience") to include in
+	// API requests with the JSON null value. By default, fields with empty
+	// values are omitted from API requests. However, any field with an
+	// empty value appearing in NullFields will be sent to the server as
+	// null. It is an error if a field in this list has a non-empty value.
+	// This may be used to include null fields in Patch requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *OidcToken) MarshalJSON() ([]byte, error) {
+	type NoMethod OidcToken
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // PauseJobRequest: Request message for PauseJob.
 type PauseJobRequest struct {
 }
@@ -1057,81 +1192,14 @@ type RunJobRequest struct {
 // suitable for
 // different programming environments, including REST APIs and RPC APIs.
 // It is
-// used by [gRPC](https://github.com/grpc). The error model is designed
-// to be:
+// used by [gRPC](https://github.com/grpc). Each `Status` message
+// contains
+// three pieces of data: error code, error message, and error
+// details.
 //
-// - Simple to use and understand for most users
-// - Flexible enough to meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code,
-// error
-// message, and error details. The error code should be an enum value
-// of
-// google.rpc.Code, but it may accept additional error codes if needed.
-// The
-// error message should be a developer-facing English message that
-// helps
-// developers *understand* and *resolve* the error. If a localized
-// user-facing
-// error message is needed, put the localized message in the error
-// details or
-// localize it in the client. The optional error details may contain
-// arbitrary
-// information about the error. There is a predefined set of error
-// detail types
-// in the package `google.rpc` that can be used for common error
-// conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error
-// model, but it
-// is not necessarily the actual wire format. When the `Status` message
-// is
-// exposed in different client libraries and different wire protocols,
-// it can be
-// mapped differently. For example, it will likely be mapped to some
-// exceptions
-// in Java, but more likely mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety
-// of
-// environments, either with or without APIs, to provide a
-// consistent developer experience across different
-// environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the
-// client,
-//     it may embed the `Status` in the normal response to indicate the
-// partial
-//     errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step
-// may
-//     have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch
-// response, the
-//     `Status` message should be used directly inside batch response,
-// one for
-//     each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous
-// operation
-//     results in its response, the status of those operations should
-// be
-//     represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message
-// `Status` could
-//     be used directly after any stripping needed for security/privacy
-// reasons.
+// You can find out more about this error model and how to work with it
+// in the
+// [API Design Guide](https://cloud.google.com/apis/design/errors).
 type Status struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.

@@ -137,3 +137,51 @@ func TestNewCuratorCronJobWhenNodeSelectorDefined(t *testing.T) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, selector)
 	}
 }
+
+func TestNewCuratorNoTolerations(t *testing.T) {
+	expTolerations := []v1.Toleration{}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Curation: logging.CurationSpec{
+				Type:        "curator",
+				CuratorSpec: logging.CuratorSpec{},
+			},
+		},
+	}
+
+	job := newCuratorCronJob(cluster, "test-app-name", "elasticsearch")
+	tolerations := job.Spec.JobTemplate.Spec.Template.Spec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+	}
+}
+
+func TestNewCuratorWithTolerations(t *testing.T) {
+	expTolerations := []v1.Toleration{
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Curation: logging.CurationSpec{
+				Type: "curator",
+				CuratorSpec: logging.CuratorSpec{
+					Tolerations: expTolerations,
+				},
+			},
+		},
+	}
+
+	job := newCuratorCronJob(cluster, "test-app-name", "elasticsearch")
+	tolerations := job.Spec.JobTemplate.Spec.Template.Spec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+	}
+}

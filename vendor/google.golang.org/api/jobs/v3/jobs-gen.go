@@ -820,7 +820,7 @@ type CompensationEntry struct {
 	//
 	// Compensation type.
 	//
-	// Default is CompensationUnit.OTHER_COMPENSATION_TYPE.
+	// Default is CompensationUnit.COMPENSATION_TYPE_UNSPECIFIED.
 	//
 	// Possible values:
 	//   "COMPENSATION_TYPE_UNSPECIFIED" - Default value.
@@ -844,7 +844,7 @@ type CompensationEntry struct {
 	//
 	// Frequency of the specified amount.
 	//
-	// Default is CompensationUnit.OTHER_COMPENSATION_UNIT.
+	// Default is CompensationUnit.COMPENSATION_UNIT_UNSPECIFIED.
 	//
 	// Possible values:
 	//   "COMPENSATION_UNIT_UNSPECIFIED" - Default value.
@@ -900,7 +900,9 @@ func (s *CompensationEntry) UnmarshalJSON(data []byte) error {
 type CompensationFilter struct {
 	// IncludeJobsWithUnspecifiedCompensationRange: Optional.
 	//
-	// Whether to include jobs whose compensation range is unspecified.
+	// If set to true, jobs with unspecified compensation range fields
+	// are
+	// included.
 	IncludeJobsWithUnspecifiedCompensationRange bool `json:"includeJobsWithUnspecifiedCompensationRange,omitempty"`
 
 	// Range: Optional.
@@ -4026,9 +4028,11 @@ type SearchJobsRequest struct {
 	// algorithms. Relevance thresholding of query results is only
 	// available
 	// with this ordering.
-	// * "posting`_`publish`_`time desc": By Job.posting_publish_time
+	// * "posting`_`publish`_`time desc": By
+	// Job.posting_publish_time
 	// descending.
-	// * "posting`_`update`_`time desc": By Job.posting_update_time
+	// * "posting`_`update`_`time desc": By
+	// Job.posting_update_time
 	// descending.
 	// * "title": By Job.title ascending.
 	// * "title desc": By Job.title descending.

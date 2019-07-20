@@ -168,6 +168,12 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateElasticsearchClu
 					elasticsearchRequest.updateMinMasters()
 				}
 
+				// we only want to update our replicas if we aren't in the middle up an upgrade
+				UpdateReplicaCount(
+					elasticsearchRequest.cluster.Name,
+					elasticsearchRequest.cluster.Namespace,
+					elasticsearchRequest.client,
+					int32(calculateReplicaCount(elasticsearchRequest.cluster)))
 			}
 		}
 	}
@@ -283,25 +289,45 @@ func (elasticsearchRequest *ElasticsearchRequest) getNodes() {
 	}
 
 	cluster := elasticsearchRequest.cluster
+	currentNodes := []NodeTypeInterface{}
 
 	// get list of client only nodes, and collapse node info into the node (self field) if needed
 	for _, node := range cluster.Spec.Nodes {
-
-		// TODO: collect UUIDs processed -- compare them against ones in status
-		//  check if someone updated a UUID of an already created node?
 
 		// build the NodeTypeInterface list
 		for _, nodeTypeInterface := range elasticsearchRequest.GetNodeTypeInterface(*node.GenUUID, node) {
 
 			nodeIndex, ok := containsNodeTypeInterface(nodeTypeInterface, nodes[nodeMapKey(cluster.Name, cluster.Namespace)])
 			if !ok {
-				nodes[nodeMapKey(cluster.Name, cluster.Namespace)] = append(nodes[nodeMapKey(cluster.Name, cluster.Namespace)], nodeTypeInterface)
+				currentNodes = append(currentNodes, nodeTypeInterface)
 			} else {
 				nodes[nodeMapKey(cluster.Name, cluster.Namespace)][nodeIndex].updateReference(nodeTypeInterface)
+				currentNodes = append(currentNodes, nodes[nodeMapKey(cluster.Name, cluster.Namespace)][nodeIndex])
 			}
 
 		}
 	}
+
+	minMasterUpdated := false
+
+	// we want to only keep nodes that were generated and purge/delete any other ones...
+	for _, node := range nodes[nodeMapKey(cluster.Name, cluster.Namespace)] {
+		if _, ok := containsNodeTypeInterface(node, currentNodes); !ok {
+			if !minMasterUpdated {
+				// if we're removing a node make sure we set a lower min masters to keep cluster functional
+				elasticsearchRequest.updateMinMasters()
+				minMasterUpdated = true
+			}
+			node.delete()
+
+			// remove from status.Nodes
+			if index, _ := getNodeStatus(node.name(), &cluster.Status); index != NOT_FOUND_INDEX {
+				cluster.Status.Nodes = append(cluster.Status.Nodes[:index], cluster.Status.Nodes[index+1:]...)
+			}
+		}
+	}
+
+	nodes[nodeMapKey(cluster.Name, cluster.Namespace)] = currentNodes
 }
 
 func getScheduledUpgradeNodes(cluster *api.Elasticsearch) []NodeTypeInterface {

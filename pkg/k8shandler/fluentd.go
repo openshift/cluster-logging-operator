@@ -251,6 +251,22 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		Privileged: utils.GetBool(true),
 	}
 
+	tolerations := utils.AppendTolerations(
+		logging.Spec.Collection.Logs.FluentdSpec.Tolerations,
+		[]v1.Toleration{
+			v1.Toleration{
+				Key:      "node-role.kubernetes.io/master",
+				Operator: v1.TolerationOpExists,
+				Effect:   v1.TaintEffectNoSchedule,
+			},
+			v1.Toleration{
+				Key:      "node.kubernetes.io/disk-pressure",
+				Operator: v1.TolerationOpExists,
+				Effect:   v1.TaintEffectNoSchedule,
+			},
+		},
+	)
+
 	fluentdPodSpec := NewPodSpec(
 		"logcollector",
 		[]v1.Container{fluentdContainer},
@@ -268,22 +284,10 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd-metrics"}}},
 		},
 		logging.Spec.Collection.Logs.FluentdSpec.NodeSelector,
+		tolerations,
 	)
 
 	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName
-
-	fluentdPodSpec.Tolerations = []v1.Toleration{
-		v1.Toleration{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-		v1.Toleration{
-			Key:      "node.kubernetes.io/disk-pressure",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
 
 	return fluentdPodSpec
 }

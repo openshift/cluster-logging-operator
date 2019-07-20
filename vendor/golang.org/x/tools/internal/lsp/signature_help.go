@@ -9,13 +9,14 @@ import (
 
 	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
+	"golang.org/x/tools/internal/lsp/xlog"
 	"golang.org/x/tools/internal/span"
 )
 
 func (s *Server) signatureHelp(ctx context.Context, params *protocol.TextDocumentPositionParams) (*protocol.SignatureHelp, error) {
 	uri := span.NewURI(params.TextDocument.URI)
-	view := s.findView(ctx, uri)
-	f, m, err := newColumnMap(ctx, view, uri)
+	view := s.session.ViewOf(uri)
+	f, m, err := getGoFile(ctx, view, uri)
 	if err != nil {
 		return nil, err
 	}
@@ -29,22 +30,21 @@ func (s *Server) signatureHelp(ctx context.Context, params *protocol.TextDocumen
 	}
 	info, err := source.SignatureHelp(ctx, f, rng.Start)
 	if err != nil {
-		s.log.Infof(ctx, "no signature help for %s:%v:%v : %s", uri, int(params.Position.Line), int(params.Position.Character), err)
+		xlog.Infof(ctx, "no signature help for %s:%v:%v : %s", uri, int(params.Position.Line), int(params.Position.Character), err)
+		return nil, nil
 	}
 	return toProtocolSignatureHelp(info), nil
 }
 
 func toProtocolSignatureHelp(info *source.SignatureInformation) *protocol.SignatureHelp {
-	if info == nil {
-		return &protocol.SignatureHelp{}
-	}
 	return &protocol.SignatureHelp{
 		ActiveParameter: float64(info.ActiveParameter),
 		ActiveSignature: 0, // there is only ever one possible signature
 		Signatures: []protocol.SignatureInformation{
 			{
-				Label:      info.Label,
-				Parameters: toProtocolParameterInformation(info.Parameters),
+				Label:         info.Label,
+				Documentation: info.Documentation,
+				Parameters:    toProtocolParameterInformation(info.Parameters),
 			},
 		},
 	}

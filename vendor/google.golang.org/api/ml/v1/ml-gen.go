@@ -360,6 +360,7 @@ type GoogleCloudMlV1__AcceleratorConfig struct {
 	//   "NVIDIA_TESLA_P100" - Nvidia Tesla P100 GPU.
 	//   "NVIDIA_TESLA_V100" - Nvidia Tesla V100 GPU.
 	//   "NVIDIA_TESLA_P4" - Nvidia Tesla P4 GPU.
+	//   "NVIDIA_TESLA_T4" - Nvidia Tesla T4 GPU.
 	//   "TPU_V2" - TPU v2.
 	Type string `json:"type,omitempty"`
 
@@ -480,7 +481,7 @@ type GoogleCloudMlV1__BuiltInAlgorithmOutput struct {
 	// trained.
 	PythonVersion string `json:"pythonVersion,omitempty"`
 
-	// RuntimeVersion: Cloud ML Engine runtime version on which the built-in
+	// RuntimeVersion: AI Platform runtime version on which the built-in
 	// algorithm was
 	// trained.
 	RuntimeVersion string `json:"runtimeVersion,omitempty"`
@@ -523,6 +524,7 @@ type GoogleCloudMlV1__Capability struct {
 	//   "NVIDIA_TESLA_P100" - Nvidia Tesla P100 GPU.
 	//   "NVIDIA_TESLA_V100" - Nvidia Tesla V100 GPU.
 	//   "NVIDIA_TESLA_P4" - Nvidia Tesla P4 GPU.
+	//   "NVIDIA_TESLA_T4" - Nvidia Tesla T4 GPU.
 	//   "TPU_V2" - TPU v2.
 	AvailableAccelerators []string `json:"availableAccelerators,omitempty"`
 
@@ -644,6 +646,9 @@ type GoogleCloudMlV1__HyperparameterOutput struct {
 	// Only set for trials of built-in algorithms jobs that have succeeded.
 	BuiltInAlgorithmOutput *GoogleCloudMlV1__BuiltInAlgorithmOutput `json:"builtInAlgorithmOutput,omitempty"`
 
+	// EndTime: Output only. End time for the trial.
+	EndTime string `json:"endTime,omitempty"`
+
 	// FinalMetric: The final objective metric seen for this trial.
 	FinalMetric *GoogleCloudMlV1HyperparameterOutputHyperparameterMetric `json:"finalMetric,omitempty"`
 
@@ -652,6 +657,26 @@ type GoogleCloudMlV1__HyperparameterOutput struct {
 
 	// IsTrialStoppedEarly: True if the trial is stopped early.
 	IsTrialStoppedEarly bool `json:"isTrialStoppedEarly,omitempty"`
+
+	// StartTime: Output only. Start time for the trial.
+	StartTime string `json:"startTime,omitempty"`
+
+	// State: Output only. The detailed state of the trial.
+	//
+	// Possible values:
+	//   "STATE_UNSPECIFIED" - The job state is unspecified.
+	//   "QUEUED" - The job has been just created and processing has not yet
+	// begun.
+	//   "PREPARING" - The service is preparing to run the job.
+	//   "RUNNING" - The job is in progress.
+	//   "SUCCEEDED" - The job completed successfully.
+	//   "FAILED" - The job failed.
+	// `error_message` should contain the details of the failure.
+	//   "CANCELLING" - The job is being cancelled.
+	// `error_message` should describe the reason for the cancellation.
+	//   "CANCELLED" - The job has been cancelled.
+	// `error_message` should describe the reason for the cancellation.
+	State string `json:"state,omitempty"`
 
 	// TrialId: The trial id for these results.
 	TrialId string `json:"trialId,omitempty"`
@@ -685,7 +710,7 @@ type GoogleCloudMlV1__HyperparameterSpec struct {
 	// Algorithm: Optional. The search algorithm specified for the
 	// hyperparameter
 	// tuning job.
-	// Uses the default CloudML Engine hyperparameter tuning
+	// Uses the default AI Platform hyperparameter tuning
 	// algorithm if unspecified.
 	//
 	// Possible values:
@@ -715,12 +740,12 @@ type GoogleCloudMlV1__HyperparameterSpec struct {
 	//   "MINIMIZE" - Minimize the goal metric.
 	Goal string `json:"goal,omitempty"`
 
-	// HyperparameterMetricTag: Optional. The Tensorflow summary tag name to
+	// HyperparameterMetricTag: Optional. The TensorFlow summary tag name to
 	// use for optimizing trials. For
-	// current versions of Tensorflow, this tag name should exactly match
+	// current versions of TensorFlow, this tag name should exactly match
 	// what is
-	// shown in Tensorboard, including all scopes.  For versions of
-	// Tensorflow
+	// shown in TensorBoard, including all scopes.  For versions of
+	// TensorFlow
 	// prior to 0.12, this should be only the tag passed to tf.Summary.
 	// By default, "training/hptuning/metric" will be used.
 	HyperparameterMetricTag string `json:"hyperparameterMetricTag,omitempty"`
@@ -729,7 +754,7 @@ type GoogleCloudMlV1__HyperparameterSpec struct {
 	// be seen before failing
 	// the hyperparameter tuning job. You can specify this field to override
 	// the
-	// default failing criteria for Cloud ML Engine hyperparameter tuning
+	// default failing criteria for AI Platform hyperparameter tuning
 	// jobs.
 	//
 	// Defaults to zero, which means the service decides when a
@@ -1164,19 +1189,18 @@ type GoogleCloudMlV1__Model struct {
 	// The model name must be unique within the project it is created in.
 	Name string `json:"name,omitempty"`
 
-	// OnlinePredictionConsoleLogging: Optional. If true, enables logging of
-	// stderr and stdout streams
-	// for online prediction in Stackdriver Logging. These can be more
-	// verbose
-	// than the standard access logs (see `online_prediction_logging`) and
-	// thus
-	// can incur higher cost. However, they are helpful for debugging. Note
-	// that
-	// since Stackdriver logs may incur a cost, particularly if the total
-	// QPS
-	// in your project is high, be sure to estimate your costs before
-	// enabling
-	// this flag.
+	// OnlinePredictionConsoleLogging: Optional. If true, online prediction
+	// nodes send `stderr` and `stdout`
+	// streams to Stackdriver Logging. These can be more verbose than the
+	// standard
+	// access logs (see `onlinePredictionLogging`) and can incur higher
+	// cost.
+	// However, they are helpful for debugging. Note that
+	// [Stackdriver logs may incur a cost](/stackdriver/pricing), especially
+	// if
+	// your project receives prediction requests at a high QPS. Estimate
+	// your
+	// costs before enabling this option.
 	//
 	// Default is false.
 	OnlinePredictionConsoleLogging bool `json:"onlinePredictionConsoleLogging,omitempty"`
@@ -1187,9 +1211,11 @@ type GoogleCloudMlV1__Model struct {
 	// containing
 	// information like timestamp and latency for each request. Note
 	// that
-	// Stackdriver logs may incur a cost, particular if the total QPS in
-	// your
-	// project is high.
+	// [Stackdriver logs may incur a cost](/stackdriver/pricing), especially
+	// if
+	// your project receives prediction requests at a high queries per
+	// second rate
+	// (QPS). Estimate your costs before enabling this option.
 	//
 	// Default is false.
 	OnlinePredictionLogging bool `json:"onlinePredictionLogging,omitempty"`
@@ -1200,7 +1226,7 @@ type GoogleCloudMlV1__Model struct {
 	// Defaults to 'us-central1' if nothing is set.
 	// See the <a href="/ml-engine/docs/tensorflow/regions">available
 	// regions</a>
-	// for ML Engine services.
+	// for AI Platform services.
 	// Note:
 	// *   No matter where a model is deployed, it can always be accessed
 	// by
@@ -1523,12 +1549,12 @@ type GoogleCloudMlV1__PredictionInput struct {
 	// prediction job in.
 	// See the <a href="/ml-engine/docs/tensorflow/regions">available
 	// regions</a>
-	// for ML Engine services.
+	// for AI Platform services.
 	Region string `json:"region,omitempty"`
 
-	// RuntimeVersion: Optional. The Cloud ML Engine runtime version to use
-	// for this batch
-	// prediction. If not set, Cloud ML Engine will pick the runtime version
+	// RuntimeVersion: Optional. The AI Platform runtime version to use for
+	// this batch
+	// prediction. If not set, AI Platform will pick the runtime version
 	// used
 	// during the CreateVersion request for this model version, or choose
 	// the
@@ -1865,6 +1891,10 @@ type GoogleCloudMlV1__TrainingInput struct {
 	// You must set this value when `scaleTier` is set to `CUSTOM`.
 	MasterType string `json:"masterType,omitempty"`
 
+	// MaxRunningTime: Optional. The maximum job running time. The default
+	// is 7 days.
+	MaxRunningTime string `json:"maxRunningTime,omitempty"`
+
 	// PackageUris: Required. The Google Cloud Storage location of the
 	// packages with
 	// the training program and any additional dependencies.
@@ -1887,7 +1917,7 @@ type GoogleCloudMlV1__TrainingInput struct {
 	// for
 	// your parameter server. If `parameterServerConfig.imageUri` has not
 	// been
-	// set, Cloud ML Engine uses the value of `masterConfig.imageUri`.
+	// set, AI Platform uses the value of `masterConfig.imageUri`.
 	// Learn more about [configuring
 	// custom
 	// containers](/ml-engine/docs/distributed-training-containers).
@@ -1916,7 +1946,7 @@ type GoogleCloudMlV1__TrainingInput struct {
 	//
 	// This value must be consistent with the category of machine type
 	// that
-	// `masterType` uses. In other words, both must be Cloud ML Engine
+	// `masterType` uses. In other words, both must be AI Platform
 	// machine
 	// types or both must be Compute Engine machine types.
 	//
@@ -1941,12 +1971,12 @@ type GoogleCloudMlV1__TrainingInput struct {
 	// training job in.
 	// See the <a href="/ml-engine/docs/tensorflow/regions">available
 	// regions</a>
-	// for ML Engine services.
+	// for AI Platform services.
 	Region string `json:"region,omitempty"`
 
-	// RuntimeVersion: Optional. The Cloud ML Engine runtime version to use
-	// for training. If not
-	// set, Cloud ML Engine uses the default stable version, 1.0. For
+	// RuntimeVersion: Optional. The AI Platform runtime version to use for
+	// training. If not
+	// set, AI Platform uses the default stable version, 1.0. For
 	// more
 	// information, see the
 	// <a href="/ml-engine/docs/runtime-version-list">runtime version
@@ -2021,7 +2051,7 @@ type GoogleCloudMlV1__TrainingInput struct {
 	//
 	// Set `workerConfig.imageUri` only if you build a custom image for
 	// your
-	// worker. If `workerConfig.imageUri` has not been set, Cloud ML Engine
+	// worker. If `workerConfig.imageUri` has not been set, AI Platform
 	// uses
 	// the value of `masterConfig.imageUri`. Learn more about
 	// [configuring
@@ -2051,7 +2081,7 @@ type GoogleCloudMlV1__TrainingInput struct {
 	//
 	// This value must be consistent with the category of machine type
 	// that
-	// `masterType` uses. In other words, both must be Cloud ML Engine
+	// `masterType` uses. In other words, both must be AI Platform
 	// machine
 	// types or both must be Compute Engine machine types.
 	//
@@ -2105,6 +2135,15 @@ type GoogleCloudMlV1__TrainingOutput struct {
 
 	// ConsumedMLUnits: The amount of ML units consumed by the job.
 	ConsumedMLUnits float64 `json:"consumedMLUnits,omitempty"`
+
+	// HyperparameterMetricTag: The TensorFlow summary tag name used for
+	// optimizing hyperparameter tuning
+	// trials.
+	// See
+	// [`HyperparameterSpec.hyperparameterMetricTag`](#HyperparameterSpec
+	// .FIELDS.hyperparameter_metric_tag)
+	// for more information. Only set for hyperparameter tuning jobs.
+	HyperparameterMetricTag string `json:"hyperparameterMetricTag,omitempty"`
 
 	// IsBuiltInAlgorithmJob: Whether this job is a built-in Algorithm job.
 	IsBuiltInAlgorithmJob bool `json:"isBuiltInAlgorithmJob,omitempty"`
@@ -2166,7 +2205,6 @@ func (s *GoogleCloudMlV1__TrainingOutput) UnmarshalJSON(data []byte) error {
 // calling
 // [projects.models.versions.list](/ml-engine/reference/rest/v1/p
 // rojects.models.versions/list).
-// Next ID: 30
 type GoogleCloudMlV1__Version struct {
 	// AutoScaling: Automatically scale the number of nodes used to serve
 	// the model in
@@ -2178,8 +2216,8 @@ type GoogleCloudMlV1__Version struct {
 	// CreateTime: Output only. The time the version was created.
 	CreateTime string `json:"createTime,omitempty"`
 
-	// DeploymentUri: Required. The Google Cloud Storage location of the
-	// trained model used to
+	// DeploymentUri: Required. The Cloud Storage location of the trained
+	// model used to
 	// create the version. See the
 	// [guide to
 	// model
@@ -2222,16 +2260,21 @@ type GoogleCloudMlV1__Version struct {
 	// ensure that their change will be applied to the model as intended.
 	Etag string `json:"etag,omitempty"`
 
-	// Framework: Optional. The machine learning framework Cloud ML Engine
-	// uses to train
+	// Framework: Optional. The machine learning framework AI Platform uses
+	// to train
 	// this version of the model. Valid values are `TENSORFLOW`,
 	// `SCIKIT_LEARN`,
-	// `XGBOOST`. If you do not specify a framework, Cloud ML Engine
+	// `XGBOOST`. If you do not specify a framework, AI Platform
 	// will analyze files in the deployment_uri to determine a framework. If
 	// you
 	// choose `SCIKIT_LEARN` or `XGBOOST`, you must also set the runtime
 	// version
 	// of the model to 1.4 or greater.
+	//
+	// Do **not** specify a framework if you're deploying a
+	// [custom
+	// prediction
+	// routine](/ml-engine/docs/tensorflow/custom-prediction-routines).
 	//
 	// Possible values:
 	//   "FRAMEWORK_UNSPECIFIED" - Unspecified framework. Assigns a value
@@ -2302,59 +2345,103 @@ type GoogleCloudMlV1__Version struct {
 	// The version name must be unique within the model it is created in.
 	Name string `json:"name,omitempty"`
 
-	// PackageUris: Optional. The Google Cloud Storage location of the
-	// packages for custom
-	// prediction and any additional dependencies.
+	// PackageUris: Optional. Cloud Storage paths (`gs://…`) of packages
+	// for [custom
+	// prediction
+	// routines](/ml-engine/docs/tensorflow/custom-prediction-routines)
+	// or [scikit-learn pipelines with
+	// custom
+	// code](/ml-engine/docs/scikit/exporting-for-prediction#custom-pi
+	// peline-code).
+	//
+	// For a custom prediction routine, one of these packages must contain
+	// your
+	// Predictor class
+	// (see
+	// [`predictionClass`](#Version.FIELDS.prediction_class)).
+	// Additionally,
+	// include any dependencies used by your Predictor or scikit-learn
+	// pipeline
+	// uses that are not already included in your selected
+	// [runtime
+	// version](/ml-engine/docs/tensorflow/runtime-version-list).
+	//
+	// I
+	// f you specify this field, you must also
+	// set
+	// [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or
+	// greater.
 	PackageUris []string `json:"packageUris,omitempty"`
 
-	// PredictionClass: class PredictionClass(object):
-	//   """A Model performs predictions on a given list of instances.
+	// PredictionClass: Optional. The fully qualified
+	// name
+	// (<var>module_name</var>.<var>class_name</var>) of a class that
+	// implements
+	// the Predictor interface described in this reference field. The
+	// module
+	// containing this class should be included in a package provided to
+	// the
+	// [`packageUris` field](#Version.FIELDS.package_uris).
 	//
-	//   The input instances are the raw values sent by the user. It is the
-	//   responsibility of a Model to translate these instances into
-	//   actual predictions.
+	// Specify this field if and only if you are deploying a [custom
+	// prediction
+	// routine
+	// (beta)](/ml-engine/docs/tensorflow/custom-prediction-routines).
+	// If you specify this field, you must
+	// set
+	// [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or
+	// greater.
 	//
-	//   The input instances and the output use python data types. The
-	// input
-	//   instances have been decoded prior to being passed to the predict
-	//   method. The output, which should use python data types is
-	//   encoded after being returned from the predict method.
-	//   """
+	// The following code sample provides the Predictor
+	// interface:
 	//
-	//   def predict(self, instances, **kwargs):
-	//     """Returns predictions for the provided instances.
+	// ```py
+	// class Predictor(object):
+	// """Interface for constructing custom predictors."""
 	//
-	//     Instances are the decoded values from the request. Clients need
-	// not
-	//     worry about decoding json nor base64 decoding.
+	// def predict(self, instances, **kwargs):
+	//     """Performs custom prediction.
+	//
+	//     Instances are the decoded values from the request. They have
+	// already
+	//     been deserialized from JSON.
 	//
 	//     Args:
-	//       instances: A list of instances, as described in the API.
-	//       **kwargs: Additional keyword arguments, will be passed into
-	// the
-	//           client's predict method.
+	//         instances: A list of prediction input instances.
+	//         **kwargs: A dictionary of keyword args provided as
+	// additional
+	//             fields on the predict request body.
 	//
 	//     Returns:
-	//       A list of outputs containing the prediction results.
+	//         A list of outputs containing the prediction results. This
+	// list must
+	//         be JSON serializable.
 	//     """
+	//     raise NotImplementedError()
 	//
-	//   @classmethod
-	//   def from_path(cls, model_path):
-	//     """Creates a model using the given model path.
+	// @classmethod
+	// def from_path(cls, model_dir):
+	//     """Creates an instance of Predictor using the given path.
 	//
-	//     Path is useful, e.g., to load files from the exported directory
-	//     containing the model.
+	//     Loading of the predictor should be done in this method.
 	//
 	//     Args:
-	//       model_path: The local directory that contains the exported
+	//         model_dir: The local directory that contains the exported
 	// model
-	//           file along with any additional files uploaded when creating
-	// the
-	//           version resource.
+	//             file along with any additional files uploaded when
+	// creating the
+	//             version resource.
 	//
 	//     Returns:
-	//       An instance implementing this Model class.
+	//         An instance implementing this Predictor class.
 	//     """
+	//     raise NotImplementedError()
+	// ```
+	//
+	// Learn more about [the Predictor interface and custom
+	// prediction
+	// routines](/ml-engine/docs/tensorflow/custom-prediction-rout
+	// ines).
 	PredictionClass string `json:"predictionClass,omitempty"`
 
 	// PythonVersion: Optional. The version of Python used in prediction. If
@@ -2365,14 +2452,18 @@ type GoogleCloudMlV1__Version struct {
 	// versions.
 	PythonVersion string `json:"pythonVersion,omitempty"`
 
-	// RuntimeVersion: Optional. The Cloud ML Engine runtime version to use
-	// for this deployment.
-	// If not set, Cloud ML Engine uses the default stable version, 1.0. For
+	// RuntimeVersion: Optional. The AI Platform runtime version to use for
+	// this deployment.
+	// If not set, AI Platform uses the default stable version, 1.0. For
 	// more
 	// information, see the
 	// [runtime version list](/ml-engine/docs/runtime-version-list) and
 	// [how to manage runtime versions](/ml-engine/docs/versioning).
 	RuntimeVersion string `json:"runtimeVersion,omitempty"`
+
+	// ServiceAccount: Optional. Specifies the service account for resource
+	// access control.
+	ServiceAccount string `json:"serviceAccount,omitempty"`
 
 	// State: Output only. The state of a version.
 	//
@@ -2934,7 +3025,8 @@ type GoogleLongrunning__Operation struct {
 	// service that
 	// originally returns it. If you use the default HTTP mapping,
 	// the
-	// `name` should have the format of `operations/some/unique/name`.
+	// `name` should be a resource name ending with
+	// `operations/{unique_id}`.
 	Name string `json:"name,omitempty"`
 
 	// Response: The normal response of the operation in case of success.
@@ -3003,81 +3095,14 @@ type GoogleProtobuf__Empty struct {
 // that is suitable for
 // different programming environments, including REST APIs and RPC APIs.
 // It is
-// used by [gRPC](https://github.com/grpc). The error model is designed
-// to be:
+// used by [gRPC](https://github.com/grpc). Each `Status` message
+// contains
+// three pieces of data: error code, error message, and error
+// details.
 //
-// - Simple to use and understand for most users
-// - Flexible enough to meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code,
-// error
-// message, and error details. The error code should be an enum value
-// of
-// google.rpc.Code, but it may accept additional error codes if needed.
-// The
-// error message should be a developer-facing English message that
-// helps
-// developers *understand* and *resolve* the error. If a localized
-// user-facing
-// error message is needed, put the localized message in the error
-// details or
-// localize it in the client. The optional error details may contain
-// arbitrary
-// information about the error. There is a predefined set of error
-// detail types
-// in the package `google.rpc` that can be used for common error
-// conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error
-// model, but it
-// is not necessarily the actual wire format. When the `Status` message
-// is
-// exposed in different client libraries and different wire protocols,
-// it can be
-// mapped differently. For example, it will likely be mapped to some
-// exceptions
-// in Java, but more likely mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety
-// of
-// environments, either with or without APIs, to provide a
-// consistent developer experience across different
-// environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the
-// client,
-//     it may embed the `Status` in the normal response to indicate the
-// partial
-//     errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step
-// may
-//     have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch
-// response, the
-//     `Status` message should be used directly inside batch response,
-// one for
-//     each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous
-// operation
-//     results in its response, the status of those operations should
-// be
-//     represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message
-// `Status` could
-//     be used directly after any stripping needed for security/privacy
-// reasons.
+// You can find out more about this error model and how to work with it
+// in the
+// [API Design Guide](https://cloud.google.com/apis/design/errors).
 type GoogleRpc__Status struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.
@@ -3469,7 +3494,7 @@ type ProjectsPredictCall struct {
 }
 
 // Predict: Performs prediction on the data in the request.
-// Cloud ML Engine implements a custom `predict` verb on top of an HTTP
+// AI Platform implements a custom `predict` verb on top of an HTTP
 // POST
 // method. <p>For details of the request and response format, see the
 // **guide
@@ -3577,7 +3602,7 @@ func (c *ProjectsPredictCall) Do(opts ...googleapi.CallOption) (*GoogleApi__Http
 	ret.Data = b.String()
 	return ret, nil
 	// {
-	//   "description": "Performs prediction on the data in the request.\nCloud ML Engine implements a custom `predict` verb on top of an HTTP POST\nmethod. \u003cp\u003eFor details of the request and response format, see the **guide\nto the [predict request format](/ml-engine/docs/v1/predict-request)**.",
+	//   "description": "Performs prediction on the data in the request.\nAI Platform implements a custom `predict` verb on top of an HTTP POST\nmethod. \u003cp\u003eFor details of the request and response format, see the **guide\nto the [predict request format](/ml-engine/docs/v1/predict-request)**.",
 	//   "flatPath": "v1/projects/{projectsId}:predict",
 	//   "httpMethod": "POST",
 	//   "id": "ml.projects.predict",
@@ -4202,11 +4227,11 @@ func (r *ProjectsJobsService) List(parent string) *ProjectsJobsListCall {
 // object.
 // For example, retrieve jobs with a job identifier that starts with
 // 'census':
-// <p><code>gcloud ml-engine jobs list
+// <p><code>gcloud ai-platform jobs list
 // --filter='jobId:census*'</code>
 // <p>List all failed jobs with names that start with
 // 'rnn':
-// <p><code>gcloud ml-engine jobs list --filter='jobId:rnn*
+// <p><code>gcloud ai-platform jobs list --filter='jobId:rnn*
 // AND state:FAILED'</code>
 // <p>For more examples, see the guide to
 // <a href="/ml-engine/docs/tensorflow/monitor-training">monitoring
@@ -4347,7 +4372,7 @@ func (c *ProjectsJobsListCall) Do(opts ...googleapi.CallOption) (*GoogleCloudMlV
 	//   ],
 	//   "parameters": {
 	//     "filter": {
-	//       "description": "Optional. Specifies the subset of jobs to retrieve.\nYou can filter on the value of one or more attributes of the job object.\nFor example, retrieve jobs with a job identifier that starts with 'census':\n\u003cp\u003e\u003ccode\u003egcloud ml-engine jobs list --filter='jobId:census*'\u003c/code\u003e\n\u003cp\u003eList all failed jobs with names that start with 'rnn':\n\u003cp\u003e\u003ccode\u003egcloud ml-engine jobs list --filter='jobId:rnn*\nAND state:FAILED'\u003c/code\u003e\n\u003cp\u003eFor more examples, see the guide to\n\u003ca href=\"/ml-engine/docs/tensorflow/monitor-training\"\u003emonitoring jobs\u003c/a\u003e.",
+	//       "description": "Optional. Specifies the subset of jobs to retrieve.\nYou can filter on the value of one or more attributes of the job object.\nFor example, retrieve jobs with a job identifier that starts with 'census':\n\u003cp\u003e\u003ccode\u003egcloud ai-platform jobs list --filter='jobId:census*'\u003c/code\u003e\n\u003cp\u003eList all failed jobs with names that start with 'rnn':\n\u003cp\u003e\u003ccode\u003egcloud ai-platform jobs list --filter='jobId:rnn*\nAND state:FAILED'\u003c/code\u003e\n\u003cp\u003eFor more examples, see the guide to\n\u003ca href=\"/ml-engine/docs/tensorflow/monitor-training\"\u003emonitoring jobs\u003c/a\u003e.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },

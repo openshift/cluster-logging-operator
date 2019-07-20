@@ -508,6 +508,7 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 			},
 		},
 		cluster.Spec.Visualization.KibanaSpec.NodeSelector,
+		cluster.Spec.Visualization.KibanaSpec.Tolerations,
 	)
 
 	kibanaPodSpec.Affinity = &v1.Affinity{
@@ -564,6 +565,12 @@ func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*app
 	if !utils.AreSelectorsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
 		logrus.Infof("Kibana nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
+		different = true
+	}
+
+	if !utils.AreTolerationsSame(current.Spec.Template.Spec.Tolerations, desired.Spec.Template.Spec.Tolerations) {
+		logrus.Infof("Kibana tolerations change found, updating '%s'", current.Name)
+		current.Spec.Template.Spec.Tolerations = desired.Spec.Template.Spec.Tolerations
 		different = true
 	}
 

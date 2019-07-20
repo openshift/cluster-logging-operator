@@ -742,6 +742,7 @@ type GooglePrivacyDlpV2ByteContentItem struct {
 	//   "IMAGE_PNG"
 	//   "IMAGE_SVG"
 	//   "TEXT_UTF8"
+	//   "AVRO"
 	Type string `json:"type,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Data") to
@@ -1068,6 +1069,8 @@ type GooglePrivacyDlpV2CloudStorageOptions struct {
 	//   "IMAGE" - Included file extensions:
 	//   bmp, gif, jpg, jpeg, jpe, png.
 	// bytes_limit_per_file has no effect on image files.
+	//   "AVRO" - Included file extensions:
+	//   avro
 	FileTypes []string `json:"fileTypes,omitempty"`
 
 	// FilesLimitPercent: Limits the number of files to scan to this
@@ -2692,11 +2695,13 @@ func (s *GooglePrivacyDlpV2DeltaPresenceEstimationResult) MarshalJSON() ([]byte,
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
-// GooglePrivacyDlpV2DetectionRule: Rule for modifying a CustomInfoType
-// to alter behavior under certain
-// circumstances, depending on the specific details of the rule. Not
-// supported
-// for the `surrogate_type` custom info type.
+// GooglePrivacyDlpV2DetectionRule: Deprecated; use `InspectionRuleSet`
+// instead. Rule for modifying a
+// `CustomInfoType` to alter behavior under certain circumstances,
+// depending
+// on the specific details of the rule. Not supported for the
+// `surrogate_type`
+// custom infoType.
 type GooglePrivacyDlpV2DetectionRule struct {
 	// HotwordRule: Hotword-based detection rule.
 	HotwordRule *GooglePrivacyDlpV2HotwordRule `json:"hotwordRule,omitempty"`
@@ -4001,9 +4006,7 @@ func (s *GooglePrivacyDlpV2InspectDataSourceDetails) MarshalJSON() ([]byte, erro
 }
 
 type GooglePrivacyDlpV2InspectJobConfig struct {
-	// Actions: Actions to execute at the completion of the job. Are
-	// executed in the order
-	// provided.
+	// Actions: Actions to execute at the completion of the job.
 	Actions []*GooglePrivacyDlpV2Action `json:"actions,omitempty"`
 
 	// InspectConfig: How and what to scan for.
@@ -4989,6 +4992,37 @@ func (s *GooglePrivacyDlpV2LargeCustomDictionaryConfig) MarshalJSON() ([]byte, e
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// GooglePrivacyDlpV2LargeCustomDictionaryStats: Summary statistics of a
+// custom dictionary.
+type GooglePrivacyDlpV2LargeCustomDictionaryStats struct {
+	// ApproxNumPhrases: Approximate number of distinct phrases in the
+	// dictionary.
+	ApproxNumPhrases int64 `json:"approxNumPhrases,omitempty,string"`
+
+	// ForceSendFields is a list of field names (e.g. "ApproxNumPhrases") to
+	// unconditionally include in API requests. By default, fields with
+	// empty values are omitted from API requests. However, any non-pointer,
+	// non-interface field appearing in ForceSendFields will be sent to the
+	// server regardless of whether the field is empty or not. This may be
+	// used to include empty fields in Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "ApproxNumPhrases") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2LargeCustomDictionaryStats) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2LargeCustomDictionaryStats
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // GooglePrivacyDlpV2LikelihoodAdjustment: Message for specifying an
 // adjustment to the likelihood of a finding as
 // part of a detection rule.
@@ -5692,8 +5726,14 @@ func (s *GooglePrivacyDlpV2Proximity) MarshalJSON() ([]byte, error) {
 type GooglePrivacyDlpV2PublishSummaryToCscc struct {
 }
 
-// GooglePrivacyDlpV2PublishToPubSub: Publish the results of a DlpJob to
-// a pub sub channel.
+// GooglePrivacyDlpV2PublishToPubSub: Publish a message into given
+// Pub/Sub topic when DlpJob has completed. The
+// message contains a single field, `DlpJobName`, which is equal to
+// the
+// finished
+// job's
+// [`DlpJob.name`](/dlp/docs/reference/rest/v2/projects.dlpJobs#Dlp
+// Job).
 // Compatible with: Inspect, Risk
 type GooglePrivacyDlpV2PublishToPubSub struct {
 	// Topic: Cloud Pub/Sub topic to send notifications to. The topic must
@@ -6713,6 +6753,38 @@ func (s *GooglePrivacyDlpV2StoredInfoTypeConfig) MarshalJSON() ([]byte, error) {
 	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
 }
 
+// GooglePrivacyDlpV2StoredInfoTypeStats: Statistics for a
+// StoredInfoType.
+type GooglePrivacyDlpV2StoredInfoTypeStats struct {
+	// LargeCustomDictionary: StoredInfoType where findings are defined by a
+	// dictionary of phrases.
+	LargeCustomDictionary *GooglePrivacyDlpV2LargeCustomDictionaryStats `json:"largeCustomDictionary,omitempty"`
+
+	// ForceSendFields is a list of field names (e.g.
+	// "LargeCustomDictionary") to unconditionally include in API requests.
+	// By default, fields with empty values are omitted from API requests.
+	// However, any non-pointer, non-interface field appearing in
+	// ForceSendFields will be sent to the server regardless of whether the
+	// field is empty or not. This may be used to include empty fields in
+	// Patch requests.
+	ForceSendFields []string `json:"-"`
+
+	// NullFields is a list of field names (e.g. "LargeCustomDictionary") to
+	// include in API requests with the JSON null value. By default, fields
+	// with empty values are omitted from API requests. However, any field
+	// with an empty value appearing in NullFields will be sent to the
+	// server as null. It is an error if a field in this list has a
+	// non-empty value. This may be used to include null fields in Patch
+	// requests.
+	NullFields []string `json:"-"`
+}
+
+func (s *GooglePrivacyDlpV2StoredInfoTypeStats) MarshalJSON() ([]byte, error) {
+	type NoMethod GooglePrivacyDlpV2StoredInfoTypeStats
+	raw := NoMethod(*s)
+	return gensupport.MarshalJSON(raw, s.ForceSendFields, s.NullFields)
+}
+
 // GooglePrivacyDlpV2StoredInfoTypeVersion: Version of a StoredInfoType,
 // including the configuration used to build it,
 // create timestamp, and current state.
@@ -6764,6 +6836,9 @@ type GooglePrivacyDlpV2StoredInfoTypeVersion struct {
 	// StoredInfoType,
 	// use the `UpdateStoredInfoType` method to create a new version.
 	State string `json:"state,omitempty"`
+
+	// Stats: Statistics about this storedInfoType version.
+	Stats *GooglePrivacyDlpV2StoredInfoTypeStats `json:"stats,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "Config") to
 	// unconditionally include in API requests. By default, fields with
@@ -7603,81 +7678,14 @@ type GoogleProtobufEmpty struct {
 // is suitable for
 // different programming environments, including REST APIs and RPC APIs.
 // It is
-// used by [gRPC](https://github.com/grpc). The error model is designed
-// to be:
+// used by [gRPC](https://github.com/grpc). Each `Status` message
+// contains
+// three pieces of data: error code, error message, and error
+// details.
 //
-// - Simple to use and understand for most users
-// - Flexible enough to meet unexpected needs
-//
-// # Overview
-//
-// The `Status` message contains three pieces of data: error code,
-// error
-// message, and error details. The error code should be an enum value
-// of
-// google.rpc.Code, but it may accept additional error codes if needed.
-// The
-// error message should be a developer-facing English message that
-// helps
-// developers *understand* and *resolve* the error. If a localized
-// user-facing
-// error message is needed, put the localized message in the error
-// details or
-// localize it in the client. The optional error details may contain
-// arbitrary
-// information about the error. There is a predefined set of error
-// detail types
-// in the package `google.rpc` that can be used for common error
-// conditions.
-//
-// # Language mapping
-//
-// The `Status` message is the logical representation of the error
-// model, but it
-// is not necessarily the actual wire format. When the `Status` message
-// is
-// exposed in different client libraries and different wire protocols,
-// it can be
-// mapped differently. For example, it will likely be mapped to some
-// exceptions
-// in Java, but more likely mapped to some error codes in C.
-//
-// # Other uses
-//
-// The error model and the `Status` message can be used in a variety
-// of
-// environments, either with or without APIs, to provide a
-// consistent developer experience across different
-// environments.
-//
-// Example uses of this error model include:
-//
-// - Partial errors. If a service needs to return partial errors to the
-// client,
-//     it may embed the `Status` in the normal response to indicate the
-// partial
-//     errors.
-//
-// - Workflow errors. A typical workflow has multiple steps. Each step
-// may
-//     have a `Status` message for error reporting.
-//
-// - Batch operations. If a client uses batch request and batch
-// response, the
-//     `Status` message should be used directly inside batch response,
-// one for
-//     each error sub-response.
-//
-// - Asynchronous operations. If an API call embeds asynchronous
-// operation
-//     results in its response, the status of those operations should
-// be
-//     represented directly using the `Status` message.
-//
-// - Logging. If some API errors are stored in logs, the message
-// `Status` could
-//     be used directly after any stripping needed for security/privacy
-// reasons.
+// You can find out more about this error model and how to work with it
+// in the
+// [API Design Guide](https://cloud.google.com/apis/design/errors).
 type GoogleRpcStatus struct {
 	// Code: The status code, which should be an enum value of
 	// google.rpc.Code.
@@ -12203,8 +12211,12 @@ func (r *ProjectsDlpJobsService) List(parent string) *ProjectsDlpJobsListCall {
 //     - `inspected_storage` - DATASTORE|CLOUD_STORAGE|BIGQUERY
 //     - `trigger_name` - The resource name of the trigger that created
 // job.
+//     - 'end_time` - Corresponds to time the job finished.
+//     - 'start_time` - Corresponds to time the job finished.
 // * Supported fields for risk analysis jobs:
 //     - `state` - RUNNING|CANCELED|FINISHED|FAILED
+//     - 'end_time` - Corresponds to time the job finished.
+//     - 'start_time` - Corresponds to time the job finished.
 // * The operator must be `=` or `!=`.
 //
 // Examples:
@@ -12213,6 +12225,7 @@ func (r *ProjectsDlpJobsService) List(parent string) *ProjectsDlpJobsListCall {
 // * inspected_storage = cloud_storage OR inspected_storage = bigquery
 // * inspected_storage = cloud_storage AND (state = done OR state =
 // canceled)
+// * end_time > \"2017-12-12T00:00:00+00:00\"
 //
 // The length of this field should be no more than 500 characters.
 func (c *ProjectsDlpJobsListCall) Filter(filter string) *ProjectsDlpJobsListCall {
@@ -12375,7 +12388,7 @@ func (c *ProjectsDlpJobsListCall) Do(opts ...googleapi.CallOption) (*GooglePriva
 	//   ],
 	//   "parameters": {
 	//     "filter": {
-	//       "description": "Optional. Allows filtering.\n\nSupported syntax:\n\n* Filter expressions are made up of one or more restrictions.\n* Restrictions can be combined by `AND` or `OR` logical operators. A\nsequence of restrictions implicitly uses `AND`.\n* A restriction has the form of `\u003cfield\u003e \u003coperator\u003e \u003cvalue\u003e`.\n* Supported fields/values for inspect jobs:\n    - `state` - PENDING|RUNNING|CANCELED|FINISHED|FAILED\n    - `inspected_storage` - DATASTORE|CLOUD_STORAGE|BIGQUERY\n    - `trigger_name` - The resource name of the trigger that created job.\n* Supported fields for risk analysis jobs:\n    - `state` - RUNNING|CANCELED|FINISHED|FAILED\n* The operator must be `=` or `!=`.\n\nExamples:\n\n* inspected_storage = cloud_storage AND state = done\n* inspected_storage = cloud_storage OR inspected_storage = bigquery\n* inspected_storage = cloud_storage AND (state = done OR state = canceled)\n\nThe length of this field should be no more than 500 characters.",
+	//       "description": "Optional. Allows filtering.\n\nSupported syntax:\n\n* Filter expressions are made up of one or more restrictions.\n* Restrictions can be combined by `AND` or `OR` logical operators. A\nsequence of restrictions implicitly uses `AND`.\n* A restriction has the form of `\u003cfield\u003e \u003coperator\u003e \u003cvalue\u003e`.\n* Supported fields/values for inspect jobs:\n    - `state` - PENDING|RUNNING|CANCELED|FINISHED|FAILED\n    - `inspected_storage` - DATASTORE|CLOUD_STORAGE|BIGQUERY\n    - `trigger_name` - The resource name of the trigger that created job.\n    - 'end_time` - Corresponds to time the job finished.\n    - 'start_time` - Corresponds to time the job finished.\n* Supported fields for risk analysis jobs:\n    - `state` - RUNNING|CANCELED|FINISHED|FAILED\n    - 'end_time` - Corresponds to time the job finished.\n    - 'start_time` - Corresponds to time the job finished.\n* The operator must be `=` or `!=`.\n\nExamples:\n\n* inspected_storage = cloud_storage AND state = done\n* inspected_storage = cloud_storage OR inspected_storage = bigquery\n* inspected_storage = cloud_storage AND (state = done OR state = canceled)\n* end_time \u003e \\\"2017-12-12T00:00:00+00:00\\\"\n\nThe length of this field should be no more than 500 characters.",
 	//       "location": "query",
 	//       "type": "string"
 	//     },

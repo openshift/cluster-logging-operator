@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -72,6 +73,58 @@ func EnsureLinuxNodeSelector(selectors map[string]string) map[string]string {
 	}
 	selectors[OsNodeLabel] = LinuxValue
 	return selectors
+}
+
+func AreTolerationsSame(lhs, rhs []v1.Toleration) bool {
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	for _, lhsToleration := range lhs {
+		if !containsToleration(lhsToleration, rhs) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func containsToleration(toleration v1.Toleration, tolerations []v1.Toleration) bool {
+	for _, t := range tolerations {
+		if isTolerationSame(t, toleration) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isTolerationSame(lhs, rhs v1.Toleration) bool {
+
+	tolerationSecondsBool := false
+	// check that both are either null or not null
+	if (lhs.TolerationSeconds == nil) == (rhs.TolerationSeconds == nil) {
+		if lhs.TolerationSeconds != nil {
+			// only compare values (attempt to dereference) if pointers aren't nil
+			tolerationSecondsBool = (*lhs.TolerationSeconds == *rhs.TolerationSeconds)
+		} else {
+			tolerationSecondsBool = true
+		}
+	}
+
+	return (lhs.Key == rhs.Key) &&
+		(lhs.Operator == rhs.Operator) &&
+		(lhs.Value == rhs.Value) &&
+		(lhs.Effect == rhs.Effect) &&
+		tolerationSecondsBool
+}
+
+func AppendTolerations(lhsTolerations, rhsTolerations []v1.Toleration) []v1.Toleration {
+	if lhsTolerations == nil {
+		lhsTolerations = []v1.Toleration{}
+	}
+
+	return append(lhsTolerations, rhsTolerations...)
 }
 
 //AddOwnerRefToObject adds the parent as an owner to the child

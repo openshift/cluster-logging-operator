@@ -361,6 +361,20 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 	proxyImage := utils.LookupEnvWithDefault("PROXY_IMAGE", "quay.io/openshift/origin-oauth-proxy:latest")
 	proxyContainer, _ := newProxyContainer(proxyImage, clusterName)
 
+	selectors := mergeSelectors(node.NodeSelector, commonSpec.NodeSelector)
+	// We want to make sure the pod ends up allocated on linux node. Thus we make sure the
+	// linux node selectors is always present. See LOG-411
+	selectors = ensureLinuxNodeSelector(selectors)
+
+	tolerations := appendTolerations(node.Tolerations, commonSpec.Tolerations)
+	tolerations = appendTolerations(tolerations, []v1.Toleration{
+		v1.Toleration{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	})
+
 	return v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
@@ -375,16 +389,10 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 				),
 				proxyContainer,
 			},
-			NodeSelector:       mergeSelectors(node.NodeSelector, commonSpec.NodeSelector),
+			NodeSelector:       selectors,
 			ServiceAccountName: clusterName,
 			Volumes:            newVolumes(clusterName, nodeName, namespace, node, client),
-			Tolerations: []v1.Toleration{
-				v1.Toleration{
-					Key:      "node.kubernetes.io/disk-pressure",
-					Operator: v1.TolerationOpExists,
-					Effect:   v1.TaintEffectNoSchedule,
-				},
-			},
+			Tolerations:        tolerations,
 		},
 	}
 }
@@ -469,9 +477,6 @@ func newResourceRequirements(nodeResRequirements, commonResRequirements v1.Resou
 		// no common memory settings
 		if nodeRequestCPU.IsZero() && nodeLimitCPU.IsZero() {
 			// no node settings, use defaults
-			lCPU, _ := resource.ParseQuantity(defaultCPULimit)
-			limitCPU = &lCPU
-
 			rCPU, _ := resource.ParseQuantity(defaultCPURequest)
 			requestCPU = &rCPU
 		} else {
@@ -484,7 +489,6 @@ func newResourceRequirements(nodeResRequirements, commonResRequirements v1.Resou
 				if nodeLimitCPU.IsZero() {
 					// limit is zero use request for both
 					requestCPU = nodeRequestCPU
-					limitCPU = nodeRequestCPU
 				} else {
 					// both aren't zero
 					requestCPU = nodeRequestCPU
@@ -509,13 +513,23 @@ func newResourceRequirements(nodeResRequirements, commonResRequirements v1.Resou
 
 		if nodeLimitCPU.IsZero() {
 			// no node request mem, check that common has it
-			if commonLimitCPU.IsZero() {
-				limitCPU = commonRequestCPU
-			} else {
+			if !commonLimitCPU.IsZero() {
 				limitCPU = commonLimitCPU
 			}
 		} else {
 			limitCPU = nodeLimitCPU
+		}
+	}
+
+	if limitCPU == nil {
+		return v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				"memory": *limitMem,
+			},
+			Requests: v1.ResourceList{
+				"cpu":    *requestCPU,
+				"memory": *requestMem,
+			},
 		}
 	}
 

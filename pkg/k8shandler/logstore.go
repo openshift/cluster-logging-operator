@@ -165,6 +165,7 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 				Image:        utils.GetComponentImage("elasticsearch"),
 				Resources:    *resources,
 				NodeSelector: cluster.Spec.LogStore.NodeSelector,
+				Tolerations:  cluster.Spec.LogStore.Tolerations,
 			},
 			Nodes:            esNodes,
 			ManagementState:  elasticsearch.ManagementStateManaged,
@@ -237,6 +238,12 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 	if !utils.AreSelectorsSame(current.Spec.Spec.NodeSelector, desired.Spec.Spec.NodeSelector) {
 		logrus.Infof("Elasticsearch nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.Spec.NodeSelector = desired.Spec.Spec.NodeSelector
+		different = true
+	}
+
+	if !utils.AreTolerationsSame(current.Spec.Spec.Tolerations, desired.Spec.Spec.Tolerations) {
+		logrus.Infof("Elasticsearch tolerations change found, updating '%s'", current.Name)
+		current.Spec.Spec.Tolerations = desired.Spec.Spec.Tolerations
 		different = true
 	}
 

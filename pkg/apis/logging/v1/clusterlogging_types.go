@@ -39,6 +39,7 @@ type VisualizationSpec struct {
 type KibanaSpec struct {
 	Resources    *v1.ResourceRequirements `json:"resources"`
 	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
 	Replicas     int32                    `json:"replicas"`
 	ProxySpec    `json:"proxy,omitempty"`
 }
@@ -57,6 +58,7 @@ type ElasticsearchSpec struct {
 	Resources        *v1.ResourceRequirements               `json:"resources"`
 	NodeCount        int32                                  `json:"nodeCount"`
 	NodeSelector     map[string]string                      `json:"nodeSelector,omitempty"`
+	Tolerations      []v1.Toleration                        `json:"tolerations,omitempty"`
 	Storage          elasticsearch.ElasticsearchStorageSpec `json:"storage"`
 	RedundancyPolicy elasticsearch.RedundancyPolicyType     `json:"redundancyPolicy"`
 }
@@ -79,11 +81,13 @@ type EventCollectionSpec struct {
 type FluentdSpec struct {
 	Resources    *v1.ResourceRequirements `json:"resources"`
 	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
 }
 
 type RsyslogSpec struct {
 	Resources    *v1.ResourceRequirements `json:"resources"`
 	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log curation (Curator)
@@ -95,6 +99,7 @@ type CurationSpec struct {
 type CuratorSpec struct {
 	Resources    *v1.ResourceRequirements `json:"resources"`
 	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
 	Schedule     string                   `json:"schedule"`
 }
 

@@ -103,7 +103,7 @@ deploy-setup:
 	EXCLUSIONS="05-deployment.yaml image-references" hack/deploy-setup.sh
 .PHONY: deploy-setup
 
-go-run: deploy deploy-example
+run: deploy deploy-example
 	@ALERTS_FILE_PATH=files/prometheus_alerts.yml \
 	RULES_FILE_PATH=files/prometheus_rules.yml \
 	OPERATOR_NAME=elasticsearch-operator WATCH_NAMESPACE=openshift-logging \

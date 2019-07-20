@@ -31,6 +31,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 		[]v1.Container{},
 		[]v1.Volume{},
 		nil,
+		nil,
 	)
 
 	CheckIfThereIsOnlyTheLinuxSelector(podSpec, t)
@@ -42,6 +43,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 		[]v1.Container{},
 		[]v1.Volume{},
 		map[string]string{"foo": "bar"},
+		nil,
 	)
 
 	if podSpec.NodeSelector == nil {
@@ -63,6 +65,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 		[]v1.Container{},
 		[]v1.Volume{},
 		map[string]string{utils.OsNodeLabel: utils.LinuxValue},
+		nil,
 	)
 
 	if podSpec.NodeSelector == nil {
@@ -81,6 +84,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 		[]v1.Container{},
 		[]v1.Volume{},
 		map[string]string{utils.OsNodeLabel: "Donald Duck"},
+		nil,
 	)
 
 	if podSpec.NodeSelector == nil {

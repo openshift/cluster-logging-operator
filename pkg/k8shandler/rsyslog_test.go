@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -116,5 +117,83 @@ func TestNewRsyslogPodSpecWhenResourcesAreDefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != requestCPU {
 		t.Errorf("Exp. the spec CPU request to be %v", requestCPU)
+	}
+}
+
+func TestNewRsyslogPodNoTolerations(t *testing.T) {
+	expTolerations := []v1.Toleration{
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+		v1.Toleration{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
+					Type:        "rsyslog",
+					RsyslogSpec: logging.RsyslogSpec{},
+				},
+			},
+		},
+	}
+
+	podSpec := newRsyslogPodSpec(cluster, "test-app-name", "test-infra-name")
+	tolerations := podSpec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+	}
+}
+
+func TestNewRsyslogPodWithTolerations(t *testing.T) {
+
+	providedToleration := v1.Toleration{
+		Key:      "test",
+		Operator: v1.TolerationOpExists,
+		Effect:   v1.TaintEffectNoSchedule,
+	}
+
+	expTolerations := []v1.Toleration{
+		providedToleration,
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+		v1.Toleration{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
+					Type: "rsyslog",
+					RsyslogSpec: logging.RsyslogSpec{
+						Tolerations: []v1.Toleration{
+							providedToleration,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podSpec := newRsyslogPodSpec(cluster, "test-app-name", "test-infra-name")
+	tolerations := podSpec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
 	}
 }

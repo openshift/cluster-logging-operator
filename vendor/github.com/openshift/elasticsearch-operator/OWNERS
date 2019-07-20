@@ -5,11 +5,9 @@ approvers:
   - richm
   - lukas-vlcek
   - nhosoi
-  - josefkarasek
 reviewers:
   - ewolinetz
   - jcantrill
-  - josefkarasek
   - lukas-vlcek
   - nhosoi
   - richm

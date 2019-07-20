@@ -440,6 +440,189 @@ func DoSynchronizedFlush(clusterName, namespace string, client client.Client) (b
 	return (payload.StatusCode == 200), payload.Error
 }
 
+// This will idempompotently update the index templates and update indices' replica count
+func UpdateReplicaCount(clusterName, namespace string, client client.Client, replicaCount int32) (bool, error) {
+
+	if ok, _ := updateAllIndexTemplateReplicas(clusterName, namespace, client, replicaCount); ok {
+		if ok, _ = updateAllIndexReplicas(clusterName, namespace, client, replicaCount); ok {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func updateAllIndexReplicas(clusterName, namespace string, client client.Client, replicaCount int32) (bool, error) {
+
+	indexHealth, _ := getIndexHealth(clusterName, namespace, client)
+
+	// get list of indices and call updateIndexReplicas for each one
+	for index, health := range indexHealth {
+		// only update replicas for indices that don't have same replica count
+		if parseInt32("replicas", health.(map[string]interface{})) != replicaCount {
+			// best effort initially?
+			logrus.Debugf("Updating %v from %d replicas to %d", index, parseInt32("replicas", health.(map[string]interface{})), replicaCount)
+			updateIndexReplicas(clusterName, namespace, client, index, replicaCount)
+		}
+	}
+
+	return true, nil
+}
+
+func getIndexHealth(clusterName, namespace string, client client.Client) (map[string]interface{}, error) {
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		URI:    "_cat/indices?h=health,status,index,pri,rep",
+	}
+
+	curlESService(clusterName, namespace, payload, client)
+
+	response := make(map[string]interface{})
+	if payload, ok := payload.ResponseBody["results"].(string); ok {
+		response = parseIndexHealth(payload)
+	}
+
+	return response, payload.Error
+}
+
+// ---
+// method: GET
+// uri: _cat/indices?h=health,status,index,pri,rep
+// requestbody: ""
+// statuscode: 200
+// responsebody:
+//   results: |
+//	 	green open .searchguard           1 0
+//		green open .kibana                1 0
+//		green open .operations.2019.07.01 1 0
+// error: null
+func parseIndexHealth(results string) map[string]interface{} {
+
+	indexHealth := make(map[string]interface{})
+
+	for _, result := range strings.Split(results, "\n") {
+
+		fields := []string{}
+		for _, val := range strings.Split(result, " ") {
+			if len(val) > 0 {
+				fields = append(fields, val)
+			}
+		}
+
+		if len(fields) == 5 {
+			primary, err := strconv.ParseFloat(fields[3], 64)
+			if err != nil {
+				primary = float64(-1)
+			}
+			replicas, err := strconv.ParseFloat(fields[4], 64)
+			if err != nil {
+				replicas = float64(-1)
+			}
+
+			indexHealth[fields[2]] = map[string]interface{}{
+				"health":   fields[0],
+				"status":   fields[1],
+				"primary":  primary,
+				"replicas": replicas,
+			}
+		}
+	}
+
+	return indexHealth
+}
+
+func updateAllIndexTemplateReplicas(clusterName, namespace string, client client.Client, replicaCount int32) (bool, error) {
+
+	// get list of all common.* index templates and update their replica count for each one
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		URI:    "_cat/templates/common.*",
+	}
+
+	curlESService(clusterName, namespace, payload, client)
+
+	commonTemplates := []string{}
+	if payload, ok := payload.ResponseBody["results"].(string); ok {
+		for _, result := range strings.Split(payload, "\n") {
+
+			fields := []string{}
+			for _, val := range strings.Split(result, " ") {
+				if len(val) > 0 {
+					fields = append(fields, val)
+				}
+			}
+
+			if len(fields) == 1 {
+				commonTemplates = append(commonTemplates, fields[0])
+			}
+		}
+	}
+
+	for _, template := range commonTemplates {
+		updateIndexTemplateReplicas(clusterName, namespace, client, template, replicaCount)
+	}
+
+	return true, nil
+}
+
+func updateIndexTemplateReplicas(clusterName, namespace string, client client.Client, templateName string, replicaCount int32) (bool, error) {
+
+	// get the index template and then update the replica and put it
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		URI:    fmt.Sprintf("_template/%s", templateName),
+	}
+
+	curlESService(clusterName, namespace, payload, client)
+
+	if template, ok := payload.ResponseBody[templateName].(map[string]interface{}); ok {
+		if settings, ok := template["settings"].(map[string]interface{}); ok {
+			if index, ok := settings["index"].(map[string]interface{}); ok {
+				currentReplicas, ok := index["number_of_replicas"].(string)
+				if ok && currentReplicas != fmt.Sprintf("%d", replicaCount) {
+					template["settings"].(map[string]interface{})["index"].(map[string]interface{})["number_of_replicas"] = fmt.Sprintf("%d", replicaCount)
+
+					templateJson, _ := json.Marshal(template)
+
+					logrus.Debugf("Updating template %v from %d replicas to %d", templateName, currentReplicas, replicaCount)
+
+					payload = &esCurlStruct{
+						Method:      http.MethodPut,
+						URI:         fmt.Sprintf("_template/%s", templateName),
+						RequestBody: string(templateJson),
+					}
+
+					curlESService(clusterName, namespace, payload, client)
+
+					acknowledged := false
+					if acknowledgedBool, ok := payload.ResponseBody["acknowledged"].(bool); ok {
+						acknowledged = acknowledgedBool
+					}
+					return (payload.StatusCode == 200 && acknowledged), payload.Error
+				}
+			}
+		}
+	}
+
+	return false, payload.Error
+}
+
+func updateIndexReplicas(clusterName, namespace string, client client.Client, index string, replicaCount int32) (bool, error) {
+	payload := &esCurlStruct{
+		Method:      http.MethodPut,
+		URI:         fmt.Sprintf("%s/_settings", index),
+		RequestBody: fmt.Sprintf("{%q:\"%d\"}}", "index.number_of_replicas", replicaCount),
+	}
+
+	curlESService(clusterName, namespace, payload, client)
+
+	acknowledged := false
+	if acknowledgedBool, ok := payload.ResponseBody["acknowledged"].(bool); ok {
+		acknowledged = acknowledgedBool
+	}
+	return (payload.StatusCode == 200 && acknowledged), payload.Error
+}
+
 // This will curl the ES service and provide the certs required for doing so
 //  it will also return the http and string response
 func curlESService(clusterName, namespace string, payload *esCurlStruct, client client.Client) {

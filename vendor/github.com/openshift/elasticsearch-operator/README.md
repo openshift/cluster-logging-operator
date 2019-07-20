@@ -108,7 +108,7 @@ Deploy an example custom resource for a single node Elasticsearch cluster
 #### deploy-undeploy
 Remove all deployed resources
 
-#### go-run
+#### run
 Deploy the example cluster and start running the operator.  The end result is that there will be an
 `elasticsearch` custom resource, and an elasticsearch pod running.  You can view the operator log by
 looking at the log file specified by `$(RUN_LOG)` (default `elasticsearch-operator.log`).  The command
@@ -214,7 +214,7 @@ ELASTICSEARCH_OPERATOR=$GOPATH/src/github.com/openshift/elasticsearch-operator
 
 To test on an OKD cluster, you can run:
 
-    make go-run
+    make run
 
 To remove created API objects:
 ```

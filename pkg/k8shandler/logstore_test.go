@@ -7,6 +7,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	esutils "github.com/openshift/elasticsearch-operator/test/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -395,5 +396,79 @@ func TestNewESCRWithTolerations(t *testing.T) {
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
 		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+	}
+}
+
+func TestGenUUIDPreservedWhenNodeCountExceeds4(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 3,
+				},
+			},
+		},
+	}
+	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	dataUUID := esutils.GenerateUUID()
+	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
+
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 4,
+				},
+			},
+		},
+	}
+	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+
+	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to node count change")
+	}
+
+	if diffCR.Spec.Nodes[0].GenUUID == nil || *diffCR.Spec.Nodes[0].GenUUID != dataUUID {
+		t.Errorf("Expected that original GenUUID would be preserved as %v but was %v", dataUUID, diffCR.Spec.Nodes[0].GenUUID)
+	}
+}
+
+func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 1,
+				},
+			},
+		},
+	}
+	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	dataUUID := esutils.GenerateUUID()
+	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
+
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 3,
+				},
+			},
+		},
+	}
+	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+
+	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to node count change")
+	}
+
+	if diffCR.Spec.Nodes[0].GenUUID == nil || *diffCR.Spec.Nodes[0].GenUUID != dataUUID {
+		t.Errorf("Expected that original GenUUID would be preserved as %v but was %v", dataUUID, diffCR.Spec.Nodes[0].GenUUID)
 	}
 }

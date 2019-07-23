@@ -154,7 +154,7 @@ func TestNewCuratorNoTolerations(t *testing.T) {
 	tolerations := job.Spec.JobTemplate.Spec.Template.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }
 
@@ -182,6 +182,6 @@ func TestNewCuratorWithTolerations(t *testing.T) {
 	tolerations := job.Spec.JobTemplate.Spec.Template.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }

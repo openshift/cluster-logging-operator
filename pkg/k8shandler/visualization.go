@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"time"
 
+	oauth "github.com/openshift/api/oauth/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -15,6 +17,10 @@ import (
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	annotationOauthSecretUpdatedAt = "logging.openshift.io/oauthSecretUpdatedAt"
 )
 
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
@@ -50,11 +56,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err 
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateOauthClient(string(oauthSecret)); err != nil {
+		updatedAt := ""
+		if updatedAt, err = clusterRequest.createOrUpdateOauthClient(string(oauthSecret)); err != nil {
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateKibanaDeployment(); err != nil {
+		if err = clusterRequest.createOrUpdateKibanaDeployment(updatedAt); err != nil {
 			return
 		}
 
@@ -155,7 +162,7 @@ func (clusterRequest *ClusterLoggingRequest) createKibanaProxyClusterRoleBinding
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment() (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(updatedAt string) (err error) {
 
 	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch")
 	kibanaDeployment := NewDeployment(
@@ -165,6 +172,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment() (e
 		"kibana",
 		kibanaPodSpec,
 	)
+	kibanaDeployment.ObjectMeta.Annotations = map[string]string{
+		annotationOauthSecretUpdatedAt: updatedAt,
+	}
 
 	kibanaDeployment.Spec.Replicas = &clusterRequest.cluster.Spec.Visualization.KibanaSpec.Replicas
 
@@ -187,17 +197,12 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment() (e
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateOauthClient(oauthSecret string) (err error) {
-
-	if err != nil {
-		return nil
-	}
-
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateOauthClient(oauthSecret string) (updatedAt string, err error) {
 	redirectURIs := []string{}
 
 	kibanaURL, err := clusterRequest.GetRouteURL("kibana")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	redirectURIs = []string{
@@ -221,13 +226,13 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateOauthClient(oauthSecr
 	err = clusterRequest.Create(oauthClient)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure constructing %v oauthclient for %q: %v", oauthClient.Name, clusterRequest.cluster.Name, err)
+			return "", fmt.Errorf("Failure constructing %v oauthclient for %q: %v", oauthClient.Name, clusterRequest.cluster.Name, err)
 		}
 
-		current := oauthClient.DeepCopy()
+		current := &oauth.OAuthClient{}
 
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err = clusterRequest.Get(oauthClient.Name, current); err != nil {
+			if err = clusterRequest.GetClusterResource(oauthClient.Name, current); err != nil {
 				if errors.IsNotFound(err) {
 					// the object doesn't exist -- it was likely culled
 					// recreate it on the next time through if necessary
@@ -236,20 +241,26 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateOauthClient(oauthSecr
 				return fmt.Errorf("Failed to get %v oauthclient for %q: %v", oauthClient.Name, clusterRequest.cluster.Name, err)
 			}
 
+			//Check to see if we even need to update
+			if areOAuthClientsSame(current, oauthClient) {
+				return nil
+			}
+
+			updatedAt = time.Now().String()
 			current.RedirectURIs = oauthClient.RedirectURIs
 			current.Secret = oauthClient.Secret
 			current.ScopeRestrictions = oauthClient.ScopeRestrictions
+			current.GetObjectMeta().GetAnnotations()[annotationOauthSecretUpdatedAt] = updatedAt
 			if err = clusterRequest.Update(current); err != nil {
 				return err
 			}
 			return nil
 		})
 		if retryErr != nil {
-			return retryErr
+			return "", retryErr
 		}
 	}
-
-	return nil
+	return updatedAt, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaRoute() error {
@@ -562,9 +573,15 @@ func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*app
 
 	different := false
 
-	if !utils.AreSelectorsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
+	if !utils.AreMapsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
 		logrus.Infof("Kibana nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
+		different = true
+	}
+
+	if !utils.AreMapsSame(current.ObjectMeta.Annotations, desired.ObjectMeta.Annotations) {
+		logrus.Infof("Kibana annotations change found, updating '%s'", current.Name)
+		current.ObjectMeta.Annotations = desired.ObjectMeta.Annotations
 		different = true
 	}
 

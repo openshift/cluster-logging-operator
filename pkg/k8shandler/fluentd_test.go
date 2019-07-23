@@ -94,7 +94,7 @@ func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
 
 	if !reflect.DeepEqual(podSpec.Tolerations, expectedTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expectedTolerations, podSpec.Tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expectedTolerations, podSpec.Tolerations)
 	}
 }
 
@@ -150,7 +150,7 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }
 
@@ -195,6 +195,6 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }

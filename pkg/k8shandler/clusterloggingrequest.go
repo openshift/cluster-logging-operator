@@ -7,6 +7,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/sirupsen/logrus"
+
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -22,20 +24,35 @@ func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
 }
 
 func (clusterRequest *ClusterLoggingRequest) Create(object runtime.Object) error {
-	return clusterRequest.client.Create(context.TODO(), object)
+	logrus.Debugf("Creating: %v", object)
+	err := clusterRequest.client.Create(context.TODO(), object)
+	logrus.Debugf("Response: %v", err)
+	return err
 }
 
 func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) error {
+	logrus.Debugf("Updating: %v", object)
 	return clusterRequest.client.Update(context.TODO(), object)
 }
 
 func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object runtime.Object) error {
 	namespacedName := types.NamespacedName{Name: objectName, Namespace: clusterRequest.cluster.Namespace}
 
+	logrus.Debugf("Getting namespacedName: %v, object: %v", namespacedName, object)
+
 	return clusterRequest.client.Get(context.TODO(), namespacedName, object)
 }
 
+func (clusterRequest *ClusterLoggingRequest) GetClusterResource(objectName string, object runtime.Object) error {
+	namespacedName := types.NamespacedName{Name: objectName}
+	logrus.Debugf("Getting ClusterResource namespacedName: %v, object: %v", namespacedName, object)
+	err := clusterRequest.client.Get(context.TODO(), namespacedName, object)
+	logrus.Debugf("Response: %v", err)
+	return err
+}
+
 func (clusterRequest *ClusterLoggingRequest) List(selector map[string]string, object runtime.Object) error {
+	logrus.Debugf("Listing selector: %v, object: %v", selector, object)
 
 	labelSelector := labels.SelectorFromSet(selector)
 
@@ -47,5 +64,6 @@ func (clusterRequest *ClusterLoggingRequest) List(selector map[string]string, ob
 }
 
 func (clusterRequest *ClusterLoggingRequest) Delete(object runtime.Object) error {
+	logrus.Debugf("Deleting: %v", object)
 	return clusterRequest.client.Delete(context.TODO(), object)
 }

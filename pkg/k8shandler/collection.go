@@ -276,7 +276,7 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 
 	different := false
 
-	if !utils.AreSelectorsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
+	if !utils.AreMapsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
 		logrus.Infof("Collector nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
 		different = true

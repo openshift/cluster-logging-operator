@@ -90,15 +90,11 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	if clusterRequest.isManaged() {
 		name := "kibana"
 		proxyName := "kibana-proxy"
-		if err = clusterRequest.RemoveServiceAccount(name); err != nil {
+		if err = clusterRequest.RemoveDeployment(name); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveConfigMap(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap("sharing-config"); err != nil {
+		if err = clusterRequest.RemoveOAuthClient(proxyName); err != nil {
 			return
 		}
 
@@ -110,19 +106,23 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 			return
 		}
 
-		if err = clusterRequest.RemoveService(name); err != nil {
-			return
-		}
-
 		if err = clusterRequest.RemoveRoute(name); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveDeployment(name); err != nil {
+		if err = clusterRequest.RemoveConfigMap(name); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveOAuthClient(proxyName); err != nil {
+		if err = clusterRequest.RemoveConfigMap("sharing-config"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveService(name); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveServiceAccount(name); err != nil {
 			return
 		}
 	}

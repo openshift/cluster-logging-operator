@@ -74,7 +74,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 
 func (clusterRequest *ClusterLoggingRequest) removeCurator() (err error) {
 	if clusterRequest.isManaged() {
-		if err = clusterRequest.RemoveServiceAccount("curator"); err != nil {
+		if err = clusterRequest.RemoveSecret("curator"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveCronJob("curator"); err != nil {
 			return
 		}
 
@@ -82,11 +86,7 @@ func (clusterRequest *ClusterLoggingRequest) removeCurator() (err error) {
 			return
 		}
 
-		if err = clusterRequest.RemoveSecret("curator"); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveCronJob("curator"); err != nil {
+		if err = clusterRequest.RemoveServiceAccount("curator"); err != nil {
 			return
 		}
 	}

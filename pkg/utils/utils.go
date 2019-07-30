@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"reflect"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -41,20 +42,8 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 	}
 }
 
-func AreSelectorsSame(lhs, rhs map[string]string) bool {
-
-	if len(lhs) != len(rhs) {
-		return false
-	}
-
-	for lhsKey, lhsVal := range lhs {
-		rhsVal, ok := rhs[lhsKey]
-		if !ok || lhsVal != rhsVal {
-			return false
-		}
-	}
-
-	return true
+func AreMapsSame(lhs, rhs map[string]string) bool {
+	return reflect.DeepEqual(lhs, rhs)
 }
 
 // EnsureLinuxNodeSelector takes given selector map and returns a selector map with linux node selector added into it.
@@ -87,6 +76,7 @@ func AreTolerationsSame(lhs, rhs []v1.Toleration) bool {
 	}
 
 	return true
+
 }
 
 func containsToleration(toleration v1.Toleration, tolerations []v1.Toleration) bool {

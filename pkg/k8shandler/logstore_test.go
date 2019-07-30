@@ -366,7 +366,7 @@ func TestNewESCRNoTolerations(t *testing.T) {
 	tolerations := elasticsearchCR.Spec.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }
 
@@ -395,7 +395,7 @@ func TestNewESCRWithTolerations(t *testing.T) {
 	tolerations := elasticsearchCR.Spec.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }
 

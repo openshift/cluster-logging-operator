@@ -44,14 +44,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		if err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
 			return
 		}
-	} else {
-		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
-			return
-		}
 	}
 
 	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
@@ -159,6 +151,16 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeRsyslog {
 		clusterRequest.removeRsyslog()
+	}
+
+	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeFluentd && cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeRsyslog {
+		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
+			return
+		}
 	}
 
 	return nil

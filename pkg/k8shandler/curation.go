@@ -288,7 +288,7 @@ func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.
 
 	different := false
 
-	if !utils.AreSelectorsSame(current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector) {
+	if !utils.AreMapsSame(current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector) {
 		logrus.Infof("Invalid Curator nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector = desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
 		different = true

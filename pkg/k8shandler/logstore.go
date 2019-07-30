@@ -235,7 +235,7 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 
 	different := false
 
-	if !utils.AreSelectorsSame(current.Spec.Spec.NodeSelector, desired.Spec.Spec.NodeSelector) {
+	if !utils.AreMapsSame(current.Spec.Spec.NodeSelector, desired.Spec.Spec.NodeSelector) {
 		logrus.Infof("Elasticsearch nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.Spec.NodeSelector = desired.Spec.Spec.NodeSelector
 		different = true

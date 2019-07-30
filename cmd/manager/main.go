@@ -24,6 +24,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
+	"github.com/sirupsen/logrus"
+
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	oauth "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -63,6 +65,15 @@ func main() {
 	// be propagated through the whole operator, generating
 	// uniform and structured logs.
 	logf.SetLogger(zap.Logger())
+
+	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
+		level, err := logrus.ParseLevel(logLevel)
+		if err != nil {
+			log.Error(err, "Unable to evaluate the LOG_LEVEL: %s", logLevel)
+			os.Exit(1)
+		}
+		logrus.SetLevel(level)
+	}
 
 	printVersion()
 

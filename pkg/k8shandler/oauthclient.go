@@ -2,6 +2,8 @@ package k8shandler
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -53,4 +55,12 @@ func (clusterRequest *ClusterLoggingRequest) RemoveOAuthClient(clientName string
 	}
 
 	return nil
+}
+
+//areOAuthClientsSame compares two OAuthClients for sameness defined as: redirectURIs, secret, scopeRestrictions
+//this function makes no attempt to normalize the scopeRestrictions
+func areOAuthClientsSame(first, second *oauth.OAuthClient) bool {
+	sort.Strings(first.RedirectURIs)
+	sort.Strings(second.RedirectURIs)
+	return first.Secret == second.Secret && reflect.DeepEqual(first.RedirectURIs, second.RedirectURIs) && reflect.DeepEqual(first.ScopeRestrictions, second.ScopeRestrictions)
 }

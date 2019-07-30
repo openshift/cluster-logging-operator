@@ -250,6 +250,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateOauthClient(oauthSecr
 			current.RedirectURIs = oauthClient.RedirectURIs
 			current.Secret = oauthClient.Secret
 			current.ScopeRestrictions = oauthClient.ScopeRestrictions
+			if current.GetObjectMeta().GetAnnotations() == nil {
+				current.GetObjectMeta().SetAnnotations(make(map[string]string))
+			}
 			current.GetObjectMeta().GetAnnotations()[annotationOauthSecretUpdatedAt] = updatedAt
 			if err = clusterRequest.Update(current); err != nil {
 				return err

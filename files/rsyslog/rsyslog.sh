@@ -23,11 +23,11 @@ if [ "${CDM_USE_UNDEFINED,,}" = "false" -a "${CDM_KEEP_EMPTY_FIELDS}" = "" -a "$
         elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
             export SKIP_EMPTY=false
             export USE_MMEXTERNAL=true
-            echo "INFO: USE_MMEXTERNAL was set to true but none of the UNDEFINED fields were set. Consider using SKIP_EMPTY=true and unsetting USE_MMEXTERNAL instead."
+            echo "INFO: USE_MMEXTERNAL was set to true but none of the environment variables to manage undefined and empty fields were set. Consider using SKIP_EMPTY=true and unsetting USE_MMEXTERNAL instead."
         else
             export SKIP_EMPTY=true
             export USE_MMEXTERNAL=false
-            echo "INFO: SKIP_EMPTY was not set but USE_MMEXTERNAL was set to false. Enabling SKIP_EMPTY. Consider unsetting both to avoid this message in the future."
+            echo "INFO: SKIP_EMPTY was not set but USE_MMEXTERNAL was set to false. Enabling SKIP_EMPTY. Consider unsetting both environment variables."
         fi
     elif [ "${SKIP_EMPTY,,}" = "true" ] ; then
         if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
@@ -36,7 +36,7 @@ if [ "${CDM_USE_UNDEFINED,,}" = "false" -a "${CDM_KEEP_EMPTY_FIELDS}" = "" -a "$
         elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
             export SKIP_EMPTY=true
             export USE_MMEXTERNAL=false
-            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to true. Respecting SKIP_EMPTY. Consider unsetting USE_MMEXTERNAL to avoid this message in the future."
+            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to true. Respecting SKIP_EMPTY. Consider unsetting USE_MMEXTERNAL."
         else
             export SKIP_EMPTY=true
             export USE_MMEXTERNAL=false
@@ -45,15 +45,15 @@ if [ "${CDM_USE_UNDEFINED,,}" = "false" -a "${CDM_KEEP_EMPTY_FIELDS}" = "" -a "$
         if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
             export SKIP_EMPTY=false
             export USE_MMEXTERNAL=true
-            echo "INFO: SKIP_EMPTY was set to false, but USE_MMEXTERNAL was not set and none of the UNDEFINED fields were configured. Enabling USE_MMEXTERNAL. Consider using SKIP_EMPTY=true instead."
+            echo "INFO: SKIP_EMPTY was set to false, but USE_MMEXTERNAL was not set and none of the environment variables to manage undefined and empty fields were configured. Enabling USE_MMEXTERNAL. Consider using SKIP_EMPTY=true instead."
         elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
             export SKIP_EMPTY=false
             export USE_MMEXTERNAL=true
-            echo "INFO: SKIP_EMPTY was set to false and USE_MMEXTERNAL was set to true, but none of the UNDEFINED fields were configured. Consider using SKIP_EMPTY=true and unsetting USE_MMEXTERNAL instead."
+            echo "INFO: SKIP_EMPTY was set to false and USE_MMEXTERNAL was set to true, but none of the environment variables to manage undefined and empty fields were configured. Consider using SKIP_EMPTY=true and unsetting USE_MMEXTERNAL instead."
         else
-            export SKIP_EMPTY=true
+            export SKIP_EMPTY=false
             export USE_MMEXTERNAL=false
-            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to false. Enabling SKIP_EMPTY. Consider unsetting both to avoid this message in the future."
+            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to false and none of the environment variables to manage undefined and empty fields were configured. No undefined field as well as skip empty field handling will be executed."
         fi
     fi
 else
@@ -67,22 +67,22 @@ else
         else
             export SKIP_EMPTY=true
             export USE_MMEXTERNAL=false
-            echo "INFO: SKIP_EMPTY was not set and USE_MMEXTERNAL was set to false, but the UNDEFINED fields were configured. Enabling SKIP_EMPTY. Consider using USE_MMEXTERNAL=true to activate the UNDEFINED fields configurations."
+            echo "INFO: SKIP_EMPTY was not set and USE_MMEXTERNAL was set to false, but the environment variables to manage undefined and empty fields were configured. Enabling SKIP_EMPTY. Consider using USE_MMEXTERNAL=true to activate the environment variables."
         fi
     elif [ "${SKIP_EMPTY,,}" = "true" ] ; then
         if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
             # default - mmnormalize skip-empty
             export SKIP_EMPTY=true
             export USE_MMEXTERNAL=false
-            echo "INFO: SKIP_EMPTY was set to true and USE_MMEXTERNAL was not set, but the UNDEFINED fields were configured. Consider using USE_MMEXTERNAL=true and unsetting SKIP_EMPTY to activate the UNDEFINED fields configurations."
+            echo "INFO: SKIP_EMPTY was set to true and USE_MMEXTERNAL was not set, but the environment variables to manage undefined and empty fields were configured. Consider using USE_MMEXTERNAL=true and unsetting SKIP_EMPTY to activate the environment variables."
         elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
             export SKIP_EMPTY=true
             export USE_MMEXTERNAL=false
-            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to true. Respecting SKIP_EMPTY. To activate the UNDEFINED fields configurations, consider unsetting SKIP_EMPTY."
+            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to true. Respecting SKIP_EMPTY. To activate the environment variables to manage undefined and empty fields configurations, consider unsetting SKIP_EMPTY."
         else
             export SKIP_EMPTY=true
             export USE_MMEXTERNAL=false
-            echo "INFO: SKIP_EMPTY was set to true and USE_MMEXTERNAL was set to false, but the UNDEFINED fields were configured. Consider using USE_MMEXTERNAL=true and unsetting SKIP_EMPTY to activate the UNDEFINED fields configurations."
+            echo "INFO: SKIP_EMPTY was set to true and USE_MMEXTERNAL was set to false, but the environment variables to manage undefined and empty fields were configured. Consider using USE_MMEXTERNAL=true and unsetting SKIP_EMPTY to activate the environment variables."
         fi
     else
         if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
@@ -94,7 +94,7 @@ else
         else
             export SKIP_EMPTY=false
             export USE_MMEXTERNAL=true
-            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to false, but the UNDEFINED fields were configured. Enabling USE_MMEXTERNAL. Consider using USE_MMEXTERNAL=true to avoid this message in the future."
+            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to false, but the environment variables to manage undefined and empty fields were configured. Enabling USE_MMEXTERNAL. Consider using USE_MMEXTERNAL=true."
         fi
     fi
 fi

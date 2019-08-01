@@ -1,2 +1,3 @@
 version=2
 rule=:%.:json%
+rule=:%-:whitespace%%.:json%

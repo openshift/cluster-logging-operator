@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CFG_DIR=/etc/rsyslog.d
-ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"false"}
+export ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"true"}
 export LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/rsyslog/rsyslog.log"}
 export RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
 export MERGE_JSON_LOG=${MERGE_JSON_LOG:-false}
@@ -337,11 +337,6 @@ if [[ "${USE_REMOTE_SYSLOG:-}" = "true" ]] ; then
     if [[ $REMOTE_SYSLOG_HOST ]] ; then
         ruby generate_syslog_config.rb
     fi
-fi
-
-if [ "${ENABLE_PROMETHEUS_ENDPOINT}" != "true" ] ; then
-  echo "INFO: Disabling Prometheus endpoint"
-  rm -f ${CFG_DIR}/openshift/input-pre-prometheus-metrics.conf
 fi
 
 # Create a directory for log files

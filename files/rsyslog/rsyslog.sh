@@ -174,6 +174,9 @@ else
 fi
 RSYSLOG_VERSION=`/usr/sbin/rsyslogd -v | awk -F'[ ,]+' '/^rsyslogd / {print $2}'`
 PIPELINE_VERSION="${RSYSLOG_VERSION} ${DATA_VERSION}"
+
+IPADDR6="" # So as to omit "ipaddr6" field from logs. See https://github.com/openshift/cluster-logging-operator/pull/225
+
 export IPADDR4 IPADDR6 PIPELINE_VERSION HOSTNAME
 
 BUFFER_SIZE_LIMIT=${BUFFER_SIZE_LIMIT:-16777216}

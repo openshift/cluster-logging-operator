@@ -9,12 +9,45 @@ export UNDEFINED_DEBUG=${UNDEFINED_DEBUG:-false}
 export RSYSLOG_FILE_READ_FROM_TAIL=${RSYSLOG_FILE_READ_FROM_TAIL:-off}
 export RSYSLOG_JOURNAL_READ_FROM_TAIL=${RSYSLOG_JOURNAL_READ_FROM_TAIL:-off}
 
+if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
+    mkdir -p $RSYSLOG_WORKDIRECTORY
+fi
+
+if [ ${LOGGING_FILE_PATH} != "console" ] ; then
+    echo "============================="
+    echo "Rsyslog logs have been redirected to: $LOGGING_FILE_PATH"
+    echo "If you want to print out the logs, use command:"
+    echo "oc exec <pod_name> -- logs"
+    echo "============================="
+
+    dirname=$( dirname $LOGGING_FILE_PATH )
+    if [ ! -d $dirname ] ; then
+        mkdir -p $dirname
+    fi
+    touch $LOGGING_FILE_PATH; exec >> $LOGGING_FILE_PATH 2>&1
+fi
+
+rsyslogargs="-i /var/run/rsyslogd.pid -f /etc/rsyslog/conf/rsyslog.conf -n"
+if [[ $VERBOSE ]]; then
+  set -ex
+  rsyslogargs="$rsyslogargs -d"
+  echo ">>>>>> ENVIRONMENT VARS <<<<<"
+  env | sort
+  echo ">>>>>>>>>>>>><<<<<<<<<<<<<<<<"
+else
+  set -e
+fi
+
+issue_deprecation_warnings() {
+    : # none at the moment
+}
+
 # Undefined field configuraion
 CDM_USE_UNDEFINED=${CDM_USE_UNDEFINED:-false}
 CDM_KEEP_EMPTY_FIELDS=${CDM_KEEP_EMPTY_FIELDS:-""}
 CDM_UNDEFINED_TO_STRING=${CDM_UNDEFINED_TO_STRING:-false}
 CDM_UNDEFINED_DOT_REPLACE_CHAR=${CDM_UNDEFINED_DOT_REPLACE_CHAR:-"UNUSED"}
-if [ "${CDM_USE_UNDEFINED,,}" = "false" -a "${CDM_KEEP_EMPTY_FIELDS}" = "" -a "${CDM_UNDEFINED_TO_STRING,,}" = "false" -a "${CDM_UNDEFINED_DOT_REPLACE_CHAR,,}" = "UNUSED" ] ; then
+if [ "${CDM_USE_UNDEFINED,,}" = "false" -a "${CDM_KEEP_EMPTY_FIELDS}" = "" -a "${CDM_UNDEFINED_TO_STRING,,}" = "false" -a "${CDM_UNDEFINED_DOT_REPLACE_CHAR}" = "UNUSED" ] ; then
     if [ "${SKIP_EMPTY:-}" = "" ] ; then
         if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
             # default - mmnormalize skip-empty
@@ -115,39 +148,6 @@ if [ "${SKIP_EMPTY}" = "false" -a "${USE_MMEXTERNAL}" = "true" ] ; then
 else
     rm -f $undefined_conf
 fi
-
-if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
-    mkdir -p $RSYSLOG_WORKDIRECTORY
-fi
-
-if [ ${LOGGING_FILE_PATH} != "console" ] ; then
-    echo "============================="
-    echo "Rsyslog logs have been redirected to: $LOGGING_FILE_PATH"
-    echo "If you want to print out the logs, use command:"
-    echo "oc exec <pod_name> -- logs"
-    echo "============================="
-
-    dirname=$( dirname $LOGGING_FILE_PATH )
-    if [ ! -d $dirname ] ; then
-        mkdir -p $dirname
-    fi
-    touch $LOGGING_FILE_PATH; exec >> $LOGGING_FILE_PATH 2>&1
-fi
-
-rsyslogargs="-i /var/run/rsyslogd.pid -f /etc/rsyslog/conf/rsyslog.conf -n"
-if [[ $VERBOSE ]]; then
-  set -ex
-  rsyslogargs="$rsyslogargs -d"
-  echo ">>>>>> ENVIRONMENT VARS <<<<<"
-  env | sort
-  echo ">>>>>>>>>>>>><<<<<<<<<<<<<<<<"
-else
-  set -e
-fi
-
-issue_deprecation_warnings() {
-    : # none at the moment
-}
 
 if type -p python3 > /dev/null 2>&1 ; then
     pycmd=python3

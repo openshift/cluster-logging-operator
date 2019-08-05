@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"time"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -39,11 +40,14 @@ func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
 			return
 		}
 
-		if err = clusterRequest.RemoveSecret("fluentd"); err != nil {
+		if err = clusterRequest.RemoveDaemonset("fluentd"); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveDaemonset("fluentd"); err != nil {
+		// Wait longer than the terminationGracePeriodSeconds
+		time.Sleep(12 * time.Second)
+
+		if err = clusterRequest.RemoveSecret("fluentd"); err != nil {
 			return
 		}
 	}
@@ -288,6 +292,8 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	)
 
 	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName
+	// Shorten the termination grace period from the default 30 sec to 10 sec.
+	fluentdPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
 
 	return fluentdPodSpec
 }

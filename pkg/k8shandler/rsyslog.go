@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"time"
 	"io/ioutil"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -55,13 +56,17 @@ func (clusterRequest *ClusterLoggingRequest) removeRsyslog() (err error) {
 			return
 		}
 
+		if err = clusterRequest.RemoveDaemonset("rsyslog"); err != nil {
+			return
+		}
+
+		// Wait longer than the default terminationGracePeriodSeconds
+		time.Sleep(12* time.Second)
+
 		if err = clusterRequest.RemoveSecret("rsyslog"); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveDaemonset("rsyslog"); err != nil {
-			return
-		}
 	}
 
 	return nil
@@ -286,6 +291,8 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogDaemonset() (e
 	cluster := clusterRequest.cluster
 
 	rsyslogPodSpec := newRsyslogPodSpec(clusterRequest.cluster, "elasticsearch", "elasticsearch")
+	// Shorten the termination grace period from the default 30 sec to 10 sec.
+	rsyslogPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
 
 	rsyslogDaemonset := NewDaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
 

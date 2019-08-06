@@ -5,6 +5,7 @@ export ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"true"}
 export LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/rsyslog/rsyslog.log"}
 export RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
 export MERGE_JSON_LOG=${MERGE_JSON_LOG:-false}
+export PRESERVE_JSON_LOG=${PRESERVE_JSON_LOG:-true}
 export UNDEFINED_DEBUG=${UNDEFINED_DEBUG:-false}
 export RSYSLOG_FILE_READ_FROM_TAIL=${RSYSLOG_FILE_READ_FROM_TAIL:-off}
 export RSYSLOG_JOURNAL_READ_FROM_TAIL=${RSYSLOG_JOURNAL_READ_FROM_TAIL:-off}
@@ -42,109 +43,22 @@ issue_deprecation_warnings() {
     : # none at the moment
 }
 
-# Undefined field configuraion
-CDM_USE_UNDEFINED=${CDM_USE_UNDEFINED:-false}
-CDM_KEEP_EMPTY_FIELDS=${CDM_KEEP_EMPTY_FIELDS:-""}
-CDM_UNDEFINED_TO_STRING=${CDM_UNDEFINED_TO_STRING:-false}
-CDM_UNDEFINED_DOT_REPLACE_CHAR=${CDM_UNDEFINED_DOT_REPLACE_CHAR:-"UNUSED"}
-if [ "${CDM_USE_UNDEFINED,,}" = "false" -a "${CDM_KEEP_EMPTY_FIELDS}" = "" -a "${CDM_UNDEFINED_TO_STRING,,}" = "false" -a "${CDM_UNDEFINED_DOT_REPLACE_CHAR}" = "UNUSED" ] ; then
-    if [ "${SKIP_EMPTY:-}" = "" ] ; then
-        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
-            # default - mmnormalize skip-empty
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=true
-            echo "INFO: USE_MMEXTERNAL was set to true but none of the environment variables to manage undefined and empty fields were set. Consider using SKIP_EMPTY=true and unsetting USE_MMEXTERNAL instead."
-        else
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-            echo "INFO: SKIP_EMPTY was not set but USE_MMEXTERNAL was set to false. Enabling SKIP_EMPTY. Consider unsetting both environment variables."
-        fi
-    elif [ "${SKIP_EMPTY,,}" = "true" ] ; then
-        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to true. Respecting SKIP_EMPTY. Consider unsetting USE_MMEXTERNAL."
-        else
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-        fi
-    else
-        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=true
-            echo "INFO: SKIP_EMPTY was set to false, but USE_MMEXTERNAL was not set and none of the environment variables to manage undefined and empty fields were configured. Enabling USE_MMEXTERNAL. Consider using SKIP_EMPTY=true instead."
-        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=true
-            echo "INFO: SKIP_EMPTY was set to false and USE_MMEXTERNAL was set to true, but none of the environment variables to manage undefined and empty fields were configured. Consider using SKIP_EMPTY=true and unsetting USE_MMEXTERNAL instead."
-        else
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=false
-            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to false and none of the environment variables to manage undefined and empty fields were configured. No undefined field as well as skip empty field handling will be executed."
-        fi
-    fi
-else
-    if [ "${SKIP_EMPTY:-}" = "" ] ; then
-        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=true
-        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=true
-        else
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-            echo "INFO: SKIP_EMPTY was not set and USE_MMEXTERNAL was set to false, but the environment variables to manage undefined and empty fields were configured. Enabling SKIP_EMPTY. Consider using USE_MMEXTERNAL=true to activate the environment variables."
-        fi
-    elif [ "${SKIP_EMPTY,,}" = "true" ] ; then
-        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
-            # default - mmnormalize skip-empty
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-            echo "INFO: SKIP_EMPTY was set to true and USE_MMEXTERNAL was not set, but the environment variables to manage undefined and empty fields were configured. Consider using USE_MMEXTERNAL=true and unsetting SKIP_EMPTY to activate the environment variables."
-        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to true. Respecting SKIP_EMPTY. To activate the environment variables to manage undefined and empty fields configurations, consider unsetting SKIP_EMPTY."
-        else
-            export SKIP_EMPTY=true
-            export USE_MMEXTERNAL=false
-            echo "INFO: SKIP_EMPTY was set to true and USE_MMEXTERNAL was set to false, but the environment variables to manage undefined and empty fields were configured. Consider using USE_MMEXTERNAL=true and unsetting SKIP_EMPTY to activate the environment variables."
-        fi
-    else
-        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=true
-        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=true
-        else
-            export SKIP_EMPTY=false
-            export USE_MMEXTERNAL=true
-            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to false, but the environment variables to manage undefined and empty fields were configured. Enabling USE_MMEXTERNAL. Consider using USE_MMEXTERNAL=true."
-        fi
-    fi
-fi
+# Undefined field configuration
+export USE_MMEXTERNAL=${USE_MMEXTERNAL:-true}
 
 undefined_conf="/var/lib/rsyslog.pod/undefined.json"
-if [ "${SKIP_EMPTY}" = "false" -a "${USE_MMEXTERNAL}" = "true" ] ; then
+if [ "${USE_MMEXTERNAL}" = "true" ] ; then
     # Create a config file for undefined fields from env vars
-    echo "{\"CDM_USE_UNDEFINED\" : ${CDM_USE_UNDEFINED}, \
+    echo "{\"CDM_USE_UNDEFINED\" : ${CDM_USE_UNDEFINED:-false}, \
 \"CDM_DEFAULT_KEEP_FIELDS\" : \"${CDM_DEFAULT_KEEP_FIELDS:-"CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id"}\", \
 \"CDM_EXTRA_KEEP_FIELDS\" : \"${CDM_EXTRA_KEEP_FIELDS:-""}\", \
 \"CDM_UNDEFINED_NAME\" : \"${CDM_UNDEFINED_NAME:-"undefined"}\", \
-\"CDM_KEEP_EMPTY_FIELDS\" : \"${CDM_KEEP_EMPTY_FIELDS}\", \
-\"CDM_UNDEFINED_TO_STRING\" : ${CDM_UNDEFINED_TO_STRING}, \
-\"CDM_UNDEFINED_DOT_REPLACE_CHAR\" : \"${CDM_UNDEFINED_DOT_REPLACE_CHAR}\", \
+\"CDM_KEEP_EMPTY_FIELDS\" : \"${CDM_KEEP_EMPTY_FIELDS:-}\", \
+\"CDM_UNDEFINED_TO_STRING\" : ${CDM_UNDEFINED_TO_STRING:-false}, \
+\"CDM_UNDEFINED_DOT_REPLACE_CHAR\" : \"${CDM_UNDEFINED_DOT_REPLACE_CHAR:-"UNUSED"}\", \
 \"CDM_UNDEFINED_MAX_NUM_FIELDS\" : ${CDM_UNDEFINED_MAX_NUM_FIELDS:--1}, \
-\"MERGE_JSON_LOG\" : ${MERGE_JSON_LOG}, \
-\"UNDEFINED_DEBUG\" : ${UNDEFINED_DEBUG}}" > $undefined_conf
+\"MERGE_JSON_LOG\" : ${MERGE_JSON_LOG:-false}, \
+\"UNDEFINED_DEBUG\" : ${UNDEFINED_DEBUG:-false}}" > $undefined_conf
 else
     rm -f $undefined_conf
 fi

@@ -216,6 +216,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "MERGE_JSON_LOG", Value: "false"},
+		{Name: "PRESERVE_JSON_LOG", Value: "true"},
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
 		{Name: "ES_HOST", Value: elasticsearchAppName},
 		{Name: "ES_PORT", Value: "9200"},
@@ -235,6 +236,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "FLUENTD_CPU_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "fluentd", Resource: "limits.cpu"}}},
 		{Name: "FLUENTD_MEMORY_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "fluentd", Resource: "limits.memory"}}},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "status.hostIP"}}},
+		{Name: "CDM_KEEP_EMPTY_FIELDS", Value: "message"}, // by default, keep empty messages
 	}
 
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{

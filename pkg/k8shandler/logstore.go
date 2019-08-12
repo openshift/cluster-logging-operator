@@ -121,14 +121,6 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 
 	if cluster.Spec.LogStore.NodeCount > 3 {
 
-		dataNode := elasticsearch.ElasticsearchNode{
-			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
-			NodeCount: cluster.Spec.LogStore.NodeCount - 3,
-			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
-		}
-
-		esNodes = append(esNodes, dataNode)
-
 		masterNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
 			NodeCount: 3,
@@ -136,6 +128,14 @@ func (cluster *ClusterLogging) newElasticsearchCR(elasticsearchName string) *ela
 		}
 
 		esNodes = append(esNodes, masterNode)
+
+		dataNode := elasticsearch.ElasticsearchNode{
+			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
+			NodeCount: cluster.Spec.LogStore.NodeCount - 3,
+			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+		}
+
+		esNodes = append(esNodes, dataNode)
 
 	} else {
 
@@ -287,9 +287,15 @@ func areNodesDifferent(current, desired []elasticsearch.ElasticsearchNode) ([]el
 	for nodeIndex := 0; nodeIndex < len(desired); nodeIndex++ {
 		for _, node := range current {
 			if areNodeRolesSame(node, desired[nodeIndex]) {
-				if updatedNode, isDifferent := isNodeDifferent(node, desired[nodeIndex]); isDifferent {
+				updatedNode, isDifferent := isNodeDifferent(node, desired[nodeIndex])
+				if isDifferent {
 					desired[nodeIndex] = updatedNode
 					different = true
+				} else {
+					// ensure that we are setting the GenUUID if it existed
+					if desired[nodeIndex].GenUUID == nil {
+						desired[nodeIndex].GenUUID = updatedNode.GenUUID
+					}
 				}
 				foundRoleMatch = true
 			}
@@ -299,6 +305,12 @@ func areNodesDifferent(current, desired []elasticsearch.ElasticsearchNode) ([]el
 	// if we didn't find a role match, then that means changes were made
 	if !foundRoleMatch {
 		different = true
+	}
+
+	// we don't use this to shortcut because the above loop will help to preserve
+	// any generated UUIDs
+	if len(current) != len(desired) {
+		return desired, true
 	}
 
 	return desired, different

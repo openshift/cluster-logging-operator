@@ -139,6 +139,7 @@ spec:
           - configmaps
           - secrets
           - serviceaccounts
+          - serviceaccounts/finalizers
           verbs:
           - "*"
         - apiGroups:

@@ -10,10 +10,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -29,10 +32,14 @@ var (
 	timeout       = time.Second * 1800
 )
 
+var serviceAccountLogCollectorUID types.UID
+
 //CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
 
 	cluster := clusterRequest.cluster
+
+	var collectorServiceAccount *core.ServiceAccount
 
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
@@ -41,7 +48,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
+		if collectorServiceAccount, err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
 			return
 		}
 	}
@@ -162,6 +169,15 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 	}
+	if collectorServiceAccount != nil && (cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd || cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog) {
+
+		// remove our finalizer from the list and update it.
+		collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
+		err = clusterRequest.Create(collectorServiceAccount)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			return
+		}
+	}
 
 	return nil
 }
@@ -180,7 +196,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityCla
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccount() error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccount() (*core.ServiceAccount, error) {
 
 	cluster := clusterRequest.cluster
 
@@ -188,9 +204,23 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(clusterRequest.cluster))
 
-	err := clusterRequest.Create(collectorServiceAccount)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Log Collector service account: %v", err)
+	delfinalizer := false
+	if collectorServiceAccount.ObjectMeta.DeletionTimestamp.IsZero() {
+		// This object is not being deleted.
+		if !utils.ContainsString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents) {
+			collectorServiceAccount.ObjectMeta.Finalizers = append(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
+		}
+		err := clusterRequest.Create(collectorServiceAccount)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			return nil, fmt.Errorf("Failure creating Log Collector service account: %v", err)
+		}
+		if len(collectorServiceAccount.ObjectMeta.UID) != 0 {
+			serviceAccountLogCollectorUID = collectorServiceAccount.ObjectMeta.UID
+		}
+	} else if utils.ContainsString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents) {
+		// This object is being deleted.
+		// our finalizer is present, so lets handle any dependency
+		delfinalizer = true
 	}
 
 	// Also create the role and role binding so that the service account has host read access
@@ -209,9 +239,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	utils.AddOwnerRefToObject(collectorRole, utils.AsOwner(cluster))
 
-	err = clusterRequest.Create(collectorRole)
+	err := clusterRequest.Create(collectorRole)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Log collector privileged role: %v", err)
+		return nil, fmt.Errorf("Failure creating Log collector privileged role: %v", err)
 	}
 
 	subject := NewSubject(
@@ -233,7 +263,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	err = clusterRequest.Create(collectorRoleBinding)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Log collector privileged role binding: %v", err)
+		return nil, fmt.Errorf("Failure creating Log collector privileged role binding: %v", err)
 	}
 
 	// create clusterrole for logcollector to retrieve metadata
@@ -247,7 +277,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	)
 	clusterRole, err := clusterRequest.CreateClusterRole("metadata-reader", clusterrules, cluster)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	subject = NewSubject(
 		"ServiceAccount",
@@ -268,10 +298,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	err = clusterRequest.Create(collectorReaderClusterRoleBinding)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Log collector %q cluster role binding: %v", collectorReaderClusterRoleBinding.Name, err)
+		return nil, fmt.Errorf("Failure creating Log collector %q cluster role binding: %v", collectorReaderClusterRoleBinding.Name, err)
 	}
 
-	return nil
+	if delfinalizer {
+		return collectorServiceAccount, nil
+	} else {
+		return nil, nil
+	}
 }
 
 func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
@@ -386,4 +420,8 @@ func isBufferFlushRequired(current *apps.DaemonSet, desired *apps.DaemonSet) boo
 	}
 
 	return (currVersion == "3.11" && desVersion == "4.0.0")
+}
+
+func getServiceAccountLogCollectorUID() types.UID {
+	return serviceAccountLogCollectorUID
 }

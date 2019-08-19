@@ -2,9 +2,139 @@
 
 CFG_DIR=/etc/rsyslog.d
 ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"false"}
-export MERGE_JSON_LOG=${MERGE_JSON_LOG:-true}
+export LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/rsyslog/rsyslog.log"}
+export RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
+export MERGE_JSON_LOG=${MERGE_JSON_LOG:-false}
+export UNDEFINED_DEBUG=${UNDEFINED_DEBUG:-false}
+export RSYSLOG_FILE_READ_FROM_TAIL=${RSYSLOG_FILE_READ_FROM_TAIL:-off}
+export RSYSLOG_JOURNAL_READ_FROM_TAIL=${RSYSLOG_JOURNAL_READ_FROM_TAIL:-off}
 
-rsyslogargs="-f /etc/rsyslog/conf/rsyslog.conf -n"
+# Undefined field configuraion
+CDM_USE_UNDEFINED=${CDM_USE_UNDEFINED:-false}
+CDM_KEEP_EMPTY_FIELDS=${CDM_KEEP_EMPTY_FIELDS:-""}
+CDM_UNDEFINED_TO_STRING=${CDM_UNDEFINED_TO_STRING:-false}
+CDM_UNDEFINED_DOT_REPLACE_CHAR=${CDM_UNDEFINED_DOT_REPLACE_CHAR:-"UNUSED"}
+if [ "${CDM_USE_UNDEFINED,,}" = "false" -a "${CDM_KEEP_EMPTY_FIELDS}" = "" -a "${CDM_UNDEFINED_TO_STRING,,}" = "false" -a "${CDM_UNDEFINED_DOT_REPLACE_CHAR,,}" = "UNUSED" ] ; then
+    if [ "${SKIP_EMPTY:-}" = "" ] ; then
+        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
+            # default - mmnormalize skip-empty
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
+            export SKIP_EMPTY=false
+            export USE_MMEXTERNAL=true
+            echo "INFO: USE_MMEXTERNAL was set to true but none of the UNDEFINED fields were set. Consider using SKIP_EMPTY=true and unsetting USE_MMEXTERNAL instead."
+        else
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+            echo "INFO: SKIP_EMPTY was not set but USE_MMEXTERNAL was set to false. Enabling SKIP_EMPTY. Consider unsetting both to avoid this message in the future."
+        fi
+    elif [ "${SKIP_EMPTY,,}" = "true" ] ; then
+        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to true. Respecting SKIP_EMPTY. Consider unsetting USE_MMEXTERNAL to avoid this message in the future."
+        else
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+        fi
+    else
+        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
+            export SKIP_EMPTY=false
+            export USE_MMEXTERNAL=true
+            echo "INFO: SKIP_EMPTY was set to false, but USE_MMEXTERNAL was not set and none of the UNDEFINED fields were configured. Enabling USE_MMEXTERNAL. Consider using SKIP_EMPTY=true instead."
+        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
+            export SKIP_EMPTY=false
+            export USE_MMEXTERNAL=true
+            echo "INFO: SKIP_EMPTY was set to false and USE_MMEXTERNAL was set to true, but none of the UNDEFINED fields were configured. Consider using SKIP_EMPTY=true and unsetting USE_MMEXTERNAL instead."
+        else
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to false. Enabling SKIP_EMPTY. Consider unsetting both to avoid this message in the future."
+        fi
+    fi
+else
+    if [ "${SKIP_EMPTY:-}" = "" ] ; then
+        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
+            export SKIP_EMPTY=false
+            export USE_MMEXTERNAL=true
+        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
+            export SKIP_EMPTY=false
+            export USE_MMEXTERNAL=true
+        else
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+            echo "INFO: SKIP_EMPTY was not set and USE_MMEXTERNAL was set to false, but the UNDEFINED fields were configured. Enabling SKIP_EMPTY. Consider using USE_MMEXTERNAL=true to activate the UNDEFINED fields configurations."
+        fi
+    elif [ "${SKIP_EMPTY,,}" = "true" ] ; then
+        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
+            # default - mmnormalize skip-empty
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+            echo "INFO: SKIP_EMPTY was set to true and USE_MMEXTERNAL was not set, but the UNDEFINED fields were configured. Consider using USE_MMEXTERNAL=true and unsetting SKIP_EMPTY to activate the UNDEFINED fields configurations."
+        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to true. Respecting SKIP_EMPTY. To activate the UNDEFINED fields configurations, consider unsetting SKIP_EMPTY."
+        else
+            export SKIP_EMPTY=true
+            export USE_MMEXTERNAL=false
+            echo "INFO: SKIP_EMPTY was set to true and USE_MMEXTERNAL was set to false, but the UNDEFINED fields were configured. Consider using USE_MMEXTERNAL=true and unsetting SKIP_EMPTY to activate the UNDEFINED fields configurations."
+        fi
+    else
+        if [ "${USE_MMEXTERNAL:-}" = "" ] ; then
+            export SKIP_EMPTY=false
+            export USE_MMEXTERNAL=true
+        elif [ "${USE_MMEXTERNAL,,}" = "true" ] ; then
+            export SKIP_EMPTY=false
+            export USE_MMEXTERNAL=true
+        else
+            export SKIP_EMPTY=false
+            export USE_MMEXTERNAL=true
+            echo "INFO: Both USE_MMEXTERNAL and SKIP_EMPTY were set to false, but the UNDEFINED fields were configured. Enabling USE_MMEXTERNAL. Consider using USE_MMEXTERNAL=true to avoid this message in the future."
+        fi
+    fi
+fi
+
+undefined_conf="/var/lib/rsyslog.pod/undefined.json"
+if [ "${SKIP_EMPTY}" = "false" -a "${USE_MMEXTERNAL}" = "true" ] ; then
+    # Create a config file for undefined fields from env vars
+    echo "{\"CDM_USE_UNDEFINED\" : ${CDM_USE_UNDEFINED}, \
+\"CDM_DEFAULT_KEEP_FIELDS\" : \"${CDM_DEFAULT_KEEP_FIELDS:-"CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id"}\", \
+\"CDM_EXTRA_KEEP_FIELDS\" : \"${CDM_EXTRA_KEEP_FIELDS:-""}\", \
+\"CDM_UNDEFINED_NAME\" : \"${CDM_UNDEFINED_NAME:-"undefined"}\", \
+\"CDM_KEEP_EMPTY_FIELDS\" : \"${CDM_KEEP_EMPTY_FIELDS}\", \
+\"CDM_UNDEFINED_TO_STRING\" : ${CDM_UNDEFINED_TO_STRING}, \
+\"CDM_UNDEFINED_DOT_REPLACE_CHAR\" : \"${CDM_UNDEFINED_DOT_REPLACE_CHAR}\", \
+\"CDM_UNDEFINED_MAX_NUM_FIELDS\" : ${CDM_UNDEFINED_MAX_NUM_FIELDS:--1}, \
+\"MERGE_JSON_LOG\" : ${MERGE_JSON_LOG}, \
+\"UNDEFINED_DEBUG\" : ${UNDEFINED_DEBUG}}" > $undefined_conf
+else
+    rm -f $undefined_conf
+fi
+
+if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
+    mkdir -p $RSYSLOG_WORKDIRECTORY
+fi
+
+if [ ${LOGGING_FILE_PATH} != "console" ] ; then
+    echo "============================="
+    echo "Rsyslog logs have been redirected to: $LOGGING_FILE_PATH"
+    echo "If you want to print out the logs, use command:"
+    echo "oc exec <pod_name> -- logs"
+    echo "============================="
+
+    dirname=$( dirname $LOGGING_FILE_PATH )
+    if [ ! -d $dirname ] ; then
+        mkdir -p $dirname
+    fi
+    touch $LOGGING_FILE_PATH; exec >> $LOGGING_FILE_PATH 2>&1
+fi
+
+rsyslogargs="-i /var/run/rsyslogd.pid -f /etc/rsyslog/conf/rsyslog.conf -n"
 if [[ $VERBOSE ]]; then
   set -ex
   rsyslogargs="$rsyslogargs -d"
@@ -59,6 +189,12 @@ if [ -z $ES_PORT ]; then
     exit 1
 fi
 
+# Check bearer_token_file for fluent-plugin-kubernetes_metadata_filter.
+if [ ! -s /var/run/secrets/kubernetes.io/serviceaccount/token ] ; then
+    echo "ERROR: Bearer_token_file (/var/run/secrets/kubernetes.io/serviceaccount/token) to access the Kubernetes API server is missing or empty."
+    exit 1
+fi
+
 OPS_HOST=${OPS_HOST:-$ES_HOST}
 OPS_PORT=${OPS_PORT:-$ES_PORT}
 OPS_CA=${OPS_CA:-$ES_CA}
@@ -83,22 +219,22 @@ ES_REBIND_INTERVAL=${ES_REBIND_INTERVAL:-200}
 OPS_REBIND_INTERVAL=${OPS_REBIND_INTERVAL:-$ES_REBIND_INTERVAL}
 export ES_REBIND_INTERVAL OPS_REBIND_INTERVAL
 
-# If FILE_BUFFER_PATH exists and it is not a directory, mkdir fails with the error.
-RSYSLOG_WORKDIRECTORY=${RSYSLOG_WORKDIRECTORY:-/var/lib/rsyslog.pod}
-if [ ! -d $RSYSLOG_WORKDIRECTORY ] ; then
-    mkdir -p $RSYSLOG_WORKDIRECTORY
-fi
 RSYSLOG_SPOOLDIRECTORY=${RSYSLOG_SPOOLDIRECTORY:-$RSYSLOG_WORKDIRECTORY}
 RSYSLOG_BULK_ERRORS=${RSYSLOG_BULK_ERRORS:-"$RSYSLOG_WORKDIRECTORY/es-bulk-errors.log"}
 RSYSLOG_IMJOURNAL_STATE=${RSYSLOG_IMJOURNAL_STATE:-"$RSYSLOG_WORKDIRECTORY/imjournal.state"}
 RSYSLOG_IMPSTATS_FILE=${RSYSLOG_IMPSTATS_FILE:-"$RSYSLOG_WORKDIRECTORY/impstats.json"}
+RSYSLOG_USE_IMPSTATS_FILE=${RSYSLOG_USE_IMPSTATS_FILE:-"false"}
 # 0 means check for cache expiration for every cache access - same as fluent-plugin-k8s
 RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL=${RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL:-0}
 # 3600 seconds = 1 hour - same as fluent-plugin-k8s
 RSYSLOG_K8S_CACHE_ENTRY_TTL=${RSYSLOG_K8S_CACHE_ENTRY_TTL:-3600}
-export RSYSLOG_WORKDIRECTORY RSYSLOG_SPOOLDIRECTORY RSYSLOG_BULK_ERRORS \
+# default queue size - depends on how much ram there is - if this is too
+# big relative to the memory limit of the pod, OOMKilled
+# figure about 10k per record + some room for overhead
+RSYSLOG_MAIN_QUEUE_SIZE=${RSYSLOG_MAIN_QUEUE_SIZE:-$( expr ${RSYSLOG_MEMORY_LIMIT:-250000000} / 10240 )}
+export RSYSLOG_SPOOLDIRECTORY RSYSLOG_BULK_ERRORS \
   RSYSLOG_IMJOURNAL_STATE RSYSLOG_IMPSTATS_FILE RSYSLOG_K8S_CACHE_EXPIRE_INTERVAL \
-  RSYSLOG_K8S_CACHE_ENTRY_TTL
+  RSYSLOG_K8S_CACHE_ENTRY_TTL RSYSLOG_MAIN_QUEUE_SIZE RSYSLOG_USE_IMPSTATS_FILE
 FILE_BUFFER_PATH=${FILE_BUFFER_PATH:-$RSYSLOG_WORKDIRECTORY}
 mkdir -p $FILE_BUFFER_PATH
 
@@ -203,12 +339,21 @@ if [ "${ENABLE_PROMETHEUS_ENDPOINT}" != "true" ] ; then
 fi
 
 # Create a directory for log files
-mkdir -p /var/log/rsyslog/
+if [ ! -d /var/log/rsyslog ] ; then
+    mkdir -p /var/log/rsyslog
+fi
+
+# make sure there is not one left over from a previous run
+rm -f /var/run/rsyslogd.pid
 
 issue_deprecation_warnings
 
 if [[ $DEBUG ]] ; then
-    exec /usr/sbin/rsyslogd $rsyslogargs > /var/log/rsyslog.log 2>&1
+    exec /usr/sbin/rsyslogd $rsyslogargs > /var/log/rsyslog/rsyslog.debug.log 2>&1
 else
-    exec /usr/sbin/rsyslogd $rsyslogargs
+    if [ ${LOGGING_FILE_PATH} = "console" ] ; then
+        exec /usr/sbin/rsyslogd $rsyslogargs
+    else
+        exec /usr/sbin/rsyslogd $rsyslogargs > /dev/null 2>&1
+    fi
 fi

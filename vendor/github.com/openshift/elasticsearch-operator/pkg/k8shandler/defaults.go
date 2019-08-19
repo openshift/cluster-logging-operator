@@ -3,7 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 
 const (
@@ -11,9 +11,7 @@ const (
 	modeSharedOps = "shared_ops"
 	defaultMode   = modeSharedOps
 
-	defaultMasterCPULimit     = "100m"
 	defaultMasterCPURequest   = "100m"
-	defaultCPULimit           = "4000m"
 	defaultCPURequest         = "100m"
 	defaultMemoryLimit        = "4Gi"
 	defaultMemoryRequest      = "1Gi"
@@ -57,6 +55,9 @@ func calculateReplicaCount(dpl *api.Elasticsearch) int {
 	case api.ZeroRedundancy:
 		return 0
 	default:
+		if dataNodeCount == 1 {
+			return 0
+		}
 		return 1
 	}
 }

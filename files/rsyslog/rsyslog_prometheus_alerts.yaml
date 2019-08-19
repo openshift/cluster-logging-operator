@@ -1,0 +1,43 @@
+"groups":
+- "name": "logging_rsyslog.alerts"
+  "rules":
+  - "alert": "RsyslogNodeDown"
+    "annotations":
+      "message": "Prometheus could not scrape rsyslog {{ $labels.instance }} for more than 10m."
+      "summary": "Rsyslog cannot be scraped"
+    "expr": |
+      absent(up{job="rsyslog"} == 1)
+    "for": "10m"
+    "labels":
+      "service": "rsyslog"
+      "severity": "critical"
+  - "alert": "RsyslogQueueLengthBurst"
+    "annotations":
+      "message": "In the last minute, rsyslog {{ $labels.instance }} queue length increased more than 32. Current value is {{ $value }}."
+      "summary": "Rsyslog is overwhelmed"
+    "expr": |
+      delta(rsyslog_queue_size[1m]) > 32
+    "for": "1m"
+    "labels":
+      "service": "rsyslog"
+      "severity": "warning"
+  - "alert": "RsyslogQueueLengthIncreasing"
+    "annotations":
+      "message": "In the last 12h, rsyslog {{ $labels.instance }} queue length constantly increased more than 1. Current value is {{ $value }}."
+      "summary": "Rsyslog queue usage issue"
+    "expr": |
+      delta(rsyslog_queue_size[1m]) > 1
+    "for": "12h"
+    "labels":
+      "service": "rsyslog"
+      "severity": "critical"
+  - "alert": "RsyslogErrorsHigh"
+    "annotations":
+      "message": "In the last minute, {{ $value }} errors reported by rsyslog {{ $labels.instance }}."
+      "summary": "Rsyslog reports high number of errors"
+    "expr": |
+      sum by(instance, job) (rate(rsyslog_action_failed[1m])) > 10
+    "for": "1m"
+    "labels":
+      "service": "rsyslog"
+      "severity": "critical"

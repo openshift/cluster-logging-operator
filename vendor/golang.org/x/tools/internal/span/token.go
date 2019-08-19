@@ -19,8 +19,8 @@ type Range struct {
 }
 
 // TokenConverter is a Converter backed by a token file set and file.
-// It uses the file set methods to work out determine the conversions which
-// make if fast and do not require the file contents.
+// It uses the file set methods to work out the conversions, which
+// makes it fast and does not require the file contents.
 type TokenConverter struct {
 	fset *token.FileSet
 	file *token.File
@@ -99,6 +99,14 @@ func (s Span) Range(converter *TokenConverter) (Range, error) {
 	if err != nil {
 		return Range{}, err
 	}
+	// go/token will panic if the offset is larger than the file's size,
+	// so check here to avoid panicking.
+	if s.Start().Offset() > converter.file.Size() {
+		return Range{}, fmt.Errorf("start offset %v is past the end of the file", s.Start())
+	}
+	if s.End().Offset() > converter.file.Size() {
+		return Range{}, fmt.Errorf("end offset %v is past the end of the file", s.End())
+	}
 	return Range{
 		FileSet: converter.fset,
 		Start:   converter.file.Pos(s.Start().Offset()),
@@ -107,7 +115,9 @@ func (s Span) Range(converter *TokenConverter) (Range, error) {
 }
 
 func (l *TokenConverter) ToPosition(offset int) (int, int, error) {
-	//TODO: check offset fits in file
+	if offset > l.file.Size() {
+		return 0, 0, fmt.Errorf("offset %v is past the end of the file", offset)
+	}
 	pos := l.file.Pos(offset)
 	p := l.fset.Position(pos)
 	return p.Line, p.Column, nil

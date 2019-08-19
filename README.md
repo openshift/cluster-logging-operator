@@ -111,6 +111,8 @@ Following is a list of some of the existing `make` targets to facilitate deploym
 |`undeploy`|Removes all `cluster-logging` resources and `openshift-logging` project|
 |`deploy-setup`|Setup the OKD cluster to support cluster-logging without deploying an instance of the `cluster-logging-operator`|
 |`deploy-image`|If you already have a remote cluster, and you just want to rebuild and redeploy the image to the remote cluster.  Use `make image` instead if you only want to build the image but not push it.|
+|`deploy-no-build`|Same as `deploy` but does not build the image first - assumes you have already built the image|
+|`deploy-example-no-build`|Same as `deploy-example` but does not build the image first - assumes you have already built the image|
 
 
 ## Testing

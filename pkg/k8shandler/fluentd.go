@@ -12,44 +12,38 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
-	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 )
 
 const (
-	metricsPort       = int32(24231)
-	metricsPortName   = "metrics"
-	prometheusCAFile  = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
-	metricsVolumeName = "fluentd-metrics"
-	alertsFile        = "/usr/share/logging/fluentd/fluentd_prometheus_alerts.yaml"
+	fluentdAlertsFile = "fluentd/fluentd_prometheus_alerts.yaml"
 )
 
-func removeFluentd(cluster *ClusterLogging) (err error) {
-	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
+	if clusterRequest.isManaged() {
 
-		if err = utils.RemoveService(cluster.Namespace, "fluentd"); err != nil {
+		if err = clusterRequest.RemoveService("fluentd"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveServiceMonitor(cluster.Namespace, "fluentd"); err != nil {
+		if err = clusterRequest.RemoveServiceMonitor("fluentd"); err != nil {
 			return
 		}
 
-		if err = utils.RemovePrometheusRule(cluster.Namespace, "fluentd"); err != nil {
+		if err = clusterRequest.RemovePrometheusRule("fluentd"); err != nil {
 			return
 		}
 
-
-		if err = utils.RemoveConfigMap(cluster.Namespace, "fluentd"); err != nil {
+		if err = clusterRequest.RemoveConfigMap("fluentd"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveSecret(cluster.Namespace, "fluentd"); err != nil {
+		if err = clusterRequest.RemoveSecret("fluentd"); err != nil {
 			return
 		}
 
-		if err = utils.RemoveDaemonset(cluster.Namespace, "fluentd"); err != nil {
+		if err = clusterRequest.RemoveDaemonset("fluentd"); err != nil {
 			return
 		}
 	}
@@ -57,10 +51,10 @@ func removeFluentd(cluster *ClusterLogging) (err error) {
 	return nil
 }
 
-func createOrUpdateFluentdService(cluster *ClusterLogging) error {
-	service := utils.NewService(
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdService() error {
+	service := NewService(
 		"fluentd",
-		cluster.Namespace,
+		clusterRequest.cluster.Namespace,
 		"fluentd",
 		[]v1.ServicePort{
 			{
@@ -72,12 +66,12 @@ func createOrUpdateFluentdService(cluster *ClusterLogging) error {
 	)
 
 	service.Annotations = map[string]string{
-		"service.alpha.openshift.io/serving-cert-secret-name": metricsVolumeName,
+		"service.alpha.openshift.io/serving-cert-secret-name": "fluentd-metrics",
 	}
 
-	utils.AddOwnerRefToObject(service, utils.AsOwner(cluster))
+	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.cluster))
 
-	err := sdk.Create(service)
+	err := clusterRequest.Create(service)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating the fluentd service: %v", err)
 	}
@@ -85,8 +79,11 @@ func createOrUpdateFluentdService(cluster *ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdServiceMonitor(cluster *ClusterLogging) error {
-	serviceMonitor := utils.NewServiceMonitor("fluentd", cluster.Namespace)
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdServiceMonitor() error {
+
+	cluster := clusterRequest.cluster
+
+	serviceMonitor := NewServiceMonitor("fluentd", cluster.Namespace)
 
 	endpoint := monitoringv1.Endpoint{
 		Port:   metricsPortName,
@@ -116,7 +113,7 @@ func createOrUpdateFluentdServiceMonitor(cluster *ClusterLogging) error {
 
 	utils.AddOwnerRefToObject(serviceMonitor, utils.AsOwner(cluster))
 
-	err := sdk.Create(serviceMonitor)
+	err := clusterRequest.Create(serviceMonitor)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating the fluentd ServiceMonitor: %v", err)
 	}
@@ -124,10 +121,13 @@ func createOrUpdateFluentdServiceMonitor(cluster *ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdPrometheusRule(cluster *ClusterLogging) error {
-	promRule := utils.NewPrometheusRule("fluentd", cluster.Namespace)
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule() error {
 
-	promRuleSpec, err := utils.NewPrometheusRuleSpecFrom(alertsFile)
+	cluster := clusterRequest.cluster
+
+	promRule := NewPrometheusRule("fluentd", cluster.Namespace)
+
+	promRuleSpec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + fluentdAlertsFile)
 	if err != nil {
 		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
 	}
@@ -136,7 +136,7 @@ func createOrUpdateFluentdPrometheusRule(cluster *ClusterLogging) error {
 
 	utils.AddOwnerRefToObject(promRule, utils.AsOwner(cluster))
 
-	err = sdk.Create(promRule)
+	err = clusterRequest.Create(promRule)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
 	}
@@ -144,32 +144,32 @@ func createOrUpdateFluentdPrometheusRule(cluster *ClusterLogging) error {
 	return nil
 }
 
-func createOrUpdateFluentdConfigMap(cluster *ClusterLogging) error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap() error {
 
-	fluentdConfigMap := utils.NewConfigMap(
+	fluentdConfigMap := NewConfigMap(
 		"fluentd",
-		cluster.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"fluent.conf":          string(utils.GetFileContents("/usr/share/logging/fluentd/fluent.conf")),
-			"throttle-config.yaml": string(utils.GetFileContents("/usr/share/logging/fluentd/fluentd-throttle-config.yaml")),
-			"secure-forward.conf":  string(utils.GetFileContents("/usr/share/logging/fluentd/secure-forward.conf")),
+			"fluent.conf":          string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/fluent.conf")),
+			"throttle-config.yaml": string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/fluentd-throttle-config.yaml")),
+			"secure-forward.conf":  string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/secure-forward.conf")),
 		},
 	)
 
-	utils.AddOwnerRefToObject(fluentdConfigMap, utils.AsOwner(cluster))
+	utils.AddOwnerRefToObject(fluentdConfigMap, utils.AsOwner(clusterRequest.cluster))
 
-	err := sdk.Create(fluentdConfigMap)
+	err := clusterRequest.Create(fluentdConfigMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure constructing Fluentd configmap: %v", err)
 	}
 
 	return nil
 }
-func createOrUpdateFluentdSecret(cluster *ClusterLogging) error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error {
 
-	fluentdSecret := utils.NewSecret(
+	fluentdSecret := NewSecret(
 		"fluentd",
-		cluster.Namespace,
+		clusterRequest.cluster.Namespace,
 		map[string][]byte{
 			"app-ca":     utils.GetWorkingDirFileContents("ca.crt"),
 			"app-key":    utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
@@ -179,9 +179,9 @@ func createOrUpdateFluentdSecret(cluster *ClusterLogging) error {
 			"infra-cert": utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
 		})
 
-	cluster.AddOwnerRefTo(fluentdSecret)
+	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(clusterRequest.cluster))
 
-	err := utils.CreateOrUpdateSecret(fluentdSecret)
+	err := clusterRequest.CreateOrUpdateSecret(fluentdSecret)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			},
 		}
 	}
-	fluentdContainer := utils.NewContainer("fluentd", v1.PullIfNotPresent, *resources)
+	fluentdContainer := NewContainer("fluentd", "fluentd", v1.PullIfNotPresent, *resources)
 
 	fluentdContainer.Ports = []v1.ContainerPort{
 		v1.ContainerPort{
@@ -225,8 +225,6 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "OPS_CLIENT_CERT", Value: "/etc/fluent/keys/infra-cert"},
 		{Name: "OPS_CLIENT_KEY", Value: "/etc/fluent/keys/infra-key"},
 		{Name: "OPS_CA", Value: "/etc/fluent/keys/infra-ca"},
-		{Name: "JOURNAL_SOURCE", Value: ""},
-		{Name: "JOURNAL_READ_FROM_HEAD", Value: ""},
 		{Name: "BUFFER_QUEUE_LIMIT", Value: "32"},
 		{Name: "BUFFER_SIZE_LIMIT", Value: "8m"},
 		{Name: "FILE_BUFFER_LIMIT", Value: "256Mi"},
@@ -253,7 +251,23 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		Privileged: utils.GetBool(true),
 	}
 
-	fluentdPodSpec := utils.NewPodSpec(
+	tolerations := utils.AppendTolerations(
+		logging.Spec.Collection.Logs.FluentdSpec.Tolerations,
+		[]v1.Toleration{
+			v1.Toleration{
+				Key:      "node-role.kubernetes.io/master",
+				Operator: v1.TolerationOpExists,
+				Effect:   v1.TaintEffectNoSchedule,
+			},
+			v1.Toleration{
+				Key:      "node.kubernetes.io/disk-pressure",
+				Operator: v1.TolerationOpExists,
+				Effect:   v1.TaintEffectNoSchedule,
+			},
+		},
+	)
+
+	fluentdPodSpec := NewPodSpec(
 		"logcollector",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{
@@ -267,41 +281,34 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "dockercfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/sysconfig/docker"}}},
 			{Name: "dockerdaemoncfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/docker"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/fluentd"}}},
-			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: metricsVolumeName}}},
+			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd-metrics"}}},
 		},
 		logging.Spec.Collection.Logs.FluentdSpec.NodeSelector,
+		tolerations,
 	)
 
 	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName
 
-	fluentdPodSpec.NodeSelector = logging.Spec.Collection.Logs.FluentdSpec.NodeSelector
-
-	fluentdPodSpec.Tolerations = []v1.Toleration{
-		v1.Toleration{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
-
 	return fluentdPodSpec
 }
 
-func createOrUpdateFluentdDaemonset(cluster *ClusterLogging) (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset() (err error) {
 
-	fluentdPodSpec := newFluentdPodSpec(cluster.ClusterLogging, "elasticsearch", "elasticsearch")
+	cluster := clusterRequest.cluster
 
-	fluentdDaemonset := utils.NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
-	cluster.AddOwnerRefTo(fluentdDaemonset)
+	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
 
-	err = sdk.Create(fluentdDaemonset)
+	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
+	utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(cluster))
+
+	err = clusterRequest.Create(fluentdDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Fluentd Daemonset %v", err)
 	}
 
-	if cluster.Spec.ManagementState == logging.ManagementStateManaged {
+	if clusterRequest.isManaged() {
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			return updateFluentdDaemonsetIfRequired(fluentdDaemonset)
+			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset)
 		})
 		if retryErr != nil {
 			return retryErr
@@ -311,12 +318,10 @@ func createOrUpdateFluentdDaemonset(cluster *ClusterLogging) (err error) {
 	return nil
 }
 
-func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
+func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	current := desired.DeepCopy()
 
-	current.Spec = apps.DaemonSetSpec{}
-
-	if err = sdk.Get(current); err != nil {
+	if err = clusterRequest.Get(desired.Name, current); err != nil {
 		if errors.IsNotFound(err) {
 			// the object doesn't exist -- it was likely culled
 			// recreate it on the next time through if necessary
@@ -332,18 +337,18 @@ func updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 
 		if flushBuffer {
 			current.Spec.Template.Spec.Containers[0].Env = append(current.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{Name: "FLUSH_AT_SHUTDOWN", Value: "True"})
-			if err = sdk.Update(current); err != nil {
+			if err = clusterRequest.Update(current); err != nil {
 				logrus.Debugf("Failed to prepare Fluentd daemonset to flush its buffers: %v", err)
 				return err
 			}
 
 			// wait for pods to all restart then continue
-			if err = waitForDaemonSetReady(current); err != nil {
+			if err = clusterRequest.waitForDaemonSetReady(current); err != nil {
 				return fmt.Errorf("Timed out waiting for Fluentd to be ready")
 			}
 		}
 
-		if err = sdk.Update(desired); err != nil {
+		if err = clusterRequest.Update(desired); err != nil {
 			return err
 		}
 	}

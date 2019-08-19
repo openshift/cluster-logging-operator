@@ -1,16 +1,17 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
-	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 
 var wrongConfig bool
@@ -25,10 +26,10 @@ func nodeMapKey(clusterName, namespace string) string {
 }
 
 // CreateOrUpdateElasticsearchCluster creates an Elasticsearch deployment
-func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
+func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateElasticsearchCluster() error {
 
 	// Verify that we didn't scale up too many masters
-	err := isValidConf(cluster)
+	err := elasticsearchRequest.isValidConf()
 	if err != nil {
 		// if wrongConfig=true then we've already print out error message
 		// don't flood the stderr of the operator with the same message
@@ -40,14 +41,16 @@ func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 	}
 	wrongConfig = false
 
-	getNodes(cluster)
+	elasticsearchRequest.getNodes()
+
+	progressUnshedulableNodes(elasticsearchRequest.cluster)
 
 	// if there is a node currently being upgraded, work on that first
-	upgradeInProgressNode := getNodeUpgradeInProgress(cluster)
-	scheduledUpgradeNodes := getScheduledUpgradeNodes(cluster)
+	upgradeInProgressNode := getNodeUpgradeInProgress(elasticsearchRequest.cluster)
+	scheduledUpgradeNodes := getScheduledUpgradeNodes(elasticsearchRequest.cluster)
 	if upgradeInProgressNode != nil {
 
-		clusterStatus := cluster.Status.DeepCopy()
+		clusterStatus := elasticsearchRequest.cluster.Status.DeepCopy()
 		index, nodeStatus := getNodeStatus(upgradeInProgressNode.name(), clusterStatus)
 
 		if _, ok := containsNodeTypeInterface(upgradeInProgressNode, scheduledUpgradeNodes); ok {
@@ -69,14 +72,14 @@ func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 			clusterStatus.Nodes[index] = *nodeStatus
 		}
 
-		updateNodeStatus(cluster, *clusterStatus)
+		elasticsearchRequest.updateNodeStatus(*clusterStatus)
 
 	} else {
 
 		if len(scheduledUpgradeNodes) > 0 {
 			for _, node := range scheduledUpgradeNodes {
 				logrus.Debugf("Perform a update for %v", node.name())
-				clusterStatus := cluster.Status.DeepCopy()
+				clusterStatus := elasticsearchRequest.cluster.Status.DeepCopy()
 				index, nodeStatus := getNodeStatus(node.name(), clusterStatus)
 
 				err := node.update(nodeStatus)
@@ -91,7 +94,7 @@ func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 					clusterStatus.Nodes[index] = *nodeStatus
 				}
 
-				updateNodeStatus(cluster, *clusterStatus)
+				elasticsearchRequest.updateNodeStatus(*clusterStatus)
 
 				if err != nil {
 					logrus.Warnf("Error occurred while updating node %v: %v", node.name(), err)
@@ -100,13 +103,13 @@ func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 
 		} else {
 
-			scheduledRedeployNodes := getScheduledRedeployOnlyNodes(cluster)
+			scheduledRedeployNodes := getScheduledRedeployOnlyNodes(elasticsearchRequest.cluster)
 			if len(scheduledRedeployNodes) > 0 {
 				// get all nodes that need only a rollout
 				// TODO: ready cluster for a pod restart first
 				for _, node := range scheduledRedeployNodes {
 					logrus.Debugf("Perform a redeploy for %v", node.name())
-					clusterStatus := cluster.Status.DeepCopy()
+					clusterStatus := elasticsearchRequest.cluster.Status.DeepCopy()
 					index, nodeStatus := getNodeStatus(node.name(), clusterStatus)
 
 					node.restart(nodeStatus)
@@ -121,17 +124,17 @@ func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 						clusterStatus.Nodes[index] = *nodeStatus
 					}
 
-					updateNodeStatus(cluster, *clusterStatus)
+					elasticsearchRequest.updateNodeStatus(*clusterStatus)
 				}
 
 			} else {
 
-				for _, node := range nodes[nodeMapKey(cluster.Name, cluster.Namespace)] {
-					clusterStatus := cluster.Status.DeepCopy()
+				for _, node := range nodes[nodeMapKey(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace)] {
+					clusterStatus := elasticsearchRequest.cluster.Status.DeepCopy()
 					index, nodeStatus := getNodeStatus(node.name(), clusterStatus)
 
 					// Verify that we didn't scale up too many masters
-					if err := isValidConf(cluster); err != nil {
+					if err := elasticsearchRequest.isValidConf(); err != nil {
 						// if wrongConfig=true then we've already print out error message
 						// don't flood the stderr of the operator with the same message
 						if wrongConfig {
@@ -160,34 +163,42 @@ func CreateOrUpdateElasticsearchCluster(cluster *api.Elasticsearch) error {
 					}
 
 					// update status here
-					updateNodeStatus(cluster, *clusterStatus)
+					elasticsearchRequest.updateNodeStatus(*clusterStatus)
 
-					updateMinMasters(cluster)
+					elasticsearchRequest.updateMinMasters()
 				}
 
+				// we only want to update our replicas if we aren't in the middle up an upgrade
+				UpdateReplicaCount(
+					elasticsearchRequest.cluster.Name,
+					elasticsearchRequest.cluster.Namespace,
+					elasticsearchRequest.client,
+					int32(calculateReplicaCount(elasticsearchRequest.cluster)))
 			}
 		}
 	}
 
 	// Scrape cluster health from elasticsearch every time
-	return UpdateClusterStatus(cluster)
+	return elasticsearchRequest.UpdateClusterStatus()
 }
 
-func updateMinMasters(cluster *api.Elasticsearch) {
+func (elasticsearchRequest *ElasticsearchRequest) updateMinMasters() {
 	// do as best effort -- whenever we create a node update min masters (if required)
 
-	currentMasterCount, err := GetMinMasterNodes(cluster.Name, cluster.Namespace)
+	cluster := elasticsearchRequest.cluster
+
+	currentMasterCount, err := GetMinMasterNodes(cluster.Name, cluster.Namespace, elasticsearchRequest.client)
 	if err != nil {
 		logrus.Debugf("Unable to get current min master count for cluster %v", cluster.Name)
 	}
 
-	desiredMasterCount := getMasterCount(cluster)
-	currentNodeCount, err := GetClusterNodeCount(cluster.Name, cluster.Namespace)
+	desiredMasterCount := getMasterCount(cluster)/2 + 1
+	currentNodeCount, err := GetClusterNodeCount(cluster.Name, cluster.Namespace, elasticsearchRequest.client)
 
 	// check that we have the required number of master nodes in the cluster...
 	if currentNodeCount >= desiredMasterCount {
 		if currentMasterCount != desiredMasterCount {
-			if _, setErr := SetMinMasterNodes(cluster.Name, cluster.Namespace, desiredMasterCount); setErr != nil {
+			if _, setErr := SetMinMasterNodes(cluster.Name, cluster.Namespace, desiredMasterCount, elasticsearchRequest.client); setErr != nil {
 				logrus.Debugf("Unable to set min master count to %d for cluster %v", desiredMasterCount, cluster.Name)
 			}
 		}
@@ -209,7 +220,25 @@ func getNodeUpgradeInProgress(cluster *api.Elasticsearch) NodeTypeInterface {
 	return nil
 }
 
-func setUUIDs(cluster *api.Elasticsearch) {
+func progressUnshedulableNodes(cluster *api.Elasticsearch) {
+	for _, node := range cluster.Status.Nodes {
+		if isPodUnschedulableConditionTrue(node.Conditions) {
+			for _, nodeTypeInterface := range nodes[nodeMapKey(cluster.Name, cluster.Namespace)] {
+				if node.DeploymentName == nodeTypeInterface.name() ||
+					node.StatefulSetName == nodeTypeInterface.name() {
+					logrus.Debugf("Node %s is unschedulable, trying to recover...", nodeTypeInterface.name())
+					if err := nodeTypeInterface.progressUnshedulableNode(&node); err != nil {
+						logrus.Warnf("Failed to progress update of unschedulable node '%s': %v", nodeTypeInterface.name(), err)
+					}
+				}
+			}
+		}
+	}
+}
+
+func (elasticsearchRequest *ElasticsearchRequest) setUUIDs() {
+
+	cluster := elasticsearchRequest.cluster
 
 	for index := 0; index < len(cluster.Spec.Nodes); index++ {
 		if cluster.Spec.Nodes[index].GenUUID == nil {
@@ -224,7 +253,7 @@ func setUUIDs(cluster *api.Elasticsearch) {
 			nretries := -1
 			retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 				nretries++
-				if getErr := sdk.Get(cluster); getErr != nil {
+				if getErr := elasticsearchRequest.client.Get(context.TODO(), types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, cluster); getErr != nil {
 					logrus.Debugf("Could not get Elasticsearch %v: %v", cluster.Name, getErr)
 					return getErr
 				}
@@ -235,7 +264,7 @@ func setUUIDs(cluster *api.Elasticsearch) {
 
 				cluster.Spec.Nodes[index].GenUUID = &uuid
 
-				if updateErr := sdk.Update(cluster); updateErr != nil {
+				if updateErr := elasticsearchRequest.client.Update(context.TODO(), cluster); updateErr != nil {
 					logrus.Debugf("Failed to update Elasticsearch %s status. Reason: %v. Trying again...", cluster.Name, updateErr)
 					return updateErr
 				}
@@ -251,32 +280,54 @@ func setUUIDs(cluster *api.Elasticsearch) {
 
 }
 
-func getNodes(cluster *api.Elasticsearch) {
+func (elasticsearchRequest *ElasticsearchRequest) getNodes() {
 
-	setUUIDs(cluster)
+	elasticsearchRequest.setUUIDs()
 
 	if nodes == nil {
 		nodes = make(map[string][]NodeTypeInterface)
 	}
 
+	cluster := elasticsearchRequest.cluster
+	currentNodes := []NodeTypeInterface{}
+
 	// get list of client only nodes, and collapse node info into the node (self field) if needed
 	for _, node := range cluster.Spec.Nodes {
 
-		// TODO: collect UUIDs processed -- compare them against ones in status
-		//  check if someone updated a UUID of an already created node?
-
 		// build the NodeTypeInterface list
-		for _, nodeTypeInterface := range GetNodeTypeInterface(*node.GenUUID, node, cluster) {
+		for _, nodeTypeInterface := range elasticsearchRequest.GetNodeTypeInterface(*node.GenUUID, node) {
 
 			nodeIndex, ok := containsNodeTypeInterface(nodeTypeInterface, nodes[nodeMapKey(cluster.Name, cluster.Namespace)])
 			if !ok {
-				nodes[nodeMapKey(cluster.Name, cluster.Namespace)] = append(nodes[nodeMapKey(cluster.Name, cluster.Namespace)], nodeTypeInterface)
+				currentNodes = append(currentNodes, nodeTypeInterface)
 			} else {
 				nodes[nodeMapKey(cluster.Name, cluster.Namespace)][nodeIndex].updateReference(nodeTypeInterface)
+				currentNodes = append(currentNodes, nodes[nodeMapKey(cluster.Name, cluster.Namespace)][nodeIndex])
 			}
 
 		}
 	}
+
+	minMasterUpdated := false
+
+	// we want to only keep nodes that were generated and purge/delete any other ones...
+	for _, node := range nodes[nodeMapKey(cluster.Name, cluster.Namespace)] {
+		if _, ok := containsNodeTypeInterface(node, currentNodes); !ok {
+			if !minMasterUpdated {
+				// if we're removing a node make sure we set a lower min masters to keep cluster functional
+				elasticsearchRequest.updateMinMasters()
+				minMasterUpdated = true
+			}
+			node.delete()
+
+			// remove from status.Nodes
+			if index, _ := getNodeStatus(node.name(), &cluster.Status); index != NOT_FOUND_INDEX {
+				cluster.Status.Nodes = append(cluster.Status.Nodes[:index], cluster.Status.Nodes[index+1:]...)
+			}
+		}
+	}
+
+	nodes[nodeMapKey(cluster.Name, cluster.Namespace)] = currentNodes
 }
 
 func getScheduledUpgradeNodes(cluster *api.Elasticsearch) []NodeTypeInterface {
@@ -315,7 +366,9 @@ func getScheduledRedeployOnlyNodes(cluster *api.Elasticsearch) []NodeTypeInterfa
 	return redeployNodes
 }
 
-func updateNodeStatus(cluster *api.Elasticsearch, status api.ElasticsearchStatus) error {
+func (elasticsearchRequest *ElasticsearchRequest) updateNodeStatus(status api.ElasticsearchStatus) error {
+
+	cluster := elasticsearchRequest.cluster
 	// if there is nothing to update, don't
 	if reflect.DeepEqual(cluster.Status, status) {
 		return nil
@@ -324,14 +377,14 @@ func updateNodeStatus(cluster *api.Elasticsearch, status api.ElasticsearchStatus
 	nretries := -1
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		nretries++
-		if getErr := sdk.Get(cluster); getErr != nil {
+		if getErr := elasticsearchRequest.client.Get(context.TODO(), types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, cluster); getErr != nil {
 			logrus.Debugf("Could not get Elasticsearch %v: %v", cluster.Name, getErr)
 			return getErr
 		}
 
 		cluster.Status = status
 
-		if updateErr := sdk.Update(cluster); updateErr != nil {
+		if updateErr := elasticsearchRequest.client.Update(context.TODO(), cluster); updateErr != nil {
 			logrus.Debugf("Failed to update Elasticsearch %s status. Reason: %v. Trying again...", cluster.Name, updateErr)
 			return updateErr
 		}

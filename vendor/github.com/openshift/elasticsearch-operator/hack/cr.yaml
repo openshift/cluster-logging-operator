@@ -1,5 +1,5 @@
 ---
-apiVersion: "logging.openshift.io/v1alpha1"
+apiVersion: "logging.openshift.io/v1"
 kind: "Elasticsearch"
 metadata:
   name: "elasticsearch"

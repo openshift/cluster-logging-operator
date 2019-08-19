@@ -10,30 +10,29 @@ import (
 	"github.com/openshift/api/image/dockerpre012"
 )
 
-var (
-	GroupName     = "image.openshift.io"
-	GroupVersion  = schema.GroupVersion{Group: GroupName, Version: "v1"}
-	schemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, docker10.AddToScheme, dockerpre012.AddToScheme, corev1.AddToScheme)
-	// Install is a function which adds this version to a scheme
-	Install = schemeBuilder.AddToScheme
-
-	// SchemeGroupVersion generated code relies on this name
-	// Deprecated
-	SchemeGroupVersion = GroupVersion
-	// AddToScheme exists solely to keep the old generators creating valid code
-	// DEPRECATED
-	AddToScheme = schemeBuilder.AddToScheme
+const (
+	GroupName       = "image.openshift.io"
+	LegacyGroupName = ""
 )
 
-// Resource generated code relies on this being here, but it logically belongs to the group
-// DEPRECATED
+var (
+	SchemeGroupVersion       = schema.GroupVersion{Group: GroupName, Version: "v1"}
+	LegacySchemeGroupVersion = schema.GroupVersion{Group: LegacyGroupName, Version: "v1"}
+
+	LegacySchemeBuilder    = runtime.NewSchemeBuilder(addLegacyKnownTypes, docker10.AddToSchemeInCoreGroup, dockerpre012.AddToSchemeInCoreGroup)
+	AddToSchemeInCoreGroup = LegacySchemeBuilder.AddToScheme
+
+	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, docker10.AddToScheme, dockerpre012.AddToScheme)
+	AddToScheme   = SchemeBuilder.AddToScheme
+)
+
 func Resource(resource string) schema.GroupResource {
-	return schema.GroupResource{Group: GroupName, Resource: resource}
+	return SchemeGroupVersion.WithResource(resource).GroupResource()
 }
 
 // Adds the list of known types to api.Scheme.
-func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(GroupVersion,
+func addLegacyKnownTypes(scheme *runtime.Scheme) error {
+	types := []runtime.Object{
 		&Image{},
 		&ImageList{},
 		&ImageSignature{},
@@ -43,10 +42,27 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ImageStreamTag{},
 		&ImageStreamTagList{},
 		&ImageStreamImage{},
-		&ImageStreamLayers{},
+		&ImageStreamImport{},
+	}
+	scheme.AddKnownTypes(LegacySchemeGroupVersion, types...)
+	return nil
+}
+
+// Adds the list of known types to api.Scheme.
+func addKnownTypes(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(SchemeGroupVersion,
+		&Image{},
+		&ImageList{},
+		&ImageSignature{},
+		&ImageStream{},
+		&ImageStreamList{},
+		&ImageStreamMapping{},
+		&ImageStreamTag{},
+		&ImageStreamTagList{},
+		&ImageStreamImage{},
 		&ImageStreamImport{},
 		&corev1.SecretList{},
 	)
-	metav1.AddToGroupVersion(scheme, GroupVersion)
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

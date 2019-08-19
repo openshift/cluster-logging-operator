@@ -8,26 +8,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"go/token"
-	"io/ioutil"
+	"time"
 
-	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/span"
 )
 
-// definition implements the definition noun for the query command.
+// check implements the check verb for gopls.
 type check struct {
 	app *Application
-}
-
-type checkClient struct {
-	baseClient
-	diagnostics chan entry
-}
-
-type entry struct {
-	uri         span.URI
-	diagnostics []protocol.Diagnostic
 }
 
 func (c *check) Name() string      { return "check" }
@@ -51,60 +39,38 @@ func (c *check) Run(ctx context.Context, args ...string) error {
 		// no files, so no results
 		return nil
 	}
-	client := &checkClient{
-		diagnostics: make(chan entry),
-	}
-	client.app = c.app
-	checking := map[span.URI][]byte{}
+	checking := map[span.URI]*cmdFile{}
 	// now we ready to kick things off
-	server, err := c.app.connect(ctx, client)
+	conn, err := c.app.connect(ctx)
 	if err != nil {
 		return err
 	}
+	defer conn.terminate(ctx)
 	for _, arg := range args {
 		uri := span.FileURI(arg)
-		content, err := ioutil.ReadFile(arg)
-		if err != nil {
-			return err
+		file := conn.AddFile(ctx, uri)
+		if file.err != nil {
+			return file.err
 		}
-		checking[uri] = content
-		p := &protocol.DidOpenTextDocumentParams{}
-		p.TextDocument.URI = string(uri)
-		p.TextDocument.Text = string(content)
-		if err := server.DidOpen(ctx, p); err != nil {
-			return err
-		}
+		checking[uri] = file
 	}
 	// now wait for results
-	for entry := range client.diagnostics {
-		//TODO:timeout?
-		content, found := checking[entry.uri]
-		if !found {
-			continue
+	//TODO: maybe conn.ExecuteCommand(ctx, &protocol.ExecuteCommandParams{Command: "gopls-wait-idle"})
+	for _, file := range checking {
+		select {
+		case <-file.hasDiagnostics:
+		case <-time.After(30 * time.Second):
+			return fmt.Errorf("timed out waiting for results from %v", file.uri)
 		}
-		fset := token.NewFileSet()
-		f := fset.AddFile(string(entry.uri), -1, len(content))
-		f.SetLinesForContent(content)
-		m := protocol.NewColumnMapper(entry.uri, fset, f, content)
-		for _, d := range entry.diagnostics {
-			spn, err := m.RangeSpan(d.Range)
+		file.diagnosticsMu.Lock()
+		defer file.diagnosticsMu.Unlock()
+		for _, d := range file.diagnostics {
+			spn, err := file.mapper.RangeSpan(d.Range)
 			if err != nil {
 				return fmt.Errorf("Could not convert position %v for %q", d.Range, d.Message)
 			}
 			fmt.Printf("%v: %v\n", spn, d.Message)
 		}
-		delete(checking, entry.uri)
-		if len(checking) == 0 {
-			return nil
-		}
-	}
-	return fmt.Errorf("did not get all results")
-}
-
-func (c *checkClient) PublishDiagnostics(ctx context.Context, p *protocol.PublishDiagnosticsParams) error {
-	c.diagnostics <- entry{
-		uri:         span.URI(p.URI),
-		diagnostics: p.Diagnostics,
 	}
 	return nil
 }

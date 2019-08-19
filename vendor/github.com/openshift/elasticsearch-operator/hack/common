@@ -17,6 +17,162 @@ REMOTE_REGISTRY=${REMOTE_REGISTRY:-false}
 # elasticsearch is running
 REMOTE_CLUSTER=${REMOTE_CLUSTER:-false}
 
+UBI_IMAGE=${UBI_IMAGE:-registry.svc.ci.openshift.org/ocp/4.0:base}
+
+function image_is_ubi() {
+    # dockerfile is arg $1
+    grep -q "^FROM $UBI_IMAGE" $1
+}
+
+function image_needs_private_repo() {
+    # dockerfile is arg $1
+    image_is_ubi $1 || \
+        grep -q "^FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base" $1
+}
+
+CI_REGISTRY=${CI_REGISTRY:-registry.svc.ci.openshift.org}
+CI_CLUSTER_NAME=${CI_CLUSTER_NAME:-api-ci-openshift-org:443}
+
+function get_context_for_cluster() {
+    set +o pipefail > /dev/null
+    oc config get-contexts | awk -F'[* ]+' -v clname="$1" '$3 == clname {print $2; exit}'
+    set -o pipefail > /dev/null
+}
+
+# get credentials needed to authenticate to $CI_REGISTRY
+# requires `oc` and requires user to have recently `oc login` to the $CI_CLUSTER_NAME cluster
+# NOTE: cluster name != cluster hostname!!
+function login_to_ci_registry() {
+    local savekc=""
+    local savectx=$( oc config current-context )
+    local cictx=$( get_context_for_cluster $CI_CLUSTER_NAME )
+    rc=0
+    if [ -z "$cictx" ] ; then
+        # try again without KUBECONFIG
+        savekc=${KUBECONFIG:-}
+        unset KUBECONFIG
+        savectx=$( oc config current-context )
+        cictx=$( get_context_for_cluster $CI_CLUSTER_NAME )
+    fi
+    if [ -z "$cictx" ] ; then
+        echo ERROR: login_to_ci_registry: you must oc login to the server for cluster $CI_CLUSTER_NAME
+        echo oc config get-contexts does not list cluster $CI_CLUSTER_NAME
+        rc=1
+    else
+        oc config use-context "$cictx"
+        local username=$( oc whoami )
+        local token=$( oc whoami -t 2> /dev/null || : )
+        if [ -z "$token" -o -z "$username" ] ; then
+            echo ERROR: no username or token for context "$cictx"
+            echo your credentials may have expired
+            echo please oc login to the server for cluster $CI_CLUSTER_NAME
+            rc=1
+        else
+            docker login -u "$username" -p "$token" $CI_REGISTRY
+        fi
+    fi
+    if [ -n "$savectx" ] ; then
+        oc config use-context "$savectx"
+    fi
+    if [ -n "$savekc" ] ; then
+        export KUBECONFIG=$savekc
+    fi
+    return $rc
+}
+
+function pull_ubi_if_needed() {
+    if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${UBI_IMAGE}\$" ; then
+        login_to_ci_registry
+        docker pull $UBI_IMAGE
+    fi
+}
+
+# to build using internal/private yum repos, specify
+# INTERNAL_REPO_DIR=/path/to/dir/
+# where /path/to/dir/ contains the yum .repo files, and
+# any private key pem files needed - this dir will be
+# mounted into the builder as /etc/yum.repos.d/
+INTERNAL_REPO_DIR=${INTERNAL_REPO_DIR:-}
+function get_private_repo_dir() {
+    if [ -z "${INTERNAL_REPO_DIR:-}" ] ; then
+        pushd $1 > /dev/null
+        if [ ! -d repos ] ; then
+            mkdir repos
+            if [ -f $GOPATH/src/github.com/openshift/shared-secrets/mirror/ops-mirror.pem ] ; then
+                cp $GOPATH/src/github.com/openshift/shared-secrets/mirror/ops-mirror.pem repos
+            else
+                if [ ! -d shared-secrets ] ; then
+                    git clone -q git@github.com:openshift/shared-secrets.git
+                fi
+                cp shared-secrets/mirror/ops-mirror.pem repos
+            fi
+            if [ -f ${GOPATH}/src/github.com/openshift/release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo ]; then
+                cp ${GOPATH}/src/github.com/openshift/release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo repos
+            elif [ -f $GOPATH/src/github.com/openshift/release/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo ]; then
+                cp $GOPATH/src/github.com/openshift/release/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo repos
+            else
+                if [ ! -d release ] ; then
+                    git clone -q https://github.com/openshift/release
+                fi
+                cp release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo repos
+            fi
+            touch repos/redhat.repo
+            chmod 0444 repos/redhat.repo
+            sed -i 's,= ops-mirror.pem,= /etc/yum.repos.d/ops-mirror.pem,' repos/*.repo
+        fi
+        INTERNAL_REPO_DIR=$( pwd )/repos
+        popd > /dev/null
+    elif [ ! -f $INTERNAL_REPO_DIR/ops-mirror.pem ] || [ ! -f $INTERNAL_REPO_DIR/ocp-4.1-default.repo -a ! -f $INTERNAL_REPO_DIR/ocp-4.0-default.repo ] ; then
+        echo ERROR: $INTERNAL_REPO_DIR missing one of ops-mirror.pem or ocp-4.1-default.repo and ocp-4.0-default.repo
+        exit 1
+    fi
+    echo $INTERNAL_REPO_DIR
+}
+
+function login_to_registry() {
+    local savectx=$( oc config current-context )
+    local token=""
+    local username=""
+    if [ -n "${PUSH_USER:-}" -a -n "${PUSH_PASSWORD:-}" ] ; then
+        username=$PUSH_USER
+        if [ "$username" = "kube:admin" ] ; then
+            username=kubeadmin
+        fi
+        oc login -u "$username" -p "$PUSH_PASSWORD" > /dev/null
+        token=$( oc whoami -t 2> /dev/null || : )
+        oc config use-context "$savectx"
+    else
+        # see if current context has a token
+        token=$( oc whoami -t 2> /dev/null || : )
+        if [ -n "$token" ] ; then
+            username=$( oc whoami )
+        else
+            # get the first user with a token
+            token=$( oc config view -o go-template='{{ range .users }}{{ if .user.token }}{{ print .user.token }}{{ end }}{{ end }}' )
+            if [ -n "$token" ] ; then
+                username=$( oc config view -o go-template='{{ range .users }}{{ if .user.token }}{{ print .name }}{{ end }}{{ end }}' )
+                # username is in form username/cluster - strip off the cluster part
+                username=$( echo "$username" | sed 's,/.*$,,' )
+            fi
+        fi
+        if [ -z "$token" ] ; then
+            echo ERROR: could not determine token to use to login to "$1"
+            echo please do `oc login -u username -p password` to create a context with a token
+            echo OR
+            echo set \$PUSH_USER and \$PUSH_PASSWORD and run this script again
+            return 1
+        fi
+        if [ "$username" = "kube:admin" ] ; then
+            username=kubeadmin
+        fi
+    fi
+    podman login --tls-verify=false -u "$username" -p "$token" "$1" > /dev/null
+}
+
+function push_image() {
+    skopeo copy --dest-tls-verify=false docker-daemon:"$1" docker://"$2"
+}
+
 if [ $REMOTE_REGISTRY = false ] ; then
     : # skip
 else

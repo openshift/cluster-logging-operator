@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -29,9 +30,7 @@ func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 		t.Errorf("Exp. the default CPU request to be %v", defaultFluentdCpuRequest)
 	}
 
-	if podSpec.NodeSelector != nil {
-		t.Errorf("Exp. the nodeSelector to be %T but was %T", map[string]string{}, podSpec.NodeSelector)
-	}
+	CheckIfThereIsOnlyTheLinuxSelector(podSpec, t)
 }
 
 func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
@@ -68,6 +67,37 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 	}
 }
 
+func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
+
+	expectedTolerations := []v1.Toleration{
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+		v1.Toleration{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
+					Type: "fluentd",
+				},
+			},
+		},
+	}
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+
+	if !reflect.DeepEqual(podSpec.Tolerations, expectedTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expectedTolerations, podSpec.Tolerations)
+	}
+}
+
 func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 	expSelector := map[string]string{
 		"foo": "bar",
@@ -88,5 +118,83 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 
 	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, podSpec.NodeSelector)
+	}
+}
+
+func TestNewFluentdPodNoTolerations(t *testing.T) {
+	expTolerations := []v1.Toleration{
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+		v1.Toleration{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
+					Type:        "fluentd",
+					FluentdSpec: logging.FluentdSpec{},
+				},
+			},
+		},
+	}
+
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+	tolerations := podSpec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+	}
+}
+
+func TestNewFluentdPodWithTolerations(t *testing.T) {
+
+	providedToleration := v1.Toleration{
+		Key:      "test",
+		Operator: v1.TolerationOpExists,
+		Effect:   v1.TaintEffectNoSchedule,
+	}
+
+	expTolerations := []v1.Toleration{
+		providedToleration,
+		v1.Toleration{
+			Key:      "node-role.kubernetes.io/master",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+		v1.Toleration{
+			Key:      "node.kubernetes.io/disk-pressure",
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: logging.CollectionSpec{
+				logging.LogCollectionSpec{
+					Type: "fluentd",
+					FluentdSpec: logging.FluentdSpec{
+						Tolerations: []v1.Toleration{
+							providedToleration,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+	tolerations := podSpec.Tolerations
+
+	if !utils.AreTolerationsSame(tolerations, expTolerations) {
+		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
 	}
 }

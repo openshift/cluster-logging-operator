@@ -108,7 +108,7 @@ Deploy an example custom resource for a single node Elasticsearch cluster
 #### deploy-undeploy
 Remove all deployed resources
 
-#### go-run
+#### run
 Deploy the example cluster and start running the operator.  The end result is that there will be an
 `elasticsearch` custom resource, and an elasticsearch pod running.  You can view the operator log by
 looking at the log file specified by `$(RUN_LOG)` (default `elasticsearch-operator.log`).  The command
@@ -214,10 +214,52 @@ ELASTICSEARCH_OPERATOR=$GOPATH/src/github.com/openshift/elasticsearch-operator
 
 To test on an OKD cluster, you can run:
 
-    make go-run
+    make run
 
 To remove created API objects:
 ```
 make undeploy
 ```
 
+### Building a Universal Base Image (UBI) based image
+
+You must first `oc login api.ci.openshift.org`.  You'll need these credentials in order
+to pull images from the UBI registry.
+
+The image build process for UBI based images uses a private yum repo.
+In order to use the private yum repo, you will need access to
+https://github.com/openshift/release/blob/master/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo
+and
+https://github.com/openshift/shared-secrets/blob/master/mirror/ops-mirror.pem
+Note that the latter is private and requires special permission to access.
+
+The best approach is to clone these repos under `$GOPATH/src/github.com/openshift`
+which the build scripts will pick up automatically.  If you do not, the build script
+will attempt to clone them to a temporary directory.
+
+### Running a full integration test with a 4.x cluster
+
+If you have a local clone of [origin-aggregated-logging](https://github.com/openshift/origin-aggregated-logging)
+under `$GOPATH/github.com/openshift/origin-aggregated-logging` you can use its `hack/get-cluster-run-tests.sh`
+to build the logging, elasticsearch-operator, and cluster-logging-operator images; deploy a 4.x cluster;
+push the images to the cluster; deploy logging; and launch the logging CI tests.
+
+### Pushing an image to a 4.x cluster
+
+You'll need `podman` in addition to `docker`.
+
+If you used the new `openshift-installer`, it creates a user named `kubeadmin`
+with the password in the file `installer/auth/kubeadmin_password`.
+
+To push the image to the remote registry, set `REMOTE_REGISTRY=true`, `PUSH_USER=kubeadmin`,
+`KUBECONFIG=/path/to/installer/auth/kubeconfig`, and
+`PUSH_PASSWORD=$( cat /path/to/installer/auth/kubeadmin_password )`.  You do not have to
+`oc login` to the cluster.  If you already built the image, use `SKIP_BUILD=true` to do
+a push only.
+
+```bash
+REMOTE_REGISTRY=true PUSH_USER=kubeadmin SKIP_BUILD=true \
+KUBECONFIG=/path/to/installer/auth/kubeconfig \
+PUSH_PASSWORD=$( cat /path/to/installer/auth/kubeadmin_password ) \
+make deploy-image
+```

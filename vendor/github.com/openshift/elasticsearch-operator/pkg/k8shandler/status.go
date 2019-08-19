@@ -1,17 +1,19 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
 
-	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/elasticsearch/v1"
+	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,17 +25,19 @@ var DISK_WATERMARK_HIGH_PCT *float64
 var DISK_WATERMARK_LOW_ABS *resource.Quantity
 var DISK_WATERMARK_HIGH_ABS *resource.Quantity
 
-func UpdateClusterStatus(cluster *api.Elasticsearch) error {
+func (elasticsearchRequest *ElasticsearchRequest) UpdateClusterStatus() error {
+
+	cluster := elasticsearchRequest.cluster
 
 	clusterStatus := cluster.Status.DeepCopy()
 
-	health, err := GetClusterHealth(cluster.Name, cluster.Namespace)
+	health, err := GetClusterHealth(cluster.Name, cluster.Namespace, elasticsearchRequest.client)
 	if err != nil {
-		health = healthUnknown
+		health.Status = healthUnknown
 	}
-	clusterStatus.ClusterHealth = health
+	clusterStatus.Cluster = health
 
-	allocation, err := GetShardAllocation(cluster.Name, cluster.Namespace)
+	allocation, err := GetShardAllocation(cluster.Name, cluster.Namespace, elasticsearchRequest.client)
 	switch {
 	case allocation == "none":
 		clusterStatus.ShardAllocationEnabled = api.ShardAllocationNone
@@ -43,26 +47,26 @@ func UpdateClusterStatus(cluster *api.Elasticsearch) error {
 		clusterStatus.ShardAllocationEnabled = api.ShardAllocationAll
 	}
 
-	clusterStatus.Pods = rolePodStateMap(cluster.Namespace, cluster.Name)
+	clusterStatus.Pods = rolePodStateMap(cluster.Namespace, cluster.Name, elasticsearchRequest.client)
 	updateStatusConditions(clusterStatus)
-	updateNodeConditions(cluster.Name, cluster.Namespace, clusterStatus)
+	updateNodeConditions(cluster.Name, cluster.Namespace, clusterStatus, elasticsearchRequest.client)
 
 	if !reflect.DeepEqual(clusterStatus, cluster.Status) {
 		nretries := -1
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			nretries++
-			if getErr := sdk.Get(cluster); getErr != nil {
+			if getErr := elasticsearchRequest.client.Get(context.TODO(), types.NamespacedName{Name: cluster.Name, Namespace: cluster.Namespace}, cluster); getErr != nil {
 				logrus.Debugf("Could not get Elasticsearch %v: %v", cluster.Name, getErr)
 				return getErr
 			}
 
-			cluster.Status.ClusterHealth = clusterStatus.ClusterHealth
+			cluster.Status.Cluster = clusterStatus.Cluster
 			cluster.Status.Conditions = clusterStatus.Conditions
 			cluster.Status.Pods = clusterStatus.Pods
 			cluster.Status.ShardAllocationEnabled = clusterStatus.ShardAllocationEnabled
 			cluster.Status.Nodes = clusterStatus.Nodes
 
-			if updateErr := sdk.Update(cluster); updateErr != nil {
+			if updateErr := elasticsearchRequest.client.Update(context.TODO(), cluster); updateErr != nil {
 				logrus.Debugf("Failed to update Elasticsearch %s status. Reason: %v. Trying again...", cluster.Name, updateErr)
 				return updateErr
 			}
@@ -89,12 +93,35 @@ func getNodeStatus(name string, status *api.ElasticsearchStatus) (int, *api.Elas
 	return NOT_FOUND_INDEX, &api.ElasticsearchNodeStatus{}
 }
 
-func rolePodStateMap(namespace string, clusterName string) map[api.ElasticsearchNodeRole]api.PodStateMap {
+func rolePodStateMap(namespace, clusterName string, client client.Client) map[api.ElasticsearchNodeRole]api.PodStateMap {
 
-	baseSelector := fmt.Sprintf("component=elasticsearch,cluster-name=%v", clusterName)
-	clientList, _ := GetPodList(namespace, fmt.Sprintf("%s,%s", baseSelector, "es-node-client=true"))
-	dataList, _ := GetPodList(namespace, fmt.Sprintf("%s,%s", baseSelector, "es-node-data=true"))
-	masterList, _ := GetPodList(namespace, fmt.Sprintf("%s,%s", baseSelector, "es-node-master=true"))
+	clientList, _ := GetPodList(
+		namespace,
+		map[string]string{
+			"component":      "elasticsearch",
+			"cluster-name":   clusterName,
+			"es-node-client": "true",
+		},
+		client,
+	)
+	dataList, _ := GetPodList(
+		namespace,
+		map[string]string{
+			"component":    "elasticsearch",
+			"cluster-name": clusterName,
+			"es-node-data": "true",
+		},
+		client,
+	)
+	masterList, _ := GetPodList(
+		namespace,
+		map[string]string{
+			"component":      "elasticsearch",
+			"cluster-name":   clusterName,
+			"es-node-master": "true",
+		},
+		client,
+	)
 
 	return map[api.ElasticsearchNodeRole]api.PodStateMap{
 		api.ElasticsearchRoleClient: podStateMap(clientList.Items),
@@ -139,19 +166,17 @@ func isPodReady(pod v1.Pod) bool {
 	return true
 }
 
-func updateNodeConditions(clusterName, namespace string, status *api.ElasticsearchStatus) {
+func updateNodeConditions(clusterName, namespace string, status *api.ElasticsearchStatus, client client.Client) {
 	// Get all pods based on status.Nodes[] and check their conditions
 	// get pod with label 'node-name=node.getName()'
-	baseSelector := fmt.Sprintf("component=elasticsearch,cluster-name=%s", clusterName)
-
-	thresholdEnabled, err := GetThresholdEnabled(clusterName, namespace)
+	thresholdEnabled, err := GetThresholdEnabled(clusterName, namespace, client)
 	if err != nil {
 		logrus.Debugf("Unable to check if threshold is enabled for %v", clusterName)
 	}
 
 	if thresholdEnabled {
 		// refresh value of thresholds in case they changed...
-		refreshDiskWatermarkThresholds(clusterName, namespace)
+		refreshDiskWatermarkThresholds(clusterName, namespace, client)
 	}
 
 	for nodeIndex, _ := range status.Nodes {
@@ -165,23 +190,31 @@ func updateNodeConditions(clusterName, namespace string, status *api.Elasticsear
 				nodeName = node.StatefulSetName
 			}
 		}
-		nodeNameSelector := fmt.Sprintf("node-name=%v", nodeName)
 
-		nodePodList, _ := GetPodList(namespace, fmt.Sprintf("%s,%s", baseSelector, nodeNameSelector))
+		nodePodList, _ := GetPodList(
+			namespace,
+			map[string]string{
+				"component":    "elasticsearch",
+				"cluster-name": clusterName,
+				"node-name":    nodeName,
+			},
+			client,
+		)
 		for _, nodePod := range nodePodList.Items {
 
 			isUnschedulable := false
 			for _, podCondition := range nodePod.Status.Conditions {
-				if podCondition.Type == v1.PodReasonUnschedulable {
+				if podCondition.Type == v1.PodScheduled && podCondition.Status == v1.ConditionFalse {
+					podCondition.Type = v1.PodReasonUnschedulable
+					podCondition.Status = v1.ConditionTrue
 					updatePodUnschedulableCondition(node, podCondition)
 					isUnschedulable = true
 				}
 			}
 
 			if isUnschedulable {
-				return
+				continue
 			}
-
 			updatePodUnschedulableCondition(node, v1.PodCondition{
 				Status: v1.ConditionFalse,
 			})
@@ -255,14 +288,14 @@ func updateNodeConditions(clusterName, namespace string, status *api.Elasticsear
 			}
 
 			if !thresholdEnabled {
-				// disk threshold is not enabled, just return
-				return
+				// disk threshold is not enabled, continue to next node
+				continue
 			}
 
-			usage, percent, err := GetNodeDiskUsage(clusterName, namespace, nodeName)
+			usage, percent, err := GetNodeDiskUsage(clusterName, namespace, nodeName, client)
 			if err != nil {
 				logrus.Debugf("Unable to get disk usage for %v", nodeName)
-				return
+				continue
 			}
 
 			if exceedsLowWatermark(usage, percent) {
@@ -290,9 +323,9 @@ func updateNodeConditions(clusterName, namespace string, status *api.Elasticsear
 	}
 }
 
-func refreshDiskWatermarkThresholds(clusterName, namespace string) {
+func refreshDiskWatermarkThresholds(clusterName, namespace string, client client.Client) {
 	//quantity, err := resource.ParseQuantity(string)
-	low, high, err := GetDiskWatermarks(clusterName, namespace)
+	low, high, err := GetDiskWatermarks(clusterName, namespace, client)
 	if err != nil {
 		logrus.Debugf("Unable to refresh disk watermarks from cluster, using defaults")
 	}
@@ -460,27 +493,32 @@ func updateStatusConditions(status *api.ElasticsearchStatus) {
 	if status.Conditions == nil {
 		status.Conditions = make([]api.ClusterCondition, 0, 4)
 	}
-	if _, condition := getESNodeCondition(status, api.UpdatingSettings); condition == nil {
+	if _, condition := getESNodeCondition(status.Conditions, api.UpdatingSettings); condition == nil {
 		updateUpdatingSettingsCondition(status, v1.ConditionFalse)
 	}
-	if _, condition := getESNodeCondition(status, api.ScalingUp); condition == nil {
+	if _, condition := getESNodeCondition(status.Conditions, api.ScalingUp); condition == nil {
 		updateScalingUpCondition(status, v1.ConditionFalse)
 	}
-	if _, condition := getESNodeCondition(status, api.ScalingDown); condition == nil {
+	if _, condition := getESNodeCondition(status.Conditions, api.ScalingDown); condition == nil {
 		updateScalingDownCondition(status, v1.ConditionFalse)
 	}
-	if _, condition := getESNodeCondition(status, api.Restarting); condition == nil {
+	if _, condition := getESNodeCondition(status.Conditions, api.Restarting); condition == nil {
 		updateRestartingCondition(status, v1.ConditionFalse)
 	}
 }
 
-func getESNodeCondition(status *api.ElasticsearchStatus, conditionType api.ClusterConditionType) (int, *api.ClusterCondition) {
-	if status == nil {
+func isPodUnschedulableConditionTrue(conditions []api.ClusterCondition) bool {
+	_, condition := getESNodeCondition(conditions, api.Unschedulable)
+	return condition != nil && condition.Status == v1.ConditionTrue
+}
+
+func getESNodeCondition(conditions []api.ClusterCondition, conditionType api.ClusterConditionType) (int, *api.ClusterCondition) {
+	if conditions == nil {
 		return -1, nil
 	}
-	for i := range status.Conditions {
-		if status.Conditions[i].Type == conditionType {
-			return i, &status.Conditions[i]
+	for i := range conditions {
+		if conditions[i].Type == conditionType {
+			return i, &conditions[i]
 		}
 	}
 	return -1, nil
@@ -489,7 +527,7 @@ func getESNodeCondition(status *api.ElasticsearchStatus, conditionType api.Clust
 func updateESNodeCondition(status *api.ElasticsearchStatus, condition *api.ClusterCondition) bool {
 	condition.LastTransitionTime = metav1.Now()
 	// Try to find this node condition.
-	conditionIndex, oldCondition := getESNodeCondition(status, condition.Type)
+	conditionIndex, oldCondition := getESNodeCondition(status.Conditions, condition.Type)
 
 	if condition.Status == v1.ConditionFalse {
 		if oldCondition != nil {
@@ -521,16 +559,16 @@ func updateESNodeCondition(status *api.ElasticsearchStatus, condition *api.Clust
 }
 
 func updateConditionWithRetry(dpl *api.Elasticsearch, value v1.ConditionStatus,
-	executeUpdateCondition func(*api.ElasticsearchStatus, v1.ConditionStatus) bool) error {
+	executeUpdateCondition func(*api.ElasticsearchStatus, v1.ConditionStatus) bool, client client.Client) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if getErr := sdk.Get(dpl); getErr != nil {
+		if getErr := client.Get(context.TODO(), types.NamespacedName{Name: dpl.Name, Namespace: dpl.Namespace}, dpl); getErr != nil {
 			logrus.Debugf("Could not get Elasticsearch %v: %v", dpl.Name, getErr)
 			return getErr
 		}
 
 		executeUpdateCondition(&dpl.Status, value)
 
-		if updateErr := sdk.Update(dpl); updateErr != nil {
+		if updateErr := client.Update(context.TODO(), dpl); updateErr != nil {
 			logrus.Debugf("Failed to update Elasticsearch %v status: %v", dpl.Name, updateErr)
 			return updateErr
 		}
@@ -575,7 +613,7 @@ func updateInvalidDataCountCondition(status *api.ElasticsearchStatus, value v1.C
 	})
 }
 
-func updateInvalidUUIDChangeCondition(cluster *api.Elasticsearch, value v1.ConditionStatus, message string) error {
+func updateInvalidUUIDChangeCondition(cluster *api.Elasticsearch, value v1.ConditionStatus, message string, client client.Client) error {
 	var reason string
 	if value == v1.ConditionTrue {
 		reason = "Invalid Spec"
@@ -594,6 +632,7 @@ func updateInvalidUUIDChangeCondition(cluster *api.Elasticsearch, value v1.Condi
 				Message: message,
 			})
 		},
+		client,
 	)
 }
 

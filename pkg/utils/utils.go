@@ -10,13 +10,16 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	sdk "github.com/operator-framework/operator-sdk/pkg/sdk"
-	apps "k8s.io/api/apps/v1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const WORKING_DIR = "/tmp/_working_dir"
-const SPLIT_ANNOTATION = "io.openshift.clusterlogging.alpha/splitinstallation"
+const (
+	WORKING_DIR = "/tmp/_working_dir"
+	OsNodeLabel = "kubernetes.io/os"
+	LinuxValue  = "linux"
+)
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
@@ -28,19 +31,12 @@ var COMPONENT_IMAGES = map[string]string{
 	"rsyslog":       "RSYSLOG_IMAGE",
 }
 
-//KubernetesResource is an adapter between public and private impl of ClusterLogging
-type KubernetesResource interface {
-	SchemeGroupVersion() string
-	Type() metav1.TypeMeta
-	Meta() metav1.ObjectMeta
-}
-
-func AsOwner(o KubernetesResource) metav1.OwnerReference {
+func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion: o.SchemeGroupVersion(),
-		Kind:       o.Type().Kind,
-		Name:       o.Meta().Name,
-		UID:        o.Meta().UID,
+		APIVersion: logging.SchemeGroupVersion.String(),
+		Kind:       "ClusterLogging",
+		Name:       o.Name,
+		UID:        o.UID,
 		Controller: GetBool(true),
 	}
 }
@@ -59,6 +55,76 @@ func AreSelectorsSame(lhs, rhs map[string]string) bool {
 	}
 
 	return true
+}
+
+// EnsureLinuxNodeSelector takes given selector map and returns a selector map with linux node selector added into it.
+// If there is already a node type selector and is different from "linux" then it is overridden and warning is logged.
+// See https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#interlude-built-in-node-labels
+func EnsureLinuxNodeSelector(selectors map[string]string) map[string]string {
+	if selectors == nil {
+		return map[string]string{OsNodeLabel: LinuxValue}
+	}
+	if os, ok := selectors[OsNodeLabel]; ok {
+		if os == LinuxValue {
+			return selectors
+		}
+		// Selector is provided but is not "linux"
+		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, os, LinuxValue)
+	}
+	selectors[OsNodeLabel] = LinuxValue
+	return selectors
+}
+
+func AreTolerationsSame(lhs, rhs []v1.Toleration) bool {
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	for _, lhsToleration := range lhs {
+		if !containsToleration(lhsToleration, rhs) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func containsToleration(toleration v1.Toleration, tolerations []v1.Toleration) bool {
+	for _, t := range tolerations {
+		if isTolerationSame(t, toleration) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func isTolerationSame(lhs, rhs v1.Toleration) bool {
+
+	tolerationSecondsBool := false
+	// check that both are either null or not null
+	if (lhs.TolerationSeconds == nil) == (rhs.TolerationSeconds == nil) {
+		if lhs.TolerationSeconds != nil {
+			// only compare values (attempt to dereference) if pointers aren't nil
+			tolerationSecondsBool = (*lhs.TolerationSeconds == *rhs.TolerationSeconds)
+		} else {
+			tolerationSecondsBool = true
+		}
+	}
+
+	return (lhs.Key == rhs.Key) &&
+		(lhs.Operator == rhs.Operator) &&
+		(lhs.Value == rhs.Value) &&
+		(lhs.Effect == rhs.Effect) &&
+		tolerationSecondsBool
+}
+
+func AppendTolerations(lhsTolerations, rhsTolerations []v1.Toleration) []v1.Toleration {
+	if lhsTolerations == nil {
+		lhsTolerations = []v1.Toleration{}
+	}
+
+	return append(lhsTolerations, rhsTolerations...)
 }
 
 //AddOwnerRefToObject adds the parent as an owner to the child
@@ -99,6 +165,14 @@ func GetFileContents(filePath string) []byte {
 	}
 
 	return contents
+}
+
+func GetShareDir() string {
+	shareDir := os.Getenv("LOGGING_SHARE_DIR")
+	if shareDir == "" {
+		return "/usr/share/logging"
+	}
+	return shareDir
 }
 
 func GetWorkingDirFileContents(filePath string) []byte {
@@ -145,25 +219,6 @@ func GetInt32(value int32) *int32 {
 func GetInt64(value int64) *int64 {
 	i := value
 	return &i
-}
-
-func GetReplicaSetList(namespace string, selector string) (*apps.ReplicaSetList, error) {
-	list := &apps.ReplicaSetList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ReplicaSet",
-			APIVersion: apps.SchemeGroupVersion.String(),
-		},
-	}
-
-	err := sdk.List(
-		namespace,
-		list,
-		sdk.WithListOptions(&metav1.ListOptions{
-			LabelSelector: selector,
-		}),
-	)
-
-	return list, err
 }
 
 func CheckFileExists(filePath string) error {

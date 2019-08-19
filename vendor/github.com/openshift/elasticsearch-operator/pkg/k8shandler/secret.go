@@ -1,28 +1,19 @@
 package k8shandler
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/operator-framework/operator-sdk/pkg/sdk"
 	"k8s.io/api/core/v1"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func getSecret(secretName, namespace string) *v1.Secret {
-	secret := v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: v1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-	}
+func getSecret(secretName, namespace string, client client.Client) *v1.Secret {
+	secret := v1.Secret{}
 
-	err := sdk.Get(&secret)
+	err := client.Get(context.TODO(), types.NamespacedName{Name: secretName, Namespace: namespace}, &secret)
 
 	if err != nil {
 		// check if doesn't exist
@@ -31,10 +22,10 @@ func getSecret(secretName, namespace string) *v1.Secret {
 	return &secret
 }
 
-func getSecretDataHash(secretName, namespace string) string {
+func getSecretDataHash(secretName, namespace string, client client.Client) string {
 	hash := ""
 
-	secret := getSecret(secretName, namespace)
+	secret := getSecret(secretName, namespace, client)
 
 	dataHashes := make(map[string][32]byte)
 

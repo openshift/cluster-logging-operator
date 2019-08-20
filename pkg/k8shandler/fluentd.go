@@ -307,7 +307,15 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset() (e
 	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
-	utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(cluster))
+
+	uid := getServiceAccountLogCollectorUID()
+	if len(uid) == 0 {
+		// There's no uid for logcollector serviceaccount; setting ClusterLogging for the ownerReference.
+		utils.AddOwnerRefToObject(fluentdDaemonset, utils.AsOwner(cluster))
+	} else {
+		// There's a uid for logcollector serviceaccount; setting the ServiceAccount for the ownerReference with blockOwnerDeletion.
+		utils.AddOwnerRefToObject(fluentdDaemonset, NewLogCollectorServiceAccountRef(uid))
+	}
 
 	err = clusterRequest.Create(fluentdDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {

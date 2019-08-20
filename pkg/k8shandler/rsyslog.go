@@ -61,7 +61,7 @@ func (clusterRequest *ClusterLoggingRequest) removeRsyslog() (err error) {
 		}
 
 		// Wait longer than the default terminationGracePeriodSeconds
-		time.Sleep(12* time.Second)
+		time.Sleep(12 * time.Second)
 
 		if err = clusterRequest.RemoveSecret("rsyslog"); err != nil {
 			return
@@ -296,7 +296,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateRsyslogDaemonset() (e
 
 	rsyslogDaemonset := NewDaemonSet("rsyslog", cluster.Namespace, "rsyslog", "rsyslog", rsyslogPodSpec)
 
-	utils.AddOwnerRefToObject(rsyslogDaemonset, utils.AsOwner(cluster))
+	uid := getServiceAccountLogCollectorUID()
+	if len(uid) == 0 {
+		// There's no uid for logcollector serviceaccount; setting ClusterLogging for the ownerReference.
+		utils.AddOwnerRefToObject(rsyslogDaemonset, utils.AsOwner(cluster))
+	} else {
+		// There's a uid for logcollector serviceaccount; setting the ServiceAccount for the ownerReference with blockOwnerDeletion.
+		utils.AddOwnerRefToObject(rsyslogDaemonset, NewLogCollectorServiceAccountRef(uid))
+	}
 
 	err = clusterRequest.Create(rsyslogDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {

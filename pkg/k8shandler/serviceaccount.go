@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,10 +45,26 @@ func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccount
 
 	serviceAccount := NewServiceAccount(serviceAccountName, clusterRequest.cluster.Namespace)
 
+	if serviceAccountName == "logcollector" {
+		// remove our finalizer from the list and update it.
+		serviceAccount.ObjectMeta.Finalizers = utils.RemoveString(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
+	}
+
 	err := clusterRequest.Delete(serviceAccount)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v service account: %v", serviceAccountName, err)
 	}
 
 	return nil
+}
+
+func NewLogCollectorServiceAccountRef(uid types.UID) metav1.OwnerReference {
+    return metav1.OwnerReference {
+        APIVersion:         "v1", // apiversion for serviceaccounts/finalizers in cluster-logging.<VER>.clusterserviceversion.yaml
+        Kind:               "ServiceAccount",
+        Name:               "logcollector",
+        UID:                uid,
+        BlockOwnerDeletion: utils.GetBool(true),
+        Controller:         utils.GetBool(true),
+    }
 }

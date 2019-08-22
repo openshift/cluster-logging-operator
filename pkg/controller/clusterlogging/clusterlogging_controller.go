@@ -2,10 +2,12 @@ package clusterlogging
 
 import (
 	"context"
+	"os"
 	"time"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,6 +26,16 @@ const (
 	singletonName    = "instance"
 	singletonMessage = "ClusterLogging is a singleton. Only an instance named 'instance' is allowed"
 )
+
+func init() {
+	level := os.Getenv("LOG_LEVEL")
+	parsed, err := logrus.ParseLevel(level)
+	if err != nil {
+		parsed = logrus.InfoLevel
+		logrus.Warnf("Unable to parse loglevel %q", level)
+	}
+	logrus.SetLevel(parsed)
+}
 
 // Add creates a new ClusterLogging Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.

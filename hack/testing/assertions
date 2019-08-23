@@ -1,0 +1,16 @@
+#!/bin/bash
+
+assert_resources_exist(){
+	# verify deployments -- kibana, curator
+	os::cmd::try_until_success "oc -n $NAMESPACE get deployment kibana" ${TIMEOUT_MIN}	
+
+	# verify cron
+	os::cmd::try_until_success "oc -n $NAMESPACE get cronjob curator" ${TIMEOUT_MIN}
+
+	# verify DS
+	os::cmd::try_until_success "oc -n $NAMESPACE get ds fluentd" ${TIMEOUT_MIN}
+
+	# verify ER
+	os::cmd::try_until_success "oc -n $NAMESPACE get elasticsearch elasticsearch" ${TIMEOUT_MIN}
+
+}

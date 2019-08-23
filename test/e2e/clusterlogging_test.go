@@ -121,8 +121,9 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 			LogStore: logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
 				ElasticsearchSpec: logging.ElasticsearchSpec{
-					NodeCount: 1,
-					Resources: esResources,
+					NodeCount:        1,
+					Resources:        esResources,
+					RedundancyPolicy: elasticsearch.ZeroRedundancy,
 				},
 			},
 			Visualization: logging.VisualizationSpec{

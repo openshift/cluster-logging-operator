@@ -1,3 +1,5 @@
+pf.log
+_output
 # Temporary Build Files
 build/_output
 build/_test

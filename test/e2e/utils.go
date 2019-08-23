@@ -17,7 +17,7 @@ import (
 
 func WaitForCronJob(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, replicas int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		cronjob, err := kubeclient.BatchV1beta1().CronJobs(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		_, err = kubeclient.BatchV1beta1().CronJobs(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s cronjob\n", name)
@@ -25,28 +25,18 @@ func WaitForCronJob(t *testing.T, kubeclient kubernetes.Interface, namespace, na
 			}
 			return false, err
 		}
-
-		if len(cronjob.Status.Active) == replicas {
-			return true, nil
-		}
-		t.Logf("Waiting for full availability of %s cronjob (%d/%d)\n", name, len(cronjob.Status.Active), replicas)
-		return false, nil
+		return true, nil
 	})
 	if err != nil {
 		return err
 	}
-	t.Logf("Cronjob available (%d/%d)\n", replicas, replicas)
+	t.Log("Cronjob available\n")
 	return nil
 }
 
 func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, retryInterval, timeout time.Duration) error {
-	nodes, err := kubeclient.Core().Nodes().List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	nodeCount := len(nodes.Items)
-	err = wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		daemonset, err := kubeclient.AppsV1().DaemonSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		_, err = kubeclient.AppsV1().DaemonSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s daemonset\n", name)
@@ -54,16 +44,12 @@ func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, 
 			}
 			return false, err
 		}
-		if int(daemonset.Status.NumberReady) == nodeCount {
-			return true, nil
-		}
-		t.Logf("Waiting for full availability of %s daemonset (%d/%d)\n", name, int(daemonset.Status.NumberReady), nodeCount)
-		return false, nil
+		return true, nil
 	})
 	if err != nil {
 		return err
 	}
-	t.Logf("Daemonset available (%d/%d)\n", nodeCount, nodeCount)
+	t.Log("Daemonset available\n")
 	return nil
 }
 

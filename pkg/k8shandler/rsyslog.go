@@ -2,8 +2,8 @@ package k8shandler
 
 import (
 	"fmt"
-	"time"
 	"io/ioutil"
+	"time"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"

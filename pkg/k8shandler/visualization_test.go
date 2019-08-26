@@ -2,28 +2,28 @@ package k8shandler
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 
 	v1 "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestCreateKibanaProxyClusterRoleBindingWithoutError(t *testing.T) {
-	clusterRoleBinding := &rbac.ClusterRoleBinding{}
-
-	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(clusterRoleBinding),
-		cluster: &logging.ClusterLogging{},
+func TestNewKibanaPodSpecSetsProxyToUseServiceAccountAsOAuthClient(t *testing.T) {
+	clusterlogging := &logging.ClusterLogging{}
+	spec := newKibanaPodSpec(clusterlogging, "kibana", "elasticsearch")
+	valueIsCorrect := false
+	for _, arg := range spec.Containers[1].Args {
+		keyValue := strings.Split(arg, "=")
+		if len(keyValue) >= 2 && keyValue[0] == "-client-id" {
+			valueIsCorrect = keyValue[1] == "system:serviceaccount:openshift-logging:kibana"
+		}
 	}
-
-	if clusterLoggingRequest.createKibanaProxyClusterRoleBinding() != nil {
-		t.Error("Exp. no error when creating proxy cluster role binding")
+	if !valueIsCorrect {
+		t.Error("Exp. the proxy container arg 'client-id=system:serviceaccount:openshift-logging:kibana'")
 	}
 }
 

@@ -1,5 +1,7 @@
 pf.log
 _output
+# GoLand
+.idea
 # Temporary Build Files
 build/_output
 build/_test

@@ -49,13 +49,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateSecret(secret *core.S
 			if reflect.DeepEqual(current.Data, secret.Data) {
 				// identical; no need to update.
 				return nil
-			} else {
-				current.Data = secret.Data
-				if err = clusterRequest.Update(current); err != nil {
-					return err
-				}
-				return nil
 			}
+			current.Data = secret.Data
+			if err = clusterRequest.Update(current); err != nil {
+				return err
+			}
+			return nil
 		})
 		if retryErr != nil {
 			return retryErr

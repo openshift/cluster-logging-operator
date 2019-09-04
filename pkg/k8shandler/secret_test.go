@@ -5,19 +5,11 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	rbac "k8s.io/api/rbac/v1"
 
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 func TestClusterLoggingRequest_CreateOrUpdateSecretNoop(t *testing.T) {
-	clusterRoleBinding := &rbac.ClusterRoleBinding{}
-
-	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(clusterRoleBinding),
-		cluster: &logging.ClusterLogging{},
-	}
-
 	// mimic ca.crt
 	caCrtStr := `-----BEGIN CERTIFICATE-----
 This is a ca cert.
@@ -30,11 +22,16 @@ This is a private key.
 
 	initSecret := NewSecret(
 		"test-secret",
-		clusterLoggingRequest.cluster.Namespace,
+		"test-namespace",
 		map[string][]byte{
 			"testca":  []byte(caCrtStr),
 			"testkey": []byte(caKeyStr),
 		})
+
+	clusterLoggingRequest := &ClusterLoggingRequest{
+		client:  fake.NewFakeClient(initSecret),
+		cluster: &logging.ClusterLogging{},
+	}
 
 	// create
 	if err := clusterLoggingRequest.CreateOrUpdateSecret(initSecret); err != nil {
@@ -66,13 +63,6 @@ This is a private key.
 }
 
 func TestClusterLoggingRequest_CreateOrUpdateSecretSameKeysNewValues(t *testing.T) {
-	clusterRoleBinding := &rbac.ClusterRoleBinding{}
-
-	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(clusterRoleBinding),
-		cluster: &logging.ClusterLogging{},
-	}
-
 	// mimic ca.crt
 	caCrtStr := `-----BEGIN CERTIFICATE-----
 This is a ca cert.
@@ -85,11 +75,16 @@ This is a private key.
 
 	initSecret := NewSecret(
 		"test-secret",
-		clusterLoggingRequest.cluster.Namespace,
+		"test-namespace",
 		map[string][]byte{
 			"testca":  []byte(caCrtStr),
 			"testkey": []byte(caKeyStr),
 		})
+
+	clusterLoggingRequest := &ClusterLoggingRequest{
+		client:  fake.NewFakeClient(initSecret),
+		cluster: &logging.ClusterLogging{},
+	}
 
 	// create
 	if err := clusterLoggingRequest.CreateOrUpdateSecret(initSecret); err != nil {
@@ -111,7 +106,7 @@ This is a new private key.
 
 	newSecret := NewSecret(
 		"test-secret",
-		clusterLoggingRequest.cluster.Namespace,
+		"test-namespace",
 		map[string][]byte{
 			"testca":  []byte(caCrtStr),
 			"testkey": []byte(caKeyStr),
@@ -138,13 +133,6 @@ This is a new private key.
 }
 
 func TestClusterLoggingRequest_CreateOrUpdateSecretNewKeysSameValues(t *testing.T) {
-	clusterRoleBinding := &rbac.ClusterRoleBinding{}
-
-	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(clusterRoleBinding),
-		cluster: &logging.ClusterLogging{},
-	}
-
 	// mimic ca.crt
 	caCrtStr := `-----BEGIN CERTIFICATE-----
 This is a ca cert.
@@ -157,11 +145,16 @@ This is a private key.
 
 	initSecret := NewSecret(
 		"test-secret",
-		clusterLoggingRequest.cluster.Namespace,
+		"test-namespace",
 		map[string][]byte{
 			"testca":  []byte(caCrtStr),
 			"testkey": []byte(caKeyStr),
 		})
+
+	clusterLoggingRequest := &ClusterLoggingRequest{
+		client:  fake.NewFakeClient(initSecret),
+		cluster: &logging.ClusterLogging{},
+	}
 
 	// create
 	if err := clusterLoggingRequest.CreateOrUpdateSecret(initSecret); err != nil {
@@ -175,7 +168,7 @@ This is a private key.
 
 	newSecret := NewSecret(
 		"test-secret",
-		clusterLoggingRequest.cluster.Namespace,
+		"test-namespace",
 		map[string][]byte{
 			"newtestca":  []byte(caCrtStr),
 			"newtestkey": []byte(caKeyStr),
@@ -202,13 +195,6 @@ This is a private key.
 }
 
 func TestClusterLoggingRequest_CreateOrUpdateSecretRemovingKey(t *testing.T) {
-	clusterRoleBinding := &rbac.ClusterRoleBinding{}
-
-	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(clusterRoleBinding),
-		cluster: &logging.ClusterLogging{},
-	}
-
 	// mimic ca.crt
 	caCrtStr := `-----BEGIN CERTIFICATE-----
 This is a ca cert.
@@ -221,11 +207,16 @@ This is a private key.
 
 	initSecret := NewSecret(
 		"test-secret",
-		clusterLoggingRequest.cluster.Namespace,
+		"test-namespace",
 		map[string][]byte{
 			"testca":  []byte(caCrtStr),
 			"testkey": []byte(caKeyStr),
 		})
+
+	clusterLoggingRequest := &ClusterLoggingRequest{
+		client:  fake.NewFakeClient(initSecret),
+		cluster: &logging.ClusterLogging{},
+	}
 
 	// create
 	if err := clusterLoggingRequest.CreateOrUpdateSecret(initSecret); err != nil {
@@ -239,7 +230,7 @@ This is a private key.
 
 	newSecret := NewSecret(
 		"test-secret",
-		clusterLoggingRequest.cluster.Namespace,
+		"test-namespace",
 		map[string][]byte{
 			"testca":  []byte(caCrtStr),
 		})

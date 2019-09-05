@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
@@ -45,7 +46,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateSecret(secret *core.S
 				}
 				return fmt.Errorf("Failed to get %v secret: %v", secret.Name, err)
 			}
-
+			if reflect.DeepEqual(current.Data, secret.Data) {
+				// identical; no need to update.
+				return nil
+			}
 			current.Data = secret.Data
 			if err = clusterRequest.Update(current); err != nil {
 				return err

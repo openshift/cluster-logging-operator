@@ -343,6 +343,7 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	rsyslogContainer.Env = []v1.EnvVar{
+		{Name: "NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "spec.nodeName"}}},
 		{Name: "MERGE_JSON_LOG", Value: "false"},
 		{Name: "PRESERVE_JSON_LOG", Value: "true"},
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
@@ -375,7 +376,6 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "main", ReadOnly: true, MountPath: "/etc/rsyslog/conf"},
 		{Name: "config", ReadOnly: true, MountPath: "/etc/rsyslog.d"},
 		{Name: "certs", ReadOnly: true, MountPath: "/etc/rsyslog/keys"},
-		{Name: "dockerhostname", ReadOnly: true, MountPath: "/etc/docker-hostname"},
 		{Name: "localtime", ReadOnly: true, MountPath: "/etc/localtime"},
 		{Name: "machineid", ReadOnly: true, MountPath: "/etc/machine-id"},
 		{Name: "filebufferstorage", MountPath: "/var/lib/rsyslog.pod"},
@@ -452,7 +452,6 @@ func newRsyslogPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "main", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "rsyslog-main"}}}},
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "rsyslog"}}}},
 			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "rsyslog"}}},
-			{Name: "dockerhostname", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/hostname"}}},
 			{Name: "localtime", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/localtime"}}},
 			{Name: "machineid", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/machine-id"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/rsyslog.pod"}}},

@@ -73,6 +73,10 @@ if [ -f /etc/docker-hostname ] ; then
     HOSTNAME=`cat /etc/docker-hostname`
     IPADDR4=`getent ahostsv4 $HOSTNAME | awk '/ STREAM / {print $1}'`
     IPADDR6=`getent ahostsv6 $HOSTNAME | awk '/ STREAM / {print $1}'`
+elif [ -n "${NODE_NAME:-}" ] ; then
+    HOSTNAME=$NODE_NAME
+    IPADDR4=${NODE_IPV4:-`getent ahostsv4 $HOSTNAME | awk '/ STREAM / {print $1}'`}
+    IPADDR6=`getent ahostsv6 $HOSTNAME | awk '/ STREAM / {print $1}'`
 elif [ -n "${NODE_IPV4:-}" ] ; then
     IPADDR4=$NODE_IPV4
     HOSTNAME=`getent hosts $IPADDR4 | awk '{print $2}'`

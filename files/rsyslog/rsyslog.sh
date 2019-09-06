@@ -107,8 +107,10 @@ if [ -z $ES_PORT ]; then
 fi
 
 # Check bearer_token_file for fluent-plugin-kubernetes_metadata_filter.
-if [ ! -s /var/run/secrets/kubernetes.io/serviceaccount/token ] ; then
-    echo "ERROR: Bearer_token_file (/var/run/secrets/kubernetes.io/serviceaccount/token) to access the Kubernetes API server is missing or empty."
+k8s_token="/var/run/secrets/kubernetes.io/serviceaccount/token"
+k8s_cacert="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+if [ ! -s "${k8s_token}" -o ! -s "${k8s_cacert}" ] ; then
+    echo "ERROR: Bearer_token_file (${k8s_token}) or ca cert (${k8s_cacert}) to access the Kubernetes API server is missing or empty."
     exit 1
 fi
 
@@ -118,6 +120,28 @@ OPS_CA=${OPS_CA:-$ES_CA}
 OPS_CLIENT_CERT=${OPS_CLIENT_CERT:-$ES_CLIENT_CERT}
 OPS_CLIENT_KEY=${OPS_CLIENT_KEY:-$ES_CLIENT_KEY}
 export OPS_HOST OPS_PORT OPS_CA OPS_CLIENT_CERT OPS_CLIENT_KEY
+
+if [ ! -s "${ES_CA}" -o ! -s "${OPS_CA}" ] ; then
+    echo "ERROR: CA cert (${ES_CA} or ${OPS_CA}) to access Elasticsearch is missing or empty."
+    exit 1
+fi
+if [ ! -s "${ES_CLIENT_CERT}" -o ! -s "${OPS_CLIENT_CERT}" ] ; then
+    echo "ERROR: Client cert (${ES_CLIENT_CERT} or ${OPS_CLIENT_CERT}) to access Elasticsearch is missing or empty."
+    exit 1
+fi
+if [ ! -s "${ES_CLIENT_KEY}" -o ! -s "${OPS_CLIENT_KEY}" ] ; then
+    echo "ERROR: Client key (${ES_CLIENT_KEY} or ${OPS_CLIENT_KEY}) to access Elasticsearch is missing or empty."
+    exit 1
+fi
+
+if [ $ENABLE_PROMETHEUS_ENDPOINT = true ] ; then
+    prometheus_cert="/etc/rsyslog/metrics/tls.crt"
+    prometheus_key="/etc/rsyslog/metrics/tls.key"
+    if [ ! -s "${prometheus_cert}" -o ! -s "${prometheus_key}" ] ; then
+		echo "ERROR: Cert (${prometheus_cert}) or key (${prometheus_key}) to access Prometheus endpoint is missing or empty."
+        exit 1
+    fi
+fi
 
 # How many outputs?
 # check ES_HOST vs. OPS_HOST; ES_PORT vs. OPS_PORT

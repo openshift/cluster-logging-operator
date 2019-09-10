@@ -232,7 +232,7 @@ This is a private key.
 		"test-secret",
 		"test-namespace",
 		map[string][]byte{
-			"testca":  []byte(caCrtStr),
+			"testca": []byte(caCrtStr),
 		})
 
 	// update

@@ -15,15 +15,18 @@ import (
 func TestNewKibanaPodSpecSetsProxyToUseServiceAccountAsOAuthClient(t *testing.T) {
 	clusterlogging := &logging.ClusterLogging{}
 	spec := newKibanaPodSpec(clusterlogging, "kibana", "elasticsearch")
-	valueIsCorrect := false
 	for _, arg := range spec.Containers[1].Args {
 		keyValue := strings.Split(arg, "=")
 		if len(keyValue) >= 2 && keyValue[0] == "-client-id" {
-			valueIsCorrect = keyValue[1] == "system:serviceaccount:openshift-logging:kibana"
+			if keyValue[1] != "system:serviceaccount:openshift-logging:kibana" {
+				t.Error("Exp. the proxy container arg 'client-id=system:serviceaccount:openshift-logging:kibana'")
+			}
 		}
-	}
-	if !valueIsCorrect {
-		t.Error("Exp. the proxy container arg 'client-id=system:serviceaccount:openshift-logging:kibana'")
+		if len(keyValue) >= 2 && keyValue[0] == "-scope" {
+			if keyValue[1] != "user:info user:check-access user:list-projects" {
+				t.Error("Exp. the proxy container arg 'scope=user:info user:check-access user:list-projects'")
+			}
+		}
 	}
 }
 

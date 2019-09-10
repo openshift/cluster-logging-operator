@@ -384,7 +384,7 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		"-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token",
 		"-cookie-secret-file=/secret/session-secret",
 		"-upstream=http://localhost:5601",
-		"-scope=user:info user:check-access",
+		"-scope=user:info user:check-access user:list-projects",
 		"--tls-cert=/secret/server-cert",
 		"-tls-key=/secret/server-key",
 		"-pass-access-token",

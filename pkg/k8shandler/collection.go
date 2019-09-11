@@ -36,8 +36,13 @@ var serviceAccountLogCollectorUID types.UID
 
 //CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
-
 	cluster := clusterRequest.cluster
+
+	//Bug 1751339: Drop rsyslog support
+	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeFluentd {
+		logrus.Infof("Unsupported log collector: %v", cluster.Spec.Collection.Logs.Type)
+		return nil
+	}
 
 	var collectorServiceAccount *core.ServiceAccount
 

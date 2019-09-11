@@ -215,6 +215,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	fluentdContainer.Env = []v1.EnvVar{
+		{Name: "NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "spec.nodeName"}}},
 		{Name: "MERGE_JSON_LOG", Value: "false"},
 		{Name: "PRESERVE_JSON_LOG", Value: "true"},
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
@@ -245,7 +246,6 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "varlibdockercontainers", ReadOnly: true, MountPath: "/var/lib/docker"},
 		{Name: "config", ReadOnly: true, MountPath: "/etc/fluent/configs.d/user"},
 		{Name: "certs", ReadOnly: true, MountPath: "/etc/fluent/keys"},
-		{Name: "dockerhostname", ReadOnly: true, MountPath: "/etc/docker-hostname"},
 		{Name: "localtime", ReadOnly: true, MountPath: "/etc/localtime"},
 		{Name: "dockercfg", ReadOnly: true, MountPath: "/etc/sysconfig/docker"},
 		{Name: "dockerdaemoncfg", ReadOnly: true, MountPath: "/etc/docker"},
@@ -282,7 +282,6 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "varlibdockercontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/docker"}}},
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
 			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd"}}},
-			{Name: "dockerhostname", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/hostname"}}},
 			{Name: "localtime", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/localtime"}}},
 			{Name: "dockercfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/sysconfig/docker"}}},
 			{Name: "dockerdaemoncfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/docker"}}},

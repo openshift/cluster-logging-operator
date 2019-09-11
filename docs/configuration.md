@@ -29,7 +29,6 @@ takes a full pull spec of the image:
 * `FLUENTD_IMAGE`
 * `KIBANA_IMAGE`
 * `OAUTH_PROXY_IMAGE`
-* `RSYSLOG_IMAGE`
 
 ## Common Configurations
 The following configuration options apply generally to all components defined in for a ClusterLogging object (e.g. logStore, visualization, etc).
@@ -111,7 +110,6 @@ The policy that defines how shards are replicated across data nodes in the clust
 Log collectors are deployed as a Daemonset to each node in the OKD cluster.  Following are the
 supported log collectors for Cluster Logging:
 * Fluentd - The default log collector based on Fluentd.
-* Rsyslog - Alternate log collector supported as **Tech Preview** only.
 
 ```
   spec:

@@ -257,8 +257,6 @@ spec:
                     value: "quay.io/openshift/origin-logging-curator5:latest"
                   - name: OAUTH_PROXY_IMAGE
                     value: "quay.io/openshift/origin-oauth-proxy:latest"
-                  - name: RSYSLOG_IMAGE
-                    value: "quay.io/openshift/origin-logging-rsyslog:latest"
   customresourcedefinitions:
     owned:
     - name: clusterloggings.logging.openshift.io
@@ -328,16 +326,6 @@ spec:
         path: collection.logs.fluentd.nodeSelector
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
-      - description: Resource requirements for the Rsyslog pods
-        displayName: Rsyslog Resource Requirements
-        path: collection.logs.rsyslog.resources
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
-      - description: The node selector to use for the Rsyslog log collection component
-        displayName: Rsyslog node selector
-        path: collection.logs.rsyslog.nodeSelector
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
       - description: Resource requirements for the Curator pods
         displayName: Curator Resource Requirements
         path: curation.curator.resources
@@ -378,10 +366,5 @@ spec:
       - description: The status for each of the Fluentd pods for the Log Collection component
         displayName: Fluentd status
         path: collection.logs.fluentdStatus.pods
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
-      - description: The status for each of the Rsyslog pods for the Log Collection component
-        displayName: Rsyslog status
-        path: collection.logs.rsyslogStatus.pods
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'

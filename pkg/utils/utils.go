@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -148,7 +149,7 @@ func GetFileContents(filePath string) []byte {
 		return nil
 	}
 
-	contents, err := ioutil.ReadFile(filePath)
+	contents, err := ioutil.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		logrus.Errorf("Unable to read file to get contents: %v", err)
 		return nil

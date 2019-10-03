@@ -14,11 +14,13 @@ type NodeTypeInterface interface {
 	state() api.ElasticsearchNodeStatus                      // this will get the current -- used for status
 	create() error                                           // this will create the node in the case where it is new
 	update(upgradeStatus *api.ElasticsearchNodeStatus) error // this will handle updates
-	restart(upgradeStatus *api.ElasticsearchNodeStatus)
+	rollingRestart(upgradeStatus *api.ElasticsearchNodeStatus)
+	fullClusterRestart(upgradeStatus *api.ElasticsearchNodeStatus)
 	progressUnshedulableNode(upgradeStatus *api.ElasticsearchNodeStatus) error
 	name() string
 	updateReference(node NodeTypeInterface)
 	delete()
+	isMissing() bool
 }
 
 // NodeTypeFactory is a factory to construct either statefulset or deployment

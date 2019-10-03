@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/openshift/elasticsearch-operator/pkg/logger"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,8 +85,9 @@ func (node *deploymentNode) name() string {
 
 func (node *deploymentNode) state() api.ElasticsearchNodeStatus {
 
-	var rolloutForReload v1.ConditionStatus
+	//var rolloutForReload v1.ConditionStatus
 	var rolloutForUpdate v1.ConditionStatus
+	var rolloutForCertReload v1.ConditionStatus
 
 	// see if we need to update the deployment object
 	if node.isChanged() {
@@ -100,14 +103,14 @@ func (node *deploymentNode) state() api.ElasticsearchNodeStatus {
 	// check if the secretHash changed
 	newSecretHash := getSecretDataHash(node.clusterName, node.self.Namespace, node.client)
 	if newSecretHash != node.secretHash {
-		rolloutForReload = v1.ConditionTrue
+		rolloutForCertReload = v1.ConditionTrue
 	}
 
 	return api.ElasticsearchNodeStatus{
 		DeploymentName: node.self.Name,
 		UpgradeStatus: api.ElasticsearchNodeUpgradeStatus{
-			ScheduledForUpgrade:  rolloutForUpdate,
-			ScheduledForRedeploy: rolloutForReload,
+			ScheduledForUpgrade:      rolloutForUpdate,
+			ScheduledForCertRedeploy: rolloutForCertReload,
 		},
 	}
 }
@@ -293,7 +296,18 @@ func (node *deploymentNode) waitForNodeLeaveCluster() (error, bool) {
 	return err, (err == nil)
 }
 
-func (node *deploymentNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) {
+func (node *deploymentNode) isMissing() bool {
+	getNode := &apps.Deployment{}
+	if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.name(), Namespace: node.self.Namespace}, getNode); getErr != nil {
+		if errors.IsNotFound(getErr) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (node *deploymentNode) rollingRestart(upgradeStatus *api.ElasticsearchNodeStatus) {
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
 		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
@@ -349,6 +363,11 @@ func (node *deploymentNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) 
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
 
+		// if the node doesn't exist -- create it
+		if node.isMissing() {
+			node.create()
+		}
+
 		if err := node.setReplicaCount(1); err != nil {
 			logrus.Warnf("Unable to scale up %v", node.name())
 			return
@@ -376,6 +395,63 @@ func (node *deploymentNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) 
 			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
 			return
 		}
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
+		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
+	}
+}
+
+func (node *deploymentNode) fullClusterRestart(upgradeStatus *api.ElasticsearchNodeStatus) {
+
+	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
+		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionTrue
+		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		if err != nil {
+			logrus.Warnf("Unable to get cluster size prior to restart for %v", node.name())
+			return
+		}
+		node.clusterSize = size
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
+		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
+
+		err, replicas := node.replicaCount()
+		if err != nil {
+			logrus.Warnf("Unable to get replica count for %v", node.name())
+		}
+
+		if replicas > 0 {
+			// check for available replicas empty
+			// node.self.Status.Replicas
+			// if we aren't at 0, then we need to scale down to 0
+			if err = node.setReplicaCount(0); err != nil {
+				logrus.Warnf("Unable to scale down %v", node.name())
+				return
+			}
+
+			if err, _ = node.waitForNodeLeaveCluster(); err != nil {
+				logrus.Infof("Timed out waiting for %v to leave the cluster", node.name())
+				return
+			}
+		}
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
+
+		if err := node.setReplicaCount(1); err != nil {
+			logrus.Warnf("Unable to scale up %v", node.name())
+			return
+		}
+
+		node.refreshHashes()
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.RecoveringData
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
 		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
 		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
@@ -472,8 +548,15 @@ func (node *deploymentNode) executeUpdate() error {
 		// isChanged() will get the latest revision from the apiserver
 		// and return false if there is nothing to change and will update the node object if required
 		if node.isChanged() {
+			if logger.IsDebugEnabled() {
+				pretty, err := json.MarshalIndent(node.self, "", "  ")
+				if err != nil {
+					logger.Debugf("Error marshaling node for debug log: %v", err)
+				}
+				logger.Debugf("Attempting to update node deployment: %+v", string(pretty))
+			}
 			if updateErr := node.client.Update(context.TODO(), &node.self); updateErr != nil {
-				logrus.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
+				logger.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
 				return updateErr
 			}
 		}
@@ -554,48 +637,71 @@ func (node *deploymentNode) isChanged() bool {
 		nodeContainer := node.self.Spec.Template.Spec.Containers[index]
 		desiredContainer := desired.Spec.Template.Spec.Containers[index]
 
-		if nodeContainer.Resources.Requests == nil {
-			nodeContainer.Resources.Requests = v1.ResourceList{}
-		}
-
-		if nodeContainer.Resources.Limits == nil {
-			nodeContainer.Resources.Limits = v1.ResourceList{}
-		}
-
-		// check that both exist
-
 		if nodeContainer.Image != desiredContainer.Image {
 			logrus.Debugf("Resource '%s' has different container image than desired", node.self.Name)
 			nodeContainer.Image = desiredContainer.Image
 			changed = true
 		}
 
-		if desiredContainer.Resources.Limits.Cpu().Cmp(*nodeContainer.Resources.Limits.Cpu()) != 0 {
-			logrus.Debugf("Resource '%s' has different CPU limit than desired", node.self.Name)
-			nodeContainer.Resources.Limits[v1.ResourceCPU] = *desiredContainer.Resources.Limits.Cpu()
-			changed = true
-		}
-		// Check memory limits
-		if desiredContainer.Resources.Limits.Memory().Cmp(*nodeContainer.Resources.Limits.Memory()) != 0 {
-			logrus.Debugf("Resource '%s' has different Memory limit than desired", node.self.Name)
-			nodeContainer.Resources.Limits[v1.ResourceMemory] = *desiredContainer.Resources.Limits.Memory()
-			changed = true
-		}
-		// Check CPU requests
-		if desiredContainer.Resources.Requests.Cpu().Cmp(*nodeContainer.Resources.Requests.Cpu()) != 0 {
-			logrus.Debugf("Resource '%s' has different CPU Request than desired", node.self.Name)
-			nodeContainer.Resources.Requests[v1.ResourceCPU] = *desiredContainer.Resources.Requests.Cpu()
-			changed = true
-		}
-		// Check memory requests
-		if desiredContainer.Resources.Requests.Memory().Cmp(*nodeContainer.Resources.Requests.Memory()) != 0 {
-			logrus.Debugf("Resource '%s' has different Memory Request than desired", node.self.Name)
-			nodeContainer.Resources.Requests[v1.ResourceMemory] = *desiredContainer.Resources.Requests.Memory()
+		var updatedContainer v1.Container
+		var resourceUpdated bool
+		if updatedContainer, resourceUpdated = updateResources(node, nodeContainer, desiredContainer); resourceUpdated {
 			changed = true
 		}
 
-		node.self.Spec.Template.Spec.Containers[index] = nodeContainer
+		node.self.Spec.Template.Spec.Containers[index] = updatedContainer
 	}
 
 	return changed
+}
+
+//updateResources for the node; return true if an actual change is made
+func updateResources(node *deploymentNode, nodeContainer, desiredContainer v1.Container) (v1.Container, bool) {
+	changed := false
+	if nodeContainer.Resources.Requests == nil {
+		nodeContainer.Resources.Requests = v1.ResourceList{}
+	}
+
+	if nodeContainer.Resources.Limits == nil {
+		nodeContainer.Resources.Limits = v1.ResourceList{}
+	}
+
+	// Check CPU limits
+	if desiredContainer.Resources.Limits.Cpu().Cmp(*nodeContainer.Resources.Limits.Cpu()) != 0 {
+		logrus.Debugf("Resource '%s' has different CPU (%+v) limit than desired (%+v)", node.self.Name, *nodeContainer.Resources.Limits.Cpu(), desiredContainer.Resources.Limits.Cpu())
+		nodeContainer.Resources.Limits[v1.ResourceCPU] = *desiredContainer.Resources.Limits.Cpu()
+		if nodeContainer.Resources.Limits.Cpu().IsZero() {
+			delete(nodeContainer.Resources.Limits, v1.ResourceCPU)
+		}
+		changed = true
+	}
+	// Check memory limits
+	if desiredContainer.Resources.Limits.Memory().Cmp(*nodeContainer.Resources.Limits.Memory()) != 0 {
+		logrus.Debugf("Resource '%s' has different Memory limit than desired", node.self.Name)
+		nodeContainer.Resources.Limits[v1.ResourceMemory] = *desiredContainer.Resources.Limits.Memory()
+		if nodeContainer.Resources.Limits.Memory().IsZero() {
+			delete(nodeContainer.Resources.Limits, v1.ResourceMemory)
+		}
+		changed = true
+	}
+	// Check CPU requests
+	if desiredContainer.Resources.Requests.Cpu().Cmp(*nodeContainer.Resources.Requests.Cpu()) != 0 {
+		logrus.Debugf("Resource '%s' has different CPU Request than desired", node.self.Name)
+		nodeContainer.Resources.Requests[v1.ResourceCPU] = *desiredContainer.Resources.Requests.Cpu()
+		if nodeContainer.Resources.Requests.Cpu().IsZero() {
+			delete(nodeContainer.Resources.Requests, v1.ResourceCPU)
+		}
+		changed = true
+	}
+	// Check memory requests
+	if desiredContainer.Resources.Requests.Memory().Cmp(*nodeContainer.Resources.Requests.Memory()) != 0 {
+		logrus.Debugf("Resource '%s' has different Memory Request than desired", node.self.Name)
+		nodeContainer.Resources.Requests[v1.ResourceMemory] = *desiredContainer.Resources.Requests.Memory()
+		if nodeContainer.Resources.Requests.Memory().IsZero() {
+			delete(nodeContainer.Resources.Requests, v1.ResourceMemory)
+		}
+		changed = true
+	}
+
+	return nodeContainer, changed
 }

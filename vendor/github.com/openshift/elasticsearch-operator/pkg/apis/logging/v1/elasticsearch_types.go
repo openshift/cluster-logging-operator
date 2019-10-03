@@ -113,10 +113,11 @@ type ElasticsearchNodeStatus struct {
 }
 
 type ElasticsearchNodeUpgradeStatus struct {
-	ScheduledForUpgrade  v1.ConditionStatus        `json:"scheduledUpgrade,omitempty"`
-	ScheduledForRedeploy v1.ConditionStatus        `json:"scheduledRedeploy,omitempty"`
-	UnderUpgrade         v1.ConditionStatus        `json:"underUpgrade,omitempty"`
-	UpgradePhase         ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
+	ScheduledForUpgrade      v1.ConditionStatus        `json:"scheduledUpgrade,omitempty"`
+	ScheduledForRedeploy     v1.ConditionStatus        `json:"scheduledRedeploy,omitempty"`
+	ScheduledForCertRedeploy v1.ConditionStatus        `json:"scheduledCertRedeploy,omitempty"`
+	UnderUpgrade             v1.ConditionStatus        `json:"underUpgrade,omitempty"`
+	UpgradePhase             ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
 }
 
 // ClusterCondition contains details for the current condition of this elasticsearch cluster.

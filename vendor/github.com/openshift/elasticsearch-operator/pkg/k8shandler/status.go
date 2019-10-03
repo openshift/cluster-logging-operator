@@ -82,6 +82,27 @@ func (elasticsearchRequest *ElasticsearchRequest) UpdateClusterStatus() error {
 	return nil
 }
 
+func (elasticsearchRequest *ElasticsearchRequest) GetCurrentPodStateMap() map[api.ElasticsearchNodeRole]api.PodStateMap {
+	return rolePodStateMap(elasticsearchRequest.cluster.Namespace, elasticsearchRequest.cluster.Name, elasticsearchRequest.client)
+}
+
+func containsClusterCondition(condition api.ClusterConditionType, status v1.ConditionStatus, elasticsearchStatus *api.ElasticsearchStatus) bool {
+	// if we're looking for a status of v1.ConditionTrue then we want to see if the
+	// condition is present and the status is the same
+	//
+	// if we're looking for a status of v1.ConditionFalse then we want the condition
+	// to either be present with status of false or to not find the condition
+	defaultValue := (status != v1.ConditionTrue)
+
+	for _, clusterCondition := range elasticsearchStatus.Conditions {
+		if clusterCondition.Type == condition {
+			return clusterCondition.Status == status
+		}
+	}
+
+	return defaultValue
+}
+
 // if a status doesn't exist, provide a new one
 func getNodeStatus(name string, status *api.ElasticsearchStatus) (int, *api.ElasticsearchNodeStatus) {
 	for index, status := range status.Nodes {
@@ -655,17 +676,9 @@ func updateInvalidReplicationCondition(status *api.ElasticsearchStatus, value v1
 }
 
 func updateUpdatingSettingsCondition(status *api.ElasticsearchStatus, value v1.ConditionStatus) bool {
-	var message string
-	if value == v1.ConditionTrue {
-		message = "Config Map is different"
-	} else {
-		message = "Config Map is up to date"
-	}
 	return updateESNodeCondition(status, &api.ClusterCondition{
-		Type:    api.UpdatingSettings,
-		Status:  value,
-		Reason:  "ConfigChange",
-		Message: message,
+		Type:   api.UpdatingSettings,
+		Status: value,
 	})
 }
 

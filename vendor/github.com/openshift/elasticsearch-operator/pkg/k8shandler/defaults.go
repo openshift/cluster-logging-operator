@@ -22,6 +22,8 @@ const (
 	elasticsearchCertsPath  = "/etc/openshift/elasticsearch/secret"
 	elasticsearchConfigPath = "/usr/share/java/elasticsearch/config"
 	heapDumpLocation        = "/elasticsearch/persistent/heapdump.hprof"
+
+	k8sTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
 func kibanaIndexMode(mode string) (string, error) {

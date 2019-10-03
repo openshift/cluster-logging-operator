@@ -18,10 +18,11 @@ NAMESPACE=openshift-logging
 os::test::junit::declare_suite_start "${BASH_SOURCE[0]}"
 
 ARTIFACT_DIR=${ARTIFACT_DIR:-_output}
+OCP_VERSION=${OCP_VERSION:-4.3}
 manifest=$(mktemp)
 global_manifest=$(mktemp)
-CSV_FILE="${CSV_FILE:-$repo_dir/manifests/latest}"
-EO_CSV_FILE="${EO_CSV_FILE:-$repo_dir/vendor/github.com/openshift/elasticsearch-operator/manifests/latest}"
+CSV_FILE="${CSV_FILE:-$repo_dir/manifests/$OCP_VERSION/cluster-logging.v$OCP_VERSION.0.clusterserviceversion.yaml}"
+EO_CSV_FILE="${EO_CSV_FILE:-$repo_dir/vendor/github.com/openshift/elasticsearch-operator/manifests/$OCP_VERSION/elasticsearch-operator.v$OCP_VERSION.0.clusterserviceversion.yaml}"
 
 cleanup(){
   local return_code="$?"
@@ -43,12 +44,12 @@ cleanup(){
 trap cleanup exit
 
 if [ -n "${IMAGE_CLUSTER_LOGGING_OPERATOR:-}" ] ; then
-  source "$(dirname $0)/../common"
+  source "$repo_dir/hack/common"
 fi
 if [ -n "${IMAGE_FORMAT:-}" ] ; then
   IMAGE_CLUSTER_LOGGING_OPERATOR=$(sed -e "s,\${component},cluster-logging-operator," <(echo $IMAGE_FORMAT))
 else
-  IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/origin/4.2:cluster-logging-operator}
+  IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/origin/${OCP_VERSION}:cluster-logging-operator}
 fi
 
 KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}

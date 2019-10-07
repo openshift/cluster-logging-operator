@@ -1,3 +1,0 @@
-version=2
-rule=:%.:json:skipempty%
-rule=:%-:whitespace%%.:json:skipempty%

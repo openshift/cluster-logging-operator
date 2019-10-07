@@ -30,7 +30,6 @@ var COMPONENT_IMAGES = map[string]string{
 	"curator":       "CURATOR_IMAGE",
 	"fluentd":       "FLUENTD_IMAGE",
 	"elasticsearch": "ELASTICSEARCH_IMAGE",
-	"rsyslog":       "RSYSLOG_IMAGE",
 }
 
 func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {

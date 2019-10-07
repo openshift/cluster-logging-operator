@@ -77,13 +77,3 @@ os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
 
 # assert deployment
 assert_resources_exist
-
-# Bug 1751339. Drop rsyslog support
-# deploy alt collector
-# os::log::info Patching the collector to deploy an alternate
-# oc -n $NAMESPACE get clusterlogging instance -o yaml | sed -e "s/type: fluentd/type: rsyslog/" | oc replace -f -
-
-# os::cmd::try_until_success "oc -n $NAMESPACE get ds rsyslog" ${TIMEOUT_MIN}
-
-# # verify old collector removed
-# os::cmd::try_until_failure "oc -n $NAMESPACE get ds fluentd" ${TIMEOUT_MIN}

@@ -71,7 +71,6 @@ type CollectionSpec struct {
 type LogCollectionSpec struct {
 	Type        LogCollectionType `json:"type"`
 	FluentdSpec `json:"fluentd,omitempty"`
-	RsyslogSpec `json:"rsyslog,omitempty"`
 }
 
 type EventCollectionSpec struct {
@@ -79,12 +78,6 @@ type EventCollectionSpec struct {
 }
 
 type FluentdSpec struct {
-	Resources    *v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
-}
-
-type RsyslogSpec struct {
 	Resources    *v1.ResourceRequirements `json:"resources"`
 	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
@@ -150,7 +143,6 @@ type CollectionStatus struct {
 
 type LogCollectionStatus struct {
 	FluentdStatus FluentdCollectorStatus `json:"fluentdStatus,omitempty"`
-	RsyslogStatus RsyslogCollectorStatus `json:"rsyslogStatus,omitempty"`
 }
 
 type EventCollectionStatus struct {
@@ -159,13 +151,6 @@ type EventCollectionStatus struct {
 type FluentdCollectorStatus struct {
 	DaemonSet  string                        `json:"daemonSet"`
 	Nodes      map[string]string             `json:"nodes"`
-	Pods       PodStateMap                   `json:"pods"`
-	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
-}
-
-type RsyslogCollectorStatus struct {
-	DaemonSet  string                        `json:"daemonSet"`
-	Nodes      map[string]string             `json:"Nodes"`
 	Pods       PodStateMap                   `json:"pods"`
 	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
 }
@@ -232,7 +217,6 @@ type LogCollectionType string
 
 const (
 	LogCollectionTypeFluentd LogCollectionType = "fluentd"
-	LogCollectionTypeRsyslog LogCollectionType = "rsyslog"
 )
 
 type EventCollectionType string

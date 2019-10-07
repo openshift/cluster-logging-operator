@@ -49,14 +49,6 @@ var secretCertificates = map[string]map[string]string{
 		"infra-key":  "system.logging.fluentd.key",
 		"infra-cert": "system.logging.fluentd.crt",
 	},
-	"rsyslog": map[string]string{
-		"app-ca":     "ca.crt",
-		"app-key":    "system.logging.rsyslog.key",
-		"app-cert":   "system.logging.rsyslog.crt",
-		"infra-ca":   "ca.crt",
-		"infra-key":  "system.logging.rsyslog.key",
-		"infra-cert": "system.logging.rsyslog.crt",
-	},
 }
 
 func (clusterRequest *ClusterLoggingRequest) extractSecretToFile(secretName string, key string, toFile string) (err error) {

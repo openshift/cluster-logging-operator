@@ -90,14 +90,6 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 			},
 		}
 	}
-	if collector == "rsyslog" {
-		collectionSpec = logging.CollectionSpec{
-			Logs: logging.LogCollectionSpec{
-				Type:        logging.LogCollectionTypeRsyslog,
-				RsyslogSpec: logging.RsyslogSpec{},
-			},
-		}
-	}
 
 	// good default values for aws testing environment
 	esResources := &v1.ResourceRequirements{
@@ -212,7 +204,6 @@ func clusterLoggingUpgradeTest(t *testing.T, f *framework.Framework, ctx *framew
 		{Name: "KIBANA_IMAGE", Value: "quay.io/openshift/origin-logging-kibana5:upgraded"},
 		{Name: "CURATOR_IMAGE", Value: "quay.io/openshift/origin-logging-curator5:upgraded"},
 		{Name: "OAUTH_PROXY_IMAGE", Value: "quay.io/openshift/origin-oauth-proxy:latest"},
-		{Name: "RSYSLOG_IMAGE", Value: "quay.io/viaq/rsyslog:upgraded"},
 	}
 
 	t.Logf("Modified image ENV variables to force upgrade: %q", newEnv)

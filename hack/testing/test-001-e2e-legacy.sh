@@ -59,7 +59,7 @@ $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'ns' | oc create -f
 $repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} >> ${manifest}
 sed -i "s,quay.io/openshift/origin-cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," ${manifest}
 if [ -n "${IMAGE_FORMAT:-}" ] ; then
-  for comp in logging-curator5 logging-elasticsearch5 logging-fluentd logging-kibana5 logging-oauth-proxy logging-rsyslog ; do
+  for comp in logging-curator5 logging-elasticsearch5 logging-fluentd logging-kibana5 logging-oauth-proxy ; do
     img=$(sed -e "s,\${component},$comp," <(echo $IMAGE_FORMAT))
     sed -i "s,quay.io/openshift/origin-${comp}:latest,${img}," ${manifest}
   done

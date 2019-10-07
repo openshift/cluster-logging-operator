@@ -38,17 +38,11 @@ var serviceAccountLogCollectorUID types.UID
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
 	cluster := clusterRequest.cluster
 
-	//Bug 1751339: Drop rsyslog support
-	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeFluentd {
-		logrus.Infof("Unsupported log collector: %v", cluster.Spec.Collection.Logs.Type)
-		return nil
-	}
-
 	var collectorServiceAccount *core.ServiceAccount
 
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
-	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd || cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
 		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
 			return
 		}
@@ -106,66 +100,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		}
 	}
 
-	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog {
-		if err = clusterRequest.createOrUpdateRsyslogService(); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateRsyslogServiceMonitor(); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateRsyslogPrometheusRule(); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateRsyslogConfigMap(); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateRsyslogSecret(); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateLogrotateConfigMap(); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateRsyslogDaemonset(); err != nil {
-			return
-		}
-
-		rsyslogStatus, err := clusterRequest.getRsyslogCollectorStatus()
-		if err != nil {
-			return fmt.Errorf("Failed to get status of Rsyslog: %v", err)
-		}
-
-		printUpdateMessage := true
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !reflect.DeepEqual(rsyslogStatus, cluster.Status.Collection.Logs.RsyslogStatus) {
-				if printUpdateMessage {
-					logrus.Info("Updating status of Rsyslog")
-					printUpdateMessage = false
-				}
-				cluster.Status.Collection.Logs.RsyslogStatus = rsyslogStatus
-				return clusterRequest.Update(cluster)
-			}
-			return nil
-		})
-		if retryErr != nil {
-			return fmt.Errorf("Failed to update Cluster Logging Rsyslog status: %v", retryErr)
-		}
-	}
-
 	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeFluentd {
 		clusterRequest.removeFluentd()
 	}
 
-	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeRsyslog {
-		clusterRequest.removeRsyslog()
-	}
-
-	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeFluentd && cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeRsyslog {
+	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeFluentd {
 		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
 			return
 		}
@@ -174,7 +113,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 	}
-	if collectorServiceAccount != nil && (cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd || cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeRsyslog) {
+	if collectorServiceAccount != nil && cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
 
 		// remove our finalizer from the list and update it.
 		collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)

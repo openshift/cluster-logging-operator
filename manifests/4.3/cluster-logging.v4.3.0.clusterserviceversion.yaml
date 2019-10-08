@@ -209,6 +209,14 @@ spec:
           verbs:
           - "*"
         - apiGroups:
+          - config.openshift.io
+          resources:
+          - proxies
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - ""
           resources:
           - pods

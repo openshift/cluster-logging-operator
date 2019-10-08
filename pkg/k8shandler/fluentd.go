@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -10,9 +11,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
+	configv1 "github.com/openshift/api/config/v1"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 )
@@ -169,6 +172,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap() er
 
 	return nil
 }
+
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error {
 
 	fluentdSecret := NewSecret(
@@ -193,7 +197,8 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 	return nil
 }
 
-func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string) v1.PodSpec {
+func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy) v1.PodSpec {
+
 	var resources = logging.Spec.Collection.Logs.FluentdSpec.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
@@ -240,6 +245,15 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "CDM_KEEP_EMPTY_FIELDS", Value: "message"}, // by default, keep empty messages
 	}
 
+	if proxyConfig != nil {
+		proxyEnv := []v1.EnvVar{
+			{Name: "HTTP_PROXY", Value: proxyConfig.Status.HTTPProxy},
+			{Name: "HTTPS_PROXY", Value: proxyConfig.Status.HTTPSProxy},
+			{Name: "NO_PROXY", Value: proxyConfig.Status.NoProxy},
+		}
+		fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
+	}
+
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: "runlogjournal", MountPath: "/run/log/journal"},
 		{Name: "varlog", MountPath: "/var/log"},
@@ -251,6 +265,13 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "dockerdaemoncfg", ReadOnly: true, MountPath: "/etc/docker"},
 		{Name: "filebufferstorage", MountPath: "/var/lib/fluentd"},
 		{Name: metricsVolumeName, MountPath: "/etc/fluent/metrics"},
+	}
+
+	if proxyConfig != nil && len(proxyConfig.Spec.TrustedCA.Name) > 0 {
+		proxyCA := []v1.VolumeMount{
+			{Name: "proxytrustedca", MountPath: "/etc/fluent/proxy"},
+		}
+		fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts, proxyCA...)
 	}
 
 	fluentdContainer.SecurityContext = &v1.SecurityContext{
@@ -292,6 +313,13 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 		tolerations,
 	)
 
+	if proxyConfig != nil && len(proxyConfig.Spec.TrustedCA.Name) > 0 {
+		proxyCAVolume := []v1.Volume{
+			{Name: "proxytrustedca", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: proxyConfig.Spec.TrustedCA.Name}}},
+		}
+		fluentdPodSpec.Volumes = append(fluentdPodSpec.Volumes, proxyCAVolume...)
+	}
+
 	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName
 	// Shorten the termination grace period from the default 30 sec to 10 sec.
 	fluentdPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
@@ -303,7 +331,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset() (e
 
 	cluster := clusterRequest.cluster
 
-	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch")
+	proxy := &configv1.Proxy{}
+	if err = clusterRequest.client.Get(context.TODO(), types.NamespacedName{Name: "cluster"}, proxy); err != nil {
+		if !errors.IsNotFound(err) {
+			logrus.Debugf("fluentd: Failed to get proxy: %v\n", err)
+		}
+	}
+
+	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxy)
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 

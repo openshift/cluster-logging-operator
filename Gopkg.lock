@@ -391,6 +391,14 @@
   version = "v1.0"
 
 [[projects]]
+  branch = "master"
+  digest = "1:83809e21ef2c422e1c4c47d07027ae7b7222709be79ff45a16ca3925dc275eaa"
+  name = "github.com/inhies/go-bytesize"
+  packages = ["."]
+  pruneopts = "NT"
+  revision = "5990f52c6ad68c68c6edf5e4d93fc67191782e33"
+
+[[projects]]
   digest = "1:f5b9328966ccea0970b1d15075698eff0ddb3e75889560aad2e9f76b289b536a"
   name = "github.com/joho/godotenv"
   packages = ["."]
@@ -471,14 +479,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a8b895bfb667bd11eda5e8dd62d82da40a810d1aefd735ed147810d8e1abd1c7"
+  digest = "1:2395201e92d688475cde7b9bb6cbf8013dc6e586c741d2093398a1f4382ea330"
   name = "github.com/openshift/elasticsearch-operator"
   packages = [
     "pkg/apis",
     "pkg/apis/logging/v1",
+    "pkg/k8shandler",
+    "pkg/logger",
+    "pkg/utils",
+    "test/utils",
   ]
   pruneopts = "T"
-  revision = "718361d9f417cc731a6cabda959c87ff3b80f128"
+  revision = "6c32769df99e8b464e9791eeb0e988ed14969c6a"
 
 [[projects]]
   digest = "1:674610d54812d3c36ab7861fc826176bf581a9426cc09abec0107414c17f89cd"
@@ -1255,6 +1267,7 @@
     "github.com/openshift/api/route/v1",
     "github.com/openshift/elasticsearch-operator/pkg/apis",
     "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1",
+    "github.com/openshift/elasticsearch-operator/test/utils",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",

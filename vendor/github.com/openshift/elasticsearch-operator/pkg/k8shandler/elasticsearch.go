@@ -1,45 +1,15 @@
 package k8shandler
 
 import (
-	"bytes"
-	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net"
 	"net/http"
-	"net/url"
-	"os"
-	"path"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/inhies/go-bytesize"
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-const (
-	certLocalPath = "/tmp/"
-)
-
-type esCurlStruct struct {
-	Method       string // use net/http constants https://golang.org/pkg/net/http/#pkg-constants
-	URI          string
-	RequestBody  string
-	StatusCode   int
-	ResponseBody map[string]interface{}
-	Error        error
-}
 
 func SetShardAllocation(clusterName, namespace string, state api.ShardAllocationState, client client.Client) (bool, error) {
 
@@ -73,10 +43,9 @@ func GetShardAllocation(clusterName, namespace string, client client.Client) (st
 }
 
 func GetNodeDiskUsage(clusterName, namespace, nodeName string, client client.Client) (string, float64, error) {
-
 	payload := &esCurlStruct{
 		Method: http.MethodGet,
-		URI:    "_cat/nodes?h=name,du,dup",
+		URI:    "_nodes/stats/fs",
 	}
 
 	curlESService(clusterName, namespace, payload, client)
@@ -84,15 +53,18 @@ func GetNodeDiskUsage(clusterName, namespace, nodeName string, client client.Cli
 	usage := ""
 	percentUsage := float64(-1)
 
-	if payload, ok := payload.ResponseBody["results"].(string); ok {
-		response := parseNodeDiskUsage(payload)
-		if nodeResponse, ok := response[nodeName].(map[string]interface{}); ok {
-			if usageString, ok := nodeResponse["used"].(string); ok {
-				usage = usageString
-			}
+	if payload, ok := payload.ResponseBody["nodes"].(map[string]interface{}); ok {
+		for _, stats := range payload {
 
-			if percentUsageFloat, ok := nodeResponse["used_percent"].(float64); ok {
-				percentUsage = percentUsageFloat
+			// ignore the key name here, it is the node UUID
+			if parseString("name", stats.(map[string]interface{})) == nodeName {
+				total := parseFloat64("fs.total.total_in_bytes", stats.(map[string]interface{}))
+				available := parseFloat64("fs.total.available_in_bytes", stats.(map[string]interface{}))
+
+				percentUsage = (total - available) / total * 100.00
+				usage = strings.TrimSuffix(fmt.Sprintf("%s", bytesize.New(total)-bytesize.New(available)), "B")
+
+				break
 			}
 		}
 	}
@@ -217,100 +189,6 @@ func GetDiskWatermarks(clusterName, namespace string, client client.Client) (int
 	}
 
 	return low, high, payload.Error
-}
-
-func parseBool(path string, interfaceMap map[string]interface{}) bool {
-	value := walkInterfaceMap(path, interfaceMap)
-
-	if parsedBool, ok := value.(bool); ok {
-		return parsedBool
-	} else {
-		return false
-	}
-}
-
-func parseString(path string, interfaceMap map[string]interface{}) string {
-	value := walkInterfaceMap(path, interfaceMap)
-
-	if parsedString, ok := value.(string); ok {
-		return parsedString
-	} else {
-		return ""
-	}
-}
-
-func parseInt32(path string, interfaceMap map[string]interface{}) int32 {
-	return int32(parseFloat64(path, interfaceMap))
-}
-
-func parseFloat64(path string, interfaceMap map[string]interface{}) float64 {
-	value := walkInterfaceMap(path, interfaceMap)
-
-	if parsedFloat, ok := value.(float64); ok {
-		return parsedFloat
-	} else {
-		return float64(-1)
-	}
-}
-
-func walkInterfaceMap(path string, interfaceMap map[string]interface{}) interface{} {
-
-	current := interfaceMap
-	keys := strings.Split(path, ".")
-	keyCount := len(keys)
-
-	for index, key := range keys {
-		if current[key] != nil {
-			if index+1 < keyCount {
-				current = current[key].(map[string]interface{})
-			} else {
-				return current[key]
-			}
-		} else {
-			return nil
-		}
-	}
-
-	return nil
-}
-
-// ---
-// method: GET
-// uri: _cat/nodes?h=name,du,dup
-// requestbody: ""
-// statuscode: 200
-// responsebody:
-//   results: |
-//     elasticsearch-cm-23bq83d3   6.3gb 5.36
-//     elasticsearch-cd-ujt4y3n5-1 6.4gb 5.43
-// error: null
-func parseNodeDiskUsage(results string) map[string]interface{} {
-
-	nodeDiskUsage := make(map[string]interface{})
-
-	for _, result := range strings.Split(results, "\n") {
-
-		fields := []string{}
-		for _, val := range strings.Split(result, " ") {
-			if len(val) > 0 {
-				fields = append(fields, val)
-			}
-		}
-
-		if len(fields) == 3 {
-			percent, err := strconv.ParseFloat(fields[2], 64)
-			if err != nil {
-				percent = float64(-1)
-			}
-
-			nodeDiskUsage[fields[0]] = map[string]interface{}{
-				"used":         strings.ToUpper(strings.TrimSuffix(fields[1], "b")),
-				"used_percent": percent,
-			}
-		}
-	}
-
-	return nodeDiskUsage
 }
 
 func SetMinMasterNodes(clusterName, namespace string, numberMasters int32, client client.Client) (bool, error) {
@@ -440,7 +318,7 @@ func DoSynchronizedFlush(clusterName, namespace string, client client.Client) (b
 	return (payload.StatusCode == 200), payload.Error
 }
 
-// This will idempompotently update the index templates and update indices' replica count
+// This will idempotently update the index templates and update indices' replica count
 func UpdateReplicaCount(clusterName, namespace string, client client.Client, replicaCount int32) (bool, error) {
 
 	if ok, _ := updateAllIndexTemplateReplicas(clusterName, namespace, client, replicaCount); ok {
@@ -450,348 +328,4 @@ func UpdateReplicaCount(clusterName, namespace string, client client.Client, rep
 	}
 
 	return false, nil
-}
-
-func updateAllIndexReplicas(clusterName, namespace string, client client.Client, replicaCount int32) (bool, error) {
-
-	indexHealth, _ := getIndexHealth(clusterName, namespace, client)
-
-	// get list of indices and call updateIndexReplicas for each one
-	for index, health := range indexHealth {
-		// only update replicas for indices that don't have same replica count
-		if parseInt32("replicas", health.(map[string]interface{})) != replicaCount {
-			// best effort initially?
-			logrus.Debugf("Updating %v from %d replicas to %d", index, parseInt32("replicas", health.(map[string]interface{})), replicaCount)
-			updateIndexReplicas(clusterName, namespace, client, index, replicaCount)
-		}
-	}
-
-	return true, nil
-}
-
-func getIndexHealth(clusterName, namespace string, client client.Client) (map[string]interface{}, error) {
-	payload := &esCurlStruct{
-		Method: http.MethodGet,
-		URI:    "_cat/indices?h=health,status,index,pri,rep",
-	}
-
-	curlESService(clusterName, namespace, payload, client)
-
-	response := make(map[string]interface{})
-	if payload, ok := payload.ResponseBody["results"].(string); ok {
-		response = parseIndexHealth(payload)
-	}
-
-	return response, payload.Error
-}
-
-// ---
-// method: GET
-// uri: _cat/indices?h=health,status,index,pri,rep
-// requestbody: ""
-// statuscode: 200
-// responsebody:
-//   results: |
-//	 	green open .searchguard           1 0
-//		green open .kibana                1 0
-//		green open .operations.2019.07.01 1 0
-// error: null
-func parseIndexHealth(results string) map[string]interface{} {
-
-	indexHealth := make(map[string]interface{})
-
-	for _, result := range strings.Split(results, "\n") {
-
-		fields := []string{}
-		for _, val := range strings.Split(result, " ") {
-			if len(val) > 0 {
-				fields = append(fields, val)
-			}
-		}
-
-		if len(fields) == 5 {
-			primary, err := strconv.ParseFloat(fields[3], 64)
-			if err != nil {
-				primary = float64(-1)
-			}
-			replicas, err := strconv.ParseFloat(fields[4], 64)
-			if err != nil {
-				replicas = float64(-1)
-			}
-
-			indexHealth[fields[2]] = map[string]interface{}{
-				"health":   fields[0],
-				"status":   fields[1],
-				"primary":  primary,
-				"replicas": replicas,
-			}
-		}
-	}
-
-	return indexHealth
-}
-
-func updateAllIndexTemplateReplicas(clusterName, namespace string, client client.Client, replicaCount int32) (bool, error) {
-
-	// get list of all common.* index templates and update their replica count for each one
-	payload := &esCurlStruct{
-		Method: http.MethodGet,
-		URI:    "_cat/templates/common.*",
-	}
-
-	curlESService(clusterName, namespace, payload, client)
-
-	commonTemplates := []string{}
-	if payload, ok := payload.ResponseBody["results"].(string); ok {
-		for _, result := range strings.Split(payload, "\n") {
-
-			fields := []string{}
-			for _, val := range strings.Split(result, " ") {
-				if len(val) > 0 {
-					fields = append(fields, val)
-				}
-			}
-
-			if len(fields) == 1 {
-				commonTemplates = append(commonTemplates, fields[0])
-			}
-		}
-	}
-
-	for _, template := range commonTemplates {
-		updateIndexTemplateReplicas(clusterName, namespace, client, template, replicaCount)
-	}
-
-	return true, nil
-}
-
-func updateIndexTemplateReplicas(clusterName, namespace string, client client.Client, templateName string, replicaCount int32) (bool, error) {
-
-	// get the index template and then update the replica and put it
-	payload := &esCurlStruct{
-		Method: http.MethodGet,
-		URI:    fmt.Sprintf("_template/%s", templateName),
-	}
-
-	curlESService(clusterName, namespace, payload, client)
-
-	if template, ok := payload.ResponseBody[templateName].(map[string]interface{}); ok {
-		if settings, ok := template["settings"].(map[string]interface{}); ok {
-			if index, ok := settings["index"].(map[string]interface{}); ok {
-				currentReplicas, ok := index["number_of_replicas"].(string)
-				if ok && currentReplicas != fmt.Sprintf("%d", replicaCount) {
-					template["settings"].(map[string]interface{})["index"].(map[string]interface{})["number_of_replicas"] = fmt.Sprintf("%d", replicaCount)
-
-					templateJson, _ := json.Marshal(template)
-
-					logrus.Debugf("Updating template %v from %d replicas to %d", templateName, currentReplicas, replicaCount)
-
-					payload = &esCurlStruct{
-						Method:      http.MethodPut,
-						URI:         fmt.Sprintf("_template/%s", templateName),
-						RequestBody: string(templateJson),
-					}
-
-					curlESService(clusterName, namespace, payload, client)
-
-					acknowledged := false
-					if acknowledgedBool, ok := payload.ResponseBody["acknowledged"].(bool); ok {
-						acknowledged = acknowledgedBool
-					}
-					return (payload.StatusCode == 200 && acknowledged), payload.Error
-				}
-			}
-		}
-	}
-
-	return false, payload.Error
-}
-
-func updateIndexReplicas(clusterName, namespace string, client client.Client, index string, replicaCount int32) (bool, error) {
-	payload := &esCurlStruct{
-		Method:      http.MethodPut,
-		URI:         fmt.Sprintf("%s/_settings", index),
-		RequestBody: fmt.Sprintf("{%q:\"%d\"}}", "index.number_of_replicas", replicaCount),
-	}
-
-	curlESService(clusterName, namespace, payload, client)
-
-	acknowledged := false
-	if acknowledgedBool, ok := payload.ResponseBody["acknowledged"].(bool); ok {
-		acknowledged = acknowledgedBool
-	}
-	return (payload.StatusCode == 200 && acknowledged), payload.Error
-}
-
-// This will curl the ES service and provide the certs required for doing so
-//  it will also return the http and string response
-func curlESService(clusterName, namespace string, payload *esCurlStruct, client client.Client) {
-
-	urlString := fmt.Sprintf("https://%s.%s.svc:9200/%s", clusterName, namespace, payload.URI)
-	urlURL, err := url.Parse(urlString)
-
-	if err != nil {
-		logrus.Warnf("Unable to parse URL %v: %v", urlString, err)
-		return
-	}
-
-	request := &http.Request{
-		Method: payload.Method,
-		URL:    urlURL,
-	}
-
-	switch payload.Method {
-	case http.MethodGet:
-		// no more to do to request...
-	case http.MethodPost:
-		if payload.RequestBody != "" {
-			// add to the request
-			request.Header = map[string][]string{
-				"Content-Type": []string{
-					"application/json",
-				},
-			}
-			request.Body = ioutil.NopCloser(bytes.NewReader([]byte(payload.RequestBody)))
-		}
-
-	case http.MethodPut:
-		if payload.RequestBody != "" {
-			// add to the request
-			request.Header = map[string][]string{
-				"Content-Type": []string{
-					"application/json",
-				},
-			}
-			request.Body = ioutil.NopCloser(bytes.NewReader([]byte(payload.RequestBody)))
-		}
-
-	default:
-		// unsupported method -- do nothing
-		return
-	}
-
-	httpClient := getClient(clusterName, namespace, client)
-	resp, err := httpClient.Do(request)
-
-	if resp != nil {
-		payload.StatusCode = resp.StatusCode
-		payload.ResponseBody = getMapFromBody(resp.Body)
-	}
-	payload.Error = err
-}
-
-func getRootCA(clusterName, namespace string) *x509.CertPool {
-	certPool := x509.NewCertPool()
-
-	// load cert into []byte
-	caPem, err := ioutil.ReadFile(path.Join(certLocalPath, clusterName, "admin-ca"))
-	if err != nil {
-		logrus.Errorf("Unable to read file to get contents: %v", err)
-		return nil
-	}
-
-	certPool.AppendCertsFromPEM(caPem)
-
-	return certPool
-}
-
-func getMapFromBody(body io.ReadCloser) map[string]interface{} {
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(body)
-
-	var results map[string]interface{}
-	err := json.Unmarshal([]byte(buf.String()), &results)
-	if err != nil {
-		results = make(map[string]interface{})
-		results["results"] = buf.String()
-	}
-
-	return results
-}
-
-func getClientCertificates(clusterName, namespace string) []tls.Certificate {
-	certificate, err := tls.LoadX509KeyPair(
-		path.Join(certLocalPath, clusterName, "admin-cert"),
-		path.Join(certLocalPath, clusterName, "admin-key"),
-	)
-	if err != nil {
-		return []tls.Certificate{}
-	}
-
-	return []tls.Certificate{
-		certificate,
-	}
-}
-
-func getClient(clusterName, namespace string, client client.Client) *http.Client {
-
-	// get the contents of the secret
-	extractSecret(clusterName, namespace, client)
-
-	// http.Transport sourced from go 1.10.7
-	return &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: false,
-				RootCAs:            getRootCA(clusterName, namespace),
-				Certificates:       getClientCertificates(clusterName, namespace),
-			},
-		},
-	}
-}
-
-func extractSecret(secretName, namespace string, client client.Client) {
-	secret := &v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: v1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
-		},
-	}
-	if err := client.Get(context.TODO(), types.NamespacedName{Name: secret.Name, Namespace: secret.Namespace}, secret); err != nil {
-		if errors.IsNotFound(err) {
-			//return err
-			logrus.Errorf("Unable to find secret %v: %v", secretName, err)
-		}
-
-		logrus.Errorf("Error reading secret %v: %v", secretName, err)
-		//return fmt.Errorf("Unable to extract secret to file: %v", secretName, err)
-	}
-
-	// make sure that the dir === secretName exists
-	if _, err := os.Stat(path.Join(certLocalPath, secretName)); os.IsNotExist(err) {
-		err = os.MkdirAll(path.Join(certLocalPath, secretName), 0755)
-		if err != nil {
-			logrus.Errorf("Error creating dir %v: %v", path.Join(certLocalPath, secretName), err)
-		}
-	}
-
-	for _, key := range []string{"admin-ca", "admin-cert", "admin-key"} {
-
-		value, ok := secret.Data[key]
-
-		// check to see if the map value exists
-		if !ok {
-			logrus.Errorf("Error secret key %v not found", key)
-			//return fmt.Errorf("No secret data \"%s\" found", key)
-		}
-
-		if err := ioutil.WriteFile(path.Join(certLocalPath, secretName, key), value, 0644); err != nil {
-			//return fmt.Errorf("Unable to write to working dir: %v", err)
-			logrus.Errorf("Error writing %v to %v: %v", value, path.Join(certLocalPath, secretName, key), err)
-		}
-	}
 }

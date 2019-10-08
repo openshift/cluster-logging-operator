@@ -78,8 +78,9 @@ func (current *statefulSetNode) updateReference(desired NodeTypeInterface) {
 }
 
 func (node *statefulSetNode) state() api.ElasticsearchNodeStatus {
-	var rolloutForReload v1.ConditionStatus
+	//var rolloutForReload v1.ConditionStatus
 	var rolloutForUpdate v1.ConditionStatus
+	var rolloutForCertReload v1.ConditionStatus
 
 	// see if we need to update the deployment object
 	if node.isChanged() {
@@ -95,14 +96,14 @@ func (node *statefulSetNode) state() api.ElasticsearchNodeStatus {
 	// check if the secretHash changed
 	newSecretHash := getSecretDataHash(node.clusterName, node.self.Namespace, node.client)
 	if newSecretHash != node.secretHash {
-		rolloutForReload = v1.ConditionTrue
+		rolloutForCertReload = v1.ConditionTrue
 	}
 
 	return api.ElasticsearchNodeStatus{
 		StatefulSetName: node.self.Name,
 		UpgradeStatus: api.ElasticsearchNodeUpgradeStatus{
-			ScheduledForUpgrade:  rolloutForUpdate,
-			ScheduledForRedeploy: rolloutForReload,
+			ScheduledForUpgrade:      rolloutForUpdate,
+			ScheduledForCertRedeploy: rolloutForCertReload,
 		},
 	}
 }
@@ -219,7 +220,18 @@ func (node *statefulSetNode) replicaCount() (int32, error) {
 	return desired.Status.Replicas, nil
 }
 
-func (node *statefulSetNode) restart(upgradeStatus *api.ElasticsearchNodeStatus) {
+func (node *statefulSetNode) isMissing() bool {
+	getNode := &apps.StatefulSet{}
+	if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.name(), Namespace: node.self.Namespace}, getNode); getErr != nil {
+		if errors.IsNotFound(getErr) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (node *statefulSetNode) rollingRestart(upgradeStatus *api.ElasticsearchNodeStatus) {
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
 		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
@@ -253,6 +265,12 @@ func (node *statefulSetNode) restart(upgradeStatus *api.ElasticsearchNodeStatus)
 	}
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
+
+		// if the node doesn't exist -- create it
+		// TODO: we can skip this logic after
+		if node.isMissing() {
+			node.create()
+		}
 
 		ordinal, err := node.partition()
 		if err != nil {
@@ -289,6 +307,74 @@ func (node *statefulSetNode) restart(upgradeStatus *api.ElasticsearchNodeStatus)
 		if err, _ := node.waitForNodeRejoinCluster(); err != nil {
 			logrus.Infof("Timed out waiting for %v pods to rejoin cluster", node.name())
 			return
+		}
+
+		node.refreshHashes()
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.RecoveringData
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.ControllerUpdated
+		upgradeStatus.UpgradeStatus.UnderUpgrade = ""
+	}
+}
+
+func (node *statefulSetNode) fullClusterRestart(upgradeStatus *api.ElasticsearchNodeStatus) {
+
+	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
+		replicas, err := node.replicaCount()
+		if err != nil {
+			logrus.Warnf("Unable to get number of replicas prior to restart for %v", node.name())
+			return
+		}
+
+		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		if err != nil {
+			logrus.Warnf("Unable to get cluster size prior to restart for %v", node.name())
+			return
+		}
+
+		node.setPartition(replicas)
+		node.clusterSize = size
+		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionTrue
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
+		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
+
+		// nothing to do here -- just maintaing a framework structure
+
+		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
+	}
+
+	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
+
+		ordinal, err := node.partition()
+		if err != nil {
+			logrus.Infof("Unable to get node ordinal value: %v", err)
+			return
+		}
+
+		for index := ordinal; index > 0; index-- {
+			// get podName based on ordinal index and node.name()
+			podName := fmt.Sprintf("%v-%v", node.name(), index-1)
+
+			// delete the pod
+			if err := DeletePod(podName, node.self.Namespace, node.client); err != nil {
+				logrus.Infof("Unable to delete pod %v for restart: %v", podName, err)
+				return
+			}
+
+			// wait for node to leave cluster
+			if err, _ := node.waitForNodeLeaveCluster(); err != nil {
+				logrus.Infof("Timed out waiting for %v to leave the cluster", podName)
+				return
+			}
+
+			// used for tracking in case of timeout
+			node.setPartition(index - 1)
 		}
 
 		node.refreshHashes()

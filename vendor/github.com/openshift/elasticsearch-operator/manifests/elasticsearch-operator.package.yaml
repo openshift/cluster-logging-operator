@@ -1,5 +1,5 @@
 #! package-manifest: ./deploy/chart/catalog_resources/rh-operators/elasticsearch-operator.v4.2.0.clusterserviceversion.yaml
 packageName: elasticsearch-operator
 channels:
-- name: "4.2"
+- name: 4.2
   currentCSV: elasticsearch-operator.v4.2.0

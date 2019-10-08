@@ -51,6 +51,7 @@ TEST_NAMESPACE=${TEST_NAMESPACE} go test ./test/e2e/... \
   -namespacedMan ${manifest} \
   -v \
   -parallel=1 \
-  -singleNamespace
+  -singleNamespace \
+  -timeout 900s
 
 oc delete namespace ${TEST_NAMESPACE}

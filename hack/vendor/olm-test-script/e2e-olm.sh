@@ -90,7 +90,16 @@ PACKAGE_NAME=$(sed -nr 's,.*packageName: (.*),\1,p' $MANIFEST_DIR/*package.yaml)
 
 oc create -n $TEST_NAMESPACE -f /tmp/configmap.yaml
 if [ "${CREATE_OPERATORGROUP}" == "true" ] ; then
-  oc process -f "$(dirname $0)/operatorgroup-template.yaml" -p TARGET_NAMESPACE=${NAMESPACE} | oc create -n $TEST_NAMESPACE -f -
+  if [ "${GLOBAL}" == "true" ] ; then
+    oc -n ${TARGET_NAMESPACE} process -f "$(dirname $0)/operatorgroup-template-global.yaml" | oc create -n $TEST_NAMESPACE -f -
+  else
+    oc -n ${TARGET_NAMESPACE} process -f "$(dirname $0)/operatorgroup-template.yaml"  -p TARGET_NAMESPACE=${TARGET_NAMESPACE} | oc create -n $TEST_NAMESPACE -f -
+  fi
+
+  if [ "$?" != "0" ] ; then
+    echo "Error processing operatorgroup template"
+    exit 1
+  fi
 fi
 
 oc process -f "$(dirname $0)/subscription.yaml" -p SUFFIX=${SUFFIX:-} -p CONFIGMAP_NAME=${CONFIGMAP_NAME:-} -p TEST_NAMESPACE=${NAMESPACE} -p PACKAGE_NAME=${PACKAGE_NAME} -p STARTING_CSV=${CURRENT_CSV} -p CHANNEL=${CSV_CHANNEL} | oc create -n $TEST_NAMESPACE -f -

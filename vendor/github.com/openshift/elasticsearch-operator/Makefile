@@ -23,7 +23,7 @@ RUN_PID?=elasticsearch-operator.pid
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all build clean fmt simplify run
+.PHONY: all build clean fmt simplify run sec
 
 all: build #check install
 
@@ -75,6 +75,10 @@ test-e2e:
 test-unit:
 	@go test -v ./pkg/... ./cmd/...
 
+sec:
+	go get -u github.com/securego/gosec/cmd/gosec
+	gosec -severity medium -confidence medium -exclude G304 -quiet ./...
+
 fmt:
 	@gofmt -l -w cmd && \
 	gofmt -l -w pkg && \
@@ -109,6 +113,14 @@ run: deploy deploy-example
 	OPERATOR_NAME=elasticsearch-operator WATCH_NAMESPACE=openshift-logging \
 	KUBERNETES_CONFIG=/etc/origin/master/admin.kubeconfig \
 	go run ${MAIN_PKG} > $(RUN_LOG) 2>&1 & echo $$! > $(RUN_PID)
+
+run-local:
+	@ALERTS_FILE_PATH=files/prometheus_alerts.yml \
+	RULES_FILE_PATH=files/prometheus_rules.yml \
+	OPERATOR_NAME=elasticsearch-operator WATCH_NAMESPACE=openshift-logging \
+	KUBERNETES_CONFIG=$(KUBECONFIG) \
+	go run ${MAIN_PKG} LOG_LEVEL=debug
+.PHONY: run-local
 
 undeploy:
 	hack/undeploy.sh

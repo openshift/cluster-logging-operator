@@ -16,10 +16,10 @@ TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
-export CSV_FILE=$(CURPATH)/manifests/latest
+export OCP_VERSION?=4.3
+export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
-export VERSION?=4.2
-export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/latest
+export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
 
 PKGS=$(shell go list ./... | grep -v -E '/vendor/|/test|/examples')
 

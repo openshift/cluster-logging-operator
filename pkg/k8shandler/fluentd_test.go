@@ -41,7 +41,7 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 	requestCPU := resource.MustParse("500m")
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
+			Collection: &logging.CollectionSpec{
 				logging.LogCollectionSpec{
 					Type: "fluentd",
 					FluentdSpec: logging.FluentdSpec{
@@ -86,7 +86,7 @@ func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
+			Collection: &logging.CollectionSpec{
 				logging.LogCollectionSpec{
 					Type: "fluentd",
 				},
@@ -106,7 +106,7 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 	}
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
+			Collection: &logging.CollectionSpec{
 				logging.LogCollectionSpec{
 					Type: "fluentd",
 					FluentdSpec: logging.FluentdSpec{
@@ -139,7 +139,7 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
+			Collection: &logging.CollectionSpec{
 				logging.LogCollectionSpec{
 					Type:        "fluentd",
 					FluentdSpec: logging.FluentdSpec{},
@@ -180,7 +180,7 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
+			Collection: &logging.CollectionSpec{
 				logging.LogCollectionSpec{
 					Type: "fluentd",
 					FluentdSpec: logging.FluentdSpec{

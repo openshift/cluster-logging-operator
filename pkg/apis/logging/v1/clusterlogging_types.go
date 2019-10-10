@@ -11,11 +11,11 @@ import (
 type ClusterLoggingSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	ManagementState ManagementState   `json:"managementState"`
-	Visualization   VisualizationSpec `json:"visualization,omitempty"`
-	LogStore        LogStoreSpec      `json:"logStore,omitempty"`
-	Collection      CollectionSpec    `json:"collection,omitempty"`
-	Curation        CurationSpec      `json:"curation,omitempty"`
+	ManagementState ManagementState    `json:"managementState"`
+	Visualization   *VisualizationSpec `json:"visualization,omitempty"`
+	LogStore        *LogStoreSpec      `json:"logStore,omitempty"`
+	Collection      *CollectionSpec    `json:"collection,omitempty"`
+	Curation        *CurationSpec      `json:"curation,omitempty"`
 }
 
 // ClusterLoggingStatus defines the observed state of ClusterLogging

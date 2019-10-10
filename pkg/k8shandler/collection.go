@@ -37,12 +37,11 @@ var serviceAccountLogCollectorUID types.UID
 //CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
 	cluster := clusterRequest.cluster
-
 	var collectorServiceAccount *core.ServiceAccount
 
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
-	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
+	if cluster.Spec.Collection != nil && cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
 		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
 			return
 		}
@@ -50,9 +49,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		if collectorServiceAccount, err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
 			return
 		}
-	}
-
-	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
 
 		if err = clusterRequest.createOrUpdateFluentdService(); err != nil {
 			return
@@ -98,27 +94,24 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", retryErr)
 		}
-	}
 
-	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeFluentd {
+		if collectorServiceAccount != nil {
+
+			// remove our finalizer from the list and update it.
+			collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
+			err = clusterRequest.Create(collectorServiceAccount)
+			if err != nil && !errors.IsAlreadyExists(err) {
+				return nil
+			}
+		}
+
+	} else {
 		clusterRequest.removeFluentd()
-	}
-
-	if cluster.Spec.Collection.Logs.Type != logging.LogCollectionTypeFluentd {
 		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
 			return
 		}
 
 		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
-			return
-		}
-	}
-	if collectorServiceAccount != nil && cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
-
-		// remove our finalizer from the list and update it.
-		collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
-		err = clusterRequest.Create(collectorServiceAccount)
-		if err != nil && !errors.IsAlreadyExists(err) {
 			return
 		}
 	}

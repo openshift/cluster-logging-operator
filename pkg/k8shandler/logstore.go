@@ -17,7 +17,10 @@ import (
 )
 
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
-
+	if clusterRequest.cluster.Spec.LogStore == nil || clusterRequest.cluster.Spec.LogStore.Type == "" {
+		clusterRequest.removeElasticsearch()
+		return nil
+	}
 	if clusterRequest.cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 
 		cluster := clusterRequest.cluster
@@ -51,8 +54,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
 		}
-	} else {
-		clusterRequest.removeElasticsearch()
 	}
 
 	return nil
@@ -102,8 +103,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret()
 func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName string) *elasticsearch.Elasticsearch {
 
 	var esNodes []elasticsearch.ElasticsearchNode
-
-	var resources = cluster.Spec.LogStore.Resources
+	logStoreSpec := logging.LogStoreSpec{}
+	if cluster.Spec.LogStore != nil {
+		logStoreSpec = *cluster.Spec.LogStore
+	}
+	var resources = logStoreSpec.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{
@@ -116,20 +120,20 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		}
 	}
 
-	if cluster.Spec.LogStore.NodeCount > 3 {
+	if logStoreSpec.NodeCount > 3 {
 
 		masterNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
 			NodeCount: 3,
-			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
 
 		esNodes = append(esNodes, masterNode)
 
 		dataNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
-			NodeCount: cluster.Spec.LogStore.NodeCount - 3,
-			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+			NodeCount: logStoreSpec.NodeCount - 3,
+			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
 
 		esNodes = append(esNodes, dataNode)
@@ -138,15 +142,15 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 
 		esNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
-			NodeCount: cluster.Spec.LogStore.NodeCount,
-			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+			NodeCount: logStoreSpec.NodeCount,
+			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
 
 		// build Nodes
 		esNodes = append(esNodes, esNode)
 	}
 
-	redundancyPolicy := cluster.Spec.LogStore.ElasticsearchSpec.RedundancyPolicy
+	redundancyPolicy := logStoreSpec.ElasticsearchSpec.RedundancyPolicy
 	if redundancyPolicy == "" {
 		redundancyPolicy = elasticsearch.ZeroRedundancy
 	}
@@ -164,8 +168,8 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 			Spec: elasticsearch.ElasticsearchNodeSpec{
 				Image:        utils.GetComponentImage("elasticsearch"),
 				Resources:    *resources,
-				NodeSelector: cluster.Spec.LogStore.NodeSelector,
-				Tolerations:  cluster.Spec.LogStore.Tolerations,
+				NodeSelector: logStoreSpec.NodeSelector,
+				Tolerations:  logStoreSpec.Tolerations,
 			},
 			Nodes:            esNodes,
 			ManagementState:  elasticsearch.ManagementStateManaged,

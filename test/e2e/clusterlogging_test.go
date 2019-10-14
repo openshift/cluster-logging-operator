@@ -110,7 +110,7 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 			Namespace: namespace,
 		},
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount:        1,
@@ -118,19 +118,19 @@ func clusterLoggingInitialDeploymentTest(t *testing.T, f *framework.Framework, c
 					RedundancyPolicy: elasticsearch.ZeroRedundancy,
 				},
 			},
-			Visualization: logging.VisualizationSpec{
+			Visualization: &logging.VisualizationSpec{
 				Type: logging.VisualizationTypeKibana,
 				KibanaSpec: logging.KibanaSpec{
 					Replicas: 1,
 				},
 			},
-			Curation: logging.CurationSpec{
+			Curation: &logging.CurationSpec{
 				Type: logging.CurationTypeCurator,
 				CuratorSpec: logging.CuratorSpec{
 					Schedule: "* * * * *",
 				},
 			},
-			Collection:      collectionSpec,
+			Collection:      &collectionSpec,
 			ManagementState: logging.ManagementStateManaged,
 		},
 	}

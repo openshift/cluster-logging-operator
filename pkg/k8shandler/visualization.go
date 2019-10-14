@@ -31,7 +31,10 @@ var (
 
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err error) {
-
+	if clusterRequest.cluster.Spec.Visualization == nil || clusterRequest.cluster.Spec.Visualization.Type == "" {
+		clusterRequest.removeKibana()
+		return nil
+	}
 	if clusterRequest.cluster.Spec.Visualization.Type == logging.VisualizationTypeKibana {
 
 		if err = clusterRequest.CreateOrUpdateServiceAccount(kibanaServiceAccountName, &kibanaServiceAccountAnnotations); err != nil {
@@ -84,8 +87,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err 
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Kibana status for %q: %v", cluster.Name, retryErr)
 		}
-	} else {
-		clusterRequest.removeKibana()
 	}
 
 	return nil
@@ -308,8 +309,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 }
 
 func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasticsearchName string) v1.PodSpec {
-
-	var kibanaResources = cluster.Spec.Visualization.KibanaSpec.Resources
+	visSpec := logging.VisualizationSpec{}
+	if cluster.Spec.Visualization != nil {
+		visSpec = *cluster.Spec.Visualization
+	}
+	var kibanaResources = visSpec.Resources
 	if kibanaResources == nil {
 		kibanaResources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: defaultKibanaMemory},
@@ -359,7 +363,7 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		InitialDelaySeconds: 5, TimeoutSeconds: 4, PeriodSeconds: 5,
 	}
 
-	var kibanaProxyResources = cluster.Spec.Visualization.ProxySpec.Resources
+	var kibanaProxyResources = visSpec.ProxySpec.Resources
 	if kibanaProxyResources == nil {
 		kibanaProxyResources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: defaultKibanaProxyMemory},
@@ -428,8 +432,8 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 			},
 			},
 		},
-		cluster.Spec.Visualization.KibanaSpec.NodeSelector,
-		cluster.Spec.Visualization.KibanaSpec.Tolerations,
+		visSpec.NodeSelector,
+		visSpec.Tolerations,
 	)
 
 	kibanaPodSpec.Affinity = &v1.Affinity{

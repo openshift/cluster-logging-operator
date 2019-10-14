@@ -25,7 +25,10 @@ const defaultSchedule = "30 3,9,15,21 * * *"
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error) {
 
 	cluster := clusterRequest.cluster
-
+	if cluster.Spec.Curation == nil || cluster.Spec.Curation.Type == "" {
+		clusterRequest.removeCurator()
+		return nil
+	}
 	if cluster.Spec.Curation.Type == logging.CurationTypeCurator {
 
 		if err = clusterRequest.createOrUpdateCuratorServiceAccount(); err != nil {
@@ -65,8 +68,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Curator status: %v", retryErr)
 		}
-	} else {
-		clusterRequest.removeCurator()
 	}
 
 	return nil
@@ -156,7 +157,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorSecret() error
 //TODO: refactor elasticsearchHost to get from cluster
 func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elasticsearchHost string) *batch.CronJob {
 
-	var resources = cluster.Spec.Curation.Resources
+	curationSpec := logging.CurationSpec{}
+	if cluster.Spec.Curation != nil {
+		curationSpec = *cluster.Spec.Curation
+	}
+	var resources = curationSpec.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: defaultCuratorMemory},
@@ -193,14 +198,14 @@ func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elas
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "curator"}}}},
 			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "curator"}}},
 		},
-		cluster.Spec.Curation.NodeSelector,
-		cluster.Spec.Curation.Tolerations,
+		curationSpec.NodeSelector,
+		curationSpec.Tolerations,
 	)
 
 	curatorPodSpec.RestartPolicy = v1.RestartPolicyNever
 	curatorPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(600)
 
-	schedule := cluster.Spec.Curation.CuratorSpec.Schedule
+	schedule := curationSpec.CuratorSpec.Schedule
 	if schedule == "" {
 		schedule = defaultSchedule
 	}

@@ -197,9 +197,12 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 	return nil
 }
 
-func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy) v1.PodSpec {
-
-	var resources = logging.Spec.Collection.Logs.FluentdSpec.Resources
+func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy) v1.PodSpec {
+	collectionSpec := logging.CollectionSpec{}
+	if cluster.Spec.Collection != nil {
+		collectionSpec = *cluster.Spec.Collection
+	}
+	var resources = collectionSpec.Logs.FluentdSpec.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: defaultFluentdMemory},
@@ -279,7 +282,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	tolerations := utils.AppendTolerations(
-		logging.Spec.Collection.Logs.FluentdSpec.Tolerations,
+		collectionSpec.Logs.FluentdSpec.Tolerations,
 		[]v1.Toleration{
 			v1.Toleration{
 				Key:      "node-role.kubernetes.io/master",
@@ -309,7 +312,7 @@ func newFluentdPodSpec(logging *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/fluentd"}}},
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd-metrics"}}},
 		},
-		logging.Spec.Collection.Logs.FluentdSpec.NodeSelector,
+		collectionSpec.Logs.FluentdSpec.NodeSelector,
 		tolerations,
 	)
 

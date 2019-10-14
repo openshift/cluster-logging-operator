@@ -70,7 +70,7 @@ func TestNewKibanaPodSpecWhenFieldsAreUndefined(t *testing.T) {
 func TestNewKibanaPodSpecWhenResourcesAreDefined(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
+			Visualization: &logging.VisualizationSpec{
 				Type: "kibana",
 				KibanaSpec: logging.KibanaSpec{
 					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
@@ -126,7 +126,7 @@ func TestNewKibanaPodSpecWhenNodeSelectorIsDefined(t *testing.T) {
 	}
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
+			Visualization: &logging.VisualizationSpec{
 				Type: "kibana",
 				KibanaSpec: logging.KibanaSpec{
 					NodeSelector: expSelector,
@@ -148,7 +148,7 @@ func TestNewKibanaPodNoTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
+			Visualization: &logging.VisualizationSpec{
 				Type:       "kibana",
 				KibanaSpec: logging.KibanaSpec{},
 			},
@@ -175,7 +175,7 @@ func TestNewKibanaPodWithTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
+			Visualization: &logging.VisualizationSpec{
 				Type: "kibana",
 				KibanaSpec: logging.KibanaSpec{
 					Tolerations: expTolerations,

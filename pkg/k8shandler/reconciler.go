@@ -4,14 +4,20 @@ import (
 	"fmt"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client) (err error) {
-
+func Reconcile(requestCluster *logging.ClusterLogging, forwarding *logforwarding.LogForwarding, requestClient client.Client) (err error) {
+	logger.Debugf("Reconciling %v", requestCluster)
 	clusterLoggingRequest := ClusterLoggingRequest{
-		client:  requestClient,
-		cluster: requestCluster,
+		client:            requestClient,
+		cluster:           requestCluster,
+		ForwardingRequest: forwarding,
+	}
+	if forwarding != nil {
+		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
 	}
 
 	// Reconcile certs

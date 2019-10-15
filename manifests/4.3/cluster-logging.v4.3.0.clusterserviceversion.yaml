@@ -9,7 +9,6 @@ metadata:
   annotations:
     capabilities: Seamless Upgrades
     categories: "OpenShift Optional, Logging & Tracing"
-    capabilities: "Seamless Upgrades"
     certified: "false"
     description: |-
       The Cluster Logging Operator for OKD provides a means for configuring and managing your aggregated logging stack.
@@ -20,46 +19,78 @@ metadata:
     olm.skipRange: ">=4.2.0 <4.3.0"
     alm-examples: |-
         [
-            {
-              "apiVersion": "logging.openshift.io/v1",
-              "kind": "ClusterLogging",
-              "metadata": {
-                "name": "instance",
-                "namespace": "openshift-logging"
-               },
-              "spec": {
-                "managementState": "Managed",
-                "logStore": {
+          {
+            "apiVersion": "logging.openshift.io/v1",
+            "kind": "ClusterLogging",
+            "metadata": {
+              "name": "instance",
+              "namespace": "openshift-logging"
+              },
+            "spec": {
+              "managementState": "Managed",
+              "logStore": {
+                "type": "elasticsearch",
+                "elasticsearch": {
+                  "nodeCount": 3,
+                  "redundancyPolicy": "SingleRedundancy",
+                  "storage": {
+                    "storageClassName": "gp2",
+                    "size": "200G"
+                    }
+                  }
+              },
+              "visualization": {
+                "type": "kibana",
+                "kibana": {
+                  "replicas": 1
+                }
+              },
+              "curation": {
+                "type": "curator",
+                "curator": {
+                  "schedule": "30 3 * * *"
+                }
+              },
+              "collection": {
+                "logs": {
+                  "type": "fluentd",
+                  "fluentd": {}
+                }
+              },
+            }
+          },
+          {
+            "apiVersion": "logging.openshift.io/v1alpha1",
+            "kind": "LogForwarding",
+            "metadata": {
+              "name": "instance",
+              "namespace": "openshift-logging"
+            },
+            "spec": {
+              "outputs": [
+                {
+                  "name": "clo-default-output-es",
                   "type": "elasticsearch",
-                  "elasticsearch": {
-                    "nodeCount": 3,
-                    "redundancyPolicy": "SingleRedundancy",
-                    "storage": {
-                      "storageClassName": "gp2",
-                      "size": "200G"
-                     }
-                   }
-                },
-                "visualization": {
-                  "type": "kibana",
-                  "kibana": {
-                    "replicas": 1
-                  }
-                },
-                "curation": {
-                  "type": "curator",
-                  "curator": {
-                    "schedule": "30 3 * * *"
-                  }
-                },
-                "collection": {
-                  "logs": {
-                    "type": "fluentd",
-                    "fluentd": {}
+                  "endpoint": "elasticsearch.openshift-logging.svc:9200",
+                  "secret" {
+                    "name", "elasticsearch"
                   }
                 }
-              }
-            }
+              ],
+              "pipelines": [
+                {
+                  "name": "clo-default-app-pipeline",
+                  "type": "logs.app",
+                  "outputRefs": ["clo-managaged-output-es"]
+                },
+                {
+                  "name": "clo-default-infra-pipeline",
+                  "type": "logs.app",
+                  "outputRefs": ["clo-managaged-output-es"]
+                }
+              ],
+            },
+          }
         ]
 spec:
   # The version value is substituted by the ART pipeline
@@ -225,6 +256,8 @@ spec:
           resources:
           - pods
           - namespaces
+          - services
+          - services/finalizers
           verbs:
           - get
           - list
@@ -296,6 +329,8 @@ spec:
       - kind: Route
         version: v1
       - kind: Elasticsearch
+        version: v1
+      - kind: LogForwarding
         version: v1alpha1
       specDescriptors:
       - description: The desired number of Kibana Pods for the Visualization component
@@ -338,6 +373,16 @@ spec:
         path: collection.logs.fluentd.nodeSelector
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
+      - description: The list of output targets that receive log messages
+        displayName: Forwarding Outputs
+        path: forwarding.outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingOutputs'
+      - description: The list of mappings between log sources (e.g. application logs) and forwarding outputs
+        displayName: Forwarding Pipelines
+        path: forwarding.pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingPipelines'
       - description: Resource requirements for the Curator pods
         displayName: Curator Resource Requirements
         path: curation.curator.resources
@@ -380,3 +425,45 @@ spec:
         path: collection.logs.fluentdStatus.pods
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
+      - description: The status for migration of a clusterlogging instance
+        displayName: Fluentd status
+        path: migration
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:migrationStatus'
+    - name: logforwardings.logging.openshift.io
+      version: v1alpha1
+      kind: LogForwarding
+      displayName: Log Forwarding
+      description: Log forwarding spec to define destinations for specific log sources
+      specDescriptors:
+      - description: The list of output targets that receive log messages
+        displayName: Forwarding Outputs
+        path: outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingOutputs'
+      - description: The list of mappings between log sources (e.g. application logs) and forwarding outputs
+        displayName: Forwarding Pipelines
+        path: pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingPipelines'
+      statusDescriptors:
+      - description: The status of the sources being collected
+        displayName: Source Status
+        path: sources
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:sourceStatuses'        
+      - description: The status of forwarding outputs
+        displayName: Outputs Status
+        path: outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:outputStatuses'        
+      - description: The status of forwarding pipelines
+        displayName: Pipelines Status
+        path: pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:pipelineStatuses'        
+      - description: The status of log forwarding resourece
+        displayName: Log Forwarding Status
+        path: status
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:logforwardingStatuses'        

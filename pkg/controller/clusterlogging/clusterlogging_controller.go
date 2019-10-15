@@ -5,10 +5,12 @@ import (
 	"time"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -23,6 +25,7 @@ var log = logf.Log.WithName("controller_clusterlogging")
 const (
 	singletonName    = "instance"
 	singletonMessage = "ClusterLogging is a singleton. Only an instance named 'instance' is allowed"
+	openshiftNS      = "openshift-logging"
 )
 
 // Add creates a new ClusterLogging Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -97,7 +100,17 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	if err = k8shandler.Reconcile(instance, r.client); err != nil {
+	forwardinginstance := &logforwarding.LogForwarding{}
+	fiName := types.NamespacedName{Name: singletonName, Namespace: openshiftNS}
+	err = r.client.Get(context.TODO(), fiName, forwardinginstance)
+	if err != nil && !errors.IsNotFound(err) {
+		// Request object not found, could have been deleted after reconcile request.
+		// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+		// Return and don't requeue
+		return reconcile.Result{}, err
+	}
+
+	if err = k8shandler.Reconcile(instance, forwardinginstance, r.client); err != nil {
 		return reconcileResult, err
 	}
 

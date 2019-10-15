@@ -9,7 +9,7 @@ objects:
 - apiVersion: operators.coreos.com/v1alpha2
   kind: OperatorGroup
   metadata:
-    name: openshift-olm-test
+    name: openshift-olm-test${SUFFIX}
   spec:
     targetNamespaces:
     - "${TARGET_NAMESPACE}"
@@ -17,3 +17,6 @@ parameters:
 - description:
   name: TARGET_NAMESPACE
   value: olm-test    
+- description:
+  name: SUFFIX
+  value: ""

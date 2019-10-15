@@ -70,6 +70,8 @@ items:
 EOL
 
 fi
+  # wait for operator to be ready
+  os::cmd::try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $((2 * $minute))
 }
 
 deploy_config_map_catalog_source() {
@@ -112,5 +114,60 @@ spec:
   displayName: $PACKAGE_NAME
   publisher: Operator Framework
 EOF
+
+}
+
+# deploy_clusterlogging_operator using a subscription and the image privided by IMAGE_CLUSTER_LOGGING_OPERATOR
+function deploy_clusterlogging_operator() {
+    if [ -n "${IMAGE_FORMAT:-}" ] ; then
+        IMAGE_CLUSTER_LOGGING_OPERATOR=$(sed -e "s,\${component},cluster-logging-operator," <(echo $IMAGE_FORMAT))
+    else
+        IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/origin/$VERSION:cluster-logging-operator}
+    fi
+    manifest=${repo_dir}/manifests
+    deploy_operator "openshift-logging" "cluster-logging-operator" $manifest $IMAGE_CLUSTER_LOGGING_OPERATOR $((2 * $minute))
+}
+
+function deploy_elasticsearch_operator() {
+    if [ -n "${IMAGE_FORMAT:-}" ] ; then
+        IMAGE_ELASTICSEARCH_OPERATOR=$(sed -e "s,\${component},elasticsearch-operator," <(echo $IMAGE_FORMAT))
+    else
+        IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/origin/$VERSION:elasticsearch-operator}
+    fi
+    manifest=${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests
+    GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
+}
+
+function deploy_operator() {
+    local namespace=$1
+    local operatorName=$2
+    local manifest=$3
+    local operatorImage=$4
+    local timeout=$5
+
+
+    local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
+
+    KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
+
+    os::log::info "Creating namespace: ${namespace}"
+    oc create ns ${namespace} || :
+    
+    os::log::info "Deploying operator from ${manifest}"
+    GLOBAL=${GLOBAL:-false} \
+    VERSION=${version} \
+    OPERATOR_IMAGE=${operatorImage} \
+    MANIFEST_DIR=${manifest} \
+    TEST_NAMESPACE=${namespace} \
+    TARGET_NAMESPACE=${namespace} \
+    ${repo_dir}/hack/vendor/olm-test-script/e2e-olm.sh
+
+    if [ "$?" != "0" ] ; then
+	    os::log::error "Error deploying operator via OLM using manifest: $manifest"
+	    exit 1
+    fi
+
+    # wait for operator to be ready
+    os::cmd::try_until_text "oc -n $namespace get deployment $operatorName -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${timeout}
 
 }

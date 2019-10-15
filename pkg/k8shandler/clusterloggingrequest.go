@@ -10,12 +10,19 @@ import (
 	"github.com/sirupsen/logrus"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ClusterLoggingRequest struct {
 	client  client.Client
 	cluster *logging.ClusterLogging
+
+	//forwardingRequest is a logforwarding instance
+	ForwardingRequest *logforward.LogForwarding
+
+	//ForwardingSpec is the normalized and sanitized logforwarding spec
+	ForwardingSpec logforward.ForwardingSpec
 }
 
 // TODO: determine if this is even necessary
@@ -24,15 +31,19 @@ func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
 }
 
 func (clusterRequest *ClusterLoggingRequest) Create(object runtime.Object) error {
-	logrus.Debugf("Creating: %v", object)
+	logrus.Tracef("Creating: %v", object)
 	err := clusterRequest.client.Create(context.TODO(), object)
-	logrus.Debugf("Response: %v", err)
+	logrus.Tracef("Response: %v", err)
 	return err
 }
 
-func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) error {
-	logrus.Debugf("Updating: %v", object)
-	return clusterRequest.client.Update(context.TODO(), object)
+//Update the runtime Object or return error
+func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err error) {
+	logrus.Tracef("Updating: %v", object)
+	if err = clusterRequest.client.Update(context.TODO(), object); err != nil {
+		logrus.Errorf("Error updating %v: %v", object.GetObjectKind(), err)
+	}
+	return err
 }
 
 func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object runtime.Object) error {

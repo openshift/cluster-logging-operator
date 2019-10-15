@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -37,6 +38,9 @@ var serviceAccountLogCollectorUID types.UID
 //CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
 	cluster := clusterRequest.cluster
+	collectorConfig := ""
+	collectorConfHash := ""
+
 	var collectorServiceAccount *core.ServiceAccount
 
 	// there is no easier way to check this in golang without writing a helper function
@@ -50,6 +54,23 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
+		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
+			return
+		}
+		logger.Debugf("Generated collector config: %s", collectorConfig)
+		collectorConfHash = utils.CalculateMD5Hash(collectorConfig)
+	} else {
+		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
+			return
+		}
+	}
+
+	if cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
+
 		if err = clusterRequest.createOrUpdateFluentdService(); err != nil {
 			return
 		}
@@ -62,7 +83,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdConfigMap(); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
 			return
 		}
 
@@ -70,7 +91,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdDaemonset(); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash); err != nil {
 			return
 		}
 
@@ -274,10 +295,21 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 
 	if !utils.EnvValueEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
 		logrus.Infof("Collector container EnvVar change found, updating %q", current.Name)
-
+		logger.Debugf("Collector envvars - current: %v, desired: %v", current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env)
 		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
 		different = true
 	}
+	if !reflect.DeepEqual(current.Spec.Template.Spec.Volumes, desired.Spec.Template.Spec.Volumes) {
+		logrus.Infof("Collector volumes change found, updating %q", current.Name)
+		current.Spec.Template.Spec.Volumes = desired.Spec.Template.Spec.Volumes
+		different = true
+	}
+	if !reflect.DeepEqual(current.Spec.Template.Spec.Containers[0].VolumeMounts, desired.Spec.Template.Spec.Containers[0].VolumeMounts) {
+		logrus.Infof("Collector container volumemounts change found, updating %q", current.Name)
+		current.Spec.Template.Spec.Containers[0].VolumeMounts = desired.Spec.Template.Spec.Containers[0].VolumeMounts
+		different = true
+	}
+
 	return current, different
 }
 

@@ -36,9 +36,6 @@ cleanup(){
 }
 trap cleanup exit
 
-if [ -n "${IMAGE_CLUSTER_LOGGING_OPERATOR:-}" ] ; then
-  source "$(dirname $0)/../common"
-fi
 if [ -n "${IMAGE_FORMAT:-}" ] ; then
   IMAGE_CLUSTER_LOGGING_OPERATOR=$(sed -e "s,\${component},cluster-logging-operator," <(echo $IMAGE_FORMAT))
 else

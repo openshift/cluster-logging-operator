@@ -5,9 +5,13 @@ fi
 
 alias oc=${OC:-oc}
 
-if [ -z "${repo_dir:-}" ] ; then
-    repo_dir="$( cd "$(dirname "$0")/.." ; pwd -P )"
-fi
+repo_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
+
+source "$repo_dir/hack/lib/init.sh"
+source "$repo_dir/hack/testing/assertions"
+source "$repo_dir/hack/testing/utils"
+
+VERSION=${VERSION:-4.2}
 ELASTICSEARCH_OP_REPO=${ELASTICSEARCH_OP_REPO:-${repo_dir}/../elasticsearch-operator}
 
 ADMIN_USER=${ADMIN_USER:-kubeadmin}

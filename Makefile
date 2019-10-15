@@ -17,9 +17,12 @@ IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
 export OCP_VERSION?=4.3
+IMAGE_CLUSTER_LOGGING_OPERATOR?=registry.svc.ci.openshift.org/origin/$VERSION:cluster-logging-operator
 export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
 export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
+
+FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
 PKGS=$(shell go list ./... | grep -v -E '/vendor/|/test|/examples')
 
@@ -65,13 +68,15 @@ build: fmt
 
 run:
 	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest \
-	FLUENTD_IMAGE=quay.io/openshift/origin-logging-fluentd:latest \
+	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana5:latest \
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator5:latest \
 	OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=openshift-logging \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
+	WORKING_DIR=$(TARGET_DIR)/_working_dir \
+	LOGGING_SHARE_DIR=$(CURPATH)/files \
 	go run ${MAIN_PKG}
 
 clean:
@@ -99,8 +104,8 @@ deploy-setup:
 deploy-image: image
 	hack/deploy-image.sh
 
-deploy: deploy-setup deploy-image
-	hack/deploy.sh
+deploy:  deploy-image
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
 
 deploy-no-build: deploy-setup
 	NO_BUILD=true hack/deploy.sh
@@ -108,8 +113,9 @@ deploy-no-build: deploy-setup
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-unit:
+test-unit: fmt
 	@go test $(TEST_OPTIONS) $(PKGS)
+
 test-e2e:
 	hack/test-e2e.sh
 test-sec:

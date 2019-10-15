@@ -2,7 +2,6 @@ package k8shandler
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -42,12 +41,9 @@ var secretCertificates = map[string]map[string]string{
 		"ops-cert": "system.logging.curator.crt",
 	},
 	"fluentd": map[string]string{
-		"app-ca":     "ca.crt",
-		"app-key":    "system.logging.fluentd.key",
-		"app-cert":   "system.logging.fluentd.crt",
-		"infra-ca":   "ca.crt",
-		"infra-key":  "system.logging.fluentd.key",
-		"infra-cert": "system.logging.fluentd.crt",
+		"ca-bundle.crt": "ca.crt",
+		"tls.key":       "system.logging.fluentd.key",
+		"tls.crt":       "system.logging.fluentd.crt",
 	},
 }
 
@@ -122,12 +118,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	if err = clusterRequest.readSecrets(); err != nil {
 		return
 	}
-
-	cmd := exec.Command("bash", "scripts/cert_generation.sh")
-	cmd.Env = append(os.Environ(),
-		"NAMESPACE="+clusterRequest.cluster.Namespace,
-	)
-	if err = cmd.Run(); err != nil {
+	if err = GenerateCertificates(clusterRequest.cluster.Namespace, ".", "elasticsearch"); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 
@@ -136,4 +127,13 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	}
 
 	return nil
+}
+
+func GenerateCertificates(namespace, rootDir, logStoreName string) (err error) {
+	cmd := exec.Command("bash", fmt.Sprintf("%s/scripts/cert_generation.sh", rootDir))
+	cmd.Env = append(cmd.Env,
+		fmt.Sprintf("NAMESPACE=%s", namespace),
+		fmt.Sprintf("LOG_STORE=%s", logStoreName),
+	)
+	return cmd.Run()
 }

@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client) (err error) {
-
+	logger.Debugf("Reconciling %v", requestCluster)
 	clusterLoggingRequest := ClusterLoggingRequest{
 		client:  requestClient,
 		cluster: requestCluster,

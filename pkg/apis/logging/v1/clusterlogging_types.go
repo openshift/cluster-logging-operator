@@ -16,6 +16,7 @@ type ClusterLoggingSpec struct {
 	LogStore        *LogStoreSpec      `json:"logStore,omitempty"`
 	Collection      *CollectionSpec    `json:"collection,omitempty"`
 	Curation        *CurationSpec      `json:"curation,omitempty"`
+	Forwarding      *ForwardingSpec    `json:"forwarding,omitempty"`
 }
 
 // ClusterLoggingStatus defines the observed state of ClusterLogging

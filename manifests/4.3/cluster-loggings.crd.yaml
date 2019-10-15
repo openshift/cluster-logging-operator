@@ -184,3 +184,63 @@ spec:
                   - schedule
               required:
               - type
+            forwarding:
+              type: object
+              description: Specification for logforwarding of messages
+              properties:
+                outputs:
+                  description: Destinations for log messages
+                  items:
+                    description: An individual entry for a specific output
+                    properties:
+                      type:
+                        description: The output type (e.g. elasticsearch or logstore)
+                        type: string
+                        enum:
+                          - elasticsearch
+                          - forward
+                      name: 
+                        description: The name of the output
+                        type: string
+                      endpoint:
+                        description: the url to the the service defined by this output
+                        type: string
+                      secrets:
+                        properties:
+                          secretName:
+                            description: The name of a secret to mount into the collector to use when shipping logs
+                            type: string
+                        required:
+                          - secretName
+                        type: object
+                  required:
+                  - type
+                  - name
+                  - endpoint
+                  type: array
+                pipelines:
+                  description: The mapping of sources to outputs
+                  items:
+                    properties:
+                      name:
+                        description: The name of the pipeline
+                        type: string
+                      outputRefs:
+                        description: The name of outputs to send the source logs
+                        items: 
+                          type: string
+                        type: array
+                      source:
+                        description: The log source type
+                        type: string
+                        enum:
+                          - logs.app
+                          - logs.infra
+                  required:
+                  - name
+                  - source
+                  - outputRefs
+                  type: array    
+              required:
+              - outputs
+              - pipelines                          

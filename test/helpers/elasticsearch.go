@@ -1,0 +1,214 @@
+package helpers
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+
+	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/remotecommand"
+)
+
+const (
+	InfraIndexPrefix          = ".operations."
+	ProjectIndexPrefix        = "project."
+	elasticsearchesLoggingURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/elasticsearches"
+)
+
+type Indices []Index
+
+type Index struct {
+	Health           string `json:"health"`
+	Status           string `json:"status"`
+	Name             string `json:"index"`
+	UUID             string `json:"uuid"`
+	Primary          string `json:"pri"`
+	Replicas         string `json:"rep"`
+	DocsCount        string `json:"docs.count"`
+	DocsDeleted      string `json:"docs.deleted"`
+	StoreSize        string `json:"store.size"`
+	PrimaryStoreSize string `json:"pri.store.size"`
+}
+
+func (index *Index) DocCount() int {
+	if index.DocsCount == "" {
+		return 0
+	}
+	value, err := strconv.Atoi(index.DocsCount)
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+//HasInfraStructureLogs returns true if there are any indices that begin with InfraIndexPrefix and also contains documents
+func (indices *Indices) HasInfraStructureLogs() bool {
+	for _, index := range *indices {
+		if strings.HasPrefix(index.Name, InfraIndexPrefix) && index.DocCount() > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+//HasApplicationStructureLogs returns true if there are any indices that begin with ProjectIndexPrefix and also contains documents
+func (indices *Indices) HasApplicationStructureLogs() bool {
+	for _, index := range *indices {
+		if strings.HasPrefix(index.Name, ProjectIndexPrefix) && index.DocCount() > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+//Indices fetches the list of indices stored by Elasticsearch
+func (tc *E2ETestFramework) Indices() (Indices, error) {
+	options := metav1.ListOptions{
+		LabelSelector: "component=elasticsearch",
+	}
+	pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+	if err != nil {
+		return nil, err
+	}
+	if len(pods.Items) == 0 {
+		return nil, errors.New("No pods found for elasticsearch")
+	}
+	logger.Debugf("Pod %s", pods.Items[0].Name)
+
+	req := tc.KubeClient.CoreV1().RESTClient().Post().
+		Namespace(OpenshiftLoggingNS).
+		Resource("pods").
+		Name(pods.Items[0].Name).
+		SubResource("exec").
+		Timeout(defaultTimeout).
+		VersionedParams(&corev1.PodExecOptions{
+			Container: "elasticsearch",
+			Command:   []string{"es_util", "--query=_cat/indices?format=json"},
+			Stdout:    true,
+			Stderr:    true,
+		}, scheme.ParameterCodec)
+
+	logger.Debugf("req: %v", req)
+	logger.Debugf("req.url: %v", req.URL().String())
+	exec, err := remotecommand.NewSPDYExecutor(tc.RestConfig, "POST", req.URL())
+	logger.Debugf("SPDY Error: %v", err)
+	if err != nil {
+		return nil, err
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	logger.Debugf("exec.stream Error: %v", err)
+	logger.Debugf("stdout: %v", stdout.String())
+	logger.Debugf("stderr: %v", stderr.String())
+	if err != nil {
+		return nil, err
+	}
+	if stderr.Len() > 0 {
+		return nil, errors.New(stderr.String())
+	}
+	indices := []Index{}
+	err = json.Unmarshal(stdout.Bytes(), &indices)
+	if err != nil {
+		return nil, err
+	}
+	return indices, nil
+}
+
+func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
+	logger.Debug("Generating Elasticsearch certificates")
+	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, "test-elastic-cluster"); err != nil {
+		return nil, nil, err
+	}
+	esSecret := k8shandler.NewSecret(
+		"test-elastic-cluster",
+		OpenshiftLoggingNS,
+		k8shandler.LoadElasticsearchSecretMap(),
+	)
+	logger.Debugf("Creating secret for an elasticsearch cluster: %s", esSecret.Name)
+	if esSecret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(esSecret); err != nil {
+		return nil, nil, err
+	}
+	pipelineSecret = k8shandler.NewSecret(
+		"test-pipeline-to-elastic",
+		OpenshiftLoggingNS,
+		map[string][]byte{
+			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
+			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
+			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
+		},
+	)
+	logger.Debugf("Creating secret for pipeline to talk to elasticsearch cluster: %s", pipelineSecret.Name)
+	if pipelineSecret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(pipelineSecret); err != nil {
+		return nil, nil, err
+	}
+	pvcSize := resource.MustParse("200G")
+	node := elasticsearch.ElasticsearchNode{
+		Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+		NodeCount: 1,
+		Storage: elasticsearch.ElasticsearchStorageSpec{
+			Size: &pvcSize,
+		},
+	}
+	cr = &elasticsearch.Elasticsearch{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      esSecret.Name,
+			Namespace: OpenshiftLoggingNS,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Elasticsearch",
+			APIVersion: elasticsearch.SchemeGroupVersion.String(),
+		},
+		Spec: elasticsearch.ElasticsearchSpec{
+			Spec: elasticsearch.ElasticsearchNodeSpec{
+				Image: utils.GetComponentImage("elasticsearch"),
+				Resources: corev1.ResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceMemory: resource.MustParse("3Gi"),
+					},
+				},
+			},
+			Nodes:            []elasticsearch.ElasticsearchNode{node},
+			ManagementState:  elasticsearch.ManagementStateManaged,
+			RedundancyPolicy: elasticsearch.ZeroRedundancy,
+		},
+	}
+	tc.CleanupFns = append(tc.CleanupFns, func() error {
+		result := tc.KubeClient.RESTClient().Delete().
+			RequestURI(fmt.Sprintf("%s/%s", elasticsearchesLoggingURI, cr.Name)).
+			SetHeader("Content-Type", "application/json").
+			Do()
+		return result.Error()
+	}, func() error {
+		for _, name := range []string{esSecret.Name, pipelineSecret.Name} {
+			tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(name, nil)
+		}
+		return nil
+	})
+
+	logger.Debugf("Creating an elasticsearch cluster %v:", cr)
+	var body []byte
+	if body, err = json.Marshal(cr); err != nil {
+		return nil, nil, err
+	}
+	result := tc.KubeClient.RESTClient().Post().
+		RequestURI(elasticsearchesLoggingURI).
+		SetHeader("Content-Type", "application/json").
+		Body(body).
+		Do()
+	return cr, pipelineSecret, result.Error()
+}

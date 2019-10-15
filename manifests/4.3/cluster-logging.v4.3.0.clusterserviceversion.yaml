@@ -57,7 +57,31 @@ metadata:
                     "type": "fluentd",
                     "fluentd": {}
                   }
-                }
+                },
+                "forwarding" {
+                  "outputs": [
+                    {
+                      "name": "clo-default-output-es",
+                      "type": "elasticsearch",
+                      "endpoint": "elasticsearch.openshift-logging.svc:9200",
+                      "secret" {
+                        "name", "elasticsearch"
+                      }
+                    }
+                  ],
+                  "pipelines": [
+                    {
+                      "name": "clo-default-app-pipeline",
+                      "type": "loggs.app",
+                      "outputRefs": ["clo-managaged-output-es"]
+                    },
+                    {
+                      "name": "clo-default-infra-pipeline",
+                      "type": "loggs.app",
+                      "outputRefs": ["clo-managaged-output-es"]
+                    }
+                  ],
+                },
               }
             }
         ]
@@ -225,6 +249,8 @@ spec:
           resources:
           - pods
           - namespaces
+          - services
+          - services/finalizers
           verbs:
           - get
           - list
@@ -338,6 +364,16 @@ spec:
         path: collection.logs.fluentd.nodeSelector
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
+      - description: The list of output targets that receive log messages
+        displayName: Forwarding Outputs
+        path: forwarding.outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingOutputs'
+      - description: The list of mappings between log sources (e.g. application logs) and forwarding outputs
+        displayName: Forwarding Pipelines
+        path: forwarding.pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingPipelines'
       - description: Resource requirements for the Curator pods
         displayName: Curator Resource Requirements
         path: curation.curator.resources
@@ -380,3 +416,8 @@ spec:
         path: collection.logs.fluentdStatus.pods
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
+      - description: The status for migration of a clusterlogging instance
+        displayName: Fluentd status
+        path: migration
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:migrationStatus'

@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -9,8 +12,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"time"
-
-	"github.com/sirupsen/logrus"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
@@ -40,6 +41,13 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 		UID:        o.UID,
 		Controller: GetBool(true),
 	}
+}
+
+//CalculateMD5Hash returns a MD5 hash of the give text
+func CalculateMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func AreMapsSame(lhs, rhs map[string]string) bool {

@@ -16,6 +16,11 @@ import (
 type ClusterLoggingRequest struct {
 	client  client.Client
 	cluster *logging.ClusterLogging
+
+	//ForwardingRequest is the coalescence of the forwarding
+	//rules defined by design and what is spec'd by the
+	//custom resource
+	ForwardingRequest logging.ForwardingSpec
 }
 
 // TODO: determine if this is even necessary
@@ -24,15 +29,19 @@ func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
 }
 
 func (clusterRequest *ClusterLoggingRequest) Create(object runtime.Object) error {
-	logrus.Debugf("Creating: %v", object)
+	logrus.Tracef("Creating: %v", object)
 	err := clusterRequest.client.Create(context.TODO(), object)
-	logrus.Debugf("Response: %v", err)
+	logrus.Tracef("Response: %v", err)
 	return err
 }
 
-func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) error {
-	logrus.Debugf("Updating: %v", object)
-	return clusterRequest.client.Update(context.TODO(), object)
+//Update the runtime Object or return error
+func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err error) {
+	logrus.Tracef("Updating: %v", object)
+	if err = clusterRequest.client.Update(context.TODO(), object); err != nil {
+		logrus.Errorf("Error updating %v: %v", object.GetObjectKind(), err)
+	}
+	return err
 }
 
 func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object runtime.Object) error {

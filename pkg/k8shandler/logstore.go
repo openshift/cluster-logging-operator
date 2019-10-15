@@ -16,6 +16,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	ElasticsearchResourceName = "elasticsearch"
+	elasticsearchSecretName   = "elasticsearch"
+)
+
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
 	if clusterRequest.cluster.Spec.LogStore == nil || clusterRequest.cluster.Spec.LogStore.Type == "" {
 		clusterRequest.removeElasticsearch()
@@ -73,21 +78,23 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearch() (err error) {
 
 	return nil
 }
-
+func LoadElasticsearchSecretMap() map[string][]byte {
+	return map[string][]byte{
+		"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
+		"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
+		"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
+		"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
+		"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
+		"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
+		"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
+	}
+}
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret() error {
 
 	esSecret := NewSecret(
-		"elasticsearch",
+		elasticsearchSecretName,
 		clusterRequest.cluster.Namespace,
-		map[string][]byte{
-			"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
-			"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
-			"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
-			"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
-			"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
-			"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
-			"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
-		},
+		LoadElasticsearchSecretMap(),
 	)
 
 	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(clusterRequest.cluster))
@@ -196,7 +203,7 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearchCR(elasticsearch
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchCR() (err error) {
 
-	esCR := newElasticsearchCR(clusterRequest.cluster, "elasticsearch")
+	esCR := newElasticsearchCR(clusterRequest.cluster, ElasticsearchResourceName)
 
 	err = clusterRequest.Create(esCR)
 	if err != nil && !errors.IsAlreadyExists(err) {

@@ -66,6 +66,14 @@ required = [
   name = "github.com/openshift/elasticsearch-operator"
   branch = "master"
 
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+
+[[constraint]]
+  name = "github.com/onsi/ginkgo"
+  version = "1.8.0"
+
 [prune]
   go-tests = true
   non-go = true

@@ -7,9 +7,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func Debug(args ...interface{}) {
+	logrus.Debug(args...)
+}
+
 //Debugf logs messages at level 2
 func Debugf(format string, objects ...interface{}) {
 	logrus.Debugf(format, objects...)
+}
+
+func Warnf(format string, objects ...interface{}) {
+	logrus.Warnf(format, objects...)
+}
+
+func Error(args ...interface{}) {
+	logrus.Error(args...)
+}
+
+func Info(args ...interface{}) {
+	logrus.Info(args...)
+}
+
+func Infof(format string, objects ...interface{}) {
+	logrus.Infof(format, objects...)
 }
 
 //IsDebugEnabled returns true if loglevel is 2

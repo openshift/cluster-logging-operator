@@ -163,6 +163,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment() (e
 				if errors.IsNotFound(err) {
 					// the object doesn't exist -- it was likely culled
 					// recreate it on the next time through if necessary
+					logrus.Debugf("Returning nil. The deployment %q was not found even though create previously failed.  Was it culled?", kibanaDeployment.Name)
 					return nil
 				}
 				return fmt.Errorf("Failed to get Kibana deployment: %v", err)

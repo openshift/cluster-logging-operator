@@ -25,6 +25,7 @@ export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
 PKGS=$(shell go list ./... | grep -v -E '/vendor/|/test|/examples')
+TEST_PKGS=$(shell go list ./test)
 
 TEST_OPTIONS?=
 
@@ -80,7 +81,8 @@ run:
 	go run ${MAIN_PKG}
 
 clean:
-	@rm -rf $(TARGET_DIR)
+	@rm -rf $(TARGET_DIR) && \
+	go clean -testcache $(TEST_PKGS) $(PKGS)
 
 image: imagebuilder
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] && [ $${SKIP_BUILD:-false} = false ] ; \
@@ -114,10 +116,11 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-unit: fmt
-	@go test $(TEST_OPTIONS) $(PKGS)
+	@LOGGING_SHARE_DIR=$(CURPATH)/files go test $(TEST_OPTIONS) $(PKGS)
 
 test-e2e:
 	hack/test-e2e.sh
+	
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec
 	gosec -severity medium --confidence medium -quiet ./...

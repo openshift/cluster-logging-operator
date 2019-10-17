@@ -118,7 +118,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	if err = clusterRequest.readSecrets(); err != nil {
 		return
 	}
-	if err = GenerateCertificates(clusterRequest.cluster.Namespace, ".", "elasticsearch"); err != nil {
+	if err = GenerateCertificates(clusterRequest.cluster.Namespace, ".", "elasticsearch", ""); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 
@@ -129,11 +129,16 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	return nil
 }
 
-func GenerateCertificates(namespace, rootDir, logStoreName string) (err error) {
+func GenerateCertificates(namespace, rootDir, logStoreName, workDir string) (err error) {
 	cmd := exec.Command("bash", fmt.Sprintf("%s/scripts/cert_generation.sh", rootDir))
 	cmd.Env = append(cmd.Env,
 		fmt.Sprintf("NAMESPACE=%s", namespace),
 		fmt.Sprintf("LOG_STORE=%s", logStoreName),
 	)
+	if workDir != "" {
+		cmd.Env = append(cmd.Env,
+			fmt.Sprintf("WORK_DIR=%s", workDir),
+		)
+	}
 	return cmd.Run()
 }

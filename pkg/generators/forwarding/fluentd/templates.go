@@ -9,7 +9,7 @@ var templateRegistry = []string{
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
 	storeElasticsearchTemplate,
-	storeForwardTemplate,
+	forwardTemplate,
 }
 
 const fluentConfTemplate = `{{- define "fluentConf" }}
@@ -328,8 +328,7 @@ const outputLabelConfNocopyTemplate = `{{- define "outputLabelConfNoCopy" }}
 </label>
 {{- end}}`
 
-const storeForwardTemplate = `{{- define "storeForward" }}
-<store>
+const forwardTemplate = `{{- define "forward" }}
 	# https://docs.fluentd.org/v1.0/articles/in_forward
 	@type forward
 	{{ if .Target.Secret }}
@@ -339,24 +338,14 @@ const storeForwardTemplate = `{{- define "storeForward" }}
 		shared_key {{ .Name }}
 	</security>
 
-	tls_version #{ENV['FORWARD_TLS_VERSION'] || 'TLSv1_2'}"
-	tls_verify_hostname #{ENV['FORWARD_TLS_VERIFY_HOSTNAME'] || 'false'}"
-	tls_allow_self_signed_cert  #{ENV['FORWARD_TLS_ALLOW_SELF_SIGNED_CERT'] || 'true'}"
-	tls_insecure_mode #{ENV['FORWARD_TLS_INSECURE_MODE'] || 'false'}"
+	transport tls
+	tls_verify_hostname true
+	tls_version 'TLSv1_2'
 
 	tls_client_private_key_path {{ .SecretPath "tls.key"}}
 	tls_client_cert_path {{ .SecretPath "tls.crt"}}
 	tls_cert_path {{ .SecretPath "ca-bundle.crt"}}
 	{{ end -}}
-
-	keepalive #{ENV['FORWARD_KEEPALIVE'] || 'false'}"
-	keepalive_timeout #{ENV['FORWARD_KEEPALIVE_TIMEOUT'] || nil }"
-
-	send_timeout #{ENV['FORWARD_SEND_TIMEOUT'] || 60 }"
-	connect_timeout #{ENV['FORWARD_CONNECT_TIMEOUT'] || nil }"
-	recover_wait #{ENV['FORWARD_RECOVER_WAIT'] || 10 }"
-	ignore_network_errors_at_startup #{ENV['FORWARD_IGNORE_NETWORK_ERRORS_AT_STARTUP'] || 'false' }"
-	verify_connection_at_startup #{ENV['FORWARD_VERIFY_CONNECTION_AT_STARTUP'] || 'false' }"
 
 	<buffer>
 		@type file
@@ -378,7 +367,6 @@ const storeForwardTemplate = `{{- define "storeForward" }}
 		host {{.Host}}
 		port {{.Port}}
 	</server>
-</store>
 {{- end}}`
 
 const storeElasticsearchTemplate = `{{- define "storeElasticsearch" }}

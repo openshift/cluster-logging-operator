@@ -16,6 +16,7 @@ const (
 	logStoreService          = "elasticsearch.openshift-logging.svc:9200"
 	defaultAppPipelineName   = "clo-default-app-pipeline"
 	defaultInfraPipelineName = "clo-default-infra-pipeline"
+	secureForwardConfHash    = "8163d9a59a20ada8ab58c2535a3a4924"
 )
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {

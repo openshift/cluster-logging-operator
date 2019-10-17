@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -13,8 +14,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/remotecommand"
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
@@ -67,35 +70,11 @@ func NewE2ETestFramework() *E2ETestFramework {
 		RestConfig: config,
 		KubeClient: client,
 	}
-	framework.LogStore = framework
 	return framework
-
 }
 
 func (tc *E2ETestFramework) AddCleanup(fn func() error) {
 	tc.CleanupFns = append(tc.CleanupFns, fn)
-}
-
-func (tc *E2ETestFramework) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		indices, err := tc.Indices()
-		if err != nil {
-			return false, err
-		}
-		return indices.HasInfraStructureLogs(), nil
-	})
-	return true, err
-}
-
-func (tc *E2ETestFramework) HasApplicationStructureLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		indices, err := tc.Indices()
-		if err != nil {
-			return false, err
-		}
-		return indices.HasApplicationStructureLogs(), nil
-	})
-	return true, err
 }
 
 func (tc *E2ETestFramework) DeployLogGenerator() error {
@@ -203,6 +182,9 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
 	tc.ClusterLogging = NewClusterLogging(componentTypes...)
+	tc.LogStore = &elasticLogStore{
+		tc: tc,
+	}
 	return tc.CreateClusterLogging(tc.ClusterLogging)
 }
 
@@ -236,7 +218,7 @@ func (tc *E2ETestFramework) Cleanup() {
 	}
 }
 
-//ewKubeClient returns a client using the KUBECONFIG env var or incluster settings
+//newKubeClient returns a client using the KUBECONFIG env var or incluster settings
 func newKubeClient() (*kubernetes.Clientset, *rest.Config) {
 
 	var config *rest.Config
@@ -254,4 +236,40 @@ func newKubeClient() (*kubernetes.Clientset, *rest.Config) {
 		panic(err.Error())
 	}
 	return clientset, config
+}
+
+func (tc *E2ETestFramework) PodExec(namespace, name, container string, command []string) (string, error) {
+	req := tc.KubeClient.CoreV1().RESTClient().Post().
+		Namespace(namespace).
+		Resource("pods").
+		Name(name).
+		SubResource("exec").
+		Timeout(defaultTimeout).
+		VersionedParams(&corev1.PodExecOptions{
+			Container: container,
+			Command:   command,
+			Stdout:    true,
+			Stderr:    true,
+		}, scheme.ParameterCodec)
+
+	logger.Debugf("req: %v", req)
+	logger.Debugf("req.url: %v", req.URL().String())
+	exec, err := remotecommand.NewSPDYExecutor(tc.RestConfig, "POST", req.URL())
+	logger.Debugf("SPDY Error: %v", err)
+	if err != nil {
+		return "", err
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	logger.Debugf("exec.stream Error: %v", err)
+	logger.Debugf("stdout: %v", stdout.String())
+	logger.Debugf("stderr: %v", stderr.String())
+	if err != nil {
+		return "", err
+	}
+	return stdout.String(), nil
 }

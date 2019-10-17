@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	helpers "github.com/openshift/cluster-logging-operator/test"
 )
 
@@ -15,6 +16,16 @@ const (
 	otherTargetName       = "someothername"
 	theInternalOutputName = "clo-default-output-es"
 )
+
+var _ = Describe("Default secure-forward.conf hash", func() {
+	It("should remain unchanged so we can determine how to upgrade", func() {
+		//sanity check to ensure it does not change without intention
+		Expect("8163d9a59a20ada8ab58c2535a3a4924").To(Equal(secureForwardConfHash))
+		file := string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/secure-forward.conf"))
+		Expect(utils.CalculateMD5Hash(file)).To(Equal(secureForwardConfHash))
+	})
+
+})
 
 var _ = Describe("Normalizing Forwarding", func() {
 

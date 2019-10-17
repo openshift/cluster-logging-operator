@@ -1,12 +1,13 @@
 package helpers
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
@@ -16,8 +17,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -72,12 +72,38 @@ func (indices *Indices) HasApplicationStructureLogs() bool {
 	return false
 }
 
+type elasticLogStore struct {
+	tc *E2ETestFramework
+}
+
+func (es *elasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
+	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+		indices, err := es.Indices()
+		if err != nil {
+			return false, err
+		}
+		return indices.HasInfraStructureLogs(), nil
+	})
+	return true, err
+}
+
+func (es *elasticLogStore) HasApplicationStructureLogs(timeToWait time.Duration) (bool, error) {
+	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+		indices, err := es.Indices()
+		if err != nil {
+			return false, err
+		}
+		return indices.HasApplicationStructureLogs(), nil
+	})
+	return true, err
+}
+
 //Indices fetches the list of indices stored by Elasticsearch
-func (tc *E2ETestFramework) Indices() (Indices, error) {
+func (es *elasticLogStore) Indices() (Indices, error) {
 	options := metav1.ListOptions{
 		LabelSelector: "component=elasticsearch",
 	}
-	pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+	pods, err := es.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
 	if err != nil {
 		return nil, err
 	}
@@ -85,44 +111,12 @@ func (tc *E2ETestFramework) Indices() (Indices, error) {
 		return nil, errors.New("No pods found for elasticsearch")
 	}
 	logger.Debugf("Pod %s", pods.Items[0].Name)
-
-	req := tc.KubeClient.CoreV1().RESTClient().Post().
-		Namespace(OpenshiftLoggingNS).
-		Resource("pods").
-		Name(pods.Items[0].Name).
-		SubResource("exec").
-		Timeout(defaultTimeout).
-		VersionedParams(&corev1.PodExecOptions{
-			Container: "elasticsearch",
-			Command:   []string{"es_util", "--query=_cat/indices?format=json"},
-			Stdout:    true,
-			Stderr:    true,
-		}, scheme.ParameterCodec)
-
-	logger.Debugf("req: %v", req)
-	logger.Debugf("req.url: %v", req.URL().String())
-	exec, err := remotecommand.NewSPDYExecutor(tc.RestConfig, "POST", req.URL())
-	logger.Debugf("SPDY Error: %v", err)
-	if err != nil {
-		return nil, err
-	}
-
-	var stdout, stderr bytes.Buffer
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	})
-	logger.Debugf("exec.stream Error: %v", err)
-	logger.Debugf("stdout: %v", stdout.String())
-	logger.Debugf("stderr: %v", stderr.String())
-	if err != nil {
-		return nil, err
-	}
-	if stderr.Len() > 0 {
-		return nil, errors.New(stderr.String())
-	}
 	indices := []Index{}
-	err = json.Unmarshal(stdout.Bytes(), &indices)
+	stdout, err := es.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal([]byte(stdout), &indices)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +125,7 @@ func (tc *E2ETestFramework) Indices() (Indices, error) {
 
 func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
 	logger.Debug("Generating Elasticsearch certificates")
-	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, "test-elastic-cluster"); err != nil {
+	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, "test-elastic-cluster", fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))); err != nil {
 		return nil, nil, err
 	}
 	esSecret := k8shandler.NewSecret(
@@ -187,13 +181,14 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 			RedundancyPolicy: elasticsearch.ZeroRedundancy,
 		},
 	}
-	tc.CleanupFns = append(tc.CleanupFns, func() error {
+	tc.AddCleanup(func() error {
 		result := tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/%s", elasticsearchesLoggingURI, cr.Name)).
 			SetHeader("Content-Type", "application/json").
 			Do()
 		return result.Error()
-	}, func() error {
+	})
+	tc.AddCleanup(func() error {
 		for _, name := range []string{esSecret.Name, pipelineSecret.Name} {
 			tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(name, nil)
 		}
@@ -210,5 +205,8 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		SetHeader("Content-Type", "application/json").
 		Body(body).
 		Do()
+	tc.LogStore = &elasticLogStore{
+		tc: tc,
+	}
 	return cr, pipelineSecret, result.Error()
 }

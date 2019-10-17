@@ -214,7 +214,7 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		case logging.OutputTypeElasticsearch:
 			storeTemplateName = "storeElasticsearch"
 		case logging.OutputTypeForward:
-			storeTemplateName = "storeForward"
+			storeTemplateName = "forward"
 			outputTemplateName = "outputLabelConfNoCopy"
 		default:
 			logger.Warnf("Pipeline targets include an unrecognized type: %q", output.Type)

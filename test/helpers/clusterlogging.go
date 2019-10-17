@@ -31,8 +31,6 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 			ManagementState: cl.ManagementStateManaged,
 		},
 	}
-	//HACK to avoid validation failure
-	instance.Spec.LogStore.RedundancyPolicy = elasticsearch.ZeroRedundancy
 
 	for _, compType := range componentTypes {
 		switch compType {

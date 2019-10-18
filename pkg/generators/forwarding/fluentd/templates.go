@@ -2,6 +2,8 @@ package fluentd
 
 // fluentConf: source -> fan to pipelines -> pipeline -> output [store]
 var templateRegistry = []string{
+	inputSourceContainerTemplate,
+	inputSourceJournalTemplate,
 	fluentConfTemplate,
 	pipelineToOutputCopyTemplate,
 	sourceToPipelineCopyTemplate,
@@ -53,24 +55,24 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
     hostname ${hostname}
   </labels>
 </source>
-<source>
-  @type systemd
-  @id systemd-input
-  @label @INGRESS
-  path "#{if (val = ENV.fetch('JOURNAL_SOURCE','')) && (val.length > 0); val; else '/run/log/journal'; end}"
-  <storage>
-    @type local
-    persistent true
-    # NOTE: if this does not end in .json, fluentd will think it
-    # is the name of a directory - see fluentd storage_local.rb
-    path "#{ENV['JOURNAL_POS_FILE'] || '/var/log/journal_pos.json'}"
-  </storage>
-  matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
-  tag journal
-  read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
-</source>
 
-@include configs.d/dynamic/input-docker-*.conf
+{{- range .SourceInputLabels }}
+{{ . }}
+{{- end}}
+
+<label @CONCAT>
+	<filter kubernetes.**>
+		@type concat
+		key log
+		partial_key logtag
+		partial_value P
+		separator \'\'
+	</filter>
+	<match kubernetes.**>
+		@type relabel
+		@label @INGRESS
+	</match>
+</label>
 
 #syslog input config here
 
@@ -270,6 +272,56 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 {{ . }}
 {{- end}}
 
+{{- end}}`
+
+const inputSourceJournalTemplate = `{{- define "inputSourceJournalTemplate" }}
+#journal logs to gather node
+<source>
+  @type systemd
+  @id systemd-input
+  @label @INGRESS
+  path "#{if (val = ENV.fetch('JOURNAL_SOURCE','')) && (val.length > 0); val; else '/run/log/journal'; end}"
+  <storage>
+    @type local
+    persistent true
+    # NOTE: if this does not end in .json, fluentd will think it
+    # is the name of a directory - see fluentd storage_local.rb
+    path "#{ENV['JOURNAL_POS_FILE'] || '/var/log/journal_pos.json'}"
+  </storage>
+  matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
+  tag journal
+  read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
+</source>
+{{- end}}`
+
+const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" }}
+# container logs
+<source>
+  @type tail
+  @id container-input
+  path "/var/log/containers/*.log"
+  pos_file "/var/log/es-containers.log.pos"
+  refresh_interval 5
+  rotate_wait 5
+  tag kubernetes.*
+  read_from_head "true"
+  exclude_path []
+  @label @CONCAT
+  <parse>
+    @type multi_format
+    <pattern>
+      format json
+      time_format \'%Y-%m-%dT%H:%M:%S.%N%Z\'
+      keep_time_key true
+    </pattern>
+    <pattern>
+      format regexp
+      expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+      time_format \'%Y-%m-%dT%H:%M:%S.%N%:z\'
+      keep_time_key true
+    </pattern>
+  </parse>
+</source>
 {{- end}}`
 
 const outputLabelMatchTemplate = `{{- define "outputLabelMatch" }}

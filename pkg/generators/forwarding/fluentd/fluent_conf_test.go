@@ -103,6 +103,8 @@ var _ = Describe("Generating fluentd config", func() {
 					hostname ${hostname}
 				</labels>
 			</source>
+
+			#journal logs to gather node
 			<source>
 				@type systemd
 				@id systemd-input
@@ -120,7 +122,47 @@ var _ = Describe("Generating fluentd config", func() {
 				read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
 			</source>
 
-			@include configs.d/dynamic/input-docker-*.conf
+			# container logs
+			<source>
+				@type tail
+				@id container-input
+				path "/var/log/containers/*.log"
+				pos_file "/var/log/es-containers.log.pos"
+				refresh_interval 5
+				rotate_wait 5
+				tag kubernetes.*
+				read_from_head "true"
+				exclude_path []
+				@label @CONCAT
+				<parse>
+				@type multi_format
+				<pattern>
+					format json
+					time_format \'%Y-%m-%dT%H:%M:%S.%N%Z\'
+					keep_time_key true
+				</pattern>
+				<pattern>
+					format regexp
+					expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+					time_format \'%Y-%m-%dT%H:%M:%S.%N%:z\'
+					keep_time_key true
+				</pattern>
+				</parse>
+			</source>
+			
+			<label @CONCAT>
+				<filter kubernetes.**>
+				@type concat
+				key log
+				partial_key logtag
+				partial_value P
+				separator \'\'
+				</filter>
+				<match kubernetes.**>
+				@type relabel
+				@label @INGRESS
+				</match>
+			</label>
 			
 			#syslog input config here
 

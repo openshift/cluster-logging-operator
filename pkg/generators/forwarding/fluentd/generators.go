@@ -56,10 +56,17 @@ func NewConfigGenerator() (*ConfigGenerator, error) {
 func (engine *ConfigGenerator) Generate(forwarding *logging.ForwardingSpec) (string, error) {
 
 	//sanitize here
+	sourceInputLabels := []string{}
 	sourceToPipelineLabels := []string{}
 	pipelineToOutputLabels := []string{}
 	var outputLabels []string
 	var err error
+
+	logTypes := gatherLogSourceTypes(forwarding.Pipelines)
+
+	if sourceInputLabels, err = engine.generateSource(logTypes); err != nil {
+		return "", err
+	}
 	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(mapSourceTypesToPipelineNames(forwarding.Pipelines)); err != nil {
 		return "", err
 	}
@@ -70,16 +77,18 @@ func (engine *ConfigGenerator) Generate(forwarding *logging.ForwardingSpec) (str
 	if outputLabels, err = engine.generateOutputLabelBlocks(forwarding.Outputs); err != nil {
 		return "", err
 	}
-	logTypes := gatherLogSourceTypes(forwarding.Pipelines)
+
 	data := struct {
 		CollectInfraLogs        bool
 		CollectAppLogs          bool
+		SourceInputLabels       []string
 		SourceToPipelineLabels  []string
 		PipelinesToOutputLabels []string
 		OutputLabels            []string
 	}{
 		logTypes.Has(string(logging.LogSourceTypeApp)),
 		logTypes.Has(string(logging.LogSourceTypeInfra)),
+		sourceInputLabels,
 		sourceToPipelineLabels,
 		pipelineToOutputLabels,
 		outputLabels,

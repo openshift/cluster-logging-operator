@@ -29,6 +29,7 @@ type ClusterLoggingStatus struct {
 	Collection    CollectionStatus    `json:"collection"`
 	Curation      CurationStatus      `json:"curation"`
 	Conditions    []ClusterCondition  `json:"clusterConditions,omitempty"`
+	Forwarding    *ForwardingStatus   `json:"forwarding,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)

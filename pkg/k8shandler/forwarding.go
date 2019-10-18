@@ -36,6 +36,23 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) logging.ForwardingSpec {
 	if cluster.Spec.LogStore != nil && cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 		if cluster.Spec.Forwarding == nil || (!cluster.Spec.Forwarding.DisableDefaultForwarding && len(cluster.Spec.Forwarding.Pipelines) == 0) {
+			cluster.Status.Forwarding = &logging.ForwardingStatus{
+				LogSources: []string{string(logging.LogSourceTypeApp), string(logging.LogSourceTypeInfra)},
+				Outputs: []logging.OutputStatus{
+					logging.OutputStatus{
+						Name:    internalOutputName,
+						State:   logging.OutputStateAccepted,
+						Message: "This is an operator generated output because forwarding is undefined and 'DisableDefaultForwarding' is false",
+					},
+				},
+				Pipelines: []logging.PipelineStatus{
+					logging.PipelineStatus{
+						Name:    defaultAppPipelineName,
+						State:   logging.PipelineStateAccepted,
+						Message: "This is an operator generated pipeline because forwarding is undefined and 'DisableDefaultForwarding' is false",
+					},
+				},
+			}
 			return logging.ForwardingSpec{
 				Outputs: []logging.OutputSpec{
 					logging.OutputSpec{
@@ -66,9 +83,24 @@ func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) l
 	if cluster.Spec.Forwarding == nil {
 		return normalized
 	}
+	logSources := sets.NewString()
+	cluster.Status.Forwarding = &logging.ForwardingStatus{}
 	normalized.Outputs = cluster.Spec.Forwarding.Outputs
-	outputRefs := gatherOutputRefs(cluster.Spec.Forwarding)
-	for _, pipeline := range cluster.Spec.Forwarding.Pipelines {
+	outputRefs := gatherAndVerifyOutputRefs(cluster.Spec.Forwarding, cluster.Status.Forwarding)
+	for i, pipeline := range cluster.Spec.Forwarding.Pipelines {
+		status := logging.PipelineStatus{
+			Name:  pipeline.Name,
+			State: logging.PipelineStateDropped,
+		}
+		if pipeline.Name == "" {
+			status.Name = fmt.Sprintf("pipeline[%d]", i)
+			status.Reasons = append(status.Reasons, logging.PipelineStateReasonMissingName)
+		}
+		if string(pipeline.SourceType) == "" {
+			status.Reasons = append(status.Reasons, logging.PipelineStateReasonUnrecognizedSource)
+		}
+
+		logSources.Insert(string(pipeline.SourceType))
 		newPipeline := logging.PipelineSpec{
 			Name:       pipeline.Name,
 			SourceType: pipeline.SourceType,
@@ -78,21 +110,50 @@ func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) l
 				newPipeline.OutputRefs = append(newPipeline.OutputRefs, output)
 			} else {
 				logger.Warnf("OutputRef %q for forwarding pipeline %q was not defined", output, pipeline.Name)
+				status.Reasons = append(status.Reasons, logging.PipelineStateReasonUnrecognizedOutput)
 			}
 		}
 		if len(newPipeline.OutputRefs) > 0 {
 			normalized.Pipelines = append(normalized.Pipelines, newPipeline)
+			status.State = logging.PipelineStateAccepted
+			if len(newPipeline.OutputRefs) != len(pipeline.OutputRefs) {
+				status.State = logging.PipelineStateDegraded
+			}
 		} else {
 			logger.Warnf("Dropping forwarding pipeline %q as its ouptutRefs have no corresponding outputs", pipeline.Name)
+			status.Reasons = append(status.Reasons, logging.PipelineStateReasonMissingOutputs)
 		}
 	}
+	cluster.Status.Forwarding.LogSources = logSources.List()
+
 	return normalized
 }
 
-func gatherOutputRefs(spec *logging.ForwardingSpec) sets.String {
+func gatherAndVerifyOutputRefs(spec *logging.ForwardingSpec, status *logging.ForwardingStatus) sets.String {
 	refs := sets.NewString()
-	for _, output := range spec.Outputs {
-		refs.Insert(output.Name)
+	for i, output := range spec.Outputs {
+		status := logging.OutputStatus{
+			Name:  output.Name,
+			State: logging.OutputStateDropped,
+		}
+		if output.Name == "" {
+			status.Name = fmt.Sprintf("output[%d]", i)
+			status.Reasons = append(status.Reasons, logging.OutputStateReasonMissingName)
+		}
+		if string(output.Type) == "" {
+			status.Reasons = append(status.Reasons, logging.OutputStateReasonMissingName)
+		}
+		if output.Endpoint == "" {
+			status.Reasons = append(status.Reasons, logging.OutputStateReasonMissingEndpoint)
+		}
+		if output.Secret != nil && output.Secret.Name == "" {
+			status.Reasons = append(status.Reasons, logging.OutputStateReasonMissingSecretName)
+		}
+
+		if len(status.Reasons) == 0 {
+			status.State = logging.OutputStateAccepted
+			refs.Insert(output.Name)
+		}
 	}
 	return refs
 }

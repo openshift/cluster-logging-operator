@@ -386,7 +386,7 @@ const forwardTemplate = `{{- define "forward" }}
 	{{ if .Target.Secret }}
 	transport tls
 	<security>
-		self_hostname ocp-clusterlogging-fluentd
+		self_hostname ${hostname}
 		shared_key {{ .Name }}
 	</security>
 

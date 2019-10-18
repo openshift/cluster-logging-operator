@@ -43,7 +43,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 	   @type forward
 	   transport tls
 	   <security>
-	     self_hostname ocp-clusterlogging-fluentd
+	     self_hostname ${hostname} 
 	     shared_key secureforward-receiver
 	   </security>
 

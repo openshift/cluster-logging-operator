@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -124,30 +123,19 @@ func (es *elasticLogStore) Indices() (Indices, error) {
 }
 
 func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
-	logger.Debug("Generating Elasticsearch certificates")
-	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, "test-elastic-cluster", fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))); err != nil {
+	logger.Debug("DeployAnElasticsearchCluster")
+	logStoreName := "test-elastic-cluster"
+	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic"); err != nil {
 		return nil, nil, err
 	}
+
 	esSecret := k8shandler.NewSecret(
-		"test-elastic-cluster",
+		logStoreName,
 		OpenshiftLoggingNS,
 		k8shandler.LoadElasticsearchSecretMap(),
 	)
 	logger.Debugf("Creating secret for an elasticsearch cluster: %s", esSecret.Name)
 	if esSecret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(esSecret); err != nil {
-		return nil, nil, err
-	}
-	pipelineSecret = k8shandler.NewSecret(
-		"test-pipeline-to-elastic",
-		OpenshiftLoggingNS,
-		map[string][]byte{
-			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
-			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-		},
-	)
-	logger.Debugf("Creating secret for pipeline to talk to elasticsearch cluster: %s", pipelineSecret.Name)
-	if pipelineSecret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(pipelineSecret); err != nil {
 		return nil, nil, err
 	}
 	pvcSize := resource.MustParse("200G")

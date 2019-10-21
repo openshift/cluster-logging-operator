@@ -92,10 +92,13 @@ const (
 	//PipelineStateDropped dropped by forwarding because its missing required fields to send messages to outputs
 	PipelineStateDropped PipelineState = "Dropped"
 
-	PipelineStateReasonUnrecognizedOutput PipelineStateReason = "An outputRef does not correspond to a defined output"
-	PipelineStateReasonUnrecognizedSource PipelineStateReason = "The source type is unrecognized"
-	PipelineStateReasonMissingName        PipelineStateReason = "The pipeline is missing a unique name"
-	PipelineStateReasonMissingOutputs     PipelineStateReason = "The pipeline does not reference any outputs"
+	PipelineStateReasonUnrecognizedOutput   PipelineStateReason = "An outputRef does not correspond to a defined output"
+	PipelineStateReasonUnrecognizedSource   PipelineStateReason = "The source type is unrecognized"
+	PipelineStateReasonNonUniqueName        PipelineStateReason = "The pipeline is missing a unique name"
+	PipelineStateReasonMissingName          PipelineStateReason = "The pipeline is missing a name"
+	PipelineStateReasonMissingOutputs       PipelineStateReason = "The pipeline does not reference any outputs or referes more than exist"
+	PipelineStateReasonMissingSource        PipelineStateReason = "The pipeline is missing a source type"
+	PipelineStateReasonReservedNameConflict PipelineStateReason = "Name conflicts with an internally reserved name"
 )
 
 //OutputStatus of a given output

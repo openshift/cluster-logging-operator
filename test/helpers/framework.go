@@ -21,6 +21,7 @@ import (
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	e2eutil "github.com/openshift/cluster-logging-operator/test/e2e"
 
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
@@ -272,4 +273,25 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 		return "", err
 	}
 	return stdout.String(), nil
+}
+
+func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string) (secret *corev1.Secret, err error) {
+	logger.Debugf("Generating Pipeline certificates for %q", logStoreName)
+	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, logStoreName, fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))); err != nil {
+		return nil, err
+	}
+	secret = k8shandler.NewSecret(
+		secretName,
+		OpenshiftLoggingNS,
+		map[string][]byte{
+			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
+			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
+			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
+		},
+	)
+	logger.Debugf("Creating secret %q for logStore", secret.Name, logStoreName)
+	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
+		return nil, err
+	}
+	return secret, nil
 }

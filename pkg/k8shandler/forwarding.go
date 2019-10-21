@@ -21,6 +21,7 @@ const (
 
 var (
 	outputTypes = sets.NewString(string(logging.OutputTypeElasticsearch), string(logging.OutputTypeForward))
+	sourceTypes = sets.NewString(string(logging.LogSourceTypeApp), string(logging.LogSourceTypeApp))
 )
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
@@ -88,45 +89,67 @@ func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) l
 		return normalized
 	}
 	logSources := sets.NewString()
+	pipelineNames := sets.NewString()
 	cluster.Status.Forwarding = &logging.ForwardingStatus{}
 	var outputRefs sets.String
 	outputRefs, normalized.Outputs = gatherAndVerifyOutputRefs(cluster.Spec.Forwarding, cluster.Status.Forwarding)
 	for i, pipeline := range cluster.Spec.Forwarding.Pipelines {
 		status := logging.PipelineStatus{
-			Name:  pipeline.Name,
-			State: logging.PipelineStateDropped,
+			Name: pipeline.Name,
 		}
 		if pipeline.Name == "" {
 			status.Name = fmt.Sprintf("pipeline[%d]", i)
 			status.Reasons = append(status.Reasons, logging.PipelineStateReasonMissingName)
+			status.State = logging.PipelineStateDropped
+		}
+		if pipeline.Name == defaultAppPipelineName || pipeline.Name == defaultInfraPipelineName {
+			status.Name = fmt.Sprintf("pipeline[%d]", i)
+			status.Reasons = append(status.Reasons, logging.PipelineStateReasonReservedNameConflict)
+			status.State = logging.PipelineStateDropped
+		}
+		if pipelineNames.Has(pipeline.Name) {
+			status.Name = fmt.Sprintf("pipeline[%d]", i)
+			status.Reasons = append(status.Reasons, logging.PipelineStateReasonNonUniqueName)
+			status.State = logging.PipelineStateDropped
 		}
 		if string(pipeline.SourceType) == "" {
+			status.Reasons = append(status.Reasons, logging.PipelineStateReasonMissingSource)
+			status.State = logging.PipelineStateDropped
+		}
+		if !sourceTypes.Has(string(pipeline.SourceType)) {
 			status.Reasons = append(status.Reasons, logging.PipelineStateReasonUnrecognizedSource)
+			status.State = logging.PipelineStateDropped
+		}
+		if status.State != logging.PipelineStateDropped {
+			pipelineNames.Insert(pipeline.Name)
+			logSources.Insert(string(pipeline.SourceType))
+			newPipeline := logging.PipelineSpec{
+				Name:       pipeline.Name,
+				SourceType: pipeline.SourceType,
+			}
+			for _, output := range pipeline.OutputRefs {
+				if outputRefs.Has(output) {
+					newPipeline.OutputRefs = append(newPipeline.OutputRefs, output)
+				} else {
+					logger.Warnf("OutputRef %q for forwarding pipeline %q was not defined", output, pipeline.Name)
+					status.Reasons = append(status.Reasons, logging.PipelineStateReasonUnrecognizedOutput)
+				}
+			}
+			if len(newPipeline.OutputRefs) > 0 {
+				normalized.Pipelines = append(normalized.Pipelines, newPipeline)
+				status.State = logging.PipelineStateAccepted
+				if len(newPipeline.OutputRefs) != len(pipeline.OutputRefs) {
+					status.State = logging.PipelineStateDegraded
+					status.Reasons = append(status.Reasons, logging.PipelineStateReasonMissingOutputs)
+				}
+			} else {
+				logger.Warnf("Dropping forwarding pipeline %q as its ouptutRefs have no corresponding outputs", pipeline.Name)
+				status.State = logging.PipelineStateDropped
+				status.Reasons = append(status.Reasons, logging.PipelineStateReasonMissingOutputs)
+			}
 		}
 
-		logSources.Insert(string(pipeline.SourceType))
-		newPipeline := logging.PipelineSpec{
-			Name:       pipeline.Name,
-			SourceType: pipeline.SourceType,
-		}
-		for _, output := range pipeline.OutputRefs {
-			if outputRefs.Has(output) {
-				newPipeline.OutputRefs = append(newPipeline.OutputRefs, output)
-			} else {
-				logger.Warnf("OutputRef %q for forwarding pipeline %q was not defined", output, pipeline.Name)
-				status.Reasons = append(status.Reasons, logging.PipelineStateReasonUnrecognizedOutput)
-			}
-		}
-		if len(newPipeline.OutputRefs) > 0 {
-			normalized.Pipelines = append(normalized.Pipelines, newPipeline)
-			status.State = logging.PipelineStateAccepted
-			if len(newPipeline.OutputRefs) != len(pipeline.OutputRefs) {
-				status.State = logging.PipelineStateDegraded
-			}
-		} else {
-			logger.Warnf("Dropping forwarding pipeline %q as its ouptutRefs have no corresponding outputs", pipeline.Name)
-			status.Reasons = append(status.Reasons, logging.PipelineStateReasonMissingOutputs)
-		}
+		cluster.Status.Forwarding.Pipelines = append(cluster.Status.Forwarding.Pipelines, status)
 	}
 	cluster.Status.Forwarding.LogSources = logSources.List()
 

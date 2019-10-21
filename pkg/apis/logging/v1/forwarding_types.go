@@ -144,6 +144,9 @@ const (
 	//OutputStateReasonMissingSecretName is missing the name of the secret
 	OutputStateReasonMissingSecretName OutputStateReason = "Missing secret name"
 
+	//OutputStateReasonSecretDoesNotExist for secrets which don't exist
+	OutputStateReasonSecretDoesNotExist OutputStateReason = "Secret does not exist"
+
 	//OutputStateReasonUnrecognizedType has an unrecognized or supported output type
 	OutputStateReasonUnrecognizedType OutputStateReason = "Unrecognized type"
 )

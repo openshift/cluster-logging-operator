@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -33,12 +34,12 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.cluster.Spec.Collection.Logs.Type)
 	}
 
-	clusterRequest.ForwardingRequest = normalizeLogForwarding(clusterRequest.cluster.Namespace, clusterRequest.cluster)
+	clusterRequest.ForwardingRequest = clusterRequest.normalizeLogForwarding(clusterRequest.cluster.Namespace, clusterRequest.cluster)
 	generator, err := forwarding.NewConfigGenerator(clusterRequest.cluster.Spec.Collection.Logs.Type)
 	return generator.Generate(&clusterRequest.ForwardingRequest)
 }
 
-func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) logging.ForwardingSpec {
+func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) logging.ForwardingSpec {
 	if cluster.Spec.LogStore != nil && cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 		if cluster.Spec.Forwarding == nil || (!cluster.Spec.Forwarding.DisableDefaultForwarding && len(cluster.Spec.Forwarding.Pipelines) == 0) {
 			cluster.Status.Forwarding = &logging.ForwardingStatus{
@@ -92,7 +93,7 @@ func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) l
 	pipelineNames := sets.NewString()
 	cluster.Status.Forwarding = &logging.ForwardingStatus{}
 	var outputRefs sets.String
-	outputRefs, normalized.Outputs = gatherAndVerifyOutputRefs(cluster.Spec.Forwarding, cluster.Status.Forwarding)
+	outputRefs, normalized.Outputs = clusterRequest.gatherAndVerifyOutputRefs(cluster.Spec.Forwarding, cluster.Status.Forwarding)
 	for i, pipeline := range cluster.Spec.Forwarding.Pipelines {
 		status := logging.PipelineStatus{
 			Name: pipeline.Name,
@@ -156,7 +157,7 @@ func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) l
 	return normalized
 }
 
-func gatherAndVerifyOutputRefs(spec *logging.ForwardingSpec, status *logging.ForwardingStatus) (sets.String, []logging.OutputSpec) {
+func (clusterRequest *ClusterLoggingRequest) gatherAndVerifyOutputRefs(spec *logging.ForwardingSpec, status *logging.ForwardingStatus) (sets.String, []logging.OutputSpec) {
 	refs := sets.NewString()
 	outputs := []logging.OutputSpec{}
 	for i, output := range spec.Outputs {
@@ -186,9 +187,17 @@ func gatherAndVerifyOutputRefs(spec *logging.ForwardingSpec, status *logging.For
 		if output.Endpoint == "" {
 			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonMissingEndpoint)
 		}
-		if output.Secret != nil && output.Secret.Name == "" {
-			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonMissingSecretName)
+		if output.Secret != nil {
+			if output.Secret.Name == "" {
+				outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonMissingSecretName)
+			} else {
+				_, err := clusterRequest.GetSecret(output.Secret.Name)
+				if errors.IsNotFound(err) {
+					outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonSecretDoesNotExist)
+				}
+			}
 		}
+
 		if len(outStatus.Reasons) == 0 {
 			outStatus.State = logging.OutputStateAccepted
 			refs.Insert(output.Name)

@@ -3,10 +3,10 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	test "github.com/openshift/cluster-logging-operator/test"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 var _ = Describe("generating source", func() {
@@ -91,12 +91,73 @@ var _ = Describe("generating source", func() {
 		})
 	})
 
+	Context("for only logs.audit source", func() {
+		BeforeEach(func() {
+			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeAudit)))
+			Expect(err).To(BeNil())
+			Expect(len(results)).To(Equal(3))
+		})
+
+		It("should produce configs for the audit logs", func() {
+			test.Expect(results[0]).ToEqual(`
+            # linux audit logs
+            <source>
+              @type tail
+              @id audit-input
+              @label @INGRESS
+              path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
+              pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+              tag linux-audit.log
+              <parse>
+                @type viaq_host_audit
+              </parse>
+            </source>
+		  `)
+			test.Expect(results[1]).ToEqual(`
+            # k8s audit logs
+            <source>
+              @type tail
+              @id k8s-audit-input
+              @label @INGRESS
+              path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
+              pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+              tag k8s-audit.log
+              <parse>
+                @type json
+                time_key requestReceivedTimestamp
+                # In case folks want to parse based on the requestReceivedTimestamp key
+                keep_time_key true
+                time_format %Y-%m-%dT%H:%M:%S.%N%z
+              </parse>
+            </source>
+		  `)
+			test.Expect(results[2]).ToEqual(`
+            # Openshift audit logs
+            <source>
+              @type tail
+              @id openshift-audit-input
+              @label @INGRESS
+              path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
+              pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+              tag openshift-audit.log
+              <parse>
+                @type json
+                time_key requestReceivedTimestamp
+                # In case folks want to parse based on the requestReceivedTimestamp key
+                keep_time_key true
+                time_format %Y-%m-%dT%H:%M:%S.%N%z
+              </parse>
+            </source>
+		  `)
+		})
+	})
+
 	Context("for all log sources", func() {
 
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp), string(logging.LogSourceTypeInfra)))
+			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp), string(logging.LogSourceTypeInfra), string(logging.LogSourceTypeAudit)))
 			Expect(err).To(BeNil())
-			Expect(len(results) == 2).To(BeTrue())
+			Expect(len(results)).To(Equal(5))
 		})
 		Context("for journal input", func() {
 
@@ -153,6 +214,62 @@ var _ = Describe("generating source", func() {
 				</parse>
 			  </source>
 			  `)
+			})
+		})
+
+		Context("for audit inputs", func() {
+
+			It("should produce a config with no exclusions", func() {
+				test.Expect(results[2]).ToEqual(`
+              # linux audit logs
+              <source>
+                @type tail
+                @id audit-input
+                @label @INGRESS
+                path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
+                pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+                tag linux-audit.log
+                <parse>
+                  @type viaq_host_audit
+                </parse>
+              </source>
+		    `)
+				test.Expect(results[3]).ToEqual(`
+              # k8s audit logs
+              <source>
+                @type tail
+                @id k8s-audit-input
+                @label @INGRESS
+                path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
+                pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+                tag k8s-audit.log
+                <parse>
+                  @type json
+                  time_key requestReceivedTimestamp
+                  # In case folks want to parse based on the requestReceivedTimestamp key
+                  keep_time_key true
+                  time_format %Y-%m-%dT%H:%M:%S.%N%z
+                </parse>
+              </source>
+		    `)
+				test.Expect(results[4]).ToEqual(`
+              # Openshift audit logs
+              <source>
+                @type tail
+                @id openshift-audit-input
+                @label @INGRESS
+                path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
+                pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+                tag openshift-audit.log
+                <parse>
+                  @type json
+                  time_key requestReceivedTimestamp
+                  # In case folks want to parse based on the requestReceivedTimestamp key
+                  keep_time_key true
+                  time_format %Y-%m-%dT%H:%M:%S.%N%z
+                </parse>
+              </source>
+		    `)
 			})
 		})
 	})

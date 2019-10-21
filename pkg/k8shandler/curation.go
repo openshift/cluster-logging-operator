@@ -61,7 +61,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 					printUpdateMessage = false
 				}
 				cluster.Status.Curation.CuratorStatus = curatorStatus
-				return clusterRequest.Update(cluster)
+				return clusterRequest.UpdateStatus(cluster)
 			}
 			return nil
 		})

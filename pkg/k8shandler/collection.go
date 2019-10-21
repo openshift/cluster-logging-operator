@@ -96,7 +96,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 					printUpdateMessage = false
 				}
 				cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
-				return clusterRequest.Update(cluster)
+				return clusterRequest.UpdateStatus(cluster)
 			}
 			return nil
 		})

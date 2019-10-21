@@ -123,8 +123,17 @@ const (
 	//OutputStateDropped means the output is unusuable by forwarding is missing some the required fields
 	OutputStateDropped OutputState = "Dropped"
 
+	//OutputStateNonUniqueName is not unique amoung all defined outputs
+	OutputStateNonUniqueName OutputStateReason = "NonUnique Name"
+
+	//OutputStateReservedNameConflict is not unique amoung all defined outputs
+	OutputStateReservedNameConflict OutputStateReason = "Name conflicts with an internally reserved name"
+
 	//OutputStateReasonMissingName is missing a name
 	OutputStateReasonMissingName OutputStateReason = "Missing name"
+
+	//OutputStateReasonMissingType is missing a name
+	OutputStateReasonMissingType OutputStateReason = "Missing type"
 
 	//OutputStateReasonMissingEndpoint is missing the endpoint information, it is empty, or is an invalid format
 	OutputStateReasonMissingEndpoint OutputStateReason = "Missing endpoint"

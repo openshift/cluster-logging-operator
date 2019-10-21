@@ -19,6 +19,10 @@ const (
 	secureForwardConfHash    = "8163d9a59a20ada8ab58c2535a3a4924"
 )
 
+var (
+	outputTypes = sets.NewString(string(logging.OutputTypeElasticsearch), string(logging.OutputTypeForward))
+)
+
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 
 	switch clusterRequest.cluster.Spec.Collection.Logs.Type {
@@ -85,8 +89,8 @@ func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) l
 	}
 	logSources := sets.NewString()
 	cluster.Status.Forwarding = &logging.ForwardingStatus{}
-	normalized.Outputs = cluster.Spec.Forwarding.Outputs
-	outputRefs := gatherAndVerifyOutputRefs(cluster.Spec.Forwarding, cluster.Status.Forwarding)
+	var outputRefs sets.String
+	outputRefs, normalized.Outputs = gatherAndVerifyOutputRefs(cluster.Spec.Forwarding, cluster.Status.Forwarding)
 	for i, pipeline := range cluster.Spec.Forwarding.Pipelines {
 		status := logging.PipelineStatus{
 			Name:  pipeline.Name,
@@ -129,31 +133,47 @@ func normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) l
 	return normalized
 }
 
-func gatherAndVerifyOutputRefs(spec *logging.ForwardingSpec, status *logging.ForwardingStatus) sets.String {
+func gatherAndVerifyOutputRefs(spec *logging.ForwardingSpec, status *logging.ForwardingStatus) (sets.String, []logging.OutputSpec) {
 	refs := sets.NewString()
+	outputs := []logging.OutputSpec{}
 	for i, output := range spec.Outputs {
-		status := logging.OutputStatus{
+		outStatus := logging.OutputStatus{
 			Name:  output.Name,
 			State: logging.OutputStateDropped,
 		}
 		if output.Name == "" {
-			status.Name = fmt.Sprintf("output[%d]", i)
-			status.Reasons = append(status.Reasons, logging.OutputStateReasonMissingName)
+			outStatus.Name = fmt.Sprintf("output[%d]", i)
+			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonMissingName)
+		}
+		if output.Name == internalOutputName {
+			outStatus.Name = fmt.Sprintf("output[%d]", i)
+			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReservedNameConflict)
+		}
+		if refs.Has(output.Name) {
+			outStatus.Name = fmt.Sprintf("output[%d]", i)
+			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateNonUniqueName)
+			outStatus.Message = outStatus.Message + "The output name is not unique among all defined outputs."
 		}
 		if string(output.Type) == "" {
-			status.Reasons = append(status.Reasons, logging.OutputStateReasonMissingName)
+			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonMissingType)
+		}
+		if !outputTypes.Has(string(output.Type)) {
+			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonUnrecognizedType)
 		}
 		if output.Endpoint == "" {
-			status.Reasons = append(status.Reasons, logging.OutputStateReasonMissingEndpoint)
+			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonMissingEndpoint)
 		}
 		if output.Secret != nil && output.Secret.Name == "" {
-			status.Reasons = append(status.Reasons, logging.OutputStateReasonMissingSecretName)
+			outStatus.Reasons = append(outStatus.Reasons, logging.OutputStateReasonMissingSecretName)
 		}
-
-		if len(status.Reasons) == 0 {
-			status.State = logging.OutputStateAccepted
+		if len(outStatus.Reasons) == 0 {
+			outStatus.State = logging.OutputStateAccepted
 			refs.Insert(output.Name)
+			outputs = append(outputs, output)
 		}
+		logger.Debugf("Status of output evaluation: %v", outStatus)
+		status.Outputs = append(status.Outputs, outStatus)
+
 	}
-	return refs
+	return refs, outputs
 }

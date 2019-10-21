@@ -90,7 +90,7 @@ deploy_config_map_catalog_source() {
 
   local CRD=$(sed '/^#!.*$/d' $manifest_dir/$version/*crd.yaml | grep -v -- "---" | indent apiVersion)
   local PKG=$(sed '/^#!.*$/d' $manifest_dir/*package.yaml | indent packageName)
-  local CSV=$(sed '/^#!.*$/d' $manifest_dir/$version/*version.yaml | sed 's/namespace: placeholder/namespace: '$namespace'/' |grep -v -- "---" |  indent apiVersion)
+  local CSV=$(sed '/^#!.*$/d' $manifest_dir/$version/*version.yaml | sed -e "s,imagePullPolicy: IfNotPresent,imagePullPolicy: Always,"  | sed 's/namespace: placeholder/namespace: '$namespace'/' |grep -v -- "---" |  indent apiVersion)
   local PACKAGE_NAME=$(sed -nr 's,.*packageName: (.*),\1,p' $manifest_dir/*package.yaml)
   if [ -n "${image:-}" ] ; then
     CSV=$(echo "$CSV" | sed -e "s~containerImage:.*~containerImage: ${image}~" | indent apiVersion)

@@ -27,7 +27,7 @@ const (
 
 var (
 	outputTypes = sets.NewString(string(logforward.OutputTypeElasticsearch), string(logforward.OutputTypeForward))
-	sourceTypes = sets.NewString(string(logforward.LogSourceTypeApp), string(logforward.LogSourceTypeInfra))
+	sourceTypes = sets.NewString(string(logforward.LogSourceTypeApp), string(logforward.LogSourceTypeInfra), string(logforward.LogSourceTypeAudit))
 )
 
 func isForwardingEnabled(cluster *logging.ClusterLogging) bool {

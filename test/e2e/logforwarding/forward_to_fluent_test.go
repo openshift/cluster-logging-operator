@@ -8,11 +8,11 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	apps "k8s.io/api/apps/v1"
 
 	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
-	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -69,6 +69,11 @@ var _ = Describe("LogForwarding", func() {
 								OutputRefs: []string{fluentDeployment.ObjectMeta.Name},
 								SourceType: logforward.LogSourceTypeInfra,
 							},
+							logforward.PipelineSpec{
+								Name:       "test-audit",
+								OutputRefs: []string{fluentDeployment.ObjectMeta.Name},
+								SourceType: logforward.LogSourceTypeAudit,
+							},
 						},
 					},
 				}
@@ -87,6 +92,7 @@ var _ = Describe("LogForwarding", func() {
 			It("should send logs to the forward.Output logstore", func() {
 				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStore.HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 			})
 		})
 
@@ -139,6 +145,11 @@ var _ = Describe("LogForwarding", func() {
 								OutputRefs: []string{fluentDeployment.ObjectMeta.Name},
 								SourceType: logforward.LogSourceTypeInfra,
 							},
+							logforward.PipelineSpec{
+								Name:       "test-audit",
+								OutputRefs: []string{fluentDeployment.ObjectMeta.Name},
+								SourceType: logforward.LogSourceTypeAudit,
+							},
 						},
 					},
 				}
@@ -157,6 +168,7 @@ var _ = Describe("LogForwarding", func() {
 			It("should send logs to the forward.Output logstore", func() {
 				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStore.HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 			})
 		})
 

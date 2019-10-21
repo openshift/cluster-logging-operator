@@ -66,6 +66,7 @@ spec:
                     enum:
                       - logs.app
                       - logs.infra
+                      - logs.audit
               required:
               - name
               - source

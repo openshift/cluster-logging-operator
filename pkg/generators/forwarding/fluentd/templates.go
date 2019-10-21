@@ -4,6 +4,9 @@ package fluentd
 var templateRegistry = []string{
 	inputSourceContainerTemplate,
 	inputSourceJournalTemplate,
+	inputSourceHostAuditTemplate,
+	inputSourceK8sAuditTemplate,
+	inputSourceOpenShiftAuditTemplate,
 	fluentConfTemplate,
 	pipelineToOutputCopyTemplate,
 	sourceToPipelineCopyTemplate,
@@ -250,6 +253,12 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 		@label @_LOGS_APP
 	</match>
 {{- end}}
+{{ if .CollectAuditLogs}}
+	<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+		@type relabel
+		@label @_LOGS_AUDIT
+	</match>
+{{- end}}
 	<match **>
 		@type stdout
 	</match>
@@ -321,6 +330,66 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
     </pattern>
   </parse>
 </source>
+{{- end}}`
+
+const inputSourceHostAuditTemplate = `{{- define "inputSourceHostAuditTemplate" }}
+# linux audit logs
+<source>
+  @type tail
+  @id audit-input
+  @label @INGRESS
+  path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
+  pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+  tag linux-audit.log
+  <parse>
+    @type viaq_host_audit
+  </parse>
+</source>
+{{- end}}`
+
+const inputSourceK8sAuditTemplate = `{{- define "inputSourceK8sAuditTemplate" }}
+# k8s audit logs
+<source>
+  @type tail
+  @id k8s-audit-input
+  @label @INGRESS
+  path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
+  pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+  tag k8s-audit.log
+  <parse>
+    @type json
+    time_key requestReceivedTimestamp
+    # In case folks want to parse based on the requestReceivedTimestamp key
+    keep_time_key true
+    time_format %Y-%m-%dT%H:%M:%S.%N%z
+  </parse>
+</source>
+{{- end}}`
+
+const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAuditTemplate" }}
+# Openshift audit logs
+<source>
+  @type tail
+  @id openshift-audit-input
+  @label @INGRESS
+  path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
+  pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+  tag openshift-audit.log
+  <parse>
+    @type json
+    time_key requestReceivedTimestamp
+    # In case folks want to parse based on the requestReceivedTimestamp key
+    keep_time_key true
+    time_format %Y-%m-%dT%H:%M:%S.%N%z
+  </parse>
+</source>
+{{- end}}`
+
+const outputLabelMatchTemplate = `{{- define "outputLabelMatch" }}
+<match {{.Tags}}>
+	@type relabel
+	@label {{labelName .Name}}
+</match>
 {{- end}}`
 
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" }}

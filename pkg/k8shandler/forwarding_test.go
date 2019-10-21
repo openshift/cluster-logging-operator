@@ -254,6 +254,18 @@ var _ = Describe("Normalizing Forwarding", func() {
 				Expect(HasOutputStatus(cluster.Status.Forwarding, "aName", logging.OutputStateDropped, logging.OutputStateReasonMissingEndpoint)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
+			It("should drop outputs that have secrets with no names", func() {
+				cluster.Spec.Forwarding.Outputs = append(cluster.Spec.Forwarding.Outputs, logging.OutputSpec{
+					Name:     "aName",
+					Type:     logging.OutputTypeElasticsearch,
+					Endpoint: "an output",
+					Secret:   &logging.OutputSecretSpec{},
+				})
+				normalizedForwardingSpec := normalizeLogForwarding(namespace, cluster)
+				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with empty secrets to be dropped")
+				Expect(HasOutputStatus(cluster.Status.Forwarding, "aName", logging.OutputStateDropped, logging.OutputStateReasonMissingSecretName)).To(BeTrue(), "Exp. the status to be updated")
+			})
+
 		})
 	})
 

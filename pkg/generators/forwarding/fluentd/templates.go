@@ -7,7 +7,6 @@ var templateRegistry = []string{
 	fluentConfTemplate,
 	pipelineToOutputCopyTemplate,
 	sourceToPipelineCopyTemplate,
-	outputLabelMatchTemplate,
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
 	storeElasticsearchTemplate,
@@ -322,13 +321,6 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
     </pattern>
   </parse>
 </source>
-{{- end}}`
-
-const outputLabelMatchTemplate = `{{- define "outputLabelMatch" }}
-<match {{.Tags}}>
-	@type relabel
-	@label {{labelName .Name}}
-</match>
 {{- end}}`
 
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" }}

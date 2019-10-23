@@ -17,22 +17,6 @@ var (
 	defaultInfraProjectPatterns = []string{"default", "openshift", "openshift-", "kube-"}
 )
 
-//sourceTags are the tags used by the fluentd pipeline to match log messages (e.g. **_foo_bar**) and
-// are used in a <match **_foo_bar_**> block
-type sourceTags map[string][]string
-
-func newSourceTags(source string, tags ...string) sourceTags {
-	sourceTags := sourceTags(make(map[string][]string))
-	sourceTags.insert(source, tags...)
-	return sourceTags
-}
-
-func (st sourceTags) insert(source string, tags ...string) sourceTags {
-	st[source] = tags
-	sort.Strings(st[source])
-	return st
-}
-
 //ConfigGenerator is a config generator for fluentd
 type ConfigGenerator struct {
 	*generators.Generator
@@ -179,21 +163,6 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 		result, err := engine.Execute("pipelineToOutputCopyTemplate", data)
 		if err != nil {
 			return nil, fmt.Errorf("Error processing pipelineToOutputCopyTemplate template: %v", err)
-		}
-		configs = append(configs, result)
-	}
-	return configs, nil
-}
-
-//generateSourceMatchBlocks generates fluentd match stanzas for sources to a given set of tags
-func (engine *ConfigGenerator) generateTagToSourceLabels(sourceTags sourceTags) ([]string, error) {
-	configs := []string{}
-	for source, fluentTags := range sourceTags {
-		// reuse outputLabelConf
-		conf := newOutputLabelConf(engine.Template, "", logging.OutputSpec{Name: source}, fluentTags...)
-		result, err := engine.Execute("outputLabelMatch", conf)
-		if err != nil {
-			return nil, fmt.Errorf("Error generating fluentd config Processing template %s: %v", engine.Template.Name(), err)
 		}
 		configs = append(configs, result)
 	}

@@ -20,18 +20,6 @@ var _ = Describe("Generating fluentd config blocks", func() {
 		Expect(err).To(BeNil())
 	})
 
-	It("should produce well formed @OUTPUT label match stanza", func() {
-		Expect(generator).To(Not(BeNil()))
-		results, err := generator.generateTagToSourceLabels(newSourceTags("logs.app", "**_foo_bar**", "**_xyz_abc**"))
-		Expect(err).To(BeNil())
-		Expect(len(results) > 0).To(BeTrue())
-		test.Expect(results[0]).ToEqual(`
-		<match **_foo_bar** **_xyz_abc**>
-			@type relabel
-			@label @LOGS_APP
-		</match>`)
-	})
-
 	Context("for a secure endpoint", func() {
 		BeforeEach(func() {
 			outputs = []logging.OutputSpec{

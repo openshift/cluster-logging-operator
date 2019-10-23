@@ -81,6 +81,19 @@ var _ = Describe("Normalizing Forwarding", func() {
 		cluster = request.cluster
 	})
 
+	It("should have sourceType application", func() {
+		Expect(sourceTypes.Has(string(logging.LogSourceTypeApp))).To(BeTrue())
+	})
+	It("should have sourceType infra", func() {
+		Expect(sourceTypes.Has(string(logging.LogSourceTypeInfra))).To(BeTrue())
+	})
+	It("should have outputType Elastic", func() {
+		Expect(outputTypes.Has(string(logging.OutputTypeElasticsearch))).To(BeTrue())
+	})
+	It("should have outputType Forward", func() {
+		Expect(outputTypes.Has(string(logging.OutputTypeForward))).To(BeTrue())
+	})
+
 	Context("while validating ", func() {
 
 		BeforeEach(func() {

@@ -52,7 +52,7 @@ func init() {
 }
 
 type LogStore interface {
-	HasApplicationStructureLogs(timeToWait time.Duration) (bool, error)
+	HasApplicationLogs(timeToWait time.Duration) (bool, error)
 
 	HasInfraStructureLogs(timeToWait time.Duration) (bool, error)
 }
@@ -284,9 +284,10 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		secretName,
 		OpenshiftLoggingNS,
 		map[string][]byte{
-			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
+			"tls.key":       utils.GetWorkingDirFileContents("logging-es.key"),
+			"tls.crt":       utils.GetWorkingDirFileContents("logging-es.crt"),
 			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
+			"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
 		},
 	)
 	logger.Debugf("Creating secret %q for logStore", secret.Name, logStoreName)

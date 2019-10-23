@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -72,7 +73,7 @@ var _ = Describe("LogForwarding", func() {
 
 			It("should send logs to the forward.Output logstore", func() {
 				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStore.HasApplicationStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 			})
 		})
 
@@ -81,6 +82,14 @@ var _ = Describe("LogForwarding", func() {
 			BeforeEach(func() {
 				if fluentDeployment, err = e2e.DeployFluendReceiver(rootDir, true); err != nil {
 					Fail(fmt.Sprintf("Unable to deploy fluent receiver: %v", err))
+				}
+				//sanity check
+				initialWaitForLogsTimeout, _ := time.ParseDuration("30s")
+				if exist, _ := e2e.LogStore.HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
+					Fail("Found logs when we didnt expect them")
+				}
+				if exist, _ := e2e.LogStore.HasApplicationLogs(initialWaitForLogsTimeout); exist {
+					Fail("Found logs when we didnt expect them")
 				}
 
 				cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector)
@@ -122,11 +131,12 @@ var _ = Describe("LogForwarding", func() {
 
 			It("should send logs to the forward.Output logstore", func() {
 				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStore.HasApplicationStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 			})
 		})
 
 		AfterEach(func() {
+			//for n in $(echo "secrets sa roles rolebindings services deployment configmap") ; do oc delete $n fluent-receiver||: ; done
 			e2e.Cleanup()
 		})
 

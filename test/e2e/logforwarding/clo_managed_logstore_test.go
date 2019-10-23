@@ -43,7 +43,7 @@ var _ = Describe("CLO Managed LogForwarding", func() {
 
 		It("should default to forwarding logs to the spec'd logstore", func() {
 			Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-			Expect(e2e.LogStore.HasApplicationStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+			Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 		})
 
 	})

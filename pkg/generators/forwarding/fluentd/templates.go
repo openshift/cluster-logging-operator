@@ -20,7 +20,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 # which should normally be supplied in a configmap.
 
 <system>
-	@log_level warn
+	@log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
 </system>
 
 # In each section below, pre- and post- includes don't include anything initially;
@@ -311,13 +311,13 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
     @type multi_format
     <pattern>
       format json
-      time_format \'%Y-%m-%dT%H:%M:%S.%N%Z\'
+      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
       keep_time_key true
     </pattern>
     <pattern>
       format regexp
       expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
-      time_format \'%Y-%m-%dT%H:%M:%S.%N%:z\'
+      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
       keep_time_key true
     </pattern>
   </parse>
@@ -384,17 +384,16 @@ const forwardTemplate = `{{- define "forward" }}
 	# https://docs.fluentd.org/v1.0/articles/in_forward
 	@type forward
 	{{ if .Target.Secret }}
-	transport tls
 	<security>
-		self_hostname ${hostname}
+		self_hostname "#{ENV['NODE_NAME'] || ${hostname}}"
 		shared_key {{ .Name }}
 	</security>
 
 	transport tls
-	tls_verify_hostname true
+	tls_verify_hostname false
 	tls_version 'TLSv1_2'
 
-	tls_client_private_key_path {{ .SecretPath "tls.key"}}
+	#tls_client_private_key_path {{ .SecretPath "tls.key"}}
 	tls_client_cert_path {{ .SecretPath "tls.crt"}}
 	tls_cert_path {{ .SecretPath "ca-bundle.crt"}}
 	{{ end -}}

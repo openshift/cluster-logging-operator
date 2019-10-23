@@ -26,15 +26,17 @@ const (
 	receiverName             = "fluent-receiver"
 	secureFluentConfTemplate = `
 <system>
-	@log_level warn
+	@log_level info
 </system>
 <source>
   @type forward
   <transport tls>
-  	ca_cert_path /etc/fluentd/secrets/ca-bundle.crt
+	  ca_cert_path /etc/fluentd/secrets/ca-bundle.crt
+	  ca_private_key_path /etc/fluentd/secrets/ca.key
   </transport>
   <security>
-    shared_key test-fluent-receiver
+	shared_key fluent-receiver
+	self_hostname fluent-receiver
   </security>
 </source>
 <match *_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
@@ -100,13 +102,16 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 		}
 		return value > 0, nil
 	})
+	if err == wait.ErrWaitTimeout {
+		return false, err
+	}
 	return true, err
 }
 
 func (fluent *fluentReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
 	return fluent.hasLogs("/tmp/infra.logs", timeToWait)
 }
-func (fluent *fluentReceiverLogStore) HasApplicationStructureLogs(timeToWait time.Duration) (bool, error) {
+func (fluent *fluentReceiverLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {
 	return fluent.hasLogs("/tmp/app.logs", timeToWait)
 }
 
@@ -207,7 +212,7 @@ func (tc *E2ETestFramework) DeployFluendReceiver(rootDir string, secure bool) (d
 
 	fluentConf := unsecureFluentConf
 	if secure {
-		fluentConf = unsecureFluentConf
+		fluentConf = secureFluentConfTemplate
 		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(rootDir, receiverName, receiverName); err != nil {
 			return nil, err
 		}
@@ -216,7 +221,8 @@ func (tc *E2ETestFramework) DeployFluendReceiver(rootDir string, secure bool) (d
 			ReadOnly:  true,
 			MountPath: "/etc/fluentd/secrets",
 		})
-		logStore.pipelineSecret.Data["shared_key"] = []byte("test-fluent-receiver")
+		podSpec.Containers = []corev1.Container{container}
+		logStore.pipelineSecret.Data["shared_key"] = []byte("fluent-receiver")
 		if logStore.pipelineSecret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Update(logStore.pipelineSecret); err != nil {
 			return nil, err
 		}

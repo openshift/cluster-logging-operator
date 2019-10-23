@@ -61,8 +61,8 @@ func (indices *Indices) HasInfraStructureLogs() bool {
 	return false
 }
 
-//HasApplicationStructureLogs returns true if there are any indices that begin with ProjectIndexPrefix and also contains documents
-func (indices *Indices) HasApplicationStructureLogs() bool {
+//HasApplicationLogs returns true if there are any indices that begin with ProjectIndexPrefix and also contains documents
+func (indices *Indices) HasApplicationLogs() bool {
 	for _, index := range *indices {
 		if strings.HasPrefix(index.Name, ProjectIndexPrefix) && index.DocCount() > 0 {
 			return true
@@ -86,13 +86,13 @@ func (es *elasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool
 	return true, err
 }
 
-func (es *elasticLogStore) HasApplicationStructureLogs(timeToWait time.Duration) (bool, error) {
+func (es *elasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			return false, err
 		}
-		return indices.HasApplicationStructureLogs(), nil
+		return indices.HasApplicationLogs(), nil
 	})
 	return true, err
 }

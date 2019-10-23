@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
@@ -44,6 +45,13 @@ var secretCertificates = map[string]map[string]string{
 		"ca-bundle.crt": "ca.crt",
 		"tls.key":       "system.logging.fluentd.key",
 		"tls.crt":       "system.logging.fluentd.crt",
+		//legacy to be removed in future
+		"app-ca":     "ca.crt",
+		"app-key":    "system.logging.fluentd.key",
+		"app-cert":   "system.logging.fluentd.crt",
+		"infra-ca":   "ca.crt",
+		"infra-key":  "system.logging.fluentd.key",
+		"infra-cert": "system.logging.fluentd.crt",
 	},
 }
 
@@ -60,7 +68,8 @@ func (clusterRequest *ClusterLoggingRequest) extractSecretToFile(secretName stri
 
 	// check to see if the map value exists
 	if !ok {
-		return fmt.Errorf("No secret data \"%s\" found", key)
+		logger.Infof("No secret data %q found", key)
+		return nil
 	}
 
 	return utils.WriteToWorkingDirFile(toFile, value)

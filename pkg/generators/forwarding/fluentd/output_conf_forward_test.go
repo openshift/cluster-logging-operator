@@ -41,17 +41,16 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 	<match **>
 		# https://docs.fluentd.org/v1.0/articles/in_forward
 	   @type forward
-	   transport tls
 	   <security>
-	     self_hostname ${hostname} 
+	     self_hostname "#{ENV['NODE_NAME'] || ${hostname}}" 
 	     shared_key secureforward-receiver
 	   </security>
 
 	   transport tls
-	   tls_verify_hostname true
+	   tls_verify_hostname false
 	   tls_version 'TLSv1_2'
 	
-	   tls_client_private_key_path /var/run/ocp-collector/secrets/my-infra-secret/tls.key
+	   #tls_client_private_key_path /var/run/ocp-collector/secrets/my-infra-secret/tls.key
 	   tls_client_cert_path /var/run/ocp-collector/secrets/my-infra-secret/tls.crt
 	   tls_cert_path /var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt
 

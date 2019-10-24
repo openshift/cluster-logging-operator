@@ -271,8 +271,10 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 		logrus.Infof("Collector resource(s) change found, updating %q", current.Name)
 		different = true
 	}
-	if !reflect.DeepEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
+
+	if !utils.EnvValueEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
 		logrus.Infof("Collector container EnvVar change found, updating %q", current.Name)
+
 		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
 		different = true
 	}

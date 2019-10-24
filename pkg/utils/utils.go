@@ -240,3 +240,67 @@ func RemoveString(slice []string, s string) (result []string) {
 	}
 	return
 }
+
+
+/**
+EnvValueEqual - check if 2 EnvValues are equal or not
+Notes:
+- reflect.DeepEqual does not return expected results if the to-be-compared value is a pointer.
+- needs to adjust with k8s.io/api/core/v#/types.go when the types are updated.
+**/
+func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
+	var found bool
+	if len(env1) != len(env2) {
+		return false
+	}
+	for _, elem1 := range env1 {
+		found = false
+		for _, elem2 := range env2 {
+			if elem1.Name == elem2.Name {
+				if elem1.Value != elem2.Value {
+					return false
+				}
+				if (elem1.ValueFrom != nil && elem2.ValueFrom == nil) ||
+				   (elem1.ValueFrom == nil && elem2.ValueFrom != nil) {
+					return false
+				}
+				if elem1.ValueFrom != nil {
+					found = EnvVarSourceEqual(*elem1.ValueFrom, *elem2.ValueFrom)
+				} else {
+					found = true
+				}
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
+	if (esource1.FieldRef != nil && esource2.FieldRef == nil) ||
+	   (esource1.FieldRef == nil && esource2.FieldRef != nil) ||
+	   (esource1.ResourceFieldRef != nil && esource2.ResourceFieldRef == nil) ||
+	   (esource1.ResourceFieldRef == nil && esource2.ResourceFieldRef != nil) ||
+	   (esource1.ConfigMapKeyRef != nil && esource2.ConfigMapKeyRef == nil) ||
+	   (esource1.ConfigMapKeyRef == nil && esource2.ConfigMapKeyRef != nil) ||
+	   (esource1.SecretKeyRef != nil && esource2.SecretKeyRef == nil) ||
+	   (esource1.SecretKeyRef == nil && esource2.SecretKeyRef != nil) {
+		return false
+	}
+	if esource1.FieldRef != nil {
+		return reflect.DeepEqual(*esource1.FieldRef, *esource2.FieldRef)
+	}
+	if esource1.ResourceFieldRef != nil {
+		return reflect.DeepEqual(*esource1.ResourceFieldRef, *esource2.ResourceFieldRef)
+	}
+	if esource1.ConfigMapKeyRef != nil {
+		return reflect.DeepEqual(*esource1.ConfigMapKeyRef, *esource2.ConfigMapKeyRef)
+	}
+	if esource1.SecretKeyRef != nil {
+		return reflect.DeepEqual(*esource1.SecretKeyRef, *esource2.SecretKeyRef)
+	}
+	return true
+}

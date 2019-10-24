@@ -377,7 +377,7 @@ const forwardTemplate = `{{- define "forward" }}
 	@type forward
 	{{ if .Target.Secret }}
 	<security>
-		self_hostname "#{ENV['NODE_NAME'] || ${hostname}}"
+		self_hostname "#{ENV['NODE_NAME']}"
 		shared_key {{ .Name }}
 	</security>
 

@@ -42,7 +42,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		# https://docs.fluentd.org/v1.0/articles/in_forward
 	   @type forward
 	   <security>
-	     self_hostname "#{ENV['NODE_NAME'] || ${hostname}}" 
+	     self_hostname "#{ENV['NODE_NAME']}" 
 	     shared_key secureforward-receiver
 	   </security>
 

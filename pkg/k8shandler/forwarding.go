@@ -36,6 +36,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 
 	clusterRequest.ForwardingRequest = clusterRequest.normalizeLogForwarding(clusterRequest.cluster.Namespace, clusterRequest.cluster)
 	generator, err := forwarding.NewConfigGenerator(clusterRequest.cluster.Spec.Collection.Logs.Type)
+	if err != nil {
+		return "", err
+	}
 	return generator.Generate(&clusterRequest.ForwardingRequest)
 }
 

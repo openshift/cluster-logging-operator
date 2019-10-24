@@ -72,12 +72,12 @@ metadata:
                   "pipelines": [
                     {
                       "name": "clo-default-app-pipeline",
-                      "type": "loggs.app",
+                      "type": "logs.app",
                       "outputRefs": ["clo-managaged-output-es"]
                     },
                     {
                       "name": "clo-default-infra-pipeline",
-                      "type": "loggs.app",
+                      "type": "logs.app",
                       "outputRefs": ["clo-managaged-output-es"]
                     }
                   ],

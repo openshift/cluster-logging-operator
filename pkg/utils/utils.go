@@ -249,7 +249,6 @@ func RemoveString(slice []string, s string) (result []string) {
 	return
 }
 
-
 /**
 EnvValueEqual - check if 2 EnvValues are equal or not
 Notes:
@@ -269,7 +268,7 @@ func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
 					return false
 				}
 				if (elem1.ValueFrom != nil && elem2.ValueFrom == nil) ||
-				   (elem1.ValueFrom == nil && elem2.ValueFrom != nil) {
+					(elem1.ValueFrom == nil && elem2.ValueFrom != nil) {
 					return false
 				}
 				if elem1.ValueFrom != nil {
@@ -289,13 +288,13 @@ func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
 
 func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
 	if (esource1.FieldRef != nil && esource2.FieldRef == nil) ||
-	   (esource1.FieldRef == nil && esource2.FieldRef != nil) ||
-	   (esource1.ResourceFieldRef != nil && esource2.ResourceFieldRef == nil) ||
-	   (esource1.ResourceFieldRef == nil && esource2.ResourceFieldRef != nil) ||
-	   (esource1.ConfigMapKeyRef != nil && esource2.ConfigMapKeyRef == nil) ||
-	   (esource1.ConfigMapKeyRef == nil && esource2.ConfigMapKeyRef != nil) ||
-	   (esource1.SecretKeyRef != nil && esource2.SecretKeyRef == nil) ||
-	   (esource1.SecretKeyRef == nil && esource2.SecretKeyRef != nil) {
+		(esource1.FieldRef == nil && esource2.FieldRef != nil) ||
+		(esource1.ResourceFieldRef != nil && esource2.ResourceFieldRef == nil) ||
+		(esource1.ResourceFieldRef == nil && esource2.ResourceFieldRef != nil) ||
+		(esource1.ConfigMapKeyRef != nil && esource2.ConfigMapKeyRef == nil) ||
+		(esource1.ConfigMapKeyRef == nil && esource2.ConfigMapKeyRef != nil) ||
+		(esource1.SecretKeyRef != nil && esource2.SecretKeyRef == nil) ||
+		(esource1.SecretKeyRef == nil && esource2.SecretKeyRef != nil) {
 		return false
 	}
 	if esource1.FieldRef != nil {

@@ -290,6 +290,9 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 			"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
 		},
 	)
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(secretName, nil)
+	})
 	logger.Debugf("Creating secret %q for logStore", secret.Name, logStoreName)
 	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
 		return nil, err

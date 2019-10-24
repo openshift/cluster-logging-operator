@@ -113,6 +113,19 @@ var _ = Describe("Normalizing Forwarding", func() {
 		})
 		Context("pipelines", func() {
 
+			It("should only include logsources if there is atleast one valid pipeline", func() {
+				cluster.Spec.Forwarding.Pipelines = []logging.PipelineSpec{
+					logging.PipelineSpec{
+						Name:       "aPipeline",
+						OutputRefs: []string{"someotherendpoint"},
+						SourceType: logging.LogSourceTypeApp,
+					},
+				}
+				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
+				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(0), "Exp. all pipelines to be dropped")
+				Expect(cluster.Status.Forwarding.LogSources).To(Equal([]string{}), "Exp. no log sources")
+			})
+
 			It("should drop pipelines that do not have unique names", func() {
 				cluster.Spec.Forwarding.Pipelines = append(cluster.Spec.Forwarding.Pipelines,
 					logging.PipelineSpec{

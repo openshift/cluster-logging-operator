@@ -122,8 +122,6 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 			status.State = logging.PipelineStateDropped
 		}
 		if status.State != logging.PipelineStateDropped {
-			pipelineNames.Insert(pipeline.Name)
-			logSources.Insert(string(pipeline.SourceType))
 			newPipeline := logging.PipelineSpec{
 				Name:       pipeline.Name,
 				SourceType: pipeline.SourceType,
@@ -137,6 +135,8 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 				}
 			}
 			if len(newPipeline.OutputRefs) > 0 {
+				pipelineNames.Insert(pipeline.Name)
+				logSources.Insert(string(pipeline.SourceType))
 				normalized.Pipelines = append(normalized.Pipelines, newPipeline)
 				status.State = logging.PipelineStateAccepted
 				if len(newPipeline.OutputRefs) != len(pipeline.OutputRefs) {

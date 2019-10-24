@@ -70,8 +70,8 @@ func (engine *ConfigGenerator) Generate(forwarding *logging.ForwardingSpec) (str
 		PipelinesToOutputLabels []string
 		OutputLabels            []string
 	}{
-		logTypes.Has(string(logging.LogSourceTypeApp)),
 		logTypes.Has(string(logging.LogSourceTypeInfra)),
+		logTypes.Has(string(logging.LogSourceTypeApp)),
 		sourceInputLabels,
 		sourceToPipelineLabels,
 		pipelineToOutputLabels,

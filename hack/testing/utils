@@ -34,7 +34,7 @@ items:
     name: $name
     namespace: $ns
   spec:
-    channel: preview
+    channel: 4.2
     installPlanApproval: Automatic
     name: $package
     source: redhat-operators
@@ -84,7 +84,7 @@ deploy_config_map_catalog_source() {
   local CSV=$(sed '/^#!.*$/d' $manifest_dir/$version/*version.yaml | sed 's/namespace: placeholder/namespace: '$namespace'/' |grep -v -- "---" |  indent apiVersion)
   local PACKAGE_NAME=$(sed -nr 's,.*packageName: (.*),\1,p' $manifest_dir/*package.yaml)
   if [ -n "${image:-}" ] ; then
-    CSV=$(echo "$CSV" | sed -e "s~containerImage:.*+~containerImage: ${image}~" | indent apiVersion)
+    CSV=$(echo "$CSV" | sed -e "s~containerImage:.*~containerImage: ${image}~" | indent apiVersion)
     CSV=$(echo "$CSV" | sed -e "s~image:.*~image: ${image}\n~" | indent ApiVersion)
   fi
 
@@ -107,7 +107,7 @@ kind: CatalogSource
 metadata:
   name: $PACKAGE_NAME
 spec:
-  sourceType: internal
+  sourceType: configmap 
   configMap: $PACKAGE_NAME
   displayName: $PACKAGE_NAME
   publisher: Operator Framework

@@ -84,11 +84,17 @@ assert_resources_exist
 
 os::cmd::expect_success "deploy_config_map_catalog_source $NAMESPACE ${repo_dir}/manifests '${IMAGE_CLUSTER_LOGGING_OPERATOR}'"
 
+echo sleep 65432
+sleep 65432 || :
+
 # patch subscription
 payload="{\"op\":\"replace\",\"path\":\"/spec/source\",\"value\":\"cluster-logging\"}"
 payload="$payload,{\"op\":\"replace\",\"path\":\"/spec/sourceNamespace\",\"value\":\"openshift-logging\"}"
 payload="$payload,{\"op\":\"replace\",\"path\":\"/spec/channel\",\"value\":\"$version\"}"
 os::cmd::expect_success "oc -n $NAMESPACE patch subscription cluster-logging-operator --type json -p '[$payload]'"
+
+echo sleep 65432
+sleep 65432 || :
 
 #verify deployment is rolled out
 os::cmd::try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.spec.template.spec.containers[0].image}" "${IMAGE_CLUSTER_LOGGING_OPERATOR}" ${TIMEOUT_MIN}

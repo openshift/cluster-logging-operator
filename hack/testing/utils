@@ -6,7 +6,7 @@ indent() {
 }
 
 deploy_marketplace_operator(){
-  local ns=$1
+  local namespace=$1
   local name=$2
   local package=${3:-$name}
   local global=${4:-false}

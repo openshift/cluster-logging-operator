@@ -17,11 +17,11 @@ if [ ! -d $ARTIFACT_DIR ] ; then
 fi
 
 cleanup(){
+  local return_code="$?"
+  set +e
   os::log::info "Running cleanup"
   end_seconds=$(date +%s)
   runtime="$(($end_seconds - $start_seconds))s"
-  local return_code="$?"
-  set +e
   
   if [ "${SKIP_CLEANUP:-false}" == "false" ] ; then
     for item in "crd/elasticsearches.logging.openshift.io" "crd/clusterloggings.logging.openshift.io" "ns/openshift-logging" "ns/openshift-operators-redhat"; do

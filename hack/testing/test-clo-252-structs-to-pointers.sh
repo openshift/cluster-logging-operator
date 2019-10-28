@@ -3,6 +3,9 @@
 # after API converts component specs to pointers 
 # from empty structs
 
+echo "WARNING: (temporarily) skipping structs-to-pointers test"
+exit 0
+
 set -e
 if [ "${DEBUG:-}" = "true" ]; then
 	set -x
@@ -28,11 +31,11 @@ manifest_dir=${repo_dir}/manifests
 version=$(basename $(find $manifest_dir -type d | sort -r | head -n 1))
 
 cleanup(){
+  local return_code="$?"
+  set +e
   os::log::info "Running cleanup"
   end_seconds=$(date +%s)
   runtime="$(($end_seconds - $start_seconds))s"
-  local return_code="$?"
-  set +e
   oc -n openshift-operators-redhat -o yaml get subscription elasticsearch-operator > $ARTIFACT_DIR/subscription-eo.yml 2>&1 ||:
   oc logs -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.log 2>&1 ||:
   oc -n ${NAMESPACE} -o yaml get subscription cluster-logging-operator > $ARTIFACT_DIR/subscription-clo.yml 2>&1 ||:

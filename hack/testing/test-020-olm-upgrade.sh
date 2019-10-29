@@ -26,13 +26,14 @@ TIMEOUT_MIN=$((2 * $minute))
 NAMESPACE="openshift-logging"
 manifest_dir=${repo_dir}/manifests
 version=$(basename $(find $manifest_dir -type d | sort -r | head -n 1))
+previous_version=$(echo $version | awk '{print $1 - 0.1}')
 
 cleanup(){
+  local return_code="$?"
+  set +e
   os::log::info "Running cleanup"
   end_seconds=$(date +%s)
   runtime="$(($end_seconds - $start_seconds))s"
-  local return_code="$?"
-  set +e
   oc -n openshift-operators-redhat -o yaml get subscription elasticsearch-operator > $ARTIFACT_DIR/subscription-eo.yml 2>&1 ||:
   oc logs -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.log 2>&1 ||:
   oc -n ${NAMESPACE} -o yaml get subscription cluster-logging-operator > $ARTIFACT_DIR/subscription-clo.yml 2>&1 ||:
@@ -65,13 +66,13 @@ fi
 
 
 # deploy EO
-os::cmd::expect_success 'deploy_marketplace_operator "openshift-operators-redhat" "elasticsearch-operator" "elasticsearch-operator" "true" '
+os::cmd::expect_success 'deploy_marketplace_operator "openshift-operators-redhat" "elasticsearch-operator"  "$previous_version" "elasticsearch-operator" "true" '
 
 # verify operator is ready
 os::cmd::try_until_text "oc -n openshift-operators-redhat get deployment elasticsearch-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 # deploy CLO
-os::cmd::expect_success 'deploy_marketplace_operator "openshift-logging" "cluster-logging-operator" "cluster-logging"'
+os::cmd::expect_success 'deploy_marketplace_operator "openshift-logging" "cluster-logging-operator" "$previous_version" "cluster-logging"'
 
 # verify operator is ready
 os::cmd::try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}

@@ -8,8 +8,9 @@ indent() {
 deploy_marketplace_operator(){
   local ns=$1
   local name=$2
-  local package=${3:-$name}
-  local global=${4:-false}
+  local channel=$3
+  local package=${4:-$name}
+  local global=${5:-false}
   if [ "${global}" = "false" ] ; then 
     cat <<EOL | oc create -f -
 apiVersion: v1
@@ -18,25 +19,25 @@ items:
 - apiVersion: v1
   kind: Namespace
   metadata:
-    name: $ns
+    name: "$ns"
 - apiVersion: operators.coreos.com/v1
   kind: OperatorGroup
   metadata:
-    name: $ns
-    namespace: $ns
+    name: "$ns"
+    namespace: "$ns"
   spec:
     targetNamespaces: 
-    - $ns
+    - "$ns"
     packages: "$name"    
 - apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    name: $name
-    namespace: $ns
+    name: "$name"
+    namespace: "$ns"
   spec:
-    channel: preview
+    channel: "$channel"
     installPlanApproval: Automatic
-    name: $package
+    name: "$package"
     source: redhat-operators
     sourceNamespace: openshift-marketplace
 EOL
@@ -48,23 +49,23 @@ items:
 - apiVersion: v1
   kind: Namespace
   metadata:
-    name: $ns
+    name: "$ns"
 - apiVersion: operators.coreos.com/v1
   kind: OperatorGroup
   metadata:
-    name: $ns
-    namespace: $ns
+    name: "$ns"
+    namespace: "$ns"
   spec:
     packages: "$name"    
 - apiVersion: operators.coreos.com/v1alpha1
   kind: Subscription
   metadata:
-    name: $name
-    namespace: $ns
+    name: "$name"
+    namespace: "$ns"
   spec:
-    channel: preview
+    channel: "$channel"
     installPlanApproval: Automatic
-    name: $package
+    name: "$package"
     source: redhat-operators
     sourceNamespace: openshift-marketplace
 EOL
@@ -84,7 +85,7 @@ deploy_config_map_catalog_source() {
   local CSV=$(sed '/^#!.*$/d' $manifest_dir/$version/*version.yaml | sed 's/namespace: placeholder/namespace: '$namespace'/' |grep -v -- "---" |  indent apiVersion)
   local PACKAGE_NAME=$(sed -nr 's,.*packageName: (.*),\1,p' $manifest_dir/*package.yaml)
   if [ -n "${image:-}" ] ; then
-    CSV=$(echo "$CSV" | sed -e "s~containerImage:.*+~containerImage: ${image}~" | indent apiVersion)
+    CSV=$(echo "$CSV" | sed -e "s~containerImage:.*~containerImage: ${image}~" | indent apiVersion)
     CSV=$(echo "$CSV" | sed -e "s~image:.*~image: ${image}\n~" | indent ApiVersion)
   fi
 

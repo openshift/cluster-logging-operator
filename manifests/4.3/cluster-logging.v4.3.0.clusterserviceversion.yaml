@@ -25,7 +25,7 @@ metadata:
             "metadata": {
               "name": "instance",
               "namespace": "openshift-logging"
-              },
+            },
             "spec": {
               "managementState": "Managed",
               "logStore": {
@@ -36,8 +36,8 @@ metadata:
                   "storage": {
                     "storageClassName": "gp2",
                     "size": "200G"
-                    }
                   }
+                }
               },
               "visualization": {
                 "type": "kibana",

@@ -8,6 +8,7 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -16,7 +17,6 @@ import (
 const (
 	internalOutputName       = "clo-default-output-es"
 	collectorSecretName      = "fluentd"
-	logStoreService          = "elasticsearch.openshift-logging.svc:9200"
 	defaultAppPipelineName   = "clo-default-app-pipeline"
 	defaultInfraPipelineName = "clo-default-infra-pipeline"
 	secureForwardConfHash    = "8163d9a59a20ada8ab58c2535a3a4924"
@@ -82,7 +82,7 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 					logforward.OutputSpec{
 						Name:     internalOutputName,
 						Type:     logforward.OutputTypeElasticsearch,
-						Endpoint: logStoreService,
+						Endpoint: constants.LogStoreService,
 						Secret: &logforward.OutputSecretSpec{
 							Name: collectorSecretName,
 						},

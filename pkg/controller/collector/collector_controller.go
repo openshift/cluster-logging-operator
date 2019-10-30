@@ -6,6 +6,7 @@ import (
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	collector "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -25,10 +26,7 @@ import (
 var log = logf.Log.WithName("controller_collector")
 
 const (
-	singletonName    = "instance"
-	singletonMessage = "Collector is a singleton. Only an instance named 'instance' is allowed"
-	openshiftNS      = "openshift-logging"
-
+	singletonMessage   = "Collector is a singleton. Only an instance named 'instance' is allowed"
 	promtailAnnotation = "clusterlogging.openshift.io/promtaildevpreview"
 )
 
@@ -101,10 +99,10 @@ func (r *ReconcileCollector) Reconcile(request reconcile.Request) (reconcile.Res
 
 	//check for instancename and then update status
 	var reconcileErr error = nil
-	if instance.Name == singletonName && value == "enabled" {
+	if instance.Name == constants.SingletonName && value == "enabled" {
 
 		clInstance := &loggingv1.ClusterLogging{}
-		clName := types.NamespacedName{Name: singletonName, Namespace: openshiftNS}
+		clName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 		err = r.client.Get(context.TODO(), clName, clInstance)
 		if err != nil && !errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.

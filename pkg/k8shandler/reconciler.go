@@ -3,9 +3,11 @@ package k8shandler
 import (
 	"fmt"
 
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	corev1 "k8s.io/api/core/v1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -31,7 +33,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, forwarding *logforwarding
 	}
 
 	// Reconcile Visualization
-	if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
+	if err = clusterLoggingRequest.CreateOrUpdateVisualization(nil, nil); err != nil {
 		return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.cluster.Name, err)
 	}
 
@@ -41,7 +43,31 @@ func Reconcile(requestCluster *logging.ClusterLogging, forwarding *logforwarding
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(nil, nil); err != nil {
+		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
+	}
+
+	return nil
+}
+
+func ReconcileForGlobalProxy(requestCluster *logging.ClusterLogging, forwarding *logforwarding.LogForwarding, proxyConfig *configv1.Proxy, trustedCABundleCM *corev1.ConfigMap, requestClient client.Client) (err error) {
+
+	clusterLoggingRequest := ClusterLoggingRequest{
+		client:            requestClient,
+		cluster:           requestCluster,
+		ForwardingRequest: forwarding,
+	}
+	if forwarding != nil {
+		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
+	}
+
+	// Reconcile Visualization
+	if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig, trustedCABundleCM); err != nil {
+		return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.cluster.Name, err)
+	}
+
+	// Reconcile Collection
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig, trustedCABundleCM); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
 	}
 

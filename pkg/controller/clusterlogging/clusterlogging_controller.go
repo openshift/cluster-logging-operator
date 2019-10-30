@@ -6,7 +6,9 @@ import (
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -23,9 +25,7 @@ import (
 var log = logf.Log.WithName("controller_clusterlogging")
 
 const (
-	singletonName    = "instance"
 	singletonMessage = "ClusterLogging is a singleton. Only an instance named 'instance' is allowed"
-	openshiftNS      = "openshift-logging"
 )
 
 // Add creates a new ClusterLogging Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -76,6 +76,11 @@ var (
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	if request.Name != constants.SingletonName {
+		// TODO: update status
+		return reconcile.Result{}, nil
+	}
+	logrus.Debugf("Clusterlogging reconcile request.Name: '%s'", request.Name)
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
@@ -90,18 +95,12 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	if instance.Name != singletonName {
-		// TODO: update status
-
-		return reconcile.Result{}, nil
-	}
-
 	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
 		return reconcile.Result{}, nil
 	}
 
 	forwardinginstance := &logforwarding.LogForwarding{}
-	fiName := types.NamespacedName{Name: singletonName, Namespace: openshiftNS}
+	fiName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	err = r.client.Get(context.TODO(), fiName, forwardinginstance)
 	if err != nil && !errors.IsNotFound(err) {
 		// Request object not found, could have been deleted after reconcile request.

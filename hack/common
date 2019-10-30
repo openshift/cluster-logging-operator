@@ -189,6 +189,48 @@ function push_image() {
     skopeo copy --dest-tls-verify=false docker-daemon:"$1" docker://"$2"
 }
 
+# debug_print [max_count [interval]]
+# Example usage in hack/testing/test-*.sh
+#    debug_print &
+#    TEST_NAMESPACE=${NAMESPACE} go test ./test/e2e/ \
+#      -root=$(pwd) \
+#      -kubeconfig=${KUBECONFIG} \
+#      -globalMan ${global_manifest} \
+#      -namespacedMan ${manifest} \
+#      -v \
+#      -parallel=1 \
+#      -singleNamespace | tee -a $ARTIFACT_DIR/test.log
+#
+function debug_print() {
+  local filename=$(basename "$0")
+  local max=${1:-120}
+  local interval=${2:-10}
+  while [ $max -gt 0 ];
+  do
+    clo=$( oc -n ${NAMESPACE} get pods -l name=cluster-logging-operator -o jsonpath='{.items[0].metadata.name}' )
+    if [ -n "$clo" ]; then
+        date >> $ARTIFACT_DIR/$filename.clo.log || :
+        oc -n ${NAMESPACE} logs $clo >> $ARTIFACT_DIR/$filename.clo.log || :
+        echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.clo.log || :
+        date >> $ARTIFACT_DIR/$filename.clo.images || :
+        oc -n ${NAMESPACE} exec $clo -- env | egrep _IMAGE >> $ARTIFACT_DIR/$filename.clo.images || :
+        echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.clo.images || :
+    else
+        date >> $ARTIFACT_DIR/$filename.noclo.log || :
+        oc -n ${NAMESPACE} get deployments >> $ARTIFACT_DIR/$filename.noclo.log || :
+        echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.noclo.log || :
+    fi
+    date >> $ARTIFACT_DIR/$filename.events.log || :
+    oc -n ${NAMESPACE} get events >> $ARTIFACT_DIR/$filename.events.log || :
+    echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.events.log || :
+    date >> $ARTIFACT_DIR/$filename.all.log || :
+    oc -n ${NAMESPACE} get all >> $ARTIFACT_DIR/$filename.all.log || :
+    echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.all.log || :
+    sleep $interval
+    max=$( expr $max - 1 ) || :
+  done
+}
+
 if [ $REMOTE_REGISTRY = false ] ; then
     : # skip
 else

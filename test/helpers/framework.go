@@ -22,9 +22,9 @@ import (
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	e2eutil "github.com/openshift/cluster-logging-operator/test/e2e"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 )
 
 const (

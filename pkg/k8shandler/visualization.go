@@ -6,12 +6,14 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -31,7 +33,7 @@ var (
 )
 
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap) (err error) {
 	if clusterRequest.cluster.Spec.Visualization == nil || clusterRequest.cluster.Spec.Visualization.Type == "" {
 		clusterRequest.removeKibana()
 		return nil
@@ -66,7 +68,13 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err 
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateKibanaDeployment(); err != nil {
+		// Create cluster proxy trusted CA bundle.
+		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
+		if err != nil {
+			return
+		}
+
+		if err = clusterRequest.createOrUpdateKibanaDeployment(proxyConfig, trustedCABundleCM); err != nil {
 			return
 		}
 
@@ -129,6 +137,10 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 			return
 		}
 
+		if err = clusterRequest.RemoveConfigMap(constants.KibanaTrustedCAName); err != nil {
+			return
+		}
+
 		if err = clusterRequest.RemoveService(name); err != nil {
 			return
 		}
@@ -146,9 +158,9 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment() (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap) (err error) {
 
-	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch")
+	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch.openshift-logging.svc.cluster.local", proxyConfig, trustedCABundleCM)
 	kibanaDeployment := NewDeployment(
 		"kibana",
 		clusterRequest.cluster.Namespace,
@@ -178,12 +190,100 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment() (e
 				}
 				return fmt.Errorf("Failed to get Kibana deployment: %v", err)
 			}
-			current.Spec = kibanaDeployment.Spec
-			return clusterRequest.Update(current)
+
+			current, different := isDeploymentDifferent(current, kibanaDeployment)
+
+			// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
+			newTrustedCAHashedValue := calcTrustedCAHashValue(trustedCABundleCM)
+			trustedCAHashedValue, _ := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
+			if trustedCAHashedValue != newTrustedCAHashedValue {
+				different = true
+				if kibanaDeployment.Spec.Template.ObjectMeta.Annotations == nil {
+					kibanaDeployment.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
+				}
+				kibanaDeployment.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = newTrustedCAHashedValue
+			}
+
+			if different {
+				current.Spec = kibanaDeployment.Spec
+				return clusterRequest.Update(current)
+			}
+			return nil
 		})
 	}
 
 	return nil
+}
+
+func isDeploymentDifferent(current *apps.Deployment, desired *apps.Deployment) (*apps.Deployment, bool) {
+
+	different := false
+
+	// is this needed?
+	if !utils.AreMapsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
+		logrus.Debugf("Visualization nodeSelector change found, updating '%s'", current.Name)
+		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
+		different = true
+	}
+
+	// is this needed?
+	if !utils.AreTolerationsSame(current.Spec.Template.Spec.Tolerations, desired.Spec.Template.Spec.Tolerations) {
+		logrus.Debugf("Visualization tolerations change found, updating '%s'", current.Name)
+		current.Spec.Template.Spec.Tolerations = desired.Spec.Template.Spec.Tolerations
+		different = true
+	}
+
+	if isDeploymentImageDifference(current, desired) {
+		logrus.Debugf("Visualization image change found, updating %q", current.Name)
+		current = updateCurrentDeploymentImages(current, desired)
+		different = true
+	}
+
+	if utils.AreResourcesDifferent(current, desired) {
+		logrus.Debugf("Visualization resource(s) change found, updating %q", current.Name)
+		different = true
+	}
+
+	if !utils.EnvValueEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
+		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
+		different = true
+	}
+
+	return current, different
+}
+
+func isDeploymentImageDifference(current *apps.Deployment, desired *apps.Deployment) bool {
+
+	for _, curr := range current.Spec.Template.Spec.Containers {
+		for _, des := range desired.Spec.Template.Spec.Containers {
+			// Only compare the images of containers with the same name
+			if curr.Name == des.Name {
+				if curr.Image != des.Image {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func updateCurrentDeploymentImages(current *apps.Deployment, desired *apps.Deployment) *apps.Deployment {
+
+	containers := current.Spec.Template.Spec.Containers
+
+	for index, curr := range current.Spec.Template.Spec.Containers {
+		for _, des := range desired.Spec.Template.Spec.Containers {
+			// Only compare the images of containers with the same name
+			if curr.Name == des.Name {
+				if curr.Image != des.Image {
+					containers[index].Image = des.Image
+				}
+			}
+		}
+	}
+
+	return current
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaRoute() error {
@@ -356,7 +456,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 	return nil
 }
 
-func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasticsearchName string) v1.PodSpec {
+func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasticsearchName string, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap) v1.PodSpec {
 	visSpec := logging.VisualizationSpec{}
 	if cluster.Spec.Visualization != nil {
 		visSpec = *cluster.Spec.Visualization
@@ -454,12 +554,27 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		},
 	}
 
+	proxyEnv := utils.SetProxyEnvVars(proxyConfig)
+	kibanaProxyContainer.Env = append(kibanaProxyContainer.Env, proxyEnv...)
+
 	kibanaProxyContainer.Ports = []v1.ContainerPort{
 		{Name: "oaproxy", ContainerPort: 3000},
 	}
 
 	kibanaProxyContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: "kibana-proxy", ReadOnly: true, MountPath: "/secret"},
+	}
+
+	addTrustedCAVolume := false
+	// If trusted CA bundle ConfigMap exists and its hash value is non-zero, mount the bundle.
+	if trustedCABundleCM != nil && hasTrustedCABundle(trustedCABundleCM) {
+		addTrustedCAVolume = true
+		kibanaProxyContainer.VolumeMounts = append(kibanaProxyContainer.VolumeMounts,
+			v1.VolumeMount{
+				Name:      constants.KibanaTrustedCAName,
+				ReadOnly:  true,
+				MountPath: constants.TrustedCABundleMountDir,
+			})
 	}
 
 	kibanaPodSpec := NewPodSpec(
@@ -482,6 +597,28 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		visSpec.NodeSelector,
 		visSpec.Tolerations,
 	)
+
+	if addTrustedCAVolume {
+		optional := true
+		kibanaPodSpec.Volumes = append(kibanaPodSpec.Volumes,
+			v1.Volume{
+				Name: constants.KibanaTrustedCAName,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: constants.KibanaTrustedCAName,
+						},
+						Optional: &optional,
+						Items: []v1.KeyToPath{
+							{
+								Key:  constants.TrustedCABundleKey,
+								Path: constants.TrustedCABundleMountFile,
+							},
+						},
+					},
+				},
+			})
+	}
 
 	kibanaPodSpec.Affinity = &v1.Affinity{
 		PodAntiAffinity: &v1.PodAntiAffinity{

@@ -60,6 +60,7 @@ rc=0
 for ii in $( seq 1 5 ) ; do
     if push_image ${IMAGE_TAG} ${tag} ; then
         rc=0
+        oc -n openshift get imagestreams | grep cluster-logging-operator
         oc -n openshift get imagestreamtags | grep cluster-logging-operator
         break
     fi

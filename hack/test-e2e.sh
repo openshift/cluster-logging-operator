@@ -2,6 +2,7 @@
 
 current_dir=$(dirname "${BASH_SOURCE[0]}" )
 source "${current_dir}/lib/init.sh"
+source "${current_dir}/lib/util/logs.sh"
 
 for test in $( find "${current_dir}/testing" -type f -name 'test-*.sh' | sort); do
 	os::log::info "======================================"
@@ -18,6 +19,8 @@ for test in $( find "${current_dir}/testing" -type f -name 'test-*.sh' | sort); 
 		failed="true"
 	fi
 done
+
+get_logging_pod_logs
 
 if [[ -n "${failed:-}" ]]; then
     exit 1

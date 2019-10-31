@@ -1,8 +1,29 @@
 #!/bin/bash
 
+millisecond=1
+second=$(( 1000 * millisecond ))
+minute=$(( 60 * second ))
+
+LOGGING_NS="openshift-logging"
+
 indent() {
   INDENT="      "
   sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
+}
+try_until_success() {
+  local cmd=$1
+  local timeout=$2
+  local interval=${3:-0.2}
+  local now=$(date +%s)
+  local expire=$(($now + $timeout))
+  while [ $now -lt $expire ]; do
+    if $cmd ; then
+      return 0
+    fi  
+    sleep $interval
+    now=$(date +%s)
+  done
+  return 1
 }
 
 try_until_text() {
@@ -21,6 +42,22 @@ try_until_text() {
   done
   return 1
 }
+get_all_logging_pod_logs() {
+  local outdir=${1:-$ARTIFACT_DIR}
+  local p
+  local container
+  for p in $(oc get pods -n ${LOGGING_NS} -o jsonpath='{.items[*].metadata.name}') ; do
+    oc -n ${LOGGING_NS} describe pod $p > $ARTIFACT_DIR/$p.describe 2>&1 || :
+    oc -n ${LOGGING_NS} get pod $p -o yaml > $ARTIFACT_DIR/$p.yaml 2>&1 || :
+    for container in $(oc -n ${LOGGING_NS} get po $p -o jsonpath='{.spec.containers[*].name}') ; do
+      case "$container" in
+        fluentd*) oc exec -n ${LOGGING_NS} $p -- logs > $ARTIFACT_DIR/$p.$container.log 2>&1 ;;
+        elasticsearch*) oc exec -n ${LOGGING_NS} -c elasticsearch $p  -- logs > $ARTIFACT_DIR/$p.$container.log 2>&1 ;;
+        *) oc logs -n ${LOGGING_NS} -c $container $p > $ARTIFACT_DIR/$p.$container.log 2>&1;;
+      esac
+    done
+  done
+}
 
 wait_for_deployment_to_be_ready(){
   local namespace=$1
@@ -30,7 +67,7 @@ wait_for_deployment_to_be_ready(){
 }
 
 deploy_marketplace_operator(){
-  local namespace=$1
+  local ns=$1
   local name=$2
   local channel=$3
   local package=${4:-$name}
@@ -95,7 +132,7 @@ items:
 EOL
 
 fi
-  wait_for_deployment_to_be_ready $namespace $name $((2 * $minute))
+  wait_for_deployment_to_be_ready $ns $name $((2 * $minute))
 }
 
 deploy_config_map_catalog_source() {

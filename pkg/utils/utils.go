@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -32,6 +34,16 @@ var COMPONENT_IMAGES = map[string]string{
 	"elasticsearch": "ELASTICSEARCH_IMAGE",
 }
 
+// GetAnnotation returns the value of an annoation for a given key and true if the key was found
+func GetAnnotation(key string, meta metav1.ObjectMeta) (string, bool) {
+	for k, value := range meta.Annotations {
+		if k == key {
+			return value, true
+		}
+	}
+	return "", false
+}
+
 func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 	return metav1.OwnerReference{
 		APIVersion: logging.SchemeGroupVersion.String(),
@@ -40,6 +52,13 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 		UID:        o.UID,
 		Controller: GetBool(true),
 	}
+}
+
+//CalculateMD5Hash returns a MD5 hash of the give text
+func CalculateMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func AreMapsSame(lhs, rhs map[string]string) bool {
@@ -241,7 +260,6 @@ func RemoveString(slice []string, s string) (result []string) {
 	return
 }
 
-
 /**
 EnvValueEqual - check if 2 EnvValues are equal or not
 Notes:
@@ -261,7 +279,7 @@ func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
 					return false
 				}
 				if (elem1.ValueFrom != nil && elem2.ValueFrom == nil) ||
-				   (elem1.ValueFrom == nil && elem2.ValueFrom != nil) {
+					(elem1.ValueFrom == nil && elem2.ValueFrom != nil) {
 					return false
 				}
 				if elem1.ValueFrom != nil {
@@ -281,13 +299,13 @@ func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
 
 func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
 	if (esource1.FieldRef != nil && esource2.FieldRef == nil) ||
-	   (esource1.FieldRef == nil && esource2.FieldRef != nil) ||
-	   (esource1.ResourceFieldRef != nil && esource2.ResourceFieldRef == nil) ||
-	   (esource1.ResourceFieldRef == nil && esource2.ResourceFieldRef != nil) ||
-	   (esource1.ConfigMapKeyRef != nil && esource2.ConfigMapKeyRef == nil) ||
-	   (esource1.ConfigMapKeyRef == nil && esource2.ConfigMapKeyRef != nil) ||
-	   (esource1.SecretKeyRef != nil && esource2.SecretKeyRef == nil) ||
-	   (esource1.SecretKeyRef == nil && esource2.SecretKeyRef != nil) {
+		(esource1.FieldRef == nil && esource2.FieldRef != nil) ||
+		(esource1.ResourceFieldRef != nil && esource2.ResourceFieldRef == nil) ||
+		(esource1.ResourceFieldRef == nil && esource2.ResourceFieldRef != nil) ||
+		(esource1.ConfigMapKeyRef != nil && esource2.ConfigMapKeyRef == nil) ||
+		(esource1.ConfigMapKeyRef == nil && esource2.ConfigMapKeyRef != nil) ||
+		(esource1.SecretKeyRef != nil && esource2.SecretKeyRef == nil) ||
+		(esource1.SecretKeyRef == nil && esource2.SecretKeyRef != nil) {
 		return false
 	}
 	if esource1.FieldRef != nil {

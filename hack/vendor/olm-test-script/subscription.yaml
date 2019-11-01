@@ -25,7 +25,7 @@ objects:
     sourceNamespace: ${TEST_NAMESPACE}
     name: ${PACKAGE_NAME}
     startingCSV: ${STARTING_CSV}
-    channel: ${CHANNEL}
+    channel: "${CHANNEL}"
 parameters:
 -
   description: 'name of the package to use for the subscription'

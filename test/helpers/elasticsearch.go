@@ -97,6 +97,10 @@ func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, e
 	return true, err
 }
 
+func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) {
+	return true, nil
+}
+
 //Indices fetches the list of indices stored by Elasticsearch
 func (es *ElasticLogStore) Indices() (Indices, error) {
 	options := metav1.ListOptions{

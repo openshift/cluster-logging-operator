@@ -16,6 +16,11 @@ func (engine *ConfigGenerator) generateSource(sources sets.String) (results []st
 	if sources.Has(string(logforward.LogSourceTypeApp)) {
 		templates = append(templates, "inputSourceContainerTemplate")
 	}
+	if sources.Has(string(logforward.LogSourceTypeAudit)) {
+		templates = append(templates, "inputSourceHostAuditTemplate")
+		templates = append(templates, "inputSourceK8sAuditTemplate")
+		templates = append(templates, "inputSourceOpenShiftAuditTemplate")
+	}
 	if len(templates) == 0 {
 		return results, fmt.Errorf("Unable to generate source configs for supported source types: %v", sources.List())
 	}

@@ -43,6 +43,14 @@ var _ = Describe("Generating fluentd config", func() {
 						Name: "my-other-secret",
 					},
 				},
+				{
+					Type:     logging.OutputTypeElasticsearch,
+					Name:     "audit-es",
+					Endpoint: "es.svc.audit.cluster:9654",
+					Secret: &logging.OutputSecretSpec{
+						Name: "my-audit-secret",
+					},
+				},
 			},
 			Pipelines: []logging.PipelineSpec{
 				logging.PipelineSpec{
@@ -54,6 +62,11 @@ var _ = Describe("Generating fluentd config", func() {
 					Name:       "apps-pipeline",
 					SourceType: logging.LogSourceTypeApp,
 					OutputRefs: []string{"apps-es-1", "apps-es-2"},
+				},
+				logging.PipelineSpec{
+					Name:       "audit-pipeline",
+					SourceType: logging.LogSourceTypeAudit,
+					OutputRefs: []string{"audit-es"},
 				},
 			},
 		}
@@ -479,6 +492,53 @@ var _ = Describe("Generating fluentd config", func() {
 				</pattern>
 				</parse>
 			</source>
+
+            # linux audit logs
+            <source>
+              @type tail
+              @id audit-input
+              @label @INGRESS
+              path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
+              pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+              tag linux-audit.log
+              <parse>
+                @type viaq_host_audit
+              </parse>
+			</source>
+
+            # k8s audit logs
+            <source>
+              @type tail
+              @id k8s-audit-input
+              @label @INGRESS
+              path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
+              pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+              tag k8s-audit.log
+              <parse>
+                @type json
+                time_key requestReceivedTimestamp
+                # In case folks want to parse based on the requestReceivedTimestamp key
+                keep_time_key true
+                time_format %Y-%m-%dT%H:%M:%S.%N%z
+			  </parse>
+			</source>
+
+            # Openshift audit logs
+            <source>
+              @type tail
+              @id openshift-audit-input
+              @label @INGRESS
+              path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
+              pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+              tag openshift-audit.log
+              <parse>
+                @type json
+                time_key requestReceivedTimestamp
+                # In case folks want to parse based on the requestReceivedTimestamp key
+                keep_time_key true
+                time_format %Y-%m-%dT%H:%M:%S.%N%z
+              </parse>
+            </source>
 			
 			<label @CONCAT>
 				<filter kubernetes.**>
@@ -667,6 +727,10 @@ var _ = Describe("Generating fluentd config", func() {
 					@type relabel
 					@label @_LOGS_APP
 				</match>
+				<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+					@type relabel
+					@label @_LOGS_AUDIT
+				</match>
 				<match **>
 					@type stdout
 				</match>
@@ -680,6 +744,15 @@ var _ = Describe("Generating fluentd config", func() {
 					<store>
 						@type relabel
 						@label @APPS_PIPELINE
+					</store>
+				</match>
+			</label>
+			<label @_LOGS_AUDIT>
+				<match **>
+					@type copy
+					<store>
+						@type relabel
+						@label @AUDIT_PIPELINE
 					</store>
 				</match>
 			</label>
@@ -713,6 +786,15 @@ var _ = Describe("Generating fluentd config", func() {
 					<store>
 						@type relabel
 						@label @APPS_ES_2
+					</store>
+				</match>
+			</label>
+			<label @AUDIT_PIPELINE>
+				<match **>
+					@type copy
+					<store>
+						@type relabel
+						@label @AUDIT_ES
 					</store>
 				</match>
 			</label>
@@ -967,6 +1049,93 @@ var _ = Describe("Generating fluentd config", func() {
 						<buffer>
 							@type file
 							path '/var/lib/fluentd/apps_es_2'
+							flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+							flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+							retry_forever true
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+						</buffer>
+					</store>
+				</match>
+			</label>
+			<label @AUDIT_ES>
+				<match retry_audit_es>
+					@type copy
+					<store>
+						@type elasticsearch
+						@id retry_audit_es
+						host es.svc.audit.cluster
+						port 9654
+						scheme https
+						ssl_version TLSv1_2
+						target_index_key viaq_index_name
+						id_key viaq_msg_id
+						remove_keys viaq_index_name
+						user fluentd
+						password changeme
+
+						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
+						type_name com.redhat.viaq.common
+						write_operation create
+						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
+						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+						reload_after "#{ENV['ES_RELOAD_AFTER'] || '200'}"
+						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+						sniffer_class_name "#{ENV['ES_SNIFFER_CLASS_NAME'] || 'Fluent::Plugin::ElasticsearchSimpleSniffer'}"
+						reload_on_failure false
+						# 2 ^ 31
+						request_timeout 2147483648
+						<buffer>
+							@type file
+							path '/var/lib/fluentd/retry_audit_es'
+							flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+							flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+							retry_forever true
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+						</buffer>
+					</store>
+				</match>
+				<match **>
+					@type copy
+					<store>
+						@type elasticsearch
+						@id audit_es
+						host es.svc.audit.cluster
+						port 9654
+						scheme https
+						ssl_version TLSv1_2
+						target_index_key viaq_index_name
+						id_key viaq_msg_id
+						remove_keys viaq_index_name
+						user fluentd
+						password changeme
+
+						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
+						type_name com.redhat.viaq.common
+						retry_tag retry_audit_es
+						write_operation create
+						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
+						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+						reload_after "#{ENV['ES_RELOAD_AFTER'] || '200'}"
+						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+						sniffer_class_name "#{ENV['ES_SNIFFER_CLASS_NAME'] || 'Fluent::Plugin::ElasticsearchSimpleSniffer'}"
+						reload_on_failure false
+						# 2 ^ 31
+						request_timeout 2147483648
+						<buffer>
+							@type file
+							path '/var/lib/fluentd/audit_es'
 							flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
 							flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"

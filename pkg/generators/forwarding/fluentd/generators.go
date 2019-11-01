@@ -61,6 +61,7 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	data := struct {
 		CollectInfraLogs        bool
 		CollectAppLogs          bool
+		CollectAuditLogs        bool
 		SourceInputLabels       []string
 		SourceToPipelineLabels  []string
 		PipelinesToOutputLabels []string
@@ -68,6 +69,7 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	}{
 		logTypes.Has(string(logforward.LogSourceTypeInfra)),
 		logTypes.Has(string(logforward.LogSourceTypeApp)),
+		logTypes.Has(string(logforward.LogSourceTypeAudit)),
 		sourceInputLabels,
 		sourceToPipelineLabels,
 		pipelineToOutputLabels,

@@ -90,6 +90,28 @@ metadata:
                 }
               ],
             },
+          {
+            "apiVersion": "logging.openshift.io/v1alpha1",
+            "kind": "Collector",
+            "metadata": {
+              "name": "instance",
+              "namespace": "openshift-logging"
+              "annotations" : {
+                "clusterlogging.openshift.io/promtaildevpreview": "enabled"
+              }
+            },
+            "spec": {
+              "type": "promtail"
+              "promtail": {
+                "endpoint": "https://someplace.on.the.cluster"
+              },
+              "resources": {
+                "requests":{
+                  "memory": "358Mi",
+                  "cpu": "100m"
+                }
+              },
+            },
           }
         ]
 spec:
@@ -302,6 +324,8 @@ spec:
                     value: "quay.io/openshift/origin-logging-curator5:latest"
                   - name: OAUTH_PROXY_IMAGE
                     value: "quay.io/openshift/origin-oauth-proxy:latest"
+                  - name: PROMTAIL_IMAGE
+                    value: "quay.io/openshift/origin-promtail:latest"
   customresourcedefinitions:
     owned:
     - name: clusterloggings.logging.openshift.io
@@ -331,6 +355,8 @@ spec:
       - kind: Elasticsearch
         version: v1
       - kind: LogForwarding
+        version: v1alpha1
+      - kind: Collector
         version: v1alpha1
       specDescriptors:
       - description: The desired number of Kibana Pods for the Visualization component
@@ -467,3 +493,14 @@ spec:
         path: status
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:logforwardingStatuses'        
+    - name: collectors.logging.openshift.io
+      version: v1alpha1
+      kind: Collector
+      displayName: Log Collector
+      description: Log Collector spec to define log collection
+      specDescriptors:
+      - description: The type of log collector
+        displayName: Collector type
+        path: type
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:collectorType'

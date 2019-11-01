@@ -72,7 +72,7 @@ $repo_dir/hack/gen-olm-artifacts.sh ${EO_CSV_FILE} ${NAMESPACE} >> ${manifest}
 
 export LOG_LEVEL=debug
 
-TEST_NAMESPACE=${NAMESPACE} go test ./test/e2e/... \
+TEST_NAMESPACE=${NAMESPACE} go test ./test/e2e/ \
   -root=$(pwd) \
   -kubeconfig=${KUBECONFIG} \
   -globalMan ${global_manifest} \

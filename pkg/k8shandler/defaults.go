@@ -19,4 +19,7 @@ var (
 
 	defaultFluentdMemory     resource.Quantity = resource.MustParse("736Mi")
 	defaultFluentdCpuRequest resource.Quantity = resource.MustParse("100m")
+
+	defaultPromTailMemory     resource.Quantity = resource.MustParse("358Mi")
+	defaultPromTailCpuRequest resource.Quantity = resource.MustParse("100m")
 )

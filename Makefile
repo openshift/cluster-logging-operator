@@ -73,6 +73,7 @@ run:
 	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana5:latest \
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator5:latest \
 	OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
+	PROMTAIL_IMAGE=quay.io/openshift/origin-promtail:latest \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=openshift-logging \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \

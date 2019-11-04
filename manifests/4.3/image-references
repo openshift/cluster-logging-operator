@@ -26,3 +26,7 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-oauth-proxy:latest
+  - name: logging-promtail
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-promtail:latest

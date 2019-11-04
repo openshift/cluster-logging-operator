@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	collector "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -23,6 +24,8 @@ type ClusterLoggingRequest struct {
 
 	//ForwardingSpec is the normalized and sanitized logforwarding spec
 	ForwardingSpec logforward.ForwardingSpec
+
+	Collector *collector.CollectorSpec
 }
 
 // TODO: determine if this is even necessary

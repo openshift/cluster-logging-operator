@@ -1,0 +1,14 @@
+apiVersion: "logging.openshift.io/v1alpha1"
+kind: "Collector"
+metadata:
+  name: "instance"
+  annotations:
+    "clusterlogging.openshift.io/promtaildevpreview": "enabled"
+spec:
+  type: "promtail"
+  promtail:
+    endpoint: "https://someplace.on.the.cluster"
+  resources:
+    requests:
+      memory: 358Mi
+      cpu: 100m

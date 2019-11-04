@@ -56,7 +56,7 @@ metadata:
                   "type": "fluentd",
                   "fluentd": {}
                 }
-              },
+              }
             }
           },
           {
@@ -72,8 +72,8 @@ metadata:
                   "name": "clo-default-output-es",
                   "type": "elasticsearch",
                   "endpoint": "elasticsearch.openshift-logging.svc:9200",
-                  "secret" {
-                    "name", "elasticsearch"
+                  "secret": {
+                    "name": "elasticsearch"
                   }
                 }
               ],
@@ -88,20 +88,21 @@ metadata:
                   "type": "logs.app",
                   "outputRefs": ["clo-managaged-output-es"]
                 }
-              ],
-            },
+              ]
+            }
+          },
           {
             "apiVersion": "logging.openshift.io/v1alpha1",
             "kind": "Collector",
             "metadata": {
               "name": "instance",
-              "namespace": "openshift-logging"
-              "annotations" : {
+              "namespace": "openshift-logging",
+              "annotations": {
                 "clusterlogging.openshift.io/promtaildevpreview": "enabled"
               }
             },
             "spec": {
-              "type": "promtail"
+              "type": "promtail",
               "promtail": {
                 "endpoint": "https://someplace.on.the.cluster"
               },
@@ -110,8 +111,8 @@ metadata:
                   "memory": "358Mi",
                   "cpu": "100m"
                 }
-              },
-            },
+              }
+            }
           }
         ]
 spec:

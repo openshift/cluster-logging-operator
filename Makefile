@@ -42,7 +42,7 @@ OC?=oc
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 #.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-unit test-e2e test-sec undeploy run
+.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-unit test-e2e test-sec undeploy run run-local
 
 all: build #check install
 
@@ -80,6 +80,10 @@ run:
 	WORKING_DIR=$(TARGET_DIR)/_working_dir \
 	LOGGING_SHARE_DIR=$(CURPATH)/files \
 	go run ${MAIN_PKG}
+
+run-local:
+	LOGGING_SHARE_DIR=$(GOPATH)/src/github.com/openshift/cluster-logging-operator/files \
+	make run
 
 clean:
 	@rm -rf $(TARGET_DIR) && \

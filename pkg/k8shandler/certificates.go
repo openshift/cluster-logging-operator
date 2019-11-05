@@ -7,7 +7,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
+
+var deprecatedKeys = sets.NewString("app-ca", "app-key", "app-cert", "infra-ca", "infra-key", "infra-cert")
 
 // golang doesn't allow for const maps
 var secretCertificates = map[string]map[string]string{
@@ -68,7 +72,12 @@ func (clusterRequest *ClusterLoggingRequest) extractSecretToFile(secretName stri
 
 	// check to see if the map value exists
 	if !ok {
-		logger.Infof("No secret data %q found", key)
+		if deprecatedKeys.Has(key) {
+			logger.Infof("No secret data %q found. Please be aware but likely not an issue for deprecated keys: %v", key, deprecatedKeys.List())
+		} else {
+			logger.Warnf("No secret data %q found", key)
+
+		}
 		return nil
 	}
 

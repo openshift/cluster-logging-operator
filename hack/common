@@ -108,19 +108,32 @@ function get_private_repo_dir() {
                 fi
                 cp shared-secrets/mirror/ops-mirror.pem repos
             fi
-            if [ -f ${GOPATH}/src/github.com/openshift/release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo ]; then
-                cp ${GOPATH}/src/github.com/openshift/release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo repos
-            elif [ -f $GOPATH/src/github.com/openshift/release/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo ]; then
-                cp $GOPATH/src/github.com/openshift/release/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo repos
+            local releasedir=${GOPATH}/src/github.com/openshift/release
+            if [ -d $releasedir ] ; then
+                pushd $releasedir > /dev/null
+                git pull -q
+                popd > /dev/null
             else
                 if [ ! -d release ] ; then
                     git clone -q https://github.com/openshift/release
                 fi
-                cp release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo repos
+                releasedir=release
             fi
+            local repofile
+            for repofile in \
+                $releasedir/core-services/release-controller/_repos/ocp-${VERSION}-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.3-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.2-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.1-default.repo ; do
+                if [ -f $repofile ] ; then
+                    cp $repofile repos
+                    break
+                fi
+            done
             touch repos/redhat.repo
             chmod 0444 repos/redhat.repo
-            sed -i 's,= ops-mirror.pem,= /etc/yum.repos.d/ops-mirror.pem,' repos/*.repo
+            sed -i -e 's,^sslclientkey.*$,sslclientkey = /etc/yum.repos.d/ops-mirror.pem,' \
+                   -e 's,^sslclientcert.*$,sslclientcert = /etc/yum.repos.d/ops-mirror.pem,' repos/*.repo
         fi
         INTERNAL_REPO_DIR=$( pwd )/repos
         popd > /dev/null

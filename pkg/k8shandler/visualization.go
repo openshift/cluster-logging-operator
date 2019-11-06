@@ -393,7 +393,6 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		"--tls-cert=/secret/server-cert",
 		"-tls-key=/secret/server-key",
 		"-pass-access-token",
-		"-skip-provider-button",
 	}
 
 	kibanaProxyContainer.Env = []v1.EnvVar{

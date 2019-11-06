@@ -174,6 +174,14 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 		preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
 		json_fields "#{ENV['JSON_FIELDS'] || 'log,MESSAGE'}"
 	</filter>
+
+	<filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
+	    @type parse_json_field
+	    merge_json_log true
+	    preserve_json_log true
+	    json_fields "#{ENV['JSON_FIELDS'] || 'log,MESSAGE'}"
+	</filter>
+
 	<filter **kibana**>
 		@type record_transformer
 		enable_ruby
@@ -197,6 +205,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 		undefined_to_string "#{ENV['CDM_UNDEFINED_TO_STRING'] || 'false'}"
 		undefined_dot_replace_char "#{ENV['CDM_UNDEFINED_DOT_REPLACE_CHAR'] || 'UNUSED'}"
 		undefined_max_num_fields "#{ENV['CDM_UNDEFINED_MAX_NUM_FIELDS'] || '-1'}"
+		process_kubernetes_events "#{ENV['TRANSFORM_EVENTS'] || 'false'}"
 		<formatter>
 			enabled false
 			tag "audit.log**"
@@ -218,6 +227,12 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 			remove_keys "#{ENV['K8S_FILTER_REMOVE_KEYS'] || 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'}"
 		</formatter>
 		<formatter>
+		    tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**"
+		    type k8s_json_file
+		    remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
+		    process_kubernetes_events "#{ENV['TRANSFORM_EVENTS'] || 'true'}"
+		</formatter>
+		<formatter>
 			tag "kubernetes.var.log.containers**"
 			type k8s_json_file
 			remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
@@ -237,7 +252,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
       @type elasticsearch_genid_ext
       hash_id_key viaq_msg_id
       alt_key kubernetes.event.metadata.uid
-      alt_tags "#{ENV['GENID_ALT_TAG'] || 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'}"
+      alt_tags "#{ENV['GENID_ALT_TAG'] || 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'}"
 	</filter>
 	
 	# Relabel specific source tags to specific intermediary labels for copy processing

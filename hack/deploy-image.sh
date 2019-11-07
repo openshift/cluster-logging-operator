@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -euo pipefail
 
-if [ "${REMOTE_REGISTRY:-false}" = false ] ; then
+if [ "${REMOTE_REGISTRY:-true}" = false ] ; then
     exit 0
 fi
 
@@ -11,7 +11,7 @@ source "$(dirname $0)/common"
 IMAGE_TAG_CMD=${IMAGE_TAG_CMD:-docker tag}
 LOCAL_PORT=${LOCAL_PORT:-5000}
 image_tag=$( echo "$IMAGE_TAG" | sed -e 's,quay.io/,,' )
-tag=${tag:-"127.0.0.1:${registry_port}/$image_tag"}
+tag=${tag:-"127.0.0.1:${LOCAL_PORT}/$image_tag"}
 
 if [ "${USE_IMAGE_STREAM:-false}" = true ] ; then
     oc process \
@@ -38,8 +38,8 @@ fi
 
 ${IMAGE_TAG_CMD} $IMAGE_TAG ${tag}
 
-echo "Setting up port-forwarding to remote $registry_svc ..."
-oc --loglevel=9 port-forward $port_fwd_obj -n $registry_namespace ${LOCAL_PORT}:${registry_port} > pf.log 2>&1 &
+echo "Setting up port-forwarding to remote registry ..."
+oc --loglevel=9 -n openshift-image-registry port-forward service/image-registry ${LOCAL_PORT}:5000 > pf.log 2>&1 &
 forwarding_pid=$!
 
 trap "kill -15 ${forwarding_pid}" EXIT

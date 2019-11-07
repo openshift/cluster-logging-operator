@@ -23,7 +23,7 @@ const (
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// LogForwading is the Schema for the logforwardings API
+// LogForwarding is the Schema for the logforwardings API
 // +k8s:openapi-gen=true
 type LogForwarding struct {
 	metav1.TypeMeta   `json:",inline"`

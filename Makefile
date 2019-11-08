@@ -17,7 +17,7 @@ IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
 export OCP_VERSION?=4.3
-IMAGE_CLUSTER_LOGGING_OPERATOR?=registry.svc.ci.openshift.org/origin/$VERSION:cluster-logging-operator
+IMAGE_CLUSTER_LOGGING_OPERATOR?=registry.svc.ci.openshift.org/origin/$(VERSION):cluster-logging-operator
 export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
 export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
@@ -101,17 +101,17 @@ simplify:
 gendeepcopy: operator-sdk
 	@operator-sdk generate k8s
 
-deploy-setup:
-	hack/deploy-setup.sh
-
 deploy-image: image
 	hack/deploy-image.sh
 
-deploy:  deploy-image
+deploy:  deploy-image deploy-elasticsearch-operator
 	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
 
-deploy-no-build: deploy-setup
-	NO_BUILD=true hack/deploy.sh
+deploy-no-build:  deploy-elasticsearch-operator
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
+
+deploy-elasticsearch-operator:
+	hack/deploy-eo.sh
 
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
@@ -125,9 +125,6 @@ test-e2e:
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec
 	gosec -severity medium --confidence medium -quiet ./...
-
-deploy-example-no-build: deploy-no-build
-	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 undeploy:
 	hack/undeploy.sh

@@ -57,6 +57,7 @@ metadata:
 spec:
   version: 4.3.0
   displayName: Elasticsearch Operator
+  minKubeVersion: 1.14.0
 
   description: |
     The Elasticsearch Operator for OKD provides a means for configuring and managing an Elasticsearch cluster for use in tracing and cluster logging.

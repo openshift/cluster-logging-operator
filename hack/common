@@ -96,6 +96,7 @@ function pull_ubi_if_needed() {
 # mounted into the builder as /etc/yum.repos.d/
 INTERNAL_REPO_DIR=${INTERNAL_REPO_DIR:-}
 function get_private_repo_dir() {
+    GOPATH=${GOPATH:-}
     if [ -z "${INTERNAL_REPO_DIR:-}" ] ; then
         pushd $1 > /dev/null
         if [ ! -d repos ] ; then

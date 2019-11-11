@@ -9,6 +9,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	v1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	rbac "k8s.io/api/rbac/v1"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -95,19 +96,28 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateRBAC() error {
 		return err
 	}
 
-	subject = newSubject(
-		"ServiceAccount",
-		dpl.Name,
-		dpl.Namespace,
-	)
-	subject.APIGroup = ""
+	// Cluster role elasticsearch-proxy has to contain subjects for all ES instances
+	esList := &v1.ElasticsearchList{}
+	err := elasticsearchRequest.client.List(context.TODO(), &client.ListOptions{}, esList)
+	if err != nil {
+		return err
+	}
+
+	subjects := []rbac.Subject{}
+	for _, es := range esList.Items {
+		subject = newSubject(
+			"ServiceAccount",
+			es.Name,
+			es.Namespace,
+		)
+		subject.APIGroup = ""
+		subjects = append(subjects, subject)
+	}
 
 	proxyRoleBinding := newClusterRoleBinding(
 		"elasticsearch-proxy",
 		"elasticsearch-proxy",
-		newSubjects(
-			subject,
-		),
+		subjects,
 	)
 
 	addOwnerRefToObject(proxyRoleBinding, owner)

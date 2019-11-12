@@ -49,6 +49,5 @@ fi
 
 os::log::info "Deploying cluster-logging-operator"
 deploy_clusterlogging_operator
-exit 0
 os::log::info "Staring test of logforwarding"
 ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest go test -parallel=1 ./test/e2e/logforwarding  | tee -a $ARTIFACT_DIR/test.log

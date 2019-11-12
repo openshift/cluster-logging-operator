@@ -313,7 +313,7 @@ type OutputCondition struct {
 type LogForwardingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ForwardingSpec `json:"items"`
+	Items           []LogForwarding `json:"items"`
 }
 
 func init() {

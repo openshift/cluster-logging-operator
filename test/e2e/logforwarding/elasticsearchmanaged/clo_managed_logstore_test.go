@@ -1,4 +1,4 @@
-package logforwarding
+package elasticsearchmanaged
 
 import (
 	"fmt"

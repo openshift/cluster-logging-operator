@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	WORKING_DIR = "/tmp/_working_dir"
-	OsNodeLabel = "kubernetes.io/os"
-	LinuxValue  = "linux"
+	DefaultWorkingDir = "/tmp/_working_dir"
+	OsNodeLabel       = "kubernetes.io/os"
+	LinuxValue        = "linux"
 )
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
@@ -190,7 +190,11 @@ func GetWorkingDirFileContents(filePath string) []byte {
 }
 
 func GetWorkingDirFilePath(toFile string) string {
-	return path.Join(WORKING_DIR, toFile)
+	workingDir := os.Getenv("WORKING_DIR")
+	if workingDir == "" {
+		workingDir = DefaultWorkingDir
+	}
+	return path.Join(workingDir, toFile)
 }
 
 func WriteToWorkingDirFile(toFile string, value []byte) error {

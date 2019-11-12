@@ -300,16 +300,25 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 }
 
 func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string) (secret *corev1.Secret, err error) {
-	logger.Debugf("Generating Pipeline certificates for %q", logStoreName)
-	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, logStoreName, fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))); err != nil {
+	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
+	logger.Debugf("Generating Pipeline certificates for %q to %s", logStoreName, workingDir)
+	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
+		if err = os.MkdirAll(workingDir, 0766); err != nil {
+			return nil, err
+		}
+	}
+	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
+		return nil, err
+	}
+	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, logStoreName, workingDir); err != nil {
 		return nil, err
 	}
 	secret = k8shandler.NewSecret(
 		secretName,
 		OpenshiftLoggingNS,
 		map[string][]byte{
-			"tls.key":       utils.GetWorkingDirFileContents("logging-es.key"),
-			"tls.crt":       utils.GetWorkingDirFileContents("logging-es.crt"),
+			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
+			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
 			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
 			"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
 		},

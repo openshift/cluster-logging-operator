@@ -1,4 +1,4 @@
-package logforwarding
+package elasticsearchunmanaged
 
 import (
 	"fmt"
@@ -17,6 +17,7 @@ import (
 )
 
 var _ = Describe("LogForwarding", func() {
+
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -26,7 +27,7 @@ var _ = Describe("LogForwarding", func() {
 	Describe("when ClusterLogging is configured with 'forwarding' to an administrator managed Elasticsearch", func() {
 
 		BeforeEach(func() {
-			rootDir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "/")
+			rootDir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 			logger.Debugf("Repo rootdir: %s", rootDir)
 			e2e.DeployLogGenerator()
 			var pipelineSecret *corev1.Secret

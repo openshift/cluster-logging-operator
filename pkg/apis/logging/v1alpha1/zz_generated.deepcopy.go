@@ -210,7 +210,7 @@ func (in *LogForwardingList) DeepCopyInto(out *LogForwardingList) {
 	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]ForwardingSpec, len(*in))
+		*out = make([]LogForwarding, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

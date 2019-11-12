@@ -7,13 +7,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 )
 
 type fluentReceiverLogStore struct {
@@ -283,7 +284,11 @@ func (tc *E2ETestFramework) DeployFluendReceiver(rootDir string, secure bool) (d
 		},
 	)
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Apps().Deployments(OpenshiftLoggingNS).Delete(fluentDeployment.Name, nil)
+		var zerograce int64
+		deleteopts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(fluentDeployment.Name, &deleteopts)
 	})
 	service, err = tc.KubeClient.Core().Services(OpenshiftLoggingNS).Create(service)
 	if err != nil {

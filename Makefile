@@ -83,7 +83,7 @@ run:
 
 clean:
 	@rm -rf $(TARGET_DIR) && \
-	go clean -testcache $(TEST_PKGS) $(PKGS)
+	go clean -cache -testcache  $(TEST_PKGS) $(PKGS)
 
 image: imagebuilder
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] && [ $${SKIP_BUILD:-false} = false ] ; \

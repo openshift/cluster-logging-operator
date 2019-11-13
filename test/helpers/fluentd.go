@@ -230,6 +230,9 @@ func (tc *E2ETestFramework) DeployFluendReceiver(rootDir string, secure bool) (d
 		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(rootDir, receiverName, receiverName); err != nil {
 			return nil, err
 		}
+		tc.AddCleanup(func() error {
+			return tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(receiverName, nil)
+		})
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 			Name:      "certs",
 			ReadOnly:  true,

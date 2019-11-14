@@ -1,4 +1,4 @@
-package logforwarding
+package fluent
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ var _ = Describe("LogForwarding", func() {
 	)
 	BeforeEach(func() {
 		e2e.DeployLogGenerator()
-		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "/")
+		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})
 	Describe("when ClusterLogging is configured with 'forwarding' to an administrator managed fluentd", func() {
 

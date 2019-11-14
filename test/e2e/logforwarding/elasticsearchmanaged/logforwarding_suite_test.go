@@ -1,4 +1,4 @@
-package logforwarding
+package elasticsearchmanaged
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestLogForwarding(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "LogForwarding Integration E2E Suite")
+	RunSpecs(t, "LogForwarding Integration E2E Suite - CLO Managed Elasticsearch")
 }

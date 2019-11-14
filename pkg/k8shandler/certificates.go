@@ -136,7 +136,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	if err = clusterRequest.readSecrets(); err != nil {
 		return
 	}
-	if err = GenerateCertificates(clusterRequest.cluster.Namespace, ".", "elasticsearch", ""); err != nil {
+	if err = GenerateCertificates(clusterRequest.cluster.Namespace, ".", "elasticsearch", utils.DefaultWorkingDir); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 
@@ -148,15 +148,13 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 }
 
 func GenerateCertificates(namespace, rootDir, logStoreName, workDir string) (err error) {
-	cmd := exec.Command("bash", fmt.Sprintf("%s/scripts/cert_generation.sh", rootDir))
-	cmd.Env = append(cmd.Env,
-		fmt.Sprintf("NAMESPACE=%s", namespace),
-		fmt.Sprintf("LOG_STORE=%s", logStoreName),
-	)
-	if workDir != "" {
-		cmd.Env = append(cmd.Env,
-			fmt.Sprintf("WORK_DIR=%s", workDir),
-		)
+	script := fmt.Sprintf("%s/scripts/cert_generation.sh", rootDir)
+	logger.Debugf("Running script '%s %s %s %s'", script, workDir, namespace, logStoreName)
+	cmd := exec.Command(script, workDir, namespace, logStoreName)
+	result, err := cmd.Output()
+	if logger.IsDebugEnabled() {
+		logger.Debugf("cert_generation output: %s", string(result))
+		logger.Debugf("err: %v", err)
 	}
-	return cmd.Run()
+	return err
 }

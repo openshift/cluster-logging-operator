@@ -1,9 +1,11 @@
-#! /bin/bash
+#!/bin/bash
 
-WORKING_DIR=${WORKING_DIR:-/tmp/_working_dir}
-NAMESPACE=${NAMESPACE:-openshift-logging}
+set -e
+
+WORKING_DIR=$1
+NAMESPACE=$2
 CA_PATH=${CA_PATH:-$WORKING_DIR/ca.crt}
-LOG_STORE=${LOG_STORE:-elasticsearch}
+LOG_STORE=$3
 REGENERATE_NEEDED=0
 
 function init_cert_files() {

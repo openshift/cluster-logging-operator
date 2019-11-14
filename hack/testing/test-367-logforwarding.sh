@@ -47,8 +47,38 @@ else
   deploy_elasticsearch_operator
 fi
 
-os::log::info "Deploying cluster-logging-operator"
-deploy_clusterlogging_operator
-exit 0
-os::log::info "Staring test of logforwarding"
-ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest go test -parallel=1 ./test/e2e/logforwarding  | tee -a $ARTIFACT_DIR/test.log
+failed=0
+for dir in $(ls -d ./test/e2e/logforwarding/*); do
+  os::log::info "==========================="
+  os::log::info "Staring test of logforwarding $dir"
+  os::log::info "==========================="
+  os::log::info "Deploying cluster-logging-operator"
+  deploy_clusterlogging_operator
+  artifact_dir=$ARTIFACT_DIR/$(basename $dir)
+  mkdir -p $artifact_dir
+  if ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest go test -parallel=1 $dir  | tee -a $artifact_dir/test.log ; then
+    os::log::info "==========================="
+    os::log::info "Logforwarding $dir passed"
+    os::log::info "==========================="
+  else
+    failed=1
+    os::log::info "==========================="
+    os::log::info "Logforwarding $dir failed"
+    os::log::info "==========================="
+    for p in $(oc -n openshift-logging get pods -o jsonpath={.items[*].metadata.name}); do
+      oc -n openshift-logging logs $p > $artifact_dir/$p.logs||:
+    done
+    for p in $(oc -n openshift-logging get pods -lcomponent=fluentd -o jsonpath={.items[*].metadata.name}); do
+      oc -n openshift-logging exec $p -- logs > $artifact_dir/$p.logs||:
+    done
+    for p in $(oc -n openshift-logging get pods -lcomponent=elasticsearch -o jsonpath={.items[*].metadata.name}); do
+      oc -n openshift-logging -c elasticsearch exec $p -- logs > $artifact_dir/$p.logs||:
+    done
+    oc -n openshift-logging get pods > $artifact_dir/pods||:
+    oc -n openshift-logging describe ds fluentd > $artifact_dir/fluent.describe||:
+    oc -n openshift-logging configmap fluentd -o yaml > $artifact_dir/fluent-configmap.yaml||:
+  fi
+  oc delete ns openshift-logging --wait=true --ignore-not-found --force --grace-period=0
+  os::cmd::try_until_failure "oc get project openshift-logging" "$((1 * $minute))"
+done
+exit $failed

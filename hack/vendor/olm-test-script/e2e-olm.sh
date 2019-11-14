@@ -63,7 +63,7 @@ CONFIGMAP_NAME=${CONFIGMAP_NAME:-openshift-olm-test$SUFFIX}
 
 CRD=$(cat $MANIFEST_DIR/$VERSION/*crd.yaml | sed '/^#!.*$/d' | grep -v -- "---" | indent apiVersion)
 PKG=$(sed '/^#!.*$/d' $MANIFEST_DIR/*package.yaml | indent packageName)
-CSV=$(sed '/^#!.*$/d' $MANIFEST_DIR/$VERSION/*version.yaml | sed 's/namespace: placeholder/namespace: '$TEST_NAMESPACE'/' |grep -v -- "---" |  indent apiVersion)
+CSV=$(sed '/^#!.*$/d' $MANIFEST_DIR/$VERSION/*version.yaml | sed 's/namespace: placeholder/namespace: '$TEST_NAMESPACE'/' | sed 's/imagePullPolicy: IfNotPresent/imagePullPolicy: Always/' | grep -v -- "---" |  indent apiVersion)
 
 if [ -n "${OPERATOR_IMAGE:-}" ] ; then
   CSV=$(echo "$CSV" | sed -e "s~containerImage:.*~containerImage: ${OPERATOR_IMAGE}~" | indent apiVersion)

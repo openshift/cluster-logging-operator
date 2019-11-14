@@ -5,11 +5,28 @@ indent() {
   sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
 }
 
+try_until_text() {
+  local cmd=$1
+  local expected=$2
+  local timeout=$3
+  local interval=${4:-0.2}
+  local now=$(date +%s)
+  local expire=$(($now + $timeout))
+  while [ $now -lt $expire ]; do
+      if [[ "$($cmd)" == "${expected}" ]] ; then
+      return 0
+    fi  
+    sleep $interval
+    now=$(date +%s)
+  done
+  return 1
+}
+
 wait_for_deployment_to_be_ready(){
   local namespace=$1
   local name=$2
   local timeout=$3
-  os::cmd::try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
+  try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
 }
 
 deploy_marketplace_operator(){

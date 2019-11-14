@@ -58,7 +58,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileForwarding{}
 
-// ReconcileForwarding reconciles a ClusterLogging object
+// ReconcileForwarding reconciles a LogForwarding object
 type ReconcileForwarding struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver

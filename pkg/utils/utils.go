@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	DefaultWorkingDir = "/tmp/_working_dir"
+	DefaultWorkingDir = "/tmp/ocp-clo"
 	OsNodeLabel       = "kubernetes.io/os"
 	LinuxValue        = "linux"
 )
@@ -170,7 +170,7 @@ func GetFileContents(filePath string) []byte {
 
 	contents, err := ioutil.ReadFile(filepath.Clean(filePath))
 	if err != nil {
-		logrus.Errorf("Unable to read file to get contents: %v", err)
+		logrus.Errorf("Operator unable to read local file to get contents: %v", err)
 		return nil
 	}
 

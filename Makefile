@@ -77,7 +77,7 @@ run:
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=openshift-logging \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
-	WORKING_DIR=$(TARGET_DIR)/_working_dir \
+	WORKING_DIR=$(TARGET_DIR)/ocp-clo \
 	LOGGING_SHARE_DIR=$(CURPATH)/files \
 	go run ${MAIN_PKG}
 

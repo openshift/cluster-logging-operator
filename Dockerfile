@@ -11,8 +11,8 @@ RUN INSTALL_PKGS=" \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
-    mkdir /tmp/_working_dir && \
-    chmod og+w /tmp/_working_dir
+    mkdir /tmp/ocp-clo && \
+    chmod og+w /tmp/ocp-clo
 COPY --from=builder _output/bin/cluster-logging-operator /usr/bin/
 COPY scripts/* /usr/bin/scripts/
 RUN mkdir -p /usr/share/logging/

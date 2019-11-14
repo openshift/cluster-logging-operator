@@ -7,6 +7,7 @@ TEST_NAMESPACE=${TEST_NAMESPACE:-olm-test}
 TARGET_NAMESPACE=${TARGET_NAMESPACE:-olm-test}
 CREATE_OPERATORGROUP=${CREATE_OPERATORGROUP:-"true"}
 OPERATOR_IMAGE=${OPERATOR_IMAGE:-""}
+IMAGE_FORMAT=${IMAGE_FORMAT:-""}
 
 # Get the manifests dir where the package and version dir are.
 MANIFEST_DIR=${MANIFEST_DIR:-$(realpath deploy/manifests)}
@@ -69,6 +70,26 @@ if [ -n "${OPERATOR_IMAGE:-}" ] ; then
   CSV=$(echo "$CSV" | sed -e "s~containerImage:.*~containerImage: ${OPERATOR_IMAGE}~" | indent apiVersion)
   CSV=$(echo "$CSV" | sed -e "s~image:.*~image: ${OPERATOR_IMAGE}\n~" | indent ApiVersion)
 fi
+
+ci_image_prefix="registry.svc.ci.openshift.org/origin/${VERSION}"
+
+# Use latest origin-aggregated-logging
+if [ -n "${IMAGE_FORMAT:-}" ] ; then
+    FLUENTD_IMAGE=$(sed -e "s,\${component},logging-fluentd," <(echo $IMAGE_FORMAT))
+    KIBANA_IMAGE=$(sed -e "s,\${component},logging-kibana5," <(echo $IMAGE_FORMAT))
+    CURATOR_IMAGE=$(sed -e "s,\${component},logging-curator5," <(echo $IMAGE_FORMAT))
+    OAUTH_PROXY_IMAGE=$(sed -e "s,\${component},oauth-proxy," <(echo $IMAGE_FORMAT))
+else
+    FLUENTD_IMAGE="${ci_image_prefix}:logging-fluentd"
+    KIBANA_IMAGE="${ci_image_prefix}:logging-kibana5"
+    CURATOR_IMAGE="${ci_image_prefix}:logging-curator5"
+    OAUTH_PROXY_IMAGE="${ci_image_prefix}:oauth-proxy"
+fi
+
+CSV=$(echo "$CSV" | sed -e "s~quay.io/openshift/origin-logging-fluentd:latest~${FLUENTD_IMAGE}~" | indent apiVersion)
+CSV=$(echo "$CSV" | sed -e "s~quay.io/openshift/origin-logging-kibana5:latest~${KIBANA_IMAGE}~" | indent apiVersion)
+CSV=$(echo "$CSV" | sed -e "s~quay.io/openshift/origin-logging-curator5:latest~${CURATOR_IMAGE}~" | indent apiVersion)
+CSV=$(echo "$CSV" | sed -e "s~quay.io/openshift/origin-oauth-proxy:latest~${OAUTH_PROXY_IMAGE}~" | indent apiVersion)
 
 cat > /tmp/configmap.yaml <<EOF | sed 's/^  *$//'
 kind: ConfigMap

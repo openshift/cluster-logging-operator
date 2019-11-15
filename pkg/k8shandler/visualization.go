@@ -85,7 +85,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err 
 					printUpdateMessage = false
 				}
 				cluster.Status.Visualization.KibanaStatus = kibanaStatus
-				return clusterRequest.Update(cluster)
+				return clusterRequest.UpdateStatus(cluster)
 			}
 			return nil
 		})

@@ -225,6 +225,12 @@ spec:
       - serviceAccountName: cluster-logging-operator
         rules:
         - apiGroups:
+          - console.openshift.io
+          resources:
+          - consoleexternalloglinks
+          verbs:
+          - "*"
+        - apiGroups:
           - scheduling.k8s.io
           resources:
           - priorityclasses

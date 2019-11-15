@@ -10,7 +10,7 @@ import (
 )
 
 func Reconcile(requestCluster *logging.ClusterLogging, forwarding *logforwarding.LogForwarding, requestClient client.Client) (err error) {
-	logger.Debugf("Reconciling %v", requestCluster)
+	logger.Debugf("Reconciling cl: %v, forwarding: %v", requestCluster, forwarding)
 	clusterLoggingRequest := ClusterLoggingRequest{
 		client:            requestClient,
 		cluster:           requestCluster,

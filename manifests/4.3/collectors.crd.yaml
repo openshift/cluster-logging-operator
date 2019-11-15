@@ -42,3 +42,5 @@ spec:
               description: Define which Nodes the Pods are scheduled on.
           required:
           - type
+  subresources:
+    status: {}

@@ -184,3 +184,5 @@ spec:
                   - schedule
               required:
               - type
+  subresources:
+    status: {}

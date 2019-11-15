@@ -7,6 +7,7 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -76,10 +77,13 @@ var (
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	logger.Debugf("logforwarding-controller Reconciling: %v", request)
 	// Fetch the LogForwarding instance
 	instance := &logforwarding.LogForwarding{}
+	logger.Debug("logforwarding-controller fetching LF instance")
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
+		logger.Debugf("logforwarding-controller Error getting instance. It will be retried if other then 'NotFound': %v", err)
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
@@ -89,6 +93,7 @@ func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Re
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+	logger.Debugf("logforwarding-controller fetched LF instance: %v", instance)
 
 	//check for instancename and then update status
 	var reconcileErr error = nil
@@ -97,6 +102,7 @@ func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Re
 	} else {
 		instance.Status = logforwarding.NewForwardingStatus(logforwarding.LogForwardingStateAccepted, logforwarding.LogForwardingReasonName, "")
 
+		logger.Debug("logforwarding-controller fetching ClusterLogging instance...")
 		clInstance := &loggingv1.ClusterLogging{}
 		clName := types.NamespacedName{Name: singletonName, Namespace: openshiftNS}
 		err = r.client.Get(context.TODO(), clName, clInstance)
@@ -104,15 +110,20 @@ func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Re
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
+			logger.Debugf("logforwarding-controller error fetching ClusterLogging instance: %v")
 			return reconcile.Result{}, err
 		}
 
+		logger.Debug("logforwarding-controller calling ClusterLogging reconciler...")
 		reconcileErr = k8shandler.Reconcile(clInstance, instance, r.client)
 	}
 
+	logger.Debugf("logforwarding-controller updating status of instance: %v", instance)
 	if err = r.client.Status().Update(context.TODO(), instance); err != nil {
+		logger.Debugf("logforwarding-controller error updating status: %v", err)
 		return reconcile.Result{}, err
 	}
 
+	logger.Debugf("logforwarding-controller returning %v, error: %v", reconcileResult, reconcileErr)
 	return reconcileResult, reconcileErr
 }

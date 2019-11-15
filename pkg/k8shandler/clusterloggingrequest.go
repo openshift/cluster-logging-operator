@@ -49,6 +49,15 @@ func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err 
 	return err
 }
 
+//Update the runtime Object status or return error
+func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object runtime.Object) (err error) {
+	logrus.Tracef("Updating Status: %v", object)
+	if err = clusterRequest.client.Status().Update(context.TODO(), object); err != nil {
+		logrus.Errorf("Error updating %v: %v", object.GetObjectKind(), err)
+	}
+	return err
+}
+
 func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object runtime.Object) error {
 	namespacedName := types.NamespacedName{Name: objectName, Namespace: clusterRequest.cluster.Namespace}
 

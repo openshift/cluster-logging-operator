@@ -57,7 +57,7 @@ spec:
                     type: string
                   outputRefs:
                     description: The name of outputs to send the source logs
-                    items: 
+                    items:
                       type: string
                     type: array
                   inputType:
@@ -71,8 +71,10 @@ spec:
               - name
               - source
               - outputRefs
-              type: array    
+              type: array
           required:
           - outputs
           - pipelines
-                 
+  subresources:
+    status: {}
+

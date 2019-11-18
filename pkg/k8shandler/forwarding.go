@@ -58,24 +58,25 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 	if cluster.Spec.LogStore != nil && cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 		if !clusterRequest.ForwardingSpec.DisableDefaultForwarding && len(clusterRequest.ForwardingSpec.Pipelines) == 0 {
 			logger.Debug("Configuring logforwarding to utilize the operator managed logstore")
-			clusterRequest.ForwardingRequest.Status = &logforward.ForwardingStatus{
-				LogSources: []logforward.LogSourceType{logforward.LogSourceTypeApp, logforward.LogSourceTypeInfra},
-				Outputs: []logforward.OutputStatus{
-					logforward.OutputStatus{
-						Name:    internalOutputName,
-						State:   logforward.OutputStateAccepted,
-						Reason:  logforward.OutputStateReasonConditionsMet,
-						Message: "This is an operator generated output because forwarding is undefined and 'DisableDefaultForwarding' is false",
-					},
-				},
-				Pipelines: []logforward.PipelineStatus{
-					logforward.PipelineStatus{
-						Name:    defaultAppPipelineName,
-						State:   logforward.PipelineStateAccepted,
-						Reason:  logforward.PipelineStateReasonConditionsMet,
-						Message: "This is an operator generated pipeline because forwarding is undefined and 'DisableDefaultForwarding' is false",
-					},
-				},
+			if clusterRequest.ForwardingRequest.Status == nil {
+				clusterRequest.ForwardingRequest.Status = logforward.NewForwardingStatus(logforward.LogForwardingStateAccepted, logforward.LogForwardingReasonName, "")
+			}
+			clusterRequest.ForwardingRequest.Status.LogSources = []logforward.LogSourceType{logforward.LogSourceTypeApp, logforward.LogSourceTypeInfra}
+			clusterRequest.ForwardingRequest.Status.Outputs = []logforward.OutputStatus{
+				logforward.NewOutputStatus(
+					internalOutputName,
+					logforward.OutputStateAccepted,
+					logforward.OutputStateReasonConditionsMet,
+					"This is an operator generated output because forwarding is undefined and 'DisableDefaultForwarding' is false",
+				),
+			}
+			clusterRequest.ForwardingRequest.Status.Pipelines = []logforward.PipelineStatus{
+				logforward.NewPipelineStatus(
+					defaultAppPipelineName,
+					logforward.PipelineStateAccepted,
+					logforward.PipelineStateReasonConditionsMet,
+					"This is an operator generated pipeline because forwarding is undefined and 'DisableDefaultForwarding' is false",
+				),
 			}
 			return logforward.ForwardingSpec{
 				Outputs: []logforward.OutputSpec{
@@ -113,9 +114,7 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 	var outputRefs sets.String
 	outputRefs, normalized.Outputs = clusterRequest.gatherAndVerifyOutputRefs(&clusterRequest.ForwardingSpec, clusterRequest.ForwardingRequest.Status)
 	for i, pipeline := range clusterRequest.ForwardingSpec.Pipelines {
-		status := logforward.PipelineStatus{
-			Name: pipeline.Name,
-		}
+		status := logforward.NewPipelineStatusNamed(pipeline.Name)
 		if pipeline.Name == "" {
 			status.Name = fmt.Sprintf("pipeline[%d]", i)
 			status.AddCondition(logforward.PipelineConditionTypeName, logforward.PipelineConditionReasonMissingName, "")
@@ -177,10 +176,8 @@ func (clusterRequest *ClusterLoggingRequest) gatherAndVerifyOutputRefs(spec *log
 	refs := sets.NewString()
 	outputs := []logforward.OutputSpec{}
 	for i, output := range spec.Outputs {
-		outStatus := logforward.OutputStatus{
-			Name:  output.Name,
-			State: logforward.OutputStateDropped,
-		}
+		outStatus := logforward.NewOutputStatusNamed(output.Name)
+		outStatus.State = logforward.OutputStateDropped
 		if output.Name == "" {
 			outStatus.Name = fmt.Sprintf("output[%d]", i)
 			outStatus.AddCondition(logforward.OutputConditionTypeName, logforward.OutputConditionReasonMissingName, "")

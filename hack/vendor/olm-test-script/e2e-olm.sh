@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+set -euo pipefail
+
 if [ "${DEBUG:-}" = "true" ]; then
 	set -x
 fi
@@ -22,11 +25,19 @@ indent() {
 
 # TODO: RIPPED from the upstream kube test shell library. Everyone will need
 # this. What do we do? -- Thanks pmorie
-readonly reset=$(tput sgr0)
-readonly  bold=$(tput bold)
-readonly black=$(tput setaf 0)
-readonly   red=$(tput setaf 1)
-readonly green=$(tput setaf 2)
+if [ -t 1 ] ; then
+  readonly reset=$(tput sgr0)
+  readonly  bold=$(tput bold)
+  readonly black=$(tput setaf 0)
+  readonly   red=$(tput setaf 1)
+  readonly green=$(tput setaf 2)
+else
+  readonly reset=""
+  readonly  bold=""
+  readonly black=""
+  readonly   red="ERROR "
+  readonly green="SUCCESS "
+fi
 
 test::object_assert() {
   local tries=$1
@@ -36,7 +47,7 @@ test::object_assert() {
   local args=${5:-}
 
   for j in $(seq 1 ${tries}); do
-    res=$(eval oc get ${args} ${object} -o jsonpath=\"${request}\")
+    res=$(eval oc get ${args} ${object} -o jsonpath=\"${request}\") || :
     echo $res
     if [[ "${res}" =~ ^$expected$ ]]; then
       echo -n "${green}"
@@ -45,7 +56,7 @@ test::object_assert() {
       return 0
     fi
     echo "Waiting for Get ${object} ${request} ${args}: expected: ${expected}, got: ${res}"
-    sleep $((${j}-1))
+    sleep $((${j}-1)) || :
   done
   echo "${bold}${red}"
   echo "FAIL!"
@@ -59,7 +70,7 @@ test::object_assert() {
 }
 
 # Name of the configmap that we will create
-CONFIGMAP_NAME=${CONFIGMAP_NAME:-openshift-olm-test$SUFFIX}
+CONFIGMAP_NAME=${CONFIGMAP_NAME:-openshift-olm-test${SUFFIX:-}}
 
 CRD=$(cat $MANIFEST_DIR/$VERSION/*crd.yaml | sed '/^#!.*$/d' | grep -v -- "---" | indent apiVersion)
 PKG=$(sed '/^#!.*$/d' $MANIFEST_DIR/*package.yaml | indent packageName)
@@ -83,25 +94,31 @@ $CSV
   packages: |-
 $PKG
 EOF
+
 CSV_CHANNEL=$(sed -nr 's,.*name: \"?([^"][^"]*)\"?,\1,p' $MANIFEST_DIR/*package.yaml)
 CURRENT_CSV=$(sed -nr 's,.*currentCSV: (.*),\1,p' $MANIFEST_DIR/*package.yaml)
 PACKAGE_NAME=$(sed -nr 's,.*packageName: (.*),\1,p' $MANIFEST_DIR/*package.yaml)
 
-oc create -n $TEST_NAMESPACE -f /tmp/configmap.yaml
+rc=0
+if ! oc create -n $TEST_NAMESPACE -f /tmp/configmap.yaml ; then
+  echo Error creating configmap
+  exit 1
+fi
 if [ "${CREATE_OPERATORGROUP}" == "true" ] ; then
-  if [ "${GLOBAL}" == "true" ] ; then
-    oc -n ${TARGET_NAMESPACE} process -f "$(dirname $0)/operatorgroup-template-global.yaml" -p SUFFIX="${SUFFIX:-}" | oc create -n $TEST_NAMESPACE -f -
-  else
-    oc -n ${TARGET_NAMESPACE} process -f "$(dirname $0)/operatorgroup-template.yaml" -p SUFFIX="${SUFFIX:-}" -p TARGET_NAMESPACE=${TARGET_NAMESPACE} | oc create -n $TEST_NAMESPACE -f -
+  if [ "${GLOBAL:-false}" == "true" ] ; then
+    if ! oc -n ${TARGET_NAMESPACE} process -f "$(dirname $0)/operatorgroup-template-global.yaml" -p SUFFIX="${SUFFIX:-}" | oc create -n $TEST_NAMESPACE -f - ; then
+      rc=1
+    fi
+  elif ! oc -n ${TARGET_NAMESPACE} process -f "$(dirname $0)/operatorgroup-template.yaml" -p SUFFIX="${SUFFIX:-}" -p TARGET_NAMESPACE=${TARGET_NAMESPACE} | oc create -n $TEST_NAMESPACE -f - ; then
+    rc=1
   fi
-
-  if [ "$?" != "0" ] ; then
-    echo "Error processing operatorgroup template"
+  if [ $rc = 1 ] ; then
+    echo Error processing operatorgroup template
     exit 1
   fi
 fi
-oc -n ${TEST_NAMESPACE} process -f "$(dirname $0)/subscription.yaml" -p SUFFIX="${SUFFIX:-}" -p CONFIGMAP_NAME=${CONFIGMAP_NAME:-} -p TEST_NAMESPACE=${TEST_NAMESPACE} -p PACKAGE_NAME=${PACKAGE_NAME} -p STARTING_CSV=${CURRENT_CSV} -p CHANNEL=${CSV_CHANNEL} | oc create -n $TEST_NAMESPACE -f -
-if [ "$?" != "0" ] ; then
+
+if ! oc -n ${TEST_NAMESPACE} process -f "$(dirname $0)/subscription.yaml" -p SUFFIX="${SUFFIX:-}" -p CONFIGMAP_NAME=${CONFIGMAP_NAME:-} -p TEST_NAMESPACE=${TEST_NAMESPACE} -p PACKAGE_NAME=${PACKAGE_NAME} -p STARTING_CSV=${CURRENT_CSV} -p CHANNEL=${CSV_CHANNEL} | oc create -n $TEST_NAMESPACE -f - ; then
   echo "Error processing subscription template"
   exit 1
 fi

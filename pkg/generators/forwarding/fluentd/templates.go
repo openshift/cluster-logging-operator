@@ -207,11 +207,6 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 		undefined_max_num_fields "#{ENV['CDM_UNDEFINED_MAX_NUM_FIELDS'] || '-1'}"
 		process_kubernetes_events "#{ENV['TRANSFORM_EVENTS'] || 'false'}"
 		<formatter>
-			enabled false
-			tag "audit.log**"
-			type sys_var_log
-		</formatter>
-		<formatter>
 			tag "system.var.log**"
 			type sys_var_log
 			remove_keys host,pid,ident
@@ -227,7 +222,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 			remove_keys "#{ENV['K8S_FILTER_REMOVE_KEYS'] || 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'}"
 		</formatter>
 		<formatter>
-		    tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**"
+		    tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log**"
 		    type k8s_json_file
 		    remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
 		    process_kubernetes_events "#{ENV['TRANSFORM_EVENTS'] || 'true'}"
@@ -239,8 +234,13 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 		</formatter>
 		<elasticsearch_index_name>
 			enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
-			tag "journal.system** system.var.log** audit.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
+			tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
 			name_type operations_full
+		</elasticsearch_index_name>
+		<elasticsearch_index_name>
+			enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
+			tag "linux-audit.log** k8s-audit.log** openshift-audit.log**"
+			name_type audit_full
 		</elasticsearch_index_name>
 		<elasticsearch_index_name>
 			enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"

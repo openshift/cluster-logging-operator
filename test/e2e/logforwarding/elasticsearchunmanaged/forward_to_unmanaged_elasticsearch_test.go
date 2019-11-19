@@ -70,6 +70,11 @@ var _ = Describe("LogForwarding", func() {
 							OutputRefs: []string{elasticsearch.Name},
 							SourceType: logforward.LogSourceTypeInfra,
 						},
+						logforward.PipelineSpec{
+							Name:       "test-audit",
+							OutputRefs: []string{elasticsearch.Name},
+							SourceType: logforward.LogSourceTypeAudit,
+						},
 					},
 				},
 			}
@@ -92,6 +97,7 @@ var _ = Describe("LogForwarding", func() {
 		It("should send logs to the forward.Output logstore", func() {
 			Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 			Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+			Expect(e2e.LogStore.HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 		})
 
 	})

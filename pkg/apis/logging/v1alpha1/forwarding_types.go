@@ -296,6 +296,9 @@ const (
 	//OutputConditionReasonSecretDoesNotExist for secrets which don't exist
 	OutputConditionReasonSecretDoesNotExist OutputConditionReason = "SecretDoesNotExist"
 
+	//OutputConditionReasonSecretMissingSharedKey for secrets which don't exist
+	OutputConditionReasonSecretMissingSharedKey OutputConditionReason = "SecretMissingSharedKey"
+
 	//OutputConditionReasonUnrecognizedType has an unrecognized or supported output type
 	OutputConditionReasonUnrecognizedType OutputConditionReason = "UnrecognizedType"
 )

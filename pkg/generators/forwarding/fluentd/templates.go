@@ -462,7 +462,7 @@ const forwardTemplate = `{{- define "forward" }}
 	{{ if .Target.Secret }}
 	<security>
 		self_hostname "#{ENV['NODE_NAME']}"
-		shared_key {{ .Name }}
+		shared_key "#{File.open('{{ .SecretPath "shared_key" }}') do |f| f.readline end.rstrip}"
 	</security>
 
 	transport tls

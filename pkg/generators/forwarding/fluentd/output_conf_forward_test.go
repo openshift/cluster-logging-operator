@@ -3,6 +3,7 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	test "github.com/openshift/cluster-logging-operator/test"
 )
@@ -10,11 +11,11 @@ import (
 var _ = Describe("Generating fluentd secure forward output store config blocks", func() {
 
 	var (
+		err       error
 		outputs   []logging.OutputSpec
 		generator *ConfigGenerator
 	)
 	BeforeEach(func() {
-		var err error
 		generator, err = NewConfigGenerator()
 		Expect(err).To(BeNil())
 	})
@@ -43,7 +44,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 	   @type forward
 	   <security>
 	     self_hostname "#{ENV['NODE_NAME']}" 
-	     shared_key secureforward-receiver
+	     shared_key "#{File.open('/var/run/ocp-collector/secrets/my-infra-secret/shared_key') do |f| f.readline end.rstrip}"
 	   </security>
 
 	   transport tls

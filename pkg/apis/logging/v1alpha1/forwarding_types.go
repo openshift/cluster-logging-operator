@@ -107,7 +107,7 @@ type ForwardingStatus struct {
 	Message string `json:"message,omitempty"`
 
 	// LastUpdated represents the last time that the status was updated.
-	LastUpdated metav1.Time
+	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
 	//LogSources lists the configured log sources
 	LogSources []LogSourceType `json:"sources,omitempty"`
@@ -147,6 +147,22 @@ type PipelineStatus struct {
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 }
 
+func NewPipelineStatusNamed(name string) PipelineStatus {
+	return PipelineStatus{
+		Name:        name,
+		LastUpdated: metav1.Now(),
+	}
+}
+func NewPipelineStatus(name string, state PipelineState, reason PipelineStateReason, message string) PipelineStatus {
+	return PipelineStatus{
+		Name:        name,
+		State:       state,
+		Reason:      reason,
+		Message:     message,
+		LastUpdated: metav1.Now(),
+	}
+}
+
 func (pipelineStatus *PipelineStatus) AddCondition(conditionType PipelineConditionType, reason PipelineConditionReason, message string) {
 	pipelineStatus.Conditions = append(pipelineStatus.Conditions, PipelineCondition{
 		Type:    conditionType,
@@ -176,10 +192,10 @@ const (
 )
 
 type PipelineCondition struct {
-	Type    PipelineConditionType
-	Reason  PipelineConditionReason
-	Status  corev1.ConditionStatus
-	Message string
+	Type    PipelineConditionType   `json:"typ,omitempty"`
+	Reason  PipelineConditionReason `json:"reason,omitempty"`
+	Status  corev1.ConditionStatus  `json:"status,omitempty"`
+	Message string                  `json:"message,omitempty"`
 }
 
 type PipelineConditionType string
@@ -233,6 +249,23 @@ type OutputStatus struct {
 
 	// LastUpdated represents the last time that the status was updated.
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
+}
+
+func NewOutputStatusNamed(name string) OutputStatus {
+	return OutputStatus{
+		Name:        name,
+		LastUpdated: metav1.Now(),
+	}
+}
+
+func NewOutputStatus(name string, state OutputState, reason OutputStateReason, message string) OutputStatus {
+	return OutputStatus{
+		Name:        name,
+		State:       state,
+		Reason:      reason,
+		Message:     message,
+		LastUpdated: metav1.Now(),
+	}
 }
 
 func (outputStatus *OutputStatus) AddCondition(conditionType OutputConditionType, reason OutputConditionReason, message string) {
@@ -304,10 +337,10 @@ const (
 )
 
 type OutputCondition struct {
-	Type    OutputConditionType
-	Reason  OutputConditionReason
-	Status  corev1.ConditionStatus
-	Message string
+	Type    OutputConditionType    `json:"type,omitempty"`
+	Reason  OutputConditionReason  `json:"reason,omitempty"`
+	Status  corev1.ConditionStatus `json:"status,omitempty"`
+	Message string                 `json:"message,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

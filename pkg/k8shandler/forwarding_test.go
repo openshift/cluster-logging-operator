@@ -314,6 +314,35 @@ var _ = Describe("Normalizing Forwarding", func() {
 				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateDropped, logging.OutputConditionReasonSecretDoesNotExist, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
+			It("should drop forward outputs that have secrets and is missing shared_key", func() {
+				secret := &core.Secret{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Secret",
+						APIVersion: core.SchemeGroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "mysecret",
+						Namespace: "openshift-logging",
+					},
+					Type: "Opaque",
+					Data: map[string][]byte{
+						"foo": []byte("bar"),
+					},
+				}
+				request.client = fake.NewFakeClient(secret)
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+					Name:     "aName",
+					Type:     logging.OutputTypeForward,
+					Endpoint: "an output",
+					Secret: &logging.OutputSecretSpec{
+						Name: "mysecret",
+					},
+				})
+				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
+				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with missing shared_key to be dropped")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateDropped, logging.OutputConditionReasonSecretMissingSharedKey, false)).To(BeTrue(), "Exp. the status to be updated")
+			})
+
 			It("should accept well formed outputs", func() {
 				request.client = fake.NewFakeClient(&core.Secret{
 					TypeMeta: metav1.TypeMeta{

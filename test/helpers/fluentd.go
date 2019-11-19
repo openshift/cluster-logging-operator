@@ -228,7 +228,10 @@ func (tc *E2ETestFramework) DeployFluendReceiver(rootDir string, secure bool) (d
 	fluentConf := unsecureFluentConf
 	if secure {
 		fluentConf = secureFluentConfTemplate
-		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(rootDir, receiverName, receiverName); err != nil {
+		otherConf := map[string][]byte{
+			"shared_key": []byte("my_shared_key"),
+		}
+		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(rootDir, receiverName, receiverName, otherConf); err != nil {
 			return nil, err
 		}
 		tc.AddCleanup(func() error {

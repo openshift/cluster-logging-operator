@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -206,10 +207,11 @@ func (clusterRequest *ClusterLoggingRequest) gatherAndVerifyOutputRefs(spec *log
 			if output.Secret.Name == "" {
 				outStatus.AddCondition(logforward.OutputConditionTypeSecret, logforward.OutputConditionReasonMissingSecretName, "")
 			} else {
-				_, err := clusterRequest.GetSecret(output.Secret.Name)
+				secret, err := clusterRequest.GetSecret(output.Secret.Name)
 				if errors.IsNotFound(err) {
 					outStatus.AddCondition(logforward.OutputConditionTypeSecret, logforward.OutputConditionReasonSecretDoesNotExist, "")
 				}
+				verifyOutputSecret(output, secret, &outStatus)
 			}
 		}
 
@@ -223,4 +225,13 @@ func (clusterRequest *ClusterLoggingRequest) gatherAndVerifyOutputRefs(spec *log
 
 	}
 	return refs, outputs
+}
+
+func verifyOutputSecret(output logforward.OutputSpec, secret *core.Secret, status *logforward.OutputStatus) {
+	if output.Type != logforward.OutputTypeForward || secret == nil {
+		return
+	}
+	if _, exists := secret.Data["shared_key"]; !exists {
+		status.AddCondition(logforward.OutputConditionTypeSecret, logforward.OutputConditionReasonSecretMissingSharedKey, "")
+	}
 }

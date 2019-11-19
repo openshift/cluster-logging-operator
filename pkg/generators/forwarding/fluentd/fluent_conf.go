@@ -103,12 +103,3 @@ func newTargetTypeCounterMap() *targetTypeCounterMap {
 	}
 	return &counters
 }
-
-//bump the counter map if the type is recognized
-func (t targetTypeCounterMap) bump(targetType logforward.OutputType) (int, bool) {
-	if counter, ok := t[targetType]; ok {
-		t[targetType]++
-		return counter, true
-	}
-	return 0, false
-}

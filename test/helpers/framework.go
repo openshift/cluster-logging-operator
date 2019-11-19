@@ -22,9 +22,9 @@ import (
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	e2eutil "github.com/openshift/cluster-logging-operator/test/e2e"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 )
 
 const (
@@ -298,7 +298,7 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 	return stdout.String(), nil
 }
 
-func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string) (secret *corev1.Secret, err error) {
+func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (secret *corev1.Secret, err error) {
 	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
 	logger.Debugf("Generating Pipeline certificates for %q to %s", logStoreName, workingDir)
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
@@ -312,15 +312,19 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, logStoreName, workingDir); err != nil {
 		return nil, err
 	}
+	data := map[string][]byte{
+		"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
+		"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
+		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
+		"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
+	}
+	for key, value := range otherData {
+		data[key] = value
+	}
 	secret = k8shandler.NewSecret(
 		secretName,
 		OpenshiftLoggingNS,
-		map[string][]byte{
-			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
-			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-			"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
-		},
+		data,
 	)
 	logger.Debugf("Creating secret %q for logStore", secret.Name, logStoreName)
 	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {

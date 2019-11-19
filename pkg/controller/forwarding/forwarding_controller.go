@@ -110,7 +110,7 @@ func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Re
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			logger.Debugf("logforwarding-controller error fetching ClusterLogging instance: %v")
+			logger.Debugf("logforwarding-controller error fetching ClusterLogging instance: %v", err)
 			return reconcile.Result{}, err
 		}
 

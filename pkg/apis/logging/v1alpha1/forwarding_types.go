@@ -44,7 +44,7 @@ type ForwardingSpec struct {
 //PipelineSpec is the sources spec to named targets
 type PipelineSpec struct {
 	Name       string        `json:"name,omitempty"`
-	SourceType LogSourceType `json:"inputType,omitempty"`
+	SourceType LogSourceType `json:"inputSource,omitempty"`
 
 	//OutputRefs is a list of  the names of outputs defined by forwarding.outputs
 	OutputRefs []string `json:"outputRefs,omitempty"`

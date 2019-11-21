@@ -6,6 +6,7 @@ import (
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 
@@ -24,9 +25,7 @@ import (
 var log = logf.Log.WithName("controller_forwarding")
 
 const (
-	singletonName    = "instance"
 	singletonMessage = "LogForwarding is a singleton. Only an instance named 'instance' is allowed"
-	openshiftNS      = "openshift-logging"
 )
 
 // Add creates a new Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -97,14 +96,14 @@ func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Re
 
 	//check for instancename and then update status
 	var reconcileErr error = nil
-	if instance.Name != singletonName {
+	if instance.Name != constants.SingletonName {
 		instance.Status = logforwarding.NewForwardingStatus(logforwarding.LogForwardingStateRejected, logforwarding.LogForwardingReasonName, singletonMessage)
 	} else {
 		instance.Status = logforwarding.NewForwardingStatus(logforwarding.LogForwardingStateAccepted, logforwarding.LogForwardingReasonName, "")
 
 		logger.Debug("logforwarding-controller fetching ClusterLogging instance...")
 		clInstance := &loggingv1.ClusterLogging{}
-		clName := types.NamespacedName{Name: singletonName, Namespace: openshiftNS}
+		clName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 		err = r.client.Get(context.TODO(), clName, clInstance)
 		if err != nil && !errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.

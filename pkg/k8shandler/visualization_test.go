@@ -1,20 +1,24 @@
 package k8shandler
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewKibanaPodSpecSetsProxyToUseServiceAccountAsOAuthClient(t *testing.T) {
 	clusterlogging := &logging.ClusterLogging{}
-	spec := newKibanaPodSpec(clusterlogging, "kibana", "elasticsearch")
+	spec := newKibanaPodSpec(clusterlogging, "kibana", "elasticsearch", nil, nil)
 	for _, arg := range spec.Containers[1].Args {
 		keyValue := strings.Split(arg, "=")
 		if len(keyValue) >= 2 && keyValue[0] == "-client-id" {
@@ -33,7 +37,7 @@ func TestNewKibanaPodSpecSetsProxyToUseServiceAccountAsOAuthClient(t *testing.T)
 func TestNewKibanaPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{}
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch")
+	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch", nil, nil)
 
 	if len(podSpec.Containers) != 2 {
 		t.Error("Exp. there to be 2 container")
@@ -81,7 +85,7 @@ func TestNewKibanaPodSpecWhenResourcesAreDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch")
+	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch", nil, nil)
 
 	limitMemory := resource.MustParse("100Gi")
 	requestMemory := resource.MustParse("120Gi")
@@ -134,7 +138,7 @@ func TestNewKibanaPodSpecWhenNodeSelectorIsDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch")
+	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch", nil, nil)
 
 	//check kibana
 	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
@@ -155,7 +159,7 @@ func TestNewKibanaPodNoTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name")
+	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil)
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -184,10 +188,103 @@ func TestNewKibanaPodWithTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name")
+	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil)
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
 		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
+	}
+}
+
+func TestNewKibanaPodSpecWhenProxyConfigExists(t *testing.T) {
+
+	cluster := &logging.ClusterLogging{}
+	httpproxy := "http://proxy-user@test.example.com/3128/"
+	noproxy := ".cluster.local,localhost"
+	caBundle := fmt.Sprint("-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n")
+	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name",
+		&configv1.Proxy{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Proxy",
+				APIVersion: "config.openshift.io/v1",
+			},
+			Spec: configv1.ProxySpec{
+				HTTPProxy:  httpproxy,
+				HTTPSProxy: httpproxy,
+				TrustedCA: configv1.ConfigMapNameReference{
+					Name: "user-ca-bundle",
+				},
+			},
+			Status: configv1.ProxyStatus{
+				HTTPProxy:  httpproxy,
+				HTTPSProxy: httpproxy,
+				NoProxy:    noproxy,
+			},
+		},
+		&v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "openshift-logging",
+				Name:      constants.KibanaTrustedCAName,
+			},
+			Data: map[string]string{
+				constants.TrustedCABundleKey: caBundle,
+			},
+		},
+	)
+
+	if len(podSpec.Containers) != 2 {
+		t.Error("Exp. there to be 2 kibana container")
+	}
+
+	checkKibanaProxyEnvVar(t, podSpec, "HTTP_PROXY", httpproxy)
+	checkKibanaProxyEnvVar(t, podSpec, "HTTPS_PROXY", httpproxy)
+	checkKibanaProxyEnvVar(t, podSpec, "NO_PROXY", noproxy)
+
+	checkKibanaProxyVolumesAndVolumeMounts(t, podSpec, constants.KibanaTrustedCAName)
+}
+
+func checkKibanaProxyEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {
+	env := podSpec.Containers[1].Env
+	found := false
+	for _, elem := range env {
+		if elem.Name == name {
+			found = true
+			if elem.Value != value {
+				t.Errorf("EnvVar %s: expected %s, actual %s", name, value, elem.Value)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("EnvVar %s not found", name)
+	}
+}
+
+func checkKibanaProxyVolumesAndVolumeMounts(t *testing.T, podSpec v1.PodSpec, trustedca string) {
+	volumemounts := podSpec.Containers[1].VolumeMounts
+	found := false
+	for _, elem := range volumemounts {
+		if elem.Name == trustedca {
+			found = true
+			if elem.MountPath != constants.TrustedCABundleMountDir {
+				t.Errorf("VolumeMounts %s: expected %s, actual %s", trustedca, constants.TrustedCABundleMountDir, elem.MountPath)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("VolumeMounts %s not found", trustedca)
+	}
+
+	volumes := podSpec.Volumes
+	found = false
+	for _, elem := range volumes {
+		if elem.Name == trustedca {
+			found = true
+			if elem.VolumeSource.ConfigMap.LocalObjectReference.Name != trustedca {
+				t.Errorf("Volume %s: expected %s, actual %s", trustedca, trustedca, elem.VolumeSource.Secret.SecretName)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("Volume %s not found", trustedca)
 	}
 }

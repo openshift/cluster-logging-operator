@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
@@ -14,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -36,7 +38,7 @@ var (
 var serviceAccountLogCollectorUID types.UID
 
 //CreateOrUpdateCollection component of the cluster
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfig *configv1.Proxy, trustedCABundleCM *core.ConfigMap) (err error) {
 	cluster := clusterRequest.cluster
 	collectorConfig := ""
 	collectorConfHash := ""
@@ -79,7 +81,13 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash); err != nil {
+		// Create or update cluster proxy trusted CA bundle.
+		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
+		if err != nil {
+			return
+		}
+
+		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash, proxyConfig, trustedCABundleCM); err != nil {
 			return
 		}
 

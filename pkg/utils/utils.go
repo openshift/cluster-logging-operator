@@ -14,6 +14,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -313,17 +314,73 @@ func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
 		(esource1.SecretKeyRef == nil && esource2.SecretKeyRef != nil) {
 		return false
 	}
+	var rval bool
 	if esource1.FieldRef != nil {
-		return reflect.DeepEqual(*esource1.FieldRef, *esource2.FieldRef)
+		if rval = reflect.DeepEqual(*esource1.FieldRef, *esource2.FieldRef); !rval {
+			return rval
+		}
 	}
 	if esource1.ResourceFieldRef != nil {
-		return reflect.DeepEqual(*esource1.ResourceFieldRef, *esource2.ResourceFieldRef)
+		if rval = EnvVarResourceFieldSelectorEqual(*esource1.ResourceFieldRef, *esource2.ResourceFieldRef); !rval {
+			return rval
+		}
 	}
 	if esource1.ConfigMapKeyRef != nil {
-		return reflect.DeepEqual(*esource1.ConfigMapKeyRef, *esource2.ConfigMapKeyRef)
+		if rval = reflect.DeepEqual(*esource1.ConfigMapKeyRef, *esource2.ConfigMapKeyRef); !rval {
+			return rval
+		}
 	}
 	if esource1.SecretKeyRef != nil {
-		return reflect.DeepEqual(*esource1.SecretKeyRef, *esource2.SecretKeyRef)
+		if rval = reflect.DeepEqual(*esource1.SecretKeyRef, *esource2.SecretKeyRef); !rval {
+			return rval
+		}
 	}
 	return true
+}
+
+func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelector) bool {
+	if (resource1.ContainerName == resource2.ContainerName) &&
+		(resource1.Resource == resource2.Resource) &&
+		(resource1.Divisor.Cmp(resource2.Divisor) == 0) {
+		return true
+	}
+	return false
+}
+
+func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {
+	envVars := []v1.EnvVar{}
+	if proxyConfig == nil {
+		return envVars
+	}
+	if len(proxyConfig.Status.HTTPSProxy) != 0 {
+		envVars = append(envVars, v1.EnvVar{
+			Name:  "HTTPS_PROXY",
+			Value: proxyConfig.Status.HTTPSProxy,
+		},
+		v1.EnvVar{
+			Name:  "https_proxy",
+			Value: proxyConfig.Status.HTTPSProxy,
+		})
+	}
+	if len(proxyConfig.Status.HTTPProxy) != 0 {
+		envVars = append(envVars, v1.EnvVar{
+			Name:  "HTTP_PROXY",
+			Value: proxyConfig.Status.HTTPProxy,
+		},
+		v1.EnvVar{
+			Name:  "http_proxy",
+			Value: proxyConfig.Status.HTTPProxy,
+		})
+	}
+	if len(proxyConfig.Status.NoProxy) != 0 {
+		envVars = append(envVars, v1.EnvVar{
+			Name:  "NO_PROXY",
+			Value: proxyConfig.Status.NoProxy,
+		},
+		v1.EnvVar{
+			Name:  "no_proxy",
+			Value: proxyConfig.Status.NoProxy,
+		})
+	}
+	return envVars
 }

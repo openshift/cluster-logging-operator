@@ -1,7 +1,6 @@
 package k8shandler
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"time"
@@ -9,13 +8,13 @@ import (
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
@@ -45,6 +44,10 @@ func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
 		}
 
 		if err = clusterRequest.RemoveConfigMap(fluentdName); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveConfigMap(constants.FluentdTrustedCAName); err != nil {
 			return
 		}
 
@@ -215,7 +218,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 	return nil
 }
 
-func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy, pipelineSpec logforward.ForwardingSpec) v1.PodSpec {
+func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy, trustedCABundleCM *core.ConfigMap, pipelineSpec logforward.ForwardingSpec) v1.PodSpec {
 	collectionSpec := logging.CollectionSpec{}
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
@@ -241,7 +244,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	fluentdContainer.Env = []v1.EnvVar{
-		{Name: "NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "spec.nodeName"}}},
+		{Name: "NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"}}},
 		{Name: "MERGE_JSON_LOG", Value: "false"},
 		{Name: "PRESERVE_JSON_LOG", Value: "true"},
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
@@ -252,18 +255,12 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "FILE_BUFFER_LIMIT", Value: "256Mi"},
 		{Name: "FLUENTD_CPU_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "fluentd", Resource: "limits.cpu"}}},
 		{Name: "FLUENTD_MEMORY_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "fluentd", Resource: "limits.memory"}}},
-		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "status.hostIP"}}},
+		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
 		{Name: "CDM_KEEP_EMPTY_FIELDS", Value: "message"}, // by default, keep empty messages
 	}
 
-	if proxyConfig != nil {
-		proxyEnv := []v1.EnvVar{
-			{Name: "HTTP_PROXY", Value: proxyConfig.Status.HTTPProxy},
-			{Name: "HTTPS_PROXY", Value: proxyConfig.Status.HTTPSProxy},
-			{Name: "NO_PROXY", Value: proxyConfig.Status.NoProxy},
-		}
-		fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
-	}
+	proxyEnv := utils.SetProxyEnvVars(proxyConfig)
+	fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
 
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: "runlogjournal", MountPath: "/run/log/journal"},
@@ -285,11 +282,16 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		}
 	}
 
-	if proxyConfig != nil && len(proxyConfig.Spec.TrustedCA.Name) > 0 {
-		proxyCA := []v1.VolumeMount{
-			{Name: "proxytrustedca", MountPath: "/etc/fluent/proxy"},
-		}
-		fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts, proxyCA...)
+	addTrustedCAVolume := false
+	// If trusted CA bundle ConfigMap exists and its hash value is non-zero, mount the bundle.
+	if trustedCABundleCM != nil && hasTrustedCABundle(trustedCABundleCM) {
+		addTrustedCAVolume = true
+		fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts,
+			v1.VolumeMount{
+				Name:      constants.FluentdTrustedCAName,
+				ReadOnly:  true,
+				MountPath: constants.TrustedCABundleMountDir,
+			})
 	}
 
 	fluentdContainer.SecurityContext = &v1.SecurityContext{
@@ -337,11 +339,26 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		}
 	}
 
-	if proxyConfig != nil && len(proxyConfig.Spec.TrustedCA.Name) > 0 {
-		proxyCAVolume := []v1.Volume{
-			{Name: "proxytrustedca", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: proxyConfig.Spec.TrustedCA.Name}}},
-		}
-		fluentdPodSpec.Volumes = append(fluentdPodSpec.Volumes, proxyCAVolume...)
+	if addTrustedCAVolume {
+		optional := true
+		fluentdPodSpec.Volumes = append(fluentdPodSpec.Volumes,
+			v1.Volume{
+				Name: constants.FluentdTrustedCAName,
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: constants.FluentdTrustedCAName,
+						},
+						Optional: &optional,
+						Items: []v1.KeyToPath{
+							{
+								Key:  constants.TrustedCABundleKey,
+								Path: constants.TrustedCABundleMountFile,
+							},
+						},
+					},
+				},
+			})
 	}
 
 	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName
@@ -351,18 +368,11 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	return fluentdPodSpec
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string) (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string, proxyConfig *configv1.Proxy, trustedCABundleCM *core.ConfigMap) (err error) {
 
 	cluster := clusterRequest.cluster
 
-	proxy := &configv1.Proxy{}
-	if err = clusterRequest.client.Get(context.TODO(), types.NamespacedName{Name: "cluster"}, proxy); err != nil {
-		if !errors.IsNotFound(err) {
-			logrus.Debugf("fluentd: Failed to get proxy: %v\n", err)
-		}
-	}
-
-	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxy, clusterRequest.ForwardingSpec)
+	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, trustedCABundleCM, clusterRequest.ForwardingSpec)
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
@@ -383,7 +393,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 
 	if clusterRequest.isManaged() {
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset)
+			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset, trustedCABundleCM)
 		})
 		if retryErr != nil {
 			return retryErr
@@ -393,7 +403,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
+func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet, trustedCABundleCM *core.ConfigMap) (err error) {
 	logger.DebugObject("desired fluent update: %v", desired)
 	current := &apps.DaemonSet{}
 
@@ -408,6 +418,17 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 
 	flushBuffer := isBufferFlushRequired(current, desired)
 	desired, different := isDaemonsetDifferent(current, desired)
+
+	// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
+	newTrustedCAHashedValue := calcTrustedCAHashValue(trustedCABundleCM)
+	trustedCAHashedValue, _ := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
+	if trustedCAHashedValue != newTrustedCAHashedValue {
+		different = true
+		if desired.Spec.Template.ObjectMeta.Annotations == nil {
+			desired.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
+		}
+		desired.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = newTrustedCAHashedValue
+	}
 
 	if different {
 		current.Spec = desired.Spec

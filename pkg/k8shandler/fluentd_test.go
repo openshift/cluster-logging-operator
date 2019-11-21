@@ -1,12 +1,14 @@
 package k8shandler
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -16,7 +18,7 @@ import (
 func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, logforward.ForwardingSpec{})
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -52,7 +54,7 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, logforward.ForwardingSpec{})
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -94,7 +96,7 @@ func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, logforward.ForwardingSpec{})
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 
 	if !reflect.DeepEqual(podSpec.Tolerations, expectedTolerations) {
 		t.Errorf("Exp. the tolerations to be %v but was %v", expectedTolerations, podSpec.Tolerations)
@@ -117,7 +119,7 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, logforward.ForwardingSpec{})
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 
 	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, podSpec.NodeSelector)
@@ -149,7 +151,7 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, logforward.ForwardingSpec{})
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -194,7 +196,7 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, logforward.ForwardingSpec{})
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -207,7 +209,7 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 	cluster := &logging.ClusterLogging{}
 	httpproxy := "http://proxy-user@test.example.com/3128/"
 	noproxy := ".cluster.local,localhost"
-	trustedca := "user-ca-bundle"
+	caBundle := fmt.Sprint("-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n")
 	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name",
 		&configv1.Proxy{
 			TypeMeta: metav1.TypeMeta{
@@ -218,13 +220,22 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 				HTTPProxy:  httpproxy,
 				HTTPSProxy: httpproxy,
 				TrustedCA: configv1.ConfigMapNameReference{
-					Name: trustedca,
+					Name: "user-ca-bundle",
 				},
 			},
 			Status: configv1.ProxyStatus{
 				HTTPProxy:  httpproxy,
 				HTTPSProxy: httpproxy,
 				NoProxy:    noproxy,
+			},
+		},
+		&v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "openshift-logging",
+				Name:      constants.FluentdTrustedCAName,
+			},
+			Data: map[string]string{
+				constants.TrustedCABundleKey: caBundle,
 			},
 		},
 		logforward.ForwardingSpec{},
@@ -234,14 +245,14 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 		t.Error("Exp. there to be 1 fluentd container")
 	}
 
-	checkProxyEnvVar(t, podSpec, "HTTP_PROXY", httpproxy)
-	checkProxyEnvVar(t, podSpec, "HTTPS_PROXY", httpproxy)
-	checkProxyEnvVar(t, podSpec, "NO_PROXY", noproxy)
+	checkFluentdProxyEnvVar(t, podSpec, "HTTP_PROXY", httpproxy)
+	checkFluentdProxyEnvVar(t, podSpec, "HTTPS_PROXY", httpproxy)
+	checkFluentdProxyEnvVar(t, podSpec, "NO_PROXY", noproxy)
 
-	checkProxyVolumesAndVolumeMounts(t, podSpec, trustedca)
+	checkFluentdProxyVolumesAndVolumeMounts(t, podSpec, constants.FluentdTrustedCAName)
 }
 
-func checkProxyEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {
+func checkFluentdProxyEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {
 	env := podSpec.Containers[0].Env
 	found := false
 	for _, elem := range env {
@@ -257,34 +268,32 @@ func checkProxyEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value strin
 	}
 }
 
-func checkProxyVolumesAndVolumeMounts(t *testing.T, podSpec v1.PodSpec, trustedca string) {
-	name := "proxytrustedca"
-	volumes := podSpec.Volumes
+func checkFluentdProxyVolumesAndVolumeMounts(t *testing.T, podSpec v1.PodSpec, trustedca string) {
+	volumemounts := podSpec.Containers[0].VolumeMounts
 	found := false
-	for _, elem := range volumes {
-		if elem.Name == name {
+	for _, elem := range volumemounts {
+		if elem.Name == trustedca {
 			found = true
-			if elem.VolumeSource.Secret.SecretName != trustedca {
-				t.Errorf("Volume %s: expected %s, actual %s", name, trustedca, elem.VolumeSource.Secret.SecretName)
+			if elem.MountPath != constants.TrustedCABundleMountDir {
+				t.Errorf("VolumeMounts %s: expected %s, actual %s", trustedca, constants.TrustedCABundleMountDir, elem.MountPath)
 			}
 		}
 	}
 	if !found {
-		t.Errorf("Volume %s not found", name)
+		t.Errorf("VolumeMounts %s not found", trustedca)
 	}
 
-	volumemounts := podSpec.Containers[0].VolumeMounts
-	value := "/etc/fluent/proxy"
+	volumes := podSpec.Volumes
 	found = false
-	for _, elem := range volumemounts {
-		if elem.Name == name {
+	for _, elem := range volumes {
+		if elem.Name == trustedca {
 			found = true
-			if elem.MountPath != value {
-				t.Errorf("VolumeMounts %s: expected %s, actual %s", name, value, elem.MountPath)
+			if elem.VolumeSource.ConfigMap.LocalObjectReference.Name != trustedca {
+				t.Errorf("Volume %s: expected %s, actual %s", trustedca, trustedca, elem.VolumeSource.Secret.SecretName)
 			}
 		}
 	}
 	if !found {
-		t.Errorf("VolumeMounts %s not found", name)
+		t.Errorf("Volume %s not found", trustedca)
 	}
 }

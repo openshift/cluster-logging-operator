@@ -266,6 +266,56 @@ func RemoveString(slice []string, s string) (result []string) {
 	return
 }
 
+func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
+
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	lhsMap := make(map[string]v1.Volume)
+	rhsMap := make(map[string]v1.Volume)
+
+	for _, vol := range lhs {
+		lhsMap[vol.Name] = vol
+	}
+
+	for _, vol := range rhs {
+		rhsMap[vol.Name] = vol
+	}
+
+	for name, lhsVol := range lhsMap {
+		if rhsVol, ok := rhsMap[name]; ok {
+			if lhsVol.Secret != nil && rhsVol.Secret != nil {
+				if lhsVol.Secret.SecretName != rhsVol.Secret.SecretName {
+					return false
+				}
+
+				continue
+			}
+			if lhsVol.ConfigMap != nil && rhsVol.ConfigMap != nil {
+				if lhsVol.ConfigMap.LocalObjectReference.Name != rhsVol.ConfigMap.LocalObjectReference.Name {
+					return false
+				}
+
+				continue
+			}
+			if lhsVol.HostPath != nil && rhsVol.HostPath != nil {
+				if lhsVol.HostPath.Path != rhsVol.HostPath.Path {
+					return false
+				}
+				continue
+			}
+
+			return false
+		} else {
+			// if rhsMap doesn't have the same key has lhsMap
+			return false
+		}
+	}
+
+	return true
+}
+
 /**
 EnvValueEqual - check if 2 EnvValues are equal or not
 Notes:
@@ -357,30 +407,30 @@ func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {
 			Name:  "HTTPS_PROXY",
 			Value: proxyConfig.Status.HTTPSProxy,
 		},
-		v1.EnvVar{
-			Name:  "https_proxy",
-			Value: proxyConfig.Status.HTTPSProxy,
-		})
+			v1.EnvVar{
+				Name:  "https_proxy",
+				Value: proxyConfig.Status.HTTPSProxy,
+			})
 	}
 	if len(proxyConfig.Status.HTTPProxy) != 0 {
 		envVars = append(envVars, v1.EnvVar{
 			Name:  "HTTP_PROXY",
 			Value: proxyConfig.Status.HTTPProxy,
 		},
-		v1.EnvVar{
-			Name:  "http_proxy",
-			Value: proxyConfig.Status.HTTPProxy,
-		})
+			v1.EnvVar{
+				Name:  "http_proxy",
+				Value: proxyConfig.Status.HTTPProxy,
+			})
 	}
 	if len(proxyConfig.Status.NoProxy) != 0 {
 		envVars = append(envVars, v1.EnvVar{
 			Name:  "NO_PROXY",
 			Value: proxyConfig.Status.NoProxy,
 		},
-		v1.EnvVar{
-			Name:  "no_proxy",
-			Value: proxyConfig.Status.NoProxy,
-		})
+			v1.EnvVar{
+				Name:  "no_proxy",
+				Value: proxyConfig.Status.NoProxy,
+			})
 	}
 	return envVars
 }

@@ -53,7 +53,9 @@ func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err 
 func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object runtime.Object) (err error) {
 	logrus.Tracef("Updating Status: %v", object)
 	if err = clusterRequest.client.Status().Update(context.TODO(), object); err != nil {
-		logrus.Errorf("Error updating %v: %v", object.GetObjectKind(), err)
+		// making this debug because we should be throwing the returned error if we are never
+		// able to update the status
+		logrus.Debugf("Error updating status: %v", err)
 	}
 	return err
 }

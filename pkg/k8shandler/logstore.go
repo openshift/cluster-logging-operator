@@ -45,7 +45,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !reflect.DeepEqual(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
+			if !compareElasticsearchStatus(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
 				if printUpdateMessage {
 					logrus.Info("Updating status of Elasticsearch")
 					printUpdateMessage = false
@@ -61,6 +61,69 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 	}
 
 	return nil
+}
+
+func compareElasticsearchStatus(lhs, rhs []logging.ElasticsearchStatus) bool {
+	// there should only ever be a single elasticsearch status object
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	if len(lhs) > 0 {
+		for index, _ := range lhs {
+			if lhs[index].ClusterName != rhs[index].ClusterName {
+				return false
+			}
+
+			if lhs[index].NodeCount != rhs[index].NodeCount {
+				return false
+			}
+
+			if lhs[index].ClusterHealth != rhs[index].ClusterHealth {
+				return false
+			}
+
+			if lhs[index].Cluster != rhs[index].Cluster {
+				return false
+			}
+
+			if lhs[index].ShardAllocationEnabled != rhs[index].ShardAllocationEnabled {
+				return false
+			}
+
+			if len(lhs[index].Pods) != len(rhs[index].Pods) {
+				return false
+			}
+
+			if len(lhs[index].Pods) > 0 {
+				if !reflect.DeepEqual(lhs[index].Pods, rhs[index].Pods) {
+					return false
+				}
+			}
+
+			if len(lhs[index].ClusterConditions) != len(rhs[index].ClusterConditions) {
+				return false
+			}
+
+			if len(lhs[index].ClusterConditions) > 0 {
+				if !reflect.DeepEqual(lhs[index].ClusterConditions, rhs[index].ClusterConditions) {
+					return false
+				}
+			}
+
+			if len(lhs[index].NodeConditions) != len(rhs[index].NodeConditions) {
+				return false
+			}
+
+			if len(lhs[index].NodeConditions) > 0 {
+				if !reflect.DeepEqual(lhs[index].NodeConditions, rhs[index].NodeConditions) {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeElasticsearch() (err error) {

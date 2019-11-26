@@ -49,13 +49,14 @@ var secretCertificates = map[string]map[string]string{
 		"ca-bundle.crt": "ca.crt",
 		"tls.key":       "system.logging.fluentd.key",
 		"tls.crt":       "system.logging.fluentd.crt",
-		//legacy to be removed in future
+		/*legacy to be removed in future
 		"app-ca":     "ca.crt",
 		"app-key":    "system.logging.fluentd.key",
 		"app-cert":   "system.logging.fluentd.crt",
 		"infra-ca":   "ca.crt",
 		"infra-key":  "system.logging.fluentd.key",
 		"infra-cert": "system.logging.fluentd.crt",
+		*/
 	},
 }
 

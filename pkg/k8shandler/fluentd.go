@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"time"
@@ -12,9 +13,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
-	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
@@ -179,7 +180,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 		return fmt.Errorf("Failure constructing Fluentd configmap: %v", err)
 	}
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		current := &core.ConfigMap{}
+		current := &v1.ConfigMap{}
 		if err = clusterRequest.Get(fluentdConfigMap.Name, current); err != nil {
 			if errors.IsNotFound(err) {
 				logrus.Debugf("Returning nil. The configmap %q was not found even though create previously failed.  Was it culled?", fluentdConfigMap.Name)
@@ -218,7 +219,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 	return nil
 }
 
-func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy, trustedCABundleCM *core.ConfigMap, pipelineSpec logforward.ForwardingSpec) v1.PodSpec {
+func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logforward.ForwardingSpec) v1.PodSpec {
 	collectionSpec := logging.CollectionSpec{}
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
@@ -368,11 +369,28 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	return fluentdPodSpec
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string, proxyConfig *configv1.Proxy, trustedCABundleCM *core.ConfigMap) (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string, proxyConfig *configv1.Proxy) (err error) {
 
 	cluster := clusterRequest.cluster
 
-	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, trustedCABundleCM, clusterRequest.ForwardingSpec)
+	fluentdTrustBundle := &v1.ConfigMap{}
+	if proxyConfig != nil {
+		// Create or update cluster proxy trusted CA bundle.
+		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
+		if err != nil {
+			return
+		}
+
+		// fluentd-trusted-ca-bundle
+		fluentdTrustBundleName := types.NamespacedName{Name: constants.FluentdTrustedCAName, Namespace: constants.OpenshiftNS}
+		if err := clusterRequest.client.Get(context.TODO(), fluentdTrustBundleName, fluentdTrustBundle); err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+
+	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, fluentdTrustBundle, clusterRequest.ForwardingSpec)
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
@@ -393,7 +411,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 
 	if clusterRequest.isManaged() {
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset, trustedCABundleCM)
+			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset, fluentdTrustBundle)
 		})
 		if retryErr != nil {
 			return retryErr
@@ -403,7 +421,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet, trustedCABundleCM *core.ConfigMap) (err error) {
+func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet, trustedCABundleCM *v1.ConfigMap) (err error) {
 	logger.DebugObject("desired fluent update: %v", desired)
 	current := &apps.DaemonSet{}
 

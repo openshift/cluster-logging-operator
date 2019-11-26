@@ -55,7 +55,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !reflect.DeepEqual(curatorStatus, cluster.Status.Curation.CuratorStatus) {
+
+			if !compareCuratorStatus(curatorStatus, cluster.Status.Curation.CuratorStatus) {
 				if printUpdateMessage {
 					logrus.Info("Updating status of Curator")
 					printUpdateMessage = false
@@ -71,6 +72,41 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 	}
 
 	return nil
+}
+
+func compareCuratorStatus(lhs, rhs []logging.CuratorStatus) bool {
+	// there should only ever be a single curator status object
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	if len(lhs) > 0 {
+		for index, _ := range lhs {
+			if lhs[index].CronJob != rhs[index].CronJob {
+				return false
+			}
+
+			if lhs[index].Schedule != rhs[index].Schedule {
+				return false
+			}
+
+			if lhs[index].Suspended != rhs[index].Suspended {
+				return false
+			}
+
+			if len(lhs[index].Conditions) != len(rhs[index].Conditions) {
+				return false
+			}
+
+			if len(lhs[index].Conditions) > 0 {
+				if !reflect.DeepEqual(lhs[index].Conditions, rhs[index].Conditions) {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeCurator() (err error) {

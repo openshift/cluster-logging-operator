@@ -14,7 +14,8 @@ source "$repo_dir/hack/testing/assertions"
 
 start_seconds=$(date +%s)
 
-ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output"}
+ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output/"}
+ARTIFACT_DIR="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
 if [ ! -d $ARTIFACT_DIR ] ; then
   mkdir -p $ARTIFACT_DIR
 fi
@@ -24,7 +25,8 @@ TIMEOUT_MIN=$((2 * $minute))
 NAMESPACE="openshift-logging"
 manifest_dir=${repo_dir}/manifests
 version=$(basename $(find $manifest_dir -type d | sort -r | head -n 1))
-previous_version=$(echo $version | awk '{print $1 - 0.1}')
+#use N-2 since OLM content is not matched to OCP version until release
+previous_version=$(echo $version | awk '{print $1 - 0.2}')
 
 cleanup(){
   local return_code="$?"
@@ -33,6 +35,11 @@ cleanup(){
   end_seconds=$(date +%s)
   runtime="$(($end_seconds - $start_seconds))s"
   oc -n openshift-operators-redhat -o yaml get subscription elasticsearch-operator > $ARTIFACT_DIR/subscription-eo.yml 2>&1 ||:
+  oc -n openshift-operators-redhat -o yaml get deployment/elasticsearch-operator > $ARTIFACT_DIR/elasticsearch-operator-deployment.yml 2>&1 ||:
+  oc -n openshift-operators-redhat -o yaml get pods > $ARTIFACT_DIR/openshift-operators-redhat-pods.yml 2>&1 ||:
+  oc -n openshift-operators-redhat -o yaml get configmaps > $ARTIFACT_DIR/openshift-operators-redhat-configmaps.yml 2>&1 ||:
+  oc -n openshift-operators-redhat describe deployment/elasticsearch-operator > $ARTIFACT_DIR/elasticsearch-operator.describe 2>&1 ||:
+
   oc logs -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.log 2>&1 ||:
   oc -n ${NAMESPACE} -o yaml get subscription cluster-logging-operator > $ARTIFACT_DIR/subscription-clo.yml 2>&1 ||:
   oc -n ${NAMESPACE} -o yaml get configmap cluster-logging > $ARTIFACT_DIR/configmap-for-catalogsource-clo.yml 2>&1 ||:
@@ -67,9 +74,11 @@ fi
 deploy_marketplace_operator "openshift-operators-redhat" "elasticsearch-operator"  "$previous_version" "elasticsearch-operator" "true"
 
 # verify operator is ready
+log::info "Verifing elasticsearch-operator is ready..."
 try_until_text "oc -n openshift-operators-redhat get deployment elasticsearch-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 # deploy CLO
+log::info "Deploying cluster-logging-operator from marketplace..."
 deploy_marketplace_operator "openshift-logging" "cluster-logging-operator" "$previous_version" "cluster-logging"
 
 # verify operator is ready

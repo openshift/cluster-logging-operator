@@ -1,0 +1,182 @@
+#!/bin/bash
+
+indent() {
+  INDENT="      "
+  sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
+}
+
+try_until_text() {
+  local cmd=$1
+  local expected=$2
+  local timeout=$3
+  local now=$(date +%s)
+  local expire=$(($now + $timeout))
+  while [ $now -lt $expire ]; do
+      if [[ "$($cmd)" == "${expected}" ]] ; then
+      exit 0
+    fi  
+    now=$(date +%s)
+  done
+  exit 1
+}
+
+wait_for_deployment_to_be_ready(){
+  local namespace=$1
+  local name=$2
+  local timeout=$3
+  try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
+}
+
+deploy_marketplace_operator(){
+  local namespace=$1
+  local name=$2
+  local channel=$3
+  local package=${4:-$name}
+  local global=${5:-false}
+  if [ "${global}" = "false" ] ; then 
+    cat <<EOL | oc create -f -
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: "$ns"
+- apiVersion: operators.coreos.com/v1
+  kind: OperatorGroup
+  metadata:
+    name: "$ns"
+    namespace: "$ns"
+  spec:
+    targetNamespaces: 
+    - "$ns"
+    packages: "$name"    
+- apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: "$name"
+    namespace: "$ns"
+  spec:
+    channel: "$channel"
+    installPlanApproval: Automatic
+    name: "$package"
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+EOL
+  else
+    cat <<EOL | oc create -f -
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Namespace
+  metadata:
+    name: "$ns"
+- apiVersion: operators.coreos.com/v1
+  kind: OperatorGroup
+  metadata:
+    name: "$ns"
+    namespace: "$ns"
+  spec:
+    packages: "$name"    
+- apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    name: "$name"
+    namespace: "$ns"
+  spec:
+    channel: "$channel"
+    installPlanApproval: Automatic
+    name: "$package"
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+EOL
+
+fi
+  wait_for_deployment_to_be_ready $namespace $name $((2 * $minute))
+}
+
+deploy_config_map_catalog_source() {
+  local namespace=$1
+  local manifest_dir=$2
+  local image=${3:-}
+
+  local version=$(basename $(find $manifest_dir -type d | sort -r | head -n 1))
+
+  local CRD=$(sed '/^#!.*$/d' $manifest_dir/$version/*crd.yaml | grep -v -- "---" | indent apiVersion)
+  local PKG=$(sed '/^#!.*$/d' $manifest_dir/*package.yaml | indent packageName)
+  local CSV=$(sed '/^#!.*$/d' $manifest_dir/$version/*version.yaml | sed 's/namespace: placeholder/namespace: '$namespace'/' |grep -v -- "---" |  indent apiVersion)
+  local PACKAGE_NAME=$(sed -nr 's,.*packageName: (.*),\1,p' $manifest_dir/*package.yaml)
+  if [ -n "${image:-}" ] ; then
+    CSV=$(echo "$CSV" | sed -e "s~containerImage:.*~containerImage: ${image}~" | indent apiVersion)
+    CSV=$(echo "$CSV" | sed -e "s~image:.*~image: ${image}\n~" | indent ApiVersion)
+  fi
+
+  cat <<EOF | sed 's/^  *$//' | oc create -n $namespace -f -
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: $PACKAGE_NAME
+data:
+  customResourceDefinitions: |-
+$CRD
+  clusterServiceVersions: |-
+$CSV
+  packages: |-
+$PKG
+EOF
+  cat <<EOF | oc create -n $namespace -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: $PACKAGE_NAME
+spec:
+  sourceType: internal
+  configMap: $PACKAGE_NAME
+  displayName: $PACKAGE_NAME
+  publisher: Operator Framework
+EOF
+
+}
+
+function deploy_elasticsearch_operator() {
+    if [ -n "${IMAGE_FORMAT:-}" ] ; then
+        IMAGE_ELASTICSEARCH_OPERATOR=$(sed -e "s,\${component},elasticsearch-operator," <(echo $IMAGE_FORMAT))
+    else
+        IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/origin/$VERSION:elasticsearch-operator}
+    fi
+    manifest=${repo_dir}/manifests
+    GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
+}
+
+function deploy_operator() {
+    local namespace=$1
+    local operatorName=$2
+    local manifest=$3
+    local operatorImage=$4
+    local timeout=$5
+
+
+    local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
+
+    KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
+
+    os::log::info "Creating namespace: ${namespace}"
+    oc create ns ${namespace} || :
+    
+    os::log::info "Deploying operator from ${manifest}"
+    GLOBAL=${GLOBAL:-false} \
+    VERSION=${version} \
+    OPERATOR_IMAGE=${operatorImage} \
+    MANIFEST_DIR=${manifest} \
+    TEST_NAMESPACE=${namespace} \
+    TARGET_NAMESPACE=${namespace} \
+    ${repo_dir}/hack/vendor/olm-test-script/e2e-olm.sh
+
+    if [ "$?" != "0" ] ; then
+	    os::log::error "Error deploying operator via OLM using manifest: $manifest"
+	    exit 1
+    fi
+
+    wait_for_deployment_to_be_ready $namespace $operatorName $timeout
+}

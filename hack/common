@@ -8,8 +8,8 @@ alias oc=${OC:-oc}
 repo_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
 
 source "$repo_dir/hack/lib/init.sh"
-source "$repo_dir/hack/testing/assertions"
 source "$repo_dir/hack/testing/utils"
+source "$repo_dir/hack/testing/assertions"
 
 VERSION=${VERSION:-4.3}
 ELASTICSEARCH_OP_REPO=${ELASTICSEARCH_OP_REPO:-${repo_dir}/../elasticsearch-operator}
@@ -146,43 +146,7 @@ function get_private_repo_dir() {
 }
 
 function login_to_registry() {
-    local savectx=$( oc config current-context )
-    local token=""
-    local username=""
-    if [ -n "${PUSH_USER:-}" -a -n "${PUSH_PASSWORD:-}" ] ; then
-        username=$PUSH_USER
-        if [ "$username" = "kube:admin" ] ; then
-            username=kubeadmin
-        fi
-        oc login -u "$username" -p "$PUSH_PASSWORD" > /dev/null
-        token=$( oc whoami -t 2> /dev/null || : )
-        oc config use-context "$savectx"
-    else
-        # see if current context has a token
-        token=$( oc whoami -t 2> /dev/null || : )
-        if [ -n "$token" ] ; then
-            username=$( oc whoami )
-        else
-            # get the first user with a token
-            token=$( oc config view -o go-template='{{ range .users }}{{ if .user.token }}{{ print .user.token }}{{ end }}{{ end }}' )
-            if [ -n "$token" ] ; then
-                username=$( oc config view -o go-template='{{ range .users }}{{ if .user.token }}{{ print .name }}{{ end }}{{ end }}' )
-                # username is in form username/cluster - strip off the cluster part
-                username=$( echo "$username" | sed 's,/.*$,,' )
-            fi
-        fi
-        if [ -z "$token" ] ; then
-            echo ERROR: could not determine token to use to login to "$1"
-            echo please do `oc login -u username -p password` to create a context with a token
-            echo OR
-            echo set \$PUSH_USER and \$PUSH_PASSWORD and run this script again
-            return 1
-        fi
-        if [ "$username" = "kube:admin" ] ; then
-            username=kubeadmin
-        fi
-    fi
-    docker login -u "$username" -p "$token" "$1" > /dev/null
+    docker login -u "$(oc whoami -t)" -p "$(oc whoami -t)" "$1" > /dev/null
 }
 
 function push_image() {

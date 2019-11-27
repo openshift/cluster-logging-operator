@@ -9,12 +9,10 @@ if [ "${DEBUG:-}" = "true" ]; then
 fi
 
 repo_dir="$( cd "$(dirname "$0")/../.." ; pwd -P )"
-source "$repo_dir/hack/lib/init.sh"
-source "$repo_dir/hack/testing/assertions"
 source "$repo_dir/hack/testing/utils"
+source "$repo_dir/hack/testing/assertions"
 
 start_seconds=$(date +%s)
-os::test::junit::declare_suite_start "${BASH_SOURCE[0]}"
 
 ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output"}
 if [ ! -d $ARTIFACT_DIR ] ; then
@@ -41,16 +39,16 @@ cleanup(){
   oc -n ${NAMESPACE} -o yaml get catalogsource cluster-logging > $ARTIFACT_DIR/catalogsource-clo.yml 2>&1 ||:
   oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/catalog-operator > $ARTIFACT_DIR/catalog-operator.logs 2>&1 ||:
   oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/olm-operator > $ARTIFACT_DIR/olm-operator.logs 2>&1 ||:
+  oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.after_update  2>&1 ||:
+
   
   for item in "crd/elasticsearches.logging.openshift.io" "crd/clusterloggings.logging.openshift.io" "ns/openshift-logging" "ns/openshift-operators-redhat"; do
     oc delete $item --wait=true --ignore-not-found --force --grace-period=0
   done
   for item in "ns/openshift-logging" "ns/openshift-operators-redhat"; do
-    os::cmd::try_until_failure "oc get project ${item}" "$((1 * $minute))"
+    try_until_text "oc get ${item} --ignore-not-found" "" "$((1 * $minute))"
   done
 
-  os::cleanup::all "${return_code}"
-  
   exit ${return_code}
 }
 trap cleanup exit
@@ -66,34 +64,40 @@ fi
 
 
 # deploy EO
-os::cmd::expect_success 'deploy_marketplace_operator "openshift-operators-redhat" "elasticsearch-operator"  "$previous_version" "elasticsearch-operator" "true" '
+deploy_marketplace_operator "openshift-operators-redhat" "elasticsearch-operator"  "$previous_version" "elasticsearch-operator" "true"
 
 # verify operator is ready
-os::cmd::try_until_text "oc -n openshift-operators-redhat get deployment elasticsearch-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
+try_until_text "oc -n openshift-operators-redhat get deployment elasticsearch-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 # deploy CLO
-os::cmd::expect_success 'deploy_marketplace_operator "openshift-logging" "cluster-logging-operator" "$previous_version" "cluster-logging"'
+deploy_marketplace_operator "openshift-logging" "cluster-logging-operator" "$previous_version" "cluster-logging"
 
 # verify operator is ready
-os::cmd::try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
+try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 # deploy cluster logging
-os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
+oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml
 
 assert_resources_exist
 
-os::cmd::expect_success "deploy_config_map_catalog_source $NAMESPACE ${repo_dir}/manifests '${IMAGE_CLUSTER_LOGGING_OPERATOR}'"
+oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.before_update 2>&1
+
+deploy_config_map_catalog_source $NAMESPACE ${repo_dir}/manifests "${IMAGE_CLUSTER_LOGGING_OPERATOR}"
+# #patch catalog source
+# #olm.skipRange: ">=4.2.0 <4.3.0"
+# range=">=$previous_version.0 <$(echo $version | awk '{print $1 + 0.1}').0"
+# oc -n $NAMESPACE get configmap cluster-logging -o yaml | sed -e "s~olm.skipRange:.*~olm.skipRange: ${range}~" | oc replace -n $NAMESPACE -f -
 
 # patch subscription
 payload="{\"op\":\"replace\",\"path\":\"/spec/source\",\"value\":\"cluster-logging\"}"
 payload="$payload,{\"op\":\"replace\",\"path\":\"/spec/sourceNamespace\",\"value\":\"openshift-logging\"}"
 payload="$payload,{\"op\":\"replace\",\"path\":\"/spec/channel\",\"value\":\"$version\"}"
-os::cmd::expect_success "oc -n $NAMESPACE patch subscription cluster-logging-operator --type json -p '[$payload]'"
+oc -n $NAMESPACE patch subscription cluster-logging-operator --type json -p "[$payload]"
 
 #verify deployment is rolled out
-os::cmd::try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.spec.template.spec.containers[0].image}" "${IMAGE_CLUSTER_LOGGING_OPERATOR}" ${TIMEOUT_MIN}
+try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.spec.template.spec.containers[0].image}" "${IMAGE_CLUSTER_LOGGING_OPERATOR}" ${TIMEOUT_MIN}
 
 # verify operator is ready
-os::cmd::try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
+try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 assert_resources_exist

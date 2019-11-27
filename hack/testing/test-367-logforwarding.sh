@@ -65,17 +65,7 @@ for dir in $(ls -d ./test/e2e/logforwarding/*); do
     os::log::info "==========================="
     os::log::info "Logforwarding $dir failed"
     os::log::info "==========================="
-    for p in $(oc -n openshift-logging get pods -o jsonpath={.items[*].metadata.name}); do
-      oc -n openshift-logging logs $p > $artifact_dir/$p.logs||:
-    done
-    for p in $(oc -n openshift-logging get pods -lcomponent=fluentd -o jsonpath={.items[*].metadata.name}); do
-      oc -n openshift-logging exec $p -- logs > $artifact_dir/$p.logs||:
-    done
-    for p in $(oc -n openshift-logging get pods -lcomponent=elasticsearch -o jsonpath={.items[*].metadata.name}); do
-      oc -n openshift-logging -c elasticsearch exec $p -- logs > $artifact_dir/$p.logs||:
-    done
-    oc -n openshift-logging get pods > $artifact_dir/pods||:
-    oc -n openshift-logging describe ds fluentd > $artifact_dir/fluent.describe||:
+    get_all_logging_pod_logs $artifact_dir
     oc -n openshift-logging configmap fluentd -o yaml > $artifact_dir/fluent-configmap.yaml||:
   fi
   oc delete ns openshift-logging --wait=true --ignore-not-found --force --grace-period=0

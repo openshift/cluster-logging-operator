@@ -14,14 +14,14 @@ try_until_success() {
   local cmd=$1
   local timeout=$2
   local interval=${3:-0.2}
-  local now=$(date +%s)
+  local now=$(date +%s%3N)
   local expire=$(($now + $timeout))
   while [ $now -lt $expire ]; do
     if $cmd ; then
       return 0
     fi  
     sleep $interval
-    now=$(date +%s)
+    now=$(date +%s%3N)
   done
   return 1
 }
@@ -31,14 +31,14 @@ try_until_text() {
   local expected=$2
   local timeout=$3
   local interval=${4:-0.2}
-  local now=$(date +%s)
+  local now=$(date +%s%3N)
   local expire=$(($now + $timeout))
   while [ $now -lt $expire ]; do
     if [[ "$($cmd)" == "${expected}" ]] ; then
       return 0
     fi  
     sleep $interval
-    now=$(date +%s)
+    now=$(date +%s%3N)
   done
   return 1
 }

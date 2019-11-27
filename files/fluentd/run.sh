@@ -5,17 +5,6 @@ CFG_DIR=/etc/fluent/configs.d
 ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"true"}
 OCP_OPERATIONS_PROJECTS=${OCP_OPERATIONS_PROJECTS:-"default openshift openshift- kube-"}
 LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/fluentd/fluentd.log"}
-OCP_FLUENTD_TAGS=""
-for p in ${OCP_OPERATIONS_PROJECTS}; do
-    if [[ "${p}" == *- ]] ; then
-      p="${p}*"
-    fi
-    OCP_FLUENTD_TAGS+=" **_${p}_**"
-done
-ocp_fluentd_files=$( grep -l %OCP_FLUENTD_TAGS% ${CFG_DIR}/* ${CFG_DIR}/*/* 2> /dev/null || : )
-for file in ${ocp_fluentd_files} ; do
-    sed -i -e "s/%OCP_FLUENTD_TAGS%/${OCP_FLUENTD_TAGS}/" $file
-done
 
 loggingargs=""
 if [ ${LOGGING_FILE_PATH} != "console" ] ; then

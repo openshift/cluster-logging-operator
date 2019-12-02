@@ -10,7 +10,7 @@ import (
 )
 
 //NewConsoleExternalLogLink stubs an instance of a ConsoleExternalLogLink
-func NewConsoleExternalLogLink(resourceName, namespace, consoleText, hrefTemplate string) *consolev1.ConsoleExternalLogLink {
+func NewConsoleExternalLogLink(resourceName, namespace, consoleText, hrefTemplate, namespaceFilter string) *consolev1.ConsoleExternalLogLink {
 	return &consolev1.ConsoleExternalLogLink{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConsoleExternalLogLink",
@@ -28,6 +28,7 @@ func NewConsoleExternalLogLink(resourceName, namespace, consoleText, hrefTemplat
 		Spec: consolev1.ConsoleExternalLogLinkSpec{
 			Text:         consoleText,
 			HrefTemplate: hrefTemplate,
+			NamespaceFilter: namespaceFilter,
 		},
 	}
 }
@@ -37,6 +38,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveConsoleExternalLogLink(resour
 	consoleExternalLogLink := NewConsoleExternalLogLink(
 		resourceName,
 		clusterRequest.cluster.Namespace,
+		"",
 		"",
 		"",
 	)

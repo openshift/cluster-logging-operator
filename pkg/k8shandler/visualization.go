@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
+	consolev1 "github.com/openshift/api/console/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
@@ -23,8 +24,11 @@ import (
 )
 
 const (
-	kibanaServiceAccountName     = "kibana"
-	kibanaOAuthRedirectReference = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
+	kibanaServiceAccountName       = "kibana"
+	kibanaOAuthRedirectReference   = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
+	// The following strings are turned into JavaScript RegExps. Online tool to test them: https://regex101.com/
+	nodesAndContainersNamespaceFilter = "^(openshift-.*|kube-.*|openshift$|kube$|default$)"
+	appsNamespaceFilter               = "^((?!" + nodesAndContainersNamespaceFilter + ").)*$" // ^((?!^(openshift-.*|kube-.*|openshift$|kube$|default$)).)*$
 )
 
 var (
@@ -436,12 +440,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaConsoleExternal
 		return err
 	}
 
-	consoleExternalLogLink := NewConsoleExternalLogLink(
-		"kibana",
+	consoleExternalLogLinkForNodesAndContainers := NewConsoleExternalLogLink(
+		"kibana-admin",
 		cluster.Namespace,
 		"Show in Kibana",
 		strings.Join([]string{kibanaURL,
-			"/app/kibana#/discover?_g=(time:(from:now-1w,mode:relative,to:now))&_a=(columns:!(kubernetes.container_name,message),query:(query_string:(analyze_wildcard:!t,query:'",
+			"/app/kibana#/discover?_g=(time:(from:now-1w,mode:relative,to:now))&_a=(columns:!(kubernetes.container_name,message),index:",
+			"'.operations.*'",
+			",query:(query_string:(analyze_wildcard:!t,query:'",
 			strings.Join([]string{
 				"kubernetes.pod_name:\"${resourceName}\"",
 				"kubernetes.namespace_name:\"${resourceNamespace}\"",
@@ -449,18 +455,39 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaConsoleExternal
 			}, " AND "),
 			"')),sort:!('@timestamp',desc))"},
 			""),
+		nodesAndContainersNamespaceFilter,
 	)
 
-	utils.AddOwnerRefToObject(consoleExternalLogLink, utils.AsOwner(cluster))
+	consoleExternalLogLinkForApps := NewConsoleExternalLogLink(
+		"kibana",
+		cluster.Namespace,
+		"Show in Kibana",
+		strings.Join([]string{kibanaURL,
+			"/app/kibana#/discover?_g=(time:(from:now-1w,mode:relative,to:now))&_a=(columns:!(kubernetes.container_name,message),index:",
+			"'project.${resourceNamespace}.${resourceNamespaceUID}.*'",
+			",query:(query_string:(analyze_wildcard:!t,query:'",
+			strings.Join([]string{
+				"kubernetes.pod_name:\"${resourceName}\"",
+				"kubernetes.namespace_name:\"${resourceNamespace}\"",
+				"kubernetes.container_name.raw:\"${containerName}\"",
+			}, " AND "),
+			"')),sort:!('@timestamp',desc))"},
+			""),
+		appsNamespaceFilter,
+	)
+	links := []*consolev1.ConsoleExternalLogLink{consoleExternalLogLinkForNodesAndContainers, consoleExternalLogLinkForApps}
 
-	// In case the object already exists we delete it first
-	if err = clusterRequest.RemoveConsoleExternalLogLink("kibana"); err != nil {
-		return
-	}
-
-	err = clusterRequest.Create(consoleExternalLogLink)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana console external log link for %q: %v", cluster.Name, err)
+	for _, externalLink := range links {
+		utils.AddOwnerRefToObject(externalLink, utils.AsOwner(cluster))
+		// In case the object already exists we delete it first
+		if err = clusterRequest.RemoveConsoleExternalLogLink(externalLink.ObjectMeta.Name); err != nil {
+			return
+		}
+		err = clusterRequest.Create(externalLink)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating Kibana console external %q log link for %q: %v",
+				externalLink.ObjectMeta.Name, cluster.Name, err)
+		}
 	}
 	return nil
 }

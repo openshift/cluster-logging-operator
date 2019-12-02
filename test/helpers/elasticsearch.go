@@ -183,7 +183,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 				Image: utils.GetComponentImage("elasticsearch"),
 				Resources: corev1.ResourceRequirements{
 					Requests: v1.ResourceList{
-						v1.ResourceMemory: resource.MustParse("3Gi"),
+						v1.ResourceMemory: resource.MustParse("4Gi"),
 					},
 				},
 			},

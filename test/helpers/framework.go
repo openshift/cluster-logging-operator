@@ -44,7 +44,7 @@ func init() {
 	if defaultRetryInterval, err = time.ParseDuration("1s"); err != nil {
 		panic(err)
 	}
-	if defaultTimeout, err = time.ParseDuration("2m"); err != nil {
+	if defaultTimeout, err = time.ParseDuration("5m"); err != nil {
 		panic(err)
 	}
 	if DefaultWaitForLogsTimeout, err = time.ParseDuration("5m"); err != nil {
@@ -98,13 +98,16 @@ func (tc *E2ETestFramework) DeployLogGenerator() error {
 		return err
 	}
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Core().Namespaces().Delete(namespace, nil)
+		return tc.KubeClient.Apps().Deployments(namespace).Delete(deployment.Name, nil)
 	})
 	return tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
 }
 
 func (tc *E2ETestFramework) CreateTestNamespace() string {
 	name := fmt.Sprintf("clo-test-%d", rand.Intn(10000))
+	if value, found := os.LookupEnv("GENERATOR_NS"); found {
+		name = value
+	}
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -197,18 +200,18 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	if err != nil {
 		return err
 	}
-	tc.AddCleanup(func() error {
-		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
-			SetHeader("Content-Type", "application/json").
-			Do().Error()
-	})
 	logger.Debugf("Creating ClusterLogging: %s", string(body))
 	result := tc.KubeClient.RESTClient().Post().
 		RequestURI(clusterLoggingURI).
 		SetHeader("Content-Type", "application/json").
 		Body(body).
 		Do()
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.RESTClient().Delete().
+			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
+			SetHeader("Content-Type", "application/json").
+			Do().Error()
+	})
 	return result.Error()
 }
 
@@ -217,22 +220,26 @@ func (tc *E2ETestFramework) CreateLogForwarding(forwarding *logforwarding.LogFor
 	if err != nil {
 		return err
 	}
-	tc.AddCleanup(func() error {
-		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", logforwardingURI)).
-			SetHeader("Content-Type", "application/json").
-			Do().Error()
-	})
 	logger.Debugf("Creating LogForwarding: %s", string(body))
 	result := tc.KubeClient.RESTClient().Post().
 		RequestURI(logforwardingURI).
 		SetHeader("Content-Type", "application/json").
 		Body(body).
 		Do()
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.RESTClient().Delete().
+			RequestURI(fmt.Sprintf("%s/instance", logforwardingURI)).
+			SetHeader("Content-Type", "application/json").
+			Do().Error()
+	})
 	return result.Error()
 }
 
 func (tc *E2ETestFramework) Cleanup() {
+	//allow caller to cleanup if unset (e.g script cleanup())
+	if value, exists := os.LookupEnv("CLEANUP_E2E"); exists && value == "false" {
+		return
+	}
 	logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {
 		logger.Debug("Running an e2e cleanup function")

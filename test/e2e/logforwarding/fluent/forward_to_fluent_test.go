@@ -173,7 +173,6 @@ var _ = Describe("LogForwarding", func() {
 		})
 
 		AfterEach(func() {
-			//for n in $(echo "secrets sa roles rolebindings services deployment configmap") ; do oc delete $n fluent-receiver||: ; done
 			e2e.Cleanup()
 		})
 

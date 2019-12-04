@@ -25,11 +25,19 @@ func NewConfigMap(configmapName string, namespace string, data map[string]string
 	}
 }
 
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateTrustedCaBundleConfigMap(configMap *core.ConfigMap) error {
+	return clusterRequest.createOrUpdateConfigMap(configMap, false)
+}
+
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateConfigMap(configMap *core.ConfigMap) error {
+	return clusterRequest.createOrUpdateConfigMap(configMap, true)
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateConfigMap(configMap *core.ConfigMap, checkData bool) error {
 	err := clusterRequest.Create(configMap)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure constructing trusted CA bundle configmap: %v", err)
+			return fmt.Errorf("Failure creating configmap: %v", err)
 		}
 
 		current := &core.ConfigMap{}
@@ -43,10 +51,36 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateConfigMap(configMap *
 				}
 				return fmt.Errorf("Failed to get %v configmap for %q: %v", configMap.Name, clusterRequest.cluster.Name, err)
 			}
-			if reflect.DeepEqual(configMap.Data, current.Data) {
+
+			if checkData {
+				if reflect.DeepEqual(configMap.Data, current.Data) {
+					return nil
+				}
+				current.Data = configMap.Data
+			}
+
+			changed := false
+			// if configMap specified labels ensure that current has them...
+			if len(configMap.ObjectMeta.Labels) > 0 {
+				for key, val := range configMap.ObjectMeta.Labels {
+					if currentVal, ok := current.ObjectMeta.Labels[key]; ok {
+						if currentVal != val {
+							current.ObjectMeta.Labels[key] = val
+							changed = true
+						}
+					} else {
+						current.ObjectMeta.Labels[key] = val
+						changed = true
+					}
+				}
+			} else {
 				return nil
 			}
-			current.Data = configMap.Data
+			if !changed {
+				// shortcut updating -- we didn't change anything
+				return nil
+			}
+
 			return clusterRequest.Update(current)
 		})
 		return retryErr

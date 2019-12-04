@@ -25,7 +25,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateTrustedCABundleConfig
 
 	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.cluster))
 
-	err := clusterRequest.CreateOrUpdateConfigMap(configMap)
+	err := clusterRequest.CreateOrUpdateTrustedCaBundleConfigMap(configMap)
 	return err
 }
 

@@ -91,6 +91,10 @@ func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool
 	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
+			logger.Errorf("Error retrieving indices from elasticsearch %v", err)
+			if strings.Contains(err.Error(), "failed to get pod") {
+				return false, nil
+			}
 			return false, err
 		}
 		return indices.HasInfraStructureLogs(), nil
@@ -102,6 +106,10 @@ func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, e
 	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
+			logger.Errorf("Error retrieving indices from elasticsearch %v", err)
+			if strings.Contains(err.Error(), "failed to get pod") {
+				return false, nil
+			}
 			return false, err
 		}
 		return indices.HasApplicationLogs(), nil

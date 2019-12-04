@@ -299,15 +299,15 @@ spec:
                   - name: OPERATOR_NAME
                     value: "cluster-logging-operator"
                   - name: ELASTICSEARCH_IMAGE
-                    value: "quay.io/openshift/origin-logging-elasticsearch5:latest"
+                    value: registry.svc.ci.openshift.org/ocp/4.3:logging-elasticsearch5
                   - name: FLUENTD_IMAGE
-                    value: "quay.io/openshift/origin-logging-fluentd:latest"
+                    value: registry.svc.ci.openshift.org/ocp/4.3:logging-fluentd
                   - name: KIBANA_IMAGE
-                    value: "quay.io/openshift/origin-logging-kibana5:latest"
+                    value: registry.svc.ci.openshift.org/ocp/4.3:logging-kibana5
                   - name: CURATOR_IMAGE
-                    value: "quay.io/openshift/origin-logging-curator5:latest"
+                    value: registry.svc.ci.openshift.org/ocp/4.3:logging-curator5
                   - name: OAUTH_PROXY_IMAGE
-                    value: "quay.io/openshift/origin-oauth-proxy:latest"
+                    value: registry.svc.ci.openshift.org/ocp/4.3:oauth-proxy
                   - name: PROMTAIL_IMAGE
                     value: "quay.io/openshift/origin-promtail:latest"
   customresourcedefinitions:

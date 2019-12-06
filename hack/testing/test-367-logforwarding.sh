@@ -10,7 +10,7 @@ source "$(dirname $0)/../common"
 
 start_seconds=$(date +%s)
 
-TEST_DIR=${TEST_DIR:-'./test/e2e/logforwarding/*'}
+TEST_DIR=${TEST_DIR:-'./test/e2e/logforwarding/*/'}
 ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output"}
 if [ ! -d $ARTIFACT_DIR ] ; then
   mkdir -p $ARTIFACT_DIR
@@ -55,7 +55,11 @@ for dir in $(ls -d $TEST_DIR); do
   artifact_dir=$ARTIFACT_DIR/$(basename $dir)
   mkdir -p $artifact_dir
   GENERATOR_NS="clo-test-$RANDOM"
-  if GENERATOR_NS=$GENERATOR_NS ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest go test -count=1 -parallel=1 $dir  | tee -a $artifact_dir/test.log ; then
+  if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/logforwarding/cleanup.sh $artifact_dir $GENERATOR_NS" \
+    artifact_dir=$artifact_dir \
+    GENERATOR_NS=$GENERATOR_NS \
+    ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest \
+    go test -count=1 -parallel=1 $dir  | tee -a $artifact_dir/test.log ; then
     log::info "======================================================="
     log::info "Logforwarding $dir passed"
     log::info "======================================================="
@@ -64,13 +68,6 @@ for dir in $(ls -d $TEST_DIR); do
     log::info "======================================================="
     log::info "Logforwarding $dir failed"
     log::info "======================================================="
-    # grab usefull logs
-    get_all_logging_pod_logs $artifact_dir
-    oc -n openshift-logging get configmap fluentd -o jsonpath={.data} > $artifact_dir/fluent-configmap.yaml||:
-    oc -n openshift-logging extract secret/elasticsearch --to=$artifact_dir||:
-    oc -n $GENERATOR_NS describe deployment/log-generator  > $artifact_dir/log-generator.describe||:
-    oc -n $GENERATOR_NS logs deployment/log-generator  > $artifact_dir/log-generator.logs||:
-    oc -n $GENERATOR_NS get deployment/log-generator -o yaml > $artifact_dir/log-generator.deployment.yaml||:
   fi
   for ns in "ns/$GENERATOR_NS ns/openshift-logging"; do
     oc delete $ns --ignore-not-found --force --grace-period=0||:

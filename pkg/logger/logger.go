@@ -24,6 +24,10 @@ func Error(args ...interface{}) {
 	logrus.Error(args...)
 }
 
+func Errorf(format string, args ...interface{}) {
+	logrus.Errorf(format, args...)
+}
+
 func Info(args ...interface{}) {
 	logrus.Info(args...)
 }

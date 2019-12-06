@@ -29,7 +29,7 @@ previous_version=$(echo $version | awk '{print $1 - 0.1}')
 cleanup(){
   local return_code="$?"
   set +e
-  os::log::info "Running cleanup"
+  log::info "Running cleanup"
   end_seconds=$(date +%s)
   runtime="$(($end_seconds - $start_seconds))s"
   oc -n openshift-operators-redhat -o yaml get subscription elasticsearch-operator > $ARTIFACT_DIR/subscription-eo.yml 2>&1 ||:

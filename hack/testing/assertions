@@ -1,5 +1,5 @@
 #!/bin/bash
-source "$(dirname $0)/utils"
+source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/utils"
 assert_resources_exist(){
 	# verify deployments -- kibana, curator
 	try_until_success "oc -n $NAMESPACE get deployment kibana" ${TIMEOUT_MIN}	

@@ -56,6 +56,14 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 			instance.Spec.Collection = &cl.CollectionSpec{
 				Logs: cl.LogCollectionSpec{
 					Type: cl.LogCollectionTypeFluentd,
+					FluentdSpec: cl.FluentdSpec{
+						Resources: &v1.ResourceRequirements{
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: resource.MustParse("736Mi"),
+								v1.ResourceCPU:    resource.MustParse("500m"),
+							},
+						},
+					},
 				},
 			}
 		}

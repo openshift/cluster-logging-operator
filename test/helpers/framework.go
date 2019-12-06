@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -240,12 +242,24 @@ func (tc *E2ETestFramework) Cleanup() {
 	if value, exists := os.LookupEnv("CLEANUP_E2E"); exists && value == "false" {
 		return
 	}
+	RunCleanupScript()
 	logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {
 		logger.Debug("Running an e2e cleanup function")
 		if err := cleanup(); err != nil {
 			logger.Debugf("Error during cleanup %v", err)
 		}
+	}
+}
+
+func RunCleanupScript() {
+	if value, found := os.LookupEnv("CLEANUP_CMD"); found {
+		args := strings.Split(value, " ")
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Env = nil
+		result, err := cmd.Output()
+		logger.Infof("RunCleanupScript output: %s", string(result))
+		logger.Infof("err: %v", err)
 	}
 }
 

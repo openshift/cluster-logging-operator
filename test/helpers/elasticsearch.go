@@ -89,9 +89,15 @@ type ElasticLogStore struct {
 
 func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+		errorCount := 0
 		indices, err := es.Indices()
 		if err != nil {
-			return false, err
+			logger.Errorf("Error retrieving indices from elasticsearch %v", err)
+			errorCount++
+			if errorCount > 5 { //accept arbitrary errors like 'etcd leader change'
+				return false, err
+			}
+			return false, nil
 		}
 		return indices.HasInfraStructureLogs(), nil
 	})
@@ -100,9 +106,15 @@ func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool
 
 func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+		errorCount := 0
 		indices, err := es.Indices()
 		if err != nil {
-			return false, err
+			logger.Errorf("Error retrieving indices from elasticsearch %v", err)
+			errorCount++
+			if errorCount > 5 {
+				return false, err
+			}
+			return false, nil
 		}
 		return indices.HasApplicationLogs(), nil
 	})

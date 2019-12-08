@@ -16,7 +16,7 @@ TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
-export OCP_VERSION?=4.3
+export OCP_VERSION?=4.4
 IMAGE_CLUSTER_LOGGING_OPERATOR?=registry.svc.ci.openshift.org/origin/$(VERSION):cluster-logging-operator
 export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging

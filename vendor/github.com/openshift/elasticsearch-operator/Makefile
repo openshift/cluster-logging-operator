@@ -87,13 +87,13 @@ fmt:
 simplify:
 	@gofmt -s -l -w $(SRC)
 
-deploy: deploy-setup deploy-image
+deploy: deploy-image
 	hack/deploy.sh
 .PHONY: deploy
 
-deploy-no-build: deploy-setup
+deploy-no-build:
 	hack/deploy.sh
-.PHONY: deploy
+.PHONY: deploy-no-build
 
 deploy-image: image
 	hack/deploy-image.sh
@@ -102,10 +102,6 @@ deploy-image: image
 deploy-example: deploy
 	@oc create -n openshift-logging -f hack/cr.yaml
 .PHONY: deploy-example
-
-deploy-setup:
-	EXCLUSIONS="05-deployment.yaml image-references" hack/deploy-setup.sh
-.PHONY: deploy-setup
 
 run: deploy deploy-example
 	@ALERTS_FILE_PATH=files/prometheus_alerts.yml \

@@ -11,7 +11,7 @@ source "$repo_dir/hack/lib/init.sh"
 source "$repo_dir/hack/testing/utils"
 source "$repo_dir/hack/testing/assertions"
 
-VERSION=${VERSION:-4.3}
+VERSION=${VERSION:-4.4}
 ELASTICSEARCH_OP_REPO=${ELASTICSEARCH_OP_REPO:-${repo_dir}/../elasticsearch-operator}
 
 ADMIN_USER=${ADMIN_USER:-kubeadmin}

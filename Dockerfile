@@ -4,7 +4,7 @@ COPY . .
 RUN make
 
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
-ARG CSV=4.3
+ARG CSV=4.4
 RUN INSTALL_PKGS=" \
       openssl \
       " && \

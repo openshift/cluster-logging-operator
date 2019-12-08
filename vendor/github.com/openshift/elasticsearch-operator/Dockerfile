@@ -1,10 +1,10 @@
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.10 AS builder
+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.12 AS builder
 WORKDIR /go/src/github.com/openshift/elasticsearch-operator
 COPY . .
 RUN make
 
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
-ARG CSV=4.3
+ARG CSV=4.4
 
 ENV ALERTS_FILE_PATH="/etc/elasticsearch-operator/files/prometheus_alerts.yml"
 ENV RULES_FILE_PATH="/etc/elasticsearch-operator/files/prometheus_rules.yml"

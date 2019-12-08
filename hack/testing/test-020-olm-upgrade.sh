@@ -83,10 +83,6 @@ assert_resources_exist
 oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.before_update 2>&1
 
 deploy_config_map_catalog_source $NAMESPACE ${repo_dir}/manifests "${IMAGE_CLUSTER_LOGGING_OPERATOR}"
-# #patch catalog source
-# #olm.skipRange: ">=4.2.0 <4.3.0"
-# range=">=$previous_version.0 <$(echo $version | awk '{print $1 + 0.1}').0"
-# oc -n $NAMESPACE get configmap cluster-logging -o yaml | sed -e "s~olm.skipRange:.*~olm.skipRange: ${range}~" | oc replace -n $NAMESPACE -f -
 
 # patch subscription
 payload="{\"op\":\"replace\",\"path\":\"/spec/source\",\"value\":\"cluster-logging\"}"

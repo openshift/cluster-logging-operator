@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,11 +91,9 @@ type ReconcileProxyConfig struct {
 func (r *ReconcileProxyConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	loggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
-	var proxyConfig *configv1.Proxy = nil
-	var trustBundle *corev1.ConfigMap = nil
-	if request.NamespacedName == proxyNamespacedName {
-		proxyConfig = &configv1.Proxy{}
-		if err := r.client.Get(context.TODO(), request.NamespacedName, proxyConfig); err != nil {
+	proxyConfig := &configv1.Proxy{}
+	if request.NamespacedName == proxyNamespacedName || utils.ContainsString(constants.ReconcileForGlobalProxyList, request.Name) {
+		if err := r.client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
 			if apierrors.IsNotFound(err) {
 				// Request object not found, could have been deleted after reconcile request.
 				// Return and don't requeue
@@ -104,15 +101,6 @@ func (r *ReconcileProxyConfig) Reconcile(request reconcile.Request) (reconcile.R
 			}
 			// Error reading the object - just return without requeuing.
 			return reconcile.Result{}, err
-		}
-	} else if utils.ContainsString(constants.ReconcileForGlobalProxyList, request.Name) {
-		trustBundle = &corev1.ConfigMap{}
-		logrus.Debugf("Trust bundle configmap reconcile request.Namespace/request.Name: '%s/%s'", request.Namespace, request.Name)
-		if err := r.client.Get(context.TODO(), loggingNamespacedName, trustBundle); err != nil {
-			if !apierrors.IsNotFound(err) {
-				// Error reading the object - just return without requeuing.
-				return reconcile.Result{}, err
-			}
 		}
 	} else {
 		return reconcile.Result{}, nil
@@ -142,7 +130,7 @@ func (r *ReconcileProxyConfig) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, err
 	}
 
-	if err := k8shandler.ReconcileForGlobalProxy(instance, forwardinginstance, proxyConfig, trustBundle, r.client); err != nil {
+	if err := k8shandler.ReconcileForGlobalProxy(instance, forwardinginstance, proxyConfig, r.client); err != nil {
 		// Failed to reconcile - requeuing.
 		return reconcileResult, err
 	}

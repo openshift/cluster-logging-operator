@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
@@ -33,7 +35,7 @@ var (
 )
 
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap) (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy) (err error) {
 	if clusterRequest.cluster.Spec.Visualization == nil || clusterRequest.cluster.Spec.Visualization.Type == "" {
 		clusterRequest.removeKibana()
 		return nil
@@ -68,13 +70,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyCo
 			return
 		}
 
-		// Create cluster proxy trusted CA bundle.
-		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
-		if err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateKibanaDeployment(proxyConfig, trustedCABundleCM); err != nil {
+		if err = clusterRequest.createOrUpdateKibanaDeployment(proxyConfig); err != nil {
 			return
 		}
 
@@ -87,9 +83,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyCo
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !reflect.DeepEqual(kibanaStatus, cluster.Status.Visualization.KibanaStatus) {
+			if !compareKibanaStatus(kibanaStatus, cluster.Status.Visualization.KibanaStatus) {
 				if printUpdateMessage {
-					logrus.Infof("Updating status of Kibana for %q", cluster.Name)
+					logrus.Infof("Updating status of Kibana")
 					printUpdateMessage = false
 				}
 				cluster.Status.Visualization.KibanaStatus = kibanaStatus
@@ -103,6 +99,57 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyCo
 	}
 
 	return nil
+}
+
+func compareKibanaStatus(lhs, rhs []logging.KibanaStatus) bool {
+	// there should only ever be a single kibana status object
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	if len(lhs) > 0 {
+		for index, _ := range lhs {
+			if lhs[index].Deployment != rhs[index].Deployment {
+				return false
+			}
+
+			if lhs[index].Replicas != rhs[index].Replicas {
+				return false
+			}
+
+			if len(lhs[index].ReplicaSets) != len(rhs[index].ReplicaSets) {
+				return false
+			}
+
+			if len(lhs[index].ReplicaSets) > 0 {
+				if !reflect.DeepEqual(lhs[index].ReplicaSets, rhs[index].ReplicaSets) {
+					return false
+				}
+			}
+
+			if len(lhs[index].Pods) != len(rhs[index].Pods) {
+				return false
+			}
+
+			if len(lhs[index].Pods) > 0 {
+				if !reflect.DeepEqual(lhs[index].Pods, rhs[index].Pods) {
+					return false
+				}
+			}
+
+			if len(lhs[index].Conditions) != len(rhs[index].Conditions) {
+				return false
+			}
+
+			if len(lhs[index].Conditions) > 0 {
+				if !reflect.DeepEqual(lhs[index].Conditions, rhs[index].Conditions) {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
@@ -158,9 +205,27 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap) (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(proxyConfig *configv1.Proxy) (err error) {
 
-	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch.openshift-logging.svc.cluster.local", proxyConfig, trustedCABundleCM)
+	kibanaTrustBundle := &v1.ConfigMap{}
+
+	// Create cluster proxy trusted CA bundle.
+	if proxyConfig != nil {
+		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
+		if err != nil {
+			return
+		}
+
+		// kibana-trusted-ca-bundle
+		kibanaTrustBundleName := types.NamespacedName{Name: constants.KibanaTrustedCAName, Namespace: constants.OpenshiftNS}
+		if err := clusterRequest.client.Get(context.TODO(), kibanaTrustBundleName, kibanaTrustBundle); err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
+		}
+	}
+
+	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch.openshift-logging.svc.cluster.local", proxyConfig, kibanaTrustBundle)
 	kibanaDeployment := NewDeployment(
 		"kibana",
 		clusterRequest.cluster.Namespace,
@@ -194,7 +259,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 			current, different := isDeploymentDifferent(current, kibanaDeployment)
 
 			// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
-			newTrustedCAHashedValue := calcTrustedCAHashValue(trustedCABundleCM)
+			newTrustedCAHashedValue := calcTrustedCAHashValue(kibanaTrustBundle)
 			trustedCAHashedValue, _ := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
 			if trustedCAHashedValue != newTrustedCAHashedValue {
 				different = true

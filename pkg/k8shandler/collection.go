@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
@@ -38,7 +37,7 @@ var (
 var serviceAccountLogCollectorUID types.UID
 
 //CreateOrUpdateCollection component of the cluster
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfig *configv1.Proxy, trustedCABundleCM *core.ConfigMap) (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfig *configv1.Proxy) (err error) {
 	cluster := clusterRequest.cluster
 	collectorConfig := ""
 	collectorConfHash := ""
@@ -81,13 +80,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		// Create or update cluster proxy trusted CA bundle.
-		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
-		if err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash, proxyConfig, trustedCABundleCM); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash, proxyConfig); err != nil {
 			return
 		}
 
@@ -98,7 +91,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !reflect.DeepEqual(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
+			if !compareFluentdCollectorStatus(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
 				if printUpdateMessage {
 					logrus.Info("Updating status of Fluentd")
 					printUpdateMessage = false
@@ -141,6 +134,44 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 	}
 
 	return nil
+}
+
+func compareFluentdCollectorStatus(lhs, rhs logging.FluentdCollectorStatus) bool {
+	if lhs.DaemonSet != rhs.DaemonSet {
+		return false
+	}
+
+	if len(lhs.Conditions) != len(rhs.Conditions) {
+		return false
+	}
+
+	if len(lhs.Conditions) > 0 {
+		if !reflect.DeepEqual(lhs.Conditions, rhs.Conditions) {
+			return false
+		}
+	}
+
+	if len(lhs.Nodes) != len(rhs.Nodes) {
+		return false
+	}
+
+	if len(lhs.Nodes) > 0 {
+		if !reflect.DeepEqual(lhs.Nodes, rhs.Nodes) {
+			return false
+		}
+	}
+
+	if len(lhs.Pods) != len(rhs.Pods) {
+		return false
+	}
+
+	if len(lhs.Pods) > 0 {
+		if !reflect.DeepEqual(lhs.Pods, rhs.Pods) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityClass() error {
@@ -302,7 +333,7 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
 		different = true
 	}
-	if !reflect.DeepEqual(current.Spec.Template.Spec.Volumes, desired.Spec.Template.Spec.Volumes) {
+	if !utils.PodVolumeEquivalent(current.Spec.Template.Spec.Volumes, desired.Spec.Template.Spec.Volumes) {
 		logrus.Infof("Collector volumes change found, updating %q", current.Name)
 		current.Spec.Template.Spec.Volumes = desired.Spec.Template.Spec.Volumes
 		different = true

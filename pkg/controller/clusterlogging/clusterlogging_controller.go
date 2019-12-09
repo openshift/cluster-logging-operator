@@ -109,9 +109,6 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	if err = k8shandler.Reconcile(instance, forwardinginstance, r.client); err != nil {
-		return reconcileResult, err
-	}
-
-	return reconcileResult, nil
+	err = k8shandler.Reconcile(instance, forwardinginstance, r.client)
+	return reconcileResult, err
 }

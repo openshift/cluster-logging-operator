@@ -66,6 +66,11 @@ fi
 
 TIMEOUT_MIN=$((2 * $minute))
 
+##verify metrics rbac
+# extra resources not support for ConfigMap based catelogs for now.
+#os::cmd::expect_success "oc get clusterrole clusterlogging-collector-metrics"
+#os::cmd::expect_success "oc get clusterrolebinding clusterlogging-collector-metrics"
+
 # wait for operator to be ready
 os::cmd::try_until_text "oc -n $NAMESPACE get deployment cluster-logging-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 

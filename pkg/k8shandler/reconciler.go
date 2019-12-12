@@ -15,26 +15,19 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(requestCluster *logging.ClusterLogging, forwarding *logforwarding.LogForwarding, requestClient client.Client) (err error) {
-	logger.Debugf("Reconciling cl: %v, forwarding: %v", requestCluster, forwarding)
+func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
-		client:            requestClient,
-		cluster:           requestCluster,
-		ForwardingRequest: forwarding,
+		client:  requestClient,
+		cluster: requestCluster,
 	}
+
+	forwarding := clusterLoggingRequest.getLogForwarding()
 	if forwarding != nil {
+		clusterLoggingRequest.ForwardingRequest = forwarding
 		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
 	}
 
-	// we need to see if we have the proxy available so we
-	// don't blank out any proxy configured changes...
-	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
-	proxyConfig := &configv1.Proxy{}
-	if err := clusterLoggingRequest.client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return fmt.Errorf("Encountered unexpected error getting %v", proxyNamespacedName)
-		}
-	}
+	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
 	// Reconcile certs
 	if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
@@ -64,14 +57,49 @@ func Reconcile(requestCluster *logging.ClusterLogging, forwarding *logforwarding
 	return nil
 }
 
-func ReconcileForGlobalProxy(requestCluster *logging.ClusterLogging, forwarding *logforwarding.LogForwarding, proxyConfig *configv1.Proxy, requestClient client.Client) (err error) {
+func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestClient client.Client) (err error) {
 
 	clusterLoggingRequest := ClusterLoggingRequest{
-		client:            requestClient,
-		cluster:           requestCluster,
-		ForwardingRequest: forwarding,
+		client: requestClient,
 	}
 	if forwarding != nil {
+		clusterLoggingRequest.ForwardingRequest = forwarding
+		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
+	}
+
+	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	clusterLoggingRequest.cluster = clusterLogging
+
+	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		return nil
+	}
+
+	proxyConfig := clusterLoggingRequest.getProxyConfig()
+
+	// Reconcile Collection
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
+		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
+	}
+
+	return nil
+}
+
+func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.Client) (err error) {
+
+	clusterLoggingRequest := ClusterLoggingRequest{
+		client: requestClient,
+	}
+
+	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	clusterLoggingRequest.cluster = clusterLogging
+
+	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		return nil
+	}
+
+	forwarding := clusterLoggingRequest.getLogForwarding()
+	if forwarding != nil {
+		clusterLoggingRequest.ForwardingRequest = forwarding
 		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
 	}
 
@@ -86,4 +114,44 @@ func ReconcileForGlobalProxy(requestCluster *logging.ClusterLogging, forwarding 
 	}
 
 	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {
+	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
+	clusterLogging := &logging.ClusterLogging{}
+
+	if err := clusterRequest.client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
+		if !apierrors.IsNotFound(err) {
+			fmt.Errorf("Encountered unexpected error getting %v", clusterLoggingNamespacedName)
+		}
+	}
+
+	return clusterLogging
+}
+
+func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
+	// we need to see if we have the proxy available so we
+	// don't blank out any proxy configured changes...
+	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
+	proxyConfig := &configv1.Proxy{}
+	if err := clusterRequest.client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
+		if !apierrors.IsNotFound(err) {
+			fmt.Errorf("Encountered unexpected error getting %v", proxyNamespacedName)
+		}
+	}
+
+	return proxyConfig
+}
+
+func (clusterRequest *ClusterLoggingRequest) getLogForwarding() *logforwarding.LogForwarding {
+	logForwardingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
+	logForwarding := &logforwarding.LogForwarding{}
+	logger.Debug("logforwarding-controller fetching LF instance")
+	if err := clusterRequest.client.Get(context.TODO(), logForwardingNamespacedName, logForwarding); err != nil {
+		if !apierrors.IsNotFound(err) {
+			fmt.Errorf("Encountered unexpected error getting %v", logForwardingNamespacedName)
+		}
+	}
+
+	return logForwarding
 }

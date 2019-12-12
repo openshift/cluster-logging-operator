@@ -5,8 +5,6 @@ import (
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
-	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -89,7 +87,6 @@ type ReconcileProxyConfig struct {
 // When the user configured and/or system certs are updated, the change is propagated to the
 // configmap objects and this reconciler triggers to restart those pods.
 func (r *ReconcileProxyConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	loggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
 	proxyConfig := &configv1.Proxy{}
 	if request.NamespacedName == proxyNamespacedName || utils.ContainsString(constants.ReconcileForGlobalProxyList, request.Name) {
@@ -106,31 +103,7 @@ func (r *ReconcileProxyConfig) Reconcile(request reconcile.Request) (reconcile.R
 		return reconcile.Result{}, nil
 	}
 
-	// Fetch the ClusterLogging instance
-	instance := &loggingv1.ClusterLogging{}
-	if err := r.client.Get(context.TODO(), loggingNamespacedName, instance); err != nil {
-		if apierrors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return reconcile.Result{}, nil
-		}
-		// Error reading the object - just return without requeuing.
-		return reconcile.Result{}, err
-	}
-
-	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
-		return reconcile.Result{}, nil
-	}
-
-	forwardinginstance := &logforwarding.LogForwarding{}
-	err := r.client.Get(context.TODO(), loggingNamespacedName, forwardinginstance)
-	if err != nil && !apierrors.IsNotFound(err) {
-		// Error reading the object - just return without requeuing.
-		return reconcile.Result{}, err
-	}
-
-	if err := k8shandler.ReconcileForGlobalProxy(instance, forwardinginstance, proxyConfig, r.client); err != nil {
+	if err := k8shandler.ReconcileForGlobalProxy(proxyConfig, r.client); err != nil {
 		// Failed to reconcile - requeuing.
 		return reconcileResult, err
 	}

@@ -5,14 +5,12 @@ import (
 	"time"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -99,16 +97,6 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	forwardinginstance := &logforwarding.LogForwarding{}
-	fiName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
-	err = r.client.Get(context.TODO(), fiName, forwardinginstance)
-	if err != nil && !errors.IsNotFound(err) {
-		// Request object not found, could have been deleted after reconcile request.
-		// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-		// Return and don't requeue
-		return reconcile.Result{}, err
-	}
-
-	err = k8shandler.Reconcile(instance, forwardinginstance, r.client)
+	err = k8shandler.Reconcile(instance, r.client)
 	return reconcileResult, err
 }

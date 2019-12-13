@@ -18,7 +18,7 @@ var _ = Describe("generating source", func() {
 	)
 
 	BeforeEach(func() {
-		generator, err = NewConfigGenerator()
+		generator, err = NewConfigGenerator(false)
 		Expect(err).To(BeNil())
 	})
 

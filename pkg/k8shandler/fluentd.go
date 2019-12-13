@@ -161,6 +161,21 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 	return nil
 }
 
+//createOrUpdateFluentdLegacyForwardConfigMap to address Bug 1782566. To be removed for LogForwarding GA
+func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
+	config := &v1.ConfigMap{
+		Data: map[string]string{},
+	}
+	if err := clusterRequest.Get("secure-forward", config); err != nil {
+		if errors.IsNotFound(err) {
+			return false
+		}
+		logger.Warnf("There was a non-critical error trying to fetch the secure-forward configmap: %v", err)
+	}
+	_, found := config.Data["secure-forward.conf"]
+	return found
+}
+
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(fluentConf string) error {
 	logrus.Debug("createOrUpdateFluentdConfigMap...")
 	fluentdConfigMap := NewConfigMap(
@@ -268,6 +283,8 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "varlog", MountPath: "/var/log"},
 		{Name: "varlibdockercontainers", ReadOnly: true, MountPath: "/var/lib/docker"},
 		{Name: "config", ReadOnly: true, MountPath: "/etc/fluent/configs.d/user"},
+		{Name: "secureforwardconfig", ReadOnly: true, MountPath: "/etc/fluent/configs.d/secure-forward"},
+		{Name: "secureforwardcerts", ReadOnly: true, MountPath: "/etc/ocp-forward"},
 		{Name: "entrypoint", ReadOnly: true, MountPath: "/opt/app-root/src/run.sh", SubPath: "run.sh"},
 		{Name: "certs", ReadOnly: true, MountPath: "/etc/fluent/keys"},
 		{Name: "localtime", ReadOnly: true, MountPath: "/etc/localtime"},
@@ -323,6 +340,8 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "varlog", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log"}}},
 			{Name: "varlibdockercontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/docker"}}},
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
+			{Name: "secureforwardconfig", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "secure-forward"}, Optional: utils.GetBool(true)}}},
+			{Name: "secureforwardcerts", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "secure-forward", Optional: utils.GetBool(true)}}},
 			{Name: "entrypoint", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
 			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd"}}},
 			{Name: "localtime", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/localtime"}}},

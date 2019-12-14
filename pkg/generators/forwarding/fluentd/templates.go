@@ -294,6 +294,15 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 {{- range .OutputLabels }}
 {{ . }}
 {{- end}}
+{{ if .IncludeLegacySecureForward }}
+<label @_LEGACY_SECUREFORWARD>
+	<match **>
+		@type copy
+		#include legacy secure-forward.conf
+		@include /etc/fluent/configs.d/secure-forward/secure-forward.conf
+	</match>
+</label>
+{{- end}}
 
 {{- end}}`
 
@@ -415,6 +424,12 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
 		<store>
 			@type relabel
 			@label {{labelName $pipelineLabel}}
+		</store>
+{{- end }}
+{{ if .IncludeLegacySecureForward }}
+		<store>
+			@type relabel
+			@label @_LEGACY_SECUREFORWARD
 		</store>
 {{- end }}
 	</match>

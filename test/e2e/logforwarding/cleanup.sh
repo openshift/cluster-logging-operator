@@ -11,6 +11,8 @@ for p in $(oc -n openshift-logging get pods -l component=fluentd -o jsonpath={.i
 	oc -n openshift-logging exec -- ls -l /var/lib/fluentd/retry_clo_default_output_es > $artifact_dir/$p.buffers.retry.txt||:
 done
 oc -n openshift-logging get configmap fluentd -o jsonpath={.data} > $artifact_dir/fluent-configmap.yaml||:
+oc -n openshift-logging get configmap secure-forward -o jsonpath={.data} > $artifact_dir/secure-forward-configmap.yaml||:
+oc -n openshift-logging get secret secure-forward -o yaml > $artifact_dir/secure-forward-secret.yaml||:
 oc -n openshift-logging extract secret/elasticsearch --to=$artifact_dir||:
 oc -n $GENERATOR_NS describe deployment/log-generator  > $artifact_dir/log-generator.describe||:
 oc -n $GENERATOR_NS logs deployment/log-generator  > $artifact_dir/log-generator.logs||:

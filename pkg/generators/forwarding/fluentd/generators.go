@@ -16,10 +16,11 @@ import (
 //ConfigGenerator is a config generator for fluentd
 type ConfigGenerator struct {
 	*generators.Generator
+	includeLegacyForwardConfig bool
 }
 
 //NewConfigGenerator creates an instance of FluentdConfigGenerator
-func NewConfigGenerator() (*ConfigGenerator, error) {
+func NewConfigGenerator(includeLegacyForwardConfig bool) (*ConfigGenerator, error) {
 	engine, err := generators.New("OutputLabelConf",
 		&template.FuncMap{
 			"labelName":           labelName,
@@ -29,7 +30,7 @@ func NewConfigGenerator() (*ConfigGenerator, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigGenerator{engine}, nil
+	return &ConfigGenerator{engine, includeLegacyForwardConfig}, nil
 }
 
 //Generate the fluent.conf file using the forwarding information
@@ -59,14 +60,16 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	}
 
 	data := struct {
-		CollectInfraLogs        bool
-		CollectAppLogs          bool
-		CollectAuditLogs        bool
-		SourceInputLabels       []string
-		SourceToPipelineLabels  []string
-		PipelinesToOutputLabels []string
-		OutputLabels            []string
+		IncludeLegacySecureForward bool
+		CollectInfraLogs           bool
+		CollectAppLogs             bool
+		CollectAuditLogs           bool
+		SourceInputLabels          []string
+		SourceToPipelineLabels     []string
+		PipelinesToOutputLabels    []string
+		OutputLabels               []string
 	}{
+		engine.includeLegacyForwardConfig,
 		logTypes.Has(string(logforward.LogSourceTypeInfra)),
 		logTypes.Has(string(logforward.LogSourceTypeApp)),
 		logTypes.Has(string(logforward.LogSourceTypeAudit)),
@@ -133,9 +136,11 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 	configs := []string{}
 	for sourceType, pipelineNames := range sourcesToPipelines {
 		data := struct {
-			Source        string
-			PipelineNames []string
+			IncludeLegacySecureForward bool
+			Source                     string
+			PipelineNames              []string
 		}{
+			engine.includeLegacyForwardConfig,
 			string(sourceType),
 			pipelineNames,
 		}

@@ -149,14 +149,14 @@ func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
 // based on the component type
 func GetComponentImage(component string) string {
 
-	env_var_name, ok := COMPONENT_IMAGES[component]
+	envVarName, ok := COMPONENT_IMAGES[component]
 	if !ok {
 		logrus.Errorf("Environment variable name mapping missing for component: %s", component)
 		return ""
 	}
-	imageTag := os.Getenv(env_var_name)
+	imageTag := os.Getenv(envVarName)
 	if imageTag == "" {
-		logrus.Errorf("No image tag defined for component '%s' by environment variable '%s'", component, env_var_name)
+		logrus.Errorf("No image tag defined for component '%s' by environment variable '%s'", component, envVarName)
 	}
 	logrus.Debugf("Setting component image for '%s' to: '%s'", component, imageTag)
 	return imageTag

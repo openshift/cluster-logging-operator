@@ -32,7 +32,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, forwarding *logforwarding
 	proxyConfig := &configv1.Proxy{}
 	if err := clusterLoggingRequest.client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
 		if !apierrors.IsNotFound(err) {
-			fmt.Errorf("Encountered unexpected error getting %v", proxyNamespacedName)
+			return fmt.Errorf("Encountered unexpected error getting %v", proxyNamespacedName)
 		}
 	}
 

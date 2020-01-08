@@ -43,10 +43,10 @@ func esUnicastHost(clusterName, namespace string) string {
 }
 
 func rootLogger(cluster *api.Elasticsearch) string {
-	if value, ok := cluster.GetAnnotations()[log4jConfig]; ok {
+	if value, ok := cluster.GetAnnotations()[logAppenderAnnotation]; ok {
 		return value
 	}
-	return "rolling"
+	return "console"
 }
 
 func calculateReplicaCount(dpl *api.Elasticsearch) int {

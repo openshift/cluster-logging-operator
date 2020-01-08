@@ -79,46 +79,12 @@ func (clusterRequest *ClusterLoggingRequest) getFluentdCollectorStatus() (loggin
 	return fluentdStatus, nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) getKibanaStatus() ([]logging.KibanaStatus, error) {
-
-	status := []logging.KibanaStatus{}
-	selector := map[string]string{
-		"logging-infra": "kibana",
-	}
-
-	kibanaDeploymentList, err := clusterRequest.GetDeploymentList(selector)
+func (clusterRequest *ClusterLoggingRequest) getKibanaStatus() ([]elasticsearch.KibanaStatus, error) {
+	cr, err := clusterRequest.getKibanaCR()
 	if err != nil {
-		return status, err
+		return nil, err
 	}
-
-	for _, deployment := range kibanaDeploymentList.Items {
-
-		selector["component"] = deployment.Name
-
-		kibanaStatus := logging.KibanaStatus{
-			Deployment: deployment.Name,
-			Replicas:   *deployment.Spec.Replicas,
-		}
-
-		replicaSetList, _ := clusterRequest.GetReplicaSetList(selector)
-		replicaNames := []string{}
-		for _, replicaSet := range replicaSetList.Items {
-			replicaNames = append(replicaNames, replicaSet.Name)
-		}
-		kibanaStatus.ReplicaSets = replicaNames
-
-		podList, _ := clusterRequest.GetPodList(selector)
-		kibanaStatus.Pods = podStateMap(podList.Items)
-
-		kibanaStatus.Conditions, err = clusterRequest.getPodConditions("kibana")
-		if err != nil {
-			return status, fmt.Errorf("unable to get pod conditions. E: %s", err.Error())
-		}
-
-		status = append(status, kibanaStatus)
-	}
-
-	return status, nil
+	return cr.Status, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging.ElasticsearchStatus, error) {

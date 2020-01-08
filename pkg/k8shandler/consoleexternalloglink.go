@@ -26,8 +26,8 @@ func NewConsoleExternalLogLink(resourceName, namespace, consoleText, hrefTemplat
 			},
 		},
 		Spec: consolev1.ConsoleExternalLogLinkSpec{
-			Text:         consoleText,
-			HrefTemplate: hrefTemplate,
+			Text:            consoleText,
+			HrefTemplate:    hrefTemplate,
 			NamespaceFilter: namespaceFilter,
 		},
 	}
@@ -42,6 +42,10 @@ func (clusterRequest *ClusterLoggingRequest) RemoveConsoleExternalLogLink(resour
 		"",
 		"",
 	)
+	//TODO: Remove this in the next release after removing old kibana code completely
+	if !HasCLORef(consoleExternalLogLink, clusterRequest) {
+		return nil
+	}
 
 	err = clusterRequest.Delete(consoleExternalLogLink)
 	if err != nil && !errors.IsNotFound(err) {

@@ -52,6 +52,12 @@ build: generate fmt
 	@cp -ru $(CURDIR)/vendor/* $(TARGET_DIR)/src
 	GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
 
+build-fast:
+	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
+	@cp -ru $(CURDIR)/pkg $(TARGET_DIR)/src/$(APP_REPO)
+	@cp -ru $(CURDIR)/vendor/* $(TARGET_DIR)/src
+	GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
+
 run:
 	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
@@ -87,8 +93,8 @@ simplify:
 GEN_TIMESTAMP=.zz_generate_timestamp
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(SRC) $(OPERATOR_SDK)
-	$(OPERATOR_SDK) generate k8s
-	$(OPERATOR_SDK) generate crds
+	@$(OPERATOR_SDK) generate k8s
+	@$(OPERATOR_SDK) generate crds
 	@touch $@
 
 # spotless does make clean and removes generated code. Don't commit without re-generating.

@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
@@ -25,6 +26,7 @@ type Environment struct {
 	Response        *Response // response message
 	Invocation      string    // string representation of call
 	RunningAsPlugin bool      // true if app is being run as a plugin
+	Verbose         bool      // if true, plugin should log details to stderr
 }
 
 // NewEnvironment creates a plugin context from arguments and standard input.
@@ -37,9 +39,11 @@ func NewEnvironment() (env *Environment, err error) {
 	input := flag.String("input", "", "API description (in binary protocol buffer form)")
 	output := flag.String("output", "-", "Output file or directory")
 	plugin := flag.Bool("plugin", false, "Run as a gnostic plugin (other flags are ignored).")
+	verbose := flag.Bool("verbose", false, "Write details to stderr.")
 	flag.Parse()
 
 	env.RunningAsPlugin = *plugin
+	env.Verbose = *verbose
 	programName := path.Base(os.Args[0])
 
 	if (*input == "") && !*plugin {
@@ -103,8 +107,9 @@ When the -plugin option is specified, these flags are ignored.`)
 		err = proto.Unmarshal(apiData, documentv2)
 		if err == nil {
 			env.Request.AddModel("openapi.v2.Document", documentv2)
+			sourceName := guessSourceName(*input)
 			// include experimental API surface model
-			surfaceModel, err := surface.NewModelFromOpenAPI2(documentv2)
+			surfaceModel, err := surface.NewModelFromOpenAPI2(documentv2, sourceName)
 			if err == nil {
 				env.Request.AddModel("surface.v1.Model", surfaceModel)
 			}
@@ -115,8 +120,9 @@ When the -plugin option is specified, these flags are ignored.`)
 		err = proto.Unmarshal(apiData, documentv3)
 		if err == nil {
 			env.Request.AddModel("openapi.v3.Document", documentv3)
+			sourceName := guessSourceName(*input)
 			// include experimental API surface model
-			surfaceModel, err := surface.NewModelFromOpenAPI3(documentv3)
+			surfaceModel, err := surface.NewModelFromOpenAPI3(documentv3, sourceName)
 			if err == nil {
 				env.Request.AddModel("surface.v1.Model", surfaceModel)
 			}
@@ -212,4 +218,18 @@ func isDirectory(path string) bool {
 		return false
 	}
 	return fileInfo.IsDir()
+}
+
+// Guesses the sourceName from the binary input file name. E.g.: given input: some/path/swagger.pb
+// check for some/path/swagger.yaml and some/path/swagger.json.
+func guessSourceName(input string) string {
+	sourceName := strings.Replace(input, ".pb", ".yaml", -1)
+	if _, err := os.Stat(sourceName); os.IsNotExist(err) {
+		// sourceName does not exist. Lets try .json instead
+		sourceName = strings.Replace(input, ".pb", ".json", -1)
+		if _, err := os.Stat(sourceName); os.IsNotExist(err) {
+			return ""
+		}
+	}
+	return sourceName
 }

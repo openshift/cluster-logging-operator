@@ -97,6 +97,11 @@ func (clusterRequest *ClusterLoggingRequest) RemoveConfigMap(configmapName strin
 		map[string]string{},
 	)
 
+	//TODO: Remove this in the next release after removing old kibana code completely
+	if !HasCLORef(configMap, clusterRequest) {
+		return nil
+	}
+
 	err := clusterRequest.Delete(configMap)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v configmap: %v", configmapName, err)

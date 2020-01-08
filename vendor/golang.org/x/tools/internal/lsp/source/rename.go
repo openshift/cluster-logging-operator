@@ -7,7 +7,6 @@ package source
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"go/ast"
 	"go/format"
 	"go/token"
@@ -15,15 +14,17 @@ import (
 	"regexp"
 
 	"golang.org/x/tools/go/types/typeutil"
-	"golang.org/x/tools/internal/lsp/telemetry/trace"
+	"golang.org/x/tools/internal/lsp/diff"
+	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/span"
+	"golang.org/x/tools/internal/telemetry/trace"
 	"golang.org/x/tools/refactor/satisfy"
+	errors "golang.org/x/xerrors"
 )
 
 type renamer struct {
 	ctx                context.Context
 	fset               *token.FileSet
-	pkg                Package // the package containing the declaration of the ident
 	refs               []*ReferenceInfo
 	objsToUpdate       map[types.Object]bool
 	hadConflicts       bool
@@ -35,42 +36,84 @@ type renamer struct {
 	changeMethods      bool
 }
 
+type PrepareItem struct {
+	Range protocol.Range
+	Text  string
+}
+
+func PrepareRename(ctx context.Context, s Snapshot, f FileHandle, pp protocol.Position) (*PrepareItem, error) {
+	ctx, done := trace.StartSpan(ctx, "source.PrepareRename")
+	defer done()
+
+	qos, err := qualifiedObjsAtProtocolPos(ctx, s, f, pp)
+	if err != nil {
+		return nil, err
+	}
+
+	// Do not rename builtin identifiers.
+	if qos[0].obj.Parent() == types.Universe {
+		return nil, errors.Errorf("cannot rename builtin %q", qos[0].obj.Name())
+	}
+
+	mr, err := posToMappedRange(s.View(), qos[0].sourcePkg, qos[0].node.Pos(), qos[0].node.End())
+	if err != nil {
+		return nil, err
+	}
+
+	rng, err := mr.Range()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, isImport := qos[0].node.(*ast.ImportSpec); isImport {
+		// We're not really renaming the import path.
+		rng.End = rng.Start
+	}
+
+	return &PrepareItem{
+		Range: rng,
+		Text:  qos[0].obj.Name(),
+	}, nil
+}
+
 // Rename returns a map of TextEdits for each file modified when renaming a given identifier within a package.
-func (i *IdentifierInfo) Rename(ctx context.Context, newName string) (map[span.URI][]TextEdit, error) {
+func Rename(ctx context.Context, s Snapshot, f FileHandle, pp protocol.Position, newName string) (map[span.URI][]protocol.TextEdit, error) {
 	ctx, done := trace.StartSpan(ctx, "source.Rename")
 	defer done()
 
-	if i.Name == newName {
-		return nil, fmt.Errorf("old and new names are the same: %s", newName)
-	}
-	if !isValidIdentifier(i.Name) {
-		return nil, fmt.Errorf("invalid identifier to rename: %q", i.Name)
+	qos, err := qualifiedObjsAtProtocolPos(ctx, s, f, pp)
+	if err != nil {
+		return nil, err
 	}
 
-	if i.pkg == nil || i.pkg.IsIllTyped() {
-		return nil, fmt.Errorf("package for %s is ill typed", i.File.URI())
+	obj := qos[0].obj
+	pkg := qos[0].pkg
+
+	if obj.Name() == newName {
+		return nil, errors.Errorf("old and new names are the same: %s", newName)
+	}
+	if !isValidIdentifier(newName) {
+		return nil, errors.Errorf("invalid identifier to rename: %q", newName)
 	}
 	// Do not rename builtin identifiers.
-	if i.decl.obj.Parent() == types.Universe {
-		return nil, fmt.Errorf("cannot rename builtin %q", i.Name)
+	if obj.Parent() == types.Universe {
+		return nil, errors.Errorf("cannot rename builtin %q", obj.Name())
 	}
-	// Do not rename identifiers declared in another package.
-	if i.pkg.GetTypes() != i.decl.obj.Pkg() {
-		return nil, fmt.Errorf("failed to rename because %q is declared in package %q", i.Name, i.decl.obj.Pkg().Name())
+	if pkg == nil || pkg.IsIllTyped() {
+		return nil, errors.Errorf("package for %s is ill typed", f.Identity().URI)
 	}
 
-	refs, err := i.References(ctx)
+	refs, err := References(ctx, s, f, pp, true)
 	if err != nil {
 		return nil, err
 	}
 
 	r := renamer{
 		ctx:          ctx,
-		fset:         i.File.FileSet(),
-		pkg:          i.pkg,
+		fset:         s.View().Session().Cache().FileSet(),
 		refs:         refs,
 		objsToUpdate: make(map[types.Object]bool),
-		from:         i.Name,
+		from:         obj.Name(),
 		to:           newName,
 		packages:     make(map[*types.Package]Package),
 	}
@@ -79,28 +122,52 @@ func (i *IdentifierInfo) Rename(ctx context.Context, newName string) (map[span.U
 	}
 
 	// Check that the renaming of the identifier is ok.
-	for _, from := range refs {
-		r.check(from.obj)
+	for _, ref := range refs {
+		r.check(ref.obj)
+		if r.hadConflicts { // one error is enough.
+			break
+		}
 	}
 	if r.hadConflicts {
-		return nil, fmt.Errorf(r.errors)
+		return nil, errors.Errorf(r.errors)
 	}
 
 	changes, err := r.update()
 	if err != nil {
 		return nil, err
 	}
-
-	// Sort edits for each file.
-	for _, edits := range changes {
-		sortTextEdits(edits)
+	result := make(map[span.URI][]protocol.TextEdit)
+	for uri, edits := range changes {
+		// These edits should really be associated with FileHandles for maximal correctness.
+		// For now, this is good enough.
+		fh, err := s.GetFile(uri)
+		if err != nil {
+			return nil, err
+		}
+		data, _, err := fh.Read(ctx)
+		if err != nil {
+			return nil, err
+		}
+		converter := span.NewContentConverter(uri.Filename(), data)
+		m := &protocol.ColumnMapper{
+			URI:       uri,
+			Converter: converter,
+			Content:   data,
+		}
+		// Sort the edits first.
+		diff.SortTextEdits(edits)
+		protocolEdits, err := ToProtocolEdits(m, edits)
+		if err != nil {
+			return nil, err
+		}
+		result[uri] = protocolEdits
 	}
-	return changes, nil
+	return result, nil
 }
 
 // Rename all references to the identifier.
-func (r *renamer) update() (map[span.URI][]TextEdit, error) {
-	result := make(map[span.URI][]TextEdit)
+func (r *renamer) update() (map[span.URI][]diff.TextEdit, error) {
+	result := make(map[span.URI][]diff.TextEdit)
 	seen := make(map[span.Span]bool)
 
 	docRegexp, err := regexp.Compile(`\b` + r.from + `\b`)
@@ -108,7 +175,7 @@ func (r *renamer) update() (map[span.URI][]TextEdit, error) {
 		return nil, err
 	}
 	for _, ref := range r.refs {
-		refSpan, err := ref.Range.Span()
+		refSpan, err := ref.spanRange.Span()
 		if err != nil {
 			return nil, err
 		}
@@ -129,7 +196,7 @@ func (r *renamer) update() (map[span.URI][]TextEdit, error) {
 		}
 
 		// Replace the identifier with r.to.
-		edit := TextEdit{
+		edit := diff.TextEdit{
 			Span:    refSpan,
 			NewText: r.to,
 		}
@@ -140,7 +207,7 @@ func (r *renamer) update() (map[span.URI][]TextEdit, error) {
 			continue
 		}
 
-		doc := r.docComment(r.pkg, ref.ident)
+		doc := r.docComment(ref.pkg, ref.ident)
 		if doc == nil {
 			continue
 		}
@@ -153,7 +220,7 @@ func (r *renamer) update() (map[span.URI][]TextEdit, error) {
 				if err != nil {
 					return nil, err
 				}
-				result[spn.URI()] = append(result[spn.URI()], TextEdit{
+				result[spn.URI()] = append(result[spn.URI()], diff.TextEdit{
 					Span:    spn,
 					NewText: r.to,
 				})
@@ -194,17 +261,16 @@ func (r *renamer) docComment(pkg Package, id *ast.Ident) *ast.CommentGroup {
 }
 
 // updatePkgName returns the updates to rename a pkgName in the import spec
-func (r *renamer) updatePkgName(pkgName *types.PkgName) (*TextEdit, error) {
+func (r *renamer) updatePkgName(pkgName *types.PkgName) (*diff.TextEdit, error) {
 	// Modify ImportSpec syntax to add or remove the Name as needed.
 	pkg := r.packages[pkgName.Pkg()]
 	_, path, _ := pathEnclosingInterval(r.ctx, r.fset, pkg, pkgName.Pos(), pkgName.Pos())
-
 	if len(path) < 2 {
-		return nil, fmt.Errorf("failed to update PkgName for %s", pkgName.Name())
+		return nil, errors.Errorf("no path enclosing interval for %s", pkgName.Name())
 	}
 	spec, ok := path[1].(*ast.ImportSpec)
 	if !ok {
-		return nil, fmt.Errorf("failed to update PkgName for %s", pkgName.Name())
+		return nil, errors.Errorf("failed to update PkgName for %s", pkgName.Name())
 	}
 
 	var astIdent *ast.Ident // will be nil if ident is removed
@@ -230,7 +296,7 @@ func (r *renamer) updatePkgName(pkgName *types.PkgName) (*TextEdit, error) {
 	format.Node(&buf, r.fset, updated)
 	newText := buf.String()
 
-	return &TextEdit{
+	return &diff.TextEdit{
 		Span:    spn,
 		NewText: newText,
 	}, nil

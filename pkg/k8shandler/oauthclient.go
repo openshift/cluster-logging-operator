@@ -49,6 +49,11 @@ func (clusterRequest *ClusterLoggingRequest) RemoveOAuthClient(clientName string
 		[]string{},
 	)
 
+	//TODO: Remove this in the next release after removing old kibana code completely
+	if !HasCLORef(oauthClient, clusterRequest) {
+		return nil
+	}
+
 	err := clusterRequest.Delete(oauthClient)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v oauthclient %v", clientName, err)

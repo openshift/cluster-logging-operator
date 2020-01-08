@@ -111,7 +111,9 @@ func updateAllIndexReplicas(clusterName, namespace string, client client.Client,
 			if int32(currentReplicas) != replicaCount {
 				// best effort initially?
 				logrus.Debugf("Updating %v from %d replicas to %d", index, currentReplicas, replicaCount)
-				updateIndexReplicas(clusterName, namespace, client, index, replicaCount)
+				if ack, err := updateIndexReplicas(clusterName, namespace, client, index, replicaCount); err != nil {
+					return ack, err
+				}
 			}
 		}
 	}
@@ -199,7 +201,7 @@ func updateIndexReplicas(clusterName, namespace string, client client.Client, in
 	if acknowledgedBool, ok := payload.ResponseBody["acknowledged"].(bool); ok {
 		acknowledged = acknowledgedBool
 	}
-	return (payload.StatusCode == 200 && acknowledged), payload.Error
+	return payload.StatusCode == 200 && acknowledged, payload.Error
 }
 
 func ensureTokenHeader(header http.Header) http.Header {

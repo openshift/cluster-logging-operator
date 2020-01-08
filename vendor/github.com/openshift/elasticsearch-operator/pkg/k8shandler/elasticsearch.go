@@ -319,19 +319,17 @@ func DoSynchronizedFlush(clusterName, namespace string, client client.Client) (b
 		payload.Error = fmt.Errorf("Failed to flush %d shards in preparation for cluster restart", failed)
 	}
 
-	return (payload.StatusCode == 200), payload.Error
+	return payload.StatusCode == 200, payload.Error
 }
 
 // This will idempotently update the index templates and update indices' replica count
-func UpdateReplicaCount(clusterName, namespace string, client client.Client, replicaCount int32) (bool, error) {
-
+func UpdateReplicaCount(clusterName, namespace string, client client.Client, replicaCount int32) error {
 	if ok, _ := updateAllIndexTemplateReplicas(clusterName, namespace, client, replicaCount); ok {
-		if ok, _ = updateAllIndexReplicas(clusterName, namespace, client, replicaCount); ok {
-			return true, nil
+		if _, err := updateAllIndexReplicas(clusterName, namespace, client, replicaCount); err != nil {
+			return err
 		}
 	}
-
-	return false, nil
+	return nil
 }
 
 func (req *ElasticsearchRequest) CreateIndex(name string, index *estypes.Index) error {

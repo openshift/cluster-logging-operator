@@ -139,7 +139,9 @@ var tests = []test{
 	{"BenchmarkReflect", compile{"reflect"}},
 	{"BenchmarkTar", compile{"archive/tar"}},
 	{"BenchmarkXML", compile{"encoding/xml"}},
-	{"BenchmarkLinkCompiler", link{"cmd/compile"}},
+	{"BenchmarkLinkCompiler", link{"cmd/compile", ""}},
+	{"BenchmarkExternalLinkCompiler", link{"cmd/compile", "-linkmode=external"}},
+	{"BenchmarkLinkWithoutDebugCompiler", link{"cmd/compile", "-w"}},
 	{"BenchmarkStdCmd", goBuild{[]string{"std", "cmd"}}},
 	{"BenchmarkHelloSize", size{"$GOROOT/test/helloworld.go", false}},
 	{"BenchmarkCmdGoSize", size{"cmd/go", true}},
@@ -200,7 +202,7 @@ func main() {
 	if *flagPackage != "" {
 		tests = []test{
 			{"BenchmarkPkg", compile{*flagPackage}},
-			{"BenchmarkPkgLink", link{*flagPackage}},
+			{"BenchmarkPkgLink", link{*flagPackage, ""}},
 		}
 		runRE = nil
 	}
@@ -244,7 +246,7 @@ func goList(dir string) (*Pkg, error) {
 	var pkg Pkg
 	out, err := exec.Command(*flagGoCmd, "list", "-json", dir).Output()
 	if err != nil {
-		return nil, fmt.Errorf("go list -json %s: %v\n", dir, err)
+		return nil, fmt.Errorf("go list -json %s: %v", dir, err)
 	}
 	if err := json.Unmarshal(out, &pkg); err != nil {
 		return nil, fmt.Errorf("go list -json %s: unmarshal: %v", dir, err)
@@ -361,7 +363,7 @@ func (c compile) run(name string, count int) error {
 	return nil
 }
 
-type link struct{ dir string }
+type link struct{ dir, flags string }
 
 func (link) long() bool { return false }
 
@@ -397,6 +399,7 @@ func (r link) run(name string, count int) error {
 	// Link the main package.
 	args = []string{"-o", "_compilebench_.exe"}
 	args = append(args, strings.Fields(*flagLinkerFlags)...)
+	args = append(args, strings.Fields(r.flags)...)
 	args = append(args, "_compilebench_.o")
 	if err := runBuildCmd(name, count, pkg.Dir, linker, args); err != nil {
 		return err

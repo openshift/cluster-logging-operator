@@ -88,7 +88,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		clusterRequest.UpdateFluentdStatus()
+		if err = clusterRequest.UpdateFluentdStatus(); err != nil {
+			logger.Errorf("unable to update status for fluentd. E: %s\r\n", err.Error())
+		}
 
 		if collectorServiceAccount != nil {
 

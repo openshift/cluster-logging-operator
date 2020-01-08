@@ -1,10 +1,6 @@
 #!/bin/bash
 source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/utils"
 assert_resources_exist(){
-	# verify deployments -- kibana, curator
-	try_until_success "oc -n $NAMESPACE get deployment kibana" ${TIMEOUT_MIN}	
-
-	# verify cron
 	try_until_success "oc -n $NAMESPACE get cronjob curator" ${TIMEOUT_MIN}
 
 	# verify DS
@@ -13,4 +9,23 @@ assert_resources_exist(){
 	# verify ER
 	try_until_success "oc -n $NAMESPACE get elasticsearch elasticsearch" ${TIMEOUT_MIN}
 
+}
+
+assert_kibana_instance_exists() {
+	# verify kibana crd
+	try_until_success "oc -n $NAMESPACE get kibana instance" ${TIMEOUT_MIN}
+}
+
+assert_elasticsearch_pod_running() {
+  try_until_success "oc -n $NAMESPACE get pods | grep elasticsearch | awk '{print \$3}' | grep Running"
+}
+
+is_crd_installed() {
+  crd_name=$1
+  cmd="oc get crd $crd_name"
+  if $cmd; then
+    return 0
+  else
+    return 1
+  fi
 }

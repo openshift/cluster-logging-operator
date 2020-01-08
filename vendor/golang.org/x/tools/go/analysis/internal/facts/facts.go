@@ -29,7 +29,7 @@
 // The notion of "exportedness" that matters here is that of the
 // compiler. According to the language spec, a method pkg.T.f is
 // unexported simply because its name starts with lowercase. But the
-// compiler must nonethless export f so that downstream compilations can
+// compiler must nonetheless export f so that downstream compilations can
 // accurately ascertain whether pkg.T implements an interface pkg.I
 // defined as interface{f()}. Exported thus means "described in export
 // data".
@@ -99,13 +99,15 @@ func (s *Set) ExportObjectFact(obj types.Object, fact analysis.Fact) {
 	s.mu.Unlock()
 }
 
-func (s *Set) AllObjectFacts() []analysis.ObjectFact {
+func (s *Set) AllObjectFacts(filter map[reflect.Type]bool) []analysis.ObjectFact {
 	var facts []analysis.ObjectFact
+	s.mu.Lock()
 	for k, v := range s.m {
-		if k.obj != nil {
-			facts = append(facts, analysis.ObjectFact{k.obj, v})
+		if k.obj != nil && filter[k.t] {
+			facts = append(facts, analysis.ObjectFact{Object: k.obj, Fact: v})
 		}
 	}
+	s.mu.Unlock()
 	return facts
 }
 
@@ -132,13 +134,15 @@ func (s *Set) ExportPackageFact(fact analysis.Fact) {
 	s.mu.Unlock()
 }
 
-func (s *Set) AllPackageFacts() []analysis.PackageFact {
+func (s *Set) AllPackageFacts(filter map[reflect.Type]bool) []analysis.PackageFact {
 	var facts []analysis.PackageFact
+	s.mu.Lock()
 	for k, v := range s.m {
-		if k.obj == nil {
-			facts = append(facts, analysis.PackageFact{k.pkg, v})
+		if k.obj == nil && filter[k.t] {
+			facts = append(facts, analysis.PackageFact{Package: k.pkg, Fact: v})
 		}
 	}
+	s.mu.Unlock()
 	return facts
 }
 

@@ -9,68 +9,30 @@ import (
 
 	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
-	"golang.org/x/tools/internal/lsp/xlog"
-	"golang.org/x/tools/internal/span"
 )
 
 func (s *Server) references(ctx context.Context, params *protocol.ReferenceParams) ([]protocol.Location, error) {
-	uri := span.NewURI(params.TextDocument.URI)
-	view := s.session.ViewOf(uri)
-	f, m, err := getGoFile(ctx, view, uri)
-	if err != nil {
+	snapshot, fh, ok, err := s.beginFileRequest(params.TextDocument.URI, source.Go)
+	if !ok {
 		return nil, err
 	}
-	spn, err := m.PointSpan(params.Position)
+	references, err := source.References(ctx, snapshot, fh, params.Position, params.Context.IncludeDeclaration)
 	if err != nil {
 		return nil, err
-	}
-	rng, err := spn.Range(m.Converter)
-	if err != nil {
-		return nil, err
-	}
-	// Find all references to the identifier at the position.
-	ident, err := source.Identifier(ctx, view, f, rng.Start)
-	if err != nil {
-		return nil, err
-	}
-	references, err := ident.References(ctx)
-	if err != nil {
-		xlog.Errorf(ctx, "no references for %s: %v", ident.Name, err)
-	}
-	if params.Context.IncludeDeclaration {
-		// The declaration of this identifier may not be in the
-		// scope that we search for references, so make sure
-		// it is added to the beginning of the list if IncludeDeclaration
-		// was specified.
-		references = append([]*source.ReferenceInfo{
-			&source.ReferenceInfo{
-				Range: ident.DeclarationRange(),
-			},
-		}, references...)
 	}
 
-	// Get the location of each reference to return as the result.
-	locations := make([]protocol.Location, 0, len(references))
-	seen := make(map[span.Span]bool)
+	var locations []protocol.Location
 	for _, ref := range references {
-		refSpan, err := ref.Range.Span()
+		refRange, err := ref.Range()
 		if err != nil {
 			return nil, err
 		}
-		if seen[refSpan] {
-			continue // already added this location
-		}
-		seen[refSpan] = true
 
-		_, refM, err := getSourceFile(ctx, view, refSpan.URI())
-		if err != nil {
-			return nil, err
-		}
-		loc, err := refM.Location(refSpan)
-		if err != nil {
-			return nil, err
-		}
-		locations = append(locations, loc)
+		locations = append(locations, protocol.Location{
+			URI:   protocol.URIFromSpanURI(ref.URI()),
+			Range: refRange,
+		})
 	}
+
 	return locations, nil
 }

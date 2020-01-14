@@ -61,6 +61,9 @@ imagebuilder:
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
 	fi
 
+lint:
+	@golangci-lint run -c golangci.yaml
+
 build: fmt
 	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/pkg $(TARGET_DIR)/src/$(APP_REPO)
@@ -121,7 +124,7 @@ test-unit: fmt
 
 test-e2e:
 	hack/test-e2e.sh
-	
+
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec
 	gosec -severity medium --confidence medium -quiet ./...

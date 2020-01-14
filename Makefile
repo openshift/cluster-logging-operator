@@ -61,9 +61,6 @@ imagebuilder:
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
 	fi
 
-lint:
-	@golangci-lint run -c golangci.yaml
-
 build: fmt
 	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURPATH)/pkg $(TARGET_DIR)/src/$(APP_REPO)
@@ -93,10 +90,11 @@ image: imagebuilder
 	then hack/build-image.sh $(IMAGE_TAG) $(IMAGE_BUILDER) $(IMAGE_BUILDER_OPTS) ; \
 	fi
 
+lint:
+	@golangci-lint run -c golangci.yaml
+
 fmt:
-	@gofmt -l -w cmd && \
-	gofmt -l -w pkg && \
-	gofmt -l -w test
+	@gofmt -l -w cmd/ pkg/ version/
 
 simplify:
 	@gofmt -s -l -w $(SRC)

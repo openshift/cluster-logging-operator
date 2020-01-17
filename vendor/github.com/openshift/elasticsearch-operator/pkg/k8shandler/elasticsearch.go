@@ -8,6 +8,9 @@ import (
 
 	"github.com/inhies/go-bytesize"
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	estypes "github.com/openshift/elasticsearch-operator/pkg/types/elasticsearch"
+	"github.com/openshift/elasticsearch-operator/pkg/utils"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -328,4 +331,106 @@ func UpdateReplicaCount(clusterName, namespace string, client client.Client, rep
 	}
 
 	return false, nil
+}
+
+func (req *ElasticsearchRequest) CreateIndex(name string, index *estypes.Index) error {
+	body, err := utils.ToJson(index)
+	if err != nil {
+		return err
+	}
+	payload := &esCurlStruct{
+		Method:      http.MethodPut,
+		URI:         name,
+		RequestBody: body,
+	}
+
+	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	if payload.Error != nil {
+		return payload.Error
+	}
+	if payload.StatusCode != 200 && payload.StatusCode != 201 {
+		return fmt.Errorf("There was an error creating index %s. Error code: %v, %v", index.Name, payload.StatusCode != 200, payload.RequestBody)
+	}
+	return nil
+}
+func (req *ElasticsearchRequest) CreateIndexTemplate(name string, template *estypes.IndexTemplate) error {
+	body, err := utils.ToJson(template)
+	if err != nil {
+		return err
+	}
+	payload := &esCurlStruct{
+		Method:      http.MethodPut,
+		URI:         fmt.Sprintf("_template/%s", name),
+		RequestBody: body,
+	}
+
+	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	if payload.Error != nil {
+		return payload.Error
+	}
+	if payload.StatusCode != 200 && payload.StatusCode != 201 {
+		return fmt.Errorf("There was an error creating index template %s. Error code: %v, %v", name, payload.StatusCode != 200, payload.RequestBody)
+	}
+	return nil
+}
+
+func (req *ElasticsearchRequest) DeleteIndexTemplate(name string) error {
+	payload := &esCurlStruct{
+		Method: http.MethodDelete,
+		URI:    fmt.Sprintf("_template/%s", name),
+	}
+
+	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	if payload.Error != nil {
+		return payload.Error
+	}
+	if payload.StatusCode != 200 && payload.StatusCode != 404 {
+		return fmt.Errorf("There was an error deleting template %s. Error code: %v", name, payload.StatusCode)
+	}
+	return nil
+}
+
+//ListTemplates returns a list of templates
+func (req *ElasticsearchRequest) ListTemplates() (sets.String, error) {
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		URI:    "_template",
+	}
+
+	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	if payload.Error != nil {
+		return nil, payload.Error
+	}
+	if payload.StatusCode != 200 {
+		return nil, fmt.Errorf("There was an error retrieving list of templates. Error code: %v, %v", payload.StatusCode != 200, payload.RequestBody)
+	}
+	response := sets.NewString()
+	for name := range payload.ResponseBody {
+		response.Insert(name)
+	}
+	return response, nil
+}
+
+//ListIndicesForAlias returns a list of indices and the alias for the given pattern (e.g. foo-*, *-write)
+func (req *ElasticsearchRequest) ListIndicesForAlias(aliasPattern string) ([]string, error) {
+	payload := &esCurlStruct{
+		Method: http.MethodGet,
+		URI:    fmt.Sprintf("_alias/%s", aliasPattern),
+	}
+
+	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	if payload.Error != nil {
+		return nil, payload.Error
+	}
+	if payload.StatusCode == 404 {
+		return []string{}, nil
+	}
+	if payload.StatusCode != 200 {
+		return nil, fmt.Errorf("There was an error retrieving list of indices aliased to %s. Error code: %v, %v", aliasPattern, payload.StatusCode != 200, payload.RequestBody)
+	}
+	response := []string{}
+	for index := range payload.ResponseBody {
+		response = append(response, index)
+	}
+	return response, nil
 }

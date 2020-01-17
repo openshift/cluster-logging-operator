@@ -4,10 +4,6 @@ const esYmlTmpl = `
 cluster:
   name: ${CLUSTER_NAME}
 
-script:
-  inline: true
-  stored: true
-
 node:
   name: ${DC_NAME}
   master: ${IS_MASTER}
@@ -26,29 +22,14 @@ gateway:
   expected_nodes: {{.RecoverExpectedShards}}
   recover_after_time: ${RECOVER_AFTER_TIME}
 
-io.fabric8.elasticsearch.kibana.mapping.app: /usr/share/elasticsearch/index_patterns/com.redhat.viaq-openshift.index-pattern.json
-io.fabric8.elasticsearch.kibana.mapping.ops: /usr/share/elasticsearch/index_patterns/com.redhat.viaq-openshift.index-pattern.json
-io.fabric8.elasticsearch.kibana.mapping.empty: /usr/share/elasticsearch/index_patterns/com.redhat.viaq-openshift.index-pattern.json
-
-openshift.config:
-  use_common_data_model: true
-  project_index_prefix: "project"
-  time_field_name: "@timestamp"
-
-openshift.searchguard:
-  keystore.path: /etc/elasticsearch/secret/admin.jks
-  truststore.path: /etc/elasticsearch/secret/searchguard.truststore
-
-openshift.kibana.index.mode: {{.KibanaIndexMode}}
-
 path:
   data: /elasticsearch/persistent/${CLUSTER_NAME}/data
   logs: /elasticsearch/persistent/${CLUSTER_NAME}/logs
 
-searchguard:
+opendistro_security:
   authcz.admin_dn:
   - CN=system.admin,OU=OpenShift,O=Logging
-  config_index_name: ".searchguard"
+  config_index_name: ".security"
   ssl:
     transport:
       enabled: true

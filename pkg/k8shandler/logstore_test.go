@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	esutils "github.com/openshift/elasticsearch-operator/test/utils"
@@ -470,5 +471,41 @@ func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
 
 	if diffCR.Spec.Nodes[0].GenUUID == nil || *diffCR.Spec.Nodes[0].GenUUID != dataUUID {
 		t.Errorf("Expected that original GenUUID would be preserved as %v but was %v", dataUUID, diffCR.Spec.Nodes[0].GenUUID)
+	}
+}
+
+func TestIndexManagementChanges(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				RetentionPolicy: &logging.RetentionPoliciesSpec{
+					App: &logging.RetentionPolicySpec{
+						MaxAge: elasticsearch.TimeUnit("12h"),
+					},
+				},
+			},
+		},
+	}
+	elasticsearchCR1 := newElasticsearchCR(cluster, "test-app-name")
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				RetentionPolicy: &logging.RetentionPoliciesSpec{
+					Audit: &logging.RetentionPolicySpec{
+						MaxAge: elasticsearch.TimeUnit("12h"),
+					},
+				},
+			},
+		},
+	}
+	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR1, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to retention policy change")
+	}
+	if !(diffCR.Spec.IndexManagement.Policies[0].Name == indexmanagement.PolicyNameAudit) {
+		t.Errorf("Expected that difference would be found due to retention policy change")
 	}
 }

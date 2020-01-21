@@ -29,7 +29,10 @@ var _ = Describe("LogForwarding", func() {
 		BeforeEach(func() {
 			rootDir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 			logger.Debugf("Repo rootdir: %s", rootDir)
-			e2e.DeployLogGenerator()
+			err = e2e.DeployLogGenerator()
+			if err != nil {
+				Fail(fmt.Sprintf("Unable to deploy log generator. E: %s", err.Error()))
+			}
 			var pipelineSecret *corev1.Secret
 			var elasticsearch *elasticsearch.Elasticsearch
 			if elasticsearch, pipelineSecret, err = e2e.DeployAnElasticsearchCluster(rootDir); err != nil {

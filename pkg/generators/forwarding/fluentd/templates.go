@@ -409,13 +409,6 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
 </source>
 {{- end}}`
 
-const outputLabelMatchTemplate = `{{- define "outputLabelMatch" }}
-<match {{.Tags}}>
-	@type relabel
-	@label {{labelName .Name}}
-</match>
-{{- end}}`
-
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" }}
 <label {{sourceTypelabelName .Source}}>
 	<match **>

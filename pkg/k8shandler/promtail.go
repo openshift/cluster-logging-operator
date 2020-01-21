@@ -133,7 +133,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailSecret() erro
 	return nil
 }
 
-func newPromTailPodSpec(collector *collector.CollectorSpec) v1.PodSpec {
+func newPromTailPodSpec(collector *collector.CollectorSpec) (v1.PodSpec, error) {
 	var resources = collector.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
@@ -154,7 +154,11 @@ func newPromTailPodSpec(collector *collector.CollectorSpec) v1.PodSpec {
 		},
 	}
 	hasher := md5.New()
-	hasher.Write([]byte(string(utils.GetFileContents(utils.GetShareDir() + "/promtail/promtail.yaml"))))
+	_, err := hasher.Write([]byte(string(utils.GetFileContents(utils.GetShareDir() + "/promtail/promtail.yaml"))))
+	if err != nil {
+		return v1.PodSpec{}, fmt.Errorf("unable to calculate hash. E: %s", err.Error())
+	}
+
 	md5hash := hex.EncodeToString(hasher.Sum(nil))
 	container.Env = []v1.EnvVar{
 		v1.EnvVar{Name: "PROMTAIL_YAML_HASH", Value: md5hash},
@@ -210,14 +214,17 @@ func newPromTailPodSpec(collector *collector.CollectorSpec) v1.PodSpec {
 	// Shorten the termination grace period from the default 30 sec to 10 sec.
 	podSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
 
-	return podSpec
+	return podSpec, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailDaemonset() (err error) {
 
 	cluster := clusterRequest.cluster
 
-	podSpec := newPromTailPodSpec(clusterRequest.Collector)
+	podSpec, err := newPromTailPodSpec(clusterRequest.Collector)
+	if err != nil {
+		return fmt.Errorf("unable to create promtail pod spec. E: %s", err.Error())
+	}
 
 	daemonset := NewDaemonSet(promtailName, cluster.Namespace, promtailName, promtailName, podSpec)
 

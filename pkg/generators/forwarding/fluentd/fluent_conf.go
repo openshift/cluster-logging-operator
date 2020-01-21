@@ -12,11 +12,6 @@ import (
 
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
 
-type sourceLabelCopyConf struct {
-	Source       string
-	TargetLabels []string
-}
-
 type outputLabelConf struct {
 	Name            string
 	Target          logforward.OutputSpec
@@ -92,14 +87,4 @@ func (conf *outputLabelConf) RetryTag() string {
 }
 func (conf *outputLabelConf) Tags() string {
 	return fmt.Sprintf("%s", strings.Join(conf.fluentTags.List(), " "))
-}
-
-type targetTypeCounterMap map[logforward.OutputType]int
-
-func newTargetTypeCounterMap() *targetTypeCounterMap {
-	counters := make(targetTypeCounterMap)
-	for _, t := range []logforward.OutputType{logforward.OutputTypeElasticsearch} {
-		counters[t] = 0
-	}
-	return &counters
 }

@@ -16,14 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-)
-
-var log = logf.Log.WithName("controller_clusterlogging")
-
-const (
-	singletonMessage = "ClusterLogging is a singleton. Only an instance named 'instance' is allowed"
 )
 
 // Add creates a new ClusterLogging Controller and adds it to the Manager. The Manager will set fields on the Controller

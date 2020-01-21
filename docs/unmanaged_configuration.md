@@ -25,3 +25,32 @@ oc set env dc/fluentd MERGE_JSON_LOG=true
 * Possible log loss due to Elasticsearch rejecting documents due to inconsistent type mappings
 * Potential buffer storage leak caused by rejected message cycling
 * Overwrite of data for field with same names
+
+
+## ElasticSearch
+### Increase vm.max_map_count
+In order to deploy an instance of ElasticSearch on a selected node of the cluster you will need to inscrease this Kernel parameter `vm.max_map_count` which is set by default to `65530` and on the ElasticSearch case you need to set it up to `262144`. This could be done in multiple ways but we recommend to use [Cluster Node Tuning Operator](https://github.com/openshift/cluster-node-tuning-operator). 
+
+- This is the Tuned Profile [you need to apply](https://github.com/openshift/cluster-node-tuning-operator/blob/master/examples/elasticsearch.yaml) with Cluster Node Tuning Operator.
+```
+apiVersion: tuned.openshift.io/v1
+kind: Tuned
+metadata:
+  name: elasticsearch
+  namespace: openshift-cluster-node-tuning-operator
+spec:
+  profile:
+  - data: |
+      [main]
+      summary=Optimize systems running ES on OpenShift nodes
+      include=openshift-node
+      [sysctl]
+      vm.max_map_count=262144
+    name: openshift-node-elasticsearch
+  recommend:
+  - match:
+    - label: tuned.openshift.io/elasticsearch
+      type: pod
+    priority: 30
+    profile: openshift-node-elasticsearch
+```

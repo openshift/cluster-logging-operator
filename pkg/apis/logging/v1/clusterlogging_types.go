@@ -132,7 +132,7 @@ type ElasticsearchStatus struct {
 	ClusterHealth          string                                      `json:"clusterHealth,omitempty"`
 	Cluster                elasticsearch.ClusterHealth                 `json:"cluster"`
 	Pods                   map[ElasticsearchRoleType]PodStateMap       `json:"pods"`
-	ShardAllocationEnabled elasticsearch.ShardAllocationState          `json:shardAllocationEnabled`
+	ShardAllocationEnabled elasticsearch.ShardAllocationState          `json:"shardAllocationEnabled"`
 	ClusterConditions      []elasticsearch.ClusterCondition            `json:"clusterConditions,omitempty"`
 	NodeConditions         map[string][]elasticsearch.ClusterCondition `json:"nodeConditions,omitempty"`
 }

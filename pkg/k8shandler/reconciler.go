@@ -122,7 +122,7 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.Cluste
 
 	if err := clusterRequest.client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
 		if !apierrors.IsNotFound(err) {
-			fmt.Errorf("Encountered unexpected error getting %v", clusterLoggingNamespacedName)
+			fmt.Printf("Encountered unexpected error getting %v", clusterLoggingNamespacedName)
 		}
 	}
 
@@ -136,7 +136,7 @@ func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
 	proxyConfig := &configv1.Proxy{}
 	if err := clusterRequest.client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
 		if !apierrors.IsNotFound(err) {
-			fmt.Errorf("Encountered unexpected error getting %v", proxyNamespacedName)
+			fmt.Printf("Encountered unexpected error getting %v", proxyNamespacedName)
 		}
 	}
 
@@ -149,7 +149,7 @@ func (clusterRequest *ClusterLoggingRequest) getLogForwarding() *logforwarding.L
 	logger.Debug("logforwarding-controller fetching LF instance")
 	if err := clusterRequest.client.Get(context.TODO(), logForwardingNamespacedName, logForwarding); err != nil {
 		if !apierrors.IsNotFound(err) {
-			fmt.Errorf("Encountered unexpected error getting %v", logForwardingNamespacedName)
+			fmt.Printf("Encountered unexpected error getting %v", logForwardingNamespacedName)
 		}
 	}
 

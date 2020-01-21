@@ -26,7 +26,9 @@ var _ = Describe("LogForwarding", func() {
 		rootDir          string
 	)
 	BeforeEach(func() {
-		e2e.DeployLogGenerator()
+		if err := e2e.DeployLogGenerator(); err != nil {
+			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
+		}
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})
 	Describe("when ClusterLogging is configured with 'forwarding' to an administrator managed fluentd", func() {

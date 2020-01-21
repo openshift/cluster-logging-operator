@@ -19,14 +19,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var log = logf.Log.WithName("controller_collector")
-
 const (
-	singletonMessage   = "Collector is a singleton. Only an instance named 'instance' is allowed"
 	promtailAnnotation = "clusterlogging.openshift.io/promtaildevpreview"
 )
 
@@ -98,7 +94,8 @@ func (r *ReconcileCollector) Reconcile(request reconcile.Request) (reconcile.Res
 	logger.Debugf("Annotation %q value: %q", promtailAnnotation, value)
 
 	//check for instancename and then update status
-	var reconcileErr error = nil
+	var reconcileErr error
+
 	if instance.Name == constants.SingletonName && value == "enabled" {
 
 		clInstance := &loggingv1.ClusterLogging{}

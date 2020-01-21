@@ -41,14 +41,19 @@ func hasTrustedCABundle(configMap *core.ConfigMap) bool {
 	}
 }
 
-func calcTrustedCAHashValue(configMap *core.ConfigMap) string {
+func calcTrustedCAHashValue(configMap *core.ConfigMap) (string, error) {
 	hashValue := "0"
+	var err error
+
 	if configMap == nil {
-		return hashValue
+		return hashValue, nil
 	}
 	caBundle, ok := configMap.Data[constants.TrustedCABundleKey]
 	if ok && caBundle != "" {
-		hashValue = utils.CalculateMD5Hash(caBundle)
+		hashValue, err = utils.CalculateMD5Hash(caBundle)
+		if err != nil {
+			return "", err
+		}
 	}
-	return hashValue
+	return hashValue, nil
 }

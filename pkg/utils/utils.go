@@ -57,10 +57,13 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 }
 
 //CalculateMD5Hash returns a MD5 hash of the give text
-func CalculateMD5Hash(text string) string {
+func CalculateMD5Hash(text string) (string, error) {
 	hasher := md5.New()
-	hasher.Write([]byte(text))
-	return hex.EncodeToString(hasher.Sum(nil))
+	_, err := hasher.Write([]byte(text))
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func AreMapsSame(lhs, rhs map[string]string) bool {
@@ -74,12 +77,12 @@ func EnsureLinuxNodeSelector(selectors map[string]string) map[string]string {
 	if selectors == nil {
 		return map[string]string{OsNodeLabel: LinuxValue}
 	}
-	if os, ok := selectors[OsNodeLabel]; ok {
-		if os == LinuxValue {
+	if osType, ok := selectors[OsNodeLabel]; ok {
+		if osType == LinuxValue {
 			return selectors
 		}
 		// Selector is provided but is not "linux"
-		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, os, LinuxValue)
+		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, osType, LinuxValue)
 	}
 	selectors[OsNodeLabel] = LinuxValue
 	return selectors
@@ -117,7 +120,7 @@ func isTolerationSame(lhs, rhs v1.Toleration) bool {
 	if (lhs.TolerationSeconds == nil) == (rhs.TolerationSeconds == nil) {
 		if lhs.TolerationSeconds != nil {
 			// only compare values (attempt to dereference) if pointers aren't nil
-			tolerationSecondsBool = (*lhs.TolerationSeconds == *rhs.TolerationSeconds)
+			tolerationSecondsBool = *lhs.TolerationSeconds == *rhs.TolerationSeconds
 		} else {
 			tolerationSecondsBool = true
 		}

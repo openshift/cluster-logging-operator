@@ -74,6 +74,9 @@ const (
 
 	//OutputTypeForward configures the pipeline to send messages via Fluent's secure forward
 	OutputTypeForward OutputType = "forward"
+
+	//OutputTypeLegacySyslog configures pipeline to send messages to an external syslog server through docebo/fluent-plugin-remote-syslog
+	OutputTypeLegacySyslog OutputType = "syslog-legacy"
 )
 
 //LogForwardingReason The reason for the current state

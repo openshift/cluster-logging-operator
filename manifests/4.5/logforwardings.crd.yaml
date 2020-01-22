@@ -29,6 +29,7 @@ spec:
                     enum:
                       - elasticsearch
                       - forward
+                      - syslog
                   name: 
                     description: The name of the output
                     type: string

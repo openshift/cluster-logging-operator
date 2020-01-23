@@ -4,7 +4,8 @@ is found in the [configuration](./docs/configuration.md) documentation.
 
 ## Quick Start
 To get started with cluster logging and the `cluster-logging-operator`:
-* Ensure Docker is installed on your local system
+* Ensure Docker is installed on your local system [(**Note** for Fedora 31)](./docs/fedora31.md)
+* Ensure skopeo is installed, e.g. `sudo dnf install -y skopeo`
 ```
 $ oc login $CLUSTER -u $ADMIN_USER -p $ADMIN_PASSWD
 $ REMOTE_CLUSTER=true make deploy-example

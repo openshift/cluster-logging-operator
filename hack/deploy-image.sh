@@ -43,13 +43,13 @@ oc --loglevel=9 -n openshift-image-registry port-forward service/image-registry 
 forwarding_pid=$!
 
 trap "kill -15 ${forwarding_pid}" EXIT
-for ii in $(seq 1 10) ; do
+for ii in $(seq 1 30) ; do
     if [ "$(curl -sk -w '%{response_code}\n' https://localhost:5000 || :)" = 200 ] ; then
         break
     fi
     sleep 1
 done
-if [ $ii = 10 ] ; then
+if [ $ii = 30 ] ; then
     echo ERROR: timeout waiting for port-forward to be available
     exit 1
 fi

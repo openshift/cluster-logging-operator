@@ -108,7 +108,7 @@ var _ = Describe("Generating fluentd config", func() {
 			## ordered so that syslog always runs last...
 			<source>
 				@type prometheus
-                bind '::'
+                bind ''
 				<ssl>
 					enable true
 					certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
@@ -449,7 +449,7 @@ var _ = Describe("Generating fluentd config", func() {
 			## ordered so that syslog always runs last...
 			<source>
 				@type prometheus
-                bind '::'
+                bind ''
 				<ssl>
 					enable true
 					certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"

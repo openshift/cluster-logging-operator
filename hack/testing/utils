@@ -18,6 +18,16 @@ indent() {
   INDENT="      "
   sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
 }
+
+expect_success(){
+  local cmd=$1
+  echo "Running '$cmd'"
+  if $cmd ; then
+    return 0
+  fi  
+  return 1
+}
+
 try_until_failure() {
   local cmd=$1
   local timeout=$2
@@ -221,11 +231,11 @@ function deploy_clusterlogging_operator() {
         op_img=${IMAGE_FORMAT/'${component}'/oauth-proxy}
     else
         IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/ocp/$version:cluster-logging-operator}
-        es_img=registry.svc.ci.openshift.org/ocp/$version:logging-elasticsearch5
-        k_img=registry.svc.ci.openshift.org/ocp/$version:logging-kibana5
-        c_img=registry.svc.ci.openshift.org/ocp/$version:logging-curator5
-        f_img=registry.svc.ci.openshift.org/ocp/$version:logging-fluentd
-        op_img=registry.svc.ci.openshift.org/ocp/$version:oauth-proxy
+        es_img=${IMAGE_ELASTICSEARCH_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-elasticsearch5}
+        k_img=${IMAGE_KIBANA_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-kibana5}
+        c_img=${IMAGE_CURATOR_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-curator5}
+        f_img=${IMAGE_FLUENTD_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-fluentd}
+        op_img=${IMAGE_OAUTH_PROXY_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:oauth-proxy}
     fi
     sed -e "/name: ELASTICSEARCH_IMAGE/,/value:/s,value:.*\$,value: ${es_img}," \
         -e "/name: KIBANA_IMAGE/,/value:/s,value:.*\$,value: ${k_img}," \

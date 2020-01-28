@@ -182,7 +182,7 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 	return nil
 }
 
-func (tc *E2ETestFramework) DeployFluendReceiver(rootDir string, secure bool) (deployment *apps.Deployment, err error) {
+func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (deployment *apps.Deployment, err error) {
 	logStore := &fluentReceiverLogStore{
 		tc: tc,
 	}

@@ -139,12 +139,12 @@ var _ = Describe("Generating fluentd config", func() {
 				@type tail
 				@id container-input
 				path "/var/log/containers/*.log"
+				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				exclude_path []
 				@label @CONCAT
 				<parse>
 				@type multi_format
@@ -497,12 +497,12 @@ var _ = Describe("Generating fluentd config", func() {
 				@type tail
 				@id container-input
 				path "/var/log/containers/*.log"
+				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				exclude_path []
 				@label @CONCAT
 				<parse>
 				@type multi_format

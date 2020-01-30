@@ -26,7 +26,9 @@ var _ = Describe("LogForwarding", func() {
 		rootDir          string
 	)
 	BeforeEach(func() {
-		e2e.DeployLogGenerator()
+		if err := e2e.DeployLogGenerator(); err != nil {
+			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
+		}
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})
 	Describe("when ClusterLogging is configured with 'forwarding' to an administrator managed fluentd", func() {
@@ -34,7 +36,7 @@ var _ = Describe("LogForwarding", func() {
 		Context("and the receiver is unsecured", func() {
 
 			BeforeEach(func() {
-				if fluentDeployment, err = e2e.DeployFluendReceiver(rootDir, false); err != nil {
+				if fluentDeployment, err = e2e.DeployFluentdReceiver(rootDir, false); err != nil {
 					Fail(fmt.Sprintf("Unable to deploy fluent receiver: %v", err))
 				}
 
@@ -99,7 +101,7 @@ var _ = Describe("LogForwarding", func() {
 		Context("and the receiver is secured", func() {
 
 			BeforeEach(func() {
-				if fluentDeployment, err = e2e.DeployFluendReceiver(rootDir, true); err != nil {
+				if fluentDeployment, err = e2e.DeployFluentdReceiver(rootDir, true); err != nil {
 					Fail(fmt.Sprintf("Unable to deploy fluent receiver: %v", err))
 				}
 				//sanity check

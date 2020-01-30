@@ -116,6 +116,23 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 	return nil
 }
 
+func ReconcileForKibanaSecret(requestClient client.Client) (err error) {
+
+	clusterLoggingRequest := ClusterLoggingRequest{
+		client: requestClient,
+	}
+
+	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	clusterLoggingRequest.cluster = clusterLogging
+
+	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		return nil
+	}
+
+	// call for Kibana to restart itself (e.g. delete its pods)
+	return clusterLoggingRequest.RestartKibana()
+}
+
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {
 	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	clusterLogging := &logging.ClusterLogging{}

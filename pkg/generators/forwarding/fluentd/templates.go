@@ -32,6 +32,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 ## ordered so that syslog always runs last...
 <source>
   @type prometheus
+  bind ''
   <ssl>
     enable true
     certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
@@ -407,13 +408,6 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
     time_format %Y-%m-%dT%H:%M:%S.%N%z
   </parse>
 </source>
-{{- end}}`
-
-const outputLabelMatchTemplate = `{{- define "outputLabelMatch" }}
-<match {{.Tags}}>
-	@type relabel
-	@label {{labelName .Name}}
-</match>
 {{- end}}`
 
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" }}

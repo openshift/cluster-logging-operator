@@ -23,9 +23,8 @@ import (
 )
 
 const (
-	annotationOauthSecretUpdatedAt = "logging.openshift.io/oauthSecretUpdatedAt"
-	kibanaServiceAccountName       = "kibana"
-	kibanaOAuthRedirectReference   = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
+	kibanaServiceAccountName     = "kibana"
+	kibanaOAuthRedirectReference = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
 )
 
 var (
@@ -37,7 +36,9 @@ var (
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy) (err error) {
 	if clusterRequest.cluster.Spec.Visualization == nil || clusterRequest.cluster.Spec.Visualization.Type == "" {
-		clusterRequest.removeKibana()
+		if err = clusterRequest.removeKibana(); err != nil {
+			return
+		}
 		return nil
 	}
 	if clusterRequest.cluster.Spec.Visualization.Type == logging.VisualizationTypeKibana {
@@ -259,7 +260,10 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 			current, different := isDeploymentDifferent(current, kibanaDeployment)
 
 			// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
-			newTrustedCAHashedValue := calcTrustedCAHashValue(kibanaTrustBundle)
+			newTrustedCAHashedValue, err := calcTrustedCAHashValue(kibanaTrustBundle)
+			if err != nil {
+				return fmt.Errorf("unable to calculate trusted CA value. E: %s", err.Error())
+			}
 			trustedCAHashedValue, _ := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
 			if trustedCAHashedValue != newTrustedCAHashedValue {
 				different = true
@@ -502,11 +506,18 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 		return err
 	}
 
+	var sessionSecret []byte
+
+	sessionSecret = utils.GetWorkingDirFileContents("kibana-session-secret")
+	if sessionSecret == nil {
+		sessionSecret = utils.GetRandomWord(32)
+	}
+
 	proxySecret := NewSecret(
 		"kibana-proxy",
 		clusterRequest.cluster.Namespace,
 		map[string][]byte{
-			"session-secret": utils.GetRandomWord(32),
+			"session-secret": sessionSecret,
 			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
 			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
 		})
@@ -707,24 +718,6 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 	}
 
 	return kibanaPodSpec
-}
-
-func updateCurrentImages(current *apps.Deployment, desired *apps.Deployment) *apps.Deployment {
-
-	containers := current.Spec.Template.Spec.Containers
-
-	for index, curr := range current.Spec.Template.Spec.Containers {
-		for _, des := range desired.Spec.Template.Spec.Containers {
-			// Only compare the images of containers with the same name
-			if curr.Name == des.Name {
-				if curr.Image != des.Image {
-					containers[index].Image = des.Image
-				}
-			}
-		}
-	}
-
-	return current
 }
 
 func createSharedConfig(namespace, kibanaAppURL, kibanaInfraURL string) *v1.ConfigMap {

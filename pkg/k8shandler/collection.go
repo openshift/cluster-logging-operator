@@ -59,7 +59,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 		logger.Debugf("Generated collector config: %s", collectorConfig)
-		collectorConfHash = utils.CalculateMD5Hash(collectorConfig)
+		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
+		if err != nil {
+			logger.Errorf("unable to calculate MD5 hash. E: %s", err.Error())
+			return
+		}
 		if err = clusterRequest.createOrUpdateFluentdService(); err != nil {
 			return
 		}
@@ -123,7 +127,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		clusterRequest.removeFluentd()
+		if err = clusterRequest.removeFluentd(); err != nil {
+			return
+		}
+
 		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
 			return
 		}

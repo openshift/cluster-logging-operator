@@ -2,16 +2,16 @@
 approvers:
   - jcantrill
   - ewolinetz
-  - richm
   - lukas-vlcek
-  - nhosoi
   - alanconway
   - igor-karpukhin
+  - vimalk78
+  - syedriko
 reviewers:
   - jcantrill
   - ewolinetz
-  - richm
-  - nhosoi
   - lukas-vlcek
   - alanconway
   - igor-karpukhin
+  - vimalk78
+  - syedriko

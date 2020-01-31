@@ -37,9 +37,9 @@ func NewConfigGenerator(includeLegacyForwardConfig bool) (*ConfigGenerator, erro
 func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (string, error) {
 
 	//sanitize here
-	sourceInputLabels := []string{}
-	sourceToPipelineLabels := []string{}
-	pipelineToOutputLabels := []string{}
+	var sourceInputLabels []string
+	var sourceToPipelineLabels []string
+	var pipelineToOutputLabels []string
 	var outputLabels []string
 	var err error
 

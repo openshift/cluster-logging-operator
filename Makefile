@@ -90,10 +90,11 @@ image: imagebuilder
 	then hack/build-image.sh $(IMAGE_TAG) $(IMAGE_BUILDER) $(IMAGE_BUILDER_OPTS) ; \
 	fi
 
+lint:
+	@golangci-lint run -c golangci.yaml
+
 fmt:
-	@gofmt -l -w cmd && \
-	gofmt -l -w pkg && \
-	gofmt -l -w test
+	@gofmt -l -w cmd/ pkg/ version/
 
 simplify:
 	@gofmt -s -l -w $(SRC)
@@ -121,7 +122,7 @@ test-unit: fmt
 
 test-e2e:
 	hack/test-e2e.sh
-	
+
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec
 	gosec -severity medium --confidence medium -quiet ./...

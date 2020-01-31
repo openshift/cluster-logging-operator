@@ -3,7 +3,7 @@ WORKDIR /go/src/github.com/openshift/cluster-logging-operator
 COPY . .
 RUN make
 
-FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
+FROM centos:centos7
 ARG CSV=4.4
 RUN INSTALL_PKGS=" \
       openssl \

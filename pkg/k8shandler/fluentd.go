@@ -457,7 +457,11 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	desired, different := isDaemonsetDifferent(current, desired)
 
 	// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
-	newTrustedCAHashedValue := calcTrustedCAHashValue(trustedCABundleCM)
+	newTrustedCAHashedValue, err := calcTrustedCAHashValue(trustedCABundleCM)
+	if err != nil {
+		return fmt.Errorf("unable to calculate trusted CA hash value. E: %s", err.Error())
+	}
+
 	trustedCAHashedValue, _ := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
 	if trustedCAHashedValue != newTrustedCAHashedValue {
 		different = true

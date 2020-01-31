@@ -57,10 +57,13 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 }
 
 //CalculateMD5Hash returns a MD5 hash of the give text
-func CalculateMD5Hash(text string) string {
+func CalculateMD5Hash(text string) (string, error) {
 	hasher := md5.New()
-	hasher.Write([]byte(text))
-	return hex.EncodeToString(hasher.Sum(nil))
+	_, err := hasher.Write([]byte(text))
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 func AreMapsSame(lhs, rhs map[string]string) bool {
@@ -74,12 +77,12 @@ func EnsureLinuxNodeSelector(selectors map[string]string) map[string]string {
 	if selectors == nil {
 		return map[string]string{OsNodeLabel: LinuxValue}
 	}
-	if os, ok := selectors[OsNodeLabel]; ok {
-		if os == LinuxValue {
+	if osType, ok := selectors[OsNodeLabel]; ok {
+		if osType == LinuxValue {
 			return selectors
 		}
 		// Selector is provided but is not "linux"
-		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, os, LinuxValue)
+		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, osType, LinuxValue)
 	}
 	selectors[OsNodeLabel] = LinuxValue
 	return selectors
@@ -117,7 +120,7 @@ func isTolerationSame(lhs, rhs v1.Toleration) bool {
 	if (lhs.TolerationSeconds == nil) == (rhs.TolerationSeconds == nil) {
 		if lhs.TolerationSeconds != nil {
 			// only compare values (attempt to dereference) if pointers aren't nil
-			tolerationSecondsBool = (*lhs.TolerationSeconds == *rhs.TolerationSeconds)
+			tolerationSecondsBool = *lhs.TolerationSeconds == *rhs.TolerationSeconds
 		} else {
 			tolerationSecondsBool = true
 		}
@@ -149,14 +152,14 @@ func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
 // based on the component type
 func GetComponentImage(component string) string {
 
-	env_var_name, ok := COMPONENT_IMAGES[component]
+	envVarName, ok := COMPONENT_IMAGES[component]
 	if !ok {
 		logrus.Errorf("Environment variable name mapping missing for component: %s", component)
 		return ""
 	}
-	imageTag := os.Getenv(env_var_name)
+	imageTag := os.Getenv(envVarName)
 	if imageTag == "" {
-		logrus.Errorf("No image tag defined for component '%s' by environment variable '%s'", component, env_var_name)
+		logrus.Errorf("No image tag defined for component '%s' by environment variable '%s'", component, envVarName)
 	}
 	logrus.Debugf("Setting component image for '%s' to: '%s'", component, imageTag)
 	return imageTag

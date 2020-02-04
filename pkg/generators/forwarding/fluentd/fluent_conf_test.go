@@ -1,109 +1,126 @@
 package fluentd
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	test "github.com/openshift/cluster-logging-operator/test"
 )
 
-var _ = Describe("Generating fluentd config", func() {
-	var (
-		forwarding *logging.ForwardingSpec
-		generator  *ConfigGenerator
-	)
-	BeforeEach(func() {
-		var err error
-		generator, err = NewConfigGenerator(true)
-		Expect(err).To(BeNil())
-		Expect(generator).ToNot(BeNil())
-		forwarding = &logging.ForwardingSpec{
-			Outputs: []logging.OutputSpec{
-				{
-					Type:     logging.OutputTypeElasticsearch,
-					Name:     "infra-es",
-					Endpoint: "es.svc.infra.cluster:9999",
-					Secret: &logging.OutputSecretSpec{
-						Name: "my-infra-secret",
-					},
-				},
-				{
-					Type:     logging.OutputTypeElasticsearch,
-					Name:     "apps-es-1",
-					Endpoint: "es.svc.messaging.cluster.local:9654",
-					Secret: &logging.OutputSecretSpec{
-						Name: "my-es-secret",
-					},
-				},
-				{
-					Type:     logging.OutputTypeElasticsearch,
-					Name:     "apps-es-2",
-					Endpoint: "es.svc.messaging.cluster.local2:9654",
-					Secret: &logging.OutputSecretSpec{
-						Name: "my-other-secret",
-					},
-				},
-				{
-					Type:     logging.OutputTypeElasticsearch,
-					Name:     "audit-es",
-					Endpoint: "es.svc.audit.cluster:9654",
-					Secret: &logging.OutputSecretSpec{
-						Name: "my-audit-secret",
-					},
-				},
-			},
-			Pipelines: []logging.PipelineSpec{
-				logging.PipelineSpec{
-					Name:       "infra-pipeline",
-					SourceType: logging.LogSourceTypeInfra,
-					OutputRefs: []string{"infra-es"},
-				},
-				logging.PipelineSpec{
-					Name:       "apps-pipeline",
-					SourceType: logging.LogSourceTypeApp,
-					OutputRefs: []string{"apps-es-1", "apps-es-2"},
-				},
-				logging.PipelineSpec{
-					Name:       "audit-pipeline",
-					SourceType: logging.LogSourceTypeAudit,
-					OutputRefs: []string{"audit-es"},
-				},
-			},
+// Strip leading whitespace from lines for string comparisons
+func normalize(in string) string {
+	out := []string{}
+	for _, line := range strings.Split(in, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			out = append(out, strings.TrimSpace(line))
 		}
-	})
+	}
+	return strings.Join(out, "\n")
+}
 
-	It("should exclude source to pipeline labels when there are no pipelines for a given sourceType (e.g. only logs.app)", func() {
-		forwarding = &logging.ForwardingSpec{
-			Outputs: []logging.OutputSpec{
-				{
-					Type:     logging.OutputTypeForward,
-					Name:     "secureforward-receiver",
-					Endpoint: "es.svc.messaging.cluster.local:9654",
+func assertEqualStrip(t *testing.T, want, got string) {
+	assert.Equal(t, normalize(want), normalize(got))
+}
+
+func setupGenerator(t *testing.T) *ConfigGenerator {
+	generator, err := NewConfigGenerator(true)
+	assert.NoError(t, err)
+	assert.NotNil(t, generator)
+	return generator
+}
+
+func setupForwarding(t *testing.T) *logging.ForwardingSpec {
+	return &logging.ForwardingSpec{
+		Outputs: []logging.OutputSpec{
+			{
+				Type:     logging.OutputTypeElasticsearch,
+				Name:     "infra-es",
+				Endpoint: "es.svc.infra.cluster:9999",
+				Secret: &logging.OutputSecretSpec{
+					Name: "my-infra-secret",
 				},
 			},
-			Pipelines: []logging.PipelineSpec{
-				logging.PipelineSpec{
-					Name:       "apps-pipeline",
-					SourceType: logging.LogSourceTypeApp,
-					OutputRefs: []string{"secureforward-receiver"},
+			{
+				Type:     logging.OutputTypeElasticsearch,
+				Name:     "apps-es-1",
+				Endpoint: "es.svc.messaging.cluster.local:9654",
+				Secret: &logging.OutputSecretSpec{
+					Name: "my-es-secret",
 				},
 			},
-		}
-		results, err := generator.Generate(forwarding)
-		Expect(err).To(BeNil())
-		test.Expect(results).ToEqual(`
-			## CLO GENERATED CONFIGURATION ### 
+			{
+				Type:     logging.OutputTypeElasticsearch,
+				Name:     "apps-es-2",
+				Endpoint: "es.svc.messaging.cluster.local2:9654",
+				Secret: &logging.OutputSecretSpec{
+					Name: "my-other-secret",
+				},
+			},
+			{
+				Type:     logging.OutputTypeElasticsearch,
+				Name:     "audit-es",
+				Endpoint: "es.svc.audit.cluster:9654",
+				Secret: &logging.OutputSecretSpec{
+					Name: "my-audit-secret",
+				},
+			},
+		},
+		Pipelines: []logging.PipelineSpec{
+			logging.PipelineSpec{
+				Name:       "infra-pipeline",
+				SourceType: logging.LogSourceTypeInfra,
+				OutputRefs: []string{"infra-es"},
+			},
+			logging.PipelineSpec{
+				Name:       "apps-pipeline",
+				SourceType: logging.LogSourceTypeApp,
+				OutputRefs: []string{"apps-es-1", "apps-es-2"},
+			},
+			logging.PipelineSpec{
+				Name:       "audit-pipeline",
+				SourceType: logging.LogSourceTypeAudit,
+				OutputRefs: []string{"audit-es"},
+			},
+		},
+	}
+}
+
+// should exclude source to pipeline labels when there are no pipelines for a
+// given sourceType (e.g. only logs.app)
+func TestGenerateFluentdConfigNoPipelines(t *testing.T) {
+	forwarding := &logging.ForwardingSpec{
+		Outputs: []logging.OutputSpec{
+			{
+				Type:     logging.OutputTypeForward,
+				Name:     "secureforward-receiver",
+				Endpoint: "es.svc.messaging.cluster.local:9654",
+			},
+		},
+		Pipelines: []logging.PipelineSpec{
+			logging.PipelineSpec{
+				Name:       "apps-pipeline",
+				SourceType: logging.LogSourceTypeApp,
+				OutputRefs: []string{"secureforward-receiver"},
+			},
+		},
+	}
+	got, err := setupGenerator(t).Generate(forwarding)
+	assert.NoError(t, err)
+	want := `
+			## CLO GENERATED CONFIGURATION ###
 			# This file is a copy of the fluentd configuration entrypoint
 			# which should normally be supplied in a configmap.
-			
+
 			<system>
   				@log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
 			</system>
-			
+
 			# In each section below, pre- and post- includes don't include anything initially;
 			# they exist to enable future additions to openshift conf as needed.
-			
+
 			## sources
 			## ordered so that syslog always runs last...
 			<source>
@@ -161,7 +178,7 @@ var _ = Describe("Generating fluentd config", func() {
 				</pattern>
 				</parse>
 			</source>
-			
+
 			<label @CONCAT>
 				<filter kubernetes.**>
 				@type concat
@@ -175,7 +192,7 @@ var _ = Describe("Generating fluentd config", func() {
 				@label @INGRESS
 				</match>
 			</label>
-			
+
 			#syslog input config here
 
 			<label @INGRESS>
@@ -260,14 +277,14 @@ var _ = Describe("Generating fluentd config", func() {
 					use_journal "#{ENV['USE_JOURNAL'] || 'nil'}"
 					ssl_partial_chain "#{ENV['SSL_PARTIAL_CHAIN'] || 'true'}"
 				</filter>
-					
+
 				<filter kubernetes.journal.**>
 					@type parse_json_field
 					merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
 					preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
 					json_fields "#{ENV['JSON_FIELDS'] || 'MESSAGE,log'}"
 				</filter>
-					
+
 				<filter kubernetes.var.log.containers.**>
 					@type parse_json_field
 					merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
@@ -365,7 +382,7 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 
 			</label>
-			
+
 			# Relabel specific sources (e.g. logs.apps) to multiple pipelines
 			<label @_LOGS_APP>
 				<match **>
@@ -396,7 +413,7 @@ var _ = Describe("Generating fluentd config", func() {
 				<match **>
 					# https://docs.fluentd.org/v1.0/articles/in_forward
 				@type forward
-		
+
 				<buffer>
 					@type file
 					path '/var/lib/fluentd/secureforward_receiver'
@@ -412,7 +429,7 @@ var _ = Describe("Generating fluentd config", func() {
 					# buffer to the remote - default is 'exception' because in_tail handles that case
 					overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'exception'}"
 				</buffer>
-		
+
 				<server>
 					host es.svc.messaging.cluster.local
 					port 9654
@@ -426,24 +443,26 @@ var _ = Describe("Generating fluentd config", func() {
 				@include /etc/fluent/configs.d/secure-forward/secure-forward.conf
 			</match>
 		</label>
-	`)
-	})
+	`
+	assertEqualStrip(t, want, got)
+}
 
-	It("should produce well formed fluent.conf", func() {
-		results, err := generator.Generate(forwarding)
-		Expect(err).To(BeNil())
-		test.Expect(results).ToEqual(`
-			## CLO GENERATED CONFIGURATION ### 
+// should produce well formed fluent.conf
+func TestGenerateFluentdWellFormed(t *testing.T) {
+	got, err := setupGenerator(t).Generate(setupForwarding(t))
+	assert.NoError(t, err)
+	want := `
+			## CLO GENERATED CONFIGURATION ###
 			# This file is a copy of the fluentd configuration entrypoint
 			# which should normally be supplied in a configmap.
-			
+
 			<system>
   				@log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
 			</system>
-			
+
 			# In each section below, pre- and post- includes don't include anything initially;
 			# they exist to enable future additions to openshift conf as needed.
-			
+
 			## sources
 			## ordered so that syslog always runs last...
 			<source>
@@ -566,7 +585,7 @@ var _ = Describe("Generating fluentd config", func() {
                 time_format %Y-%m-%dT%H:%M:%S.%N%z
               </parse>
             </source>
-			
+
 			<label @CONCAT>
 				<filter kubernetes.**>
 				@type concat
@@ -580,7 +599,7 @@ var _ = Describe("Generating fluentd config", func() {
 				@label @INGRESS
 				</match>
 			</label>
-			
+
 			#syslog input config here
 
 			<label @INGRESS>
@@ -665,14 +684,14 @@ var _ = Describe("Generating fluentd config", func() {
 					use_journal "#{ENV['USE_JOURNAL'] || 'nil'}"
 					ssl_partial_chain "#{ENV['SSL_PARTIAL_CHAIN'] || 'true'}"
 				</filter>
-					
+
 				<filter kubernetes.journal.**>
 					@type parse_json_field
 					merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
 					preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
 					json_fields "#{ENV['JSON_FIELDS'] || 'MESSAGE,log'}"
 				</filter>
-					
+
 				<filter kubernetes.var.log.containers.**>
 					@type parse_json_field
 					merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
@@ -778,7 +797,7 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 
 			</label>
-			
+
 			# Relabel specific sources (e.g. logs.apps) to multiple pipelines
 			<label @_LOGS_APP>
 				<match **>
@@ -1209,7 +1228,6 @@ var _ = Describe("Generating fluentd config", func() {
 					@include /etc/fluent/configs.d/secure-forward/secure-forward.conf
 				</match>
 			</label>
-			`)
-	})
-
-})
+			`
+	assertEqualStrip(t, want, got)
+}

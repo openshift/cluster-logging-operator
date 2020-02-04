@@ -6,3 +6,10 @@ func (conf *outputLabelConf) SyslogLegacyPlugin() string {
 	}
 	return "syslog_buffered"
 }
+
+func (conf *outputLabelConf) SyslogProtocol() string {
+	if protocol := conf.Protocol(); protocol != "" {
+		return protocol
+	}
+	return "tcp"
+}

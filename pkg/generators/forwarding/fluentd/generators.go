@@ -200,6 +200,9 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logforward.Ou
 		case logforward.OutputTypeLegacySyslog:
 			storeTemplateName = "storeLegacySyslog"
 			outputTemplateName = "outputLabelConfNoRetry"
+		case logforward.OutputTypeSyslog:
+			storeTemplateName = "storeSyslog"
+			outputTemplateName = "outputLabelConfNoRetry"
 		default:
 			logger.Warnf("Pipeline targets include an unrecognized type: %q", output.Type)
 			continue

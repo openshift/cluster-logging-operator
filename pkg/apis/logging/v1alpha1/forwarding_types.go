@@ -77,6 +77,9 @@ const (
 
 	//OutputTypeLegacySyslog configures pipeline to send messages to an external syslog server through docebo/fluent-plugin-remote-syslog
 	OutputTypeLegacySyslog OutputType = "syslog-legacy"
+
+	//OutputTypeSyslog configures pipeline to send messages to an external syslog server through dlackty/fluent-plugin-remote_syslog
+	OutputTypeSyslog OutputType = "syslog"
 )
 
 //LogForwardingReason The reason for the current state

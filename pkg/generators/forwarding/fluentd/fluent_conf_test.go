@@ -9,107 +9,88 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 )
 
-// Strip leading whitespace from lines for string comparisons
-func normalize(in string) string {
-	out := []string{}
-	for _, line := range strings.Split(in, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			out = append(out, strings.TrimSpace(line))
+func TestGeneratingFluentdConfig(t *testing.T) {
+	before := func(t *testing.T) (*ConfigGenerator, *logging.ForwardingSpec) {
+		generator, err := NewConfigGenerator(true)
+		assert.NoError(t, err)
+		assert.NotNil(t, generator)
+		forwarding := &logging.ForwardingSpec{
+			Outputs: []logging.OutputSpec{
+				{
+					Type:     logging.OutputTypeElasticsearch,
+					Name:     "infra-es",
+					Endpoint: "es.svc.infra.cluster:9999",
+					Secret: &logging.OutputSecretSpec{
+						Name: "my-infra-secret",
+					},
+				},
+				{
+					Type:     logging.OutputTypeElasticsearch,
+					Name:     "apps-es-1",
+					Endpoint: "es.svc.messaging.cluster.local:9654",
+					Secret: &logging.OutputSecretSpec{
+						Name: "my-es-secret",
+					},
+				},
+				{
+					Type:     logging.OutputTypeElasticsearch,
+					Name:     "apps-es-2",
+					Endpoint: "es.svc.messaging.cluster.local2:9654",
+					Secret: &logging.OutputSecretSpec{
+						Name: "my-other-secret",
+					},
+				},
+				{
+					Type:     logging.OutputTypeElasticsearch,
+					Name:     "audit-es",
+					Endpoint: "es.svc.audit.cluster:9654",
+					Secret: &logging.OutputSecretSpec{
+						Name: "my-audit-secret",
+					},
+				},
+			},
+			Pipelines: []logging.PipelineSpec{
+				logging.PipelineSpec{
+					Name:       "infra-pipeline",
+					SourceType: logging.LogSourceTypeInfra,
+					OutputRefs: []string{"infra-es"},
+				},
+				logging.PipelineSpec{
+					Name:       "apps-pipeline",
+					SourceType: logging.LogSourceTypeApp,
+					OutputRefs: []string{"apps-es-1", "apps-es-2"},
+				},
+				logging.PipelineSpec{
+					Name:       "audit-pipeline",
+					SourceType: logging.LogSourceTypeAudit,
+					OutputRefs: []string{"audit-es"},
+				},
+			},
 		}
+		return generator, forwarding
 	}
-	return strings.Join(out, "\n")
-}
 
-func assertEqualStrip(t *testing.T, want, got string) {
-	assert.Equal(t, normalize(want), normalize(got))
-}
-
-func setupGenerator(t *testing.T) *ConfigGenerator {
-	generator, err := NewConfigGenerator(true)
-	assert.NoError(t, err)
-	assert.NotNil(t, generator)
-	return generator
-}
-
-func setupForwarding(t *testing.T) *logging.ForwardingSpec {
-	return &logging.ForwardingSpec{
-		Outputs: []logging.OutputSpec{
-			{
-				Type:     logging.OutputTypeElasticsearch,
-				Name:     "infra-es",
-				Endpoint: "es.svc.infra.cluster:9999",
-				Secret: &logging.OutputSecretSpec{
-					Name: "my-infra-secret",
+	t.Run("should exclude source to pipeline labels when there are no pipelines for a given sourceType (e.g. only logs.app)", func(t *testing.T) {
+		generator, _ := before(t) // Ignoring forwarding from before()
+		forwarding := &logging.ForwardingSpec{
+			Outputs: []logging.OutputSpec{
+				{
+					Type:     logging.OutputTypeForward,
+					Name:     "secureforward-receiver",
+					Endpoint: "es.svc.messaging.cluster.local:9654",
 				},
 			},
-			{
-				Type:     logging.OutputTypeElasticsearch,
-				Name:     "apps-es-1",
-				Endpoint: "es.svc.messaging.cluster.local:9654",
-				Secret: &logging.OutputSecretSpec{
-					Name: "my-es-secret",
+			Pipelines: []logging.PipelineSpec{
+				logging.PipelineSpec{
+					Name:       "apps-pipeline",
+					SourceType: logging.LogSourceTypeApp,
+					OutputRefs: []string{"secureforward-receiver"},
 				},
 			},
-			{
-				Type:     logging.OutputTypeElasticsearch,
-				Name:     "apps-es-2",
-				Endpoint: "es.svc.messaging.cluster.local2:9654",
-				Secret: &logging.OutputSecretSpec{
-					Name: "my-other-secret",
-				},
-			},
-			{
-				Type:     logging.OutputTypeElasticsearch,
-				Name:     "audit-es",
-				Endpoint: "es.svc.audit.cluster:9654",
-				Secret: &logging.OutputSecretSpec{
-					Name: "my-audit-secret",
-				},
-			},
-		},
-		Pipelines: []logging.PipelineSpec{
-			logging.PipelineSpec{
-				Name:       "infra-pipeline",
-				SourceType: logging.LogSourceTypeInfra,
-				OutputRefs: []string{"infra-es"},
-			},
-			logging.PipelineSpec{
-				Name:       "apps-pipeline",
-				SourceType: logging.LogSourceTypeApp,
-				OutputRefs: []string{"apps-es-1", "apps-es-2"},
-			},
-			logging.PipelineSpec{
-				Name:       "audit-pipeline",
-				SourceType: logging.LogSourceTypeAudit,
-				OutputRefs: []string{"audit-es"},
-			},
-		},
-	}
-}
-
-// should exclude source to pipeline labels when there are no pipelines for a
-// given sourceType (e.g. only logs.app)
-func TestGenerateFluentdConfigNoPipelines(t *testing.T) {
-	forwarding := &logging.ForwardingSpec{
-		Outputs: []logging.OutputSpec{
-			{
-				Type:     logging.OutputTypeForward,
-				Name:     "secureforward-receiver",
-				Endpoint: "es.svc.messaging.cluster.local:9654",
-			},
-		},
-		Pipelines: []logging.PipelineSpec{
-			logging.PipelineSpec{
-				Name:       "apps-pipeline",
-				SourceType: logging.LogSourceTypeApp,
-				OutputRefs: []string{"secureforward-receiver"},
-			},
-		},
-	}
-	got, err := setupGenerator(t).Generate(forwarding)
-	assert.NoError(t, err)
-	want := `
+		}
+		got, err := generator.Generate(forwarding)
+		assert.NoError(t, err)
+		want := `
 			## CLO GENERATED CONFIGURATION ###
 			# This file is a copy of the fluentd configuration entrypoint
 			# which should normally be supplied in a configmap.
@@ -444,15 +425,15 @@ func TestGenerateFluentdConfigNoPipelines(t *testing.T) {
 			</match>
 		</label>
 	`
-	assertEqualStrip(t, want, got)
-}
+		assertEqualStrip(t, want, got)
+	})
 
-// should produce well formed fluent.conf
-func TestGenerateFluentdWellFormed(t *testing.T) {
-	got, err := setupGenerator(t).Generate(setupForwarding(t))
-	assert.NoError(t, err)
-	want := `
-			## CLO GENERATED CONFIGURATION ###
+	t.Run("should produce well formed fluent.conf", func(t *testing.T) {
+		generator, forwarding := before(t)
+		got, err := generator.Generate(forwarding)
+		assert.NoError(t, err)
+		want := `
+		## CLO GENERATED CONFIGURATION ###
 			# This file is a copy of the fluentd configuration entrypoint
 			# which should normally be supplied in a configmap.
 
@@ -1229,5 +1210,22 @@ func TestGenerateFluentdWellFormed(t *testing.T) {
 				</match>
 			</label>
 			`
-	assertEqualStrip(t, want, got)
+		assertEqualStrip(t, want, got)
+	})
+}
+
+// Strip leading whitespace from lines for string comparisons
+func normalize(in string) string {
+	out := []string{}
+	for _, line := range strings.Split(in, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			out = append(out, strings.TrimSpace(line))
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
+func assertEqualStrip(t *testing.T, want, got string) {
+	assert.Equal(t, normalize(want), normalize(got))
 }

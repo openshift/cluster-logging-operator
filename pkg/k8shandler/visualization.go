@@ -153,6 +153,25 @@ func compareKibanaStatus(lhs, rhs []logging.KibanaStatus) bool {
 	return true
 }
 
+func (clusterRequest *ClusterLoggingRequest) RestartKibana() (err error) {
+
+	// get kibana pods
+	kibanaPods, err := clusterRequest.GetPodList(
+		map[string]string{
+			"component": "kibana",
+		})
+
+	// delete kibana pods
+	for _, pod := range kibanaPods.Items {
+		err := clusterRequest.Delete(&pod)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	if clusterRequest.isManaged() {
 		name := "kibana"
@@ -368,9 +387,10 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaRoute() error {
 
 	utils.AddOwnerRefToObject(kibanaRoute, utils.AsOwner(cluster))
 
-	err := clusterRequest.Create(kibanaRoute)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana route for %q: %v", cluster.Name, err)
+	if err := clusterRequest.CreateOrUpdateRoute(kibanaRoute); err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return err
+		}
 	}
 
 	kibanaURL, err := clusterRequest.GetRouteURL("kibana")

@@ -7,6 +7,8 @@ metadata:
   name: clusterlogging.v4.4.0
   namespace: placeholder
   annotations:
+    "operatorframework.io/suggested-namespace": openshift-logging
+    "operatorframework.io/cluster-monitoring": "true"
     capabilities: Seamless Upgrades
     categories: "OpenShift Optional, Logging & Tracing"
     certified: "false"

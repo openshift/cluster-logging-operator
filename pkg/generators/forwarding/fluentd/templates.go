@@ -304,6 +304,15 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 	</match>
 </label>
 {{- end}}
+{{ if .IncludeLegacySyslog }}
+<label @_LEGACY_SYSLOG>
+	<match **>
+		@type copy
+		#include legacy Syslog
+		@include /etc/fluent/configs.d/syslog/syslog.conf
+	</match>
+</label>
+{{- end}}
 
 {{- end}}`
 
@@ -424,6 +433,12 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
 		<store>
 			@type relabel
 			@label @_LEGACY_SECUREFORWARD
+		</store>
+{{- end }}
+{{ if .IncludeLegacySyslog }}
+		<store>
+			@type relabel
+			@label @_LEGACY_SYSLOG
 		</store>
 {{- end }}
 	</match>

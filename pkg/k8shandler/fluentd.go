@@ -27,6 +27,7 @@ import (
 const (
 	fluentdAlertsFile = "fluentd/fluentd_prometheus_alerts.yaml"
 	fluentdName       = "fluentd"
+	syslogName        = "syslog"
 )
 
 func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
@@ -176,6 +177,21 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
 	return found
 }
 
+//includeLegacySyslogConfig to address Bug 1799024. To be removed for LogForwarding GA
+func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
+	config := &v1.ConfigMap{
+		Data: map[string]string{},
+	}
+	if err := clusterRequest.Get(syslogName, config); err != nil {
+		if errors.IsNotFound(err) {
+			return false
+		}
+		logger.Warnf("There was a non-critical error trying to fetch the configmap: %v", err)
+	}
+	_, found := config.Data["syslog.conf"]
+	return found
+}
+
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(fluentConf string) error {
 	logrus.Debug("createOrUpdateFluentdConfigMap...")
 	fluentdConfigMap := NewConfigMap(
@@ -285,6 +301,8 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "config", ReadOnly: true, MountPath: "/etc/fluent/configs.d/user"},
 		{Name: "secureforwardconfig", ReadOnly: true, MountPath: "/etc/fluent/configs.d/secure-forward"},
 		{Name: "secureforwardcerts", ReadOnly: true, MountPath: "/etc/ocp-forward"},
+		{Name: "syslogconfig", ReadOnly: true, MountPath: "/etc/fluent/configs.d/syslog"},
+		{Name: "syslogcerts", ReadOnly: true, MountPath: "/etc/ocp-syslog"},
 		{Name: "entrypoint", ReadOnly: true, MountPath: "/opt/app-root/src/run.sh", SubPath: "run.sh"},
 		{Name: "certs", ReadOnly: true, MountPath: "/etc/fluent/keys"},
 		{Name: "localtime", ReadOnly: true, MountPath: "/etc/localtime"},
@@ -342,6 +360,8 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
 			{Name: "secureforwardconfig", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "secure-forward"}, Optional: utils.GetBool(true)}}},
 			{Name: "secureforwardcerts", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "secure-forward", Optional: utils.GetBool(true)}}},
+			{Name: "syslogconfig", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: syslogName}, Optional: utils.GetBool(true)}}},
+			{Name: "syslogcerts", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: syslogName, Optional: utils.GetBool(true)}}},
 			{Name: "entrypoint", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
 			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd"}}},
 			{Name: "localtime", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/localtime"}}},

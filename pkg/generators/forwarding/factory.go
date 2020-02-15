@@ -9,10 +9,10 @@ import (
 )
 
 //NewConfigGenerator create a config generator for a given collector type
-func NewConfigGenerator(collector logging.LogCollectionType, includeLegacyForwardConfig bool) (ConfigGenerator, error) {
+func NewConfigGenerator(collector logging.LogCollectionType, includeLegacyForwardConfig, includeLegacySyslogConfig bool) (ConfigGenerator, error) {
 	switch collector {
 	case logging.LogCollectionTypeFluentd:
-		return fluentd.NewConfigGenerator(includeLegacyForwardConfig)
+		return fluentd.NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig)
 	}
 	return nil, fmt.Errorf("Config generation not supported for collects of type %s", collector)
 }

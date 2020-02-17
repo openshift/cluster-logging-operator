@@ -380,7 +380,6 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	}
 
 	if addTrustedCAVolume {
-		optional := true
 		fluentdPodSpec.Volumes = append(fluentdPodSpec.Volumes,
 			v1.Volume{
 				Name: constants.FluentdTrustedCAName,
@@ -389,7 +388,6 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 						LocalObjectReference: v1.LocalObjectReference{
 							Name: constants.FluentdTrustedCAName,
 						},
-						Optional: &optional,
 						Items: []v1.KeyToPath{
 							{
 								Key:  constants.TrustedCABundleKey,
@@ -413,26 +411,23 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 	cluster := clusterRequest.cluster
 
 	fluentdTrustBundle := &v1.ConfigMap{}
-	if proxyConfig != nil {
-		// Create or update cluster proxy trusted CA bundle.
-		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
-		if err != nil {
-			return
-		}
-
-		// fluentd-trusted-ca-bundle
-		fluentdTrustBundleName := types.NamespacedName{Name: constants.FluentdTrustedCAName, Namespace: constants.OpenshiftNS}
-		if err := clusterRequest.client.Get(context.TODO(), fluentdTrustBundleName, fluentdTrustBundle); err != nil {
-			if !errors.IsNotFound(err) {
-				return err
-			}
-		}
+	// Create or update cluster proxy trusted CA bundle.
+	err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
+	if err != nil {
+		return
 	}
 
 	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, fluentdTrustBundle, clusterRequest.ForwardingSpec)
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
+
+	annotations, err := clusterRequest.getFluentdAnnotations(fluentdDaemonset)
+	if err != nil {
+		return err
+	}
+
+	fluentdDaemonset.Spec.Template.Annotations = annotations
 
 	uid := getServiceAccountLogCollectorUID()
 	if len(uid) == 0 {
@@ -450,7 +445,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 
 	if clusterRequest.isManaged() {
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset, fluentdTrustBundle)
+			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset)
 		})
 		if retryErr != nil {
 			return retryErr
@@ -460,7 +455,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet, trustedCABundleCM *v1.ConfigMap) (err error) {
+func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
 	logger.DebugObject("desired fluent update: %v", desired)
 	current := &apps.DaemonSet{}
 
@@ -477,18 +472,8 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	desired, different := isDaemonsetDifferent(current, desired)
 
 	// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
-	newTrustedCAHashedValue, err := calcTrustedCAHashValue(trustedCABundleCM)
-	if err != nil {
-		return fmt.Errorf("unable to calculate trusted CA hash value. E: %s", err.Error())
-	}
-
-	trustedCAHashedValue, _ := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
-	if trustedCAHashedValue != newTrustedCAHashedValue {
+	if current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] != desired.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] {
 		different = true
-		if desired.Spec.Template.ObjectMeta.Annotations == nil {
-			desired.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
-		}
-		desired.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = newTrustedCAHashedValue
 	}
 
 	if different {
@@ -512,6 +497,61 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	}
 
 	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) getFluentdAnnotations(daemonset *apps.DaemonSet) (map[string]string, error) {
+
+	if daemonset.Spec.Template.ObjectMeta.Annotations == nil {
+		daemonset.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
+	}
+
+	annotations := daemonset.Spec.Template.ObjectMeta.Annotations
+
+	fluentdTrustBundle := &v1.ConfigMap{}
+	fluentdTrustBundleName := types.NamespacedName{Name: constants.FluentdTrustedCAName, Namespace: constants.OpenshiftNS}
+	if err := clusterRequest.client.Get(context.TODO(), fluentdTrustBundleName, fluentdTrustBundle); err != nil {
+		if !errors.IsNotFound(err) {
+			return annotations, err
+		}
+	}
+
+	if _, ok := fluentdTrustBundle.Data[constants.TrustedCABundleKey]; !ok {
+		return annotations, fmt.Errorf("%v does not yet contain expected key %v", fluentdTrustBundle.Name, constants.TrustedCABundleKey)
+	}
+
+	trustedCAHashValue, err := calcTrustedCAHashValue(fluentdTrustBundle)
+	if err != nil {
+		return annotations, fmt.Errorf("unable to calculate trusted CA value. E: %s", err.Error())
+	}
+
+	if trustedCAHashValue == "" {
+		return annotations, fmt.Errorf("Did not receive hashvalue for trusted CA value")
+	}
+
+	annotations[constants.TrustedCABundleHashName] = trustedCAHashValue
+
+	return annotations, nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) RestartFluentd(proxyConfig *configv1.Proxy) (err error) {
+
+	collectorConfig, err := clusterRequest.generateCollectorConfig()
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf("Generated collector config: %s", collectorConfig)
+	collectorConfHash, err := utils.CalculateMD5Hash(collectorConfig)
+	if err != nil {
+		logger.Errorf("unable to calculate MD5 hash. E: %s", err.Error())
+		return
+	}
+
+	if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash, proxyConfig); err != nil {
+		return
+	}
+
+	return clusterRequest.UpdateFluentdStatus()
 }
 
 //updateEnvar adds the value to the list or replaces it if it already existing

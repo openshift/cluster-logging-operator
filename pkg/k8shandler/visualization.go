@@ -15,8 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
-	consolev1 "github.com/openshift/api/console/v1"
 	configv1 "github.com/openshift/api/config/v1"
+	consolev1 "github.com/openshift/api/console/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	kibanaServiceAccountName       = "kibana"
-	kibanaOAuthRedirectReference   = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
+	kibanaServiceAccountName     = "kibana"
+	kibanaOAuthRedirectReference = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
 	// The following strings are turned into JavaScript RegExps. Online tool to test them: https://regex101.com/
 	nodesAndContainersNamespaceFilter = "^(openshift-.*|kube-.*|openshift$|kube$|default$)"
 	appsNamespaceFilter               = "^((?!" + nodesAndContainersNamespaceFilter + ").)*$" // ^((?!^(openshift-.*|kube-.*|openshift$|kube$|default$)).)*$
@@ -79,28 +79,35 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyCo
 			return
 		}
 
-		kibanaStatus, err := clusterRequest.getKibanaStatus()
-		cluster := clusterRequest.cluster
+		clusterRequest.UpdateKibanaStatus()
+	}
 
-		if err != nil {
-			return fmt.Errorf("Failed to get Kibana status for %q: %v", cluster.Name, err)
-		}
+	return nil
+}
 
-		printUpdateMessage := true
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !compareKibanaStatus(kibanaStatus, cluster.Status.Visualization.KibanaStatus) {
-				if printUpdateMessage {
-					logrus.Infof("Updating status of Kibana")
-					printUpdateMessage = false
-				}
-				cluster.Status.Visualization.KibanaStatus = kibanaStatus
-				return clusterRequest.UpdateStatus(cluster)
+func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
+
+	kibanaStatus, err := clusterRequest.getKibanaStatus()
+	cluster := clusterRequest.cluster
+
+	if err != nil {
+		return fmt.Errorf("Failed to get Kibana status for %q: %v", cluster.Name, err)
+	}
+
+	printUpdateMessage := true
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if !compareKibanaStatus(kibanaStatus, cluster.Status.Visualization.KibanaStatus) {
+			if printUpdateMessage {
+				logrus.Infof("Updating status of Kibana")
+				printUpdateMessage = false
 			}
-			return nil
-		})
-		if retryErr != nil {
-			return fmt.Errorf("Failed to update Kibana status for %q: %v", cluster.Name, retryErr)
+			cluster.Status.Visualization.KibanaStatus = kibanaStatus
+			return clusterRequest.UpdateStatus(cluster)
 		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Failed to update Kibana status for %q: %v", cluster.Name, retryErr)
 	}
 
 	return nil
@@ -157,23 +164,13 @@ func compareKibanaStatus(lhs, rhs []logging.KibanaStatus) bool {
 	return true
 }
 
-func (clusterRequest *ClusterLoggingRequest) RestartKibana() (err error) {
+func (clusterRequest *ClusterLoggingRequest) RestartKibana(proxyConfig *configv1.Proxy) (err error) {
 
-	// get kibana pods
-	kibanaPods, err := clusterRequest.GetPodList(
-		map[string]string{
-			"component": "kibana",
-		})
-
-	// delete kibana pods
-	for _, pod := range kibanaPods.Items {
-		err := clusterRequest.Delete(&pod)
-		if err != nil {
-			return err
-		}
+	if err = clusterRequest.createOrUpdateKibanaDeployment(proxyConfig); err != nil {
+		return
 	}
 
-	return nil
+	return clusterRequest.UpdateKibanaStatus()
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
@@ -234,19 +231,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 	kibanaTrustBundle := &v1.ConfigMap{}
 
 	// Create cluster proxy trusted CA bundle.
-	if proxyConfig != nil {
-		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
-		if err != nil {
-			return
-		}
-
-		// kibana-trusted-ca-bundle
-		kibanaTrustBundleName := types.NamespacedName{Name: constants.KibanaTrustedCAName, Namespace: constants.OpenshiftNS}
-		if err := clusterRequest.client.Get(context.TODO(), kibanaTrustBundleName, kibanaTrustBundle); err != nil {
-			if !errors.IsNotFound(err) {
-				return err
-			}
-		}
+	err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
+	if err != nil {
+		return
 	}
 
 	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch.openshift-logging.svc.cluster.local", proxyConfig, kibanaTrustBundle)
@@ -258,6 +245,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 		kibanaPodSpec,
 	)
 	kibanaDeployment.Spec.Replicas = &clusterRequest.cluster.Spec.Visualization.KibanaSpec.Replicas
+
+	// if we don't have the hash values we shouldn't start/create
+	annotations, err := clusterRequest.getKibanaAnnotations(kibanaDeployment)
+	if err != nil {
+		return err
+	}
+
+	kibanaDeployment.Spec.Template.ObjectMeta.Annotations = annotations
 
 	utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(clusterRequest.cluster))
 
@@ -283,17 +278,17 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 			current, different := isDeploymentDifferent(current, kibanaDeployment)
 
 			// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
-			newTrustedCAHashedValue, err := calcTrustedCAHashValue(kibanaTrustBundle)
-			if err != nil {
-				return fmt.Errorf("unable to calculate trusted CA value. E: %s", err.Error())
-			}
-			trustedCAHashedValue, _ := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
-			if trustedCAHashedValue != newTrustedCAHashedValue {
+			if current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] != kibanaDeployment.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] {
 				different = true
-				if kibanaDeployment.Spec.Template.ObjectMeta.Annotations == nil {
-					kibanaDeployment.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
+			}
+
+			// Check secret hash has been updated or not
+			for _, secretName := range []string{"kibana", "kibana-proxy"} {
+
+				hashKey := fmt.Sprintf("%s%s", constants.SecretHashPrefix, secretName)
+				if kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey] != current.Spec.Template.ObjectMeta.Annotations[hashKey] {
+					different = true
 				}
-				kibanaDeployment.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = newTrustedCAHashedValue
 			}
 
 			if different {
@@ -305,6 +300,57 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 	}
 
 	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) getKibanaAnnotations(deployment *apps.Deployment) (map[string]string, error) {
+
+	if deployment.Spec.Template.ObjectMeta.Annotations == nil {
+		deployment.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
+	}
+
+	annotations := deployment.Spec.Template.ObjectMeta.Annotations
+
+	kibanaTrustBundle := &v1.ConfigMap{}
+	kibanaTrustBundleName := types.NamespacedName{Name: constants.KibanaTrustedCAName, Namespace: constants.OpenshiftNS}
+	if err := clusterRequest.client.Get(context.TODO(), kibanaTrustBundleName, kibanaTrustBundle); err != nil {
+		if !errors.IsNotFound(err) {
+			return annotations, err
+		}
+	}
+
+	if _, ok := kibanaTrustBundle.Data[constants.TrustedCABundleKey]; !ok {
+		return annotations, fmt.Errorf("%v does not yet contain expected key %v", kibanaTrustBundle.Name, constants.TrustedCABundleKey)
+	}
+
+	trustedCAHashValue, err := calcTrustedCAHashValue(kibanaTrustBundle)
+	if err != nil {
+		return annotations, fmt.Errorf("unable to calculate trusted CA value. E: %s", err.Error())
+	}
+
+	if trustedCAHashValue == "" {
+		return annotations, fmt.Errorf("Did not receive hashvalue for trusted CA value")
+	}
+
+	annotations[constants.TrustedCABundleHashName] = trustedCAHashValue
+
+	// generate secret hash
+	for _, secretName := range []string{"kibana", "kibana-proxy"} {
+
+		hashKey := fmt.Sprintf("%s%s", constants.SecretHashPrefix, secretName)
+
+		secret, err := clusterRequest.GetSecret(secretName)
+		if err != nil {
+			return annotations, err
+		}
+		secretHashValue, err := calcSecretHashValue(secret)
+		if err != nil {
+			return annotations, err
+		}
+
+		annotations[hashKey] = secretHashValue
+	}
+
+	return annotations, nil
 }
 
 func isDeploymentDifferent(current *apps.Deployment, desired *apps.Deployment) (*apps.Deployment, bool) {
@@ -722,7 +768,6 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 	)
 
 	if addTrustedCAVolume {
-		optional := true
 		kibanaPodSpec.Volumes = append(kibanaPodSpec.Volumes,
 			v1.Volume{
 				Name: constants.KibanaTrustedCAName,
@@ -731,7 +776,6 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 						LocalObjectReference: v1.LocalObjectReference{
 							Name: constants.KibanaTrustedCAName,
 						},
-						Optional: &optional,
 						Items: []v1.KeyToPath{
 							{
 								Key:  constants.TrustedCABundleKey,

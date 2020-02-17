@@ -3,7 +3,9 @@ package k8shandler
 import (
 	"fmt"
 	"reflect"
+	"sort"
 
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
@@ -91,4 +93,34 @@ func (clusterRequest *ClusterLoggingRequest) RemoveSecret(secretName string) err
 	}
 
 	return nil
+}
+
+func calcSecretHashValue(secret *core.Secret) (string, error) {
+	hashValue := ""
+	var err error
+
+	if secret == nil {
+		return hashValue, nil
+	}
+
+	hashKeys := []string{}
+	rawbytes := []byte{}
+
+	// we just want the keys here to sort them for consistently calculated hashes
+	for key := range secret.Data {
+		hashKeys = append(hashKeys, key)
+	}
+
+	sort.Strings(hashKeys)
+
+	for _, key := range hashKeys {
+		rawbytes = append(rawbytes, secret.Data[key]...)
+	}
+
+	hashValue, err = utils.CalculateMD5Hash(string(rawbytes))
+	if err != nil {
+		return "", err
+	}
+
+	return hashValue, nil
 }

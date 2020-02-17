@@ -1,15 +1,15 @@
-package proxyconfig
+package trustedcabundle
 
 import (
-	"context"
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -34,68 +34,62 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	if err := configv1.Install(mgr.GetScheme()); err != nil {
-		return &ReconcileProxyConfig{}
+		return &ReconcileTrustedCABundle{}
 	}
 
-	return &ReconcileProxyConfig{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileTrustedCABundle{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("proxyconfig-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("trustedcabundle-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for updates only
+	// Watch for changes to the additional trust bundle configmap in "openshift-logging".
 	pred := predicate.Funcs{
-		UpdateFunc:  func(e event.UpdateEvent) bool { return true },
+		UpdateFunc:  func(e event.UpdateEvent) bool { return handleConfigMap(e.MetaNew) },
 		DeleteFunc:  func(e event.DeleteEvent) bool { return false },
-		CreateFunc:  func(e event.CreateEvent) bool { return true },
+		CreateFunc:  func(e event.CreateEvent) bool { return handleConfigMap(e.Meta) },
 		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
-
-	// Watch for changes to the proxy resource.
-	if err = c.Watch(&source.Kind{Type: &configv1.Proxy{}}, &handler.EnqueueRequestForObject{}, pred); err != nil {
+	if err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForObject{}, pred); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-var _ reconcile.Reconciler = &ReconcileProxyConfig{}
+var _ reconcile.Reconciler = &ReconcileTrustedCABundle{}
 
 // ReconcileProxyConfig reconciles a ClusterLogging object
-type ReconcileProxyConfig struct {
+type ReconcileTrustedCABundle struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
 }
 
-// Reconcile reads that state of the cluster for a cluster-scoped named "cluster"
-func (r *ReconcileProxyConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
-	proxyConfig := &configv1.Proxy{}
-	if request.NamespacedName == proxyNamespacedName {
-		if err := r.client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
-			if apierrors.IsNotFound(err) {
-				// Request object not found, could have been deleted after reconcile request.
-				// Return and don't requeue
-				return reconcile.Result{}, nil
-			}
-			// Error reading the object - just return without requeuing.
-			return reconcile.Result{}, err
-		}
-	} else {
-		return reconcile.Result{}, nil
-	}
+// Reconcile reads that state of the trusted CA bundle configmap objects for the
+// collector and the visualization resources.
+// When the user configured and/or system certs are updated, the pods are triggered to restart.
+func (r *ReconcileTrustedCABundle) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
-	if err := k8shandler.ReconcileForGlobalProxy(proxyConfig, r.client); err != nil {
-		// Failed to reconcile - requeuing.
-		return reconcileResult, err
+	// do one for fluentd and one for kibana separate...
+	if utils.ContainsString(constants.ReconcileForGlobalProxyList, request.Name) {
+
+		if err := k8shandler.ReconcileForTrustedCABundle(request.Name, r.client); err != nil {
+			// Failed to reconcile - requeuing.
+			return reconcileResult, err
+		}
 	}
 
 	return reconcile.Result{}, nil
+}
+
+// handleConfigMap returns true if meta namespace is "openshift-logging".
+func handleConfigMap(meta metav1.Object) bool {
+	return meta.GetNamespace() == constants.OpenshiftNS && utils.ContainsString(constants.ReconcileForGlobalProxyList, meta.GetName())
 }

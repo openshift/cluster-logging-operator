@@ -116,6 +116,39 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 	return nil
 }
 
+func ReconcileForTrustedCABundle(requestName string, requestClient client.Client) (err error) {
+	clusterLoggingRequest := ClusterLoggingRequest{
+		client: requestClient,
+	}
+
+	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	clusterLoggingRequest.cluster = clusterLogging
+
+	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		return nil
+	}
+
+	forwarding := clusterLoggingRequest.getLogForwarding()
+	if forwarding != nil {
+		clusterLoggingRequest.ForwardingRequest = forwarding
+		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
+	}
+
+	proxyConfig := clusterLoggingRequest.getProxyConfig()
+
+	// call for Kibana to restart itself
+	if requestName == constants.KibanaTrustedCAName {
+		return clusterLoggingRequest.RestartKibana(proxyConfig)
+	}
+
+	// call for Fluentd to restart itself
+	if requestName == constants.FluentdTrustedCAName {
+		return clusterLoggingRequest.RestartFluentd(proxyConfig)
+	}
+
+	return nil
+}
+
 func ReconcileForKibanaSecret(requestClient client.Client) (err error) {
 
 	clusterLoggingRequest := ClusterLoggingRequest{
@@ -129,8 +162,10 @@ func ReconcileForKibanaSecret(requestClient client.Client) (err error) {
 		return nil
 	}
 
+	proxyConfig := clusterLoggingRequest.getProxyConfig()
+
 	// call for Kibana to restart itself (e.g. delete its pods)
-	return clusterLoggingRequest.RestartKibana()
+	return clusterLoggingRequest.RestartKibana(proxyConfig)
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {

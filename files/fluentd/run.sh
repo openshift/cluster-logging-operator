@@ -40,7 +40,7 @@ if [ -z "${JOURNAL_SOURCE:-}" ] ; then
 fi
 
 IPADDR4=${NODE_IPV4:-$( /usr/sbin/ip -4 addr show dev eth0 | grep inet | sed -e "s/[ \t]*inet \([0-9.]*\).*/\1/" )}
-IPADDR6="" # So as to omit "ipaddr6" field from logs.
+IPADDR6=${NODE_IPV6:-$(/usr/sbin/ip -6 addr show dev eth0 | grep inet | sed -e "s/[ \t]*inet6 \([a-z0-9::]*\).*/\1/" )}
 
 export IPADDR4 IPADDR6
 

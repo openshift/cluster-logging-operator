@@ -1,5 +1,10 @@
 #!/bin/bash
 
+set -euo pipefail
+if [ "${DEBUG:-}" = "true" ]; then
+  set -x
+fi
+
 source "$(dirname $0)/common"
 
 oc delete ns openshift-logging --force --ignore-not-found --grace-period=0 ||:

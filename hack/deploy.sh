@@ -1,6 +1,9 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -euo pipefail
+if [ "${DEBUG:-}" = "true" ]; then
+  set -x
+fi
 
 source "$(dirname $0)/common"
 

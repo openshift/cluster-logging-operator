@@ -1,5 +1,10 @@
 #!/bin/bash
 
+set -euo pipefail
+if [ "${DEBUG:-}" = "true" ]; then
+  set -x
+fi
+
 current_dir=$(dirname "${BASH_SOURCE[0]}" )
 source "${current_dir}/lib/init.sh"
 source "${current_dir}/lib/util/logs.sh"

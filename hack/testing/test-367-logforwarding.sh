@@ -58,7 +58,8 @@ for dir in $(ls -d $TEST_DIR); do
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/logforwarding/cleanup.sh $artifact_dir $GENERATOR_NS" \
     artifact_dir=$artifact_dir \
     GENERATOR_NS=$GENERATOR_NS \
-    ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest \
+    LOGGING_IMAGE_STREAM=${LOGGING_IMAGE_STREAM:-stable} \
+    ELASTICSEARCH_IMAGE=${ELASTICSEARCH_IMAGE:-registry.svc.ci.openshift.org/ocp/$LOGGING_IMAGE_STREAM:logging-elasticsearch6} \
     go test -count=1 -parallel=1 $dir  | tee -a $artifact_dir/test.log ; then
     log::info "======================================================="
     log::info "Logforwarding $dir passed"

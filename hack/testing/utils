@@ -221,20 +221,22 @@ function deploy_clusterlogging_operator() {
     local manifest=${repo_dir}/manifests
     local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
     local csv=$manifest/$version/cluster-logging.*.clusterserviceversion.yaml
-    local es_img k_img c_img f_img op_img
+    local es_img k_img c_img f_img op_img    
+    
+    LOGGING_IMAGE_STREAM=${LOGGING_IMAGE_STREAM:-$version}
     if [ -n "${IMAGE_FORMAT:-}" ] ; then
         IMAGE_CLUSTER_LOGGING_OPERATOR=$(sed -e "s,\${component},cluster-logging-operator," <(echo $IMAGE_FORMAT))
-        es_img=${IMAGE_FORMAT/'${component}'/logging-elasticsearch5}
-        k_img=${IMAGE_FORMAT/'${component}'/logging-kibana5}
+        es_img=${IMAGE_FORMAT/'${component}'/logging-elasticsearch6}
+        k_img=${IMAGE_FORMAT/'${component}'/logging-kibana6}
         c_img=${IMAGE_FORMAT/'${component}'/logging-curator5}
         f_img=${IMAGE_FORMAT/'${component}'/logging-fluentd}
         op_img=${IMAGE_FORMAT/'${component}'/oauth-proxy}
     else
-        IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/ocp/$version:cluster-logging-operator}
-        es_img=${IMAGE_ELASTICSEARCH_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-elasticsearch5}
-        k_img=${IMAGE_KIBANA_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-kibana5}
-        c_img=${IMAGE_CURATOR_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-curator5}
-        f_img=${IMAGE_FLUENTD_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-fluentd}
+        IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/ocp/$LOGGING_IMAGE_STREAM:cluster-logging-operator}
+        es_img=${IMAGE_ELASTICSEARCH_IMAGE:-registry.svc.ci.openshift.org/ocp/$LOGGING_IMAGE_STREAM:logging-elasticsearch6}
+        k_img=${IMAGE_KIBANA_IMAGE:-registry.svc.ci.openshift.org/ocp/$LOGGING_IMAGE_STREAM:logging-kibana6}
+        c_img=${IMAGE_CURATOR_IMAGE:-registry.svc.ci.openshift.org/ocp/$LOGGING_IMAGE_STREAM:logging-curator5}
+        f_img=${IMAGE_FLUENTD_IMAGE:-registry.svc.ci.openshift.org/ocp/$LOGGING_IMAGE_STREAM:logging-fluentd}
         op_img=${IMAGE_OAUTH_PROXY_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:oauth-proxy}
     fi
     sed -e "/name: ELASTICSEARCH_IMAGE/,/value:/s,value:.*\$,value: ${es_img}," \
@@ -252,7 +254,8 @@ function deploy_elasticsearch_operator() {
     if [ -n "${IMAGE_FORMAT:-}" ] ; then
         IMAGE_ELASTICSEARCH_OPERATOR=$(sed -e "s,\${component},elasticsearch-operator," <(echo $IMAGE_FORMAT))
     else
-        IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/ocp/$version:elasticsearch-operator}
+        LOGGING_IMAGE_STREAM=${LOGGING_IMAGE_STREAM:-$version}
+        IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/ocp/$LOGGING_IMAGE_STREAM:elasticsearch-operator}
     fi
     GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
 }

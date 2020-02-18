@@ -16,11 +16,10 @@ TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
-export OCP_VERSION?=4.4
 IMAGE_CLUSTER_LOGGING_OPERATOR?=registry.svc.ci.openshift.org/origin/$(VERSION):cluster-logging-operator
-export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
-export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
+
+export LOGGING_IMAGE_STREAM?=feature-es6x
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
@@ -106,13 +105,13 @@ deploy-image: image
 	hack/deploy-image.sh
 
 deploy:  deploy-image deploy-elasticsearch-operator
-	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
+	LOGGING_IMAGE_STREAM=$(LOGGING_IMAGE_STREAM) IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
 
 deploy-no-build:  deploy-elasticsearch-operator
 	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
 
 deploy-elasticsearch-operator:
-	hack/deploy-eo.sh
+	LOGGING_IMAGE_STREAM=$(LOGGING_IMAGE_STREAM) hack/deploy-eo.sh
 
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
@@ -121,7 +120,7 @@ test-unit: fmt
 	@LOGGING_SHARE_DIR=$(CURPATH)/files go test $(TEST_OPTIONS) $(PKGS)
 
 test-e2e:
-	hack/test-e2e.sh
+	LOGGING_IMAGE_STREAM=$(LOGGING_IMAGE_STREAM) hack/test-e2e.sh
 
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec

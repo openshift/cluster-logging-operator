@@ -34,7 +34,7 @@ metadata:
                 "spec": {
                   "managementState": "Managed",
                   "nodeSpec": {
-                    "image": "quay.io/openshift/origin-logging-elasticsearch5:latest",
+                    "image": "quay.io/openshift/origin-logging-elasticsearch6:latest",
                     "resources": {
                       "limits": {
                         "memory": "1Gi"
@@ -128,6 +128,12 @@ spec:
           verbs:
           - "*"
         - apiGroups:
+          - batch
+          resources:
+          - cronjobs
+          verbs:
+          - "*"
+        - apiGroups:
           - monitoring.coreos.com
           resources:
           - prometheusrules
@@ -194,7 +200,7 @@ spec:
                     - name: PROXY_IMAGE
                       value: "quay.io/openshift/origin-oauth-proxy:latest"
                     - name: ELASTICSEARCH_IMAGE
-                      value: "quay.io/openshift/origin-logging-elasticsearch5:latest"
+                      value: "quay.io/openshift/origin-logging-elasticsearch6:latest"
   customresourcedefinitions:
     owned:
     - name: elasticsearches.logging.openshift.io

@@ -521,7 +521,7 @@
 
 [[projects]]
   branch = "feature-es6x"
-  digest = "1:bde78f3ff1aa8a9fd828b61aee76f53c36a2f4b990fdf9a35b7430fe66daed14"
+  digest = "1:02505f4574c8638831018ed2780930d2305e17a22df1e6be145312dfd6863753"
   name = "github.com/openshift/elasticsearch-operator"
   packages = [
     "pkg/apis",
@@ -530,11 +530,13 @@
     "pkg/k8shandler",
     "pkg/logger",
     "pkg/types/elasticsearch",
+    "pkg/types/k8s",
     "pkg/utils",
+    "pkg/utils/comparators",
     "test/utils",
   ]
   pruneopts = "T"
-  revision = "66a02fbeffe5ace05b977021bf28e7f878eb32e6"
+  revision = "5afd71567352a69e575efddc176b71a9db2283af"
 
 [[projects]]
   digest = "1:0087f38751ec1995bafa67afd0ded9519a46297ecf571165c695fb9ba943688d"

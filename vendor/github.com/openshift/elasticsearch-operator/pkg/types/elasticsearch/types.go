@@ -57,6 +57,6 @@ type IndexAlias struct {
 }
 
 type IndexSettings struct {
-	NumberOfShards   int32 `json:"number_of_shards,omitempty"`
-	NumberOfReplicas int32 `json:"number_of_replicas,omitempty"`
+	NumberOfShards   int32 `json:"number_of_shards"`
+	NumberOfReplicas int32 `json:"number_of_replicas"`
 }

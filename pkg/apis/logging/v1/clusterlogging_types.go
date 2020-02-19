@@ -52,6 +52,17 @@ type ProxySpec struct {
 type LogStoreSpec struct {
 	Type              LogStoreType `json:"type"`
 	ElasticsearchSpec `json:"elasticsearch,omitempty"`
+	RetentionPolicy   *RetentionPoliciesSpec `json:"retentionPolicy,omitempty"`
+}
+
+type RetentionPoliciesSpec struct {
+	App   *RetentionPolicySpec `json:"logs.app,omitempty"`
+	Infra *RetentionPolicySpec `json:"logs.infra,omitempty"`
+	Audit *RetentionPolicySpec `json:"logs.audit,omitempty"`
+}
+
+type RetentionPolicySpec struct {
+	MaxAge elasticsearch.TimeUnit `json:"maxAge"`
 }
 
 type ElasticsearchSpec struct {

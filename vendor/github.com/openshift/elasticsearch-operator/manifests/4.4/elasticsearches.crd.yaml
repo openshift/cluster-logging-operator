@@ -77,6 +77,54 @@ spec:
                       size:
                         description: The max storage capacity for the node
                         type: string
+            indexManagement:
+              description: Management spec for indicies
+              properties:
+                policies:
+                  description: A list of polices for managing an indices
+                  type: array
+                  items:
+                    properties:
+                      name:
+                        description: The unique name of the policy
+                        type: string
+                      pollInterval:
+                        description: How often to check an index meets the desired criteria (e.g. 1m)
+                        type: string
+                      phases:
+                        type: object
+                        properties:
+                          delete:
+                            type: object
+                            properties:
+                              minAge:
+                                description: The minimum age of an index before it should be deleted (e.g. 10d)
+                                type: string
+                          hot:
+                            type: object
+                            properties:
+                              actions:
+                                type: object
+                                properties:
+                                  maxAge:
+                                    description: The maximum age of an index before it should be rolled over (e.g. 7d)
+                                    type: string
+                mappings:
+                  description: Mappings of policies to indicies
+                  type: array
+                  items:
+                    properties:
+                      name:
+                        description: The unique name of the policy mapping
+                        type: string
+                      policyRef:
+                        description: A reference to a defined policy
+                        type: string
+                      aliases:
+                        description: Aliases to apply to a template
+                        type: array
+                        items:
+                          type: string
             nodeSpec:
               description: Default specification applied to all Elasticsearch nodes
               properties:

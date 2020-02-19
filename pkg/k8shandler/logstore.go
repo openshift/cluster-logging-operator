@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -32,11 +34,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 		cluster := clusterRequest.cluster
 
 		if err = clusterRequest.createOrUpdateElasticsearchSecret(); err != nil {
-			return
+			return nil
 		}
 
 		if err = clusterRequest.createOrUpdateElasticsearchCR(); err != nil {
-			return
+			return nil
 		}
 
 		elasticsearchStatus, err := clusterRequest.getElasticsearchStatus()
@@ -226,6 +228,8 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		redundancyPolicy = elasticsearch.ZeroRedundancy
 	}
 
+	indexManagementSpec := indexmanagement.NewSpec(logStoreSpec.RetentionPolicy)
+
 	cr := &elasticsearch.Elasticsearch{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      elasticsearchName,
@@ -245,6 +249,7 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 			Nodes:            esNodes,
 			ManagementState:  elasticsearch.ManagementStateManaged,
 			RedundancyPolicy: redundancyPolicy,
+			IndexManagement:  indexManagementSpec,
 		},
 	}
 
@@ -343,6 +348,12 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 	if nodes, ok := areNodesDifferent(current.Spec.Nodes, desired.Spec.Nodes); ok {
 		logrus.Infof("Elasticsearch node configuration change found, updating %v", current.Name)
 		current.Spec.Nodes = nodes
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.Spec.IndexManagement, desired.Spec.IndexManagement) {
+		logger.Infof("Elasticsearch IndexManagement change found, updating %v", current.Name)
+		current.Spec.IndexManagement = desired.Spec.IndexManagement
 		different = true
 	}
 

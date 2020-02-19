@@ -39,6 +39,11 @@ metadata:
                     "storageClassName": "gp2",
                     "size": "200G"
                   }
+                },
+                "retentionPolicy":{
+                  "logs.app":{
+                    "maxAge":"7d"
+                  }
                 }
               },
               "visualization": {

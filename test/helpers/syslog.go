@@ -103,6 +103,24 @@ func (tc *E2ETestFramework) createSyslogServiceAccount() (serviceAccount *corev1
 	return serviceAccount, nil
 }
 
+func (tc *E2ETestFramework) CreateLegacySyslogConfigMap(namespace, conf string) (err error) {
+	fluentdConfigMap := k8shandler.NewConfigMap(
+		"syslog",
+		namespace,
+		map[string]string{
+			"syslog.conf": conf,
+		},
+	)
+
+	if fluentdConfigMap, err = tc.KubeClient.Core().ConfigMaps(namespace).Create(fluentdConfigMap); err != nil {
+		return err
+	}
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.Core().ConfigMaps(namespace).Delete(fluentdConfigMap.Name, nil)
+	})
+	return nil
+}
+
 func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 	saRole := k8shandler.NewRole(
 		name,

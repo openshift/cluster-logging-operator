@@ -226,7 +226,7 @@ function generate_extensions() {
   local use_comma=0
 
   if [ "$add_localhost" == "true" ]; then
-    extension_names="IP.1:127.0.0.1,DNS.1:localhost"
+    extension_names="IP.1:127.0.0.1,IP.2:0:0:0:0:0:0:0:1,DNS.1:localhost"
     extension_index=2
     use_comma=1
   fi

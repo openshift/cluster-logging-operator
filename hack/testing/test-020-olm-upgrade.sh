@@ -48,13 +48,14 @@ cleanup(){
   oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/olm-operator > $ARTIFACT_DIR/olm-operator.logs 2>&1 ||:
   oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.after_update  2>&1 ||:
 
-  
   for item in "crd/elasticsearches.logging.openshift.io" "crd/clusterloggings.logging.openshift.io" "ns/openshift-logging" "ns/openshift-operators-redhat"; do
     oc delete $item --wait=true --ignore-not-found --force --grace-period=0
   done
   for item in "ns/openshift-logging" "ns/openshift-operators-redhat"; do
     try_until_text "oc get ${item} --ignore-not-found" "" "$((1 * $minute))"
   done
+
+  cleanup_olm_catalog_unsupported_resources
 
   exit ${return_code}
 }
@@ -92,6 +93,7 @@ assert_resources_exist
 oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.before_update 2>&1
 
 deploy_config_map_catalog_source $NAMESPACE ${repo_dir}/manifests "${IMAGE_CLUSTER_LOGGING_OPERATOR}"
+deploy_olm_catalog_unsupported_resources
 
 # patch subscription
 payload="{\"op\":\"replace\",\"path\":\"/spec/source\",\"value\":\"cluster-logging\"}"
@@ -105,4 +107,8 @@ try_until_text "oc -n openshift-logging get deployment cluster-logging-operator 
 # verify operator is ready
 try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
+# assert deployment
 assert_resources_exist
+
+# assert kibana shared config
+assert_kibana_shared_config_exist

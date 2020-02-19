@@ -26,8 +26,8 @@ func NewConsoleExternalLogLink(resourceName, namespace, consoleText, hrefTemplat
 			},
 		},
 		Spec: consolev1.ConsoleExternalLogLinkSpec{
-			Text:         consoleText,
-			HrefTemplate: hrefTemplate,
+			Text:            consoleText,
+			HrefTemplate:    hrefTemplate,
 			NamespaceFilter: namespaceFilter,
 		},
 	}

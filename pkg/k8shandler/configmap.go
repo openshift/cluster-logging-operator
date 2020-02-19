@@ -88,12 +88,21 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateConfigMap(configMap *
 	return nil
 }
 
-//RemoveConfigMap with a given name and namespace
+//RemoveConfigMap with a given name and the cluster request namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveConfigMap(configmapName string) error {
+	return clusterRequest.removeConfigMapFromNs(configmapName, clusterRequest.cluster.Namespace)
+}
+
+//RemoveSharedConfigMap with a given a name and a shared cluster namespace
+func (clusterRequest *ClusterLoggingRequest) RemoveSharedConfigMap(configMapName, namespace string) error {
+	return clusterRequest.removeConfigMapFromNs(configMapName, namespace)
+}
+
+func (clusterRequest *ClusterLoggingRequest) removeConfigMapFromNs(configmapName, namespace string) error {
 
 	configMap := NewConfigMap(
 		configmapName,
-		clusterRequest.cluster.Namespace,
+		namespace,
 		map[string]string{},
 	)
 

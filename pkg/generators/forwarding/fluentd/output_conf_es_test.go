@@ -16,7 +16,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		generator, err = NewConfigGenerator(false)
+		generator, err = NewConfigGenerator(false, false)
 		Expect(err).To(BeNil())
 	})
 

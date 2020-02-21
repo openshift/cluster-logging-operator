@@ -224,15 +224,15 @@ function deploy_clusterlogging_operator() {
     local es_img k_img c_img f_img op_img
     if [ -n "${IMAGE_FORMAT:-}" ] ; then
         IMAGE_CLUSTER_LOGGING_OPERATOR=$(sed -e "s,\${component},cluster-logging-operator," <(echo $IMAGE_FORMAT))
-        es_img=${IMAGE_FORMAT/'${component}'/logging-elasticsearch5}
-        k_img=${IMAGE_FORMAT/'${component}'/logging-kibana5}
+        es_img=${IMAGE_FORMAT/'${component}'/logging-elasticsearch6}
+        k_img=${IMAGE_FORMAT/'${component}'/logging-kibana6}
         c_img=${IMAGE_FORMAT/'${component}'/logging-curator5}
         f_img=${IMAGE_FORMAT/'${component}'/logging-fluentd}
         op_img=${IMAGE_FORMAT/'${component}'/oauth-proxy}
     else
         IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/ocp/$version:cluster-logging-operator}
-        es_img=${IMAGE_ELASTICSEARCH_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-elasticsearch5}
-        k_img=${IMAGE_KIBANA_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-kibana5}
+        es_img=${IMAGE_ELASTICSEARCH_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-elasticsearch6}
+        k_img=${IMAGE_KIBANA_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-kibana6}
         c_img=${IMAGE_CURATOR_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-curator5}
         f_img=${IMAGE_FLUENTD_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-fluentd}
         op_img=${IMAGE_OAUTH_PROXY_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:oauth-proxy}

@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	AliasesApp   = []string{"app, logs.app"}
+	AliasesApp   = []string{"app", "logs.app"}
 	AliasesInfra = []string{"infra", "logs.infra"}
 	AliasesAudit = []string{"infra.audit", "logs.audit"}
 

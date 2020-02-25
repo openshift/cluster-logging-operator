@@ -171,7 +171,6 @@ func getDataCount(dpl *api.Elasticsearch) int32 {
 			dataCount = dataCount + node.NodeCount
 		}
 	}
-
 	return dataCount
 }
 

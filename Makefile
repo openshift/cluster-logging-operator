@@ -16,8 +16,7 @@ TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
-export OCP_VERSION?=4.4
-IMAGE_CLUSTER_LOGGING_OPERATOR?=registry.svc.ci.openshift.org/origin/$(VERSION):cluster-logging-operator
+export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -type d))
 export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
 export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
@@ -68,10 +67,10 @@ build: fmt
 	@GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
 
 run:
-	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest \
+	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
-	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana5:latest \
-	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator5:latest \
+	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana6:latest \
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator6:latest \
 	OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
 	PROMTAIL_IMAGE=quay.io/openshift/origin-promtail:latest \
 	OPERATOR_NAME=cluster-logging-operator \
@@ -106,10 +105,10 @@ deploy-image: image
 	hack/deploy-image.sh
 
 deploy:  deploy-image deploy-elasticsearch-operator
-	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
+	hack/deploy.sh
 
 deploy-no-build:  deploy-elasticsearch-operator
-	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
+	hack/deploy.sh
 
 deploy-elasticsearch-operator:
 	hack/deploy-eo.sh

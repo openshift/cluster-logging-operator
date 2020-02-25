@@ -57,6 +57,7 @@ cleanup(){
 
   cleanup_olm_catalog_unsupported_resources
 
+  set -e
   exit ${return_code}
 }
 trap cleanup exit

@@ -109,12 +109,12 @@ deploy_olm_catalog_unsupported_resources(){
     local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
 
     # Create static cluster roles and rolebindings
-    try_until_success "oc create -f ${manifest}/$version/0100_clusterroles.yaml" "$(( 30 * second ))"
-    try_until_success "oc create -f ${manifest}/$version/0110_clusterrolebindings.yaml" "$(( 30 * second ))"
+    oc create -f ${manifest}/$version/0100_clusterroles.yaml ||:
+    oc create -f ${manifest}/$version/0110_clusterrolebindings.yaml ||:
 
     # Create static cluster roles and rolebindings
-    try_until_success "oc create -f ${manifest}/$version/0200_roles.yaml" "$(( 30 * second ))"
-    try_until_success "oc create -f ${manifest}/$version/0210_rolebindings.yaml" "$(( 30 * second ))"
+    oc create -f ${manifest}/$version/0200_roles.yaml ||:
+    oc create -f ${manifest}/$version/0210_rolebindings.yaml ||:
 }
 
 cleanup_olm_catalog_unsupported_resources(){

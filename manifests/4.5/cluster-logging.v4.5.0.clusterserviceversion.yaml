@@ -4,7 +4,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   # The version value is substituted by the ART pipeline
-  name: clusterlogging.v4.4.0
+  name: clusterlogging.v4.5.0
   namespace: placeholder
   annotations:
     "operatorframework.io/suggested-namespace": openshift-logging
@@ -18,7 +18,7 @@ metadata:
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
     # The version value is substituted by the ART pipeline
-    olm.skipRange: ">=4.1.0 <4.4.0"
+    olm.skipRange: ">=4.1.0 <4.5.0"
     alm-examples: |-
         [
           {
@@ -101,7 +101,7 @@ metadata:
         ]
 spec:
   # The version value is substituted by the ART pipeline
-  version: 4.4.0
+  version: 4.5.0
   displayName: Cluster Logging
   minKubeVersion: 1.17.1
   description: |

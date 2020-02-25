@@ -32,6 +32,7 @@ cleanup(){
     done
   fi
   
+  set -e
   exit ${return_code}
 }
 trap cleanup exit

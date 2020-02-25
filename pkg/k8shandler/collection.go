@@ -88,26 +88,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
-		if err != nil {
-			return fmt.Errorf("Failed to get status of Fluentd: %v", err)
-		}
-
-		printUpdateMessage := true
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !compareFluentdCollectorStatus(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
-				if printUpdateMessage {
-					logrus.Info("Updating status of Fluentd")
-					printUpdateMessage = false
-				}
-				cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
-				return clusterRequest.UpdateStatus(cluster)
-			}
-			return nil
-		})
-		if retryErr != nil {
-			return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", retryErr)
-		}
+		clusterRequest.UpdateFluentdStatus()
 
 		if collectorServiceAccount != nil {
 
@@ -138,6 +119,34 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
 			return
 		}
+	}
+
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
+
+	cluster := clusterRequest.cluster
+
+	fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
+	if err != nil {
+		return fmt.Errorf("Failed to get status of Fluentd: %v", err)
+	}
+
+	printUpdateMessage := true
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if !compareFluentdCollectorStatus(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
+			if printUpdateMessage {
+				logrus.Info("Updating status of Fluentd")
+				printUpdateMessage = false
+			}
+			cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
+			return clusterRequest.UpdateStatus(cluster)
+		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", retryErr)
 	}
 
 	return nil

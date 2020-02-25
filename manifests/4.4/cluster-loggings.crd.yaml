@@ -120,6 +120,21 @@ spec:
                       - "ZeroRedundancy"
                   required:
                   - nodeCount
+                retentionPolicy:
+                  description: Retention policy defines the maximum age for an index after which it should be deleted
+                  properties:
+                    logs.app:
+                      properties:
+                      maxAge:
+                        type: string
+                    logs.infra:
+                      properties:
+                      maxAge:
+                        type: string
+                    logs.audit:
+                      properties:
+                      maxAge:
+                        type: string
               required:
               - type
             collection:

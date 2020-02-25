@@ -19,6 +19,7 @@ MAIN_PKG=cmd/manager/main.go
 export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -type d))
 export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
+export MANAGED_CONFIG_NAMESPACE?=openshift-config-managed
 export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest

@@ -15,8 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
-	consolev1 "github.com/openshift/api/console/v1"
 	configv1 "github.com/openshift/api/config/v1"
+	consolev1 "github.com/openshift/api/console/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	kibanaServiceAccountName       = "kibana"
-	kibanaOAuthRedirectReference   = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
+	kibanaServiceAccountName     = "kibana"
+	kibanaOAuthRedirectReference = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
 	// The following strings are turned into JavaScript RegExps. Online tool to test them: https://regex101.com/
 	nodesAndContainersNamespaceFilter = "^(openshift-.*|kube-.*|openshift$|kube$|default$)"
 	appsNamespaceFilter               = "^((?!" + nodesAndContainersNamespaceFilter + ").)*$" // ^((?!^(openshift-.*|kube-.*|openshift$|kube$|default$)).)*$

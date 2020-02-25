@@ -73,7 +73,7 @@ var _ = Describe("Generating fluentd config", func() {
 		}
 	})
 
-	It("should exclude source to pipeline labels when there are no pipelines for a given sourceType (e.g. only logs.app)", func() {
+	It("should exclude source to pipeline labels when there are no pipelines for a given sourceType (e.g. only logs-app)", func() {
 		forwarding = &logging.ForwardingSpec{
 			Outputs: []logging.OutputSpec{
 				{
@@ -367,7 +367,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 			</label>
 			
-			# Relabel specific sources (e.g. logs.apps) to multiple pipelines
+			# Relabel specific sources (e.g. logs-apps) to multiple pipelines
 			<label @_LOGS_APP>
 				<match **>
 					@type copy
@@ -792,7 +792,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 			</label>
 			
-			# Relabel specific sources (e.g. logs.apps) to multiple pipelines
+			# Relabel specific sources (e.g. logs-apps) to multiple pipelines
 			<label @_LOGS_APP>
 				<match **>
 					@type copy

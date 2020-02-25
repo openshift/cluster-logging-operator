@@ -82,7 +82,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 			client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
 			ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
-			type_name com.redhat.viaq.common
+			type_name _doc
 			write_operation create
 			reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -124,7 +124,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 			client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
 			ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
-			type_name com.redhat.viaq.common
+			type_name _doc
 			retry_tag retry_oncluster_elasticsearch
 			write_operation create
 			reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
@@ -182,7 +182,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			user fluentd
 			password changeme
 
-			type_name com.redhat.viaq.common
+			type_name _doc
 			write_operation create
 			reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -220,7 +220,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			user fluentd
 			password changeme
 
-			type_name com.redhat.viaq.common
+			type_name _doc
 			retry_tag retry_other_elasticsearch
 			write_operation create
 			reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"

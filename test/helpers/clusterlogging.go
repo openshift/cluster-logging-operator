@@ -18,7 +18,16 @@ const (
 	ComponentTypeCollector     LogComponentType = "Collector"
 )
 
-func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
+type clusterLogging struct {
+	ClusterLogging *cl.ClusterLogging
+}
+
+func (cl *clusterLogging) WithLogForwarding() *clusterLogging {
+	cl.ClusterLogging.Annotations[k8shandler.ForwardingAnnotation] = "enabled"
+	return cl
+}
+
+func NewClusterLogging(componentTypes ...LogComponentType) *clusterLogging {
 	instance := &cl.ClusterLogging{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterLogging",
@@ -28,7 +37,7 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 			Name:      ClusterLoggingName,
 			Namespace: OpenshiftLoggingNS,
 			Annotations: map[string]string{
-				k8shandler.ForwardingAnnotation: "enabled",
+				k8shandler.ForwardingAnnotation: "disabled",
 			},
 		},
 		Spec: cl.ClusterLoggingSpec{
@@ -68,5 +77,5 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 			}
 		}
 	}
-	return instance
+	return &clusterLogging{ClusterLogging: instance}
 }

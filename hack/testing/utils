@@ -5,6 +5,7 @@ second=$(( 1000 * millisecond ))
 minute=$(( 60 * second ))
 
 LOGGING_NS="openshift-logging"
+EO_NS="openshift-operators-redhat"
 
 log::info(){
   echo " [INFO] $@"
@@ -100,6 +101,17 @@ get_all_logging_pod_logs() {
   local outdir=${1:-$ARTIFACT_DIR}
   local p
   local container
+
+  # Grab logs for elasticsearch operator
+  for p in $(oc get pods -n ${EO_NS} -o jsonpath='{.items[*].metadata.name}') ; do
+    oc -n ${EO_NS} describe pod $p > $outdir/$p.describe 2>&1 || :
+    oc -n ${EO_NS} get pod $p -o yaml > $outdir/$p.yaml 2>&1 || :
+    for container in $(oc -n ${EO_NS} get po $p -o jsonpath='{.spec.containers[*].name}') ; do
+      oc logs -n ${EO_NS} -c $container $p > $outdir/$p.$container.log 2>&1
+    done
+  done
+
+  # Grab the logs for clusterlogging
   for p in $(oc get pods -n ${LOGGING_NS} -o jsonpath='{.items[*].metadata.name}') ; do
     oc -n ${LOGGING_NS} describe pod $p > $outdir/$p.describe 2>&1 || :
     oc -n ${LOGGING_NS} get pod $p -o yaml > $outdir/$p.yaml 2>&1 || :

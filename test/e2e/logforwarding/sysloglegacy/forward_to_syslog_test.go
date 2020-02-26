@@ -9,7 +9,6 @@ import (
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
@@ -55,7 +54,6 @@ var _ = Describe("LogForwarding", func() {
 
 					components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
 					cr := helpers.NewClusterLogging(components...)
-					cr.ObjectMeta.Annotations[k8shandler.ForwardingAnnotation] = "disabled"
 					if err := e2e.CreateClusterLogging(cr); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 					}
@@ -95,7 +93,6 @@ var _ = Describe("LogForwarding", func() {
 
 					components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
 					cr := helpers.NewClusterLogging(components...)
-					cr.ObjectMeta.Annotations[k8shandler.ForwardingAnnotation] = "disabled"
 					if err := e2e.CreateClusterLogging(cr); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 					}

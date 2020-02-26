@@ -40,7 +40,7 @@ var _ = Describe("LogForwarding", func() {
 					Fail(fmt.Sprintf("Unable to deploy fluent receiver: %v", err))
 				}
 
-				cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector)
+				cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector).WithLogForwarding()
 				if err := e2e.CreateClusterLogging(cr); err != nil {
 					Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 				}
@@ -113,7 +113,7 @@ var _ = Describe("LogForwarding", func() {
 					Fail("Found logs when we didnt expect them")
 				}
 
-				cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector)
+				cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector).WithLogForwarding()
 				if err := e2e.CreateClusterLogging(cr); err != nil {
 					Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 				}

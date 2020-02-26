@@ -27,7 +27,8 @@ var _ = Describe("CLO Managed LogForwarding", func() {
 			}
 
 			components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
-			if err := e2e.SetupClusterLogging(components...); err != nil {
+			cr := helpers.NewClusterLogging(components...).WithLogForwarding()
+			if err := e2e.SetupClusterLogging(cr); err != nil {
 				Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 			}
 			for _, component := range components {

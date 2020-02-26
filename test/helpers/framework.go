@@ -21,7 +21,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
 
-	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
@@ -60,12 +59,14 @@ type LogStore interface {
 	HasInfraStructureLogs(timeToWait time.Duration) (bool, error)
 
 	HasAuditLogs(timeToWait time.Duration) (bool, error)
+
+	HasAppLogEntry(msg string, timeToWait time.Duration) (bool, error)
 }
 
 type E2ETestFramework struct {
 	RestConfig     *rest.Config
 	KubeClient     *kubernetes.Clientset
-	ClusterLogging *cl.ClusterLogging
+	ClusterLogging *clusterLogging
 	CleanupFns     []func() error
 	LogStore       LogStore
 }
@@ -84,12 +85,16 @@ func (tc *E2ETestFramework) AddCleanup(fn func() error) {
 }
 
 func (tc *E2ETestFramework) DeployLogGenerator() error {
+	return tc.DeployLogGeneratorFor("My life is my message")
+}
+
+func (tc *E2ETestFramework) DeployLogGeneratorFor(msg string) error {
 	namespace := tc.CreateTestNamespace()
 	container := corev1.Container{
 		Name:            "log-generator",
 		Image:           "busybox",
 		ImagePullPolicy: corev1.PullAlways,
-		Args:            []string{"sh", "-c", "i=0; while true; do echo $i: My life is my message; i=$((i+1)) ; sleep 1; done"},
+		Args:            []string{"sh", "-c", fmt.Sprintf("i=0; while true; do echo \"%s\"; i=$((i+1)) ; sleep 1; done", msg)},
 	}
 	podSpec := corev1.PodSpec{
 		Containers: []corev1.Container{container},
@@ -189,16 +194,16 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 	return nil
 }
 
-func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
-	tc.ClusterLogging = NewClusterLogging(componentTypes...)
+func (tc *E2ETestFramework) SetupClusterLogging(cr *clusterLogging) error {
+	tc.ClusterLogging = cr
 	tc.LogStore = &ElasticLogStore{
 		Framework: tc,
 	}
 	return tc.CreateClusterLogging(tc.ClusterLogging)
 }
 
-func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLogging) error {
-	body, err := json.Marshal(clusterlogging)
+func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *clusterLogging) error {
+	body, err := json.Marshal(clusterlogging.ClusterLogging)
 	if err != nil {
 		return err
 	}

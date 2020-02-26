@@ -119,6 +119,10 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	return true, err
 }
 
+func (fluent *fluentReceiverLogStore) HasAppLogEntry(msg string, timeToWait time.Duration) (bool, error) {
+	panic("Not implemented")
+}
+
 func (fluent *fluentReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
 	return fluent.hasLogs("/tmp/infra.logs", timeToWait)
 }

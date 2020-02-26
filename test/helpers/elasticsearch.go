@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -18,14 +19,62 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	InfraIndexPrefix          = "infra-"
 	ProjectIndexPrefix        = "app-"
 	AuditIndexPrefix          = "audit-infra-"
+	AppWriteIndex             = "app-write"
 	elasticsearchesLoggingURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/elasticsearches"
 )
+
+type SearchResult struct {
+	Hits *struct {
+		Total int `json:"total"`
+		Hits  []*struct {
+			Index  string `json:"_index"`
+			Source *struct {
+				Message    string `json:"message"`
+				Kubernetes *struct {
+					Name      string            `json:"container_name"`
+					Namespace string            `json:"namespace_name"`
+					Labels    map[string]string `json:"labels"`
+				} `json:"kubernetes"`
+			} `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
+
+func (sr *SearchResult) Total() int {
+	if sr.Hits == nil {
+		return 0
+	}
+	return sr.Hits.Total
+}
+
+func (sr *SearchResult) HasMessage(s string) (bool, error) {
+	logrus.Printf("%#v", sr)
+
+	if sr.Hits == nil {
+		return false, errors.New("Empty search result")
+	}
+
+	if len(sr.Hits.Hits) == 0 {
+		return false, nil
+	}
+
+	found := false
+	for _, hit := range sr.Hits.Hits {
+		if s == hit.Source.Message {
+			found = true
+			break
+		}
+	}
+
+	return found, nil
+}
 
 type Indices []Index
 
@@ -87,6 +136,23 @@ type ElasticLogStore struct {
 	Framework *E2ETestFramework
 }
 
+func (es *ElasticLogStore) HasAppLogEntry(msg string, timeToWait time.Duration) (bool, error) {
+	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+		errorCount := 0
+		sr, err := es.Search(AppWriteIndex, msg)
+		if err != nil {
+			logger.Errorf("Error searching %s index on elasticsearch %v", AppWriteIndex, err)
+			errorCount++
+			if errorCount > 5 { //accept arbitrary errors like 'etcd leader change'
+				return false, err
+			}
+			return false, nil
+		}
+		return sr.HasMessage(msg)
+	})
+	return true, err
+}
+
 func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		errorCount := 0
@@ -134,27 +200,30 @@ func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) 
 
 //Indices fetches the list of indices stored by Elasticsearch
 func (es *ElasticLogStore) Indices() (Indices, error) {
-	options := metav1.ListOptions{
-		LabelSelector: "component=elasticsearch",
-	}
-	pods, err := es.Framework.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
-	if err != nil {
-		return nil, err
-	}
-	if len(pods.Items) == 0 {
-		return nil, errors.New("No pods found for elasticsearch")
-	}
-	logger.Debugf("Pod %s", pods.Items[0].Name)
 	indices := []Index{}
-	stdout, err := es.Framework.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
+	stdout, err := es.esUtil("--query=_cat/indices?format=json")
 	if err != nil {
 		return nil, err
 	}
+
 	err = json.Unmarshal([]byte(stdout), &indices)
 	if err != nil {
 		return nil, err
 	}
 	return indices, nil
+}
+
+func (es *ElasticLogStore) Search(index, s string) (*SearchResult, error) {
+	results := SearchResult{}
+	stdout, err := es.esUtil(fmt.Sprintf("--query=%s/_search/?q=%s", index, url.QueryEscape(s)))
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal([]byte(stdout), &results)
+	if err != nil {
+		return nil, err
+	}
+	return &results, nil
 }
 
 func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
@@ -234,4 +303,27 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		Framework: tc,
 	}
 	return cr, pipelineSecret, result.Error()
+}
+
+func (es *ElasticLogStore) esUtil(args ...string) (string, error) {
+	options := metav1.ListOptions{
+		LabelSelector: "component=elasticsearch",
+	}
+	pods, err := es.Framework.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+	if err != nil {
+		return "", err
+	}
+	if len(pods.Items) == 0 {
+		return "", errors.New("No pods found for elasticsearch")
+	}
+	logger.Debugf("Pod %s", pods.Items[0].Name)
+
+	command := []string{"es_util"}
+	command = append(command, args...)
+
+	stdout, err := es.Framework.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "elasticsearch", command)
+	if err != nil {
+		return "", err
+	}
+	return stdout, nil
 }

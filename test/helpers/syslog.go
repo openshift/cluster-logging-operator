@@ -80,6 +80,10 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	return true, err
 }
 
+func (syslog *syslogReceiverLogStore) HasAppLogEntry(msg string, timeToWait time.Duration) (bool, error) {
+	panic("Not implemented")
+}
+
 func (syslog *syslogReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
 	return syslog.hasLogs("/var/log/infra.log", timeToWait)
 }

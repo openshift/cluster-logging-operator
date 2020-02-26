@@ -3,9 +3,11 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: elasticsearch-operator.v4.4.0
+  name: elasticsearch-operator.v4.5.0
   namespace: placeholder
   annotations:
+    "operatorframework.io/suggested-namespace": openshift-operators-redhat
+    "operatorframework.io/cluster-monitoring": "true"
     categories: "OpenShift Optional, Logging & Tracing"
     capabilities: "Seamless Upgrades"
     certified: "false"
@@ -22,7 +24,7 @@ metadata:
     containerImage: quay.io/openshift/origin-elasticsearch-operator:latest
     createdAt: 2019-02-20T08:00:00Z
     support: AOS Cluster Logging, Jaeger
-    olm.skipRange: ">=4.2.0 <4.4.0"
+    olm.skipRange: ">=4.1.0 <4.5.0"
     alm-examples: |-
         [
             {
@@ -34,7 +36,7 @@ metadata:
                 "spec": {
                   "managementState": "Managed",
                   "nodeSpec": {
-                    "image": "quay.io/openshift/origin-logging-elasticsearch5:latest",
+                    "image": "quay.io/openshift/origin-logging-elasticsearch6:latest",
                     "resources": {
                       "limits": {
                         "memory": "1Gi"
@@ -55,9 +57,9 @@ metadata:
             }
         ]
 spec:
-  version: 4.4.0
+  version: 4.5.0
   displayName: Elasticsearch Operator
-  minKubeVersion: 1.14.0
+  minKubeVersion: 1.17.1
 
   description: |
     The Elasticsearch Operator for OKD provides a means for configuring and managing an Elasticsearch cluster for use in tracing and cluster logging.
@@ -128,6 +130,12 @@ spec:
           verbs:
           - "*"
         - apiGroups:
+          - batch
+          resources:
+          - cronjobs
+          verbs:
+          - "*"
+        - apiGroups:
           - monitoring.coreos.com
           resources:
           - prometheusrules
@@ -194,7 +202,7 @@ spec:
                     - name: PROXY_IMAGE
                       value: "quay.io/openshift/origin-oauth-proxy:latest"
                     - name: ELASTICSEARCH_IMAGE
-                      value: "quay.io/openshift/origin-logging-elasticsearch5:latest"
+                      value: "quay.io/openshift/origin-logging-elasticsearch6:latest"
   customresourcedefinitions:
     owned:
     - name: elasticsearches.logging.openshift.io

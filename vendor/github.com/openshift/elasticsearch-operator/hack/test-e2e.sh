@@ -1,57 +1,33 @@
 #!/bin/bash
+
+if [ "${DEBUG:-}" = "true" ]; then
+  set -x
+fi
 set -euo pipefail
 
-if [ -n "${DEBUG:-}" ]; then
-    set -x
+current_dir=$(dirname "${BASH_SOURCE[0]}" )
+source "${current_dir}/lib/init.sh"
+source "${current_dir}/lib/util/logs.sh"
+
+for test in $( find "${current_dir}/testing" -type f -name 'test-*.sh' | sort); do
+	os::log::info "==============================================================="
+	os::log::info "running e2e $test "
+	os::log::info "==============================================================="
+	if "${test}" ; then
+		os::log::info "==========================================================="
+		os::log::info "e2e $test succeeded at $( date )"
+		os::log::info "==========================================================="
+	else
+
+		os::log::error "============= FAILED FAILED ============= "
+		os::log::error "e2e $test failed at $( date )"
+		os::log::error "============= FAILED FAILED ============= "
+		failed="true"
+	fi
+done
+
+get_logging_pod_logs
+
+if [[ -n "${failed:-}" ]]; then
+    exit 1
 fi
-
-IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-quay.io/openshift/origin-elasticsearch-operator:latest}
-
-if [ -n "${IMAGE_FORMAT:-}" ] ; then
-  IMAGE_ELASTICSEARCH_OPERATOR=$(sed -e "s,\${component},elasticsearch-operator," <(echo $IMAGE_FORMAT))
-fi
-
-KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
-
-repo_dir="$(dirname $0)/.."
-
-manifest=$(mktemp)
-files="01-service-account.yaml 02-role.yaml 03-role-bindings.yaml 05-deployment.yaml"
-pushd manifests;
-  for f in ${files}; do
-     cat ${f} >> ${manifest};
-  done;
-popd
-# update the manifest with the image built by ci
-sed -i "s,quay.io/openshift/origin-elasticsearch-operator:latest,${IMAGE_ELASTICSEARCH_OPERATOR}," ${manifest}
-
-if [ "${REMOTE_CLUSTER:-false}" = false ] ; then
-  sudo sysctl -w vm.max_map_count=262144 ||:
-fi
-
-TEST_NAMESPACE="${TEST_NAMESPACE:-e2e-test-${RANDOM}}"
-
-if oc get project ${TEST_NAMESPACE} > /dev/null 2>&1 ; then
-  echo using existing project ${TEST_NAMESPACE}
-else
-  oc create namespace ${TEST_NAMESPACE}
-fi
-
-sed -i "s/namespace: openshift-logging/namespace: ${TEST_NAMESPACE}/g" ${manifest}
-
-oc create -n ${TEST_NAMESPACE} -f \
-https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prometheus-operator-crd/prometheusrule.crd.yaml || :
-oc create -n ${TEST_NAMESPACE} -f \
-https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prometheus-operator-crd/servicemonitor.crd.yaml || :
-
-TEST_NAMESPACE=${TEST_NAMESPACE} go test ./test/e2e/... \
-  -root=$(pwd) \
-  -kubeconfig=${KUBECONFIG} \
-  -globalMan manifests/04-crd.yaml \
-  -namespacedMan ${manifest} \
-  -v \
-  -parallel=1 \
-  -singleNamespace \
-  -timeout 1200s
-
-oc delete namespace ${TEST_NAMESPACE}

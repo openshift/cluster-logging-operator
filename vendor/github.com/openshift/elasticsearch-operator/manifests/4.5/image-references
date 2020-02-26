@@ -7,10 +7,10 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-elasticsearch-operator:latest
-  - name: logging-elasticsearch5
+  - name: logging-elasticsearch6
     from:
       kind: DockerImage
-      name: quay.io/openshift/origin-logging-elasticsearch5:latest
+      name: quay.io/openshift/origin-logging-elasticsearch6:latest
   - name: oauth-proxy
     from:
       kind: DockerImage

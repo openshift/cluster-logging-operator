@@ -7,7 +7,7 @@ source "$repo_dir/hack/lib/init.sh"
 source "$repo_dir/hack/testing/utils"
 source "$repo_dir/hack/testing/assertions"
 
-VERSION=${VERSION:-$(basename $(find ${repo_dir}/../manifests -type d | sort -r | head -n 1))}
+VERSION=${VERSION:-$(basename $(find ${repo_dir}/manifests -type d | sort -r | head -n 1))}
 ELASTICSEARCH_OP_REPO=${ELASTICSEARCH_OP_REPO:-${repo_dir}/../elasticsearch-operator}
 
 ADMIN_USER=${ADMIN_USER:-kubeadmin}

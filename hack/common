@@ -1,8 +1,4 @@
 #!/bin/bash
-if [ -n "${DEBUG:-}" ]; then
-    set -x
-fi
-
 alias oc=${OC:-oc}
 
 repo_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."

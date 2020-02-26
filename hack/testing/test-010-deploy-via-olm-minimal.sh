@@ -4,9 +4,6 @@
 # that begets the operands that make up logging.
 
 set -e
-if [ "${DEBUG:-}" = "true" ]; then
-	set -x
-fi
 
 source "$(dirname "${BASH_SOURCE[0]}")/../lib/init.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/assertions"

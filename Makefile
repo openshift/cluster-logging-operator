@@ -123,6 +123,10 @@ test-unit: fmt
 test-e2e:
 	hack/test-e2e.sh
 
+test-e2e-local: deploy-image
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	 hack/test-e2e.sh
+
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec
 	gosec -severity medium --confidence medium -quiet ./...

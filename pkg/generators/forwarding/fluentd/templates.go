@@ -32,6 +32,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 ## ordered so that syslog always runs last...
 <source>
   @type prometheus
+  bind ''
   <ssl>
     enable true
     certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
@@ -280,7 +281,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 
 </label>
 
-# Relabel specific sources (e.g. logs.apps) to multiple pipelines
+# Relabel specific sources (e.g. logs-apps) to multiple pipelines
 {{- range .SourceToPipelineLabels }}
 {{ . }}
 {{- end}}
@@ -300,6 +301,15 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 		@type copy
 		#include legacy secure-forward.conf
 		@include /etc/fluent/configs.d/secure-forward/secure-forward.conf
+	</match>
+</label>
+{{- end}}
+{{ if .IncludeLegacySyslog }}
+<label @_LEGACY_SYSLOG>
+	<match **>
+		@type copy
+		#include legacy Syslog
+		@include /etc/fluent/configs.d/syslog/syslog.conf
 	</match>
 </label>
 {{- end}}
@@ -332,12 +342,12 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
   @type tail
   @id container-input
   path "/var/log/containers/*.log"
+  exclude_path ["/var/log/containers/{{.CollectorPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.LogStorePodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.VisualizationPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log"]
   pos_file "/var/log/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
-  exclude_path []
   @label @CONCAT
   <parse>
     @type multi_format
@@ -409,13 +419,6 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
 </source>
 {{- end}}`
 
-const outputLabelMatchTemplate = `{{- define "outputLabelMatch" }}
-<match {{.Tags}}>
-	@type relabel
-	@label {{labelName .Name}}
-</match>
-{{- end}}`
-
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" }}
 <label {{sourceTypelabelName .Source}}>
 	<match **>
@@ -432,6 +435,13 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
 			@label @_LEGACY_SECUREFORWARD
 		</store>
 {{- end }}
+{{ if .IncludeLegacySyslog }}
+		<store>
+			@type relabel
+			@label @_LEGACY_SYSLOG
+		</store>
+{{- end }}
+r
 	</match>
 </label>
 {{- end}}`

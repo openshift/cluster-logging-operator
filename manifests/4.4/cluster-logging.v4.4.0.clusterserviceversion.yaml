@@ -4,9 +4,11 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   # The version value is substituted by the ART pipeline
-  name: clusterlogging.v4.3.0
+  name: clusterlogging.v4.4.0
   namespace: placeholder
   annotations:
+    "operatorframework.io/suggested-namespace": openshift-logging
+    "operatorframework.io/cluster-monitoring": "true"
     capabilities: Seamless Upgrades
     categories: "OpenShift Optional, Logging & Tracing"
     certified: "false"
@@ -16,7 +18,7 @@ metadata:
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
     # The version value is substituted by the ART pipeline
-    olm.skipRange: ">=4.2.0 <4.3.0"
+    olm.skipRange: ">=4.1.0 <4.4.0"
     alm-examples: |-
         [
           {
@@ -36,6 +38,11 @@ metadata:
                   "storage": {
                     "storageClassName": "gp2",
                     "size": "200G"
+                  }
+                },
+                "retentionPolicy":{
+                  "logs.app":{
+                    "maxAge":"7d"
                   }
                 }
               },
@@ -80,12 +87,12 @@ metadata:
               "pipelines": [
                 {
                   "name": "clo-default-app-pipeline",
-                  "inputSource": "logs.app",
+                  "inputSource": "logs-app",
                   "outputRefs": ["clo-managaged-output-es"]
                 },
                 {
                   "name": "clo-default-infra-pipeline",
-                  "inputSource": "logs.app",
+                  "inputSource": "logs-app",
                   "outputRefs": ["clo-managaged-output-es"]
                 }
               ]
@@ -94,9 +101,9 @@ metadata:
         ]
 spec:
   # The version value is substituted by the ART pipeline
-  version: 4.3.0
+  version: 4.4.0
   displayName: Cluster Logging
-  minKubeVersion: 1.14.0
+  minKubeVersion: 1.17.1
   description: |
     # Cluster Logging
     The Cluster Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.
@@ -299,11 +306,11 @@ spec:
                   - name: OPERATOR_NAME
                     value: "cluster-logging-operator"
                   - name: ELASTICSEARCH_IMAGE
-                    value: "quay.io/openshift/origin-logging-elasticsearch5:latest"
+                    value: "quay.io/openshift/origin-logging-elasticsearch6:latest"
                   - name: FLUENTD_IMAGE
                     value: "quay.io/openshift/origin-logging-fluentd:latest"
                   - name: KIBANA_IMAGE
-                    value: "quay.io/openshift/origin-logging-kibana5:latest"
+                    value: "quay.io/openshift/origin-logging-kibana6:latest"
                   - name: CURATOR_IMAGE
                     value: "quay.io/openshift/origin-logging-curator5:latest"
                   - name: OAUTH_PROXY_IMAGE

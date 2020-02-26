@@ -48,6 +48,7 @@ type ElasticsearchSpec struct {
 	RedundancyPolicy RedundancyPolicyType  `json:"redundancyPolicy"`
 	Nodes            []ElasticsearchNode   `json:"nodes"`
 	Spec             ElasticsearchNodeSpec `json:"nodeSpec"`
+	IndexManagement  *IndexManagementSpec  `json:"indexManagement"`
 }
 
 // ElasticsearchStatus defines the observed state of Elasticsearch
@@ -63,6 +64,7 @@ type ElasticsearchStatus struct {
 	ShardAllocationEnabled ShardAllocationState                  `json:"shardAllocationEnabled"`
 	Pods                   map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
 	Conditions             []ClusterCondition                    `json:"conditions"`
+	IndexManagementStatus  *IndexManagementStatus                `json:"indexManagement,omitempty"`
 }
 
 type ClusterHealth struct {

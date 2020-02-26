@@ -34,8 +34,9 @@ var secretCertificates = map[string]map[string]string{
 		"cert": "system.logging.kibana.crt",
 	},
 	"kibana-proxy": map[string]string{
-		"server-key":  "kibana-internal.key",
-		"server-cert": "kibana-internal.crt",
+		"server-key":     "kibana-internal.key",
+		"server-cert":    "kibana-internal.crt",
+		"session-secret": "kibana-session-secret",
 	},
 	"curator": map[string]string{
 		"ca":       "ca.crt",
@@ -49,14 +50,6 @@ var secretCertificates = map[string]map[string]string{
 		"ca-bundle.crt": "ca.crt",
 		"tls.key":       "system.logging.fluentd.key",
 		"tls.crt":       "system.logging.fluentd.crt",
-		/*legacy to be removed in future
-		"app-ca":     "ca.crt",
-		"app-key":    "system.logging.fluentd.key",
-		"app-cert":   "system.logging.fluentd.crt",
-		"infra-ca":   "ca.crt",
-		"infra-key":  "system.logging.fluentd.key",
-		"infra-cert": "system.logging.fluentd.crt",
-		*/
 	},
 }
 
@@ -150,6 +143,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 
 func GenerateCertificates(namespace, rootDir, logStoreName, workDir string) (err error) {
 	script := fmt.Sprintf("%s/scripts/cert_generation.sh", rootDir)
+	return RunCertificatesScript(namespace, logStoreName, workDir, script)
+}
+
+func RunCertificatesScript(namespace, logStoreName, workDir, script string) (err error) {
 	logger.Debugf("Running script '%s %s %s %s'", script, workDir, namespace, logStoreName)
 	cmd := exec.Command(script, workDir, namespace, logStoreName)
 	result, err := cmd.Output()

@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strings"
@@ -10,10 +11,17 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	routev1 "github.com/openshift/api/route/v1"
 	v1 "k8s.io/api/core/v1"
+	rbac "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 func TestNewKibanaPodSpecSetsProxyToUseServiceAccountAsOAuthClient(t *testing.T) {
@@ -241,6 +249,100 @@ func TestNewKibanaPodSpecWhenProxyConfigExists(t *testing.T) {
 	checkKibanaProxyEnvVar(t, podSpec, "NO_PROXY", noproxy)
 
 	checkKibanaProxyVolumesAndVolumeMounts(t, podSpec, constants.KibanaTrustedCAName)
+}
+
+func TestNewLoggingSharedConfigMapExists(t *testing.T) {
+	_ = routev1.AddToScheme(scheme.Scheme)
+	cluster := &logging.ClusterLogging{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "instance",
+			Namespace: "openshift-logging",
+		},
+	}
+
+	testCases := []struct {
+		name    string
+		objs    []runtime.Object
+		wantCm  *v1.ConfigMap
+		wantErr error
+	}{
+		{
+			name: "new route creation",
+			wantCm: NewConfigMap(
+				loggingSharedConfigMapName,
+				loggingSharedConfigNs,
+				map[string]string{
+					"kibanaAppPublicURL":      "https://",
+					"kibanaInfraAppPublicURL": "https://",
+				},
+			),
+		},
+		{
+			name: "update route with shared configmap, role and rolebinding migration",
+			objs: []runtime.Object{
+				runtime.Object(NewConfigMap(loggingSharedConfigMapNamePre44x, cluster.GetNamespace(), map[string]string{})),
+				runtime.Object(NewRole(loggingSharedConfigRolePre44x, cluster.GetNamespace(), []rbac.PolicyRule{})),
+				runtime.Object(NewRoleBinding(loggingSharedConfigRoleBindingPre44x, cluster.GetNamespace(), loggingSharedConfigRolePre44x, []rbac.Subject{})),
+			},
+			wantCm: NewConfigMap(
+				loggingSharedConfigMapName,
+				loggingSharedConfigNs,
+				map[string]string{
+					"kibanaAppPublicURL":      "https://",
+					"kibanaInfraAppPublicURL": "https://",
+				},
+			),
+		},
+	}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			client := fake.NewFakeClient(tc.objs...)
+			clusterRequest := &ClusterLoggingRequest{
+				client:  client,
+				cluster: cluster,
+			}
+
+			if gotErr := clusterRequest.createOrUpdateKibanaRoute(); gotErr != tc.wantErr {
+				t.Errorf("got: %v, want: %v", gotErr, tc.wantErr)
+			}
+
+			// Check new shared config map existings in openshift config shared namespace
+			key := types.NamespacedName{Namespace: loggingSharedConfigNs, Name: loggingSharedConfigMapName}
+			gotCm := &v1.ConfigMap{}
+			utils.AddOwnerRefToObject(tc.wantCm, utils.AsOwner(clusterRequest.cluster))
+
+			if err := client.Get(context.TODO(), key, gotCm); err != nil {
+				t.Errorf("Expected configmap got: %v", err)
+			}
+			if ok := reflect.DeepEqual(gotCm, tc.wantCm); !ok {
+				t.Errorf("got: %v, want: %v", gotCm, tc.wantCm)
+			}
+
+			// Check old shared config map is deleted
+			key = types.NamespacedName{Namespace: cluster.GetNamespace(), Name: loggingSharedConfigMapNamePre44x}
+			gotCmPre44x := &v1.ConfigMap{}
+			if err := client.Get(context.TODO(), key, gotCmPre44x); !errors.IsNotFound(err) {
+				t.Errorf("Expected deleted shared config pre 4.4.x, got: %v", err)
+			}
+
+			// Check old role to access the shared config map is deleted
+			key = types.NamespacedName{Namespace: cluster.GetNamespace(), Name: loggingSharedConfigRolePre44x}
+			gotRolePre44x := &rbac.Role{}
+			if err := client.Get(context.TODO(), key, gotRolePre44x); !errors.IsNotFound(err) {
+				t.Errorf("Expected deleted role for shared config map pre 4.4.x, got: %v", err)
+			}
+
+			// Check old rolebinding for group system:autheticated is deleted
+			key = types.NamespacedName{Namespace: cluster.GetNamespace(), Name: loggingSharedConfigRoleBindingPre44x}
+			gotRoleBindingPre44x := &rbac.RoleBinding{}
+			if err := client.Get(context.TODO(), key, gotRoleBindingPre44x); !errors.IsNotFound(err) {
+				t.Errorf("Expected deleted rolebinding for shared config map pre 4.4.x, got: %v", err)
+			}
+		})
+	}
 }
 
 func checkKibanaProxyEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {

@@ -115,7 +115,7 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 			Name: name,
 		},
 	}
-	namespace, err := tc.KubeClient.CoreV1().Namespaces().Create(namespace)
+	_, err := tc.KubeClient.CoreV1().Namespaces().Create(namespace)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -347,7 +347,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		OpenshiftLoggingNS,
 		data,
 	)
-	logger.Debugf("Creating secret %q for logStore", secret.Name, logStoreName)
+	logger.Debugf("Creating secret %s for logStore %s", secret.Name, logStoreName)
 	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
 		return nil, err
 	}

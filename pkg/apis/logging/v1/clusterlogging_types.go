@@ -52,6 +52,17 @@ type ProxySpec struct {
 type LogStoreSpec struct {
 	Type              LogStoreType `json:"type"`
 	ElasticsearchSpec `json:"elasticsearch,omitempty"`
+	RetentionPolicy   *RetentionPoliciesSpec `json:"retentionPolicy,omitempty"`
+}
+
+type RetentionPoliciesSpec struct {
+	App   *RetentionPolicySpec `json:"logs.app,omitempty"`
+	Infra *RetentionPolicySpec `json:"logs.infra,omitempty"`
+	Audit *RetentionPolicySpec `json:"logs.audit,omitempty"`
+}
+
+type RetentionPolicySpec struct {
+	MaxAge elasticsearch.TimeUnit `json:"maxAge"`
 }
 
 type ElasticsearchSpec struct {
@@ -132,7 +143,7 @@ type ElasticsearchStatus struct {
 	ClusterHealth          string                                      `json:"clusterHealth,omitempty"`
 	Cluster                elasticsearch.ClusterHealth                 `json:"cluster"`
 	Pods                   map[ElasticsearchRoleType]PodStateMap       `json:"pods"`
-	ShardAllocationEnabled elasticsearch.ShardAllocationState          `json:shardAllocationEnabled`
+	ShardAllocationEnabled elasticsearch.ShardAllocationState          `json:"shardAllocationEnabled"`
 	ClusterConditions      []elasticsearch.ClusterCondition            `json:"clusterConditions,omitempty"`
 	NodeConditions         map[string][]elasticsearch.ClusterCondition `json:"nodeConditions,omitempty"`
 }

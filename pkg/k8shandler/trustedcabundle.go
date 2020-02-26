@@ -1,6 +1,8 @@
 package k8shandler
 
 import (
+	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
@@ -41,14 +43,24 @@ func hasTrustedCABundle(configMap *core.ConfigMap) bool {
 	}
 }
 
-func calcTrustedCAHashValue(configMap *core.ConfigMap) string {
-	hashValue := "0"
+func calcTrustedCAHashValue(configMap *core.ConfigMap) (string, error) {
+	hashValue := ""
+	var err error
+
 	if configMap == nil {
-		return hashValue
+		return hashValue, nil
 	}
 	caBundle, ok := configMap.Data[constants.TrustedCABundleKey]
 	if ok && caBundle != "" {
-		hashValue = utils.CalculateMD5Hash(caBundle)
+		hashValue, err = utils.CalculateMD5Hash(caBundle)
+		if err != nil {
+			return "", err
+		}
 	}
-	return hashValue
+
+	if !ok {
+		return "", fmt.Errorf("Expected key %v does not exist in %v", constants.TrustedCABundleKey, configMap.Name)
+	}
+
+	return hashValue, nil
 }

@@ -4,26 +4,8 @@ export MERGE_JSON_LOG=${MERGE_JSON_LOG:-false}
 CFG_DIR=/etc/fluent/configs.d
 ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"true"}
 OCP_OPERATIONS_PROJECTS=${OCP_OPERATIONS_PROJECTS:-"default openshift openshift- kube-"}
-LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/fluentd/fluentd.log"}
 
-loggingargs=""
-if [ ${LOGGING_FILE_PATH} != "console" ] ; then
-    echo "============================="
-    echo "Fluentd logs have been redirected to: $LOGGING_FILE_PATH"
-    echo "If you want to print out the logs, use command:"
-    echo "oc exec <pod_name> -- logs"
-    echo "============================="
-
-    dirname=$( dirname $LOGGING_FILE_PATH )
-    if [ ! -d $dirname ] ; then
-        mkdir -p $dirname
-    fi
-    touch $LOGGING_FILE_PATH; exec >> $LOGGING_FILE_PATH 2>&1
-
-    loggingargs="-o $LOGGING_FILE_PATH --log-rotate-age $LOGGING_FILE_AGE --log-rotate-size $LOGGING_FILE_SIZE"
-fi
-
-fluentdargs="--no-supervisor $loggingargs"
+fluentdargs="--no-supervisor"
 # find the sniffer class file
 sniffer=$( gem contents fluent-plugin-elasticsearch|grep elasticsearch_simple_sniffer.rb )
 if [ -z "$sniffer" ] ; then
@@ -58,7 +40,7 @@ if [ -z "${JOURNAL_SOURCE:-}" ] ; then
 fi
 
 IPADDR4=${NODE_IPV4:-$( /usr/sbin/ip -4 addr show dev eth0 | grep inet | sed -e "s/[ \t]*inet \([0-9.]*\).*/\1/" )}
-IPADDR6="" # So as to omit "ipaddr6" field from logs.
+IPADDR6=${NODE_IPV6:-$(/usr/sbin/ip -6 addr show dev eth0 | grep inet | sed -e "s/[ \t]*inet6 \([a-z0-9::]*\).*/\1/" )}
 
 export IPADDR4 IPADDR6
 
@@ -160,30 +142,6 @@ if [ -d /var/lib/docker/containers ] ; then
         umount /var/lib/docker/containers/*/shm || :
     else
         umount /var/lib/docker/containers/*/shm > /dev/null 2>&1 || :
-    fi
-fi
-
-if [[ "${USE_REMOTE_SYSLOG:-}" = "true" ]] ; then
-    # The symlink is a workaround for https://github.com/openshift/origin-aggregated-logging/issues/604
-    found=
-    for file in /usr/share/gems/gems/fluent-plugin-remote-syslog-*/lib/fluentd/plugin/*.rb ; do
-        bname=$(basename $file)
-        if [ ! -e "/etc/fluent/plugin/$bname" -a -f "$file" ] ; then
-            ln -s $file /etc/fluent/plugin/
-            found=true
-        fi
-    done
-    if [ -z "${found:-}" ] ; then
-        # not found in rpm location - look in alternate location
-        for file in /opt/app-root/src/gems/fluent-plugin-remote-syslog*/lib/fluentd/plugin/*.rb ; do
-            bname=$(basename $file)
-            if [ ! -e "/etc/fluent/plugin/$bname" -a -f "$file" ] ; then
-                ln -s $file /etc/fluent/plugin/
-            fi
-        done
-    fi
-    if [[ $REMOTE_SYSLOG_HOST ]] ; then
-        ruby generate_syslog_config.rb
     fi
 fi
 

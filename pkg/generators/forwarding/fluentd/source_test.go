@@ -18,29 +18,30 @@ var _ = Describe("generating source", func() {
 	)
 
 	BeforeEach(func() {
-		generator, err = NewConfigGenerator(false)
+		generator, err = NewConfigGenerator(false, false)
+
 		Expect(err).To(BeNil())
 	})
 
-	Context("for only logs.app source", func() {
+	Context("for only logs-app source", func() {
 		BeforeEach(func() {
 			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp)))
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
 
-		It("should produce a container config with no exclusions", func() {
+		It("should produce a container config", func() {
 			test.Expect(results[0]).ToEqual(`# container logs
 		  <source>
 			@type tail
 			@id container-input
 			path "/var/log/containers/*.log"
+			exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 			pos_file "/var/log/es-containers.log.pos"
 			refresh_interval 5
 			rotate_wait 5
 			tag kubernetes.*
 			read_from_head "true"
-			exclude_path []
 			@label @CONCAT
 			<parse>
 			  @type multi_format
@@ -61,7 +62,7 @@ var _ = Describe("generating source", func() {
 		})
 	})
 
-	Context("for only logs.infra source", func() {
+	Context("for only logs-infra source", func() {
 		BeforeEach(func() {
 			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeInfra)))
 			Expect(err).To(BeNil())
@@ -91,7 +92,7 @@ var _ = Describe("generating source", func() {
 		})
 	})
 
-	Context("for only logs.audit source", func() {
+	Context("for only logs-audit source", func() {
 		BeforeEach(func() {
 			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeAudit)))
 			Expect(err).To(BeNil())
@@ -185,18 +186,18 @@ var _ = Describe("generating source", func() {
 
 		Context("for container inputs", func() {
 
-			It("should produce a config with no exclusions", func() {
+			It("should produce a config", func() {
 				test.Expect(results[1]).ToEqual(`# container logs
 			  <source>
 				@type tail
 				@id container-input
 				path "/var/log/containers/*.log"
+				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				exclude_path []
 				@label @CONCAT
 				<parse>
 				  @type multi_format

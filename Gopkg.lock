@@ -512,6 +512,7 @@
   name = "github.com/openshift/api"
   packages = [
     "config/v1",
+    "console/v1",
     "oauth/v1",
     "route/v1",
   ]
@@ -519,19 +520,21 @@
   revision = "d4a64ec2cbd86f11ea74dfdcf6520d5833d0c6cd"
 
 [[projects]]
-  branch = "master"
-  digest = "1:f9f98ec6f144764a1b66447a37c7cdc0700f8d4d700d5ae292341a70f5862df0"
+  branch = "feature-es6x"
+  digest = "1:bde78f3ff1aa8a9fd828b61aee76f53c36a2f4b990fdf9a35b7430fe66daed14"
   name = "github.com/openshift/elasticsearch-operator"
   packages = [
     "pkg/apis",
     "pkg/apis/logging/v1",
+    "pkg/indexmanagement",
     "pkg/k8shandler",
     "pkg/logger",
+    "pkg/types/elasticsearch",
     "pkg/utils",
     "test/utils",
   ]
   pruneopts = "T"
-  revision = "3b74c3f2d0bc1cc80bcc8bd29e416b99655d87ea"
+  revision = "66a02fbeffe5ace05b977021bf28e7f878eb32e6"
 
 [[projects]]
   digest = "1:0087f38751ec1995bafa67afd0ded9519a46297ecf571165c695fb9ba943688d"
@@ -549,7 +552,6 @@
     "pkg/log/zap",
     "pkg/metrics",
     "pkg/test",
-    "pkg/test/e2eutil",
     "version",
   ]
   pruneopts = "NT"
@@ -1310,6 +1312,7 @@
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/format",
     "github.com/openshift/api/config/v1",
+    "github.com/openshift/api/console/v1",
     "github.com/openshift/api/oauth/v1",
     "github.com/openshift/api/route/v1",
     "github.com/openshift/elasticsearch-operator/pkg/apis",
@@ -1320,7 +1323,6 @@
     "github.com/operator-framework/operator-sdk/pkg/log/zap",
     "github.com/operator-framework/operator-sdk/pkg/metrics",
     "github.com/operator-framework/operator-sdk/pkg/test",
-    "github.com/operator-framework/operator-sdk/pkg/test/e2eutil",
     "github.com/operator-framework/operator-sdk/version",
     "github.com/sirupsen/logrus",
     "github.com/spf13/pflag",
@@ -1361,8 +1363,10 @@
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/client/fake",
     "sigs.k8s.io/controller-runtime/pkg/controller",
+    "sigs.k8s.io/controller-runtime/pkg/event",
     "sigs.k8s.io/controller-runtime/pkg/handler",
     "sigs.k8s.io/controller-runtime/pkg/manager",
+    "sigs.k8s.io/controller-runtime/pkg/predicate",
     "sigs.k8s.io/controller-runtime/pkg/reconcile",
     "sigs.k8s.io/controller-runtime/pkg/runtime/log",
     "sigs.k8s.io/controller-runtime/pkg/runtime/scheme",

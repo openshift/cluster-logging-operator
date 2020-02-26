@@ -15,7 +15,7 @@ var _ = Describe("Generating fluentd config", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		generator, err = NewConfigGenerator(true)
+		generator, err = NewConfigGenerator(true, true)
 		Expect(err).To(BeNil())
 		Expect(generator).ToNot(BeNil())
 		forwarding = &logging.ForwardingSpec{
@@ -73,7 +73,7 @@ var _ = Describe("Generating fluentd config", func() {
 		}
 	})
 
-	It("should exclude source to pipeline labels when there are no pipelines for a given sourceType (e.g. only logs.app)", func() {
+	It("should exclude source to pipeline labels when there are no pipelines for a given sourceType (e.g. only logs-app)", func() {
 		forwarding = &logging.ForwardingSpec{
 			Outputs: []logging.OutputSpec{
 				{
@@ -108,6 +108,7 @@ var _ = Describe("Generating fluentd config", func() {
 			## ordered so that syslog always runs last...
 			<source>
 				@type prometheus
+                bind ''
 				<ssl>
 					enable true
 					certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
@@ -139,12 +140,12 @@ var _ = Describe("Generating fluentd config", func() {
 				@type tail
 				@id container-input
 				path "/var/log/containers/*.log"
+				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				exclude_path []
 				@label @CONCAT
 				<parse>
 				@type multi_format
@@ -366,7 +367,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 			</label>
 			
-			# Relabel specific sources (e.g. logs.apps) to multiple pipelines
+			# Relabel specific sources (e.g. logs-apps) to multiple pipelines
 			<label @_LOGS_APP>
 				<match **>
 					@type copy
@@ -378,6 +379,11 @@ var _ = Describe("Generating fluentd config", func() {
 						@type relabel
 						@label @_LEGACY_SECUREFORWARD
 					</store>
+					<store>
+						@type relabel
+						@label @_LEGACY_SYSLOG
+					</store>
+
 				</match>
 			</label>
 
@@ -426,6 +432,13 @@ var _ = Describe("Generating fluentd config", func() {
 				@include /etc/fluent/configs.d/secure-forward/secure-forward.conf
 			</match>
 		</label>
+		<label @_LEGACY_SYSLOG>
+			<match **>
+				@type copy
+				#include legacy Syslog
+				@include /etc/fluent/configs.d/syslog/syslog.conf
+			</match>
+		</label>
 	`)
 	})
 
@@ -448,6 +461,7 @@ var _ = Describe("Generating fluentd config", func() {
 			## ordered so that syslog always runs last...
 			<source>
 				@type prometheus
+                bind ''
 				<ssl>
 					enable true
 					certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
@@ -497,12 +511,12 @@ var _ = Describe("Generating fluentd config", func() {
 				@type tail
 				@id container-input
 				path "/var/log/containers/*.log"
+				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				exclude_path []
 				@label @CONCAT
 				<parse>
 				@type multi_format
@@ -779,7 +793,7 @@ var _ = Describe("Generating fluentd config", func() {
 
 			</label>
 			
-			# Relabel specific sources (e.g. logs.apps) to multiple pipelines
+			# Relabel specific sources (e.g. logs-apps) to multiple pipelines
 			<label @_LOGS_APP>
 				<match **>
 					@type copy
@@ -790,6 +804,10 @@ var _ = Describe("Generating fluentd config", func() {
 					<store>
 						@type relabel
 						@label @_LEGACY_SECUREFORWARD
+					</store>
+					<store>
+						@type relabel
+						@label @_LEGACY_SYSLOG
 					</store>
 				</match>
 			</label>
@@ -804,6 +822,10 @@ var _ = Describe("Generating fluentd config", func() {
 						@type relabel
 						@label @_LEGACY_SECUREFORWARD
 					</store>
+					<store>
+						@type relabel
+						@label @_LEGACY_SYSLOG
+					</store>
 				</match>
 			</label>
 			<label @_LOGS_INFRA>
@@ -816,6 +838,10 @@ var _ = Describe("Generating fluentd config", func() {
 					<store>
 						@type relabel
 						@label @_LEGACY_SECUREFORWARD
+					</store>
+					<store>
+						@type relabel
+						@label @_LEGACY_SYSLOG
 					</store>
 				</match>
 			</label>
@@ -1207,6 +1233,13 @@ var _ = Describe("Generating fluentd config", func() {
 				  @type copy
 					#include legacy secure-forward.conf
 					@include /etc/fluent/configs.d/secure-forward/secure-forward.conf
+				</match>
+			</label>
+			<label @_LEGACY_SYSLOG>
+				<match **>
+					@type copy
+					#include legacy Syslog
+					@include /etc/fluent/configs.d/syslog/syslog.conf
 				</match>
 			</label>
 			`)

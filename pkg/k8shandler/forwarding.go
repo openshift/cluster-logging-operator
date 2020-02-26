@@ -20,7 +20,6 @@ const (
 	collectorSecretName      = "fluentd"
 	defaultAppPipelineName   = "clo-default-app-pipeline"
 	defaultInfraPipelineName = "clo-default-infra-pipeline"
-	secureForwardConfHash    = "8163d9a59a20ada8ab58c2535a3a4924"
 
 	//ForwardingAnnotation  Annotate CL instance with a value of "enabled"
 	ForwardingAnnotation = "clusterlogging.openshift.io/logforwardingtechpreview"
@@ -48,7 +47,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	}
 
 	clusterRequest.ForwardingSpec = clusterRequest.normalizeLogForwarding(clusterRequest.cluster.Namespace, clusterRequest.cluster)
-	generator, err := forwarding.NewConfigGenerator(clusterRequest.cluster.Spec.Collection.Logs.Type, clusterRequest.includeLegacyForwardConfig())
+	generator, err := forwarding.NewConfigGenerator(clusterRequest.cluster.Spec.Collection.Logs.Type, clusterRequest.includeLegacyForwardConfig(), clusterRequest.includeLegacySyslogConfig())
 	return generator.Generate(&clusterRequest.ForwardingSpec)
 }
 

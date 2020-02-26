@@ -17,10 +17,12 @@ import (
 type ConfigGenerator struct {
 	*generators.Generator
 	includeLegacyForwardConfig bool
+	includeLegacySyslogConfig  bool
 }
 
 //NewConfigGenerator creates an instance of FluentdConfigGenerator
-func NewConfigGenerator(includeLegacyForwardConfig bool) (*ConfigGenerator, error) {
+func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig bool) (*ConfigGenerator, error) {
+
 	engine, err := generators.New("OutputLabelConf",
 		&template.FuncMap{
 			"labelName":           labelName,
@@ -30,16 +32,17 @@ func NewConfigGenerator(includeLegacyForwardConfig bool) (*ConfigGenerator, erro
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigGenerator{engine, includeLegacyForwardConfig}, nil
+	return &ConfigGenerator{engine, includeLegacyForwardConfig, includeLegacySyslogConfig}, nil
+
 }
 
 //Generate the fluent.conf file using the forwarding information
 func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (string, error) {
 
 	//sanitize here
-	sourceInputLabels := []string{}
-	sourceToPipelineLabels := []string{}
-	pipelineToOutputLabels := []string{}
+	var sourceInputLabels []string
+	var sourceToPipelineLabels []string
+	var pipelineToOutputLabels []string
 	var outputLabels []string
 	var err error
 
@@ -61,6 +64,7 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 
 	data := struct {
 		IncludeLegacySecureForward bool
+		IncludeLegacySyslog        bool
 		CollectInfraLogs           bool
 		CollectAppLogs             bool
 		CollectAuditLogs           bool
@@ -70,6 +74,8 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 		OutputLabels               []string
 	}{
 		engine.includeLegacyForwardConfig,
+		engine.includeLegacySyslogConfig,
+
 		logTypes.Has(string(logforward.LogSourceTypeInfra)),
 		logTypes.Has(string(logforward.LogSourceTypeApp)),
 		logTypes.Has(string(logforward.LogSourceTypeAudit)),
@@ -137,10 +143,14 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 	for sourceType, pipelineNames := range sourcesToPipelines {
 		data := struct {
 			IncludeLegacySecureForward bool
+			IncludeLegacySyslog        bool
+
 			Source                     string
 			PipelineNames              []string
 		}{
 			engine.includeLegacyForwardConfig,
+			engine.includeLegacySyslogConfig,
+
 			string(sourceType),
 			pipelineNames,
 		}

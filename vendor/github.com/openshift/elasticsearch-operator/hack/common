@@ -7,6 +7,11 @@ alias oc=${OC:-oc}
 
 repo_dir="$(dirname $0)/.."
 
+source "$repo_dir/hack/lib/init.sh"
+source "$repo_dir/hack/testing/utils"
+
+VERSION=${VERSION:-4.4}
+
 IMAGE_TAG=${IMAGE_TAG:-"quay.io/openshift/origin-elasticsearch-operator:latest"}
 
 ADMIN_USER=${ADMIN_USER:-admin}
@@ -106,19 +111,32 @@ function get_private_repo_dir() {
                 fi
                 cp shared-secrets/mirror/ops-mirror.pem repos
             fi
-            if [ -f ${GOPATH}/src/github.com/openshift/release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo ]; then
-                cp ${GOPATH}/src/github.com/openshift/release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo repos
-            elif [ -f $GOPATH/src/github.com/openshift/release/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo ]; then
-                cp $GOPATH/src/github.com/openshift/release/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo repos
+            local releasedir=${GOPATH}/src/github.com/openshift/release
+            if [ -d $releasedir ] ; then
+                pushd $releasedir > /dev/null
+                git pull -q
+                popd > /dev/null
             else
                 if [ ! -d release ] ; then
                     git clone -q https://github.com/openshift/release
                 fi
-                cp release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo repos
+                releasedir=release
             fi
+            local repofile
+            for repofile in \
+                $releasedir/core-services/release-controller/_repos/ocp-${VERSION}-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.3-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.2-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.1-default.repo ; do
+                if [ -f $repofile ] ; then
+                    cp $repofile repos
+                    break
+                fi
+            done
             touch repos/redhat.repo
             chmod 0444 repos/redhat.repo
-            sed -i 's,= ops-mirror.pem,= /etc/yum.repos.d/ops-mirror.pem,' repos/*.repo
+            sed -i -e 's,^sslclientkey.*$,sslclientkey = /etc/yum.repos.d/ops-mirror.pem,' \
+                   -e 's,^sslclientcert.*$,sslclientcert = /etc/yum.repos.d/ops-mirror.pem,' repos/*.repo
         fi
         INTERNAL_REPO_DIR=$( pwd )/repos
         popd > /dev/null
@@ -166,7 +184,7 @@ function login_to_registry() {
             username=kubeadmin
         fi
     fi
-    podman login --tls-verify=false -u "$username" -p "$token" "$1" > /dev/null
+    docker login -u "$username" -p "$token" "$1" > /dev/null
 }
 
 function push_image() {

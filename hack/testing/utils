@@ -49,19 +49,59 @@ try_until_success() {
   return 1
 }
 
+expect_success(){
+  local cmd=$1
+  echo "Running '$cmd'"
+  if $cmd ; then
+    return 0
+  fi  
+  return 1
+}
+
+try_until_failure() {
+  local cmd=$1
+  local timeout=$2
+  local interval=${3:-0.2}
+  local now=$(date +%s)
+  local expire=$(($now + $timeout))
+  while [ $now -lt $expire ]; do
+    if ! $cmd ; then
+      return 0
+    fi  
+    sleep $interval
+    now=$(date +%s)
+  done
+  return 1
+}
+try_until_success() {
+  local cmd=$1
+  local timeout=$2
+  local interval=${3:-0.2}
+  local now=$(date +%s%3N)
+  local expire=$(($now + $timeout))
+  while [ $now -lt $expire ]; do
+    if $cmd ; then
+      return 0
+    fi  
+    sleep $interval
+    now=$(date +%s%3N)
+  done
+  return 1
+}
+
 try_until_text() {
   local cmd=$1
   local expected=$2
   local timeout=$3
   local interval=${4:-0.2}
-  local now=$(date +%s)
+  local now=$(date +%s%3N)
   local expire=$(($now + $timeout))
   while [ $now -lt $expire ]; do
     if [[ "$($cmd)" == "${expected}" ]] ; then
       return 0
     fi  
     sleep $interval
-    now=$(date +%s)
+    now=$(date +%s%3N)
   done
   log::error "try_until_text expired for '$cmd' == '$expected'"
   return 1
@@ -92,6 +132,26 @@ wait_for_deployment_to_be_ready(){
   local timeout=$3
   log::info "Waiting for $namespace/deployment/$name to be ready..."
   try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
+}
+
+deploy_olm_catalog_unsupported_resources(){
+    local manifest=${repo_dir}/manifests
+    local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
+
+    # Create static cluster roles and rolebindings
+    try_until_success "oc create -f ${manifest}/$version/0100_clusterroles.yaml" "$(( 30 * second ))"
+    try_until_success "oc create -f ${manifest}/$version/0110_clusterrolebindings.yaml" "$(( 30 * second ))"
+
+    # Create static cluster roles and rolebindings
+    try_until_success "oc create -f ${manifest}/$version/0200_roles.yaml" "$(( 30 * second ))"
+    try_until_success "oc create -f ${manifest}/$version/0210_rolebindings.yaml" "$(( 30 * second ))"
+}
+
+cleanup_olm_catalog_unsupported_resources(){
+    oc delete clusterrolebinding clusterlogging-collector-metrics --wait=false --ignore-not-found
+    oc delete clusterrole clusterlogging-collector-metrics --wait=false --ignore-not-found
+    oc -n "${MANAGED_CONFIG_NAMESPACE}" delete role clusterlogging-shared-config
+    oc -n "${MANAGED_CONFIG_NAMESPACE}" delete rolebinding clusterlogging-shared-config
 }
 
 deploy_marketplace_operator(){
@@ -214,37 +274,51 @@ function deploy_clusterlogging_operator() {
     local es_img k_img c_img f_img op_img
     if [ -n "${IMAGE_FORMAT:-}" ] ; then
         IMAGE_CLUSTER_LOGGING_OPERATOR=$(sed -e "s,\${component},cluster-logging-operator," <(echo $IMAGE_FORMAT))
-        es_img=${IMAGE_FORMAT/'${component}'/logging-elasticsearch5}
-        k_img=${IMAGE_FORMAT/'${component}'/logging-kibana5}
+        k_img=${IMAGE_FORMAT/'${component}'/logging-kibana6}
         c_img=${IMAGE_FORMAT/'${component}'/logging-curator5}
         f_img=${IMAGE_FORMAT/'${component}'/logging-fluentd}
         op_img=${IMAGE_FORMAT/'${component}'/oauth-proxy}
     else
         IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/ocp/$version:cluster-logging-operator}
-        es_img=registry.svc.ci.openshift.org/ocp/$version:logging-elasticsearch5
-        k_img=registry.svc.ci.openshift.org/ocp/$version:logging-kibana5
-        c_img=registry.svc.ci.openshift.org/ocp/$version:logging-curator5
-        f_img=registry.svc.ci.openshift.org/ocp/$version:logging-fluentd
-        op_img=registry.svc.ci.openshift.org/ocp/$version:oauth-proxy
+        k_img=${IMAGE_KIBANA_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-kibana6}
+        c_img=${IMAGE_CURATOR_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-curator5}
+        f_img=${IMAGE_FLUENTD_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-fluentd}
+        op_img=${IMAGE_OAUTH_PROXY_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:oauth-proxy}
     fi
+    es_img="$(format_elasticsearch_image)"
     sed -e "/name: ELASTICSEARCH_IMAGE/,/value:/s,value:.*\$,value: ${es_img}," \
         -e "/name: KIBANA_IMAGE/,/value:/s,value:.*\$,value: ${k_img}," \
         -e "/name: CURATOR_IMAGE/,/value:/s,value:.*\$,value: ${c_img}," \
         -e "/name: FLUENTD_IMAGE/,/value:/s,value:.*\$,value: ${f_img}," \
         -e "/name: OAUTH_PROXY_IMAGE/,/value:/s,value:.*\$,value: ${op_img}," \
         -i $csv
+
+    deploy_olm_catalog_unsupported_resources
     deploy_operator "openshift-logging" "cluster-logging-operator" $manifest $IMAGE_CLUSTER_LOGGING_OPERATOR $((2 * $minute))
 }
 
 function deploy_elasticsearch_operator() {
     local manifest=${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests
-    local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
     if [ -n "${IMAGE_FORMAT:-}" ] ; then
         IMAGE_ELASTICSEARCH_OPERATOR=$(sed -e "s,\${component},elasticsearch-operator," <(echo $IMAGE_FORMAT))
     else
+        local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
         IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/ocp/$version:elasticsearch-operator}
     fi
+    ELASTICSEARCH_IMAGE="$(format_elasticsearch_image)"
     GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
+}
+
+function format_elasticsearch_image() {
+    if [ -n "${IMAGE_FORMAT:-}" ] ; then
+        local es_img=${IMAGE_FORMAT/'${component}'/logging-elasticsearch6}
+        echo ${es_img}
+    else
+        local manifest=${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests
+        local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
+        ELASTICSEARCH_IMAGE=${ELASTICSEARCH_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-elasticsearch6}
+        echo $ELASTICSEARCH_IMAGE
+    fi
 }
 
 function deploy_operator() {

@@ -213,7 +213,9 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 	})
 	tc.AddCleanup(func() error {
 		for _, name := range []string{esSecret.Name, pipelineSecret.Name} {
-			tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(name, nil)
+			if err := tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(name, nil); err != nil {
+				return err
+			}
 		}
 		return nil
 	})

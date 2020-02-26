@@ -16,10 +16,10 @@ TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
 IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
-export OCP_VERSION?=4.3
-IMAGE_CLUSTER_LOGGING_OPERATOR?=registry.svc.ci.openshift.org/origin/$(VERSION):cluster-logging-operator
+export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -type d))
 export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
+export MANAGED_CONFIG_NAMESPACE?=openshift-config-managed
 export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
@@ -68,10 +68,10 @@ build: fmt
 	@GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
 
 run:
-	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch5:latest \
+	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
-	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana5:latest \
-	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator5:latest \
+	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana6:latest \
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator6:latest \
 	OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
 	PROMTAIL_IMAGE=quay.io/openshift/origin-promtail:latest \
 	OPERATOR_NAME=cluster-logging-operator \
@@ -90,10 +90,11 @@ image: imagebuilder
 	then hack/build-image.sh $(IMAGE_TAG) $(IMAGE_BUILDER) $(IMAGE_BUILDER_OPTS) ; \
 	fi
 
+lint:
+	@golangci-lint run -c golangci.yaml
+
 fmt:
-	@gofmt -l -w cmd && \
-	gofmt -l -w pkg && \
-	gofmt -l -w test
+	@gofmt -l -w cmd/ pkg/ version/
 
 simplify:
 	@gofmt -s -l -w $(SRC)
@@ -105,10 +106,10 @@ deploy-image: image
 	hack/deploy-image.sh
 
 deploy:  deploy-image deploy-elasticsearch-operator
-	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
+	hack/deploy.sh
 
 deploy-no-build:  deploy-elasticsearch-operator
-	IMAGE_CLUSTER_LOGGING_OPERATOR=$(IMAGE_CLUSTER_LOGGING_OPERATOR) hack/deploy.sh
+	hack/deploy.sh
 
 deploy-elasticsearch-operator:
 	hack/deploy-eo.sh
@@ -121,7 +122,7 @@ test-unit: fmt
 
 test-e2e:
 	hack/test-e2e.sh
-	
+
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec
 	gosec -severity medium --confidence medium -quiet ./...

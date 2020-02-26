@@ -64,9 +64,9 @@ spec:
                     description: The log source type
                     type: string
                     enum:
-                      - logs.app
-                      - logs.infra
-                      - logs.audit
+                      - logs-app
+                      - logs-infra
+                      - logs-audit
               required:
               - name
               - source

@@ -4,7 +4,6 @@ COPY . .
 RUN make
 
 FROM centos:centos7
-ARG CSV=4.4
 RUN INSTALL_PKGS=" \
       openssl \
       " && \
@@ -17,7 +16,7 @@ COPY --from=builder _output/bin/cluster-logging-operator /usr/bin/
 COPY scripts/* /usr/bin/scripts/
 RUN mkdir -p /usr/share/logging/
 COPY files/ /usr/share/logging/
-COPY manifests/$CSV /manifests/$CSV
+COPY manifests/4* /manifests/
 COPY manifests/cluster-logging.package.yaml /manifests/
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin

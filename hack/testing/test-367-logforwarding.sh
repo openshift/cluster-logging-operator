@@ -2,9 +2,6 @@
 # Jira LOG-367 - Log forwarding
 
 set -e
-if [ -n "${DEBUG:-}" ]; then
-    set -x
-fi
 
 source "$(dirname $0)/../common"
 

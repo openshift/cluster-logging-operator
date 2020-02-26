@@ -4,9 +4,6 @@
 # that begets the operands that make up logging.
 
 set -e
-if [ "${DEBUG:-}" = "true" ]; then
-	set -x
-fi
 
 repo_dir="$( cd "$(dirname "$0")/../.." ; pwd -P )"
 source "$repo_dir/hack/testing/utils"

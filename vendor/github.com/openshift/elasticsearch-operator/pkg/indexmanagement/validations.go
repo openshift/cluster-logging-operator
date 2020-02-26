@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	reTimeUnit = regexp.MustCompile("^\\d+[yMwdhHms]$")
+	reTimeUnit = regexp.MustCompile("^(?P<number>\\d+)(?P<unit>[yMwdhHms])$")
 )
 
 const (

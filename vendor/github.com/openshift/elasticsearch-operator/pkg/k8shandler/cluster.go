@@ -17,6 +17,8 @@ import (
 var wrongConfig bool
 var nodes map[string][]NodeTypeInterface
 
+var aliasNeededMap map[string]bool
+
 func FlushNodes(clusterName, namespace string) {
 	nodes[nodeMapKey(clusterName, namespace)] = []NodeTypeInterface{}
 }
@@ -136,6 +138,20 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateElasticsearchClu
 					elasticsearchRequest.cluster.Namespace,
 					elasticsearchRequest.client,
 					int32(calculateReplicaCount(elasticsearchRequest.cluster)))
+
+				if aliasNeededMap == nil {
+					aliasNeededMap = make(map[string]bool)
+				}
+
+				if val, ok := aliasNeededMap[nodeMapKey(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace)]; !ok || val {
+					// add alias to old indices if they exist and don't have one
+					// this should be removed after one release...
+					successful := elasticsearchRequest.AddAliasForOldIndices()
+
+					if successful {
+						aliasNeededMap[nodeMapKey(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace)] = false
+					}
+				}
 			}
 		}
 	}

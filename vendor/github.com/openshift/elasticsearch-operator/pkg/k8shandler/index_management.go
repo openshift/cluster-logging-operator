@@ -26,10 +26,10 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateIndexManagement(
 		return nil
 	}
 	spec := indexmanagement.VerifyAndNormalize(cluster)
-	//TODO find crons with no matching mapping and remove them
-	elasticsearchRequest.cullIndexManagement(spec.Mappings)
+	policies := spec.PolicyMap()
+	elasticsearchRequest.cullIndexManagement(spec.Mappings, policies)
 	for _, mapping := range spec.Mappings {
-		logger.Debugf("reconciling index manageme	nt for mapping: %s", mapping.Name)
+		logger.Debugf("reconciling index management for mapping: %s", mapping.Name)
 		//create or update template
 		if err := elasticsearchRequest.createOrUpdateIndexTemplate(mapping); err != nil {
 			logger.Errorf("Error creating index template for mapping %s: %v", mapping.Name, err)
@@ -41,10 +41,29 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateIndexManagement(
 			return err
 		}
 	}
+	if err := indexmanagement.ReconcileCurationConfigmap(elasticsearchRequest.client, elasticsearchRequest.cluster); err != nil {
+		return err
+	}
+	primaryShards := getDataCount(elasticsearchRequest.cluster)
+	for _, mapping := range spec.Mappings {
+		policy := policies[mapping.PolicyRef]
+		if err := indexmanagement.ReconcileRolloverCronjob(elasticsearchRequest.client, elasticsearchRequest.cluster, policy, mapping, primaryShards); err != nil {
+			logger.Errorf("There was an error reconciling the rollover cronjob for policy %q: %v", policy.Name, err)
+			return err
+		}
+		if err := indexmanagement.ReconcileCurationCronjob(elasticsearchRequest.client, elasticsearchRequest.cluster, policy, mapping, primaryShards); err != nil {
+			logger.Errorf("There was an error reconciling the curation cronjob for policy %q: %v", policy.Name, err)
+			return err
+		}
+	}
 
 	return nil
 }
-func (elasticsearchRequest *ElasticsearchRequest) cullIndexManagement(mappings []logging.IndexManagementPolicyMappingSpec) {
+
+func (elasticsearchRequest *ElasticsearchRequest) cullIndexManagement(mappings []logging.IndexManagementPolicyMappingSpec, policies logging.PolicyMap) {
+	if err := indexmanagement.RemoveCronJobsForMappings(elasticsearchRequest.client, elasticsearchRequest.cluster, mappings, policies); err != nil {
+		logger.Errorf("Unable to cull cronjobs: %v", err)
+	}
 	mappingNames := sets.NewString()
 	for _, mapping := range mappings {
 		mappingNames.Insert(formatTemplateName(mapping.Name))
@@ -65,7 +84,7 @@ func (elasticsearchRequest *ElasticsearchRequest) cullIndexManagement(mappings [
 	}
 }
 func (elasticsearchRequest *ElasticsearchRequest) initializeIndexIfNeeded(mapping logging.IndexManagementPolicyMappingSpec) error {
-	pattern := fmt.Sprintf("%s-write", mapping.Name)
+	pattern := formatWriteAlias(mapping)
 	indices, err := elasticsearchRequest.ListIndicesForAlias(pattern)
 	if err != nil {
 		return err
@@ -87,6 +106,10 @@ func (elasticsearchRequest *ElasticsearchRequest) initializeIndexIfNeeded(mappin
 
 func formatTemplateName(name string) string {
 	return fmt.Sprintf("%s-%s", ocpTemplatePrefix, name)
+}
+
+func formatWriteAlias(mapping logging.IndexManagementPolicyMappingSpec) string {
+	return fmt.Sprintf("%s-write", mapping.Name)
 }
 
 func (elasticsearchRequest *ElasticsearchRequest) createOrUpdateIndexTemplate(mapping logging.IndexManagementPolicyMappingSpec) error {

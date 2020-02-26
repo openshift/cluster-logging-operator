@@ -1,6 +1,9 @@
 #!/bin/bash
 
-set -euxo pipefail
+if [ "${DEBUG:-}" = "true" ]; then
+  set -x
+fi
+set -euo pipefail
 
 if [ "${REMOTE_REGISTRY:-true}" = false ] ; then
     exit 0

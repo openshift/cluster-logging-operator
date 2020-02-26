@@ -1,16 +1,21 @@
 #!/bin/bash
 source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/utils"
 assert_resources_exist(){
-	# verify deployments -- kibana, curator
-	try_until_success "oc -n $NAMESPACE get deployment kibana" ${TIMEOUT_MIN}	
+    # verify deployments -- kibana, curator
+    try_until_success "oc -n $NAMESPACE get deployment kibana" "${TIMEOUT_MIN}"
 
-	# verify cron
-	try_until_success "oc -n $NAMESPACE get cronjob curator" ${TIMEOUT_MIN}
+    # verify cron
+    try_until_success "oc -n $NAMESPACE get cronjob curator" "${TIMEOUT_MIN}"
 
-	# verify DS
-	try_until_success "oc -n $NAMESPACE get ds fluentd" ${TIMEOUT_MIN}
+    # verify DS
+    try_until_success "oc -n $NAMESPACE get ds fluentd" "${TIMEOUT_MIN}"
 
-	# verify ER
-	try_until_success "oc -n $NAMESPACE get elasticsearch elasticsearch" ${TIMEOUT_MIN}
+    # verify ER
+    try_until_success "oc -n $NAMESPACE get elasticsearch elasticsearch" "${TIMEOUT_MIN}"
 
+}
+
+assert_kibana_shared_config_exist() {
+    # verify kibana shared config map
+    try_until_success "oc -n $MANAGED_CONFIG_NAMESPACE get configmap logging-shared-config" "${TIMEOUT_MIN}"
 }

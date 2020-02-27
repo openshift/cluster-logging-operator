@@ -1,6 +1,9 @@
 #!/bin/bash
 
-set -euxo pipefail
+if [ "${DEBUG:-}" = "true" ]; then
+  set -x
+fi
+set -euo pipefail
 
 oc delete ns $NAMESPACE --force --grace-period=1 ||:
 oc delete -n openshift is origin-elasticsearch-operator || :

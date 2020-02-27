@@ -24,6 +24,21 @@ type Elasticsearch struct {
 	Status ElasticsearchStatus `json:"status,omitempty"`
 }
 
+//AddOwnerRefTo appends the Elasticsearch object as an OwnerReference to the passed object
+func (es *Elasticsearch) AddOwnerRefTo(o metav1.Object) {
+	trueVar := true
+	ref := metav1.OwnerReference{
+		APIVersion: SchemeGroupVersion.String(),
+		Kind:       "Elasticsearch",
+		Name:       es.Name,
+		UID:        es.UID,
+		Controller: &trueVar,
+	}
+	if (metav1.OwnerReference{}) != ref {
+		o.SetOwnerReferences(append(o.GetOwnerReferences(), ref))
+	}
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ElasticsearchList contains a list of Elasticsearch

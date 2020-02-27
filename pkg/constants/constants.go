@@ -10,6 +10,7 @@ const (
 	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
 	TrustedCABundleHashName    = "logging.openshift.io/hash"
+	SecretHashPrefix           = "logging.openshift.io/"
 	FluentdTrustedCAName       = "fluentd-trusted-ca-bundle"
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	// internal elasticsearch FQDN to prevent to connect to the global proxy

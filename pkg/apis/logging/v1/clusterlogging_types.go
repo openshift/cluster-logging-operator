@@ -123,11 +123,11 @@ type VisualizationStatus struct {
 }
 
 type KibanaStatus struct {
-	Replicas    int32                         `json:"replicas"`
-	Deployment  string                        `json:"deployment"`
-	ReplicaSets []string                      `json:"replicaSets"`
-	Pods        PodStateMap                   `json:"pods"`
-	Conditions  map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
+	Replicas    int32                        `json:"replicas"`
+	Deployment  string                       `json:"deployment"`
+	ReplicaSets []string                     `json:"replicaSets"`
+	Pods        PodStateMap                  `json:"pods"`
+	Conditions  map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type LogStoreStatus struct {
@@ -135,17 +135,17 @@ type LogStoreStatus struct {
 }
 
 type ElasticsearchStatus struct {
-	ClusterName            string                                      `json:"clusterName"`
-	NodeCount              int32                                       `json:"nodeCount"`
-	ReplicaSets            []string                                    `json:"replicaSets,omitempty"`
-	Deployments            []string                                    `json:"deployments,omitempty"`
-	StatefulSets           []string                                    `json:"statefulSets,omitempty"`
-	ClusterHealth          string                                      `json:"clusterHealth,omitempty"`
-	Cluster                elasticsearch.ClusterHealth                 `json:"cluster"`
-	Pods                   map[ElasticsearchRoleType]PodStateMap       `json:"pods"`
-	ShardAllocationEnabled elasticsearch.ShardAllocationState          `json:"shardAllocationEnabled"`
-	ClusterConditions      []elasticsearch.ClusterCondition            `json:"clusterConditions,omitempty"`
-	NodeConditions         map[string][]elasticsearch.ClusterCondition `json:"nodeConditions,omitempty"`
+	ClusterName            string                                    `json:"clusterName"`
+	NodeCount              int32                                     `json:"nodeCount"`
+	ReplicaSets            []string                                  `json:"replicaSets,omitempty"`
+	Deployments            []string                                  `json:"deployments,omitempty"`
+	StatefulSets           []string                                  `json:"statefulSets,omitempty"`
+	ClusterHealth          string                                    `json:"clusterHealth,omitempty"`
+	Cluster                elasticsearch.ClusterHealth               `json:"cluster"`
+	Pods                   map[ElasticsearchRoleType]PodStateMap     `json:"pods"`
+	ShardAllocationEnabled elasticsearch.ShardAllocationState        `json:"shardAllocationEnabled"`
+	ClusterConditions      ElasticsearchClusterConditions            `json:"clusterConditions,omitempty"`
+	NodeConditions         map[string]ElasticsearchClusterConditions `json:"nodeConditions,omitempty"`
 }
 
 type CollectionStatus struct {
@@ -160,17 +160,17 @@ type EventCollectionStatus struct {
 }
 
 type FluentdCollectorStatus struct {
-	DaemonSet  string                        `json:"daemonSet"`
-	Nodes      map[string]string             `json:"nodes"`
-	Pods       PodStateMap                   `json:"pods"`
-	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
+	DaemonSet  string                       `json:"daemonSet"`
+	Nodes      map[string]string            `json:"nodes"`
+	Pods       PodStateMap                  `json:"pods"`
+	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type FluentdNormalizerStatus struct {
-	Replicas    int32                         `json:"replicas"`
-	ReplicaSets []string                      `json:"replicaSets"`
-	Pods        PodStateMap                   `json:"pods"`
-	Conditions  map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
+	Replicas    int32                        `json:"replicas"`
+	ReplicaSets []string                     `json:"replicaSets"`
+	Pods        PodStateMap                  `json:"pods"`
+	Conditions  map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type NormalizerStatus struct {
@@ -182,10 +182,10 @@ type CurationStatus struct {
 }
 
 type CuratorStatus struct {
-	CronJob    string                        `json:"cronJobs"`
-	Schedule   string                        `json:"schedules"`
-	Suspended  bool                          `json:"suspended"`
-	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
+	CronJob    string                       `json:"cronJobs"`
+	Schedule   string                       `json:"schedules"`
+	Suspended  bool                         `json:"suspended"`
+	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type PodStateMap map[PodStateType][]string
@@ -267,6 +267,10 @@ const (
 	Unschedulable       ClusterConditionType = "Unschedulable"
 	NodeStorage         ClusterConditionType = "NodeStorage"
 )
+
+// `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
+type ClusterConditions []ClusterCondition
+type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

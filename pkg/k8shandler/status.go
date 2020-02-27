@@ -142,7 +142,7 @@ func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging
 	if len(esList.Items) != 0 {
 		for _, cluster := range esList.Items {
 
-			nodeConditions := make(map[string][]elasticsearch.ClusterCondition)
+			nodeConditions := make(map[string]logging.ElasticsearchClusterConditions)
 
 			nodeStatus := logging.ElasticsearchStatus{
 				ClusterName:            cluster.Name,
@@ -235,10 +235,10 @@ func isPodReady(pod v1.Pod) bool {
 	return true
 }
 
-func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) (map[string][]logging.ClusterCondition, error) {
+func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) (map[string]logging.ClusterConditions, error) {
 	// Get all pods based on status.Nodes[] and check their conditions
 	// get pod with label 'node-name=node.getName()'
-	podConditions := make(map[string][]logging.ClusterCondition)
+	podConditions := make(map[string]logging.ClusterConditions)
 
 	nodePodList := &core.PodList{
 		TypeMeta: metav1.TypeMeta{

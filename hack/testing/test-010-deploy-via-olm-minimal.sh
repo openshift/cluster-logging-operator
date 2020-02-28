@@ -5,9 +5,8 @@
 
 set -e
 
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/init.sh"
-source "$(dirname "${BASH_SOURCE[0]}")/assertions"
-source "$(dirname "${BASH_SOURCE[0]}")/utils"
+source "$(dirname "${BASH_SOURCE[0]}" )/../lib/init.sh"
+source "$(dirname $0)/assertions"
 
 os::test::junit::declare_suite_start "${BASH_SOURCE[0]}"
 
@@ -27,8 +26,6 @@ cleanup(){
   oc delete ns ${NAMESPACE} --wait=true --ignore-not-found
   oc delete crd elasticsearches.logging.openshift.io --wait=false --ignore-not-found
   os::cmd::try_until_failure "oc get project ${NAMESPACE}" "$((1 * $minute))"
-
-  cleanup_olm_catalog_unsupported_resources
   
   os::cleanup::all "${return_code}"
   
@@ -51,8 +48,6 @@ oc create ns ${NAMESPACE} || :
 eo_version=$(basename $(find  ${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests -type d | sort -r | head -n 1))
 os::cmd::expect_success "oc create -f ${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests/${eo_version}/elasticsearches.crd.yaml"
 
-# Create static cluster roles and rolebindings
-deploy_olm_catalog_unsupported_resources
 
 os::log::info "Deploying operator from ${manifest}"
 NAMESPACE=${NAMESPACE} \
@@ -70,15 +65,10 @@ fi
 
 TIMEOUT_MIN=$((2 * $minute))
 
-# verify metrics rbac
-# extra resources not support for ConfigMap based catalogs for now.
-os::cmd::expect_success "oc get clusterrole clusterlogging-collector-metrics"
-os::cmd::expect_success "oc get clusterrolebinding clusterlogging-collector-metrics"
-
-# verify shared config rbac
-# extra resources not support for ConfigMap based catalogs for now.
-os::cmd::expect_success "oc -n ${MANAGED_CONFIG_NAMESPACE} get role clusterlogging-shared-config"
-os::cmd::expect_success "oc -n ${MANAGED_CONFIG_NAMESPACE} get rolebinding clusterlogging-shared-config"
+##verify metrics rbac
+# extra resources not support for ConfigMap based catelogs for now.
+#os::cmd::expect_success "oc get clusterrole clusterlogging-collector-metrics"
+#os::cmd::expect_success "oc get clusterrolebinding clusterlogging-collector-metrics"
 
 # wait for operator to be ready
 os::cmd::try_until_text "oc -n $NAMESPACE get deployment cluster-logging-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
@@ -88,6 +78,3 @@ os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
 
 # assert deployment
 assert_resources_exist
-
-# assert kibana shared config
-assert_kibana_shared_config_exist

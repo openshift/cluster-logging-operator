@@ -1,0 +1,221 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: clusterlogforwarders.logging.openshift.io
+spec:
+  group: logging.openshift.io
+  names:
+    kind: ClusterLogForwarder
+    listKind: ClusterLogForwarderList
+    plural: clusterlogforwarders
+    singular: clusterlogforwarder
+  scope: cluster
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: ClusterLogForwarder is the schema for the `clusterlogforwarder`
+        API.
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
+          properties:
+            outputs:
+              description: Outputs are named destinations for log messages.
+              items:
+                description: Output defines a destination for log messages.
+                properties:
+                  insecure:
+                    description: Insecure must be true for intentionally insecure
+                      outputs. Has no function other than a marker to help avoid configuration
+                      mistakes.
+                    type: boolean
+                  name:
+                    description: Name used to refer to the output from a `pipeline`.
+                    type: string
+                  secretRef:
+                    description: "SecretRef refers to a `secret` object for secure
+                      communication. \n Client-authenticated TLS is enabled if the
+                      secret contains keys `tls.crt`, `tls.key` and `ca.crt`. Output
+                      types with password authentication will use keys `password`
+                      and `username`, not the exposed 'username@password' part of
+                      the `url`. \n For a `ClusterLogForwarder`, `secretRef.namespace`
+                      defaults to the `cluster-logging` namespace where secrets are
+                      normally stored."
+                    properties:
+                      name:
+                        description: Name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: Namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                  syslog:
+                    description: Syslog optional extra syslog-specific properties.
+                    properties:
+                      facility:
+                        description: "Facility to set on outgoing syslog records.
+                          \n The string value may contain an integer or one of these
+                          names:     kernel user mail daemon auth syslog lpr news
+                          \    uucp cron authpriv ftp ntp security console cron     local0
+                          local1 local2 local3 local4 local5 local6 local7"
+                        type: string
+                      payloadKey:
+                        description: PayloadKey specifies record field to use as payload.
+                        type: string
+                      severity:
+                        description: "Severity to set on outgoing syslog records.
+                          \n The string value may contain an integer or one of these
+                          names:     emergency alert critical error warning notice
+                          informational debug"
+                        type: string
+                      tagKey:
+                        description: TagKey specifies a record field  to  use as tag.
+                        type: string
+                      trimPrefix:
+                        description: TrimPrefix is a prefix to trim from the tag.
+                        type: string
+                    type: object
+                  type:
+                    description: Type of output plugin, for example 'syslog'
+                    type: string
+                  url:
+                    description: "URL to send log messages to. \n Must be an absolute
+                      URL, with a scheme. Valid URL schemes depend on `type`. Special
+                      schemes 'tcp', 'udp' and 'tls' are used for output types that
+                      don't define their own URL scheme.  Example: \n     { type:
+                      syslog, url: tls://syslog.example.com:1234 } \n TLS with server
+                      authentication is enabled by the URL scheme, for example 'tls'
+                      or 'https'.  See `secretRef` for TLS client authentication."
+                    type: string
+                required:
+                - name
+                - type
+                - url
+                type: object
+              type: array
+            pipelines:
+              description: Pipelines select log messages to send to outputs.
+              items:
+                properties:
+                  inputRefs:
+                    description: InputRefs lists the names of inputs to this pipeline.
+                      By default, all available log streams are forwarded.
+                    items:
+                      enum:
+                      - Application
+                      - Infrastructure
+                      - Audit
+                      type: string
+                    type: array
+                  outputRefs:
+                    description: OutputNames lists the names of outputs from this
+                      pipeline.
+                    items:
+                      type: string
+                    type: array
+                required:
+                - outputRefs
+                type: object
+              type: array
+          type: object
+        status:
+          properties:
+            inputs:
+              items:
+                properties:
+                  conditions:
+                    items:
+                      properties:
+                        lastUpdated:
+                          format: date-time
+                          type: string
+                        message:
+                          type: string
+                        reason:
+                          type: string
+                        status:
+                          type: string
+                        type:
+                          type: string
+                      type: object
+                    type: array
+                  lastUpdated:
+                    format: date-time
+                    type: string
+                  message:
+                    type: string
+                  name:
+                    description: Name of the sub-object corresponding to for this
+                      status
+                    type: string
+                  reason:
+                    type: string
+                  state:
+                    type: string
+                type: object
+              type: array
+            lastUpdated:
+              format: date-time
+              type: string
+            message:
+              type: string
+            outputs:
+              items:
+                properties:
+                  conditions:
+                    items:
+                      properties:
+                        lastUpdated:
+                          format: date-time
+                          type: string
+                        message:
+                          type: string
+                        reason:
+                          type: string
+                        status:
+                          type: string
+                        type:
+                          type: string
+                      type: object
+                    type: array
+                  lastUpdated:
+                    format: date-time
+                    type: string
+                  message:
+                    type: string
+                  name:
+                    description: Name of the sub-object corresponding to for this
+                      status
+                    type: string
+                  reason:
+                    type: string
+                  state:
+                    type: string
+                type: object
+              type: array
+            reason:
+              type: string
+            state:
+              type: string
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true

@@ -27,9 +27,6 @@ cleanup() {
 		try_until_failure "oc get ${item}" "$((1 * $minute))"
 		done
 	fi
-
-    cleanup_olm_catalog_unsupported_resources
-
     exit $return_code
 }
 trap "cleanup" EXIT

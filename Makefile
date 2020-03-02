@@ -20,7 +20,6 @@ export OCP_VERSION?=4.4
 IMAGE_CLUSTER_LOGGING_OPERATOR?=registry.svc.ci.openshift.org/origin/$(VERSION):cluster-logging-operator
 export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
-export MANAGED_CONFIG_NAMESPACE?=openshift-config-managed
 export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest

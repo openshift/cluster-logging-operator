@@ -73,7 +73,5 @@ for dir in $(ls -d $TEST_DIR); do
     oc delete $ns --ignore-not-found --force --grace-period=0||:
     try_until_failure "oc get $ns" "$((1 * $minute))"
   done
-
-  cleanup_olm_catalog_unsupported_resources
 done
 exit $failed

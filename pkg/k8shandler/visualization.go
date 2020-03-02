@@ -29,12 +29,6 @@ const (
 	// The following strings are turned into JavaScript RegExps. Online tool to test them: https://regex101.com/
 	nodesAndContainersNamespaceFilter = "^(openshift-.*|kube-.*|openshift$|kube$|default$)"
 	appsNamespaceFilter               = "^((?!" + nodesAndContainersNamespaceFilter + ").)*$" // ^((?!^(openshift-.*|kube-.*|openshift$|kube$|default$)).)*$
-
-	loggingSharedConfigMapNamePre44x     = "sharing-config"
-	loggingSharedConfigRolePre44x        = "sharing-config-reader"
-	loggingSharedConfigRoleBindingPre44x = "openshift-logging-sharing-config-reader-binding"
-	loggingSharedConfigMapName           = "logging-shared-config"
-	loggingSharedConfigNs                = "openshift-config-managed"
 )
 
 var (
@@ -207,11 +201,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 			return
 		}
 
-		if err = clusterRequest.RemoveConfigMap(loggingSharedConfigMapNamePre44x); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveSharedConfigMap(loggingSharedConfigMapName, loggingSharedConfigNs); err != nil {
+		if err = clusterRequest.RemoveConfigMap("sharing-config"); err != nil {
 			return
 		}
 
@@ -453,42 +443,56 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaRoute() error {
 		}
 	}
 
-	if err := clusterRequest.createOrUpdateKibanaSharedConfigMap(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSharedConfigMap() error {
-	cluster := clusterRequest.cluster
-
 	kibanaURL, err := clusterRequest.GetRouteURL("kibana")
 	if err != nil {
 		return err
 	}
 
-	sharedConfig := createSharedConfig(loggingSharedConfigNs, kibanaURL, kibanaURL)
+	sharedConfig := createSharedConfig(cluster.Namespace, kibanaURL, kibanaURL)
 	utils.AddOwnerRefToObject(sharedConfig, utils.AsOwner(cluster))
 
-	err = clusterRequest.CreateOrUpdateConfigMap(sharedConfig)
+	err = clusterRequest.Create(sharedConfig)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Kibana route shared config: %v", err)
 	}
 
-	oldSharedConfig := NewConfigMap(loggingSharedConfigMapNamePre44x, cluster.GetNamespace(), map[string]string{})
-	if err = clusterRequest.Delete(oldSharedConfig); err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure delete old Kibana route shared config for %q: %v", cluster.Name, err)
+	sharedRole := NewRole(
+		"sharing-config-reader",
+		cluster.Namespace,
+		NewPolicyRules(
+			NewPolicyRule(
+				[]string{""},
+				[]string{"configmaps"},
+				[]string{"sharing-config"},
+				[]string{"get"},
+			),
+		),
+	)
+
+	utils.AddOwnerRefToObject(sharedRole, utils.AsOwner(clusterRequest.cluster))
+
+	err = clusterRequest.Create(sharedRole)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating Kibana route shared config role for %q: %v", cluster.Name, err)
 	}
 
-	oldSharedRole := NewRole(loggingSharedConfigRolePre44x, cluster.GetNamespace(), nil)
-	if err = clusterRequest.Delete(oldSharedRole); err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting old Kibana shared config role for %q: %v", cluster.Name, err)
-	}
+	sharedRoleBinding := NewRoleBinding(
+		"openshift-logging-sharing-config-reader-binding",
+		cluster.Namespace,
+		"sharing-config-reader",
+		NewSubjects(
+			NewSubject(
+				"Group",
+				"system:authenticated",
+			),
+		),
+	)
 
-	oldSharedRoleBinding := NewRoleBinding(loggingSharedConfigRoleBindingPre44x, cluster.GetNamespace(), loggingSharedConfigRolePre44x, nil)
-	if err = clusterRequest.Delete(oldSharedRoleBinding); err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting old Kibana shared config role binding for %q: %v", cluster.Name, err)
+	utils.AddOwnerRefToObject(sharedRoleBinding, utils.AsOwner(clusterRequest.cluster))
+
+	err = clusterRequest.Create(sharedRoleBinding)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure creating Kibana route shared config role binding for %q: %v", cluster.Name, err)
 	}
 
 	return nil
@@ -807,13 +811,13 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 	return kibanaPodSpec
 }
 
-func createSharedConfig(namespace, kibanaAppPublicURL, kibanaInfraAppPublicURL string) *v1.ConfigMap {
+func createSharedConfig(namespace, kibanaAppURL, kibanaInfraURL string) *v1.ConfigMap {
 	return NewConfigMap(
-		loggingSharedConfigMapName,
+		"sharing-config",
 		namespace,
 		map[string]string{
-			"kibanaAppPublicURL":      kibanaAppPublicURL,
-			"kibanaInfraAppPublicURL": kibanaInfraAppPublicURL,
+			"kibanaAppURL":   kibanaAppURL,
+			"kibanaInfraURL": kibanaInfraURL,
 		},
 	)
 }

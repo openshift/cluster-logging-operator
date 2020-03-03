@@ -12,8 +12,10 @@ var templateRegistry = []string{
 	sourceToPipelineCopyTemplate,
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
+	outputLabelConfNoretryTemplate,
 	storeElasticsearchTemplate,
 	forwardTemplate,
+	storeSyslogTemplate,
 }
 
 const fluentConfTemplate = `{{- define "fluentConf" }}
@@ -484,6 +486,15 @@ const outputLabelConfNocopyTemplate = `{{- define "outputLabelConfNoCopy" }}
 </label>
 {{- end}}`
 
+const outputLabelConfNoretryTemplate = `{{- define "outputLabelConfNoRetry" }}
+<label {{.LabelName}}>
+	<match **>
+		@type copy
+{{include .StoreTemplate . "" | indent 4}}
+	</match>
+</label>
+{{- end}}`
+
 const forwardTemplate = `{{- define "forward" }}
 	# https://docs.fluentd.org/v1.0/articles/in_forward
 	@type forward
@@ -571,5 +582,17 @@ const storeElasticsearchTemplate = `{{- define "storeElasticsearch" }}
 		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
 		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 	</buffer>
+</store>
+{{- end}}`
+
+const storeSyslogTemplate = `{{- define "storeSyslog" }}
+<store>
+	@type {{.SyslogPlugin}}
+	@id {{.StoreID}}
+	remote_syslog {{.Host}}
+	port {{.Port}}
+	hostname ${hostname}
+	facility user
+	severity debug
 </store>
 {{- end}}`

@@ -12,8 +12,10 @@ var templateRegistry = []string{
 	sourceToPipelineCopyTemplate,
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
+	outputLabelConfNoretryTemplate,
 	storeElasticsearchTemplate,
 	forwardTemplate,
+	storeSyslogTemplate,
 }
 
 const fluentConfTemplate = `{{- define "fluentConf" }}
@@ -193,6 +195,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 	</filter>
 	<filter **>
 		@type viaq_data_model
+		elasticsearch_index_prefix_field 'viaq_index_name'
 		default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
 		extra_keep_fields "#{ENV['CDM_EXTRA_KEEP_FIELDS'] || ''}"
 		keep_empty_fields "#{ENV['CDM_KEEP_EMPTY_FIELDS'] || 'message'}"
@@ -236,17 +239,20 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 		<elasticsearch_index_name>
 			enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
 			tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
-			name_type operations_full
+			name_type static
+			static_index_name infra-write
 		</elasticsearch_index_name>
 		<elasticsearch_index_name>
 			enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
 			tag "linux-audit.log** k8s-audit.log** openshift-audit.log**"
-			name_type audit_full
+			name_type static
+			static_index_name audit-infra-write
 		</elasticsearch_index_name>
 		<elasticsearch_index_name>
 			enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
 			tag "**"
-			name_type project_full
+			name_type static
+			static_index_name app-write
 		</elasticsearch_index_name>
 	</filter>
 	<filter **>
@@ -481,6 +487,15 @@ const outputLabelConfNocopyTemplate = `{{- define "outputLabelConfNoCopy" }}
 </label>
 {{- end}}`
 
+const outputLabelConfNoretryTemplate = `{{- define "outputLabelConfNoRetry" }}
+<label {{.LabelName}}>
+	<match **>
+		@type copy
+{{include .StoreTemplate . "" | indent 4}}
+	</match>
+</label>
+{{- end}}`
+
 const forwardTemplate = `{{- define "forward" }}
 	# https://docs.fluentd.org/v1.0/articles/in_forward
 	@type forward
@@ -543,7 +558,7 @@ const storeElasticsearchTemplate = `{{- define "storeElasticsearch" }}
 	client_cert '{{ .SecretPath "tls.crt"}}'
 	ca_file '{{ .SecretPath "ca-bundle.crt"}}'
 	{{ end -}}
-	type_name com.redhat.viaq.common
+	type_name _doc
 	{{if .Hints.Has "include_retry_tag" -}}
 	retry_tag {{.RetryTag}}
 	{{end -}}
@@ -568,5 +583,17 @@ const storeElasticsearchTemplate = `{{- define "storeElasticsearch" }}
 		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
 		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 	</buffer>
+</store>
+{{- end}}`
+
+const storeSyslogTemplate = `{{- define "storeSyslog" }}
+<store>
+	@type {{.SyslogPlugin}}
+	@id {{.StoreID}}
+	remote_syslog {{.Host}}
+	port {{.Port}}
+	hostname ${hostname}
+	facility user
+	severity debug
 </store>
 {{- end}}`

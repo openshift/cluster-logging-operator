@@ -4,9 +4,6 @@
 # that begets the operands that make up logging.
 
 set -e
-if [ "${DEBUG:-}" = "true" ]; then
-	set -x
-fi
 
 repo_dir="$( cd "$(dirname "$0")/../.." ; pwd -P )"
 source "$repo_dir/hack/testing/utils"
@@ -57,6 +54,7 @@ cleanup(){
 
   cleanup_olm_catalog_unsupported_resources
 
+  set -e
   exit ${return_code}
 }
 trap cleanup exit
@@ -93,7 +91,6 @@ assert_resources_exist
 oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.before_update 2>&1
 
 deploy_config_map_catalog_source $NAMESPACE ${repo_dir}/manifests "${IMAGE_CLUSTER_LOGGING_OPERATOR}"
-deploy_olm_catalog_unsupported_resources
 
 # patch subscription
 payload="{\"op\":\"replace\",\"path\":\"/spec/source\",\"value\":\"cluster-logging\"}"
@@ -107,8 +104,4 @@ try_until_text "oc -n openshift-logging get deployment cluster-logging-operator 
 # verify operator is ready
 try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
-# assert deployment
 assert_resources_exist
-
-# assert kibana shared config
-assert_kibana_shared_config_exist

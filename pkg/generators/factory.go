@@ -13,13 +13,7 @@ type Generator struct {
 
 //New creates an instance of a template engine for a set of templates
 func New(name string, addFunctions *template.FuncMap, templates ...string) (*Generator, error) {
-	allFunctions := funcMap
-	if addFunctions != nil {
-		for name, f := range *addFunctions {
-			allFunctions[name] = f
-		}
-	}
-	tmpl := template.New(name).Funcs(funcMap)
+	tmpl := template.New(name).Funcs(*addFunctions).Funcs(funcMap)
 	var err error
 	for i, s := range templates {
 		tmpl, err = tmpl.Parse(s)

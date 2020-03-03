@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	InfraIndexPrefix          = ".operations."
-	ProjectIndexPrefix        = "project."
-	AuditIndexPrefix          = ".audit."
+	InfraIndexPrefix          = "infra-"
+	ProjectIndexPrefix        = "app-"
+	AuditIndexPrefix          = "audit-infra-"
 	elasticsearchesLoggingURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/elasticsearches"
 )
 

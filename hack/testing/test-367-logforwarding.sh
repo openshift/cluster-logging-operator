@@ -2,9 +2,6 @@
 # Jira LOG-367 - Log forwarding
 
 set -e
-if [ -n "${DEBUG:-}" ]; then
-    set -x
-fi
 
 source "$(dirname $0)/../common"
 
@@ -32,6 +29,7 @@ cleanup(){
     done
   fi
   
+  set -e
   exit ${return_code}
 }
 trap cleanup exit
@@ -73,7 +71,5 @@ for dir in $(ls -d $TEST_DIR); do
     oc delete $ns --ignore-not-found --force --grace-period=0||:
     try_until_failure "oc get $ns" "$((1 * $minute))"
   done
-
-  cleanup_olm_catalog_unsupported_resources
 done
 exit $failed

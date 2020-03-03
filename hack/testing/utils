@@ -139,19 +139,13 @@ deploy_olm_catalog_unsupported_resources(){
     local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
 
     # Create static cluster roles and rolebindings
-    try_until_success "oc create -f ${manifest}/$version/0100_clusterroles.yaml" "$(( 30 * second ))"
-    try_until_success "oc create -f ${manifest}/$version/0110_clusterrolebindings.yaml" "$(( 30 * second ))"
-
-    # Create static cluster roles and rolebindings
-    try_until_success "oc create -f ${manifest}/$version/0200_roles.yaml" "$(( 30 * second ))"
-    try_until_success "oc create -f ${manifest}/$version/0210_rolebindings.yaml" "$(( 30 * second ))"
+    oc create -f ${manifest}/$version/0100_clusterroles.yaml ||:
+    oc create -f ${manifest}/$version/0110_clusterrolebindings.yaml ||:
 }
 
 cleanup_olm_catalog_unsupported_resources(){
     oc delete clusterrolebinding clusterlogging-collector-metrics --wait=false --ignore-not-found
     oc delete clusterrole clusterlogging-collector-metrics --wait=false --ignore-not-found
-    oc -n "${MANAGED_CONFIG_NAMESPACE}" delete role clusterlogging-shared-config
-    oc -n "${MANAGED_CONFIG_NAMESPACE}" delete rolebinding clusterlogging-shared-config
 }
 
 deploy_marketplace_operator(){
@@ -292,8 +286,6 @@ function deploy_clusterlogging_operator() {
         -e "/name: FLUENTD_IMAGE/,/value:/s,value:.*\$,value: ${f_img}," \
         -e "/name: OAUTH_PROXY_IMAGE/,/value:/s,value:.*\$,value: ${op_img}," \
         -i $csv
-
-    deploy_olm_catalog_unsupported_resources
     deploy_operator "openshift-logging" "cluster-logging-operator" $manifest $IMAGE_CLUSTER_LOGGING_OPERATOR $((2 * $minute))
 }
 

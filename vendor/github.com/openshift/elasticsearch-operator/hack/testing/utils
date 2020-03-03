@@ -13,11 +13,11 @@ try_until_text() {
   local expire=$(($now + $timeout))
   while [ $now -lt $expire ]; do
       if [[ "$($cmd)" == "${expected}" ]] ; then
-      exit 0
+      return 0
     fi  
     now=$(date +%s)
   done
-  exit 1
+  return 1
 }
 
 wait_for_deployment_to_be_ready(){
@@ -26,6 +26,27 @@ wait_for_deployment_to_be_ready(){
   local timeout=$3
   try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
 }
+
+get_all_logging_pod_logs() {
+  set +e
+  local LOGGING_NS=$1
+  local outdir=${2:-$ARTIFACT_DIR}
+  local p
+  local container
+  for p in $(oc get pods -n ${LOGGING_NS} -o jsonpath='{.items[*].metadata.name}') ; do
+    oc -n ${LOGGING_NS} describe pod $p > $outdir/$p.describe 2>&1 || :
+    oc -n ${LOGGING_NS} get pod $p -o yaml > $outdir/$p.yaml 2>&1 || :
+    for container in $(oc -n ${LOGGING_NS} get po $p -o jsonpath='{.spec.containers[*].name}') ; do
+      oc logs -n ${LOGGING_NS} -c $container $p > $outdir/$p.$container.log 2>&1
+      case "$container" in
+        elasticsearch*) oc exec -n ${LOGGING_NS} -c elasticsearch $p  -- logs > $outdir/$p.$container.exec.log 2>&1 ;;
+        *) continue ;;
+      esac
+    done
+   done
+  set -e
+}
+
 
 deploy_marketplace_operator(){
   local namespace=$1
@@ -140,13 +161,15 @@ EOF
 }
 
 function deploy_elasticsearch_operator() {
+    OPERAND_IMAGES=""
     if [ -n "${IMAGE_FORMAT:-}" ] ; then
         IMAGE_ELASTICSEARCH_OPERATOR=$(sed -e "s,\${component},elasticsearch-operator," <(echo $IMAGE_FORMAT))
+        OPERAND_IMAGES+="ELASTICSEARCH_IMAGE=registry.svc.ci.openshift.org/ocp/${LOGGING_IMAGE_STREAM:-stable}:logging-elasticsearch6"
     else
         IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/origin/$VERSION:elasticsearch-operator}
     fi
     manifest=${repo_dir}/manifests
-    GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
+    OPERAND_IMAGES=$OPERAND_IMAGES GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
 }
 
 function deploy_operator() {
@@ -156,7 +179,6 @@ function deploy_operator() {
     local operatorImage=$4
     local timeout=$5
 
-
     local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
 
     KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
@@ -165,6 +187,7 @@ function deploy_operator() {
     oc create ns ${namespace} || :
     
     os::log::info "Deploying operator from ${manifest}"
+    OPERAND_IMAGES=${OPERAND_IMAGES:-""} \
     GLOBAL=${GLOBAL:-false} \
     VERSION=${version} \
     OPERATOR_IMAGE=${operatorImage} \
@@ -175,7 +198,7 @@ function deploy_operator() {
 
     if [ "$?" != "0" ] ; then
 	    os::log::error "Error deploying operator via OLM using manifest: $manifest"
-	    exit 1
+	    return 1
     fi
 
     wait_for_deployment_to_be_ready $namespace $operatorName $timeout

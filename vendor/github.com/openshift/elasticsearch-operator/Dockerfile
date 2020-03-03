@@ -4,14 +4,13 @@ COPY . .
 RUN make
 
 FROM registry.svc.ci.openshift.org/openshift/origin-v4.0:base
-ARG CSV=4.4
 
 ENV ALERTS_FILE_PATH="/etc/elasticsearch-operator/files/prometheus_alerts.yml"
 ENV RULES_FILE_PATH="/etc/elasticsearch-operator/files/prometheus_rules.yml"
 
 COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/_output/bin/elasticsearch-operator /usr/bin/
 COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/files/ /etc/elasticsearch-operator/files/
-COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/manifests/$CSV /manifests/$CSV
+COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/manifests/4.* /manifests/
 COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/manifests/elasticsearch-operator.package.yaml /manifests/
 
 WORKDIR /usr/bin

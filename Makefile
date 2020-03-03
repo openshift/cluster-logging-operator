@@ -1,9 +1,8 @@
-CURPATH=$(PWD)
-TARGET_DIR=$(CURPATH)/_output
+TARGET_DIR=$(CURDIR)/_output
 KUBECONFIG?=$(HOME)/.kube/config
 
 GOBUILD=go build
-BUILD_GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURPATH)/cmd
+BUILD_GOPATH=$(TARGET_DIR):$(TARGET_DIR)/vendor:$(CURDIR)/cmd
 
 IMAGE_BUILDER_OPTS=
 IMAGE_BUILDER?=imagebuilder
@@ -17,10 +16,9 @@ IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 export IMAGE_TAG
 MAIN_PKG=cmd/manager/main.go
 export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -type d))
-export CSV_FILE=$(CURPATH)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
+export CSV_FILE=$(CURDIR)/manifests/$(OCP_VERSION)/cluster-logging.v$(OCP_VERSION).0.clusterserviceversion.yaml
 export NAMESPACE?=openshift-logging
-export MANAGED_CONFIG_NAMESPACE?=openshift-config-managed
-export EO_CSV_FILE=$(CURPATH)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
+export EO_CSV_FILE=$(CURDIR)/vendor/github.com/openshift/elasticsearch-operator/manifests/$(OCP_VERSION)/elasticsearch-operator.v$(OCP_VERSION).0.clusterserviceversion.yaml
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
@@ -29,43 +27,30 @@ TEST_PKGS=$(shell go list ./test)
 
 TEST_OPTIONS?=
 
-OC?=oc
+# go source files, excluding generated code.
+SRC = $(shell find cmd pkg version -type f -name '*.go' -not -name zz_generated*)
 
-# These will be provided to the target
-#VERSION := 1.0.0
-#BUILD := `git rev-parse HEAD`
-
-# Use linker flags to provide version/build settings to the target
-#LDFLAGS=-ldflags "-X=main.Version=$(VERSION) -X=main.Build=$(BUILD)"
-
-# go source files, ignore vendor directory
-SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
-
-#.PHONY: all build clean install uninstall fmt simplify check run
-.PHONY: all operator-sdk imagebuilder build clean fmt simplify gendeepcopy deploy-setup deploy-image deploy deploy-example test-unit test-e2e test-sec undeploy run
+.PHONY: all imagebuilder build clean fmt simplify generate deploy-setup deploy-image deploy deploy-example test-unit test-e2e test-sec undeploy run
 
 all: build #check install
 
-operator-sdk:
-	@if ! type -p operator-sdk ; \
-	then if [ ! -d $(GOPATH)/src/github.com/operator-framework/operator-sdk ] ; \
-	  then git clone https://github.com/operator-framework/operator-sdk --branch master $(GOPATH)/src/github.com/operator-framework/operator-sdk ; \
-	  fi ; \
-	  cd $(GOPATH)/src/github.com/operator-framework/operator-sdk ; \
-	  make dep ; \
-	  make install || sudo make install || cd commands/operator-sdk && sudo go install ; \
-	fi
+# Download a known released version of operator-sdk.
+OPERATOR_SDK_RELEASE?=v0.15.2
+OPERATOR_SDK=./operator-sdk-$(OPERATOR_SDK_RELEASE)
+$(OPERATOR_SDK):
+	curl -f -L -o $@ https://github.com/operator-framework/operator-sdk/releases/download/${OPERATOR_SDK_RELEASE}/operator-sdk-${OPERATOR_SDK_RELEASE}-$(shell uname -i)-linux-gnu
+	chmod +x $(OPERATOR_SDK)
 
 imagebuilder:
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] && ! type -p imagebuilder ; \
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
 	fi
 
-build: fmt
+build: generate fmt
 	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
-	@cp -ru $(CURPATH)/pkg $(TARGET_DIR)/src/$(APP_REPO)
-	@cp -ru $(CURPATH)/vendor/* $(TARGET_DIR)/src
-	@GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
+	@cp -ru $(CURDIR)/pkg $(TARGET_DIR)/src/$(APP_REPO)
+	@cp -ru $(CURDIR)/vendor/* $(TARGET_DIR)/src
+	GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
 
 run:
 	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
@@ -78,7 +63,7 @@ run:
 	WATCH_NAMESPACE=openshift-logging \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(TARGET_DIR)/ocp-clo \
-	LOGGING_SHARE_DIR=$(CURPATH)/files \
+	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	go run ${MAIN_PKG}
 
 clean:
@@ -91,16 +76,26 @@ image: imagebuilder
 	fi
 
 lint:
-	@golangci-lint run -c golangci.yaml
+	golangci-lint run -c golangci.yaml
 
 fmt:
-	@gofmt -l -w cmd/ pkg/ version/
+	gofmt -l -w cmd/ pkg/ version/
 
 simplify:
-	@gofmt -s -l -w $(SRC)
+	gofmt -s -l -w $(SRC)
 
-gendeepcopy: operator-sdk
-	@operator-sdk generate k8s
+GEN_TIMESTAMP=.zz_generate_timestamp
+generate: $(GEN_TIMESTAMP)
+$(GEN_TIMESTAMP): $(SRC) $(OPERATOR_SDK)
+	$(OPERATOR_SDK) generate k8s
+	$(OPERATOR_SDK) generate crds
+	@touch $@
+
+# spotless does make clean and removes generated code. Don't commit without re-generating.
+spotless: clean
+	@find pkg -name 'zz_generated*' -delete -print
+	@rm -vrf deploy/crds/*.yaml
+	@rm -vf $(GEN_TIMESTAMP)
 
 deploy-image: image
 	hack/deploy-image.sh
@@ -118,10 +113,14 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-unit: fmt
-	@LOGGING_SHARE_DIR=$(CURPATH)/files go test $(TEST_OPTIONS) $(PKGS)
+	@LOGGING_SHARE_DIR=$(CURDIR)/files go test $(TEST_OPTIONS) $(PKGS)
 
 test-e2e:
 	hack/test-e2e.sh
+
+test-e2e-local: deploy-image
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	 hack/test-e2e.sh
 
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec

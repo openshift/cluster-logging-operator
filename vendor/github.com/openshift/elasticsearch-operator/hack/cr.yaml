@@ -6,10 +6,9 @@ metadata:
 spec:
   managementState: "Managed"
   nodeSpec:
-    image: quay.io/openshift/origin-logging-elasticsearch5:latest
+    image: quay.io/openshift/origin-logging-elasticsearch6:latest
     resources:
       limits:
-        cpu: 500m
         memory: 1Gi
       requests:
         cpu: 500m
@@ -22,3 +21,20 @@ spec:
     - master
     storage: {}
   redundancyPolicy: ZeroRedundancy
+  indexManagement:
+    policies:
+    - name: infra-policy
+      pollInterval: 1m
+      phases:
+        hot:
+          actions:
+            rollover:
+              maxAge:   2m
+        delete:
+          minAge: 5m
+    mappings:
+    - name:  infra
+      policyRef: infra-policy
+      aliases:
+      - infra
+      - logs.infra

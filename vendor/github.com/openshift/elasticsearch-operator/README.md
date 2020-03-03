@@ -119,7 +119,7 @@ file `$(RUN_PID)` (default `elasticsearch-operator.pid`) e.g. `kill $(cat elasti
 
 ### Image customization
 
-The operator is designed to work with `quay.io/openshift/origin-logging-elasticsearch5` image.  To use
+The operator is designed to work with `quay.io/openshift/origin-logging-elasticsearch6` image.  To use
 a different image, edit `manifests/image-references` before deployment, or edit the elasticsearch
 cr after deployment e.g. `oc edit elasticsearch elasticsearch`.
 

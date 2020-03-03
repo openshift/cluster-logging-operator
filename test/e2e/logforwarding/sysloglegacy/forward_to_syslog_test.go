@@ -37,7 +37,6 @@ var _ = Describe("LogForwarding", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(corev1.ProtocolTCP); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					const conf = `
 <store>
 	@type syslog_buffered
@@ -50,14 +49,47 @@ var _ = Describe("LogForwarding", func() {
 </store>
 					`
 					//create configmap syslog/"syslog.conf"
-					fluentdConfigMap := k8shandler.NewConfigMap(
-						"syslog",
-						syslogDeployment.Namespace,
-						map[string]string{
-							"syslog.conf": conf,
-						},
-					)
-					if _, err = e2e.KubeClient.Core().ConfigMaps(syslogDeployment.Namespace).Create(fluentdConfigMap); err != nil {
+					if err = e2e.CreateLegacySyslogConfigMap(syslogDeployment.Namespace, conf); err != nil {
+						Fail(fmt.Sprintf("Unable to create legacy syslog.conf configmap: %v", err))
+					}
+
+					components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+					cr := helpers.NewClusterLogging(components...)
+					cr.ObjectMeta.Annotations[k8shandler.ForwardingAnnotation] = "disabled"
+					if err := e2e.CreateClusterLogging(cr); err != nil {
+						Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
+					}
+					for _, component := range components {
+						if err := e2e.WaitFor(component); err != nil {
+							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
+						}
+					}
+				})
+
+				It("should send logs to the forward.Output logstore", func() {
+					Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				})
+			})
+
+			Context("and udp receiver", func() {
+
+				BeforeEach(func() {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(corev1.ProtocolUDP); err != nil {
+						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
+					}
+					const conf = `
+<store>
+	@type syslog
+	@id syslogid
+	remote_syslog syslog-receiver.openshift-logging.svc
+	port 24224
+	hostname ${hostname}
+	facility user
+	severity debug
+</store>
+					`
+					//create configmap syslog/"syslog.conf"
+					if err = e2e.CreateLegacySyslogConfigMap(syslogDeployment.Namespace, conf); err != nil {
 						Fail(fmt.Sprintf("Unable to create legacy syslog.conf configmap: %v", err))
 					}
 

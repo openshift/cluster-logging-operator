@@ -11,6 +11,7 @@ import (
 )
 
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
+var protocolSeparator = "://"
 
 type outputLabelConf struct {
 	Name            string
@@ -44,15 +45,32 @@ func (conf *outputLabelConf) Template() *template.Template {
 	return conf.TemplateContext
 }
 func (conf *outputLabelConf) Host() string {
-	return strings.Split(conf.Target.Endpoint, ":")[0]
+	endpoint := stripProtocol(conf.Target.Endpoint)
+	return strings.Split(endpoint, ":")[0]
 }
 
 func (conf *outputLabelConf) Port() string {
-	parts := strings.Split(conf.Target.Endpoint, ":")
+	endpoint := stripProtocol(conf.Target.Endpoint)
+	parts := strings.Split(endpoint, ":")
 	if len(parts) == 1 {
 		return "9200"
 	}
 	return parts[1]
+}
+
+func (conf *outputLabelConf) Protocol() string {
+	endpoint := conf.Target.Endpoint
+	if index := strings.Index(endpoint, protocolSeparator); index != -1 {
+		return endpoint[:index]
+	}
+	return ""
+}
+
+func stripProtocol(endpoint string) string {
+	if index := strings.Index(endpoint, protocolSeparator); index != -1 {
+		endpoint = endpoint[index+len(protocolSeparator):]
+	}
+	return endpoint
 }
 
 func (conf *outputLabelConf) BufferPath() string {

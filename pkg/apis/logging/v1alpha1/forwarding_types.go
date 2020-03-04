@@ -298,7 +298,7 @@ const (
 	OutputConditionTypeEndpoint OutputConditionType = "Endpoint"
 
 	//OutputConditionTypeSecret related to verifying secrets
-	OutputConditionTypeSecret OutputConditionType = "Secet"
+	OutputConditionTypeSecret OutputConditionType = "Secret"
 
 	//OutputConditionTypeName related to verifying name
 	OutputConditionTypeName OutputConditionType = "Name"

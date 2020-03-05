@@ -58,7 +58,7 @@ if [ -z "${JOURNAL_SOURCE:-}" ] ; then
 fi
 
 IPADDR4=${NODE_IPV4:-$( /usr/sbin/ip -4 addr show dev eth0 | grep inet | sed -e "s/[ \t]*inet \([0-9.]*\).*/\1/" )}
-IPADDR6=${NODE_IPV6:-$(/usr/sbin/ip -6 addr show dev eth0 | grep inet | sed -e "s/[ \t]*inet6 \([a-z0-9::]*\).*/\1/" )}
+IPADDR6=${NODE_IPV6:-$( /usr/sbin/ip -6 addr show dev eth0 | grep inet | sed -e "s/[ \t]*inet6 \([a-z0-9::]*\).*/\1/" | grep -v ^fe80 | grep -v ^::1 || echo "")}
 
 export IPADDR4 IPADDR6
 

@@ -1,0 +1,64 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: kibanas.logging.openshift.io
+spec:
+  subresources:
+    status: {}
+  group: logging.openshift.io
+  names:
+    kind: Kibana
+    listKind: KibanaList
+    plural: kibanas
+    singular: kibana
+  scope: Namespaced
+  version: v1
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          type: object
+          description: Specification of the desired behavior of the Kibana
+          properties:
+            image:
+              type: string
+              description: Kibana image
+            resources:
+              type: object
+              description: The resource requirements for Kibana
+              properties:
+                limits:
+                  type: object
+                  description: 'Limits describes the maximum amount of compute
+                    resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                requests:
+                  type: object
+                  description: 'Requests describes the minimum amount of compute
+                    resources required. If Requests is omitted for a container,
+                    it defaults to Limits if that is explicitly specified, otherwise
+                    to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+            replicas:
+              type: integer
+              description: Number of instances to deploy for a Kibana deployment
+              format: int32
+            proxySpec:
+              type: object
+              description: Specification of the Kibana Proxy component
+              properties:
+                image:
+                  type: string
+                  description: Proxy image
+                resources:
+                  type: object
+                  description: The resource requirements for Kibana
+                  properties:
+                    limits:
+                      description: 'Limits describes the maximum amount of compute
+                        resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                      type: object
+                    requests:
+                      description: 'Requests describes the minimum amount of compute
+                        resources required. If Requests is omitted for a container,
+                        it defaults to Limits if that is explicitly specified, otherwise
+                        to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                      type: object

@@ -163,30 +163,6 @@ if [ -d /var/lib/docker/containers ] ; then
     fi
 fi
 
-if [[ "${USE_REMOTE_SYSLOG:-}" = "true" ]] ; then
-    # The symlink is a workaround for https://github.com/openshift/origin-aggregated-logging/issues/604
-    found=
-    for file in /usr/share/gems/gems/fluent-plugin-remote-syslog-*/lib/fluentd/plugin/*.rb ; do
-        bname=$(basename $file)
-        if [ ! -e "/etc/fluent/plugin/$bname" -a -f "$file" ] ; then
-            ln -s $file /etc/fluent/plugin/
-            found=true
-        fi
-    done
-    if [ -z "${found:-}" ] ; then
-        # not found in rpm location - look in alternate location
-        for file in /opt/app-root/src/gems/fluent-plugin-remote-syslog*/lib/fluentd/plugin/*.rb ; do
-            bname=$(basename $file)
-            if [ ! -e "/etc/fluent/plugin/$bname" -a -f "$file" ] ; then
-                ln -s $file /etc/fluent/plugin/
-            fi
-        done
-    fi
-    if [[ $REMOTE_SYSLOG_HOST ]] ; then
-        ruby generate_syslog_config.rb
-    fi
-fi
-
 if [ "${AUDIT_CONTAINER_ENGINE:-}" = "true" ] ; then
     cp -f $CFG_DIR/input-pre-audit-log.conf $CFG_DIR/openshift
     cp -f $CFG_DIR/filter-pre-a-audit-exclude.conf $CFG_DIR/openshift

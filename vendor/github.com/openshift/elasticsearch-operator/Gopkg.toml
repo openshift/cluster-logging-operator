@@ -57,14 +57,15 @@ required = [
   name = "sigs.k8s.io/controller-runtime"
   version = "=v0.1.10"
 
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+
 [[constraint]]
   name = "github.com/operator-framework/operator-sdk"
   # The version rule is used for a specific release and the master branch for in between releases.
   # branch = "master" #osdk_branch_annotation
   version = "=v0.8.2" #osdk_version_annotation
-[[override]]
-  name = "gopkg.in/fsnotify.v1"
-  source = "https://github.com/fsnotify/fsnotify.git"
 
 [prune]
   go-tests = true
@@ -81,3 +82,7 @@ required = [
 [[constraint]]
   name = "github.com/onsi/ginkgo"
   version = "1.10.3"
+
+[[constraint]]
+  branch = "release-4.2"
+  name = "github.com/openshift/api"

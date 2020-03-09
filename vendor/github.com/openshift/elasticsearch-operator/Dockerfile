@@ -10,8 +10,8 @@ ENV RULES_FILE_PATH="/etc/elasticsearch-operator/files/prometheus_rules.yml"
 
 COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/_output/bin/elasticsearch-operator /usr/bin/
 COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/files/ /etc/elasticsearch-operator/files/
-COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/manifests/4.* /manifests/
-COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/manifests/elasticsearch-operator.package.yaml /manifests/
+COPY --from=builder /go/src/github.com/openshift/elasticsearch-operator/manifests /manifests
+RUN rm /manifests/art.yaml
 
 WORKDIR /usr/bin
 ENTRYPOINT ["elasticsearch-operator"]

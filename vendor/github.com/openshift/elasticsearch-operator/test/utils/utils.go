@@ -66,10 +66,15 @@ func WaitForNodeStatusCondition(t *testing.T, f *framework.Framework, namespace,
 		}
 
 		allMatch := true
-
 		for _, node := range elasticsearchCR.Status.Nodes {
+			t.Log("\tActual  status", node.UpgradeStatus)
+			t.Log("\tDesired status", condition)
 			if !reflect.DeepEqual(node.UpgradeStatus, condition) {
+				t.Log("\t\tDid not match")
 				allMatch = false
+			} else {
+				t.Log("\t\tMatch!")
+				break
 			}
 		}
 
@@ -101,8 +106,9 @@ func WaitForClusterStatusCondition(t *testing.T, f *framework.Framework, namespa
 		}
 
 		contained := false
-
 		for _, clusterCondition := range elasticsearchCR.Status.Conditions {
+			t.Log("\tExpected condition", condition)
+			t.Log("\tReal     condition", clusterCondition)
 			if reflect.DeepEqual(clusterCondition, condition) {
 				contained = true
 			}

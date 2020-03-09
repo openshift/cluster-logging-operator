@@ -52,6 +52,12 @@ build: generate fmt
 	@cp -ru $(CURDIR)/vendor/* $(TARGET_DIR)/src
 	GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
 
+build-fast:
+	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
+	@cp -ru $(CURDIR)/pkg $(TARGET_DIR)/src/$(APP_REPO)
+	@cp -ru $(CURDIR)/vendor/* $(TARGET_DIR)/src
+	GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
+
 run:
 	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \

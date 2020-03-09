@@ -18,7 +18,7 @@ KUBECONFIG?=$(HOME)/.kube/config
 MAIN_PKG=cmd/manager/main.go
 RUN_LOG?=elasticsearch-operator.log
 RUN_PID?=elasticsearch-operator.pid
-LOGGING_IMAGE_STREAM?=feature-es6x
+LOGGING_IMAGE_STREAM?=stable
 OPERATOR_NAMESPACE=openshift-operators-redhat
 DEPLOYMENT_NAMESPACE=openshift-logging
 REPLICAS?=0
@@ -65,6 +65,9 @@ build: fmt
 	@cp -ru $(CURPATH)/vendor/* $(TARGET_DIR)/src
 	@GOPATH=$(BUILD_GOPATH) $(GOBUILD) $(LDFLAGS) -o $(TARGET) $(MAIN_PKG)
 
+build-fast:
+	@go build -o elasticsearch-operator $(MAIN_PKG)
+
 clean:
 	@rm -rf $(TARGET_DIR)
 
@@ -108,15 +111,7 @@ deploy-example: deploy deploy-example-secret
 .PHONY: deploy-example
 
 deploy-example-secret: gen-example-certs
-	@oc -n $(DEPLOYMENT_NAMESPACE) delete secret elasticsearch ||: && \
-	oc -n $(DEPLOYMENT_NAMESPACE) create secret generic elasticsearch  \
-		--from-file=admin-key=/tmp/example-secrets/system.admin.key \
-		--from-file=admin-cert=/tmp/example-secrets/system.admin.crt \
-		--from-file=admin-ca=/tmp/example-secrets/ca.crt \
-		--from-file=/tmp/example-secrets/elasticsearch.crt \
-		--from-file=/tmp/example-secrets/logging-es.key \
-		--from-file=/tmp/example-secrets/logging-es.crt \
-		--from-file=/tmp/example-secrets/elasticsearch.key
+	hack/deploy-example-secrets.sh $(DEPLOYMENT_NAMESPACE)
 .PHONY: deploy-example-secret
 
 gen-example-certs:

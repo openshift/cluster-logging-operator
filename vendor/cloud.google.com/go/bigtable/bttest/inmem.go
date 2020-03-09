@@ -143,7 +143,15 @@ func (s *server) CreateTable(ctx context.Context, req *btapb.CreateTableRequest)
 	s.tables[tbl] = newTable(req)
 	s.mu.Unlock()
 
-	return &btapb.Table{Name: tbl}, nil
+	ct := &btapb.Table{
+		Name:           tbl,
+		ColumnFamilies: req.GetTable().GetColumnFamilies(),
+		Granularity:    req.GetTable().GetGranularity(),
+	}
+	if ct.Granularity == 0 {
+		ct.Granularity = btapb.Table_MILLIS
+	}
+	return ct, nil
 }
 
 func (s *server) CreateTableFromSnapshot(context.Context, *btapb.CreateTableFromSnapshotRequest) (*longrunning.Operation, error) {
@@ -707,6 +715,10 @@ func includeCell(f *btpb.RowFilter, fam, col string, cell cell) (bool, error) {
 		}
 		return inRangeStart() && inRangeEnd(), nil
 	case *btpb.RowFilter_TimestampRangeFilter:
+		// Server should only support millisecond precision.
+		if f.TimestampRangeFilter.StartTimestampMicros%int64(time.Millisecond/time.Microsecond) != 0 || f.TimestampRangeFilter.EndTimestampMicros%int64(time.Millisecond/time.Microsecond) != 0 {
+			return false, status.Errorf(codes.InvalidArgument, "Error in field 'timestamp_range_filter'. Maximum precision allowed in filter is millisecond.\nGot:\nStart: %v\nEnd: %v", f.TimestampRangeFilter.StartTimestampMicros, f.TimestampRangeFilter.EndTimestampMicros)
+		}
 		// Lower bound is inclusive and defaults to 0, upper bound is exclusive and defaults to infinity.
 		return cell.ts >= f.TimestampRangeFilter.StartTimestampMicros &&
 			(f.TimestampRangeFilter.EndTimestampMicros == 0 || cell.ts < f.TimestampRangeFilter.EndTimestampMicros), nil
@@ -733,7 +745,7 @@ func includeCell(f *btpb.RowFilter, fam, col string, cell cell) (bool, error) {
 }
 
 func newRegexp(pat []byte) (*binaryregexp.Regexp, error) {
-	re, err := binaryregexp.Compile("^" + string(pat) + "$") // match entire target
+	re, err := binaryregexp.Compile("^(?:" + string(pat) + ")$") // match entire target
 	if err != nil {
 		log.Printf("Bad pattern %q: %v", pat, err)
 	}

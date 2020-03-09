@@ -56,12 +56,13 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServices() error
 		return fmt.Errorf("Failure creating service %v", err)
 	}
 
+	//legacy metrics service that likely can be rolled into the single service that goes through the proxy
 	annotations["service.alpha.openshift.io/serving-cert-secret-name"] = fmt.Sprintf("%s-%s", dpl.Name, "metrics")
 	err = createOrUpdateService(
 		fmt.Sprintf("%s-%s", dpl.Name, "metrics"),
 		dpl.Namespace,
 		dpl.Name,
-		"metrics",
+		"restapi",
 		60000,
 		selectorForES("es-node-client", dpl.Name),
 		annotations,

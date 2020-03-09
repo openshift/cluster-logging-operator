@@ -1,23 +1,129 @@
 #!/bin/bash
 
+millisecond=1
+second=$(( 1000 * millisecond ))
+minute=$(( 60 * second ))
+
+function log::warning() {
+	echo "[WARNING] ${*}"
+}
+function log::info() {
+	echo "[INFO] ${*}"
+}
+function log::debug() {
+  if [[ -n "${DEBUG:-}" ]]; then
+	  echo "[DEBUG] ${*}"
+  fi
+}
+
 indent() {
   INDENT="      "
   sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
+}
+
+expect_success(){
+  local cmd=$1
+  echo "Running '$cmd'"
+  if $cmd ; then
+    return 0
+  fi  
+  return 1
+}
+expect_success_and_text(){
+  local cmd=$1
+  local expected=$2
+  log::debug "Running '$cmd'"
+  response=$($cmd)
+  log::debug "Response '${response}'" 
+  if [[ "${response}" == "${expected}" ]] ; then
+    return 0
+  fi  
+  return 1
+}
+
+try_until_failure() {
+  local cmd=$1
+  local timeout=$2
+  local interval=${3:-0.2}
+  local now=$(date +%s%3N)
+  local expire=$(($now + $timeout))
+  while [ $now -lt $expire ]; do
+    if ! $cmd ; then
+      return 0
+    fi  
+    sleep $interval
+    now=$(date +%s%3N)
+  done
+  return 1
+}
+try_until_success() {
+  local cmd=$1
+  local timeout=$2
+  local interval=${3:-0.2}
+  local now=$(date +%s%3N)
+  local expire=$(($now + $timeout))
+  while [ $now -lt $expire ]; do
+    if $cmd ; then
+      return 0
+    fi  
+    sleep $interval
+    now=$(date +%s%3N)
+  done
+  return 1
 }
 
 try_until_text() {
   local cmd=$1
   local expected=$2
   local timeout=$3
-  local now=$(date +%s)
+  local now=$(date +%s%3N)
   local expire=$(($now + $timeout))
   while [ $now -lt $expire ]; do
       if [[ "$($cmd)" == "${expected}" ]] ; then
       return 0
     fi  
-    now=$(date +%s)
+    now=$(date +%s%3N)
   done
   return 1
+}
+
+gather_logging_resources() {
+  set +e
+  local LOGGING_NS=$1
+  local outdir=${2:-$ARTIFACT_DIR}
+  oc -n ${LOGGING_NS} get configmaps -o yaml > $outdir/configmaps.yaml 2>&1 || :
+  oc -n ${LOGGING_NS} get secrets -o yaml > $outdir/secrets.yaml 2>&1 || :
+  oc -n ${LOGGING_NS} get cronjobs -o yaml > $outdir/cronjobs.yaml 2>&1 || :
+  
+  oc -n ${LOGGING_NS} get deployments -o wide > $outdir/deployments.txt 2>&1 || :
+  oc -n ${LOGGING_NS} get pods -o wide > $outdir/pods.txt 2>&1 || :
+
+  oc -n ${LOGGING_NS} extract secret/elasticsearch --to=$outdir ||:
+  oc -n ${LOGGING_NS} extract configmap/fluentd --to=$outdir ||:
+
+  get_all_logging_pod_logs $@
+  set -e
+}
+
+get_all_logging_pod_logs() {
+  set +e
+  local LOGGING_NS=$1
+  local outdir=${2:-$ARTIFACT_DIR}
+  local p
+  local container
+  oc get pods -n ${LOGGING_NS} -o wide > $outdir/pods.txt 2>&1
+  for p in $(oc get pods -n ${LOGGING_NS} -o jsonpath='{.items[*].metadata.name}') ; do
+    oc -n ${LOGGING_NS} describe pod $p > $outdir/$p.describe 2>&1 || :
+    oc -n ${LOGGING_NS} get pod $p -o yaml > $outdir/$p.yaml 2>&1 || :
+    for container in $(oc -n ${LOGGING_NS} get po $p -o jsonpath='{.spec.containers[*].name}') ; do
+      oc logs -n ${LOGGING_NS} -c $container $p > $outdir/$p.$container.log 2>&1
+      case "$container" in
+        elasticsearch*) oc exec -n ${LOGGING_NS} -c elasticsearch $p  -- logs > $outdir/$p.$container.exec.log 2>&1 ;;
+        *) continue ;;
+      esac
+    done
+  done
+  set -e
 }
 
 wait_for_deployment_to_be_ready(){
@@ -161,15 +267,23 @@ EOF
 }
 
 function deploy_elasticsearch_operator() {
-    OPERAND_IMAGES=""
-    if [ -n "${IMAGE_FORMAT:-}" ] ; then
-        IMAGE_ELASTICSEARCH_OPERATOR=$(sed -e "s,\${component},elasticsearch-operator," <(echo $IMAGE_FORMAT))
-        OPERAND_IMAGES+="ELASTICSEARCH_IMAGE=registry.svc.ci.openshift.org/ocp/${LOGGING_IMAGE_STREAM:-stable}:logging-elasticsearch6"
-    else
-        IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/origin/$VERSION:elasticsearch-operator}
-    fi
+    OPERAND_IMAGES="ELASTICSEARCH_IMAGE=$(format_image logging-elasticsearch6) ELASTICSEARCH_PROXY=$(format_image elasticsearch-proxy)"
+    IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-$(format_image elasticsearch-operator)}
     manifest=${repo_dir}/manifests
     OPERAND_IMAGES=$OPERAND_IMAGES GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
+}
+
+function format_image() {
+    local component=$1
+    if [ -n "${IMAGE_FORMAT:-}" ] ; then
+        export component; eval image="${IMAGE_FORMAT}" 
+        echo ${image}
+    else
+        local manifest=${repo_dir}/manifests
+        local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
+        local image=registry.svc.ci.openshift.org/ocp/$version:$component
+        echo ${image}
+    fi
 }
 
 function deploy_operator() {
@@ -183,10 +297,10 @@ function deploy_operator() {
 
     KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
-    os::log::info "Creating namespace: ${namespace}"
+    log::info "Creating namespace: ${namespace}"
     oc create ns ${namespace} || :
     
-    os::log::info "Deploying operator from ${manifest}"
+    log::info "Deploying operator from ${manifest}"
     OPERAND_IMAGES=${OPERAND_IMAGES:-""} \
     GLOBAL=${GLOBAL:-false} \
     VERSION=${version} \

@@ -30,6 +30,8 @@ spec:
               value: "elasticsearch-operator"
             - name: PROXY_IMAGE
               value: "quay.io/openshift/origin-oauth-proxy:v4.0.0"
+            - name: ELASTICSEARCH_PROXY
+              value: "quay.io/openshift/elasticsearch-proxy:latest"
             - name: ELASTICSEARCH_IMAGE
               value: "quay.io/openshift/origin-logging-elasticsearch6:latest"
             - name: POD_NAME

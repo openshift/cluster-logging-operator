@@ -175,7 +175,6 @@ func newElasticsearchContainer(imageName string, envVars []v1.EnvVar, resourceRe
 				Protocol:      v1.ProtocolTCP,
 			},
 			v1.ContainerPort{
-				Name:          "restapi",
 				ContainerPort: 9200,
 				Protocol:      v1.ProtocolTCP,
 			},
@@ -211,11 +210,6 @@ func newElasticsearchContainer(imageName string, envVars []v1.EnvVar, resourceRe
 }
 
 func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
-	proxyCookieSecret, err := utils.RandStringBase64(16)
-	if err != nil {
-		return v1.Container{}, err
-	}
-
 	cpuLimit, err := resource.ParseQuantity("100m")
 	if err != nil {
 		return v1.Container{}, err
@@ -232,7 +226,7 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 		ImagePullPolicy: "IfNotPresent",
 		Ports: []v1.ContainerPort{
 			v1.ContainerPort{
-				Name:          "metrics",
+				Name:          "restapi",
 				ContainerPort: 60000,
 				Protocol:      v1.ProtocolTCP,
 			},
@@ -248,18 +242,21 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 			},
 		},
 		Args: []string{
-			"--http-address=:4180",
-			"--https-address=:60000",
-			"--provider=openshift",
-			"--upstream=https://localhost:9200",
-			"--tls-cert=/etc/proxy/secrets/tls.crt",
-			"--tls-key=/etc/proxy/secrets/tls.key",
+			"--listening-address=:60000",
+			"--tls-cert=/etc/proxy/elasticsearch/logging-es.crt",
+			"--tls-key=/etc/proxy/elasticsearch/logging-es.key",
+			"--tls-client-ca=/etc/proxy/elasticsearch/admin-ca",
 			"--upstream-ca=/etc/proxy/elasticsearch/admin-ca",
-			"--openshift-service-account=elasticsearch",
-			`-openshift-sar={"resource": "namespaces", "verb": "get"}`,
-			`-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get"}}`,
-			"--pass-user-bearer-token",
-			fmt.Sprintf("--cookie-secret=%s", proxyCookieSecret),
+			"--auth-whitelisted-name=system.logging.kibana",
+			"--auth-whitelisted-name=system.logging.fluentd",
+			"--auth-whitelisted-name=system.logging.curator",
+			"--auth-whitelisted-name=system.admin",
+			"--auth-whitelisted-name=user.jaeger",
+			"--cache-expiry=60s",
+			`--auth-backend-role=sg_role_admin={"namespace": "default", "verb": "view", "resource": "pods/metrics"}`,
+			`--auth-backend-role=prometheus={"verb": "get", "resource": "/metrics"}`,
+			`--auth-backend-role=jaeger={"verb": "get", "resource": "/jaeger", "resourceAPIGroup": "elasticsearch.jaegertracing.io"}`,
+			`--cl-infra-role-name=sg_role_admin`,
 		},
 		Resources: v1.ResourceRequirements{
 			Limits: v1.ResourceList{
@@ -288,6 +285,10 @@ func newEnvVars(nodeName, clusterName, instanceRam string, roleMap map[api.Elast
 					FieldPath: "metadata.namespace",
 				},
 			},
+		},
+		v1.EnvVar{
+			Name:  "KUBERNETES_MASTER",
+			Value: "https://kubernetes.default.svc",
 		},
 		v1.EnvVar{
 			Name:  "KUBERNETES_TRUST_CERT",
@@ -360,7 +361,7 @@ func newLabelSelector(clusterName, nodeName string, roleMap map[api.Elasticsearc
 func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.ElasticsearchNode, commonSpec api.ElasticsearchNodeSpec, labels map[string]string, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) v1.PodTemplateSpec {
 
 	resourceRequirements := newResourceRequirements(node.Resources, commonSpec.Resources)
-	proxyImage := utils.LookupEnvWithDefault("PROXY_IMAGE", "quay.io/openshift/origin-oauth-proxy:latest")
+	proxyImage := utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", "quay.io/openshift/origin-elasticsearch-proxy:latest")
 	proxyContainer, _ := newProxyContainer(proxyImage, clusterName)
 
 	selectors := mergeSelectors(node.NodeSelector, commonSpec.NodeSelector)

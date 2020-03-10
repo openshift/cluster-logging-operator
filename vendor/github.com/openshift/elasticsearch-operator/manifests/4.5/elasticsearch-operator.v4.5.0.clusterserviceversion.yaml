@@ -54,6 +54,26 @@ metadata:
                     }
                   ]
                 }
+            },
+            {
+              "apiVersion": "logging.openshift.io/v1",
+              "kind": "Kibana",
+              "metadata": {
+                "name": "kibana"
+              },
+              "spec": {
+                "managementState": "Managed",
+                "replicas": 1,
+                "nodeSelector": {},
+                "resources": {
+                  "limits": {
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "memory": "512Mi"
+                  }
+                }
+              }
             }
         ]
 spec:
@@ -101,6 +121,12 @@ spec:
       - serviceAccountName: elasticsearch-operator
         rules:
         - apiGroups:
+          - console.openshift.io
+          resources:
+          - consoleexternalloglinks
+          verbs:
+          - "*"
+        - apiGroups:
           - logging.openshift.io
           resources:
           - "*"
@@ -118,6 +144,13 @@ spec:
           - configmaps
           - secrets
           - serviceaccounts
+          verbs:
+          - "*"
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          - routes/custom-host
           verbs:
           - "*"
         - apiGroups:
@@ -140,6 +173,12 @@ spec:
           resources:
           - prometheusrules
           - servicemonitors
+          verbs:
+          - "*"
+        - apiGroups:
+          - oauth.openshift.io
+          resources:
+          - oauthclients
           verbs:
           - "*"
         - apiGroups:
@@ -166,6 +205,21 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - roles
+          - rolebindings
+          verbs:
+          - "*"
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - proxies
+          verbs:
+          - get
+          - list
+          - watch
       deployments:
       - name: elasticsearch-operator
         spec:
@@ -201,8 +255,12 @@ spec:
                       value: "elasticsearch-operator"
                     - name: PROXY_IMAGE
                       value: "quay.io/openshift/origin-oauth-proxy:latest"
+                    - name: ELASTICSEARCH_PROXY
+                      value: "quay.io/openshift/origin-elasticsearch-proxy:latest"
                     - name: ELASTICSEARCH_IMAGE
                       value: "quay.io/openshift/origin-logging-elasticsearch6:latest"
+                    - name: KIBANA_IMAGE
+                      value: "quay.io/openshift/origin-logging-kibana6:latest"
   customresourcedefinitions:
     owned:
     - name: elasticsearches.logging.openshift.io
@@ -287,3 +345,32 @@ spec:
         path: pods.master
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
+    - name: kibanas.logging.openshift.io
+      version: v1
+      kind: Kibana
+      displayName: Kibana
+      description: Kibana instance
+      resources:
+      - kind: Deployment
+        version: v1
+      specDescriptors:
+      - description: The desired number of Kibana Pods for the Visualization component
+        displayName: Kibana Size
+        path: replicas
+        x-descriptors:
+          - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+      - description: Resource requirements for the Kibana pods
+        displayName: Kibana Resource Requirements
+        path: resources
+        x-descriptors:
+      - description: The node selector to use for the Kibana Visualization component
+        displayName: Kibana Node Selector
+        path: nodeSelector
+        x-descriptors:
+          - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
+      statusDescriptors:
+      - description: The status for each of the Kibana pods for the Visualization component
+        displayName: Kibana Status
+        path: pods
+        x-descriptors:
+          - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'

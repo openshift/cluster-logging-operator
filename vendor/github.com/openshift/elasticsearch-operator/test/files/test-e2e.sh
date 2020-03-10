@@ -24,4 +24,4 @@ go test ./test/e2e/... \
   -v \
   -parallel=1 \
   -singleNamespace \
-  -timeout 900s
+  -timeout 1200s

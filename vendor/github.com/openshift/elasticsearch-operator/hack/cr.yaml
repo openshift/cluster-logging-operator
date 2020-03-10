@@ -6,7 +6,6 @@ metadata:
 spec:
   managementState: "Managed"
   nodeSpec:
-    image: quay.io/openshift/origin-logging-elasticsearch6:latest
     resources:
       limits:
         memory: 1Gi
@@ -37,4 +36,4 @@ spec:
       policyRef: infra-policy
       aliases:
       - infra
-      - logs.infra
+      - logs-infra

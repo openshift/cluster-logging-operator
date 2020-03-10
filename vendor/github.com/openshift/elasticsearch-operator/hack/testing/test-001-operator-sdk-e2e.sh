@@ -31,7 +31,7 @@ popd
 # update the manifest with the image built by ci
 sed -i "s,quay.io/openshift/origin-elasticsearch-operator:latest,${IMAGE_ELASTICSEARCH_OPERATOR}," ${manifest}
 sed -i "s,quay.io/openshift/origin-logging-elasticsearch6:latest,${ELASTICSEARCH_IMAGE}," ${manifest}
-sed -i "s,quay.io/openshift/elasticsearch-proxy:latest,${IMAGE_ELASTICSEARCH_PROXY}," ${manifest}
+sed -i "s,quay.io/openshift/origin-elasticsearch-proxy:latest,${IMAGE_ELASTICSEARCH_PROXY}," ${manifest}
 
 if [ "${REMOTE_CLUSTER:-false}" = false ] ; then
   sudo sysctl -w vm.max_map_count=262144 ||:

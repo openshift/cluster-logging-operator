@@ -355,7 +355,7 @@ func newLabelSelector(clusterName, nodeName string, roleMap map[api.Elasticsearc
 func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.ElasticsearchNode, commonSpec api.ElasticsearchNodeSpec, labels map[string]string, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) v1.PodTemplateSpec {
 
 	resourceRequirements := newResourceRequirements(node.Resources, commonSpec.Resources)
-	proxyImage := utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", "quay.io/openshift/elasticsearch-proxy:latest")
+	proxyImage := utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", "quay.io/openshift/origin-elasticsearch-proxy:latest")
 	proxyContainer, _ := newProxyContainer(proxyImage, clusterName)
 
 	selectors := mergeSelectors(node.NodeSelector, commonSpec.NodeSelector)

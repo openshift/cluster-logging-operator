@@ -256,7 +256,7 @@ spec:
                     - name: PROXY_IMAGE
                       value: "quay.io/openshift/origin-oauth-proxy:latest"
                     - name: ELASTICSEARCH_PROXY
-                      value: "quay.io/openshift/elasticsearch-proxy:latest"
+                      value: "quay.io/openshift/origin-elasticsearch-proxy:latest"
                     - name: ELASTICSEARCH_IMAGE
                       value: "quay.io/openshift/origin-logging-elasticsearch6:latest"
                     - name: KIBANA_IMAGE

@@ -22,4 +22,4 @@ spec:
   - name: elasticsearch-proxy
     from:
       kind: DockerImage
-      name: quay.io/openshift/elasticsearch-proxy:latest
+      name: quay.io/openshift/origin-elasticsearch-proxy:latest

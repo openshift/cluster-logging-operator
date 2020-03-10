@@ -243,9 +243,15 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 		},
 		Args: []string{
 			"--listening-address=:60000",
-			"--tls-cert=/etc/proxy/secrets/tls.crt",
-			"--tls-key=/etc/proxy/secrets/tls.key",
+			"--tls-cert=/etc/proxy/elasticsearch/logging-es.crt",
+			"--tls-key=/etc/proxy/elasticsearch/logging-es.key",
+			"--tls-client-ca=/etc/proxy/elasticsearch/admin-ca",
 			"--upstream-ca=/etc/proxy/elasticsearch/admin-ca",
+			"--auth-whitelisted-name=system.logging.kibana",
+			"--auth-whitelisted-name=system.logging.fluentd",
+			"--auth-whitelisted-name=system.logging.curator",
+			"--auth-whitelisted-name=system.admin",
+			"--auth-whitelisted-name=user.jaeger",
 			"--cache-expiry=60s",
 			`--auth-backend-role=sg_role_admin={"namespace": "default", "verb": "view", "resource": "pods/metrics"}`,
 			`--auth-backend-role=prometheus={"verb": "get", "resource": "/metrics"}`,
@@ -355,7 +361,7 @@ func newLabelSelector(clusterName, nodeName string, roleMap map[api.Elasticsearc
 func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.ElasticsearchNode, commonSpec api.ElasticsearchNodeSpec, labels map[string]string, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) v1.PodTemplateSpec {
 
 	resourceRequirements := newResourceRequirements(node.Resources, commonSpec.Resources)
-	proxyImage := utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", "quay.io/openshift/elasticsearch-proxy:latest")
+	proxyImage := utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", "quay.io/openshift/origin-elasticsearch-proxy:latest")
 	proxyContainer, _ := newProxyContainer(proxyImage, clusterName)
 
 	selectors := mergeSelectors(node.NodeSelector, commonSpec.NodeSelector)

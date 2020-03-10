@@ -78,7 +78,7 @@ func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestC
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		return fmt.Errorf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
 	}
 
 	return nil

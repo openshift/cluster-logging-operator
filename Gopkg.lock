@@ -521,7 +521,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:57bd1e85edbf2ed57caa6cc779e011da4a04f71e318e605abcd15c7361a7590e"
+  digest = "1:b1631ec8835e0d102ebb3a6092eefaa7a9ae2c30185ac9c505da6b72607b0eae"
   name = "github.com/openshift/elasticsearch-operator"
   packages = [
     "pkg/apis",
@@ -535,7 +535,7 @@
     "pkg/utils/comparators",
     "test/utils",
   ]
-  pruneopts = "T"
+  pruneopts = "NT"
   revision = "e09a9f723a7cc4b83f43db4d6727837f3b436d4c"
 
 [[projects]]
@@ -1309,7 +1309,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1",
-    "github.com/go-openapi/spec",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/format",
@@ -1360,7 +1359,6 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/gengo/args",
     "k8s.io/kube-openapi/cmd/openapi-gen",
-    "k8s.io/kube-openapi/pkg/common",
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/client/fake",

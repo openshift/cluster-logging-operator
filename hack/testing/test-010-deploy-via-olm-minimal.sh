@@ -44,9 +44,12 @@ KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
 oc create ns ${NAMESPACE} || :
 
+tempdir=$(mktemp -d /tmp/elasticsearch-operator-XXXXXXXX)
+get_operator_files $tempdir elasticsearch-operator ${EO_REPO:-openshift} ${EO_BRANCH:-master}
+eo_manifest=${tempdir}/manifests
 
-eo_version=$(basename $(find  ${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests -type d | sort -r | head -n 1))
-os::cmd::expect_success "oc create -f ${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests/${eo_version}/elasticsearches.crd.yaml"
+eo_version=$(basename $(find  $eo_manifest -type d | sort -r | head -n 1))
+os::cmd::expect_success "oc create -f ${eo_manifest}/${eo_version}/elasticsearches.crd.yaml"
 
 
 os::log::info "Deploying operator from ${manifest}"

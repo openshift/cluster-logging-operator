@@ -230,6 +230,47 @@ EOF
 
 }
 
+get_github_directory() {
+    local outputdir=$1
+    local ghdir=$2
+    local comp=$3
+    local repo=${4:-openshift}
+    local branch=${5:-master}
+    local name
+    local type
+    local download_url
+    if [ ! -d $outputdir/$ghdir ] ; then
+        mkdir -p $outputdir/$ghdir
+    fi
+    pushd $outputdir/$ghdir > /dev/null
+    curl -s https://api.github.com/repos/$repo/$comp/contents/$ghdir?ref=$branch | \
+    jq  -r '.[] | .name + " " + .type + " " + .download_url' | \
+    while read name type download_url ; do
+        if [ $type = dir ] ; then
+            get_github_directory $outputdir $ghdir/$name $comp $repo $branch
+        elif [ $type = file ] ; then
+            curl -sOLJ "$download_url"
+        fi
+    done
+    popd > /dev/null
+}
+
+# rather than cloning the entire repo, just grab the files
+# we require for deploying
+get_operator_files() {
+    local dir=$1
+    local comp=$2
+    local repo=${3:-openshift}
+    local branch=${4:-master}
+    if [ ! -d $dir ] ; then
+        mkdir -p $dir
+    fi
+    pushd $dir > /dev/null
+    
+    get_github_directory $dir manifests $comp $repo $branch
+    popd > /dev/null
+}
+
 # deploy_clusterlogging_operator using a subscription and the image privided by IMAGE_CLUSTER_LOGGING_OPERATOR
 function deploy_clusterlogging_operator() {
     local manifest=${repo_dir}/manifests
@@ -249,7 +290,12 @@ function deploy_clusterlogging_operator() {
         f_img=${IMAGE_FLUENTD_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-fluentd}
         op_img=${IMAGE_OAUTH_PROXY_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:oauth-proxy}
     fi
-    es_img="$(format_elasticsearch_image)"
+
+    local tempdir=$(mktemp -d /tmp/elasticsearch-operator-XXXXXXXX)
+    get_operator_files $tempdir elasticsearch-operator ${EO_REPO:-openshift} ${EO_BRANCH:-master}
+    local eo_manifest=${tempdir}/manifests
+
+    es_img="$(format_elasticsearch_image $eo_manifest)"
     sed -e "/name: ELASTICSEARCH_IMAGE/,/value:/s,value:.*\$,value: ${es_img}," \
         -e "/name: KIBANA_IMAGE/,/value:/s,value:.*\$,value: ${k_img}," \
         -e "/name: CURATOR_IMAGE/,/value:/s,value:.*\$,value: ${c_img}," \
@@ -259,24 +305,30 @@ function deploy_clusterlogging_operator() {
     deploy_operator "openshift-logging" "cluster-logging-operator" $manifest $IMAGE_CLUSTER_LOGGING_OPERATOR $((2 * $minute))
 }
 
+
+
 function deploy_elasticsearch_operator() {
-    local manifest=${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests
+    local tempdir=$(mktemp -d /tmp/elasticsearch-operator-XXXXXXXX)
+
+    get_operator_files $tempdir elasticsearch-operator ${EO_REPO:-openshift} ${EO_BRANCH:-master}
+
+    local manifest=${tempdir}/manifests
     if [ -n "${IMAGE_FORMAT:-}" ] ; then
         IMAGE_ELASTICSEARCH_OPERATOR=$(sed -e "s,\${component},elasticsearch-operator," <(echo $IMAGE_FORMAT))
     else
         local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
         IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/ocp/$version:elasticsearch-operator}
     fi
-    ELASTICSEARCH_IMAGE="$(format_elasticsearch_image)"
+    ELASTICSEARCH_IMAGE="$(format_elasticsearch_image $manifest)"
     GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
 }
 
 function format_elasticsearch_image() {
+    local manifest=$1
     if [ -n "${IMAGE_FORMAT:-}" ] ; then
         local es_img=${IMAGE_FORMAT/'${component}'/logging-elasticsearch6}
         echo ${es_img}
     else
-        local manifest=${repo_dir}/vendor/github.com/openshift/elasticsearch-operator/manifests
         local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
         ELASTICSEARCH_IMAGE=${ELASTICSEARCH_IMAGE:-registry.svc.ci.openshift.org/ocp/$version:logging-elasticsearch6}
         echo $ELASTICSEARCH_IMAGE

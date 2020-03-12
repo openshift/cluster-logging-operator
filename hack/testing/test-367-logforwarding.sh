@@ -51,12 +51,17 @@ for dir in $(ls -d $TEST_DIR); do
   log::info "Deploying cluster-logging-operator"
   deploy_clusterlogging_operator
   artifact_dir=$ARTIFACT_DIR/$(basename $dir)
+
+  tempdir=$(mktemp -d /tmp/elasticsearch-operator-XXXXXXXX)
+  get_operator_files $tempdir elasticsearch-operator ${EO_REPO:-openshift} ${EO_BRANCH:-master}
+  eo_manifest=${tempdir}/manifests
+
   mkdir -p $artifact_dir
   GENERATOR_NS="clo-test-$RANDOM"
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/logforwarding/cleanup.sh $artifact_dir $GENERATOR_NS" \
     artifact_dir=$artifact_dir \
     GENERATOR_NS=$GENERATOR_NS \
-    ELASTICSEARCH_IMAGE="$(format_elasticsearch_image)" \
+    ELASTICSEARCH_IMAGE="$(format_elasticsearch_image $eo_manifest)" \
     go test -count=1 -parallel=1 $dir  | tee -a $artifact_dir/test.log ; then
     log::info "======================================================="
     log::info "Logforwarding $dir passed"

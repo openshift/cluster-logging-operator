@@ -94,8 +94,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 
 			// remove our finalizer from the list and update it.
 			collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
-			err = clusterRequest.Create(collectorServiceAccount)
-			if err != nil && !errors.IsAlreadyExists(err) {
+			if err = clusterRequest.Update(collectorServiceAccount); err != nil {
+				logger.Warnf("Unable to update the collector serviceaccount %q finalizers: %v", collectorServiceAccount.Name, err)
 				return nil
 			}
 		}
@@ -109,14 +109,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 		}
 
 		if err = clusterRequest.removeFluentd(); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
 			return
 		}
 	}

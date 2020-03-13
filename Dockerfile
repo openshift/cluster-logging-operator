@@ -13,12 +13,15 @@ RUN INSTALL_PKGS=" \
     yum clean all && \
     mkdir /tmp/_working_dir && \
     chmod og+w /tmp/_working_dir
-COPY --from=builder _output/bin/cluster-logging-operator /usr/bin/
+
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/_output/bin/cluster-logging-operator /usr/bin/
 COPY scripts/* /usr/bin/scripts/
 RUN mkdir -p /usr/share/logging/
 COPY files/ /usr/share/logging/
-COPY manifests/$CSV /manifests/$CSV
-COPY manifests/cluster-logging.package.yaml /manifests/
+
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
+RUN rm /manifests/art.yaml
+
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
 ENTRYPOINT ["/usr/bin/cluster-logging-operator"]

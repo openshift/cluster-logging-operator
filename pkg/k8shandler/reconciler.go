@@ -68,6 +68,9 @@ func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestC
 	}
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	if clusterLogging == nil {
+		return nil
+	}
 	clusterLoggingRequest.cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
@@ -91,6 +94,10 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 	}
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	if clusterLogging == nil {
+		return nil
+	}
+
 	clusterLoggingRequest.cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
@@ -122,6 +129,10 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 	}
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	if clusterLogging == nil {
+		return nil
+	}
+
 	clusterLoggingRequest.cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
@@ -156,6 +167,10 @@ func ReconcileForKibanaSecret(requestClient client.Client) (err error) {
 	}
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	if clusterLogging == nil {
+		return nil
+	}
+
 	clusterLoggingRequest.cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
@@ -176,6 +191,7 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.Cluste
 		if !apierrors.IsNotFound(err) {
 			fmt.Printf("Encountered unexpected error getting %v", clusterLoggingNamespacedName)
 		}
+		return nil
 	}
 
 	return clusterLogging

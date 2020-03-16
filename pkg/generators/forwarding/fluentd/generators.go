@@ -205,6 +205,9 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 				engine.storeTemplate = "storeSyslog"
 			}
 			engine.outputTemplate = "outputLabelConfNoRetry"
+		case logging.OutputTypeKafka:
+			engine.storeTemplate = "storeKafka"
+			engine.outputTemplate = "outputLabelConfNoCopy"
 		default:
 			return nil, fmt.Errorf("Unknown outpt type: %v", output.Type)
 		}

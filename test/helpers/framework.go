@@ -54,7 +54,7 @@ func init() {
 
 type LogStore interface {
 	//ApplicationLogs returns app logs for a given log store
-	ApplicationLogs(timeToWait time.Duration) (string, error)
+	ApplicationLogs(timeToWait time.Duration) (logs, error)
 
 	HasApplicationLogs(timeToWait time.Duration) (bool, error)
 
@@ -63,6 +63,8 @@ type LogStore interface {
 	HasAuditLogs(timeToWait time.Duration) (bool, error)
 
 	GrepLogs(expr string, timeToWait time.Duration) (string, error)
+
+	ClusterLocalEndpoint() string
 }
 
 type E2ETestFramework struct {
@@ -219,6 +221,27 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []stri
 		logger.Debugf("%v pods still running", len(pods.Items))
 		return false, nil
 	})
+}
+
+func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInterval, timeout time.Duration) error {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		deployment, err := tc.KubeClient.Apps().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		replicas := int(*deployment.Spec.Replicas)
+		if int(deployment.Status.ReadyReplicas) == replicas {
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {

@@ -80,6 +80,22 @@ spec:
                       outputs. Has no function other than a marker to help avoid configuration
                       mistakes.
                     type: boolean
+                  kafka:
+                    description: 'Kafka provides optional extra properties for `type:
+                      kafka`'
+                    properties:
+                      brokers:
+                        description: Brokers specifies the list of brokers to register
+                          in addition to the main output URL on initial connect to
+                          enhance reliability.
+                        items:
+                          type: string
+                        type: array
+                      topic:
+                        description: Topic specifies the target topic to send logs
+                          to.
+                        type: string
+                    type: object
                   name:
                     description: Name used to refer to the output from a `pipeline`.
                     type: string
@@ -181,6 +197,7 @@ spec:
               type: array
           type: object
         status:
+          description: ClusterLogForwarder represents the current status of ClusterLogForwarder
           properties:
             conditions:
               description: Conditions of the log forwarder.

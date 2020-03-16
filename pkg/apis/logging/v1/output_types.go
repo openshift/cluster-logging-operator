@@ -15,6 +15,7 @@ const (
 	OutputTypeElasticsearch  = "elasticsearch"
 	OutputTypeFluentdForward = "fluentdForward"
 	OutputTypeSyslog         = "syslog"
+	OutputTypeKafka          = "kafka"
 )
 
 // Output defines a destination for log messages.
@@ -84,6 +85,8 @@ type OutputTypeSpec struct {
 	FluentdForward *FluentdForward `json:"fluentdForward,omitempty"`
 	// +optional
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
+	// +optional
+	Kafka *Kafka `json:"kafka,omitempty"`
 }
 
 var otsType = reflect.TypeOf(OutputTypeSpec{})
@@ -133,6 +136,21 @@ type Syslog struct {
 	//
 	// +optional
 	PayloadKey string `json:"payloadKey,omitempty"`
+}
+
+// Kafka provides optional extra properties for `type: kafka`
+type Kafka struct {
+	// Topic specifies the target topic to send logs to.
+	//
+	// +optional
+	Topic string `json:"topic,omitempty"`
+
+	// Brokers specifies the list of brokers
+	// to register in addition to the main output URL
+	// on initial connect to enhance reliability.
+	//
+	// +optional
+	Brokers []string `json:"brokers,omitempty"`
 }
 
 // Placeholders for configuration of other types

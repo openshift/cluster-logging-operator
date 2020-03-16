@@ -76,6 +76,25 @@ try_until_text() {
   log::error "try_until_text expired for '$cmd' == '$expected'"
   return 1
 }
+
+gather_logging_resources() {
+  set +e
+  local LOGGING_NS=$1
+  local outdir=${2:-$ARTIFACT_DIR}
+  oc -n ${LOGGING_NS} get configmaps -o yaml > $outdir/configmaps.yaml 2>&1 || :
+  oc -n ${LOGGING_NS} get secrets -o yaml > $outdir/secrets.yaml 2>&1 || :
+  oc -n ${LOGGING_NS} get cronjobs -o yaml > $outdir/cronjobs.yaml 2>&1 || :
+  
+  oc -n ${LOGGING_NS} get deployments -o wide > $outdir/deployments.txt 2>&1 || :
+  oc -n ${LOGGING_NS} get pods -o wide > $outdir/pods.txt 2>&1 || :
+
+  oc -n ${LOGGING_NS} extract secret/elasticsearch --to=$outdir ||:
+  oc -n ${LOGGING_NS} extract configmap/fluentd --to=$outdir ||:
+
+  get_all_logging_pod_logs $outdir
+  set -e
+}
+
 get_all_logging_pod_logs() {
   set +e
   local outdir=${1:-$ARTIFACT_DIR}
@@ -87,8 +106,8 @@ get_all_logging_pod_logs() {
     for container in $(oc -n ${LOGGING_NS} get po $p -o jsonpath='{.spec.containers[*].name}') ; do
       oc logs -n ${LOGGING_NS} -c $container $p > $outdir/$p.$container.log 2>&1
       case "$container" in
-        fluentd*) oc exec -n ${LOGGING_NS} $p -- logs > $outdir/$p.$container.exec.log 2>&1 ;;
-        elasticsearch*) oc exec -n ${LOGGING_NS} -c elasticsearch $p  -- logs > $outdir/$p.$container.exec.log 2>&1 ;;
+        fluentd*) oc -n ${LOGGING_NS} exec $p -- logs > $outdir/$p.$container.exec.log 2>&1 ;;
+        elasticsearch*) oc -n ${LOGGING_NS}  exec -c elasticsearch $p  -- logs > $outdir/$p.$container.exec.log 2>&1 ;;
         *) continue ;;
       esac
     done
@@ -302,7 +321,7 @@ function deploy_clusterlogging_operator() {
         -e "/name: FLUENTD_IMAGE/,/value:/s,value:.*\$,value: ${f_img}," \
         -e "/name: OAUTH_PROXY_IMAGE/,/value:/s,value:.*\$,value: ${op_img}," \
         -i $csv
-    deploy_operator "openshift-logging" "cluster-logging-operator" $manifest $IMAGE_CLUSTER_LOGGING_OPERATOR $((2 * $minute))
+    deploy_operator "openshift-logging" "cluster-logging-operator" $manifest $IMAGE_CLUSTER_LOGGING_OPERATOR $((3 * $minute))
 }
 
 

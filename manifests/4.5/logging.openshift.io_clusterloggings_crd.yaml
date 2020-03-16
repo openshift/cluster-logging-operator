@@ -10,9 +10,10 @@ spec:
     plural: clusterloggings
     singular: clusterlogging
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
-      description: ClusterLogging is the Schema for the clusterloggings API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -27,23 +28,24 @@ spec:
         metadata:
           type: object
         spec:
-          description: ClusterLoggingSpec defines the desired state of ClusterLogging
+          description: Specification of the desired behavior of the Logging cluster.
           properties:
             collection:
-              description: This is the struct that will contain information pertinent
-                to Log and event collection
+              description: Specification of the Collection component for the cluster
               properties:
                 logs:
+                  description: Specification of Log Collection for the cluster
                   properties:
                     fluentd:
+                      description: Specification of the Fluentd Log Collection component
                       properties:
                         nodeSelector:
                           additionalProperties:
                             type: string
+                          description: Define which Nodes the Pods are scheduled on.
                           type: object
                         resources:
-                          description: ResourceRequirements describes the compute
-                            resource requirements.
+                          description: The resource requirements for Fluentd
                           properties:
                             limits:
                               additionalProperties:
@@ -107,24 +109,25 @@ spec:
                       - resources
                       type: object
                     type:
+                      description: The type of Log Collection to configure
                       type: string
                   required:
                   - type
                   type: object
               type: object
             curation:
-              description: This is the struct that will contain information pertinent
-                to Log curation (Curator)
+              description: Specification of the Curation component for the cluster
               properties:
                 curator:
+                  description: The specification of curation to configure
                   properties:
                     nodeSelector:
                       additionalProperties:
                         type: string
+                      description: Define which Nodes the Pods are scheduled on.
                       type: object
                     resources:
-                      description: ResourceRequirements describes the compute resource
-                        requirements.
+                      description: The resource requirements for Curator
                       properties:
                         limits:
                           additionalProperties:
@@ -143,6 +146,8 @@ spec:
                           type: object
                       type: object
                     schedule:
+                      description: The cron schedule that the Curator job is run.
+                        Defaults to "30 3 * * *"
                       type: string
                     tolerations:
                       items:
@@ -186,26 +191,28 @@ spec:
                         type: object
                       type: array
                   required:
-                  - resources
                   - schedule
                   type: object
                 type:
+                  description: The kind of curation to configure
                   type: string
               required:
               - type
               type: object
             logStore:
-              description: This is the struct that will contain information pertinent
-                to Log storage (Elasticsearch)
+              description: Specification of the Log Storage component for the cluster
               properties:
                 elasticsearch:
+                  description: Specification of the Elasticsearch Log Store component
                   properties:
                     nodeCount:
+                      description: Number of nodes to deploy for Elasticsearch
                       format: int32
                       type: integer
                     nodeSelector:
                       additionalProperties:
                         type: string
+                      description: Define which Nodes the Pods are scheduled on.
                       type: object
                     redundancyPolicy:
                       description: RedundancyPolicyType controls number of elasticsearch
@@ -215,8 +222,7 @@ spec:
                         - one replica shard ZeroRedundancy - no replica shards
                       type: string
                     resources:
-                      description: ResourceRequirements describes the compute resource
-                        requirements.
+                      description: The resource requirements for Kibana
                       properties:
                         limits:
                           additionalProperties:
@@ -235,6 +241,8 @@ spec:
                           type: object
                       type: object
                     storage:
+                      description: The storage specification for Elasticsearch data
+                        nodes
                       properties:
                         size:
                           type: string
@@ -284,62 +292,62 @@ spec:
                       type: array
                   required:
                   - nodeCount
-                  - redundancyPolicy
-                  - resources
-                  - storage
                   type: object
                 retentionPolicy:
+                  description: Retention policy defines the maximum age for an index
+                    after which it should be deleted
                   properties:
                     application:
                       properties:
                         maxAge:
-                          description: TimeUnit is a time unit like h,m,d
+                          description: Maximum age as integer followed by time unit;
+                            one of [yMwdhHms]
                           type: string
-                      required:
-                      - maxAge
                       type: object
                     audit:
                       properties:
                         maxAge:
-                          description: TimeUnit is a time unit like h,m,d
+                          description: Maximum age as integer followed by time unit;
+                            one of [yMwdhHms]
                           type: string
-                      required:
-                      - maxAge
                       type: object
                     infra:
                       properties:
                         maxAge:
-                          description: TimeUnit is a time unit like h,m,d
+                          description: Maximum age as integer followed by time unit;
+                            one of [yMwdhHms]
                           type: string
-                      required:
-                      - maxAge
                       type: object
                   type: object
                 type:
+                  description: The type of Log Storage to configure
                   type: string
               required:
               - type
               type: object
             managementState:
-              description: 'Important: Run "operator-sdk generate k8s" to regenerate
-                code after modifying this file Add custom validation using kubebuilder
-                tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
+              description: Indicator if the resource is 'Managed' or 'Unmanaged' by
+                the operator
+              enum:
+              - Managed
+              - Unmanaged
               type: string
             visualization:
-              description: This is the struct that will contain information pertinent
-                to Log visualization (Kibana)
+              description: Specification of the Visualization component for the cluster
               properties:
                 kibana:
+                  description: Specification of the Kibana Visualization component
                   properties:
                     nodeSelector:
                       additionalProperties:
                         type: string
+                      description: Define which Nodes the Pods are scheduled on.
                       type: object
                     proxy:
+                      description: Specification of the Kibana Proxy component
                       properties:
                         resources:
-                          description: ResourceRequirements describes the compute
-                            resource requirements.
+                          description: The resource requirements for Kibana
                           properties:
                             limits:
                               additionalProperties:
@@ -361,11 +369,11 @@ spec:
                       - resources
                       type: object
                     replicas:
+                      description: Number of instances to deploy for a Kibana deployment
                       format: int32
                       type: integer
                     resources:
-                      description: ResourceRequirements describes the compute resource
-                        requirements.
+                      description: The resource requirements for Kibana
                       properties:
                         limits:
                           additionalProperties:
@@ -426,39 +434,42 @@ spec:
                       type: array
                   required:
                   - replicas
-                  - resources
                   type: object
                 type:
+                  description: The type of Visualization to configure
                   type: string
               required:
               - type
               type: object
-          required:
-          - managementState
           type: object
         status:
-          description: ClusterLoggingStatus defines the observed state of ClusterLogging
+          description: Observed state of ClusterLogging
           properties:
             clusterConditions:
               items:
-                description: 'ConditionStatus contains details for the current condition
-                  of this elasticsearch cluster. Status: the status of the condition.
-                  LastTransitionTime: Last time the condition transitioned from one
-                  status to another. Reason: Unique, one-word, CamelCase reason for
-                  the condition''s last transition. Message: Human-readable message
-                  indicating details about last transition.'
                 properties:
                   lastTransitionTime:
+                    description: Last time the condition transitioned from one status
+                      to another.
                     format: date-time
                     type: string
                   message:
+                    description: Human-readable message indicating details about last
+                      transition.
                     type: string
                   reason:
+                    description: Unique, one-word, CamelCase reason for the condition's
+                      last transition.
                     type: string
                   status:
                     type: string
                   type:
-                    description: ClusterConditionType is a valid value for ClusterCondition.Type
+                    enum:
+                    - IncorrectCRName
+                    - ContainerWaiting
+                    - ContainerTerminated
+                    - Unschedulable
+                    - NodeStorage
                     type: string
                 required:
                 - lastTransitionTime
@@ -474,29 +485,30 @@ spec:
                       properties:
                         clusterCondition:
                           additionalProperties:
-                            description: '`operator-sdk generate crds` does not allow
-                              map-of-slice, must use a named type.'
                             items:
-                              description: 'ConditionStatus contains details for the
-                                current condition of this elasticsearch cluster. Status:
-                                the status of the condition. LastTransitionTime: Last
-                                time the condition transitioned from one status to
-                                another. Reason: Unique, one-word, CamelCase reason
-                                for the condition''s last transition. Message: Human-readable
-                                message indicating details about last transition.'
                               properties:
                                 lastTransitionTime:
+                                  description: Last time the condition transitioned
+                                    from one status to another.
                                   format: date-time
                                   type: string
                                 message:
+                                  description: Human-readable message indicating details
+                                    about last transition.
                                   type: string
                                 reason:
+                                  description: Unique, one-word, CamelCase reason
+                                    for the condition's last transition.
                                   type: string
                                 status:
                                   type: string
                                 type:
-                                  description: ClusterConditionType is a valid value
-                                    for ClusterCondition.Type
+                                  enum:
+                                  - IncorrectCRName
+                                  - ContainerWaiting
+                                  - ContainerTerminated
+                                  - Unschedulable
+                                  - NodeStorage
                                   type: string
                               required:
                               - lastTransitionTime
@@ -531,29 +543,30 @@ spec:
                     properties:
                       clusterCondition:
                         additionalProperties:
-                          description: '`operator-sdk generate crds` does not allow
-                            map-of-slice, must use a named type.'
                           items:
-                            description: 'ConditionStatus contains details for the
-                              current condition of this elasticsearch cluster. Status:
-                              the status of the condition. LastTransitionTime: Last
-                              time the condition transitioned from one status to another.
-                              Reason: Unique, one-word, CamelCase reason for the condition''s
-                              last transition. Message: Human-readable message indicating
-                              details about last transition.'
                             properties:
                               lastTransitionTime:
+                                description: Last time the condition transitioned
+                                  from one status to another.
                                 format: date-time
                                 type: string
                               message:
+                                description: Human-readable message indicating details
+                                  about last transition.
                                 type: string
                               reason:
+                                description: Unique, one-word, CamelCase reason for
+                                  the condition's last transition.
                                 type: string
                               status:
                                 type: string
                               type:
-                                description: ClusterConditionType is a valid value
-                                  for ClusterCondition.Type
+                                enum:
+                                - IncorrectCRName
+                                - ContainerWaiting
+                                - ContainerTerminated
+                                - Unschedulable
+                                - NodeStorage
                                 type: string
                             required:
                             - lastTransitionTime
@@ -718,9 +731,6 @@ spec:
                   type: array
               type: object
             visualization:
-              description: 'Important: Run "operator-sdk generate k8s" to regenerate
-                code after modifying this file Add custom validation using kubebuilder
-                tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html'
               properties:
                 kibanaStatus:
                   items:

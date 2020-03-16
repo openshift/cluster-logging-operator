@@ -10,9 +10,10 @@ spec:
     plural: logforwardings
     singular: logforwarding
   scope: Namespaced
+  subresources:
+    status: {}
   validation:
     openAPIV3Schema:
-      description: LogForwarding is the Schema for the logforwardings API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -27,56 +28,75 @@ spec:
         metadata:
           type: object
         spec:
-          description: ForwardingSpec specifies log forwarding pipelines from a defined
-            sources to dest outputs
+          description: Specification of desired state for LogForwarding.
           properties:
             disableDefaultForwarding:
+              description: Disable forwarding to the default log store.
               type: boolean
             outputs:
+              description: Destinations for log messages
               items:
-                description: OutputSpec specifies destination config for log message
-                  endpoints
                 properties:
                   endpoint:
+                    description: The url to the the service defined by this output
                     type: string
                   name:
+                    description: The name of the output
                     type: string
                   secret:
-                    description: OutputSecretSpec specifies secrets for pipelines
+                    description: Secret used to authenticate with the endpoint.
                     properties:
                       name:
-                        description: Name is the name of the secret to use with this
-                          output
+                        description: The name of a secret to mount into the collector
+                          to use when shipping logs
                         type: string
                     required:
                     - name
                     type: object
                   type:
-                    description: OutputType defines the type of endpoint that will
-                      receive messages
+                    description: The output type (e.g. elasticsearch or logstore)
+                    enum:
+                    - elasticsearch
+                    - forward
+                    - syslog
                     type: string
+                required:
+                - endpoint
+                - name
+                - type
                 type: object
               type: array
             pipelines:
+              description: The mapping of sources to outputs
               items:
-                description: PipelineSpec is the sources spec to named targets
                 properties:
                   inputSource:
                     description: LogSourceType is an explicitly defined log source
+                    enum:
+                    - logs-app
+                    - logs-infra
+                    - logs-audit
                     type: string
                   name:
+                    description: The name of the pipeline
                     type: string
                   outputRefs:
-                    description: OutputRefs is a list of  the names of outputs defined
-                      by forwarding.outputs
+                    description: The name of outputs to send the source logs
                     items:
                       type: string
                     type: array
+                required:
+                - inputSource
+                - name
+                - outputRefs
                 type: object
               type: array
+          required:
+          - outputs
+          - pipelines
           type: object
         status:
-          description: ForwardingStatus is the status of spec'd forwarding
+          description: Observed state of LogForwarding.
           properties:
             lastUpdated:
               description: LastUpdated represents the last time that the status was
@@ -174,6 +194,10 @@ spec:
               description: LogSources lists the configured log sources
               items:
                 description: LogSourceType is an explicitly defined log source
+                enum:
+                - logs-app
+                - logs-infra
+                - logs-audit
                 type: string
               type: array
             state:

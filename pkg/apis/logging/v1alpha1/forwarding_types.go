@@ -6,6 +6,8 @@ import (
 )
 
 //LogSourceType is an explicitly defined log source
+//
+// +kubebuilder:validation:Enum=logs-app;logs-infra;logs-audit
 type LogSourceType string
 
 const (
@@ -23,49 +25,65 @@ const (
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// LogForwarding is the Schema for the logforwardings API
-// +k8s:openapi-gen=true
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+
 type LogForwarding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ForwardingSpec    `json:"spec,omitempty"`
+	// Specification of desired state for LogForwarding.
+	Spec ForwardingSpec `json:"spec,omitempty"`
+	// Observed state of LogForwarding.
 	Status *ForwardingStatus `json:"status,omitempty"`
 }
 
 //ForwardingSpec specifies log forwarding pipelines from a defined sources to dest outputs
-// +k8s:openapi-gen=true
 type ForwardingSpec struct {
-	DisableDefaultForwarding bool           `json:"disableDefaultForwarding,omitempty"`
-	Outputs                  []OutputSpec   `json:"outputs,omitempty"`
-	Pipelines                []PipelineSpec `json:"pipelines,omitempty"`
+	// Disable forwarding to the default log store.
+	DisableDefaultForwarding bool `json:"disableDefaultForwarding,omitempty"`
+	// Destinations for log messages
+	Outputs []OutputSpec `json:"outputs"`
+	// The mapping of sources to outputs
+	Pipelines []PipelineSpec `json:"pipelines"`
 }
 
-//PipelineSpec is the sources spec to named targets
 type PipelineSpec struct {
-	Name       string        `json:"name,omitempty"`
-	SourceType LogSourceType `json:"inputSource,omitempty"`
+	// The name of the pipeline
+	// +required
+	Name string `json:"name"`
 
-	//OutputRefs is a list of  the names of outputs defined by forwarding.outputs
-	OutputRefs []string `json:"outputRefs,omitempty"`
+	// +required
+	SourceType LogSourceType `json:"inputSource"`
+
+	// The name of outputs to send the source logs
+	// +required
+	OutputRefs []string `json:"outputRefs"`
 }
 
-//OutputSpec specifies destination config for log message endpoints
 type OutputSpec struct {
-	Type     OutputType        `json:"type,omitempty"`
-	Name     string            `json:"name,omitempty"`
-	Endpoint string            `json:"endpoint,omitempty"`
-	Secret   *OutputSecretSpec `json:"secret,omitempty"`
+	// The output type (e.g. elasticsearch or logstore)
+	// +required
+	Type OutputType `json:"type"`
+	// The name of the output
+	// +required
+	Name string `json:"name"`
+	// The url to the the service defined by this output
+	// +required
+	Endpoint string `json:"endpoint"`
+	// Secret used to authenticate with the endpoint.
+	// +optional
+	Secret *OutputSecretSpec `json:"secret,omitempty"`
 }
 
 //OutputSecretSpec specifies secrets for pipelines
 type OutputSecretSpec struct {
-
-	//Name is the name of the secret to use with this output
+	// The name of a secret to mount into the collector to use when shipping logs
 	Name string `json:"name"`
 }
 
-//OutputType defines the type of endpoint that will receive messages
+// OutputType defines the type of endpoint that will receive messages
+// +kubebuilder:validation:Enum=elasticsearch;forward;syslog
 type OutputType string
 
 const (
@@ -97,7 +115,6 @@ const (
 )
 
 //ForwardingStatus is the status of spec'd forwarding
-// +k8s:openapi-gen=true
 type ForwardingStatus struct {
 
 	//State is the current state of LogForwarding instance
@@ -347,8 +364,8 @@ type OutputCondition struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
-// LogForwardingList contains a list of LogForwarding
 type LogForwardingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

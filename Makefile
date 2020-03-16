@@ -70,6 +70,8 @@ $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@$(MAKE) operator-sdk
 	@operator-sdk generate k8s
 	@operator-sdk generate crds
+	@mv deploy/crds/* manifests/$(OCP_VERSION)
+	@rm -rf deploy
 	@$(MAKE) fmt
 	@touch $@
 

@@ -54,7 +54,7 @@ func init() {
 
 type LogStore interface {
 	//ApplicationLogs returns app logs for a given log store
-	ApplicationLogs(timeToWait time.Duration) (string, error)
+	ApplicationLogs(timeToWait time.Duration) (logs, error)
 
 	HasApplicationLogs(timeToWait time.Duration) (bool, error)
 
@@ -63,6 +63,8 @@ type LogStore interface {
 	HasAuditLogs(timeToWait time.Duration) (bool, error)
 
 	GrepLogs(expr string, timeToWait time.Duration) (string, error)
+
+	ClusterLocalEndpoint() string
 }
 
 type E2ETestFramework struct {

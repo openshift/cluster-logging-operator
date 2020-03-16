@@ -11,8 +11,9 @@ source "$(dirname $0)/assertions"
 os::test::junit::declare_suite_start "${BASH_SOURCE[0]}"
 
 ARTIFACT_DIR=${ARTIFACT_DIR:-"$(pwd)/_output"}
-if [ ! -d $ARTIFACT_DIR ] ; then
-  mkdir -p $ARTIFACT_DIR
+test_artifactdir="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
+if [ ! -d $test_artifactdir ] ; then
+  mkdir -p $test_artifactdir
 fi
 export NAMESPACE="openshift-logging"
 repo_dir="$(dirname $0)/../.."
@@ -22,7 +23,7 @@ version=$(basename $(find $manifest -type d | sort -r | head -n 1))
 cleanup(){
   local return_code="$?"
   set +e
-  oc logs -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.log 2>&1 ||:
+  gather_logging_resources ${NAMESPACE} $test_artifactdir
   oc delete ns ${NAMESPACE} --wait=true --ignore-not-found
   oc delete crd elasticsearches.logging.openshift.io --wait=false --ignore-not-found
   os::cmd::try_until_failure "oc get project ${NAMESPACE}" "$((1 * $minute))"

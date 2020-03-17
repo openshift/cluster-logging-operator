@@ -39,8 +39,8 @@ func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 }
 
 func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
-	limitMemory := resource.MustParse("100Gi")
-	requestMemory := resource.MustParse("120Gi")
+	limitMemory := resource.MustParse("120Gi")
+	requestMemory := resource.MustParse("100Gi")
 	requestCPU := resource.MustParse("500m")
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
@@ -48,7 +48,7 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 				Logs: logging.LogCollectionSpec{
 					Type: "fluentd",
 					FluentdSpec: logging.FluentdSpec{
-						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+						Resources: newResourceRequirements("120Gi", "", "100Gi", "500m"),
 					},
 				},
 			},

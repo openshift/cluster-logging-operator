@@ -266,6 +266,7 @@ const (
 	ContainerTerminated ClusterConditionType = "ContainerTerminated"
 	Unschedulable       ClusterConditionType = "Unschedulable"
 	NodeStorage         ClusterConditionType = "NodeStorage"
+	CollectorDeadEnd    ClusterConditionType = "CollectorDeadEnd"
 )
 
 // `operator-sdk generate crds` does not allow map-of-slice, must use a named type.

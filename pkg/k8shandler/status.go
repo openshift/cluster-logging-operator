@@ -291,7 +291,7 @@ func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) 
 						Status:             v1.ConditionTrue,
 						Reason:             containerStatus.State.Terminated.Reason,
 						Message:            containerStatus.State.Terminated.Message,
-						LastTransitionTime: metav1.Now(),
+						LastTransitionTime: containerStatus.State.Terminated.FinishedAt,
 					})
 				}
 			}

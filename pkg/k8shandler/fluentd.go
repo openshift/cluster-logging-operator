@@ -255,7 +255,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
 	}
-	var resources = collectionSpec.Logs.FluentdSpec.Resources
+	resources := collectionSpec.Logs.FluentdSpec.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: defaultFluentdMemory},

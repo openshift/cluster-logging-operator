@@ -44,7 +44,7 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 				ElasticsearchSpec: cl.ElasticsearchSpec{
 					Resources: &v1.ResourceRequirements{
 						Requests: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse("3Gi"),
+							v1.ResourceMemory: resource.MustParse("2Gi"),
 							v1.ResourceCPU:    resource.MustParse("100m"),
 						},
 					},
@@ -59,8 +59,8 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 					FluentdSpec: cl.FluentdSpec{
 						Resources: &v1.ResourceRequirements{
 							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("736Mi"),
-								v1.ResourceCPU:    resource.MustParse("500m"),
+								v1.ResourceMemory: resource.MustParse("500Mi"),
+								v1.ResourceCPU:    resource.MustParse("200m"),
 							},
 						},
 					},

@@ -55,6 +55,9 @@ func init() {
 }
 
 type LogStore interface {
+	//ApplicationLogs returns app logs for a given log store
+	ApplicationLogs(timeToWait time.Duration) (string, error)
+
 	HasApplicationLogs(timeToWait time.Duration) (bool, error)
 
 	HasInfraStructureLogs(timeToWait time.Duration) (bool, error)
@@ -95,6 +98,7 @@ func (tc *E2ETestFramework) DeployLogGenerator() error {
 		Containers: []corev1.Container{container},
 	}
 	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
+	logger.Infof("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
 	deployment, err := tc.KubeClient.Apps().Deployments(namespace).Create(deployment)
 	if err != nil {
 		return err
@@ -239,21 +243,25 @@ func (tc *E2ETestFramework) CreateLogForwarding(forwarding *logforwarding.LogFor
 
 func (tc *E2ETestFramework) Cleanup() {
 	//allow caller to cleanup if unset (e.g script cleanup())
-	if value, exists := os.LookupEnv("CLEANUP_E2E"); exists && value == "false" {
-		return
-	}
-	RunCleanupScript()
-	logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
-	for _, cleanup := range tc.CleanupFns {
-		logger.Debug("Running an e2e cleanup function")
-		if err := cleanup(); err != nil {
-			logger.Debugf("Error during cleanup %v", err)
-		}
+	doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
+	if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
+    	RunCleanupScript()
+    	logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
+    	for _, cleanup := range tc.CleanupFns {
+    		logger.Debug("Running an e2e cleanup function")
+    		if err := cleanup(); err != nil {
+    			logger.Debugf("Error during cleanup %v", err)
+    		}
+    	}
 	}
 }
 
 func RunCleanupScript() {
 	if value, found := os.LookupEnv("CLEANUP_CMD"); found {
+		if strings.TrimSpace(value) == "" {
+			logger.Info("No cleanup script provided")
+			return
+		}
 		args := strings.Split(value, " ")
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Env = nil

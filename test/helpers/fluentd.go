@@ -44,16 +44,19 @@ const (
   @type file
   append true
   path /tmp/infra.logs
+  symlink_path /tmp/infra-logs
 </match>
 <match kubernetes.**>
   @type file
   append true
   path /tmp/app.logs
-</match>
-<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+  symlink_path /tmp/app-logs
+  </match>
+  <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
   @type file
   append true
   path /tmp/audit.logs
+  symlink_path /tmp/audit-logs
 </match>
 <match **>
 	@type stdout
@@ -70,16 +73,19 @@ const (
   @type file
   append true
   path /tmp/infra.logs
-</match>
-<match kubernetes.**>
+  symlink_path /tmp/infra-logs
+  </match>
+  <match kubernetes.**>
   @type file
   append true
   path /tmp/app.logs
-</match>
-<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+  symlink_path /tmp/app-logs
+  </match>
+  <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
   @type file
   append true
   path /tmp/audit.logs
+  symlink_path /tmp/audit-logs
 </match>
 <match **>
 	@type stdout
@@ -119,7 +125,37 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	return true, err
 }
 
-func (fluent *fluentReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
+func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration) (string, error) {
+	options := metav1.ListOptions{
+		LabelSelector: "component=fluent-receiver",
+	}
+	pods, err := fluent.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+	if err != nil {
+		return "", err
+	}
+	if len(pods.Items) == 0 {
+		return "", errors.New("No pods found for fluent receiver")
+	}
+	logger.Debugf("Pod %s", pods.Items[0].Name)
+	cmd := fmt.Sprintf("cat %s", file)
+	result := ""
+	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+		if result, err = fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
+			return false, err
+		}
+		return true, nil
+	})
+	if err == wait.ErrWaitTimeout {
+		return "", err
+	}
+	return result, nil
+}
+
+func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (string, error) {
+	return fluent.logs("/tmp/app-logs", timeToWait)
+}
+
+func (fluent fluentReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
 	return fluent.hasLogs("/tmp/infra.logs", timeToWait)
 }
 func (fluent *fluentReceiverLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {

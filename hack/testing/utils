@@ -91,6 +91,10 @@ gather_logging_resources() {
   oc -n ${LOGGING_NS} extract secret/elasticsearch --to=$outdir ||:
   oc -n ${LOGGING_NS} extract configmap/fluentd --to=$outdir ||:
 
+  oc -n openshift-operators-redhat get deployment elasticsearch-operator -o wide > $outdir/eo-deployment.txt 2>&1 || :
+  oc -n openshift-operators-redhat describe deployment elasticsearch-operator > $outdir/eo-deployment.describe 2>&1 || :
+  oc -n openshift-operators-redhat logs deployment/elasticsearch-operator > $outdir/elasticsearch-operator.logs 2>&1 || :
+
   get_all_logging_pod_logs $outdir
   set -e
 }
@@ -338,6 +342,7 @@ function deploy_elasticsearch_operator() {
         local version=$(basename $(find $manifest -type d | sort -r | head -n 1))
         IMAGE_ELASTICSEARCH_OPERATOR=${IMAGE_ELASTICSEARCH_OPERATOR:-registry.svc.ci.openshift.org/ocp/$version:elasticsearch-operator}
     fi
+    log::info "Deploying elasticsearch-operator using image: $IMAGE_ELASTICSEARCH_OPERATOR"
     ELASTICSEARCH_IMAGE="$(format_elasticsearch_image $manifest)"
     GLOBAL=true deploy_operator "openshift-operators-redhat" "elasticsearch-operator" $manifest $IMAGE_ELASTICSEARCH_OPERATOR $((2 * $minute))
 }

@@ -1,0 +1,9 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: cluster-logging-operator
+spec:
+  channel: ${OPERATOR_PACKAGE_CHANNEL}
+  name: cluster-logging
+  source: cluster-logging-catalog
+  sourceNamespace: ${CLUSTER_LOGGING_OPERATOR_NAMESPACE}

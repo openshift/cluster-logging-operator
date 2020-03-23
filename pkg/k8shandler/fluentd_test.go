@@ -75,12 +75,12 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 
 	expectedTolerations := []v1.Toleration{
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
 		},
-		v1.Toleration{
+		{
 			Key:      "node.kubernetes.io/disk-pressure",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
@@ -128,12 +128,12 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 
 func TestNewFluentdPodNoTolerations(t *testing.T) {
 	expTolerations := []v1.Toleration{
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
 		},
-		v1.Toleration{
+		{
 			Key:      "node.kubernetes.io/disk-pressure",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
@@ -169,12 +169,12 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 
 	expTolerations := []v1.Toleration{
 		providedToleration,
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
 		},
-		v1.Toleration{
+		{
 			Key:      "node.kubernetes.io/disk-pressure",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,

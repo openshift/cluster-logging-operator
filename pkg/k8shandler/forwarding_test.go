@@ -111,7 +111,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 					otherOutput,
 				},
 				Pipelines: []logging.PipelineSpec{
-					logging.PipelineSpec{
+					{
 						Name:       "aPipeline",
 						OutputRefs: []string{output.Name, otherOutput.Name},
 						SourceType: logging.LogSourceTypeApp,
@@ -123,7 +123,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 
 			It("should only include logsources if there is atleast one valid pipeline", func() {
 				request.ForwardingSpec.Pipelines = []logging.PipelineSpec{
-					logging.PipelineSpec{
+					{
 						Name:       "aPipeline",
 						OutputRefs: []string{"someotherendpoint"},
 						SourceType: logging.LogSourceTypeApp,
@@ -420,7 +420,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 					BeforeEach(func() {
 						request.ForwardingSpec = logging.ForwardingSpec{
 							Pipelines: []logging.PipelineSpec{
-								logging.PipelineSpec{
+								{
 									Name:       "mypipeline",
 									OutputRefs: []string{output.Name},
 									SourceType: logging.LogSourceTypeApp,
@@ -438,7 +438,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 						request.ForwardingSpec = logging.ForwardingSpec{
 							Outputs: []logging.OutputSpec{output},
 							Pipelines: []logging.PipelineSpec{
-								logging.PipelineSpec{
+								{
 									Name:       "mypipeline",
 									OutputRefs: []string{otherOutput.Name, output.Name},
 									SourceType: logging.LogSourceTypeApp,
@@ -461,7 +461,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 								otherOutput,
 							},
 							Pipelines: []logging.PipelineSpec{
-								logging.PipelineSpec{
+								{
 									Name:       "mypipeline",
 									OutputRefs: []string{output.Name, otherOutput.Name},
 									SourceType: logging.LogSourceTypeApp,

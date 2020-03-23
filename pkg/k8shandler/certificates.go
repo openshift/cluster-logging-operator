@@ -15,11 +15,11 @@ var deprecatedKeys = sets.NewString("app-ca", "app-key", "app-cert", "infra-ca",
 
 // golang doesn't allow for const maps
 var secretCertificates = map[string]map[string]string{
-	"master-certs": map[string]string{
+	"master-certs": {
 		"masterca":  "ca.crt",
 		"masterkey": "ca.key",
 	},
-	"elasticsearch": map[string]string{
+	"elasticsearch": {
 		"elasticsearch.key": "elasticsearch.key",
 		"elasticsearch.crt": "elasticsearch.crt",
 		"logging-es.key":    "logging-es.key",
@@ -28,17 +28,17 @@ var secretCertificates = map[string]map[string]string{
 		"admin-cert":        "system.admin.crt",
 		"admin-ca":          "ca.crt",
 	},
-	"kibana": map[string]string{
+	"kibana": {
 		"ca":   "ca.crt",
 		"key":  "system.logging.kibana.key",
 		"cert": "system.logging.kibana.crt",
 	},
-	"kibana-proxy": map[string]string{
+	"kibana-proxy": {
 		"server-key":     "kibana-internal.key",
 		"server-cert":    "kibana-internal.crt",
 		"session-secret": "kibana-session-secret",
 	},
-	"curator": map[string]string{
+	"curator": {
 		"ca":       "ca.crt",
 		"key":      "system.logging.curator.key",
 		"cert":     "system.logging.curator.crt",
@@ -46,7 +46,7 @@ var secretCertificates = map[string]map[string]string{
 		"ops-key":  "system.logging.curator.key",
 		"ops-cert": "system.logging.curator.crt",
 	},
-	"fluentd": map[string]string{
+	"fluentd": {
 		"ca-bundle.crt": "ca.crt",
 		"tls.key":       "system.logging.fluentd.key",
 		"tls.crt":       "system.logging.fluentd.crt",

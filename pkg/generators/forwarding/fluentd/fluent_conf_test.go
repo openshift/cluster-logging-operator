@@ -54,17 +54,17 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 			Pipelines: []logging.PipelineSpec{
-				logging.PipelineSpec{
+				{
 					Name:       "infra-pipeline",
 					SourceType: logging.LogSourceTypeInfra,
 					OutputRefs: []string{"infra-es"},
 				},
-				logging.PipelineSpec{
+				{
 					Name:       "apps-pipeline",
 					SourceType: logging.LogSourceTypeApp,
 					OutputRefs: []string{"apps-es-1", "apps-es-2"},
 				},
-				logging.PipelineSpec{
+				{
 					Name:       "audit-pipeline",
 					SourceType: logging.LogSourceTypeAudit,
 					OutputRefs: []string{"audit-es"},
@@ -83,7 +83,7 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 			Pipelines: []logging.PipelineSpec{
-				logging.PipelineSpec{
+				{
 					Name:       "apps-pipeline",
 					SourceType: logging.LogSourceTypeApp,
 					OutputRefs: []string{"secureforward-receiver"},

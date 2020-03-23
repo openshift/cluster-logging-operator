@@ -268,7 +268,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	fluentdContainer := NewContainer("fluentd", "fluentd", v1.PullIfNotPresent, *resources)
 
 	fluentdContainer.Ports = []v1.ContainerPort{
-		v1.ContainerPort{
+		{
 			Name:          metricsPortName,
 			ContainerPort: metricsPort,
 			Protocol:      v1.ProtocolTCP,
@@ -337,12 +337,12 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	tolerations := utils.AppendTolerations(
 		collectionSpec.Logs.FluentdSpec.Tolerations,
 		[]v1.Toleration{
-			v1.Toleration{
+			{
 				Key:      "node-role.kubernetes.io/master",
 				Operator: v1.TolerationOpExists,
 				Effect:   v1.TaintEffectNoSchedule,
 			},
-			v1.Toleration{
+			{
 				Key:      "node.kubernetes.io/disk-pressure",
 				Operator: v1.TolerationOpExists,
 				Effect:   v1.TaintEffectNoSchedule,

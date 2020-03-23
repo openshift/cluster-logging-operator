@@ -724,13 +724,12 @@ spec:
               properties:
                 kibanaStatus:
                   items:
+                    description: KibanaStatus defines the observed state of Kibana
                     properties:
                       clusterCondition:
                         additionalProperties:
-                          description: '`operator-sdk generate crds` does not allow
-                            map-of-slice, must use a named type.'
                           items:
-                            description: 'ConditionStatus contains details for the
+                            description: 'ClusterCondition contains details for the
                               current condition of this elasticsearch cluster. Status:
                               the status of the condition. LastTransitionTime: Last
                               time the condition transitioned from one status to another.

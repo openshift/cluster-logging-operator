@@ -61,14 +61,14 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 			)
 	}
 	// else
-	clusterRequest.UpdateCondition(
+	err = clusterRequest.UpdateCondition(
 		logging.CollectorDeadEnd,
 		"",
 		"",
 		v1.ConditionFalse,
 	)
 
-	return generatedConfig, nil
+	return generatedConfig, err
 }
 
 func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) logforward.ForwardingSpec {
@@ -100,7 +100,7 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 			}
 			return logforward.ForwardingSpec{
 				Outputs: []logforward.OutputSpec{
-					logforward.OutputSpec{
+					{
 						Name:     internalOutputName,
 						Type:     logforward.OutputTypeElasticsearch,
 						Endpoint: constants.LogStoreService,
@@ -110,12 +110,12 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 					},
 				},
 				Pipelines: []logforward.PipelineSpec{
-					logforward.PipelineSpec{
+					{
 						Name:       defaultAppPipelineName,
 						SourceType: logforward.LogSourceTypeApp,
 						OutputRefs: []string{internalOutputName},
 					},
-					logforward.PipelineSpec{
+					{
 						Name:       defaultInfraPipelineName,
 						SourceType: logforward.LogSourceTypeInfra,
 						OutputRefs: []string{internalOutputName},

@@ -83,7 +83,7 @@ func compareCuratorStatus(lhs, rhs []logging.CuratorStatus) bool {
 	}
 
 	if len(lhs) > 0 {
-		for index, _ := range lhs {
+		for index := range lhs {
 			if lhs[index].CronJob != rhs[index].CronJob {
 				return false
 			}

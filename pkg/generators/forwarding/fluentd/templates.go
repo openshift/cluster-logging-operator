@@ -69,7 +69,7 @@ const fluentConfTemplate = `{{- define "fluentConf" }}
 		key log
 		partial_key logtag
 		partial_value P
-		separator \'\'
+		separator ''
 	</filter>
 	<match kubernetes.**>
 		@type relabel

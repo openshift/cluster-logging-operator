@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -48,7 +49,26 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 
 	clusterRequest.ForwardingSpec = clusterRequest.normalizeLogForwarding(clusterRequest.cluster.Namespace, clusterRequest.cluster)
 	generator, err := forwarding.NewConfigGenerator(clusterRequest.cluster.Spec.Collection.Logs.Type, clusterRequest.includeLegacyForwardConfig(), clusterRequest.includeLegacySyslogConfig())
-	return generator.Generate(&clusterRequest.ForwardingSpec)
+	generatedConfig, err := generator.Generate(&clusterRequest.ForwardingSpec)
+
+	if err != nil {
+		return "",
+			clusterRequest.UpdateCondition(
+				logging.CollectorDeadEnd,
+				"Collectors are defined but there is no defined LogStore of LogForward destinations",
+				"No defined logstore destination",
+				v1.ConditionTrue,
+			)
+	}
+	// else
+	clusterRequest.UpdateCondition(
+		logging.CollectorDeadEnd,
+		"",
+		"",
+		v1.ConditionFalse,
+	)
+
+	return generatedConfig, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) logforward.ForwardingSpec {

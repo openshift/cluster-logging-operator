@@ -11,6 +11,7 @@ import (
 var _ = Describe("Indexmanagement", func() {
 
 	var retentionPolicy *logging.RetentionPoliciesSpec
+	var defaultPolicy *logging.RetentionPoliciesSpec
 
 	BeforeEach(func() {
 		retentionPolicy = &logging.RetentionPoliciesSpec{
@@ -30,10 +31,25 @@ var _ = Describe("Indexmanagement", func() {
 		Context("when retention policy is not defined", func() {
 			BeforeEach(func() {
 				retentionPolicy = nil
+				defaultPolicy = &logging.RetentionPoliciesSpec{
+					App: &logging.RetentionPolicySpec{
+						MaxAge: esapi.TimeUnit("7d"),
+					},
+					Infra: &logging.RetentionPolicySpec{
+						MaxAge: esapi.TimeUnit("7d"),
+					},
+					Audit: &logging.RetentionPolicySpec{
+						MaxAge: esapi.TimeUnit("7d"),
+					},
+				}
 			})
-			It("should not generate index management", func() {
+			It("should generate default index management", func() {
 				spec := NewSpec(retentionPolicy)
-				Expect(spec).To(BeNil())
+				Expect(len(spec.Policies)).To(Equal(3))
+				Expect(len(spec.Mappings)).To(Equal(3))
+				Expect(spec.Policies[0].Phases.Delete.MinAge).To(Equal(defaultPolicy.App.MaxAge))
+				Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(defaultPolicy.Infra.MaxAge))
+				Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(defaultPolicy.Audit.MaxAge))
 			})
 		})
 		Context("retention policy App log source has low maxAge", func() {

@@ -8,9 +8,9 @@ source "$(dirname $0)/../common"
 start_seconds=$(date +%s)
 
 TEST_DIR=${TEST_DIR:-'./test/e2e/logforwarding/*/'}
-ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output"}
-if [ ! -d $ARTIFACT_DIR ] ; then
-  mkdir -p $ARTIFACT_DIR
+test_artifact_dir="${ARTIFACT_DIR:-"$repo_dir/_output"}/$(basename ${BASH_SOURCE[0]})"
+if [ ! -d $test_artifact_dir ] ; then
+  mkdir -p $test_artifact_dir
 fi
 
 cleanup(){
@@ -50,7 +50,7 @@ for dir in $(ls -d $TEST_DIR); do
   log::info "=========================================================="
   log::info "Deploying cluster-logging-operator"
   deploy_clusterlogging_operator
-  artifact_dir=$ARTIFACT_DIR/$(basename $dir)
+  artifact_dir=$test_artifact_dir/$(basename $dir)
 
   tempdir=$(mktemp -d /tmp/elasticsearch-operator-XXXXXXXX)
   get_operator_files $tempdir elasticsearch-operator ${EO_REPO:-openshift} ${EO_BRANCH:-master}

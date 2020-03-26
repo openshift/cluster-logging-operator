@@ -11,10 +11,9 @@ source "$repo_dir/hack/testing/assertions"
 
 start_seconds=$(date +%s)
 
-ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output/"}
-ARTIFACT_DIR="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
-if [ ! -d $ARTIFACT_DIR ] ; then
-  mkdir -p $ARTIFACT_DIR
+test_artifact_dir="${ARTIFACT_DIR:-"$repo_dir/_output"}/$(basename ${BASH_SOURCE[0]})"
+if [ ! -d $test_artifact_dir ] ; then
+  mkdir -p $test_artifact_dir
 fi
 
 KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
@@ -31,19 +30,19 @@ cleanup(){
   log::info "Running cleanup"
   end_seconds=$(date +%s)
   runtime="$(($end_seconds - $start_seconds))s"
-  oc -n openshift-operators-redhat -o yaml get subscription elasticsearch-operator > $ARTIFACT_DIR/subscription-eo.yml 2>&1 ||:
-  oc -n openshift-operators-redhat -o yaml get deployment/elasticsearch-operator > $ARTIFACT_DIR/elasticsearch-operator-deployment.yml 2>&1 ||:
-  oc -n openshift-operators-redhat -o yaml get pods > $ARTIFACT_DIR/openshift-operators-redhat-pods.yml 2>&1 ||:
-  oc -n openshift-operators-redhat -o yaml get configmaps > $ARTIFACT_DIR/openshift-operators-redhat-configmaps.yml 2>&1 ||:
-  oc -n openshift-operators-redhat describe deployment/elasticsearch-operator > $ARTIFACT_DIR/elasticsearch-operator.describe 2>&1 ||:
+  oc -n openshift-operators-redhat -o yaml get subscription elasticsearch-operator > $test_artifact_dir/subscription-eo.yml 2>&1 ||:
+  oc -n openshift-operators-redhat -o yaml get deployment/elasticsearch-operator > $test_artifact_dir/elasticsearch-operator-deployment.yml 2>&1 ||:
+  oc -n openshift-operators-redhat -o yaml get pods > $test_artifact_dir/openshift-operators-redhat-pods.yml 2>&1 ||:
+  oc -n openshift-operators-redhat -o yaml get configmaps > $test_artifact_dir/openshift-operators-redhat-configmaps.yml 2>&1 ||:
+  oc -n openshift-operators-redhat describe deployment/elasticsearch-operator > $test_artifact_dir/elasticsearch-operator.describe 2>&1 ||:
 
-  oc logs -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.log 2>&1 ||:
-  oc -n ${NAMESPACE} -o yaml get subscription cluster-logging-operator > $ARTIFACT_DIR/subscription-clo.yml 2>&1 ||:
-  oc -n ${NAMESPACE} -o yaml get configmap cluster-logging > $ARTIFACT_DIR/configmap-for-catalogsource-clo.yml 2>&1 ||:
-  oc -n ${NAMESPACE} -o yaml get catalogsource cluster-logging > $ARTIFACT_DIR/catalogsource-clo.yml 2>&1 ||:
-  oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/catalog-operator > $ARTIFACT_DIR/catalog-operator.logs 2>&1 ||:
-  oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/olm-operator > $ARTIFACT_DIR/olm-operator.logs 2>&1 ||:
-  oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.after_update  2>&1 ||:
+  oc logs -n ${NAMESPACE} deployment/cluster-logging-operator > $test_artifact_dir/cluster-logging-operator.log 2>&1 ||:
+  oc -n ${NAMESPACE} -o yaml get subscription cluster-logging-operator > $test_artifact_dir/subscription-clo.yml 2>&1 ||:
+  oc -n ${NAMESPACE} -o yaml get configmap cluster-logging > $test_artifact_dir/configmap-for-catalogsource-clo.yml 2>&1 ||:
+  oc -n ${NAMESPACE} -o yaml get catalogsource cluster-logging > $test_artifact_dir/catalogsource-clo.yml 2>&1 ||:
+  oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/catalog-operator > $test_artifact_dir/catalog-operator.logs 2>&1 ||:
+  oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/olm-operator > $test_artifact_dir/olm-operator.logs 2>&1 ||:
+  oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $test_artifact_dir/cluster-logging-operator.describe.after_update  2>&1 ||:
 
   for item in "crd/elasticsearches.logging.openshift.io" "crd/clusterloggings.logging.openshift.io" "ns/openshift-logging" "ns/openshift-operators-redhat"; do
     oc delete $item --wait=true --ignore-not-found --force --grace-period=0
@@ -88,7 +87,7 @@ oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml
 
 assert_resources_exist
 
-oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.before_update 2>&1
+oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $test_artifact_dir/cluster-logging-operator.describe.before_update 2>&1
 
 deploy_config_map_catalog_source $NAMESPACE ${repo_dir}/manifests "${IMAGE_CLUSTER_LOGGING_OPERATOR}"
 

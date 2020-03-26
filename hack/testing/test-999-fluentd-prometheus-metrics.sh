@@ -5,7 +5,10 @@ set -e
 repo_dir=${repo_dir:-$(dirname $0)/../..}
 source "$repo_dir/hack/testing/utils"
 
-ARTIFACT_DIR=${ARTIFACT_DIR:-$repo_dir/_output}
+test_artifact_dir="${ARTIFACT_DIR:-"$repo_dir/_output"}/$(basename ${BASH_SOURCE[0]})"
+if [ ! -d $test_artifact_dir ] ; then
+  mkdir -p $test_artifact_dir
+fi
 LOGGING_NS=${LOGGING_NS:-openshift-logging}
 
 test_name=test-999-fluentd-prometheus-metrics

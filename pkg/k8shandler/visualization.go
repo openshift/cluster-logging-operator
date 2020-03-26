@@ -236,7 +236,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 		return
 	}
 
-	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch.openshift-logging.svc.cluster.local", proxyConfig, kibanaTrustBundle)
+	routerCanonicalHostname, err := clusterRequest.GetRouterCanonicalHostname("kibana")
+	if err != nil {
+		logrus.Error("Unable to get routerCanonicalHostname for kibana")
+	}
+
+	oauthIssuer := fmt.Sprintf("%s.%s", "oauth-openshift", routerCanonicalHostname)
+
+	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch.openshift-logging.svc.cluster.local", proxyConfig, kibanaTrustBundle, oauthIssuer)
 	kibanaDeployment := NewDeployment(
 		"kibana",
 		clusterRequest.cluster.Namespace,
@@ -625,7 +632,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 	return nil
 }
 
-func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasticsearchName string, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap) v1.PodSpec {
+func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasticsearchName string, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, oauthIssuer string) v1.PodSpec {
 	visSpec := logging.VisualizationSpec{}
 	if cluster.Spec.Visualization != nil {
 		visSpec = *cluster.Spec.Visualization
@@ -723,7 +730,7 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		},
 	}
 
-	proxyEnv := utils.SetProxyEnvVars(proxyConfig)
+	proxyEnv := utils.SetKibanaProxyEnvVars(proxyConfig, oauthIssuer)
 	kibanaProxyContainer.Env = append(kibanaProxyContainer.Env, proxyEnv...)
 
 	kibanaProxyContainer.Ports = []v1.ContainerPort{

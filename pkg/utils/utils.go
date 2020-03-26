@@ -400,11 +400,12 @@ func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelec
 	return false
 }
 
-func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {
+func SetKibanaProxyEnvVars(proxyConfig *configv1.Proxy, oauthIssuer string) []v1.EnvVar {
 	envVars := []v1.EnvVar{}
 	if proxyConfig == nil {
 		return envVars
 	}
+
 	if len(proxyConfig.Status.HTTPSProxy) != 0 {
 		envVars = append(envVars, v1.EnvVar{
 			Name:  "HTTPS_PROXY",
@@ -426,6 +427,48 @@ func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {
 			})
 	}
 	if len(proxyConfig.Status.NoProxy) != 0 {
+
+		envVars = append(envVars, v1.EnvVar{
+			Name:  "NO_PROXY",
+			Value: fmt.Sprintf("%s,%s", oauthIssuer, proxyConfig.Status.NoProxy),
+		},
+			v1.EnvVar{
+				Name:  "no_proxy",
+				Value: fmt.Sprintf("%s,%s", oauthIssuer, proxyConfig.Status.NoProxy),
+			})
+
+	}
+	return envVars
+}
+
+func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {
+	envVars := []v1.EnvVar{}
+	if proxyConfig == nil {
+		return envVars
+	}
+
+	if len(proxyConfig.Status.HTTPSProxy) != 0 {
+		envVars = append(envVars, v1.EnvVar{
+			Name:  "HTTPS_PROXY",
+			Value: proxyConfig.Status.HTTPSProxy,
+		},
+			v1.EnvVar{
+				Name:  "https_proxy",
+				Value: proxyConfig.Status.HTTPSProxy,
+			})
+	}
+	if len(proxyConfig.Status.HTTPProxy) != 0 {
+		envVars = append(envVars, v1.EnvVar{
+			Name:  "HTTP_PROXY",
+			Value: proxyConfig.Status.HTTPProxy,
+		},
+			v1.EnvVar{
+				Name:  "http_proxy",
+				Value: proxyConfig.Status.HTTPProxy,
+			})
+	}
+	if len(proxyConfig.Status.NoProxy) != 0 {
+
 		envVars = append(envVars, v1.EnvVar{
 			Name:  "NO_PROXY",
 			Value: proxyConfig.Status.NoProxy,
@@ -434,6 +477,7 @@ func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {
 				Name:  "no_proxy",
 				Value: proxyConfig.Status.NoProxy,
 			})
+
 	}
 	return envVars
 }

@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-logging-operator-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      registry.operator.cluster-logging: "true"
+  template:
+    metadata:
+      labels:
+        registry.operator.cluster-logging: "true"
+      name: cluster-logging-operator-registry
+    spec:
+      initContainers:
+      - name: mutate-csv-and-generate-sqlite-db
+        image: ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY}
+        imagePullPolicy: Always
+        command:
+        - sh
+        args:
+        - /scripts/registry-init.sh
+        volumeMounts:
+        - name: workdir
+          mountPath: /bundle
+        env:
+        - name: IMAGE_CLUSTER_LOGGING_OPERATOR
+          value: ${IMAGE_CLUSTER_LOGGING_OPERATOR}
+        - name: IMAGE_OAUTH_PROXY
+          value: ${IMAGE_OAUTH_PROXY}
+        - name: IMAGE_LOGGING_CURATOR5
+          value: ${IMAGE_LOGGING_CURATOR5}
+        - name: IMAGE_LOGGING_FLUENTD
+          value: ${IMAGE_LOGGING_FLUENTD}
+        - name: IMAGE_PROMTAIL
+          value: ${IMAGE_PROMTAIL}
+        - name: IMAGE_ELASTICSEARCH6
+          value: ${IMAGE_ELASTICSEARCH6}
+        - name: IMAGE_LOGGING_KIBANA6
+          value: ${IMAGE_LOGGING_KIBANA6}
+
+      containers:
+      - name: cluster-logging-operator-registry
+        image: ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY}
+        imagePullPolicy: Always
+        command:
+        - /usr/bin/registry-server
+        - --database=/bundle/bundles.db
+        volumeMounts:
+        - name: workdir
+          mountPath: /bundle
+        ports:
+        - containerPort: 50051
+          name: grpc
+          protocol: TCP
+        livenessProbe:
+          exec:
+            command:
+            - grpc_health_probe
+            - -addr=localhost:50051
+        readinessProbe:
+          exec:
+            command:
+            - grpc_health_probe
+            - -addr=localhost:50051
+        resources:
+          requests:
+            cpu: 10m
+            memory: 100Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      volumes:
+      - name: workdir
+        emptyDir: {}

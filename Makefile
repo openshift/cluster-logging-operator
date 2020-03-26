@@ -118,6 +118,9 @@ test-unit: fmt
 test-e2e:
 	hack/test-e2e.sh
 
+test-e2e-olm:
+	hack/test-e2e-olm.sh
+
 test-e2e-local: deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
 	 hack/test-e2e.sh
@@ -128,3 +131,29 @@ test-sec:
 
 undeploy:
 	hack/undeploy.sh
+
+
+
+cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-deploy
+
+cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-catalog-uninstall
+
+# builds an operator-registry image containing the cluster-logging operator
+cluster-logging-catalog-build:
+	olm_deploy/scripts/catalog-build.sh
+
+# deploys the operator registry image and creates a catalogsource referencing it
+cluster-logging-catalog-deploy:
+	olm_deploy/scripts/catalog-deploy.sh
+
+# deletes the catalogsource and catalog namespace
+cluster-logging-catalog-uninstall:
+	olm_deploy/scripts/catalog-uninstall.sh
+
+# installs the cluster-logging operator from the deployed operator-registry/catalogsource.
+cluster-logging-operator-install:
+	olm_deploy/scripts/operator-install.sh
+
+# uninstalls the cluster-logging operator
+cluster-logging-operator-uninstall:
+	olm_deploy/scripts/operator-uninstall.sh

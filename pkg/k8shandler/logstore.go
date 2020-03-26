@@ -234,6 +234,9 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      elasticsearchName,
 			Namespace: cluster.Namespace,
+			Annotations: map[string]string{
+				"elasticsearch.openshift.io/loglevel": "trace",
+			},
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",

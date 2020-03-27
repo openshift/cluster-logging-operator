@@ -56,9 +56,9 @@ type LogStoreSpec struct {
 }
 
 type RetentionPoliciesSpec struct {
-	App   *RetentionPolicySpec `json:"logs.app,omitempty"`
-	Infra *RetentionPolicySpec `json:"logs.infra,omitempty"`
-	Audit *RetentionPolicySpec `json:"logs.audit,omitempty"`
+	App   *RetentionPolicySpec `json:"application,omitempty"`
+	Infra *RetentionPolicySpec `json:"infra,omitempty"`
+	Audit *RetentionPolicySpec `json:"audit,omitempty"`
 }
 
 type RetentionPolicySpec struct {

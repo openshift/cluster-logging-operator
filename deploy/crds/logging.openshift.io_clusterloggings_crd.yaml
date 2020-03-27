@@ -290,7 +290,7 @@ spec:
                   type: object
                 retentionPolicy:
                   properties:
-                    logs.app:
+                    application:
                       properties:
                         maxAge:
                           description: TimeUnit is a time unit like h,m,d
@@ -298,7 +298,7 @@ spec:
                       required:
                       - maxAge
                       type: object
-                    logs.audit:
+                    audit:
                       properties:
                         maxAge:
                           description: TimeUnit is a time unit like h,m,d
@@ -306,7 +306,7 @@ spec:
                       required:
                       - maxAge
                       type: object
-                    logs.infra:
+                    infra:
                       properties:
                         maxAge:
                           description: TimeUnit is a time unit like h,m,d

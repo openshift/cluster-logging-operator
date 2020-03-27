@@ -46,7 +46,7 @@ imagebuilder:
 	then go get -u github.com/openshift/imagebuilder/cmd/imagebuilder ; \
 	fi
 
-build: generate fmt
+build: fmt
 	@mkdir -p $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURDIR)/pkg $(TARGET_DIR)/src/$(APP_REPO)
 	@cp -ru $(CURDIR)/vendor/* $(TARGET_DIR)/src

@@ -143,7 +143,7 @@ function os::util::environment::setup_tmpdir_vars() {
     export LOG_DIR
     ARTIFACT_DIR="${ARTIFACT_DIR:-${BASEOUTDIR}/artifacts}"
     export ARTIFACT_DIR
-    FAKE_HOME_DIR="${BASEOUTDIR}/openshift.local.home"
+    FAKE_HOME_DIR="${FAKE_HOME_DIR:-${BASEOUTDIR}/openshift.local.home}"
     export FAKE_HOME_DIR
 
     mkdir -p "${LOG_DIR}" "${VOLUME_DIR}" "${ARTIFACT_DIR}" "${FAKE_HOME_DIR}"

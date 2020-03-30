@@ -202,6 +202,84 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 			Nodes:            []elasticsearch.ElasticsearchNode{node},
 			ManagementState:  elasticsearch.ManagementStateManaged,
 			RedundancyPolicy: elasticsearch.ZeroRedundancy,
+			IndexManagement: &elasticsearch.IndexManagementSpec{
+				Policies: []elasticsearch.IndexManagementPolicySpec{
+					elasticsearch.IndexManagementPolicySpec{
+						Name:         "App",
+						PollInterval: elasticsearch.TimeUnit("15m"),
+						Phases: elasticsearch.IndexManagementPhasesSpec{
+							Delete: &elasticsearch.IndexManagementDeletePhaseSpec{
+								MinAge: elasticsearch.TimeUnit("2d"),
+							},
+							Hot: &elasticsearch.IndexManagementHotPhaseSpec{
+								Actions: elasticsearch.IndexManagementActionsSpec{
+									Rollover: &elasticsearch.IndexManagementActionSpec{
+										MaxAge: elasticsearch.TimeUnit("2d"),
+									},
+								},
+							},
+						},
+					},
+					elasticsearch.IndexManagementPolicySpec{
+						Name:         "Infra",
+						PollInterval: elasticsearch.TimeUnit("15m"),
+						Phases: elasticsearch.IndexManagementPhasesSpec{
+							Delete: &elasticsearch.IndexManagementDeletePhaseSpec{
+								MinAge: elasticsearch.TimeUnit("2d"),
+							},
+							Hot: &elasticsearch.IndexManagementHotPhaseSpec{
+								Actions: elasticsearch.IndexManagementActionsSpec{
+									Rollover: &elasticsearch.IndexManagementActionSpec{
+										MaxAge: elasticsearch.TimeUnit("2d"),
+									},
+								},
+							},
+						},
+					},
+					elasticsearch.IndexManagementPolicySpec{
+						Name:         "Audit",
+						PollInterval: elasticsearch.TimeUnit("15m"),
+						Phases: elasticsearch.IndexManagementPhasesSpec{
+							Delete: &elasticsearch.IndexManagementDeletePhaseSpec{
+								MinAge: elasticsearch.TimeUnit("2d"),
+							},
+							Hot: &elasticsearch.IndexManagementHotPhaseSpec{
+								Actions: elasticsearch.IndexManagementActionsSpec{
+									Rollover: &elasticsearch.IndexManagementActionSpec{
+										MaxAge: elasticsearch.TimeUnit("2d"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Mappings: []elasticsearch.IndexManagementPolicyMappingSpec{
+					elasticsearch.IndexManagementPolicyMappingSpec{
+						Name:      "App",
+						PolicyRef: "app-policy",
+						Aliases: []string{
+							"app",
+							"logs.app",
+						},
+					},
+					elasticsearch.IndexManagementPolicyMappingSpec{
+						Name:      "Infra",
+						PolicyRef: "infra-policy",
+						Aliases: []string{
+							"infra",
+							"logs.infra",
+						},
+					},
+					elasticsearch.IndexManagementPolicyMappingSpec{
+						Name:      "Audit",
+						PolicyRef: "audit-policy",
+						Aliases: []string{
+							"infra.audit",
+							"logs.audit",
+						},
+					},
+				},
+			},
 		},
 	}
 	tc.AddCleanup(func() error {

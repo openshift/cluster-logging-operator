@@ -16,6 +16,9 @@ func Debugf(format string, objects ...interface{}) {
 	logrus.Debugf(format, objects...)
 }
 
+func Warn(objects ...interface{}) {
+	logrus.Warn(objects...)
+}
 func Warnf(format string, objects ...interface{}) {
 	logrus.Warnf(format, objects...)
 }

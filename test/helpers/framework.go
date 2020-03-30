@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -81,6 +82,16 @@ func NewE2ETestFramework() *E2ETestFramework {
 
 func (tc *E2ETestFramework) AddCleanup(fn func() error) {
 	tc.CleanupFns = append(tc.CleanupFns, fn)
+}
+
+func (tc *E2ETestFramework) WriteToArchiveDir(file string, object interface{}) {
+	if artifactDir := os.Getenv("artifact_dir"); artifactDir != "" {
+
+		if err := ioutil.WriteFile(fmt.Sprintf("%s/%s", artifactDir, file), []byte(fmt.Sprintf("%v", object)), 444); err != nil {
+			logger.Errorf("Unable to write %s to archive dir: %v", file, err)
+		}
+	}
+	logger.Warn("Trying to write to the artifact_dir but it was not defined")
 }
 
 func (tc *E2ETestFramework) DeployLogGenerator() error {

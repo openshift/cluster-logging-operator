@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
@@ -163,6 +164,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
 		return nil, nil, err
 	}
+	tc.WriteToArchiveDir("test-es-cluster.secret.txt", pipelineSecret)
 
 	esSecret := k8shandler.NewSecret(
 		logStoreName,
@@ -202,6 +204,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 			Nodes:            []elasticsearch.ElasticsearchNode{node},
 			ManagementState:  elasticsearch.ManagementStateManaged,
 			RedundancyPolicy: elasticsearch.ZeroRedundancy,
+			IndexManagement:  indexmanagement.NewSpec(nil),
 		},
 	}
 	tc.AddCleanup(func() error {

@@ -169,7 +169,7 @@ var _ = Describe("Generating fluentd config", func() {
 				key log
 				partial_key logtag
 				partial_value P
-				separator \'\'
+				separator ''
 				</filter>
 				<match kubernetes.**>
 				@type relabel
@@ -586,7 +586,7 @@ var _ = Describe("Generating fluentd config", func() {
 				key log
 				partial_key logtag
 				partial_value P
-				separator \'\'
+				separator ''
 				</filter>
 				<match kubernetes.**>
 				@type relabel

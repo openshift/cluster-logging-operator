@@ -43,6 +43,11 @@ func (clusterRequest *ClusterLoggingRequest) RemoveService(serviceName string) e
 		[]core.ServicePort{},
 	)
 
+	//TODO: Remove this in the next release after removing old kibana code completely
+	if !HasCLORef(service, clusterRequest) {
+		return nil
+	}
+
 	err := clusterRequest.Delete(service)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v service %v", serviceName, err)

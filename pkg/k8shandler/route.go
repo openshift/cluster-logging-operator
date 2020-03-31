@@ -90,14 +90,19 @@ func (clusterRequest *ClusterLoggingRequest) GetRouteURL(routeName string) (stri
 //RemoveRoute with given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveRoute(routeName string) error {
 
-	route := NewRoute(
+	rt := NewRoute(
 		routeName,
 		clusterRequest.cluster.Namespace,
 		routeName,
 		"",
 	)
 
-	err := clusterRequest.Delete(route)
+	//TODO: Remove this in the next release after removing old kibana code completely
+	if !HasCLORef(rt, clusterRequest) {
+		return nil
+	}
+
+	err := clusterRequest.Delete(rt)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v route %v", routeName, err)
 	}

@@ -6,47 +6,22 @@ package lsp
 
 import (
 	"context"
+
+	"golang.org/x/tools/internal/lsp/mod"
 	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
-	"golang.org/x/tools/internal/span"
 )
 
-func (s *Server) hover(ctx context.Context, params *protocol.TextDocumentPositionParams) (*protocol.Hover, error) {
-	uri := span.NewURI(params.TextDocument.URI)
-	view := s.session.ViewOf(uri)
-	f, m, err := getGoFile(ctx, view, uri)
-	if err != nil {
+func (s *Server) hover(ctx context.Context, params *protocol.HoverParams) (*protocol.Hover, error) {
+	snapshot, fh, ok, err := s.beginFileRequest(params.TextDocument.URI, source.UnknownKind)
+	if !ok {
 		return nil, err
 	}
-	spn, err := m.PointSpan(params.Position)
-	if err != nil {
-		return nil, err
+	switch fh.Identity().Kind {
+	case source.Mod:
+		return mod.Hover(ctx, snapshot, fh, params.Position)
+	case source.Go:
+		return source.Hover(ctx, snapshot, fh, params.Position)
 	}
-	identRange, err := spn.Range(m.Converter)
-	if err != nil {
-		return nil, err
-	}
-	ident, err := source.Identifier(ctx, view, f, identRange.Start)
-	if err != nil {
-		return nil, err
-	}
-	hover, err := ident.Hover(ctx, s.preferredContentFormat == protocol.Markdown, s.hoverKind)
-	if err != nil {
-		return nil, err
-	}
-	identSpan, err := ident.Range.Span()
-	if err != nil {
-		return nil, err
-	}
-	rng, err := m.Range(identSpan)
-	if err != nil {
-		return nil, err
-	}
-	return &protocol.Hover{
-		Contents: protocol.MarkupContent{
-			Kind:  s.preferredContentFormat,
-			Value: hover,
-		},
-		Range: &rng,
-	}, nil
+	return nil, nil
 }

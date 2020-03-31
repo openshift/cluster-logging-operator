@@ -56,6 +56,10 @@ required = [
   name = "sigs.k8s.io/controller-runtime"
   version = "=v0.1.10"
 
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+
 [[constraint]]
   name = "github.com/operator-framework/operator-sdk"
   # The version rule is used for a specific release and the master branch for in between releases.
@@ -65,10 +69,6 @@ required = [
 [[constraint]]
   name = "github.com/openshift/elasticsearch-operator"
   branch = "master"
-
-[[override]]
-  name = "gopkg.in/fsnotify.v1"
-  source = "https://github.com/fsnotify/fsnotify.git"
 
 [[constraint]]
   name = "github.com/onsi/ginkgo"

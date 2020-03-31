@@ -60,6 +60,14 @@ func (r UpdateResult) Extract() (string, error) {
 	return s.UUID, err
 }
 
+func (r ResizeResult) Extract() (string, error) {
+	var s struct {
+		UUID string
+	}
+	err := r.ExtractInto(&s)
+	return s.UUID, err
+}
+
 type Cluster struct {
 	APIAddress        string             `json:"api_address"`
 	COEVersion        string             `json:"coe_version"`
@@ -87,6 +95,9 @@ type Cluster struct {
 	UUID              string             `json:"uuid"`
 	UpdatedAt         time.Time          `json:"updated_at"`
 	UserID            string             `json:"user_id"`
+	FloatingIPEnabled bool               `json:"floating_ip_enabled"`
+	FixedNetwork      string             `json:"fixed_network"`
+	FixedSubnet       string             `json:"fixed_subnet"`
 }
 
 type ClusterPage struct {

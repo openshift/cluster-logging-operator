@@ -45,6 +45,10 @@ func IsDebugEnabled() bool {
 	return logrus.GetLevel() == logrus.DebugLevel
 }
 
+func Info(args ...interface{}) {
+	logrus.Info(args...)
+}
+
 //DebugObject pretty prints the given object
 func DebugObject(sprintfMessage string, object interface{}) {
 	if IsDebugEnabled() && object != nil {

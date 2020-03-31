@@ -6,18 +6,18 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 
-	"golang.org/x/tools/internal/lsp/telemetry/trace"
-	"golang.org/x/tools/internal/span"
+	"golang.org/x/tools/internal/lsp/protocol"
+	"golang.org/x/tools/internal/telemetry/trace"
 )
 
 // ReferenceInfo holds information about reference to an identifier in Go source.
 type ReferenceInfo struct {
-	Name          string
-	Range         span.Range
+	Name string
+	mappedRange
 	ident         *ast.Ident
 	obj           types.Object
 	pkg           Package
@@ -26,74 +26,91 @@ type ReferenceInfo struct {
 
 // References returns a list of references for a given identifier within the packages
 // containing i.File. Declarations appear first in the result.
-func (i *IdentifierInfo) References(ctx context.Context) ([]*ReferenceInfo, error) {
+func References(ctx context.Context, s Snapshot, f FileHandle, pp protocol.Position, includeDeclaration bool) ([]*ReferenceInfo, error) {
 	ctx, done := trace.StartSpan(ctx, "source.References")
 	defer done()
-	var references []*ReferenceInfo
 
-	// If the object declaration is nil, assume it is an import spec and do not look for references.
-	if i.decl.obj == nil {
-		return nil, fmt.Errorf("no references for an import spec")
+	qualifiedObjs, err := qualifiedObjsAtProtocolPos(ctx, s, f, pp)
+	if err != nil {
+		return nil, err
+	}
+	// Don't return references for builtin types.
+	if qualifiedObjs[0].obj.Parent() == types.Universe {
+		return nil, nil
 	}
 
-	pkgs := i.File.GetPackages(ctx)
-	for _, pkg := range pkgs {
-		if pkg == nil || pkg.IsIllTyped() {
-			return nil, fmt.Errorf("package for %s is ill typed", i.File.URI())
-		}
-		info := pkg.GetTypesInfo()
-		if info == nil {
-			return nil, fmt.Errorf("package %s has no types info", pkg.PkgPath())
+	var (
+		references []*ReferenceInfo
+		seen       = make(map[token.Position]bool)
+		fset       = s.View().Session().Cache().FileSet()
+	)
+
+	// Make sure declaration is the first item in the response.
+	if includeDeclaration {
+		rng, err := objToMappedRange(s.View(), qualifiedObjs[0].pkg, qualifiedObjs[0].obj)
+		if err != nil {
+			return nil, err
 		}
 
-		if i.decl.wasImplicit {
-			// The definition is implicit, so we must add it separately.
-			// This occurs when the variable is declared in a type switch statement
-			// or is an implicit package name. Both implicits are local to a file.
-			references = append(references, &ReferenceInfo{
-				Name:          i.decl.obj.Name(),
-				Range:         i.decl.rng,
-				obj:           i.decl.obj,
-				pkg:           pkg,
-				isDeclaration: true,
-			})
-		}
-		for ident, obj := range info.Defs {
-			if obj == nil || !sameObj(obj, i.decl.obj) {
-				continue
+		ident, _ := qualifiedObjs[0].node.(*ast.Ident)
+		references = append(references, &ReferenceInfo{
+			mappedRange:   rng,
+			Name:          qualifiedObjs[0].obj.Name(),
+			ident:         ident,
+			obj:           qualifiedObjs[0].obj,
+			pkg:           qualifiedObjs[0].pkg,
+			isDeclaration: true,
+		})
+	}
+
+	for _, qo := range qualifiedObjs {
+		var searchPkgs []Package
+
+		// Only search dependents if the object is exported.
+		if qo.obj.Exported() {
+			reverseDeps, err := s.GetReverseDependencies(ctx, qo.pkg.ID())
+			if err != nil {
+				return nil, err
 			}
-			// Add the declarations at the beginning of the references list.
-			references = append([]*ReferenceInfo{&ReferenceInfo{
-				Name:          ident.Name,
-				Range:         span.NewRange(i.File.FileSet(), ident.Pos(), ident.End()),
-				ident:         ident,
-				obj:           obj,
-				pkg:           pkg,
-				isDeclaration: true,
-			}}, references...)
-		}
-		for ident, obj := range info.Uses {
-			if obj == nil || !sameObj(obj, i.decl.obj) {
-				continue
+
+			for _, ph := range reverseDeps {
+				pkg, err := ph.Check(ctx)
+				if err != nil {
+					return nil, err
+				}
+				searchPkgs = append(searchPkgs, pkg)
 			}
-			references = append(references, &ReferenceInfo{
-				Name:  ident.Name,
-				Range: span.NewRange(i.File.FileSet(), ident.Pos(), ident.End()),
-				ident: ident,
-				pkg:   pkg,
-				obj:   obj,
-			})
 		}
 
+		// Add the package in which the identifier is declared.
+		searchPkgs = append(searchPkgs, qo.pkg)
+
+		for _, pkg := range searchPkgs {
+			for ident, obj := range pkg.GetTypesInfo().Uses {
+				if obj != qo.obj {
+					continue
+				}
+
+				pos := fset.Position(ident.Pos())
+				if seen[pos] {
+					continue
+				}
+				seen[pos] = true
+
+				rng, err := posToMappedRange(s.View(), pkg, ident.Pos(), ident.End())
+				if err != nil {
+					return nil, err
+				}
+				references = append(references, &ReferenceInfo{
+					Name:        ident.Name,
+					ident:       ident,
+					pkg:         pkg,
+					obj:         obj,
+					mappedRange: rng,
+				})
+			}
+		}
 	}
 
 	return references, nil
-}
-
-// sameObj returns true if obj is the same as declObj.
-// Objects are the same if they have the some Pos and Name.
-func sameObj(obj, declObj types.Object) bool {
-	// TODO(suzmue): support the case where an identifier may have two different
-	// declaration positions.
-	return obj.Pos() == declObj.Pos() && obj.Name() == declObj.Name()
 }

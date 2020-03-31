@@ -25,8 +25,9 @@ cleanup(){
   gather_logging_resources ${NAMESPACE} $test_artifact_dir
   oc delete ns ${NAMESPACE} --wait=true --ignore-not-found
   oc delete crd elasticsearches.logging.openshift.io --wait=false --ignore-not-found
+  oc delete crd kibanas.logging.openshift.io --wait=false --ignore-not-found
   os::cmd::try_until_failure "oc get project ${NAMESPACE}" "$((1 * $minute))"
-  
+
   os::cleanup::all "${return_code}"
   
   set -e
@@ -40,6 +41,8 @@ else
   IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/origin/${OCP_VERSION}:cluster-logging-operator}
 fi
 
+os::log::info "Using image: $IMAGE_CLUSTER_LOGGING_OPERATOR"
+
 KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
 oc create ns ${NAMESPACE} || :
@@ -47,10 +50,18 @@ oc create ns ${NAMESPACE} || :
 tempdir=$(mktemp -d /tmp/elasticsearch-operator-XXXXXXXX)
 get_operator_files $tempdir elasticsearch-operator ${EO_REPO:-openshift} ${EO_BRANCH:-master}
 eo_manifest=${tempdir}/manifests
+eo_version=$(basename $(find $eo_manifest -type d | sort -r | head -n 1))
+os::log::info "Using elasticsearch operator version: ${eo_version}"
 
-eo_version=$(basename $(find  $eo_manifest -type d | sort -r | head -n 1))
-os::cmd::expect_success "oc create -f ${eo_manifest}/${eo_version}/elasticsearches.crd.yaml"
+if ! is_crd_installed "elasticsearches.logging.openshift.io"; then
+  os::cmd::expect_success "oc create -f ${eo_manifest}/${eo_version}/elasticsearches.crd.yaml"
+fi
 
+if ! is_crd_installed "kibanas.logging.openshift.io"; then
+  os::cmd::expect_success "oc create -f ${eo_manifest}/${eo_version}/kibanas.crd.yaml"
+fi
+# Create static cluster roles and rolebindings
+deploy_olm_catalog_unsupported_resources
 
 os::log::info "Deploying operator from ${manifest}"
 NAMESPACE=${NAMESPACE} \
@@ -81,3 +92,5 @@ os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
 
 # assert deployment
 assert_resources_exist
+# assert kibana instance exists
+assert_kibana_instance_exists

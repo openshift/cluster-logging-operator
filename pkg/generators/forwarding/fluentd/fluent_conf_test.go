@@ -344,7 +344,7 @@ var _ = Describe("Generating fluentd config", func() {
 						enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
 						tag "linux-audit.log** k8s-audit.log** openshift-audit.log**"
 						name_type static
-						static_index_name audit-infra-write
+						static_index_name audit-write
 						</elasticsearch_index_name>
 						<elasticsearch_index_name>
 						enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
@@ -765,7 +765,7 @@ var _ = Describe("Generating fluentd config", func() {
 						enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
 						tag "linux-audit.log** k8s-audit.log** openshift-audit.log**"
 						name_type static
-						static_index_name audit-infra-write
+						static_index_name audit-write
 					</elasticsearch_index_name>
 					<elasticsearch_index_name>
 						enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"

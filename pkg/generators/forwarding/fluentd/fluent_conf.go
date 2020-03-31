@@ -63,7 +63,7 @@ func (conf *outputLabelConf) Protocol() string {
 	if index := strings.Index(endpoint, protocolSeparator); index != -1 {
 		return endpoint[:index]
 	}
-	return ""
+	return "tcp"
 }
 
 func stripProtocol(endpoint string) string {

@@ -18,10 +18,11 @@ type ConfigGenerator struct {
 	*generators.Generator
 	includeLegacyForwardConfig bool
 	includeLegacySyslogConfig  bool
+	useOldRemoteSyslogPlugin   bool
 }
 
 //NewConfigGenerator creates an instance of FluentdConfigGenerator
-func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig bool) (*ConfigGenerator, error) {
+func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin bool) (*ConfigGenerator, error) {
 	engine, err := generators.New("OutputLabelConf",
 		&template.FuncMap{
 			"labelName":           labelName,
@@ -31,7 +32,7 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig bo
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigGenerator{engine, includeLegacyForwardConfig, includeLegacySyslogConfig}, nil
+	return &ConfigGenerator{engine, includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin}, nil
 }
 
 //Generate the fluent.conf file using the forwarding information
@@ -206,7 +207,11 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logforward.Ou
 			storeTemplateName = "forward"
 			outputTemplateName = "outputLabelConfNoCopy"
 		case logforward.OutputTypeSyslog:
-			storeTemplateName = "storeSyslog"
+			if engine.useOldRemoteSyslogPlugin {
+				storeTemplateName = "storeSyslogOld"
+			} else {
+				storeTemplateName = "storeSyslog"
+			}
 			outputTemplateName = "outputLabelConfNoRetry"
 		default:
 			logger.Warnf("Pipeline targets include an unrecognized type: %q", output.Type)

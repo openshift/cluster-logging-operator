@@ -16,7 +16,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		generator *ConfigGenerator
 	)
 	BeforeEach(func() {
-		generator, err = NewConfigGenerator(false, false)
+		generator, err = NewConfigGenerator(false, false, true)
 		Expect(err).To(BeNil())
 	})
 

@@ -15,6 +15,7 @@ var templateRegistry = []string{
 	outputLabelConfNoretryTemplate,
 	storeElasticsearchTemplate,
 	forwardTemplate,
+	storeSyslogTemplateOld,
 	storeSyslogTemplate,
 }
 
@@ -594,7 +595,7 @@ const storeElasticsearchTemplate = `{{- define "storeElasticsearch" }}
 </store>
 {{- end}}`
 
-const storeSyslogTemplate = `{{- define "storeSyslog" }}
+const storeSyslogTemplateOld = `{{- define "storeSyslogOld" }}
 <store>
 	@type {{.SyslogPlugin}}
 	@id {{.StoreID}}
@@ -603,5 +604,45 @@ const storeSyslogTemplate = `{{- define "storeSyslog" }}
 	hostname ${hostname}
 	facility user
 	severity debug
+</store>
+{{- end}}`
+
+//	hostname ${hostname}
+const storeSyslogTemplate = `{{- define "storeSyslog" }}
+<store>
+    @type remote_syslog
+	@id {{.StoreID}}
+	host {{.Host}}
+	port {{.Port}}
+	facility user
+	severity debug
+	program fluentd
+	protocol {{.Protocol}}
+	packet_size 4096
+	{{if .Target.Secret }}
+	tls true
+	ca_file '{{ .SecretPath "ca-bundle.crt"}}'
+	verify_mode true
+	{{ end -}}
+	{{ if (eq .Protocol "tcp")}}
+	timeout 60
+	timeout_exception true
+	keep_alive       true
+	keep_alive_idle    75
+	keep_alive_cnt      9
+	keep_alive_intvl 7200
+	{{ end -}}
+	<buffer>
+		@type file
+		path '{{.BufferPath}}'
+		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+		retry_forever true
+		queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+	</buffer>
 </store>
 {{- end}}`

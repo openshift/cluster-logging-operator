@@ -24,6 +24,9 @@ const (
 
 	//ForwardingAnnotation  Annotate CL instance with a value of "enabled"
 	ForwardingAnnotation = "clusterlogging.openshift.io/logforwardingtechpreview"
+
+	// UseOldRemoteSyslogPlugin Annotation in LogFprwarding to use old plugin (docebo/fluent-plugin-remote-syslog) to send syslog
+	UseOldRemoteSyslogPlugin = "clusterlogging.openshift.io/useoldremotesyslogplugin"
 )
 
 var (
@@ -48,7 +51,11 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	}
 
 	clusterRequest.ForwardingSpec = clusterRequest.normalizeLogForwarding(clusterRequest.cluster.Namespace, clusterRequest.cluster)
-	generator, err := forwarding.NewConfigGenerator(clusterRequest.cluster.Spec.Collection.Logs.Type, clusterRequest.includeLegacyForwardConfig(), clusterRequest.includeLegacySyslogConfig())
+	generator, err := forwarding.NewConfigGenerator(
+		clusterRequest.cluster.Spec.Collection.Logs.Type,
+		clusterRequest.includeLegacyForwardConfig(),
+		clusterRequest.includeLegacySyslogConfig(),
+		clusterRequest.useOldRemoteSyslogPlugin())
 	generatedConfig, err := generator.Generate(&clusterRequest.ForwardingSpec)
 
 	if err != nil {

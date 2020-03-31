@@ -3,6 +3,9 @@ package helpers
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +26,7 @@ type syslogReceiverLogStore struct {
 }
 
 const (
-	syslogReceiverName = "syslog-receiver"
+	SyslogReceiverName = "syslog-receiver"
 	tcpSyslogConf      = `
 # Provides TCP syslog reception
 # for parameters see http://www.rsyslog.com/doc/imtcp.html
@@ -35,10 +38,57 @@ ruleset(name="test"){
     action(type="omfile" file="/var/log/infra.log")
 }
 	`
+	tcpSyslogWithTLSConf = `
+# Provides TCP syslog reception
+# for parameters see http://www.rsyslog.com/doc/imtcp.html
+module(load="imtcp"
+    StreamDriver.Name="gtls"
+    StreamDriver.Mode="1" # run driver in TLS-only mode
+    StreamDriver.Authmode="anon"
+)
+# make gtls driver the default and set certificate files
+global(
+    DefaultNetstreamDriver="gtls"
+    DefaultNetstreamDriverCAFile="/rsyslog/etc/secrets/ca-bundle.crt"
+    DefaultNetstreamDriverCertFile="/rsyslog/etc/secrets/tls.crt"
+    DefaultNetstreamDriverKeyFile="/rsyslog/etc/secrets/tls.key"
+    )
+
+input(type="imtcp" port="24224" ruleset="test")
+
+#### RULES ####
+ruleset(name="test"){
+    action(type="omfile" file="/var/log/infra.log")
+}
+	`
 	udpSyslogConf = `
 # Provides UDP syslog reception
 # for parameters see http://www.rsyslog.com/doc/imudp.html
 module(load="imudp") # needs to be done just once
+input(type="imudp" port="24224" ruleset="test")
+
+#### RULES ####
+ruleset(name="test"){
+    action(type="omfile" file="/var/log/infra.log")
+}
+	`
+	udpSyslogWithTLSConf = `
+# Provides UDP syslog reception
+# for parameters see http://www.rsyslog.com/doc/imudp.html
+module(load="imudp"
+    StreamDriver.Name="gtls"
+    StreamDriver.Mode="1" # run driver in TLS-only mode
+    StreamDriver.Authmode="anon"
+) # needs to be done just once
+
+# make gtls driver the default and set certificate files
+global(
+    DefaultNetstreamDriver="gtls"
+    DefaultNetstreamDriverCAFile="/rsyslog/etc/secrets/ca-bundle.crt"
+    DefaultNetstreamDriverCertFile="/rsyslog/etc/secrets/tls.crt"
+    DefaultNetstreamDriverKeyFile="/rsyslog/etc/secrets/tls.key"
+    )
+
 input(type="imudp" port="24224" ruleset="test")
 
 #### RULES ####
@@ -166,7 +216,7 @@ func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 	return nil
 }
 
-func (tc *E2ETestFramework) DeploySyslogReceiver(protocol corev1.Protocol) (deployment *apps.Deployment, err error) {
+func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1.Protocol, withTLS bool) (deployment *apps.Deployment, err error) {
 	logStore := &syslogReceiverLogStore{
 		tc: tc,
 	}
@@ -174,11 +224,11 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(protocol corev1.Protocol) (depl
 	if err != nil {
 		return nil, err
 	}
-	if err := tc.createSyslogRbac(syslogReceiverName); err != nil {
+	if err := tc.createSyslogRbac(SyslogReceiverName); err != nil {
 		return nil, err
 	}
 	container := corev1.Container{
-		Name:            syslogReceiverName,
+		Name:            SyslogReceiverName,
 		Image:           "quay.io/openshift/origin-logging-rsyslog:latest",
 		ImagePullPolicy: corev1.PullAlways,
 		Args:            []string{"rsyslogd", "-n", "-f", "/rsyslog/etc/rsyslog.conf"},
@@ -216,6 +266,36 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(protocol corev1.Protocol) (depl
 
 	default:
 		rsyslogConf = tcpSyslogConf
+	}
+
+	if withTLS {
+		switch {
+		case protocol == corev1.ProtocolUDP:
+			rsyslogConf = udpSyslogWithTLSConf
+
+		default:
+			rsyslogConf = tcpSyslogWithTLSConf
+		}
+		secret, err := tc.CreateSyslogReceiverSecrets(testDir, SyslogReceiverName, SyslogReceiverName)
+		if err != nil {
+			return nil, err
+		}
+		tc.AddCleanup(func() error {
+			return tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(SyslogReceiverName, nil)
+		})
+		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+			Name:      "certs",
+			ReadOnly:  true,
+			MountPath: "/rsyslog/etc/secrets",
+		})
+		podSpec.Containers = []corev1.Container{container}
+		podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
+			Name: "certs", VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secret.ObjectMeta.Name,
+				},
+			},
+		})
 	}
 
 	config := k8shandler.NewConfigMap(container.Name, OpenshiftLoggingNS, map[string]string{
@@ -269,4 +349,41 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(protocol corev1.Protocol) (depl
 	logStore.deployment = syslogDeployment
 	tc.LogStore = logStore
 	return syslogDeployment, tc.waitForDeployment(OpenshiftLoggingNS, syslogDeployment.Name, defaultRetryInterval, defaultTimeout)
+}
+
+func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, secretName string) (*corev1.Secret, error) {
+	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
+	logger.Debugf("Generating Pipeline certificates for %q to %s", "rsyslog-receiver", workingDir)
+	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
+		if err = os.MkdirAll(workingDir, 0766); err != nil {
+			return nil, err
+		}
+	}
+	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
+		return nil, err
+	}
+	script := fmt.Sprintf("%s/syslog_cert_generation.sh", testDir)
+	logger.Debugf("Running script '%s %s %s %s'", script, workingDir, OpenshiftLoggingNS, logStoreName)
+	cmd := exec.Command(script, workingDir, OpenshiftLoggingNS, logStoreName)
+	result, err := cmd.Output()
+	if logger.IsDebugEnabled() {
+		logger.Debugf("cert_generation output: %s", string(result))
+		logger.Debugf("err: %v", err)
+	}
+	data := map[string][]byte{
+		"tls.key":       utils.GetWorkingDirFileContents("syslog-server.key"),
+		"tls.crt":       utils.GetWorkingDirFileContents("syslog-server.crt"),
+		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca-syslog.crt"),
+		"ca.key":        utils.GetWorkingDirFileContents("ca-syslog.key"),
+	}
+	secret := k8shandler.NewSecret(
+		secretName,
+		OpenshiftLoggingNS,
+		data,
+	)
+	logger.Debugf("Creating secret %s for logStore %s", secret.Name, logStoreName)
+	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
+		return nil, err
+	}
+	return secret, nil
 }

@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
@@ -23,7 +24,7 @@ import (
 const (
 	InfraIndexPrefix          = "infra-"
 	ProjectIndexPrefix        = "app-"
-	AuditIndexPrefix          = "audit-infra-"
+	AuditIndexPrefix          = "audit-"
 	elasticsearchesLoggingURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/elasticsearches"
 )
 
@@ -202,6 +203,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 			Nodes:            []elasticsearch.ElasticsearchNode{node},
 			ManagementState:  elasticsearch.ManagementStateManaged,
 			RedundancyPolicy: elasticsearch.ZeroRedundancy,
+			IndexManagement:  indexmanagement.NewSpec(nil),
 		},
 	}
 	tc.AddCleanup(func() error {

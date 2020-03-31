@@ -123,15 +123,15 @@ spec:
                 retentionPolicy:
                   description: Retention policy defines the maximum age for an index after which it should be deleted
                   properties:
-                    logs.app:
+                    application:
                       properties:
                       maxAge:
                         type: string
-                    logs.infra:
+                    infra:
                       properties:
                       maxAge:
                         type: string
-                    logs.audit:
+                    audit:
                       properties:
                       maxAge:
                         type: string

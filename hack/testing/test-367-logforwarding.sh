@@ -46,7 +46,7 @@ fi
 failed=0
 for dir in $(ls -d $TEST_DIR); do
   log::info "=========================================================="
-  log::info "Staring test of logforwarding $dir"
+  log::info "Starting test of logforwarding $dir"
   log::info "=========================================================="
   log::info "Deploying cluster-logging-operator"
   deploy_clusterlogging_operator

@@ -88,6 +88,10 @@ type ElasticLogStore struct {
 	Framework *E2ETestFramework
 }
 
+func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (string, error) {
+	panic("Method not implemented")
+}
+
 func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		errorCount := 0

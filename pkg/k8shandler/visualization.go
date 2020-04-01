@@ -95,51 +95,43 @@ func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 	return nil
 }
 
-func compareKibanaStatus(lhs, rhs []es.KibanaStatus) bool {
-	// there should only ever be a single kibana status object
-	if len(lhs) != len(rhs) {
+func compareKibanaStatus(lhs, rhs es.KibanaStatus) bool {
+
+	if lhs.Deployment != rhs.Deployment {
 		return false
 	}
 
-	if len(lhs) > 0 {
-		for index, _ := range lhs {
-			if lhs[index].Deployment != rhs[index].Deployment {
-				return false
-			}
+	if lhs.Replicas != rhs.Replicas {
+		return false
+	}
 
-			if lhs[index].Replicas != rhs[index].Replicas {
-				return false
-			}
+	if len(lhs.ReplicaSets) != len(rhs.ReplicaSets) {
+		return false
+	}
 
-			if len(lhs[index].ReplicaSets) != len(rhs[index].ReplicaSets) {
-				return false
-			}
+	if len(lhs.ReplicaSets) > 0 {
+		if !reflect.DeepEqual(lhs.ReplicaSets, rhs.ReplicaSets) {
+			return false
+		}
+	}
 
-			if len(lhs[index].ReplicaSets) > 0 {
-				if !reflect.DeepEqual(lhs[index].ReplicaSets, rhs[index].ReplicaSets) {
-					return false
-				}
-			}
+	if len(lhs.Pods) != len(rhs.Pods) {
+		return false
+	}
 
-			if len(lhs[index].Pods) != len(rhs[index].Pods) {
-				return false
-			}
+	if len(lhs.Pods) > 0 {
+		if !reflect.DeepEqual(lhs.Pods, rhs.Pods) {
+			return false
+		}
+	}
 
-			if len(lhs[index].Pods) > 0 {
-				if !reflect.DeepEqual(lhs[index].Pods, rhs[index].Pods) {
-					return false
-				}
-			}
+	if len(lhs.Conditions) != len(rhs.Conditions) {
+		return false
+	}
 
-			if len(lhs[index].Conditions) != len(rhs[index].Conditions) {
-				return false
-			}
-
-			if len(lhs[index].Conditions) > 0 {
-				if !reflect.DeepEqual(lhs[index].Conditions, rhs[index].Conditions) {
-					return false
-				}
-			}
+	if len(lhs.Conditions) > 0 {
+		if !reflect.DeepEqual(lhs.Conditions, rhs.Conditions) {
+			return false
 		}
 	}
 
@@ -849,7 +841,7 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 }
 
 func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
-	var kb = &es.Kibana{
+	kb := &es.Kibana{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Kibana",
 			APIVersion: es.SchemeGroupVersion.String(),

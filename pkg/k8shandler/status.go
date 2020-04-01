@@ -7,6 +7,7 @@ import (
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -79,72 +80,64 @@ func (clusterRequest *ClusterLoggingRequest) getFluentdCollectorStatus() (loggin
 	return fluentdStatus, nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) getKibanaStatus() ([]elasticsearch.KibanaStatus, error) {
+func (clusterRequest *ClusterLoggingRequest) getKibanaStatus() (elasticsearch.KibanaStatus, error) {
 	cr, err := clusterRequest.getKibanaCR()
 	if err != nil {
-		return nil, err
+		return elasticsearch.KibanaStatus{}, err
 	}
-	return cr.Status, nil
+
+	// this is due to the CR dep -- once we update it will be different
+	return cr.Status[0], nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging.ElasticsearchStatus, error) {
+func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() (logging.ElasticsearchStatus, error) {
 
-	// we can scrape the status provided by the elasticsearch-operator
-	// get list of elasticsearch objects
-	esList := &elasticsearch.ElasticsearchList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Elasticsearch",
-			APIVersion: elasticsearch.SchemeGroupVersion.String(),
-		},
+	// TODO: eventually update this to just use what ES passes to us
+	cluster := &elasticsearch.Elasticsearch{}
+	nodeStatus := logging.ElasticsearchStatus{}
+
+	if err := clusterRequest.Get("elasticsearch", cluster); err != nil {
+		if apierrors.IsNotFound(err) {
+			// the object doesn't exist -- it was likely culled
+			// recreate it on the next time through if necessary
+			return nodeStatus, nil
+		}
+		return nodeStatus, fmt.Errorf("Failed to get Elasticsearch CR: %v", err)
 	}
 
-	err := clusterRequest.List(map[string]string{}, esList)
-	status := []logging.ElasticsearchStatus{}
+	nodeConditions := make(map[string]logging.ElasticsearchClusterConditions)
 
-	if err != nil {
-		return status, fmt.Errorf("Unable to get Elasticsearches: %v", err)
+	nodeStatus = logging.ElasticsearchStatus{
+		ClusterName:            cluster.Name,
+		NodeCount:              cluster.Spec.Nodes[0].NodeCount,
+		ClusterHealth:          cluster.Status.ClusterHealth,
+		Cluster:                cluster.Status.Cluster,
+		Pods:                   getPodMap(cluster.Status),
+		ClusterConditions:      cluster.Status.Conditions,
+		ShardAllocationEnabled: cluster.Status.ShardAllocationEnabled,
 	}
 
-	if len(esList.Items) != 0 {
-		for _, cluster := range esList.Items {
+	for _, node := range cluster.Status.Nodes {
+		nodeName := ""
 
-			nodeConditions := make(map[string]logging.ElasticsearchClusterConditions)
+		if node.DeploymentName != "" {
+			nodeName = node.DeploymentName
+		}
 
-			nodeStatus := logging.ElasticsearchStatus{
-				ClusterName:            cluster.Name,
-				NodeCount:              cluster.Spec.Nodes[0].NodeCount,
-				ClusterHealth:          cluster.Status.ClusterHealth,
-				Cluster:                cluster.Status.Cluster,
-				Pods:                   getPodMap(cluster.Status),
-				ClusterConditions:      cluster.Status.Conditions,
-				ShardAllocationEnabled: cluster.Status.ShardAllocationEnabled,
-			}
+		if node.StatefulSetName != "" {
+			nodeName = node.StatefulSetName
+		}
 
-			for _, node := range cluster.Status.Nodes {
-				nodeName := ""
-
-				if node.DeploymentName != "" {
-					nodeName = node.DeploymentName
-				}
-
-				if node.StatefulSetName != "" {
-					nodeName = node.StatefulSetName
-				}
-
-				if node.Conditions != nil {
-					nodeConditions[nodeName] = node.Conditions
-				} else {
-					nodeConditions[nodeName] = []elasticsearch.ClusterCondition{}
-				}
-			}
-
-			nodeStatus.NodeConditions = nodeConditions
-
-			status = append(status, nodeStatus)
+		if node.Conditions != nil {
+			nodeConditions[nodeName] = node.Conditions
+		} else {
+			nodeConditions[nodeName] = []elasticsearch.ClusterCondition{}
 		}
 	}
 
-	return status, nil
+	nodeStatus.NodeConditions = nodeConditions
+
+	return nodeStatus, nil
 }
 
 func getPodMap(node elasticsearch.ElasticsearchStatus) map[logging.ElasticsearchRoleType]logging.PodStateMap {

@@ -119,7 +119,7 @@ type ClusterLogging struct {
 }
 
 type VisualizationStatus struct {
-	KibanaStatus []elasticsearch.KibanaStatus `json:"kibanaStatus,omitempty"`
+	KibanaStatus elasticsearch.KibanaStatus `json:"kibanaStatus,omitempty"`
 }
 
 type KibanaStatus struct {
@@ -131,7 +131,7 @@ type KibanaStatus struct {
 }
 
 type LogStoreStatus struct {
-	ElasticsearchStatus []ElasticsearchStatus `json:"elasticsearchStatus,omitempty"`
+	ElasticsearchStatus ElasticsearchStatus `json:"elasticsearchStatus,omitempty"`
 }
 
 type ElasticsearchStatus struct {

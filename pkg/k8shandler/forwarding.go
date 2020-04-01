@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -61,12 +62,14 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 			)
 	}
 	// else
-	clusterRequest.UpdateCondition(
+	if err := clusterRequest.UpdateCondition(
 		logging.CollectorDeadEnd,
 		"",
 		"",
 		v1.ConditionFalse,
-	)
+	); err != nil {
+		logrus.Warnf("unable to update collector condition. E: %s\r\n", err.Error())
+	}
 
 	return generatedConfig, nil
 }

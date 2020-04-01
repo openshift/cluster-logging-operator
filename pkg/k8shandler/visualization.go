@@ -28,17 +28,9 @@ import (
 )
 
 const (
-	kibanaServiceAccountName     = "kibana"
-	kibanaOAuthRedirectReference = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
 	// The following strings are turned into JavaScript RegExps. Online tool to test them: https://regex101.com/
 	nodesAndContainersNamespaceFilter = "^(openshift-.*|kube-.*|openshift$|kube$|default$)"
 	appsNamespaceFilter               = "^((?!" + nodesAndContainersNamespaceFilter + ").)*$" // ^((?!^(openshift-.*|kube-.*|openshift$|kube$|default$)).)*$
-)
-
-var (
-	kibanaServiceAccountAnnotations = map[string]string{
-		"serviceaccounts.openshift.io/oauth-redirectreference.first": kibanaOAuthRedirectReference,
-	}
 )
 
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging

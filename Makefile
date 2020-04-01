@@ -8,7 +8,7 @@ IMAGE_BUILDER_OPTS=
 IMAGE_BUILDER?=imagebuilder
 IMAGE_BUILD=$(IMAGE_BUILDER)
 export IMAGE_TAG_CMD?=docker tag
-
+export GOBIN=$(CURDIR)/bin
 export APP_NAME=cluster-logging-operator
 APP_REPO=github.com/openshift/$(APP_NAME)
 TARGET=$(TARGET_DIR)/bin/$(APP_NAME)
@@ -27,12 +27,16 @@ TEST_PKGS=$(shell go list ./test)
 
 TEST_OPTIONS?=
 
+OS_NAME=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 # go source files, excluding generated code.
 SRC = $(shell find cmd pkg version -type f -name '*.go' -not -name zz_generated*)
 
-.PHONY: all imagebuilder build clean fmt simplify generate deploy-setup deploy-image deploy deploy-example test-unit test-e2e test-sec undeploy run
+.PHONY: all gobindir imagebuilder build clean fmt simplify generate deploy-setup deploy-image deploy deploy-example test-unit test-e2e test-sec undeploy run
 
 all: build #check install
+
+gobindir:
+	@mkdir -p ${GOBIN}
 
 # Download a known released version of operator-sdk.
 OPERATOR_SDK_RELEASE?=v0.15.2
@@ -40,6 +44,14 @@ OPERATOR_SDK=./operator-sdk-$(OPERATOR_SDK_RELEASE)
 $(OPERATOR_SDK):
 	curl -f -L -o $@ https://github.com/operator-framework/operator-sdk/releases/download/${OPERATOR_SDK_RELEASE}/operator-sdk-${OPERATOR_SDK_RELEASE}-$(shell uname -i)-linux-gnu
 	chmod +x $(OPERATOR_SDK)
+
+GOLANGCI_LINT_VERSION?=1.24.0
+GOLANGCI_LINT_URL=https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/golangci-lint-${GOLANGCI_LINT_VERSION}-${OS_NAME}-amd64.tar.gz
+golangci-lint: gobindir
+	@type -p golangci-lint > /dev/null && \
+	golangci-lint version | grep -q $(GOLANGCI_LINT_VERSION) || \
+	curl -sSfL ${GOLANGCI_LINT_URL} | tar -z --strip-components=1 -C ./bin -x golangci-lint-${GOLANGCI_LINT_VERSION}-${OS_NAME}-amd64/$@
+	@chmod +x $(GOBIN)/$@\
 
 imagebuilder:
 	@if [ $${USE_IMAGE_STREAM:-false} = false ] && ! type -p imagebuilder ; \
@@ -81,8 +93,8 @@ image: imagebuilder
 	then hack/build-image.sh $(IMAGE_TAG) $(IMAGE_BUILDER) $(IMAGE_BUILDER_OPTS) ; \
 	fi
 
-lint:
-	golangci-lint run -c golangci.yaml
+lint: golangci-lint fmt
+	@golangci-lint run -c golangci.yaml
 
 fmt:
 	gofmt -l -w cmd/ pkg/ version/

@@ -110,7 +110,7 @@ func mapSourceTypesToPipelineNames(pipelines []logforward.PipelineSpec) map[logf
 }
 
 func pretty(in string) string {
-	stack := -1
+	stack := 0
 	out := bytes.NewBufferString("")
 	for _, line := range strings.Split(in, "\n") {
 		stack = prettyLine(out, line, stack)
@@ -119,14 +119,17 @@ func pretty(in string) string {
 }
 func prettyLine(out *bytes.Buffer, in string, levelIn int) int {
 	levelOut := levelIn
+	level := levelIn
 	trimmed := strings.Trim(in, " \t")
 	if strings.HasPrefix(trimmed, "</") {
 		levelOut = levelIn - 1
+		level = levelOut
 	} else if strings.HasPrefix(trimmed, "<") && !strings.HasPrefix(trimmed, "</") {
 		levelOut = levelIn + 1
+		level = levelIn
 	}
 
-	for i := 0; i < levelOut; i++ {
+	for i := 0; i < level; i++ {
 		out.WriteString("\t")
 	}
 	out.WriteString(trimmed)

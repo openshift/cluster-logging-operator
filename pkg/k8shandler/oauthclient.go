@@ -30,7 +30,7 @@ func NewOAuthClient(oauthClientName, namespace, oauthSecret string, redirectURIs
 		RedirectURIs: redirectURIs,
 		GrantMethod:  oauth.GrantHandlerPrompt,
 		ScopeRestrictions: []oauth.ScopeRestriction{
-			oauth.ScopeRestriction{
+			{
 				ExactValues: scopeRestrictions,
 			},
 		},

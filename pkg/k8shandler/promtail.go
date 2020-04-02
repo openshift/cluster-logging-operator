@@ -147,7 +147,7 @@ func newPromTailPodSpec(collector *collector.CollectorSpec) (v1.PodSpec, error) 
 	container := NewContainer(promtailName, promtailName, v1.PullIfNotPresent, *resources)
 
 	container.Ports = []v1.ContainerPort{
-		v1.ContainerPort{
+		{
 			Name:          metricsPortName,
 			ContainerPort: metricsPort,
 			Protocol:      v1.ProtocolTCP,
@@ -161,7 +161,7 @@ func newPromTailPodSpec(collector *collector.CollectorSpec) (v1.PodSpec, error) 
 
 	md5hash := hex.EncodeToString(hasher.Sum(nil))
 	container.Env = []v1.EnvVar{
-		v1.EnvVar{Name: "PROMTAIL_YAML_HASH", Value: md5hash},
+		{Name: "PROMTAIL_YAML_HASH", Value: md5hash},
 	}
 	container.Args = []string{
 		"-config.file=/etc/promtail/promtail.yaml",
@@ -183,12 +183,12 @@ func newPromTailPodSpec(collector *collector.CollectorSpec) (v1.PodSpec, error) 
 	tolerations := utils.AppendTolerations(
 		collector.Tolerations,
 		[]v1.Toleration{
-			v1.Toleration{
+			{
 				Key:      "node-role.kubernetes.io/master",
 				Operator: v1.TolerationOpExists,
 				Effect:   v1.TaintEffectNoSchedule,
 			},
-			v1.Toleration{
+			{
 				Key:      "node.kubernetes.io/disk-pressure",
 				Operator: v1.TolerationOpExists,
 				Effect:   v1.TaintEffectNoSchedule,

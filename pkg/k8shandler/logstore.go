@@ -74,7 +74,7 @@ func compareElasticsearchStatus(lhs, rhs []logging.ElasticsearchStatus) bool {
 	}
 
 	if len(lhs) > 0 {
-		for index, _ := range lhs {
+		for index := range lhs {
 			if lhs[index].ClusterName != rhs[index].ClusterName {
 				return false
 			}

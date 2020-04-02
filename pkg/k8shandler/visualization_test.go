@@ -173,7 +173,7 @@ func TestNewKibanaPodNoTolerations(t *testing.T) {
 func TestNewKibanaPodWithTolerations(t *testing.T) {
 
 	expTolerations := []v1.Toleration{
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,

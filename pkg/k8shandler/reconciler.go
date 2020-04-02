@@ -109,11 +109,6 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
 	}
 
-	// Reconcile Visualization
-	if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.cluster.Name, err)
-	}
-
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
@@ -146,40 +141,12 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
-	// call for Kibana to restart itself
-	if requestName == constants.KibanaTrustedCAName {
-		return clusterLoggingRequest.RestartKibana(proxyConfig)
-	}
-
 	// call for Fluentd to restart itself
 	if requestName == constants.FluentdTrustedCAName {
 		return clusterLoggingRequest.RestartFluentd(proxyConfig)
 	}
 
 	return nil
-}
-
-func ReconcileForKibanaSecret(requestClient client.Client) (err error) {
-
-	clusterLoggingRequest := ClusterLoggingRequest{
-		client: requestClient,
-	}
-
-	clusterLogging := clusterLoggingRequest.getClusterLogging()
-	if clusterLogging == nil {
-		return nil
-	}
-
-	clusterLoggingRequest.cluster = clusterLogging
-
-	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
-		return nil
-	}
-
-	proxyConfig := clusterLoggingRequest.getProxyConfig()
-
-	// call for Kibana to restart itself (e.g. delete its pods)
-	return clusterLoggingRequest.RestartKibana(proxyConfig)
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {

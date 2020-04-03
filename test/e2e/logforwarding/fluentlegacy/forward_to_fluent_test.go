@@ -63,6 +63,9 @@ var _ = Describe("LogForwarding prior to LF feature", func() {
 				if _, err = e2e.KubeClient.Core().ConfigMaps(fluentDeployment.Namespace).Create(fluentdConfigMap); err != nil {
 					Fail(fmt.Sprintf("Unable to create legacy fluent.conf configmap: %v", err))
 				}
+				e2e.AddCleanup(func() error {
+					return e2e.KubeClient.Core().ConfigMaps(fluentdConfigMap.ObjectMeta.Namespace).Delete(fluentdConfigMap.ObjectMeta.Name, nil)
+				})
 
 				var secret *v1.Secret
 				if secret, err = e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Get(fluentDeployment.Name, metav1.GetOptions{}); err != nil {
@@ -72,6 +75,9 @@ var _ = Describe("LogForwarding prior to LF feature", func() {
 				if _, err = e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Create(secret); err != nil {
 					Fail(fmt.Sprintf("Unable to create secure-forward secret: %v", err))
 				}
+				e2e.AddCleanup(func() error {
+					return e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Delete(secret.ObjectMeta.Name, nil)
+				})
 
 				components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
 				cr := helpers.NewClusterLogging(components...)

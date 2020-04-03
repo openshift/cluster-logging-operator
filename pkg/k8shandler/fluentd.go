@@ -192,6 +192,14 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
 	return found
 }
 
+// useOldPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
+func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
+	if enabled, found := clusterRequest.ForwardingRequest.Annotations[UseOldRemoteSyslogPlugin]; found && enabled == "enabled" {
+		return true
+	}
+	return false
+}
+
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(fluentConf string) error {
 	logrus.Debug("createOrUpdateFluentdConfigMap...")
 	fluentdConfigMap := NewConfigMap(

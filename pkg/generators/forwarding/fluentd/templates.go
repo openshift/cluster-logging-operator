@@ -551,6 +551,7 @@ const storeElasticsearchTemplate = `{{- define "storeElasticsearch" }}
 	@id {{.StoreID }}
 	host {{.Host}}
 	port {{.Port}}
+    verify_es_version_at_startup false
 	{{- if .Target.Secret }}
 	scheme https
 	ssl_version TLSv1_2

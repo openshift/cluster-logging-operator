@@ -914,6 +914,7 @@ var _ = Describe("Generating fluentd config", func() {
 						@id retry_infra_es
 						host es.svc.infra.cluster
 						port 9999
+						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -956,6 +957,7 @@ var _ = Describe("Generating fluentd config", func() {
 						@id infra_es
 						host es.svc.infra.cluster
 						port 9999
+						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1001,6 +1003,7 @@ var _ = Describe("Generating fluentd config", func() {
 						@id retry_apps_es_1
 						host es.svc.messaging.cluster.local
 						port 9654
+						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1043,6 +1046,7 @@ var _ = Describe("Generating fluentd config", func() {
 						@id apps_es_1
 						host es.svc.messaging.cluster.local
 						port 9654
+						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1088,6 +1092,7 @@ var _ = Describe("Generating fluentd config", func() {
 						@id retry_apps_es_2
 						host es.svc.messaging.cluster.local2
 						port 9654
+						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1130,6 +1135,7 @@ var _ = Describe("Generating fluentd config", func() {
 						@id apps_es_2
 						host es.svc.messaging.cluster.local2
 						port 9654
+						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1175,6 +1181,7 @@ var _ = Describe("Generating fluentd config", func() {
 						@id retry_audit_es
 						host es.svc.audit.cluster
 						port 9654
+						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1217,6 +1224,7 @@ var _ = Describe("Generating fluentd config", func() {
 						@id audit_es
 						host es.svc.audit.cluster
 						port 9654
+						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name

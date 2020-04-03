@@ -15,7 +15,7 @@ var _ = Describe("Generating fluentd config", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		generator, err = NewConfigGenerator(true, true)
+		generator, err = NewConfigGenerator(true, true, true)
 		Expect(err).To(BeNil())
 		Expect(generator).ToNot(BeNil())
 		forwarding = &logging.ForwardingSpec{

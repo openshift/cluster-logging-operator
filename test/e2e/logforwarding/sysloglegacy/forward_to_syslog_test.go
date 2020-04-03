@@ -2,6 +2,7 @@ package sysloglegacy
 
 import (
 	"fmt"
+	"path/filepath"
 	"runtime"
 
 	. "github.com/onsi/ginkgo"
@@ -21,11 +22,13 @@ var _ = Describe("LogForwarding", func() {
 		err              error
 		syslogDeployment *apps.Deployment
 		e2e              = helpers.NewE2ETestFramework()
+		testDir          string
 	)
 	BeforeEach(func() {
 		if err := e2e.DeployLogGenerator(); err != nil {
 			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
 		}
+		testDir = filepath.Dir(filename)
 	})
 	Describe("when ClusterLogging is configured with 'forwarding' to an external syslog server", func() {
 
@@ -34,7 +37,7 @@ var _ = Describe("LogForwarding", func() {
 			Context("and tcp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(corev1.ProtocolTCP); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `
@@ -74,7 +77,7 @@ var _ = Describe("LogForwarding", func() {
 			Context("and udp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(corev1.ProtocolUDP); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `

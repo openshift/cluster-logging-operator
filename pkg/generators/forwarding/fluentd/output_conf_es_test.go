@@ -71,6 +71,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			@id retry_oncluster_elasticsearch
 			host es.svc.messaging.cluster.local
 			port 9654
+            verify_es_version_at_startup false
 			scheme https
 			ssl_version TLSv1_2
 			target_index_key viaq_index_name
@@ -113,6 +114,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			@id oncluster_elasticsearch
 			host es.svc.messaging.cluster.local
 			port 9654
+            verify_es_version_at_startup false
 			scheme https
 			ssl_version TLSv1_2
 			target_index_key viaq_index_name
@@ -175,6 +177,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			@id retry_other_elasticsearch
 			host es.svc.messaging.cluster.local
 			port 9654
+            verify_es_version_at_startup false
 			scheme http
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
@@ -213,6 +216,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			@id other_elasticsearch
 			host es.svc.messaging.cluster.local
 			port 9654
+            verify_es_version_at_startup false
 			scheme http
 			target_index_key viaq_index_name
 			id_key viaq_msg_id

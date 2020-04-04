@@ -282,6 +282,8 @@ spec:
               labels:
                 name: cluster-logging-operator
             spec:
+              nodeSelector:
+                kubernetes.io/os: linux
               serviceAccountName: cluster-logging-operator
               containers:
               - name: cluster-logging-operator

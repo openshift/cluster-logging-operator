@@ -95,6 +95,7 @@ var _ = Describe("LogForwarding", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
+			e2e.WaitForCleanupCompletion([]string{"fluentd", "elasticsearch"})
 		})
 
 		It("should send logs to the forward.Output logstore", func() {

@@ -100,6 +100,7 @@ var _ = Describe("LogForwarding prior to LF feature", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
+			e2e.WaitForCleanupCompletion([]string{"fluent-receiver", "fluentd", "elasticsearch"})
 		})
 	})
 

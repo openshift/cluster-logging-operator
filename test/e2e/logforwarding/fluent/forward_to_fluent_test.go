@@ -176,6 +176,7 @@ var _ = Describe("LogForwarding", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
+			e2e.WaitForCleanupCompletion([]string{"fluent-receiver", "fluentd"})
 		})
 
 	})

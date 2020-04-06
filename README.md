@@ -12,6 +12,10 @@ $ oc login $CLUSTER -u $ADMIN_USER -p $ADMIN_PASSWD
 $ REMOTE_CLUSTER=true make deploy-example
 ```
 This will stand up a cluster logging stack named 'example'.
+Test change, do not merge.
+second attempt to run CI tests.
+third attemp to run CI tests.
+fourth attempt
 
 
 ## Hacking

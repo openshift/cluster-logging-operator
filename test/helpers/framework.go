@@ -193,6 +193,39 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 	return nil
 }
 
+func (tc *E2ETestFramework) WaitForCleanupCompletion(podlabels []string) {
+	if err := tc.waitForClusterLoggingPodsCompletion(podlabels); err != nil {
+		logger.Errorf("Cleanup completion error %v", err)
+	}
+}
+
+func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []string) error {
+	labels := strings.Join(podlabels, ",")
+	logger.Infof("waiting for pods to complete with labels: %s", labels)
+	labelSelector := fmt.Sprintf("component in (%s)", labels)
+	options := metav1.ListOptions{
+		LabelSelector: labelSelector,
+	}
+	wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
+		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				logger.Infof("Did not find pods %v", err)
+				return false, nil
+			}
+			logger.Infof("Error listing pods %v", err)
+			return false, err
+		}
+		if len(pods.Items) == 0 {
+			logger.Infof("No pods found for label selection: %s", labels)
+			return true, nil
+		}
+		logger.Debug("pods still running...")
+		return false, nil
+	})
+	return nil
+}
+
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
 	tc.ClusterLogging = NewClusterLogging(componentTypes...)
 	tc.LogStore = &ElasticLogStore{
@@ -267,7 +300,7 @@ func RunCleanupScript() {
 		cmd.Env = nil
 		result, err := cmd.Output()
 		logger.Infof("RunCleanupScript output: %s", string(result))
-		logger.Infof("err: %v", err)
+		logger.Infof("RunCleanupScript err: %v", err)
 	}
 }
 

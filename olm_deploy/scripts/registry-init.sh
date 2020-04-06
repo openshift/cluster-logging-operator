@@ -24,6 +24,11 @@ sed -i "s,quay.io/openshift/origin-promtail:latest,${IMAGE_PROMTAIL}," /manifest
 sed -i "s,quay.io/openshift/origin-logging-elasticsearch6:latest,${IMAGE_ELASTICSEARCH6}," /manifests/*/*clusterserviceversion.yaml
 sed -i "s,quay.io/openshift/origin-logging-kibana6:latest,${IMAGE_LOGGING_KIBANA6}," /manifests/*/*clusterserviceversion.yaml
 
+# update the manifest to pull always the operator image for non-CI environments
+if [ -z "${IMAGE_FORMAT:-}" ] ; then
+    echo -e "Set operator deployment's imagePullPolicy to 'Always'\n\n"
+    sed -i 's,imagePullPolicy:\ IfNotPresent,imagePullPolicy:\ Always,' /manifests/*/*clusterserviceversion.yaml
+fi
 
 echo -e "substitution complete, dumping new csv\n\n"
 cat /manifests/*/*clusterserviceversion.yaml

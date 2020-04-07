@@ -29,4 +29,4 @@ spec:
   - name: promtail
     from:
       kind: DockerImage
-      name: quay.io/openshift/origin-promtail:latest
+      name: quay.io/openshift/origin-promtail:refBz1793551

@@ -127,9 +127,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
       packet_size 4096
       timeout 60
       timeout_exception true
-      keep_alive       true
-      keep_alive_idle    75
-      keep_alive_cnt      9
+      keep_alive true
+      keep_alive_idle 75
+      keep_alive_cnt 9
       keep_alive_intvl 7200
       <buffer>
         @type file
@@ -192,9 +192,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
       verify_mode true
       timeout 60
       timeout_exception true
-      keep_alive       true
-      keep_alive_idle    75
-      keep_alive_cnt      9
+      keep_alive true
+      keep_alive_idle 75
+      keep_alive_cnt 9
       keep_alive_intvl 7200
       <buffer>
         @type file

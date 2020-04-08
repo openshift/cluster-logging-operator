@@ -141,7 +141,7 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 
 func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time.Duration) error {
 	logger.Debugf("Waiting for %v", "elasticsearch")
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
 		}
@@ -169,11 +169,10 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 		}
 		return true, nil
 	})
-	return err
 }
 
 func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInterval, timeout time.Duration) error {
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -187,10 +186,6 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 		}
 		return false, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (tc *E2ETestFramework) WaitForCleanupCompletion(podlabels []string) {
@@ -206,7 +201,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []stri
 	options := metav1.ListOptions{
 		LabelSelector: labelSelector,
 	}
-	wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
+	return wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
 		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -223,7 +218,6 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []stri
 		logger.Debug("pods still running...")
 		return false, nil
 	})
-	return nil
 }
 
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
@@ -278,14 +272,14 @@ func (tc *E2ETestFramework) Cleanup() {
 	//allow caller to cleanup if unset (e.g script cleanup())
 	doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
 	if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
-    	RunCleanupScript()
-    	logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
-    	for _, cleanup := range tc.CleanupFns {
-    		logger.Debug("Running an e2e cleanup function")
-    		if err := cleanup(); err != nil {
-    			logger.Debugf("Error during cleanup %v", err)
-    		}
-    	}
+		RunCleanupScript()
+		logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
+		for _, cleanup := range tc.CleanupFns {
+			logger.Debug("Running an e2e cleanup function")
+			if err := cleanup(); err != nil {
+				logger.Debugf("Error during cleanup %v", err)
+			}
+		}
 	}
 }
 

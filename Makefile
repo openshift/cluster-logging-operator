@@ -26,9 +26,11 @@ imagebuilder:
 golangci-lint:
 	@type -p golangci-lint > /dev/null || go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
-
 build:
-	go build -o bin/cluster-logging-operator ./cmd/manager
+	go build $(BUILD_OPTS) -o bin/cluster-logging-operator ./cmd/manager
+
+build-debug:
+	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
 run:
 	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
@@ -42,7 +44,10 @@ run:
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(TARGET_DIR)/ocp-clo \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	go run cmd/manager/main.go
+	$(RUN_OPTS) bin/cluster-logging-operator
+
+run-debug:
+	$(MAKE) run RUN_OPTS='dlv exec --'
 
 clean:
 	@rm -f bin/operator-sdk bin/imagebuilder bin/golangci-lint bin/cluster-logging-operator

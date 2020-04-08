@@ -201,6 +201,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []stri
 	options := metav1.ListOptions{
 		LabelSelector: labelSelector,
 	}
+
 	return wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
 		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
 		if err != nil {

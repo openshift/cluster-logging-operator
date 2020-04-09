@@ -35,4 +35,4 @@ cat /manifests/*/*clusterserviceversion.yaml
 
 echo "generating sqlite database"
 
-/usr/bin/initializer --manifests=/manifests --output=/bundle/bundles.db --permissive=true
+/usr/bin/initializer --manifests=/manifests --output=/bundle/bundles.db --permissive=true --debug

@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eou pipefail
+set -x
 
 export CLUSTER_LOGGING_OPERATOR_NAMESPACE=${CLUSTER_LOGGING_OPERATOR_NAMESPACE:-openshift-logging}
 

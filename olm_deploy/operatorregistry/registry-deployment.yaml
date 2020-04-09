@@ -47,6 +47,7 @@ spec:
         command:
         - /usr/bin/registry-server
         - --database=/bundle/bundles.db
+        - --debug
         volumeMounts:
         - name: workdir
           mountPath: /bundle

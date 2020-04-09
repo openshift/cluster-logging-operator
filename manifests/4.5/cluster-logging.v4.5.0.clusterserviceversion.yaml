@@ -66,7 +66,7 @@ metadata:
               }
             }
           },
-          {
+          {                     # FIXME(alanconway) update example to new API
             "apiVersion": "logging.openshift.io/v1alpha1",
             "kind": "LogForwarding",
             "metadata": {
@@ -347,6 +347,8 @@ spec:
         version: v1
       - kind: Elasticsearch
         version: v1
+      - kind: ClusterLogForwarder
+        version: v1
       - kind: LogForwarding
         version: v1alpha1
       - kind: Collector
@@ -470,22 +472,29 @@ spec:
         displayName: Source Status
         path: sources
         x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:sourceStatuses'        
+        - 'urn:alm:descriptor:com.tectonic.ui:sourceStatuses'
       - description: The status of forwarding outputs
         displayName: Outputs Status
         path: outputs
         x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:outputStatuses'        
+        - 'urn:alm:descriptor:com.tectonic.ui:outputStatuses'
       - description: The status of forwarding pipelines
         displayName: Pipelines Status
         path: pipelines
         x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:pipelineStatuses'        
+        - 'urn:alm:descriptor:com.tectonic.ui:pipelineStatuses'
       - description: The status of log forwarding resourece
         displayName: Log Forwarding Status
         path: status
         x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:logforwardingStatuses'        
+        - 'urn:alm:descriptor:com.tectonic.ui:logforwardingStatuses'
+    - name: clusterlogforwarder.logging.openshift.io
+      version: v1
+      kind: ClusterLogForwarder
+      displayName: Cluster Log Forwarder
+      description: Cluster log forwarder spec to define destinations for logs
+      specDescriptors: {}         # FIXME(alanconway) fill these in
+      statusDescriptors: {}       # FIXME(alanconway) fill these in
     - name: collectors.logging.openshift.io
       version: v1alpha1
       kind: Collector

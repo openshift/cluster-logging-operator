@@ -69,12 +69,16 @@ fmt:
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
+MANIFESTS=manifests/$(OCP_VERSION)
+DEPLOY=deploy/crds/logging.openshift.io_
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@echo generating code
 	@$(MAKE) operator-sdk
 	@operator-sdk generate k8s
 	@operator-sdk generate crds
+	@mv $(DEPLOY)clusterlogforwarders_crd.yaml $(MANIFESTS)
+	@rm -rf deploy
 	@$(MAKE) fmt
 	@touch $@
 

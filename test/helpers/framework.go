@@ -141,7 +141,7 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 
 func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time.Duration) error {
 	logger.Debugf("Waiting for %v", "elasticsearch")
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
 		}
@@ -169,11 +169,10 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 		}
 		return true, nil
 	})
-	return err
 }
 
 func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInterval, timeout time.Duration) error {
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -187,10 +186,6 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 		}
 		return false, nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (tc *E2ETestFramework) WaitForCleanupCompletion(podlabels []string) {
@@ -206,7 +201,8 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []stri
 	options := metav1.ListOptions{
 		LabelSelector: labelSelector,
 	}
-	err := wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
+
+	return wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
 		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -223,7 +219,6 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []stri
 		logger.Debug("pods still running...")
 		return false, nil
 	})
-	return err
 }
 
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {

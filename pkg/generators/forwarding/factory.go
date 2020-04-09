@@ -13,8 +13,9 @@ func NewConfigGenerator(collector logging.LogCollectionType, includeLegacyForwar
 	switch collector {
 	case logging.LogCollectionTypeFluentd:
 		return fluentd.NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin)
+	default:
+		return nil, fmt.Errorf("Config generation not supported for collectors of type %s", collector)
 	}
-	return nil, fmt.Errorf("Config generation not supported for collects of type %s", collector)
 }
 
 //ConfigGenerator is a config generator for a given ForwardingSpec

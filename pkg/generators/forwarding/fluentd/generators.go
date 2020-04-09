@@ -1,10 +1,8 @@
 package fluentd
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
-	"strings"
 	"text/template"
 
 	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -86,7 +84,7 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	if err != nil {
 		return "", fmt.Errorf("Error processing fluentConf template: %v", err)
 	}
-	return pretty(result), nil
+	return result, nil
 }
 
 func gatherLogSourceTypes(pipelines []logforward.PipelineSpec) sets.String {
@@ -108,34 +106,6 @@ func mapSourceTypesToPipelineNames(pipelines []logforward.PipelineSpec) map[logf
 		result[pipeline.SourceType] = names
 	}
 	return result
-}
-
-func pretty(in string) string {
-	stack := 0
-	out := bytes.NewBufferString("")
-	for _, line := range strings.Split(in, "\n") {
-		stack = prettyLine(out, line, stack)
-	}
-	return out.String()
-}
-func prettyLine(out *bytes.Buffer, in string, levelIn int) int {
-	levelOut := levelIn
-	level := levelIn
-	trimmed := strings.Trim(in, " \t")
-	if strings.HasPrefix(trimmed, "</") {
-		levelOut = levelIn - 1
-		level = levelOut
-	} else if strings.HasPrefix(trimmed, "<") && !strings.HasPrefix(trimmed, "</") {
-		levelOut = levelIn + 1
-		level = levelIn
-	}
-
-	for i := 0; i < level; i++ {
-		out.WriteString("\t")
-	}
-	out.WriteString(trimmed)
-	out.WriteString("\n")
-	return levelOut
 }
 
 //generateSourceToPipelineLabels generates fluentd label stanzas to fan source types to multiple pipelines

@@ -56,13 +56,22 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		clusterRequest.includeLegacyForwardConfig(),
 		clusterRequest.includeLegacySyslogConfig(),
 		clusterRequest.useOldRemoteSyslogPlugin())
+	if err != nil {
+		return "",
+			clusterRequest.UpdateCondition(
+				logging.CollectorDeadEnd,
+				"Unable to generate collector configuration",
+				"No defined logstore destination",
+				v1.ConditionTrue,
+			)
+	}
 	generatedConfig, err := generator.Generate(&clusterRequest.ForwardingSpec)
 
 	if err != nil {
 		return "",
 			clusterRequest.UpdateCondition(
 				logging.CollectorDeadEnd,
-				"Collectors are defined but there is no defined LogStore of LogForward destinations",
+				"Collectors are defined but there is no defined LogStore or LogForward destinations",
 				"No defined logstore destination",
 				v1.ConditionTrue,
 			)

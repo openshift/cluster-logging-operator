@@ -8,7 +8,7 @@ export IMAGE_TAG_CMD?=docker tag
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
 
-export OCP_VERSION?=4.5
+export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -type d))
 export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest

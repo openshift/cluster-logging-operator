@@ -280,7 +280,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 			It("should drop outputs that have empty endpoints", func() {
 				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
 					Name:     "aName",
-					Type:     "foo",
+					Type:     "fluentForward",
 					Endpoint: "",
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)

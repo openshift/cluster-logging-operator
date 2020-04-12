@@ -120,6 +120,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       @id syslog_receiver
       host sl.svc.messaging.cluster.local
       port 9654
+      rfc rfc5424
       facility user
       severity debug
       program fluentd
@@ -154,6 +155,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       @id syslog_receiver
       host sl.svc.messaging.cluster.local
       port 9654
+      rfc rfc5424
       facility user
       severity debug
       program fluentd
@@ -182,6 +184,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       @id syslog_receiver
       host sl.svc.messaging.cluster.local
       port 9654
+      rfc rfc5424
       facility user
       severity debug
       program fluentd
@@ -219,6 +222,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       @id syslog_receiver
       host sl.svc.messaging.cluster.local
       port 9654
+      rfc rfc5424
       facility user
       severity debug
       program fluentd

@@ -137,6 +137,10 @@ func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) 
 	return true, err
 }
 
+func (es *ElasticLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
+	return "Not Found", fmt.Errorf("Not implemented")
+}
+
 //Indices fetches the list of indices stored by Elasticsearch
 func (es *ElasticLogStore) Indices() (Indices, error) {
 	options := metav1.ListOptions{

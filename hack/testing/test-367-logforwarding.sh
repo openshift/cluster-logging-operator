@@ -62,7 +62,7 @@ for dir in $(ls -d $TEST_DIR); do
     artifact_dir=$artifact_dir \
     GENERATOR_NS=$GENERATOR_NS \
     ELASTICSEARCH_IMAGE="$(format_elasticsearch_image $eo_manifest)" \
-    go test -count=1 -parallel=1 $dir  | tee -a $artifact_dir/test.log ; then
+    go test -count=1 -parallel=1 -timeout=60m $dir -ginkgo.noColor  | tee -a $artifact_dir/test.log ; then
     log::info "======================================================="
     log::info "Logforwarding $dir passed"
     log::info "======================================================="

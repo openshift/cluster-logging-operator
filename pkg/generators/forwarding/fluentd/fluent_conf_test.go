@@ -326,6 +326,7 @@ var _ = Describe("Generating fluentd config", func() {
 					merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
 					preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
 					json_fields "#{ENV['JSON_FIELDS'] || 'MESSAGE,log'}"
+					replace_json_log "#{ENV['REPLACE_JSON_LOG'] || 'false'}"
 				</filter>
 
 				<filter kubernetes.var.log.containers.**>
@@ -333,6 +334,7 @@ var _ = Describe("Generating fluentd config", func() {
 					merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
 					preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
 					json_fields "#{ENV['JSON_FIELDS'] || 'log,MESSAGE'}"
+					replace_json_log "#{ENV['REPLACE_JSON_LOG'] || 'false'}"
 				</filter>
 
 				<filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
@@ -757,6 +759,7 @@ var _ = Describe("Generating fluentd config", func() {
 					merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
 					preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
 					json_fields "#{ENV['JSON_FIELDS'] || 'MESSAGE,log'}"
+					replace_json_log "#{ENV['REPLACE_JSON_LOG'] || 'false'}"
 				</filter>
 
 				<filter kubernetes.var.log.containers.**>
@@ -764,6 +767,7 @@ var _ = Describe("Generating fluentd config", func() {
 					merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
 					preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
 					json_fields "#{ENV['JSON_FIELDS'] || 'log,MESSAGE'}"
+					replace_json_log "#{ENV['REPLACE_JSON_LOG'] || 'false'}"
 				</filter>
 
 				<filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>

@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1/outputs"
 )
 
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
@@ -24,6 +25,11 @@ type outputLabelConf struct {
 }
 
 func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, fluentTags ...string) *outputLabelConf {
+	if target.Type == logging.OutputTypeSyslog && target.Syslog == nil {
+		target.Syslog = &outputs.Syslog{
+			RFC: "RFC5424",
+		}
+	}
 	return &outputLabelConf{
 		Name:            target.Name,
 		Target:          target,

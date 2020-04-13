@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
-	"testing"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +23,6 @@ import (
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	e2eutil "github.com/openshift/cluster-logging-operator/test/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
@@ -109,6 +108,64 @@ func (tc *E2ETestFramework) DeployLogGenerator() error {
 	return tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
 }
 
+func (tc *E2ETestFramework) DeployJsonLogGenerator(vals map[string]string) (string, string, error) {
+	namespace := tc.CreateTestNamespace()
+	pycode := `
+import time,json,sys,datetime
+%s
+i=0
+while True:
+  i=i+1
+  ts=time.time()
+  data={
+	"timestamp"   :datetime.datetime.fromtimestamp(ts).strftime('%%Y-%%m-%%d %%H:%%M:%%S'),
+	"index"       :i,
+  }
+  set_vals()
+  print json.dumps(data)
+  sys.stdout.flush()
+  time.sleep(1)
+`
+	setVals := `
+def set_vals():
+  pass
+
+`
+	if len(vals) != 0 {
+		setVals = "def set_vals():\n"
+		for k, v := range vals {
+			//...  data["key"]="value"
+			setVals += fmt.Sprintf("  data[\"%s\"]=\"%s\"\n", k, v)
+		}
+		setVals += "\n"
+	}
+	container := corev1.Container{
+		Name:            "log-generator",
+		Image:           "centos:centos7",
+		ImagePullPolicy: corev1.PullIfNotPresent,
+		Args:            []string{"python2", "-c", fmt.Sprintf(pycode, setVals)},
+	}
+	podSpec := corev1.PodSpec{
+		Containers: []corev1.Container{container},
+	}
+	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
+	logger.Infof("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
+	deployment, err := tc.KubeClient.Apps().Deployments(namespace).Create(deployment)
+	if err != nil {
+		return "", "", err
+	}
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.Apps().Deployments(namespace).Delete(deployment.Name, nil)
+	})
+	err = tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
+	if err == nil {
+		podName, _ := oc.Get().WithNamespace(namespace).Pod().OutputJsonpath("{.items[0].metadata.name}").Run()
+		return namespace, podName, nil
+
+	}
+	return "", "", err
+}
+
 func (tc *E2ETestFramework) CreateTestNamespace() string {
 	name := fmt.Sprintf("clo-test-%d", rand.Intn(10000))
 	if value, found := os.LookupEnv("GENERATOR_NS"); found {
@@ -132,11 +189,36 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 		return tc.waitForDeployment(OpenshiftLoggingNS, "kibana", defaultRetryInterval, defaultTimeout)
 	case ComponentTypeCollector:
 		logger.Debugf("Waiting for %v", component)
-		return e2eutil.WaitForDaemonSet(&testing.T{}, tc.KubeClient, OpenshiftLoggingNS, "fluentd", defaultRetryInterval, defaultTimeout)
+		return tc.waitForFluentDaemonSet(defaultRetryInterval, time.Minute*1)
 	case ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
 	}
 	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
+}
+
+func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.Duration) error {
+	// daemonset should have non-zero number of instances for maxtimes consecutive retryInterval to detect a CrashLoopBackOff pod
+	maxtimes := 5
+	times := 0
+	return wait.Poll(retryInterval, timeout, func() (bool, error) {
+		numReady, err := oc.Literal().From("oc -n openshift-logging get daemonset/fluentd -o jsonpath={.status.numberReady}").Run()
+		if err == nil {
+			value, err := strconv.Atoi(strings.TrimSpace(numReady))
+			if err != nil {
+				times = 0
+				return false, err
+			}
+			if value > 0 {
+				times++
+			} else {
+				times = 0
+			}
+			if times == maxtimes {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
 }
 
 func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time.Duration) error {
@@ -188,22 +270,22 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 	})
 }
 
-func (tc *E2ETestFramework) WaitForCleanupCompletion(podlabels []string) {
-	if err := tc.waitForClusterLoggingPodsCompletion(podlabels); err != nil {
+func (tc *E2ETestFramework) WaitForCleanupCompletion(namespace string, podlabels []string) {
+	if err := tc.waitForClusterLoggingPodsCompletion(namespace, podlabels); err != nil {
 		logger.Errorf("Cleanup completion error %v", err)
 	}
 }
 
-func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []string) error {
+func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string, podlabels []string) error {
 	labels := strings.Join(podlabels, ",")
-	logger.Infof("waiting for pods to complete with labels: %s", labels)
+	logger.Infof("waiting for pods to complete with labels: %s in namespace: %s", labels, namespace)
 	labelSelector := fmt.Sprintf("component in (%s)", labels)
 	options := metav1.ListOptions{
 		LabelSelector: labelSelector,
 	}
 
 	return wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
-		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+		pods, err := tc.KubeClient.CoreV1().Pods(namespace).List(options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				logger.Infof("Did not find pods %v", err)

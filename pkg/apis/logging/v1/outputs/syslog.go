@@ -31,13 +31,46 @@ type Syslog struct {
 	// +optional
 	TrimPrefix string `json:"trimPrefix,omitempty"`
 
-	// TagKey specifies a record field  to  use as tag.
+	// Tag specifies a record field  to  use as tag.
 	//
 	// +optional
-	TagKey string `json:"tagKey,omitempty"`
+	Tag string `json:"tag,omitempty"`
 
 	// PayloadKey specifies record field to use as payload.
 	//
 	// +optional
 	PayloadKey string `json:"payloadKey,omitempty"`
+
+	// Rfc specifies the rfc to be used for sending syslog
+	//
+	// Rfc values can be one of:
+	//  - RFC3164 (https://tools.ietf.org/html/rfc3164)
+	//  - RFC5424 (https://tools.ietf.org/html/rfc5424)
+	//
+	// If unspecified, RFC5424 will be assumed.
+	//
+	// +kubebuilder:validation:Enum:=RFC3164;RFC5424
+	// +optional
+	RFC string `json:"rfc,omitempty"`
+
+	// AppName is APP-NAME part of the syslog-msg header
+	//
+	// AppName needs to be specified if using rfc5424
+	//
+	// +optional
+	AppName string `json:"appName,omitempty"`
+
+	// ProcID is PROCID part of the syslog-msg header
+	//
+	// ProcID needs to be specified if using rfc5424
+	//
+	// +optional
+	ProcID string `json:"procID,omitempty"`
+
+	// MsgID is MSGID part of the syslog-msg header
+	//
+	// MsgID needs to be specified if using rfc5424
+	//
+	// +optional
+	MsgID string `json:"msgID,omitempty"`
 }

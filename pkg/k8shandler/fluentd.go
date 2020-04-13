@@ -288,6 +288,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		{Name: "NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"}}},
 		{Name: "MERGE_JSON_LOG", Value: "false"},
 		{Name: "PRESERVE_JSON_LOG", Value: "true"},
+		{Name: "REPLACE_JSON_LOG", Value: "true"},
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
 		{Name: "METRICS_CERT", Value: "/etc/fluent/metrics/tls.crt"},
 		{Name: "METRICS_KEY", Value: "/etc/fluent/metrics/tls.key"},

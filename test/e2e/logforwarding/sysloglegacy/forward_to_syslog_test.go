@@ -36,7 +36,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 			Context("and tcp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.Rfc3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `
@@ -75,7 +75,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 			Context("and udp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false, helpers.Rfc3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false, helpers.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `
@@ -115,7 +115,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluentd", "syslog-receiver", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "syslog-receiver", "elasticsearch"})
 		})
 
 	})

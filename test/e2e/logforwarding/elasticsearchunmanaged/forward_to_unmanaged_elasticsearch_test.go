@@ -96,7 +96,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "elasticsearch"})
 		})
 
 		It("should send logs to the forward.Output logstore", func() {

@@ -140,7 +140,8 @@ test-e2e-olm:
 
 test-e2e-local: deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
-	hack/test-e2e.sh
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
+	hack/test-e2e-olm.sh
 
 test-sec:
 	GOFLAGS="" GO111MODULE=off go get -u github.com/securego/gosec/cmd/gosec

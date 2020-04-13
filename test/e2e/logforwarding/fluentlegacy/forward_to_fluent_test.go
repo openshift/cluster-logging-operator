@@ -105,7 +105,7 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluent-receiver", "fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd", "elasticsearch"})
 		})
 	})
 

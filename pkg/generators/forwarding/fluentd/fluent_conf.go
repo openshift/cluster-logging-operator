@@ -24,6 +24,11 @@ type outputLabelConf struct {
 }
 
 func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, fluentTags ...string) *outputLabelConf {
+	if target.Type == logging.OutputTypeSyslog && target.Syslog == nil {
+		target.Syslog = &logging.Syslog{
+			RFC: "RFC5424",
+		}
+	}
 	return &outputLabelConf{
 		Name:            target.Name,
 		Target:          target,

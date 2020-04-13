@@ -204,7 +204,7 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 			} else {
 				engine.storeTemplate = "storeSyslog"
 			}
-			engine.outputTemplate = "outputLabelConfNoRetry"
+			engine.outputTemplate = "outputLabelConfJsonParseNoRetry"
 		case logging.OutputTypeKafka:
 			engine.storeTemplate = "storeKafka"
 			engine.outputTemplate = "outputLabelConfNoCopy"

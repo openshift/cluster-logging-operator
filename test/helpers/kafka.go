@@ -108,7 +108,8 @@ func (tc *E2ETestFramework) consumedLogs(inputName string) (logs, error) {
 	}
 
 	logger.Debugf("Pod %s", pods.Items[0].Name)
-	stdout, err := tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"cat", "/shared/consumed.logs"})
+	cmd := "cat /shared/consumed.logs"
+	stdout, err := tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"bash", "-c", cmd})
 	if err != nil {
 		return nil, err
 	}

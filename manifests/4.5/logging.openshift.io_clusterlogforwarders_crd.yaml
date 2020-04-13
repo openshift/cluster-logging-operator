@@ -324,6 +324,10 @@ spec:
                       description: Syslog provides optional extra properties for output
                         type `syslog`
                       properties:
+                        appName:
+                          description: "AppName is APP-NAME part of the syslog-msg
+                            header \n AppName needs to be specified if using rfc5424"
+                          type: string
                         facility:
                           description: "Facility to set on outgoing syslog records.
                             \n Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
@@ -334,9 +338,27 @@ spec:
                             cron authpriv ftp ntp security console solaris-cron     local0
                             local1 local2 local3 local4 local5 local6 local7"
                           type: string
+                        msgID:
+                          description: "MsgID is MSGID part of the syslog-msg header
+                            \n MsgID needs to be specified if using rfc5424"
+                          type: string
                         payloadKey:
                           description: PayloadKey specifies record field to use as
                             payload.
+                          type: string
+                        procID:
+                          description: "ProcID is PROCID part of the syslog-msg header
+                            \n ProcID needs to be specified if using rfc5424"
+                          type: string
+                        rfc:
+                          default: RFC5424
+                          description: "Rfc specifies the rfc to be used for sending
+                            syslog \n Rfc values can be one of:  - RFC3164 (https://tools.ietf.org/html/rfc3164)
+                            \ - RFC5424 (https://tools.ietf.org/html/rfc5424) \n If
+                            unspecified, RFC5424 will be assumed."
+                          enum:
+                          - RFC3164
+                          - RFC5424
                           type: string
                         severity:
                           description: "Severity to set on outgoing syslog records.
@@ -345,9 +367,8 @@ spec:
                             keywords: \n     Emergency Alert Critical Error Warning
                             Notice Informational Debug"
                           type: string
-                        tagKey:
-                          description: TagKey specifies a record field  to  use as
-                            tag.
+                        tag:
+                          description: Tag specifies a record field to use as tag.
                           type: string
                         trimPrefix:
                           description: TrimPrefix is a prefix to trim from the tag.

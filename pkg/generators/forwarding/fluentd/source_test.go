@@ -24,7 +24,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs-app source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp)))
+			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp)), sets.NewString())
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
@@ -63,7 +63,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs-infra source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeInfra)))
+			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeInfra)), sets.NewString())
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
@@ -93,7 +93,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs-audit source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeAudit)))
+			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeAudit)), sets.NewString())
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(3))
 		})
@@ -155,7 +155,7 @@ var _ = Describe("generating source", func() {
 	Context("for all log sources", func() {
 
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp), string(logging.LogSourceTypeInfra), string(logging.LogSourceTypeAudit)))
+			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp), string(logging.LogSourceTypeInfra), string(logging.LogSourceTypeAudit)), sets.NewString())
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(5))
 		})

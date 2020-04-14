@@ -153,12 +153,12 @@ def set_vals():
 	}
 	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
 	logger.Infof("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
-	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
+	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(deployment)
 	if err != nil {
 		return "", "", err
 	}
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
+		return tc.KubeClient.AppsV1().Deployments(namespace).Delete(deployment.Name, &metav1.DeleteOptions{})
 	})
 	err = tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
 	if err == nil {
@@ -288,7 +288,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 	}
 
 	return wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
-		pods, err := tc.KubeClient.CoreV1().Pods(namespace).List(context.TODO(), options)
+		pods, err := tc.KubeClient.CoreV1().Pods(namespace).List(options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				logger.Infof("Did not find pods %v", err)

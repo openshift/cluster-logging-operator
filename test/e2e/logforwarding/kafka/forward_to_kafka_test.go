@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"fmt"
-	"net/url"
 	"runtime"
 
 	. "github.com/onsi/ginkgo"

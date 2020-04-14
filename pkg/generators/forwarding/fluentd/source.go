@@ -16,14 +16,14 @@ import (
 func (engine *ConfigGenerator) generateSource(sources sets.String, appNs sets.String) (results []string, err error) {
 	// Order of templates matters.
 	templates := []string{}
-	nsPaths := []string{}
+	appNsPaths := []string{}
 	if sources.Has(string(logging.InputNameInfrastructure)) {
 		templates = append(templates, "inputSourceJournalTemplate")
 	}
 	if sources.Has(string(logging.InputNameApplication)) {
 		templates = append(templates, "inputSourceContainerTemplate")
 		for _, ns := range appNs.List() {
-			nsPaths = append(nsPaths, fmt.Sprintf("\"/var/log/containers/*_%s_*.log\"", ns))
+			appNsPaths = append(appNsPaths, fmt.Sprintf("\"/var/log/containers/*_%s_*.log\"", ns))
 		}
 	}
 	if sources.Has(string(logging.InputNameAudit)) {
@@ -45,7 +45,7 @@ func (engine *ConfigGenerator) generateSource(sources sets.String, appNs sets.St
 		constants.FluentdName,
 		constants.ElasticsearchName,
 		constants.KibanaName,
-		strings.Join(nsPaths, ", "),
+		strings.Join(appNsPaths, ", "),
 	}
 	for _, template := range templates {
 		result, err := engine.Execute(template, data)

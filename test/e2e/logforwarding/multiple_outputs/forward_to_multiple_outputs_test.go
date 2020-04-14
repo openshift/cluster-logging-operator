@@ -130,7 +130,7 @@ var _ = Describe("LogForwarding", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(selectors)
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, selectors)
 		})
 	})
 })

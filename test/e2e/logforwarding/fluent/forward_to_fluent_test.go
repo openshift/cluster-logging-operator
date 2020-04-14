@@ -177,7 +177,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluent-receiver", "fluentd"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd"})
 		})
 
 	})

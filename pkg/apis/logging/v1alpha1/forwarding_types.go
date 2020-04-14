@@ -45,6 +45,9 @@ type ForwardingSpec struct {
 type PipelineSpec struct {
 	Name       string        `json:"name,omitempty"`
 	SourceType LogSourceType `json:"inputSource,omitempty"`
+	// Namespaces to be captured for "logs-app" source type, ignored for other LogSourceTypes
+	// Empty value means no filtering based on namespace, all container logs will be collected.
+	Namespaces []string `json:"namespaces,omitempty"`
 
 	//OutputRefs is a list of  the names of outputs defined by forwarding.outputs
 	OutputRefs []string `json:"outputRefs,omitempty"`

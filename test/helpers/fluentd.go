@@ -352,6 +352,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		return tc.KubeClient.Core().Services(OpenshiftLoggingNS).Delete(service.Name, nil)
 	})
 	logStore.deployment = fluentDeployment
-	tc.LogStore = logStore
+	name := fluentDeployment.GetName()
+	tc.LogStores[name] = logStore
 	return fluentDeployment, tc.waitForDeployment(OpenshiftLoggingNS, fluentDeployment.Name, defaultRetryInterval, defaultTimeout)
 }

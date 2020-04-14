@@ -120,40 +120,38 @@ var _ = Describe("LogForwarder", func() {
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-				}
-				if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
-					Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
-				}
-				components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
-				for _, component := range components {
-					if err := e2e.WaitFor(component); err != nil {
-						Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
-					}
-				}
-				logStore := e2e.LogStores[syslogDeployment.GetName()]
-				Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
-				expectedAppName := forwarder.Spec.Outputs[0].Syslog.AppName
-				Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
-				expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
-				Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
-				expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
-				Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
-			},
-				Entry("with TLS disabled, with TCP", false, corev1.ProtocolTCP),
-				Entry("with TLS disabled, with UDP", false, corev1.ProtocolUDP),
-				Entry("with TLS enabled, with TCP", true, corev1.ProtocolTCP),
-				Entry("with TLS enabled, with UDP", true, corev1.ProtocolUDP),
-			)
-			Describe("values for appname", func() {
-				Context("and msgid,procid", func() {
-					BeforeEach(func() {
-						generatorPayload["appname_key"] = "rec_appname"
-						generatorPayload["msgid_key"] = "rec_msgid"
-						generatorPayload["procid_key"] = "rec_procid"
-					})
-					It("should use values from record", func() {
-						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
+				})
+
+				Context("and with TLS disabled", func() {
+
+					DescribeTable("should send logs to the forward.Output logstore", func(rfc helpers.SyslogRfc) {
+						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, rfc); err != nil {
+							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
+						}
+						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+							Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+						}
+						components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
+						for _, component := range components {
+							if err := e2e.WaitFor(component); err != nil {
+								Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
+							}
+						}
+
+						name := syslogDeployment.GetName()
+						Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						Expect(e2e.LogStores[name].GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
+						Expect(e2e.LogStores[name].GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
+					},
+						//Entry("with rfc 3164", helpers.Rfc3164))
+						Entry("with rfc 5424", helpers.Rfc5424))
+				})
+
+				Context("and with TLS enabled", func() {
+
+					DescribeTable("should send logs to the forward.Output logstore", func(rfc helpers.SyslogRfc) {
+						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, rfc); err != nil {
 							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 						}
 						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
@@ -173,16 +171,12 @@ var _ = Describe("LogForwarder", func() {
 								Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 							}
 						}
-						logStore := e2e.LogStores[syslogDeployment.GetName()]
-						Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
-						expectedAppName := generatorPayload["appname_key"]
-						Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
-						expectedMsgID := generatorPayload["msgid_key"]
-						Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
-						expectedProcID := generatorPayload["procid_key"]
-						Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
-					})
+						Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						Expect(e2e.LogStores[name].GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
+						Expect(e2e.LogStores[name].GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
+					},
+						//Entry("with rfc 3164", helpers.Rfc3164))
+						Entry("with rfc 5424", helpers.Rfc5424))
 				})
 				It("should take value from complete fluentd tag", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
@@ -202,17 +196,14 @@ var _ = Describe("LogForwarder", func() {
 						if err := e2e.WaitFor(component); err != nil {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
-					}
-					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
-					// typical value of tag in this test case is: kubernetes.var.log.containers.log-generator-746f659fdf-qgclg_clo-test-5764_log-generator-fef2a7848f9741bc6aeb1325aac051c0734c5dc177839c6787da207dc95530ad.log
-					expectedAppNamePrefix := "kubernetes.var.log.containers"
-					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedAppNamePrefix))
-					expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
-					Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
-					expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
-					Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+
+						name := syslogDeployment.GetName()
+						Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						Expect(e2e.LogStores[name].GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
+						Expect(e2e.LogStores[name].GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
+					},
+						//Entry("with rfc 3164", helpers.Rfc3164))
+						Entry("with rfc 5424", helpers.Rfc5424))
 				})
 				It("should use values from parts of tag", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
@@ -341,16 +332,14 @@ var _ = Describe("LogForwarder", func() {
 						if err := e2e.WaitFor(component); err != nil {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
-					}
-					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
-					expectedAppName := forwarder.Spec.Outputs[0].Syslog.AppName
-					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
-					expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
-					Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
-					expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
-					Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+
+						name := syslogDeployment.GetName()
+						Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						Expect(e2e.LogStores[name].GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
+						Expect(e2e.LogStores[name].GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
+					},
+						//Entry("with rfc 3164", helpers.Rfc3164))
+						Entry("with rfc 5424", helpers.Rfc5424))
 				})
 			})
 		})
@@ -509,14 +498,11 @@ var _ = Describe("LogForwarder", func() {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
 					}
-					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
-					// typical value of tag in this test case is: kubernetes.var.log.containers.log-generator-746f659fdf-qgclg_clo-test-5764_log-generator-fef2a7848f9741bc6aeb1325aac051c0734c5dc177839c6787da207dc95530ad.log
-					// prefix expected is: kubernetes#
-					expectedTagPrefix := "kubernetes#"
-					Expect(logStore.GrepLogs(greptag, helpers.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedTagPrefix))
-				})
+
+					name := syslogDeployment.GetName()
+					Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				},
+					Entry("with rfc 3164", helpers.Rfc3164))
 			})
 			Describe("values for facility,severity", func() {
 				BeforeEach(func() {
@@ -543,55 +529,11 @@ var _ = Describe("LogForwarder", func() {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
 					}
-					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
-					// 134 = Facility(local0/16)*8 + Severity(Informational/6)
-					// The 1 after <134> is version, which is always set to 1
-					expectedPriority := "<134>1"
-					grepPri := fmt.Sprintf(rsyslogFormatStr, logGenPod, "$1")
-					Expect(logStore.GrepLogs(grepPri, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedPriority), "Expected: "+expectedPriority)
-				})
-			})
-			Describe("syslog payload", func() {
-				Context("with new plugin", func() {
-					BeforeEach(func() {
-						generatorPayload["tag_key"] = "rec_tag"
-						generatorPayload["marker"] = logGenPod
-					})
-					It("should take from payload_key", func() {
-						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
-							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
-						}
-						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-						forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
-							Name: syslogDeployment.ObjectMeta.Name,
-						}
-						forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
-						forwarder.Spec.Outputs[0].Syslog.Tag = "$.message.tag_key"
-						forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
-						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
-							Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
-						}
-						components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
-						for _, component := range components {
-							if err := e2e.WaitFor(component); err != nil {
-								Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
-							}
-						}
-						logStore := e2e.LogStores[syslogDeployment.GetName()]
-						Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
-						grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_tag")
-						str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
-						Expect(err).To(BeNil())
-						str = strings.ReplaceAll(str, "=>", ":")
-						msg := map[string]interface{}{}
-						err = json.Unmarshal([]byte(str), &msg)
-						Expect(err).To(BeNil())
-						Expect(msg["msgcontent"]).To(Equal("My life is my message"))
-					})
-				})
+
+					name := syslogDeployment.GetName()
+					Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				},
+					Entry("with rfc 3164", helpers.Rfc3164))
 			})
 		})
 		AfterEach(func() {

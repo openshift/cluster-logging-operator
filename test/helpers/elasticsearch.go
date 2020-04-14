@@ -244,7 +244,9 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		SetHeader("Content-Type", "application/json").
 		Body(body).
 		Do()
-	tc.LogStore = &ElasticLogStore{
+
+	name := cr.GetName()
+	tc.LogStores[name] = &ElasticLogStore{
 		Framework: tc,
 	}
 	return cr, pipelineSecret, result.Error()

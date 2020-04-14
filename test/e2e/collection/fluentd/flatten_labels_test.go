@@ -77,10 +77,10 @@ var _ = Describe("Fluentd message filtering", func() {
 	}, helpers.DefaultCleanUpTimeout)
 
 	It("should remove 'kubernetes.labels' and create 'kubernetes.flat_labels' with an array of 'kubernetes.labels'", func() {
-		Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+		Expect(e2e.LogStores[helpers.FluentdLogStore].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 
 		//verify infra namespaces are not stored to their own index
-		logs, err := e2e.LogStore.ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
+		logs, err := e2e.LogStores[helpers.FluentdLogStore].ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
 		Expect(err).To(BeNil(), fmt.Sprintf("Error fetching logs: %v", err))
 		Expect(len(logs)).To(Not(Equal(0)), "There were no documents returned in the logs")
 

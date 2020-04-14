@@ -17,11 +17,12 @@ import (
 
 type kafkaReceiver struct {
 	tc     *E2ETestFramework
+	app    *apps.StatefulSet
 	topics []string
 }
 
 func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (logs, error) {
-	logs, err := kr.tc.consumedLogs(loggingv1.InputNameApplication)
+	logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read consumed application logs: %s", err)
 	}
@@ -30,7 +31,7 @@ func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (logs, error)
 
 func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
-		logs, err := kr.tc.consumedLogs(loggingv1.InputNameInfrastructure)
+		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameInfrastructure)
 		if err != nil {
 			return false, err
 		}
@@ -41,7 +42,7 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 
 func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
-		logs, err := kr.tc.consumedLogs(loggingv1.InputNameApplication)
+		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 		if err != nil {
 			return false, err
 		}
@@ -52,7 +53,7 @@ func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error)
 
 func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
-		logs, err := kr.tc.consumedLogs(loggingv1.InputNameAudit)
+		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameAudit)
 		if err != nil {
 			return false, err
 		}
@@ -69,30 +70,32 @@ func (kr *kafkaReceiver) ClusterLocalEndpoint() string {
 	return kafka.ClusterLocalEndpoint(OpenshiftLoggingNS)
 }
 
-func (tc *E2ETestFramework) DeployKafkaReceiver(topics []string) error {
+func (tc *E2ETestFramework) DeployKafkaReceiver(topics []string) (*apps.StatefulSet, error) {
+	if err := tc.createZookeeper(); err != nil {
+		return nil, err
+	}
+
+	app, err := tc.createKafkaBroker()
+	if err != nil {
+		return nil, err
+	}
+
 	receiver := &kafkaReceiver{
 		tc:     tc,
+		app:    app,
 		topics: topics,
 	}
-	tc.LogStore = receiver
+	tc.LogStores[app.Name] = receiver
 
-	if err := tc.createZookeeper(); err != nil {
-		return err
+	if err := tc.createKafkaConsumers(receiver); err != nil {
+		return nil, err
 	}
 
-	if err := tc.createKafkaBroker(); err != nil {
-		return err
-	}
-
-	if err := tc.createKafkaConsumers(); err != nil {
-		return err
-	}
-
-	return nil
+	return app, nil
 }
 
-func (tc *E2ETestFramework) consumedLogs(inputName string) (logs, error) {
-	rcv := tc.LogStore.(*kafkaReceiver)
+func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error) {
+	rcv := tc.LogStores[rcvName].(*kafkaReceiver)
 	topic := kafka.TopicForInputName(rcv.topics, inputName)
 	name := kafka.ConsumerNameForTopic(topic)
 
@@ -125,25 +128,25 @@ func (tc *E2ETestFramework) consumedLogs(inputName string) (logs, error) {
 	return logs, nil
 }
 
-func (tc *E2ETestFramework) createKafkaBroker() error {
+func (tc *E2ETestFramework) createKafkaBroker() (*apps.StatefulSet, error) {
 	if err := tc.createKafkaBrokerRBAC(); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := tc.createKafkaBrokerConfigMap(); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := tc.createKafkaBrokerService(); err != nil {
-		return err
+		return nil, err
 	}
 
-	err := tc.createKafkaBrokerStatefulSet()
+	app, err := tc.createKafkaBrokerStatefulSet()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return app, nil
 }
 
 func (tc *E2ETestFramework) createZookeeper() error {
@@ -162,8 +165,7 @@ func (tc *E2ETestFramework) createZookeeper() error {
 	return nil
 }
 
-func (tc *E2ETestFramework) createKafkaConsumers() error {
-	rcv := tc.LogStore.(*kafkaReceiver)
+func (tc *E2ETestFramework) createKafkaConsumers(rcv *kafkaReceiver) error {
 	for _, topic := range rcv.topics {
 		app := kafka.NewKafkaConsumerDeployment(OpenshiftLoggingNS, topic)
 
@@ -185,7 +187,7 @@ func (tc *E2ETestFramework) createKafkaConsumers() error {
 	return err
 }
 
-func (tc *E2ETestFramework) createKafkaBrokerStatefulSet() error {
+func (tc *E2ETestFramework) createKafkaBrokerStatefulSet() (*apps.StatefulSet, error) {
 	app := kafka.NewBrokerStatefuleSet(OpenshiftLoggingNS)
 
 	tc.AddCleanup(func() error {
@@ -195,10 +197,10 @@ func (tc *E2ETestFramework) createKafkaBrokerStatefulSet() error {
 
 	_, err := tc.KubeClient.Apps().StatefulSets(OpenshiftLoggingNS).Create(app)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return tc.waitForStatefulSet(OpenshiftLoggingNS, app.GetName(), defaultRetryInterval, defaultTimeout)
+	return app, tc.waitForStatefulSet(OpenshiftLoggingNS, app.GetName(), defaultRetryInterval, defaultTimeout)
 }
 
 func (tc *E2ETestFramework) createZookeeperStatefulSet() (*apps.StatefulSet, error) {

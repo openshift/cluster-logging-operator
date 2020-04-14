@@ -36,7 +36,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 		Context("and the receiver is unsecured", func() {
 
 			BeforeEach(func() {
-				fluentDeployment, err := e2e.DeployFluentdReceiver(rootDir, false)
+				fluentDeployment, err = e2e.DeployFluentdReceiver(rootDir, false)
 				Expect(err).To(Succeed(), "DeployFluentdReceiver")
 
 				cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector)

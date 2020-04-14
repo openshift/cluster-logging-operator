@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
+	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,6 +20,8 @@ var _ = Describe("LogForwarding", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
+		app *apps.StatefulSet
+		err error
 		e2e = helpers.NewE2ETestFramework()
 	)
 	BeforeEach(func() {
@@ -31,7 +34,8 @@ var _ = Describe("LogForwarding", func() {
 		Context("write app, audit and infra logs on a single topic", func() {
 			BeforeEach(func() {
 				topics := []string{kafka.DefaultTopic}
-				if err := e2e.DeployKafkaReceiver(topics); err != nil {
+				app, err = e2e.DeployKafkaReceiver(topics)
+				if err != nil {
 					Fail(fmt.Sprintf("Unable to deploy kafka receiver: %v", err))
 				}
 
@@ -54,7 +58,7 @@ var _ = Describe("LogForwarding", func() {
 								Type: loggingv1.OutputTypeKafka,
 								URL: fmt.Sprintf(
 									"tls://%s/%s",
-									e2e.LogStore.ClusterLocalEndpoint(),
+									e2e.LogStores[app.Name].ClusterLocalEndpoint(),
 									kafka.DefaultTopic,
 								),
 							},
@@ -91,9 +95,10 @@ var _ = Describe("LogForwarding", func() {
 			})
 
 			It("should send logs to the forward.Output logstore", func() {
-				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
-				Expect(e2e.LogStore.HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+				Expect(e2e.LogStores[app.Name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(),
+					"Expected to find stored infrastructure logs")
+				Expect(e2e.LogStores[app.Name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStores[app.Name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 			})
 
 			AfterEach(func() {
@@ -104,7 +109,8 @@ var _ = Describe("LogForwarding", func() {
 		Context("split app, audit and infra on different topics", func() {
 			BeforeEach(func() {
 				topics := []string{kafka.AppLogsTopic, kafka.AuditLogsTopic, kafka.InfraLogsTopic}
-				if err := e2e.DeployKafkaReceiver(topics); err != nil {
+				app, err = e2e.DeployKafkaReceiver(topics)
+				if err != nil {
 					Fail(fmt.Sprintf("Unable to deploy kafka receiver: %v", err))
 				}
 
@@ -125,7 +131,7 @@ var _ = Describe("LogForwarding", func() {
 							{
 								Name: fmt.Sprintf("%s-app-out", kafka.DeploymentName),
 								Type: loggingv1.OutputTypeKafka,
-								URL:  fmt.Sprintf("tls://%s", e2e.LogStore.ClusterLocalEndpoint()),
+								URL:  fmt.Sprintf("tls://%s", e2e.LogStores[app.Name].ClusterLocalEndpoint()),
 								OutputTypeSpec: loggingv1.OutputTypeSpec{
 									Kafka: &v1.Kafka{
 										Topic: kafka.AppLogsTopic,
@@ -135,7 +141,7 @@ var _ = Describe("LogForwarding", func() {
 							{
 								Name: fmt.Sprintf("%s-audit-out", kafka.DeploymentName),
 								Type: loggingv1.OutputTypeKafka,
-								URL:  fmt.Sprintf("tls://%s", e2e.LogStore.ClusterLocalEndpoint()),
+								URL:  fmt.Sprintf("tls://%s", e2e.LogStores[app.Name].ClusterLocalEndpoint()),
 								OutputTypeSpec: loggingv1.OutputTypeSpec{
 									Kafka: &v1.Kafka{
 										Topic: kafka.AuditLogsTopic,
@@ -145,7 +151,7 @@ var _ = Describe("LogForwarding", func() {
 							{
 								Name: fmt.Sprintf("%s-infra-out", kafka.DeploymentName),
 								Type: loggingv1.OutputTypeKafka,
-								URL:  fmt.Sprintf("tls://%s", e2e.LogStore.ClusterLocalEndpoint()),
+								URL:  fmt.Sprintf("tls://%s", e2e.LogStores[app.Name].ClusterLocalEndpoint()),
 								OutputTypeSpec: loggingv1.OutputTypeSpec{
 									Kafka: &v1.Kafka{
 										Topic: kafka.InfraLogsTopic,
@@ -185,9 +191,9 @@ var _ = Describe("LogForwarding", func() {
 			})
 
 			It("should send logs to the forward.Output logstore", func() {
-				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
-				Expect(e2e.LogStore.HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+				Expect(e2e.LogStores[app.Name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(e2e.LogStores[app.Name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStores[app.Name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 			})
 
 			AfterEach(func() {

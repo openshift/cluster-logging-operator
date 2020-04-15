@@ -10,7 +10,7 @@ const ClusterLogForwarderKind = "ClusterLogForwarder"
 // ClusterLogForwarder is the schema for the `clusterlogforwarder` API.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=cluster
+// +kubebuilder:resource:scope=Cluster
 // +kubebuilder:subresource:status
 type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`

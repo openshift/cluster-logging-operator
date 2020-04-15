@@ -9,7 +9,7 @@ spec:
     listKind: ClusterLogForwarderList
     plural: clusterlogforwarders
     singular: clusterlogforwarder
-  scope: cluster
+  scope: Cluster
   subresources:
     status: {}
   validation:

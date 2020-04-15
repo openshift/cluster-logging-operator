@@ -94,6 +94,7 @@ gather_logging_resources() {
   oc -n ${LOGGING_NS} extract configmap/fluentd --to=$outdir ||:
 
   get_all_logging_pod_logs $outdir
+  get_all_olm_logs $outdir
   set -e
 }
 
@@ -115,6 +116,15 @@ get_all_logging_pod_logs() {
     done
   done
   set -e
+}
+
+get_all_olm_logs(){
+    set +e
+    local outdir=${1:-$ARTIFACT_DIR}
+    local runtime=${2:-"120s"}
+    oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/catalog-operator > $outdir/catalog-operator.logs 2>&1 ||:
+    oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/olm-operator > $outdir/olm-operator.logs 2>&1 ||:
+    set -e
 }
 
 wait_for_deployment_to_be_ready(){

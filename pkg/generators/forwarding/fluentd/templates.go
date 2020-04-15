@@ -631,6 +631,7 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
   @id {{.StoreID}}
   host {{.Host}}
   port {{.Port}}
+  rfc {{.Rfc}}
   facility user
   severity debug
   program fluentd

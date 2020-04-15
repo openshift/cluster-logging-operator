@@ -488,13 +488,13 @@ spec:
         path: status
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:logforwardingStatuses'
-    - name: clusterlogforwarder.logging.openshift.io
+    - name: clusterlogforwarders.logging.openshift.io
       version: v1
       kind: ClusterLogForwarder
       displayName: Cluster Log Forwarder
       description: Cluster log forwarder spec to define destinations for logs
-      specDescriptors: {}         # FIXME(alanconway) fill these in
-      statusDescriptors: {}       # FIXME(alanconway) fill these in
+      specDescriptors: []
+      statusDescriptors: []
     - name: collectors.logging.openshift.io
       version: v1alpha1
       kind: Collector

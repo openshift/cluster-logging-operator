@@ -99,6 +99,7 @@ Some `make` targets to facilitate deployment:
 ### E2E Testing
 
 This test assumes:
+* the cluster-logging-catalog image is available
 * the cluster-logging-operator image is available
 * the cluster-logging component images are available (i.e. $docker_registry_ip/openshift/$component)
 
@@ -109,4 +110,6 @@ on which the operator runs or can be pulled from a visible registry.
 in order to run this test against local changes to the `cluster-logging-operator`. For example:
 ```
 $ make deploy-image && IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest make test-e2e
-```
+``**
+
+**Note:** To skip cleanup of resources while hacking/debugging an E2E test apply `DO_CLEANUP=false`.

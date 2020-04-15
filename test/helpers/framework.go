@@ -63,6 +63,8 @@ type LogStore interface {
 	HasInfraStructureLogs(timeToWait time.Duration) (bool, error)
 
 	HasAuditLogs(timeToWait time.Duration) (bool, error)
+
+	GrepLogs(expr string, timeToWait time.Duration) (string, error)
 }
 
 type E2ETestFramework struct {
@@ -271,6 +273,7 @@ func (tc *E2ETestFramework) CreateLogForwarding(forwarding *logforwarding.LogFor
 
 func (tc *E2ETestFramework) Cleanup() {
 	//allow caller to cleanup if unset (e.g script cleanup())
+	logger.Infof("Running Cleanup....")
 	doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
 	if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
 		RunCleanupScript()

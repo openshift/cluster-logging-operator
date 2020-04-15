@@ -37,7 +37,7 @@ var _ = Describe("LogForwarding", func() {
 			Context("and tcp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.Rfc3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `
@@ -77,7 +77,7 @@ var _ = Describe("LogForwarding", func() {
 			Context("and udp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false, helpers.Rfc3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `

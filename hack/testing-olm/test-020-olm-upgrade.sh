@@ -45,9 +45,11 @@ cleanup(){
   oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/olm-operator > $ARTIFACT_DIR/olm-operator.logs 2>&1 ||:
   oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.after_update  2>&1 ||:
 
-  ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
-  ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
 
+  if [ "${DO_CLEANUP:-true}" == "true" ] ; then
+      ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
+      ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
+  fi
   set -e
   exit ${return_code}
 }

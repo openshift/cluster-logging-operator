@@ -20,7 +20,7 @@ cleanup(){
   end_seconds=$(date +%s)
   runtime="$(($end_seconds - $start_seconds))s"
   
-  if [ "${SKIP_CLEANUP:-false}" == "false" ] ; then
+  if [ "${DO_CLEANUP:-true}" == "true" ] ; then
     ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
     ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
   fi

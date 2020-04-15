@@ -26,10 +26,11 @@ cleanup(){
   set +e
   gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
 
-  ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
-  ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
-  
-  os::cleanup::all "${return_code}"
+  if [ "${DO_CLEANUP:-true}" == "true" ] ; then
+      ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
+      ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
+      os::cleanup::all "${return_code}"
+  fi
   
   set -e
   exit ${return_code}

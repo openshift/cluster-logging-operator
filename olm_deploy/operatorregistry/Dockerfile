@@ -5,7 +5,7 @@ FROM registry.svc.ci.openshift.org/openshift/release:golang-1.12
 WORKDIR /
 COPY manifests/ /manifests
 
-RUN chmod -R o+w /manifests && rm /manifests/art.yaml /manifests/*/image-references
+RUN chmod -R g+w /manifests && rm /manifests/art.yaml /manifests/*/image-references
 
 COPY olm_deploy/scripts/registry-init.sh /scripts/
 

@@ -17,7 +17,7 @@ type OutputSpec struct {
 	// +required
 	Type string `json:"type"`
 
-	// OutputTypeUnion is inlined with a required `type` and optional extra configuration.
+	// OutputTypeSpec is inlined with a required `type` and optional extra configuration.
 	OutputTypeSpec `json:",inline"`
 
 	// URL to send log messages to.

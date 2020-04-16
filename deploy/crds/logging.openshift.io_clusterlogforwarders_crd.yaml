@@ -32,6 +32,39 @@ spec:
         spec:
           description: ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
           properties:
+            inputs:
+              description: Inputs are named inputs of log messages
+              items:
+                description: InputSpec defines a source of log messages.
+                properties:
+                  application:
+                    description: Application specific specs
+                    properties:
+                      namespaces:
+                        description: "Namespaces referes to the namespace names. The
+                          input to the pipeline will be restricted to logs from containers
+                          belonging to these namespaces. \n If no namespaces are specified,
+                          all application container logs will be collected."
+                        items:
+                          type: string
+                        type: array
+                    type: object
+                  name:
+                    description: Name used to refer to the input of a `pipeline`.
+                    type: string
+                  type:
+                    description: 'Type of input source. Must be one of :  - "application"  -
+                      "infrastructure"  - "audit"'
+                    enum:
+                    - application
+                    - infrastructure
+                    - audit
+                    type: string
+                required:
+                - name
+                - type
+                type: object
+              type: array
             outputs:
               description: Outputs are named destinations for log messages.
               items:
@@ -130,8 +163,7 @@ spec:
                       list.
                     type: string
                   outputRefs:
-                    description: OutputNames lists the names of outputs from this
-                      pipeline.
+                    description: OutputRefs lists the names of outputs from this pipeline.
                     items:
                       type: string
                     type: array

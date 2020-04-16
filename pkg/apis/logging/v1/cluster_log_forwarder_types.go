@@ -22,6 +22,10 @@ type ClusterLogForwarder struct {
 
 // ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
 type ClusterLogForwarderSpec struct {
+	// Inputs are named inputs of log messages
+	//
+	// +required
+	Inputs []InputSpec `json:"inputs,omitempty"`
 	// Outputs are named destinations for log messages.
 	//
 	// +required
@@ -45,7 +49,7 @@ type ClusterLogForwarderStatus struct {
 }
 
 type PipelineSpec struct {
-	// OutputNames lists the names of outputs from this pipeline.
+	// OutputRefs lists the names of outputs from this pipeline.
 	//
 	// +required
 	OutputRefs []string `json:"outputRefs"`
@@ -114,12 +118,3 @@ func (spec *ClusterLogForwarderSpec) OutputMap() map[string]*OutputSpec {
 	}
 	return m
 }
-
-// Built-in log input names
-const (
-	InputApplication    = "Application"    // Containers from non-infrastructure namespaces
-	InputInfrastructure = "Infrastructure" // Infrastructure containers and system logs
-	InputAudit          = "Audit"          // System audit logs
-)
-
-var BuiltInInputs = sets.NewString(InputApplication, InputInfrastructure, InputAudit)

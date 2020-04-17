@@ -112,10 +112,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
-			return
-		}
-
 		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
 			return
 		}

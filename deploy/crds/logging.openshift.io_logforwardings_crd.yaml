@@ -66,6 +66,13 @@ spec:
                     type: string
                   name:
                     type: string
+                  namespaces:
+                    description: Namespaces to be captured for "logs-app" source type,
+                      ignored for other LogSourceTypes Empty value means no filtering
+                      based on namespace, all container logs will be collected.
+                    items:
+                      type: string
+                    type: array
                   outputRefs:
                     description: OutputRefs is a list of  the names of outputs defined
                       by forwarding.outputs

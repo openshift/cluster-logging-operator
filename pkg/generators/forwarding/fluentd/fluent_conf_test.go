@@ -3,6 +3,7 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	test "github.com/openshift/cluster-logging-operator/test"
@@ -71,6 +72,60 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 		}
+	})
+
+	It("should generats container source config for given namespaces only", func() {
+		forwarding = &logging.ForwardingSpec{
+			Outputs: []logging.OutputSpec{
+				{
+					Type:     logging.OutputTypeElasticsearch,
+					Name:     "apps-es-1",
+					Endpoint: "es.svc.messaging.cluster.local:9654",
+					Secret: &logging.OutputSecretSpec{
+						Name: "my-es-secret",
+					},
+				},
+			},
+			Pipelines: []logging.PipelineSpec{
+				{
+					Name:       "apps-pipeline",
+					SourceType: logging.LogSourceTypeApp,
+					OutputRefs: []string{"apps-es-1", "apps-es-2"},
+					Namespaces: []string{"project1-namespace", "project2-namespace"},
+				},
+			},
+		}
+		results, err := generator.generateSource(sets.NewString(string(forwarding.Pipelines[0].SourceType)), sets.NewString(forwarding.Pipelines[0].Namespaces...))
+		Expect(err).To(BeNil())
+		test.Expect(results[0]).ToEqual(`
+# container logs
+<source>
+  @type tail
+  @id container-input
+  path "/var/log/containers/*_project1-namespace_*.log", "/var/log/containers/*_project2-namespace_*.log"
+  exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  pos_file "/var/log/es-containers.log.pos"
+  refresh_interval 5
+  rotate_wait 5
+  tag kubernetes.*
+  read_from_head "true"
+  @label @CONCAT
+  <parse>
+    @type multi_format
+    <pattern>
+      format json
+      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
+      keep_time_key true
+    </pattern>
+    <pattern>
+      format regexp
+      expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
+      keep_time_key true
+    </pattern>
+  </parse>
+</source>
+		`)
 	})
 
 	It("should exclude source to pipeline labels when there are no pipelines for a given sourceType (e.g. only logs-app)", func() {

@@ -43,9 +43,9 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	var outputLabels []string
 	var err error
 
-	logTypes := gatherLogSourceTypes(forwarding.Pipelines)
+	logTypes, appNs := gatherLogSourceTypes(forwarding.Pipelines)
 
-	if sourceInputLabels, err = engine.generateSource(logTypes); err != nil {
+	if sourceInputLabels, err = engine.generateSource(logTypes, appNs); err != nil {
 		return "", err
 	}
 	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(mapSourceTypesToPipelineNames(forwarding.Pipelines)); err != nil {
@@ -87,12 +87,16 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	return result, nil
 }
 
-func gatherLogSourceTypes(pipelines []logforward.PipelineSpec) sets.String {
+func gatherLogSourceTypes(pipelines []logforward.PipelineSpec) (sets.String, sets.String) {
 	types := sets.NewString()
+	appNamespaces := sets.NewString()
 	for _, pipeline := range pipelines {
 		types.Insert(string(pipeline.SourceType))
+		if pipeline.SourceType == logforward.LogSourceTypeApp {
+			appNamespaces.Insert(pipeline.Namespaces...)
+		}
 	}
-	return types
+	return types, appNamespaces
 }
 
 func mapSourceTypesToPipelineNames(pipelines []logforward.PipelineSpec) map[logforward.LogSourceType][]string {

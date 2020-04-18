@@ -7,6 +7,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func Trace(args ...interface{}) {
+	logrus.Trace(args...)
+}
+
+func Tracef(format string, objects ...interface{}) {
+	logrus.Tracef(format, objects...)
+}
+
 func Debug(args ...interface{}) {
 	logrus.Debug(args...)
 }
@@ -38,7 +46,7 @@ func Infof(format string, objects ...interface{}) {
 
 //IsDebugEnabled returns true if loglevel is 2
 func IsDebugEnabled() bool {
-	return logrus.GetLevel() == logrus.DebugLevel
+	return logrus.GetLevel() >= logrus.DebugLevel
 }
 
 func init() {

@@ -33,7 +33,7 @@ build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
 run:
-	ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
+	mkdir $(CURDIR)/tmp||: && ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana6:latest \
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator6:latest \
@@ -42,15 +42,16 @@ run:
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
-	WORKING_DIR=$(TARGET_DIR)/ocp-clo \
+	WORKING_DIR=$(CURDIR)/tmp \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	$(RUN_OPTS) bin/cluster-logging-operator
+	$(RUN_OPTS) $(CURDIR)/bin/cluster-logging-operator
 
 run-debug:
 	$(MAKE) run RUN_OPTS='dlv exec --'
 
 clean:
 	@rm -f bin/operator-sdk bin/imagebuilder bin/golangci-lint bin/cluster-logging-operator
+	rm -rf tmp
 	go clean -cache -testcache ./...
 
 image: build

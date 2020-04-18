@@ -17,6 +17,7 @@ if [ ! -d $test_artifactdir ] ; then
 fi
 
 export CLUSTER_LOGGING_OPERATOR_NAMESPACE="openshift-logging"
+NAMESPACE="${CLUSTER_LOGGING_OPERATOR_NAMESPACE}"
 repo_dir="$(dirname $0)/../.."
 manifest=${repo_dir}/manifests
 version=$(basename $(find $manifest -type d | sort -r | head -n 1))
@@ -57,3 +58,5 @@ os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
 
 # assert deployment
 assert_resources_exist
+# assert kibana instance exists
+assert_kibana_instance_exists

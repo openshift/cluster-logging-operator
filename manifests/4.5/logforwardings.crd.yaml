@@ -13,6 +13,7 @@ spec:
   version: v1alpha1
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         spec:
           type: object
@@ -21,6 +22,7 @@ spec:
             outputs:
               description: Destinations for log messages
               items:
+                type: object
                 description: An individual entry for a specific output
                 properties:
                   type:
@@ -44,6 +46,7 @@ spec:
                     required:
                       - name
                     type: object
+                    nullable: true
               required:
               - type
               - name
@@ -52,6 +55,7 @@ spec:
             pipelines:
               description: The mapping of sources to outputs
               items:
+                type: object
                 properties:
                   name:
                     description: The name of the pipeline
@@ -61,7 +65,7 @@ spec:
                     items:
                       type: string
                     type: array
-                  inputType:
+                  inputSource:
                     description: The log source type
                     type: string
                     enum:
@@ -76,6 +80,8 @@ spec:
           required:
           - outputs
           - pipelines
+        status:
+          type: object
   subresources:
     status: {}
 

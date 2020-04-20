@@ -13,7 +13,7 @@ IMAGE_LOGGING_CURATOR5=${IMAGE_LOGGING_CURATOR5:-quay.io/openshift/origin-loggin
 IMAGE_LOGGING_FLUENTD=${IMAGE_LOGGING_FLUENTD:-quay.io/openshift/origin-logging-fluentd:latest}
 IMAGE_PROMTAIL=${IMAGE_PROMTAIL:-name: quay.io/openshift/origin-promtail:latest}
 IMAGE_ELASTICSEARCH6=${IMAGE_ELASTICSEARCH6:-quay.io/openshift/origin-logging-elasticsearch6:latest}
-IMAGE_LOGGING_KIBANA6=${IMAGE_OAUTH_KIBANA6:-quay.io/openshift/origin-logging-kibana6:latest}
+IMAGE_LOGGING_KIBANA6=${IMAGE_LOGGING_KIBANA6:-quay.io/openshift/origin-logging-kibana6:latest}
 
 # update the manifest with the image built by ci
 sed -i "s,quay.io/openshift/origin-cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," /manifests/*/*clusterserviceversion.yaml

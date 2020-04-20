@@ -68,6 +68,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	generatedConfig, err := generator.Generate(&clusterRequest.ForwardingSpec)
 
 	if err != nil {
+		logger.Errorf("Conf generation failed. %v", err)
 		return "",
 			clusterRequest.UpdateCondition(
 				logging.CollectorDeadEnd,

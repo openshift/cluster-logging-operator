@@ -46,16 +46,20 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	logTypes, appNs := gatherLogSourceTypes(forwarding.Pipelines)
 
 	if sourceInputLabels, err = engine.generateSource(logTypes, appNs); err != nil {
+		logger.Errorf("Error in generating sourceInputLabels. %v", err)
 		return "", err
 	}
 	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(mapSourceTypesToPipelineNames(forwarding.Pipelines)); err != nil {
+		logger.Errorf("Error in generating sourceToPipelineLabels. %v", err)
 		return "", err
 	}
 	sort.Strings(sourceToPipelineLabels)
 	if pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(forwarding.Pipelines); err != nil {
+		logger.Errorf("Error in generating pipelineToOutputLabels. %v", err)
 		return "", err
 	}
 	if outputLabels, err = engine.generateOutputLabelBlocks(forwarding.Outputs); err != nil {
+		logger.Errorf("Error in generating outputLabels. %v", err)
 		return "", err
 	}
 
@@ -82,6 +86,7 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	}
 	result, err := engine.Execute("fluentConf", data)
 	if err != nil {
+		logger.Errorf("Error processing fluentConf template: %v", err)
 		return "", fmt.Errorf("Error processing fluentConf template: %v", err)
 	}
 	return result, nil

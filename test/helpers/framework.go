@@ -123,7 +123,9 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 	}
 	_, err := tc.KubeClient.CoreV1().Namespaces().Create(namespace)
 	if err != nil {
-		logger.Error(err)
+		if !apierrors.IsAlreadyExists(err) {
+			logger.Error(err)
+		}
 	}
 	return name
 }

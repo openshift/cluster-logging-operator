@@ -58,6 +58,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 }
 
 func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestClient client.Client) (err error) {
+	logger.DebugObject("Reconciling LogForwarding instance: %v", forwarding)
 	clusterLoggingRequest := ClusterLoggingRequest{
 		client: requestClient,
 	}

@@ -13,6 +13,7 @@ spec:
   version: v1alpha1
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         spec:
           type: object
@@ -24,23 +25,29 @@ spec:
               enum:
               - promtail
             resources:
-              type: object
               description: The resource requirements for Fluentd
+              type: object
+              nullable: true
               properties:
                 limits:
                   type: object
+                  nullable: true
                   description: 'Limits describes the maximum amount of compute
                     resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                 requests:
                   type: object
+                  nullable: true
                   description: 'Requests describes the minimum amount of compute
                     resources required. If Requests is omitted for a container,
                     it defaults to Limits if that is explicitly specified, otherwise
                     to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
             nodeSelector:
               type: object
+              nullable: true
               description: Define which Nodes the Pods are scheduled on.
           required:
           - type
+        status:
+          type: object
   subresources:
     status: {}

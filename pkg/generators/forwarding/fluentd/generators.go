@@ -35,7 +35,7 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 
 //Generate the fluent.conf file using the forwarding information
 func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (string, error) {
-
+	logger.DebugObject("Generating fluent.conf using %s", forwarding)
 	//sanitize here
 	var sourceInputLabels []string
 	var sourceToPipelineLabels []string
@@ -46,16 +46,20 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	logTypes, appNs := gatherLogSourceTypes(forwarding.Pipelines)
 
 	if sourceInputLabels, err = engine.generateSource(logTypes, appNs); err != nil {
+		logger.Tracef("Error generating source blocks: %v", err)
 		return "", err
 	}
 	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(mapSourceTypesToPipelineNames(forwarding.Pipelines)); err != nil {
+		logger.Tracef("Error generating source to pipeline blocks: %v", err)
 		return "", err
 	}
 	sort.Strings(sourceToPipelineLabels)
 	if pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(forwarding.Pipelines); err != nil {
+		logger.Tracef("Error generating pipeline to output labels blocks: %v", err)
 		return "", err
 	}
 	if outputLabels, err = engine.generateOutputLabelBlocks(forwarding.Outputs); err != nil {
+		logger.Tracef("Error generating to output label blocks: %v", err)
 		return "", err
 	}
 
@@ -82,8 +86,10 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	}
 	result, err := engine.Execute("fluentConf", data)
 	if err != nil {
+		logger.Tracef("Error generating fluentConf")
 		return "", fmt.Errorf("Error processing fluentConf template: %v", err)
 	}
+	logger.Tracef("Successfully generated fluent.conf: %v", result)
 	return result, nil
 }
 

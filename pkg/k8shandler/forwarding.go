@@ -57,6 +57,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		clusterRequest.includeLegacySyslogConfig(),
 		clusterRequest.useOldRemoteSyslogPlugin())
 	if err != nil {
+		logger.Warnf("Unable to create collector config generator: %v", err)
 		return "",
 			clusterRequest.UpdateCondition(
 				logging.CollectorDeadEnd,
@@ -66,6 +67,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 			)
 	}
 	generatedConfig, err := generator.Generate(&clusterRequest.ForwardingSpec)
+	logger.Warnf("Unable to generate log confguraiton: %v", err)
 
 	if err != nil {
 		return "",
@@ -88,9 +90,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 }
 
 func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace string, cluster *logging.ClusterLogging) logforward.ForwardingSpec {
-	logger.Debugf("Normalizing logforwarding from request: %v", clusterRequest)
-	logger.Debugf("ForwardingRequest: %v", clusterRequest.ForwardingRequest)
-	logger.Debugf("ForwardingSpec: %v", clusterRequest.ForwardingSpec)
+	logger.DebugObject("Normalizing logforwarding from request: %v", clusterRequest)
+	logger.DebugObject("ForwardingRequest: %v", clusterRequest.ForwardingRequest)
+	logger.DebugObject("ForwardingSpec: %v", clusterRequest.ForwardingSpec)
 	if cluster.Spec.LogStore != nil && cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 		if !clusterRequest.ForwardingSpec.DisableDefaultForwarding && len(clusterRequest.ForwardingSpec.Pipelines) == 0 {
 			logger.Debug("Configuring logforwarding to utilize the operator managed logstore")

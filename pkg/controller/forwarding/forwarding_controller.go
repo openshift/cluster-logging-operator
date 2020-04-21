@@ -71,7 +71,7 @@ var (
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	logger.Debugf("logforwarding-controller Reconciling: %v", request)
+	logger.DebugObject("logforwarding-controller Reconciling request: %s", request)
 	// Fetch the LogForwarding instance
 	instance := &logforwarding.LogForwarding{}
 	logger.Debug("logforwarding-controller fetching LF instance")
@@ -92,7 +92,7 @@ func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, reconcileErr
 	}
 
-	logger.Debugf("logforwarding-controller fetched LF instance: %v", instance)
+	logger.DebugObject("logforwarding-controller fetched LF instance: %v", instance)
 
 	//check for instancename and then update status
 	if instance.Name != constants.SingletonName {

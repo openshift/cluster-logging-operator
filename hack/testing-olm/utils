@@ -83,15 +83,38 @@ gather_logging_resources() {
   set +e
   local LOGGING_NS=$1
   local outdir=${2:-$ARTIFACT_DIR}
+  local runtime=${3:-$(date +%s)}
+  outdir=$outdir/$runtime
+  mkdir $outdir ||:
   oc -n ${LOGGING_NS} get configmaps -o yaml > $outdir/configmaps.yaml 2>&1 || :
   oc -n ${LOGGING_NS} get secrets -o yaml > $outdir/secrets.yaml 2>&1 || :
   oc -n ${LOGGING_NS} get cronjobs -o yaml > $outdir/cronjobs.yaml 2>&1 || :
   
-  oc -n ${LOGGING_NS} get deployments -o wide > $outdir/deployments.txt 2>&1 || :
+  oc -n ${LOGGING_NS} get deployments -o wide > $outdir/deployments.txt 2>&1 ||    :
+  oc -n ${LOGGING_NS} get ds -o wide > $outdir/daemonsets.txt 2>&1 ||    :
   oc -n ${LOGGING_NS} get pods -o wide > $outdir/pods.txt 2>&1 || :
+  oc -n ${LOGGING_NS} get clusterlogging instance -o yaml > $outdir/clusterlogging.instance.yaml  ||:
+  oc -n ${LOGGING_NS} get logforwarding instance -o yaml > $outdir/logforwarding.instance.yaml  ||:
 
   oc -n ${LOGGING_NS} extract secret/elasticsearch --to=$outdir ||:
   oc -n ${LOGGING_NS} extract configmap/fluentd --to=$outdir ||:
+  oc -n ${LOGGING_NS} extract configmap/secure-forward --to=$outdir ||:
+  oc -n ${LOGGING_NS} extract secret/secure-forward --to=$outdir ||:
+
+  oc -n ${LOGGING_NS} describe ds/fluentd > $outdir/fluentd.describe.txt  ||:
+  
+
+  oc -n openshift-logging exec -c elasticsearch \
+    $(oc -n openshift-logging get pods -l component=elasticsearch -o jsonpath={.items[0].metadata.name}) \
+    -- indices > $outdir/indices.txt||:
+  for p in $(oc -n openshift-logging get pods -l component=fluentd -o jsonpath={.items[*].metadata.name}); do
+    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/clo_default_output_es > $outdir/$p.buffers.txt||:
+    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/retry_clo_default_output_es > $outdir/$p.buffers.retry.txt||:
+  done
+
+  oc -n openshift-operators-redhat get deployment elasticsearch-operator -o wide > $outdir/eo-deployment.txt 2>&1 || :
+  oc -n openshift-operators-redhat describe deployment elasticsearch-operator > $outdir/eo-deployment.describe 2>&1 || :
+  oc -n openshift-operators-redhat logs deployment/elasticsearch-operator > $outdir/elasticsearch-operator.logs 2>&1 || :
 
   get_all_logging_pod_logs $outdir
   set -e

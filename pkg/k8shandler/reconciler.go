@@ -87,3 +87,60 @@ func ReconcileForGlobalProxy(requestCluster *logging.ClusterLogging, forwarding 
 
 	return nil
 }
+
+func ReconcileForKibanaSecret(requestClient client.Client) (err error) {
+
+	clusterLoggingRequest := ClusterLoggingRequest{
+		client: requestClient,
+	}
+
+	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	clusterLoggingRequest.cluster = clusterLogging
+
+	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		return nil
+	}
+
+	// call for Kibana to restart itself (e.g. delete its pods)
+	return clusterLoggingRequest.RestartKibana()
+}
+
+func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {
+	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
+	clusterLogging := &logging.ClusterLogging{}
+
+	if err := clusterRequest.client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
+		if !apierrors.IsNotFound(err) {
+			fmt.Printf("Encountered unexpected error getting %v", clusterLoggingNamespacedName)
+		}
+	}
+
+	return clusterLogging
+}
+
+func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
+	// we need to see if we have the proxy available so we
+	// don't blank out any proxy configured changes...
+	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
+	proxyConfig := &configv1.Proxy{}
+	if err := clusterRequest.client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
+		if !apierrors.IsNotFound(err) {
+			fmt.Printf("Encountered unexpected error getting %v", proxyNamespacedName)
+		}
+	}
+
+	return proxyConfig
+}
+
+func (clusterRequest *ClusterLoggingRequest) getLogForwarding() *logforwarding.LogForwarding {
+	logForwardingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
+	logForwarding := &logforwarding.LogForwarding{}
+	logger.Debug("logforwarding-controller fetching LF instance")
+	if err := clusterRequest.client.Get(context.TODO(), logForwardingNamespacedName, logForwarding); err != nil {
+		if !apierrors.IsNotFound(err) {
+			fmt.Printf("Encountered unexpected error getting %v", logForwardingNamespacedName)
+		}
+	}
+
+	return logForwarding
+}

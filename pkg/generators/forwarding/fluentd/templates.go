@@ -546,7 +546,7 @@ tls_cert_path {{ .SecretPath "ca-bundle.crt"}}
 <buffer>
   @type file
   path '{{.BufferPath}}'
-  queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
+  queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
   chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
   flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
   flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
@@ -609,7 +609,7 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
     flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
     retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
     retry_forever true
-    queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
     overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
   </buffer>
@@ -662,7 +662,7 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
     flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
     retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
     retry_forever true
-    queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
     overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
   </buffer>

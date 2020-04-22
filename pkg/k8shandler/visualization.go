@@ -522,11 +522,18 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 		return err
 	}
 
+	sessionSecret := []byte{}
+
+	sessionSecret = utils.GetWorkingDirFileContents("kibana-session-secret")
+	if sessionSecret == nil {
+		sessionSecret = utils.GetRandomWord(32)
+	}
+
 	proxySecret := NewSecret(
 		"kibana-proxy",
 		clusterRequest.cluster.Namespace,
 		map[string][]byte{
-			"session-secret": utils.GetRandomWord(32),
+			"session-secret": sessionSecret,
 			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
 			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
 		})

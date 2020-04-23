@@ -228,6 +228,14 @@ spec:
           - prometheusrules
           verbs:
           - "*"
+        - apiGroups:
+          - apps
+          resources:
+          - deployments/finalizers
+          resourceNames:
+          - "cluster-logging-operator"
+          verbs:
+          - "update"
       clusterPermissions:
       - serviceAccountName: cluster-logging-operator
         rules:

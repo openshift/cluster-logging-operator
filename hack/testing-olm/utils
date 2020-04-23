@@ -94,6 +94,7 @@ gather_logging_resources() {
   oc -n ${LOGGING_NS} extract configmap/fluentd --to=$outdir ||:
 
   get_all_logging_pod_logs $outdir
+  get_all_olm_logs $outdir
   set -e
 }
 
@@ -105,7 +106,14 @@ get_all_logging_pod_logs() {
   for p in $(oc get pods -n ${LOGGING_NS} -o jsonpath='{.items[*].metadata.name}') ; do
     oc -n ${LOGGING_NS} describe pod $p > $outdir/$p.describe 2>&1 || :
     oc -n ${LOGGING_NS} get pod $p -o yaml > $outdir/$p.yaml 2>&1 || :
-    for container in $(oc -n ${LOGGING_NS} get po $p -o jsonpath='{.spec.containers[*].name}') ; do
+
+    initContainers=$(oc -n ${LOGGING_NS} get po $p -o jsonpath='{.spec.initContainers[*].name}')
+    for container in $initContainers ; do
+        oc logs -n ${LOGGING_NS} -c $container $p > $outdir/$p.$container.init.log 2>&1
+    done
+
+    containers="$(oc -n ${LOGGING_NS} get po $p -o jsonpath='{.spec.containers[*].name}')"
+    for container in $containers ; do
       oc logs -n ${LOGGING_NS} -c $container $p > $outdir/$p.$container.log 2>&1
       case "$container" in
         fluentd*) oc -n ${LOGGING_NS} exec $p -- logs > $outdir/$p.$container.exec.log 2>&1 ;;
@@ -115,6 +123,15 @@ get_all_logging_pod_logs() {
     done
   done
   set -e
+}
+
+get_all_olm_logs(){
+    set +e
+    local outdir=${1:-$ARTIFACT_DIR}
+    local runtime=${2:-"120s"}
+    oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/catalog-operator > $outdir/catalog-operator.logs 2>&1
+    oc  -n openshift-operator-lifecycle-manager logs --since=$runtime deployment/olm-operator > $outdir/olm-operator.logs 2>&1
+    set -e
 }
 
 wait_for_deployment_to_be_ready(){

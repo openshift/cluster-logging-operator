@@ -1,9 +1,11 @@
-#! /bin/bash
+#!/bin/bash
 
-WORKING_DIR=${WORKING_DIR:-/tmp/_working_dir}
-NAMESPACE=${NAMESPACE:-openshift-logging}
+set -e
+
+WORKING_DIR=$1
+NAMESPACE=$2
 CA_PATH=${CA_PATH:-$WORKING_DIR/ca.crt}
-
+LOG_STORE=$3
 REGENERATE_NEEDED=0
 
 function init_cert_files() {
@@ -224,7 +226,7 @@ function generate_extensions() {
   local use_comma=0
 
   if [ "$add_localhost" == "true" ]; then
-    extension_names="IP.1:127.0.0.1,DNS.1:localhost"
+    extension_names="IP.1:127.0.0.1,IP.2:0:0:0:0:0:0:0:1,DNS.1:localhost"
     extension_index=2
     use_comma=1
   fi
@@ -255,12 +257,11 @@ init_cert_files
 create_signing_conf
 
 generate_certs 'system.logging.fluentd'
-generate_certs 'system.logging.rsyslog'
 generate_certs 'system.logging.kibana'
 generate_certs 'system.logging.curator'
 generate_certs 'system.admin'
 
 # TODO: get es SAN DNS, IP values from es service names
 generate_certs 'kibana-internal' "$(generate_extensions false false kibana)"
-generate_certs 'elasticsearch' "$(generate_extensions true true elasticsearch{,-cluster}{,.${NAMESPACE}.svc}{,.cluster.local})"
-generate_certs 'logging-es' "$(generate_extensions false true elasticsearch{,.${NAMESPACE}.svc}{,.cluster.local})"
+generate_certs 'elasticsearch' "$(generate_extensions true true $LOG_STORE{,-cluster}{,.${NAMESPACE}.svc}{,.cluster.local})"
+generate_certs 'logging-es' "$(generate_extensions false true $LOG_STORE{,.${NAMESPACE}.svc}{,.cluster.local})"

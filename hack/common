@@ -1,11 +1,13 @@
 #!/bin/bash
-if [ -n "${DEBUG:-}" ]; then
-    set -x
-fi
-
 alias oc=${OC:-oc}
 
-repo_dir="$(dirname $0)/.."
+repo_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/.."
+
+source "$repo_dir/hack/lib/init.sh"
+source "$repo_dir/hack/testing/utils"
+source "$repo_dir/hack/testing/assertions"
+
+VERSION=${VERSION:-$(basename $(find ${repo_dir}/manifests -type d | sort -r | head -n 1))}
 ELASTICSEARCH_OP_REPO=${ELASTICSEARCH_OP_REPO:-${repo_dir}/../elasticsearch-operator}
 
 ADMIN_USER=${ADMIN_USER:-kubeadmin}
@@ -90,6 +92,7 @@ function pull_ubi_if_needed() {
 # mounted into the builder as /etc/yum.repos.d/
 INTERNAL_REPO_DIR=${INTERNAL_REPO_DIR:-}
 function get_private_repo_dir() {
+    GOPATH=${GOPATH:-}
     if [ -z "${INTERNAL_REPO_DIR:-}" ] ; then
         pushd $1 > /dev/null
         if [ ! -d repos ] ; then
@@ -102,19 +105,32 @@ function get_private_repo_dir() {
                 fi
                 cp shared-secrets/mirror/ops-mirror.pem repos
             fi
-            if [ -f ${GOPATH}/src/github.com/openshift/release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo ]; then
-                cp ${GOPATH}/src/github.com/openshift/release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo repos
-            elif [ -f $GOPATH/src/github.com/openshift/release/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo ]; then
-                cp $GOPATH/src/github.com/openshift/release/cluster/ci/config/prow/openshift/rpm-mirrors/ocp-4.0-default.repo repos
+            local releasedir=${GOPATH}/src/github.com/openshift/release
+            if [ -d $releasedir ] ; then
+                pushd $releasedir > /dev/null
+                git pull -q
+                popd > /dev/null
             else
                 if [ ! -d release ] ; then
                     git clone -q https://github.com/openshift/release
                 fi
-                cp release/ci-operator/infra/openshift/release-controller/repos/ocp-4.1-default.repo repos
+                releasedir=release
             fi
+            local repofile
+            for repofile in \
+                $releasedir/core-services/release-controller/_repos/ocp-${VERSION}-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.3-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.2-default.repo \
+                $releasedir/core-services/release-controller/_repos/ocp-4.1-default.repo ; do
+                if [ -f $repofile ] ; then
+                    cp $repofile repos
+                    break
+                fi
+            done
             touch repos/redhat.repo
             chmod 0444 repos/redhat.repo
-            sed -i 's,= ops-mirror.pem,= /etc/yum.repos.d/ops-mirror.pem,' repos/*.repo
+            sed -i -e 's,^sslclientkey.*$,sslclientkey = /etc/yum.repos.d/ops-mirror.pem,' \
+                   -e 's,^sslclientcert.*$,sslclientcert = /etc/yum.repos.d/ops-mirror.pem,' repos/*.repo
         fi
         INTERNAL_REPO_DIR=$( pwd )/repos
         popd > /dev/null
@@ -162,11 +178,53 @@ function login_to_registry() {
             username=kubeadmin
         fi
     fi
-    podman login --tls-verify=false -u "$username" -p "$token" "$1" > /dev/null
+    docker login -u "$username" -p "$token" "$1" > /dev/null
 }
 
 function push_image() {
     skopeo copy --dest-tls-verify=false docker-daemon:"$1" docker://"$2"
+}
+
+# debug_print [max_count [interval]]
+# Example usage in hack/testing/test-*.sh
+#    debug_print &
+#    TEST_NAMESPACE=${NAMESPACE} go test ./test/e2e/ \
+#      -root=$(pwd) \
+#      -kubeconfig=${KUBECONFIG} \
+#      -globalMan ${global_manifest} \
+#      -namespacedMan ${manifest} \
+#      -v \
+#      -parallel=1 \
+#      -singleNamespace | tee -a $ARTIFACT_DIR/test.log
+#
+function debug_print() {
+  local filename=$(basename "$0")
+  local max=${1:-120}
+  local interval=${2:-10}
+  while [ $max -gt 0 ];
+  do
+    clo=$( oc -n ${NAMESPACE} get pods -l name=cluster-logging-operator -o jsonpath='{.items[0].metadata.name}' )
+    if [ -n "$clo" ]; then
+        date >> $ARTIFACT_DIR/$filename.clo.log || :
+        oc -n ${NAMESPACE} logs $clo >> $ARTIFACT_DIR/$filename.clo.log || :
+        echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.clo.log || :
+        date >> $ARTIFACT_DIR/$filename.clo.images || :
+        oc -n ${NAMESPACE} exec $clo -- env | egrep _IMAGE >> $ARTIFACT_DIR/$filename.clo.images || :
+        echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.clo.images || :
+    else
+        date >> $ARTIFACT_DIR/$filename.noclo.log || :
+        oc -n ${NAMESPACE} get deployments >> $ARTIFACT_DIR/$filename.noclo.log || :
+        echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.noclo.log || :
+    fi
+    date >> $ARTIFACT_DIR/$filename.events.log || :
+    oc -n ${NAMESPACE} get events >> $ARTIFACT_DIR/$filename.events.log || :
+    echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.events.log || :
+    date >> $ARTIFACT_DIR/$filename.all.log || :
+    oc -n ${NAMESPACE} get all >> $ARTIFACT_DIR/$filename.all.log || :
+    echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.all.log || :
+    sleep $interval
+    max=$( expr $max - 1 ) || :
+  done
 }
 
 if [ $REMOTE_REGISTRY = false ] ; then

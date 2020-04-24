@@ -1,6 +1,10 @@
+pf.log
+# GoLand
+.idea
 # Temporary Build Files
 build/_output
 build/_test
+tmp/
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 ### Emacs ###
 # -*- mode: gitignore; -*-
@@ -59,6 +63,7 @@ anaconda-mode/
 *.dylib
 # Test binary, build with 'go test -c'
 *.test
+bin/
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 ### Vim ###

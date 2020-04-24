@@ -2,10 +2,12 @@ package k8shandler
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/util/retry"
 
 	route "github.com/openshift/api/route/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,6 +44,34 @@ func NewRoute(routeName, namespace, serviceName, cafilePath string) *route.Route
 	}
 }
 
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateRoute(newRoute *route.Route) error {
+
+	err := clusterRequest.Create(newRoute)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating route for %q: %v", clusterRequest.cluster.Name, err)
+		}
+
+		// else -- try to update it if its a valid change (e.g. spec.tls)
+		current := &route.Route{}
+
+		return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err := clusterRequest.Get(newRoute.Name, current); err != nil {
+				return fmt.Errorf("Failed to get route: %v", err)
+			}
+
+			if !reflect.DeepEqual(current.Spec.TLS, newRoute.Spec.TLS) {
+				current.Spec.TLS = newRoute.Spec.TLS
+				return clusterRequest.Update(current)
+			}
+
+			return nil
+		})
+	}
+
+	return nil
+}
+
 //GetRouteURL retrieves the route URL from a given route and namespace
 func (clusterRequest *ClusterLoggingRequest) GetRouteURL(routeName string) (string, error) {
 
@@ -60,14 +90,19 @@ func (clusterRequest *ClusterLoggingRequest) GetRouteURL(routeName string) (stri
 //RemoveRoute with given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveRoute(routeName string) error {
 
-	route := NewRoute(
+	rt := NewRoute(
 		routeName,
 		clusterRequest.cluster.Namespace,
 		routeName,
 		"",
 	)
 
-	err := clusterRequest.Delete(route)
+	//TODO: Remove this in the next release after removing old kibana code completely
+	if !HasCLORef(rt, clusterRequest) {
+		return nil
+	}
+
+	err := clusterRequest.Delete(rt)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v route %v", routeName, err)
 	}

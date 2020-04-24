@@ -1,0 +1,18 @@
+#!/bin/bash
+source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/utils"
+assert_resources_exist(){
+	# verify cron
+	try_until_success "oc -n $NAMESPACE get cronjob curator" ${TIMEOUT_MIN}
+
+	# verify DS
+	try_until_success "oc -n $NAMESPACE get ds fluentd" ${TIMEOUT_MIN}
+
+	# verify ER
+	try_until_success "oc -n $NAMESPACE get elasticsearch elasticsearch" ${TIMEOUT_MIN}
+
+}
+
+assert_kibana_instance_exists() {
+	# verify kibana crd
+	try_until_success "oc -n $NAMESPACE get kibana instance" ${TIMEOUT_MIN}
+}

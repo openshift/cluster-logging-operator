@@ -1,58 +1,28 @@
-#!/bin/bash -x
-set -e
+#!/bin/bash
 
-ARTIFACT_DIR=${ARTIFACT_DIR:-_output}
-manifest=$(mktemp)
-global_manifest=$(mktemp)
+current_dir=$(dirname "${BASH_SOURCE[0]}" )
+source "${current_dir}/lib/init.sh"
+source "${current_dir}/lib/util/logs.sh"
 
-cleanup(){
-  local return_code="$?"
-  set +e
+for test in $( find "${current_dir}/testing" -type f -name 'test-*.sh' | sort); do
+	os::log::info "==============================================================="
+	os::log::info "running e2e $test "
+	os::log::info "==============================================================="
+	if "${test}" ; then
+		os::log::info "==========================================================="
+		os::log::info "e2e $test succeeded at $( date )"
+		os::log::info "==========================================================="
+	else
 
-  cat $manifest > $ARTIFACT_DIR/manifest
-  cat $global_manifest > $ARTIFACT_DIR/global_manifest
+		os::log::error "============= FAILED FAILED ============= "
+		os::log::error "e2e $test failed at $( date )"
+		os::log::error "============= FAILED FAILED ============= "
+		failed="true"
+	fi
+done
 
-  exit $return_code
-}
-trap cleanup exit
+get_logging_pod_logs
 
-if [ -n "${IMAGE_CLUSTER_LOGGING_OPERATOR:-}" ] ; then
-  source "$(dirname $0)/common"
+if [[ -n "${failed:-}" ]]; then
+    exit 1
 fi
-if [ -n "${IMAGE_FORMAT:-}" ] ; then
-  IMAGE_CLUSTER_LOGGING_OPERATOR=$(sed -e "s,\${component},cluster-logging-operator," <(echo $IMAGE_FORMAT))
-else
-  IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift/origin-cluster-logging-operator:latest}
-fi
-
-KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
-
-oc create -n ${NAMESPACE} -f \
-https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prometheus-operator-crd/prometheusrule.crd.yaml || :
-oc create -n ${NAMESPACE} -f \
-https://raw.githubusercontent.com/coreos/prometheus-operator/master/example/prometheus-operator-crd/servicemonitor.crd.yaml || :
-
-repo_dir="$(dirname $0)/.."
-$repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'ns' | oc create -f - || :
-
-$repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} >> ${manifest}
-sed -i "s,quay.io/openshift/origin-cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," ${manifest}
-if [ -n "${IMAGE_FORMAT:-}" ] ; then
-  for comp in logging-curator5 logging-elasticsearch5 logging-fluentd logging-kibana5 logging-oauth-proxy logging-rsyslog ; do
-    img=$(sed -e "s,\${component},$comp," <(echo $IMAGE_FORMAT))
-    sed -i "s,quay.io/openshift/origin-${comp}:latest,${img}," ${manifest}
-  done
-fi
-
-$repo_dir/hack/gen-olm-artifacts.sh ${CSV_FILE} ${NAMESPACE} 'crd' >> ${global_manifest}
-$repo_dir/hack/gen-olm-artifacts.sh ${EO_CSV_FILE} ${NAMESPACE} 'crd' >> ${global_manifest}
-$repo_dir/hack/gen-olm-artifacts.sh ${EO_CSV_FILE} ${NAMESPACE} >> ${manifest}
-
-TEST_NAMESPACE=${NAMESPACE} go test ./test/e2e/... \
-  -root=$(pwd) \
-  -kubeconfig=${KUBECONFIG} \
-  -globalMan ${global_manifest} \
-  -namespacedMan ${manifest} \
-  -v \
-  -parallel=1 \
-  -singleNamespace

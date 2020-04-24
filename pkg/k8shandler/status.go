@@ -31,7 +31,10 @@ func (clusterRequest *ClusterLoggingRequest) getCuratorStatus() ([]logging.Curat
 			Suspended: *cronjob.Spec.Suspend,
 		}
 
-		curatorStatus.Conditions = clusterRequest.getPodConditions("curator")
+		curatorStatus.Conditions, err = clusterRequest.getPodConditions("curator")
+		if err != nil {
+			return nil, fmt.Errorf("unable to get pod conditions. E: %s", err.Error())
+		}
 
 		status = append(status, curatorStatus)
 	}
@@ -67,83 +70,21 @@ func (clusterRequest *ClusterLoggingRequest) getFluentdCollectorStatus() (loggin
 		fluentdStatus.Pods = podStateMap(podList.Items)
 		fluentdStatus.Nodes = podNodeMap
 
-		fluentdStatus.Conditions = clusterRequest.getPodConditions("fluentd")
+		fluentdStatus.Conditions, err = clusterRequest.getPodConditions("fluentd")
+		if err != nil {
+			return fluentdStatus, fmt.Errorf("unable to get pod conditions. E: %s", err.Error())
+		}
 	}
 
 	return fluentdStatus, nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) getRsyslogCollectorStatus() (logging.RsyslogCollectorStatus, error) {
-
-	rsyslogStatus := logging.RsyslogCollectorStatus{}
-	selector := map[string]string{
-		"logging-infra": "rsyslog",
-	}
-
-	rsyslogDaemonsetList, err := clusterRequest.GetDaemonSetList(selector)
-
+func (clusterRequest *ClusterLoggingRequest) getKibanaStatus() ([]elasticsearch.KibanaStatus, error) {
+	cr, err := clusterRequest.getKibanaCR()
 	if err != nil {
-		return rsyslogStatus, err
+		return nil, err
 	}
-
-	if len(rsyslogDaemonsetList.Items) != 0 {
-		daemonset := rsyslogDaemonsetList.Items[0]
-
-		rsyslogStatus.DaemonSet = daemonset.Name
-
-		// use map to represent {pod: node}
-		podList, _ := clusterRequest.GetPodList(selector)
-
-		podNodeMap := make(map[string]string)
-		for _, pod := range podList.Items {
-			podNodeMap[pod.Name] = pod.Spec.NodeName
-		}
-		rsyslogStatus.Pods = podStateMap(podList.Items)
-		rsyslogStatus.Nodes = podNodeMap
-
-		rsyslogStatus.Conditions = clusterRequest.getPodConditions("rsyslog")
-	}
-
-	return rsyslogStatus, nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) getKibanaStatus() ([]logging.KibanaStatus, error) {
-
-	status := []logging.KibanaStatus{}
-	selector := map[string]string{
-		"logging-infra": "kibana",
-	}
-
-	kibanaDeploymentList, err := clusterRequest.GetDeploymentList(selector)
-	if err != nil {
-		return status, err
-	}
-
-	for _, deployment := range kibanaDeploymentList.Items {
-
-		selector["component"] = deployment.Name
-
-		kibanaStatus := logging.KibanaStatus{
-			Deployment: deployment.Name,
-			Replicas:   *deployment.Spec.Replicas,
-		}
-
-		replicaSetList, _ := clusterRequest.GetReplicaSetList(selector)
-		replicaNames := []string{}
-		for _, replicaSet := range replicaSetList.Items {
-			replicaNames = append(replicaNames, replicaSet.Name)
-		}
-		kibanaStatus.ReplicaSets = replicaNames
-
-		podList, _ := clusterRequest.GetPodList(selector)
-		kibanaStatus.Pods = podStateMap(podList.Items)
-
-		kibanaStatus.Conditions = clusterRequest.getPodConditions("kibana")
-
-		status = append(status, kibanaStatus)
-	}
-
-	return status, nil
+	return cr.Status, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging.ElasticsearchStatus, error) {
@@ -167,7 +108,7 @@ func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging
 	if len(esList.Items) != 0 {
 		for _, cluster := range esList.Items {
 
-			nodeConditions := make(map[string][]elasticsearch.ClusterCondition)
+			nodeConditions := make(map[string]logging.ElasticsearchClusterConditions)
 
 			nodeStatus := logging.ElasticsearchStatus{
 				ClusterName:            cluster.Name,
@@ -224,41 +165,11 @@ func translatePodMap(podStateMap elasticsearch.PodStateMap) logging.PodStateMap 
 	}
 }
 
-func getDeploymentNames(node elasticsearch.ElasticsearchStatus) []string {
-
-	deploymentNames := []string{}
-
-	for _, nodeStatus := range node.Nodes {
-		deploymentNames = append(deploymentNames, nodeStatus.DeploymentName)
-	}
-
-	return deploymentNames
-}
-
-// We are no longer going to populate this field, however since it is in the
-// status spec we cannot just remove it.
-func getReplicaSetNames(node elasticsearch.ElasticsearchStatus) []string {
-
-	replicasetNames := []string{}
-	return replicasetNames
-}
-
-func getStatefulSetNames(node elasticsearch.ElasticsearchStatus) []string {
-
-	statefulsetNames := []string{}
-
-	for _, nodeStatus := range node.Nodes {
-		statefulsetNames = append(statefulsetNames, nodeStatus.StatefulSetName)
-	}
-
-	return statefulsetNames
-}
-
 func podStateMap(podList []v1.Pod) logging.PodStateMap {
 	stateMap := map[logging.PodStateType][]string{
-		logging.PodStateTypeReady:    []string{},
-		logging.PodStateTypeNotReady: []string{},
-		logging.PodStateTypeFailed:   []string{},
+		logging.PodStateTypeReady:    {},
+		logging.PodStateTypeNotReady: {},
+		logging.PodStateTypeFailed:   {},
 	}
 
 	for _, pod := range podList {
@@ -290,10 +201,10 @@ func isPodReady(pod v1.Pod) bool {
 	return true
 }
 
-func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) map[string][]logging.ClusterCondition {
+func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) (map[string]logging.ClusterConditions, error) {
 	// Get all pods based on status.Nodes[] and check their conditions
 	// get pod with label 'node-name=node.getName()'
-	podConditions := make(map[string][]logging.ClusterCondition)
+	podConditions := make(map[string]logging.ClusterConditions)
 
 	nodePodList := &core.PodList{
 		TypeMeta: metav1.TypeMeta{
@@ -302,16 +213,18 @@ func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) 
 		},
 	}
 
-	clusterRequest.List(
+	if err := clusterRequest.List(
 		map[string]string{
 			"component": component,
 		},
 		nodePodList,
-	)
+	); err != nil {
+		return nil, fmt.Errorf("unable to list pods. E: %s", err.Error())
+	}
 
 	for _, nodePod := range nodePodList.Items {
 
-		conditions := []logging.ClusterCondition{}
+		var conditions []logging.ClusterCondition
 
 		isUnschedulable := false
 		for _, podCondition := range nodePod.Status.Conditions {
@@ -344,7 +257,7 @@ func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) 
 						Status:             v1.ConditionTrue,
 						Reason:             containerStatus.State.Terminated.Reason,
 						Message:            containerStatus.State.Terminated.Message,
-						LastTransitionTime: metav1.Now(),
+						LastTransitionTime: containerStatus.State.Terminated.FinishedAt,
 					})
 				}
 			}
@@ -355,5 +268,5 @@ func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) 
 		}
 	}
 
-	return podConditions
+	return podConditions, nil
 }

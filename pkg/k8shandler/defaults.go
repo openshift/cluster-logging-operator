@@ -11,15 +11,12 @@ var (
 	defaultKibanaMemory     resource.Quantity = resource.MustParse("736Mi")
 	defaultKibanaCpuRequest resource.Quantity = resource.MustParse("100m")
 
-	defaultKibanaProxyMemory     resource.Quantity = resource.MustParse("256Mi")
-	defaultKibanaProxyCpuRequest resource.Quantity = resource.MustParse("100m")
-
 	defaultCuratorMemory     resource.Quantity = resource.MustParse("256Mi")
 	defaultCuratorCpuRequest resource.Quantity = resource.MustParse("100m")
 
 	defaultFluentdMemory     resource.Quantity = resource.MustParse("736Mi")
 	defaultFluentdCpuRequest resource.Quantity = resource.MustParse("100m")
 
-	defaultRsyslogMemory     resource.Quantity = resource.MustParse("358Mi")
-	defaultRsyslogCpuRequest resource.Quantity = resource.MustParse("100m")
+	defaultPromTailMemory     resource.Quantity = resource.MustParse("358Mi")
+	defaultPromTailCpuRequest resource.Quantity = resource.MustParse("100m")
 )

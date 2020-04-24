@@ -11,11 +11,11 @@ import (
 type ClusterLoggingSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	ManagementState ManagementState   `json:"managementState"`
-	Visualization   VisualizationSpec `json:"visualization,omitempty"`
-	LogStore        LogStoreSpec      `json:"logStore,omitempty"`
-	Collection      CollectionSpec    `json:"collection,omitempty"`
-	Curation        CurationSpec      `json:"curation,omitempty"`
+	ManagementState ManagementState    `json:"managementState"`
+	Visualization   *VisualizationSpec `json:"visualization,omitempty"`
+	LogStore        *LogStoreSpec      `json:"logStore,omitempty"`
+	Collection      *CollectionSpec    `json:"collection,omitempty"`
+	Curation        *CurationSpec      `json:"curation,omitempty"`
 }
 
 // ClusterLoggingStatus defines the observed state of ClusterLogging
@@ -52,6 +52,17 @@ type ProxySpec struct {
 type LogStoreSpec struct {
 	Type              LogStoreType `json:"type"`
 	ElasticsearchSpec `json:"elasticsearch,omitempty"`
+	RetentionPolicy   *RetentionPoliciesSpec `json:"retentionPolicy,omitempty"`
+}
+
+type RetentionPoliciesSpec struct {
+	App   *RetentionPolicySpec `json:"application,omitempty"`
+	Infra *RetentionPolicySpec `json:"infra,omitempty"`
+	Audit *RetentionPolicySpec `json:"audit,omitempty"`
+}
+
+type RetentionPolicySpec struct {
+	MaxAge elasticsearch.TimeUnit `json:"maxAge"`
 }
 
 type ElasticsearchSpec struct {
@@ -71,7 +82,6 @@ type CollectionSpec struct {
 type LogCollectionSpec struct {
 	Type        LogCollectionType `json:"type"`
 	FluentdSpec `json:"fluentd,omitempty"`
-	RsyslogSpec `json:"rsyslog,omitempty"`
 }
 
 type EventCollectionSpec struct {
@@ -79,12 +89,6 @@ type EventCollectionSpec struct {
 }
 
 type FluentdSpec struct {
-	Resources    *v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
-}
-
-type RsyslogSpec struct {
 	Resources    *v1.ResourceRequirements `json:"resources"`
 	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
@@ -115,15 +119,15 @@ type ClusterLogging struct {
 }
 
 type VisualizationStatus struct {
-	KibanaStatus []KibanaStatus `json:"kibanaStatus,omitempty"`
+	KibanaStatus []elasticsearch.KibanaStatus `json:"kibanaStatus,omitempty"`
 }
 
 type KibanaStatus struct {
-	Replicas    int32                         `json:"replicas"`
-	Deployment  string                        `json:"deployment"`
-	ReplicaSets []string                      `json:"replicaSets"`
-	Pods        PodStateMap                   `json:"pods"`
-	Conditions  map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
+	Replicas    int32                        `json:"replicas"`
+	Deployment  string                       `json:"deployment"`
+	ReplicaSets []string                     `json:"replicaSets"`
+	Pods        PodStateMap                  `json:"pods"`
+	Conditions  map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type LogStoreStatus struct {
@@ -131,17 +135,17 @@ type LogStoreStatus struct {
 }
 
 type ElasticsearchStatus struct {
-	ClusterName            string                                      `json:"clusterName"`
-	NodeCount              int32                                       `json:"nodeCount"`
-	ReplicaSets            []string                                    `json:"replicaSets,omitempty"`
-	Deployments            []string                                    `json:"deployments,omitempty"`
-	StatefulSets           []string                                    `json:"statefulSets,omitempty"`
-	ClusterHealth          string                                      `json:"clusterHealth,omitempty"`
-	Cluster                elasticsearch.ClusterHealth                 `json:"cluster"`
-	Pods                   map[ElasticsearchRoleType]PodStateMap       `json:"pods"`
-	ShardAllocationEnabled elasticsearch.ShardAllocationState          `json:shardAllocationEnabled`
-	ClusterConditions      []elasticsearch.ClusterCondition            `json:"clusterConditions,omitempty"`
-	NodeConditions         map[string][]elasticsearch.ClusterCondition `json:"nodeConditions,omitempty"`
+	ClusterName            string                                    `json:"clusterName"`
+	NodeCount              int32                                     `json:"nodeCount"`
+	ReplicaSets            []string                                  `json:"replicaSets,omitempty"`
+	Deployments            []string                                  `json:"deployments,omitempty"`
+	StatefulSets           []string                                  `json:"statefulSets,omitempty"`
+	ClusterHealth          string                                    `json:"clusterHealth,omitempty"`
+	Cluster                elasticsearch.ClusterHealth               `json:"cluster"`
+	Pods                   map[ElasticsearchRoleType]PodStateMap     `json:"pods"`
+	ShardAllocationEnabled elasticsearch.ShardAllocationState        `json:"shardAllocationEnabled"`
+	ClusterConditions      ElasticsearchClusterConditions            `json:"clusterConditions,omitempty"`
+	NodeConditions         map[string]ElasticsearchClusterConditions `json:"nodeConditions,omitempty"`
 }
 
 type CollectionStatus struct {
@@ -150,31 +154,23 @@ type CollectionStatus struct {
 
 type LogCollectionStatus struct {
 	FluentdStatus FluentdCollectorStatus `json:"fluentdStatus,omitempty"`
-	RsyslogStatus RsyslogCollectorStatus `json:"rsyslogStatus,omitempty"`
 }
 
 type EventCollectionStatus struct {
 }
 
 type FluentdCollectorStatus struct {
-	DaemonSet  string                        `json:"daemonSet"`
-	Nodes      map[string]string             `json:"nodes"`
-	Pods       PodStateMap                   `json:"pods"`
-	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
-}
-
-type RsyslogCollectorStatus struct {
-	DaemonSet  string                        `json:"daemonSet"`
-	Nodes      map[string]string             `json:"Nodes"`
-	Pods       PodStateMap                   `json:"pods"`
-	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
+	DaemonSet  string                       `json:"daemonSet"`
+	Nodes      map[string]string            `json:"nodes"`
+	Pods       PodStateMap                  `json:"pods"`
+	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type FluentdNormalizerStatus struct {
-	Replicas    int32                         `json:"replicas"`
-	ReplicaSets []string                      `json:"replicaSets"`
-	Pods        PodStateMap                   `json:"pods"`
-	Conditions  map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
+	Replicas    int32                        `json:"replicas"`
+	ReplicaSets []string                     `json:"replicaSets"`
+	Pods        PodStateMap                  `json:"pods"`
+	Conditions  map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type NormalizerStatus struct {
@@ -186,10 +182,10 @@ type CurationStatus struct {
 }
 
 type CuratorStatus struct {
-	CronJob    string                        `json:"cronJobs"`
-	Schedule   string                        `json:"schedules"`
-	Suspended  bool                          `json:"suspended"`
-	Conditions map[string][]ClusterCondition `json:"clusterCondition,omitempty"`
+	CronJob    string                       `json:"cronJobs"`
+	Schedule   string                       `json:"schedules"`
+	Suspended  bool                         `json:"suspended"`
+	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type PodStateMap map[PodStateType][]string
@@ -232,7 +228,6 @@ type LogCollectionType string
 
 const (
 	LogCollectionTypeFluentd LogCollectionType = "fluentd"
-	LogCollectionTypeRsyslog LogCollectionType = "rsyslog"
 )
 
 type EventCollectionType string
@@ -271,7 +266,12 @@ const (
 	ContainerTerminated ClusterConditionType = "ContainerTerminated"
 	Unschedulable       ClusterConditionType = "Unschedulable"
 	NodeStorage         ClusterConditionType = "NodeStorage"
+	CollectorDeadEnd    ClusterConditionType = "CollectorDeadEnd"
 )
+
+// `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
+type ClusterConditions []ClusterCondition
+type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

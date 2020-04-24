@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cluster-logging-operator-registry
+spec:
+  type: ClusterIP
+  selector:
+    registry.operator.cluster-logging: "true"
+  ports:
+  - name: grpc
+    port: 50051
+    protocol: TCP
+    targetPort: 50051
+  sessionAffinity: None
+

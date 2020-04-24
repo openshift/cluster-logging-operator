@@ -5,37 +5,13 @@ import (
 	"fmt"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-const (
-	OsNodeLabel = "kubernetes.io/os"
-	LinuxValue  = "linux"
-)
-
-// ensureLinuxNodeSelector takes given selector map and returns a selector map with linux node selector added into it.
-// If there is already a node type selector and is different from "linux" then it is overridden and warning is logged.
-// See https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#interlude-built-in-node-labels
-func ensureLinuxNodeSelector(selectors map[string]string) map[string]string {
-	if selectors == nil {
-		return map[string]string{OsNodeLabel: LinuxValue}
-	}
-	if os, ok := selectors[OsNodeLabel]; ok {
-		if os == LinuxValue {
-			return selectors
-		}
-		// Selector is provided but is not "linux"
-		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, os, LinuxValue)
-	}
-	selectors[OsNodeLabel] = LinuxValue
-	return selectors
-}
 
 func selectorForES(nodeRole string, clusterName string) map[string]string {
 
@@ -171,7 +147,6 @@ func getDataCount(dpl *api.Elasticsearch) int32 {
 			dataCount = dataCount + node.NodeCount
 		}
 	}
-
 	return dataCount
 }
 

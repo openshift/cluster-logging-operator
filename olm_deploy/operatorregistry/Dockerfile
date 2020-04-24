@@ -9,6 +9,6 @@ RUN chmod -R g+w /manifests && rm /manifests/art.yaml /manifests/*/image-referen
 
 COPY olm_deploy/scripts/registry-init.sh /scripts/
 
-COPY --from=registry-builder /build/bin/initializer /usr/bin/initializer
-COPY --from=registry-builder /build/bin/registry-server /usr/bin/registry-server
+COPY --from=registry-builder /bin/initializer /usr/bin/initializer
+COPY --from=registry-builder /bin/registry-server /usr/bin/registry-server
 COPY --from=registry-builder /bin/grpc_health_probe /usr/bin/grpc_health_probe

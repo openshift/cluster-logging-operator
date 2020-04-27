@@ -101,9 +101,6 @@ deploy-example: deploy
 test-unit:
 	go test ./pkg/...
 
-test-e2e:
-	hack/test-e2e.sh
-
 test-e2e-olm:
 	hack/test-e2e-olm.sh
 

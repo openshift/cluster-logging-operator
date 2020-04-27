@@ -36,7 +36,6 @@ function os::cleanup::all() {
 	os::cleanup::truncate_large_logs
 
 	if [[ -z "${SKIP_TEARDOWN:-}" ]]; then
-		os::cleanup::containers
 		os::cleanup::processes
 		os::cleanup::prune_etcd
 	fi

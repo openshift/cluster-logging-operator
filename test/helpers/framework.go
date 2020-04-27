@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -16,10 +15,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/remotecommand"
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -27,6 +24,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	e2eutil "github.com/openshift/cluster-logging-operator/test/e2e"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
 const (
@@ -323,39 +321,7 @@ func newKubeClient() (*kubernetes.Clientset, *rest.Config) {
 }
 
 func (tc *E2ETestFramework) PodExec(namespace, name, container string, command []string) (string, error) {
-	req := tc.KubeClient.CoreV1().RESTClient().Post().
-		Namespace(namespace).
-		Resource("pods").
-		Name(name).
-		SubResource("exec").
-		Timeout(defaultTimeout).
-		VersionedParams(&corev1.PodExecOptions{
-			Container: container,
-			Command:   command,
-			Stdout:    true,
-			Stderr:    true,
-		}, scheme.ParameterCodec)
-
-	logger.Debugf("req: %v", req)
-	logger.Debugf("req.url: %v", req.URL().String())
-	exec, err := remotecommand.NewSPDYExecutor(tc.RestConfig, "POST", req.URL())
-	logger.Debugf("SPDY Error: %v", err)
-	if err != nil {
-		return "", err
-	}
-
-	var stdout, stderr bytes.Buffer
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdout: &stdout,
-		Stderr: &stderr,
-	})
-	logger.Debugf("exec.stream Error: %v", err)
-	logger.Debugf("stdout: %v", stdout.String())
-	logger.Debugf("stderr: %v", stderr.String())
-	if err != nil {
-		return "", err
-	}
-	return stdout.String(), nil
+	return oc.Exec().WithNamespace(namespace).Pod(name).Container(container).WithCmd(command[0], command[1:]...).Run()
 }
 
 func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (secret *corev1.Secret, err error) {

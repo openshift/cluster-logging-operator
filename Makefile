@@ -3,17 +3,15 @@ KUBECONFIG?=$(HOME)/.kube/config
 export GOBIN=$(CURDIR)/bin
 export PATH:=$(GOBIN):$(PATH)
 
-export IMAGE_TAG_CMD?=docker tag
-
 export APP_NAME=cluster-logging-operator
-export IMAGE_TAG?=quay.io/openshift/origin-$(APP_NAME):latest
+export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 
 export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -type d))
 export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
-.PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk imagebuilder golangci-lint
+.PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk golangci-lint
 
 # Run all local pre-merge tests. CI runs additional system tests on the image.
 all: generate fmt test-unit lint
@@ -21,8 +19,7 @@ all: generate fmt test-unit lint
 # Download tools if not available on local PATH.
 operator-sdk:
 	@type -p operator-sdk > /dev/null || bash hack/get-operator-sdk.sh
-imagebuilder:
-	@type -p imagebuilder > /dev/null || go get github.com/openshift/imagebuilder/cmd/imagebuilder
+
 golangci-lint:
 	@type -p golangci-lint > /dev/null || go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
@@ -54,10 +51,9 @@ clean:
 	rm -rf tmp
 	go clean -cache -testcache ./...
 
-image: build
-	$(MAKE) imagebuilder
-	@if [ $${USE_IMAGE_STREAM:-false} = false ] && [ $${SKIP_BUILD:-false} = false ] ; \
-	then hack/build-image.sh $(IMAGE_TAG) imagebuilder $(IMAGE_BUILDER_OPTS) ; \
+image:
+	@if [ $${SKIP_BUILD:-false} = false ] ; then \
+		podman build -t $(IMAGE_TAG) . ; \
 	fi
 
 lint: fmt
@@ -86,11 +82,21 @@ regenerate:
 deploy-image: image
 	hack/deploy-image.sh
 
-deploy:  deploy-image deploy-elasticsearch-operator
-	hack/deploy.sh
+deploy-image-no-build:
+	hack/deploy-image.sh
 
-deploy-no-build:  deploy-elasticsearch-operator
-	hack/deploy.sh
+deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
+
+install:
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	$(MAKE) cluster-logging-operator-install
+
+deploy-catalog:
+	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/cluster-logging-operator-registry \
+	$(MAKE) cluster-logging-catalog-build
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	$(MAKE) cluster-logging-catalog-deploy
 
 deploy-elasticsearch-operator:
 	hack/deploy-eo.sh

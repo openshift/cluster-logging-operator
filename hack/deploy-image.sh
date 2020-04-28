@@ -36,7 +36,7 @@ if [ "${USE_IMAGE_STREAM:-false}" = true ] ; then
     exit 0
 fi
 
-${IMAGE_TAG_CMD} $IMAGE_TAG ${tag}
+podman tag $IMAGE_TAG ${tag}
 
 echo "Setting up port-forwarding to remote registry ..."
 oc --loglevel=9 -n openshift-image-registry port-forward service/image-registry ${LOCAL_PORT}:5000 > pf.log 2>&1 &

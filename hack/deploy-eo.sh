@@ -2,9 +2,13 @@
 
 set -euo pipefail
 
-source "$(dirname $0)/common"
-
 if oc -n "openshift-operators-redhat" get deployment elasticsearch-operator -o name > /dev/null 2>&1 ; then
   exit 0
 fi
-deploy_elasticsearch_operator
+
+pushd ../elasticsearch-operator
+  LOCAL_IMAGE_ELASTICSEARCH_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/elasticsearch-operator-registry \
+  make elasticsearch-catalog-deploy
+  IMAGE_ELASTICSEARCH_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/elasticsearch-operator-registry \
+  make -C ../elasticsearch-operator elasticsearch-operator-install
+popd

@@ -1,4 +1,6 @@
 # Cluster Logging Operator
+An operator to support OKD aggregated cluster logging.  Cluster logging configuration information
+is found in the [configuration](./docs/configuration.md) documentation.
 
 ## Overview
 
@@ -10,7 +12,11 @@ pods), *infrastructure* logs (from system pods and node logs), and *audit* logs
 The CLO does not collect or forward logs itself: it starts, configures, monitors
 and manages the components that do the work.
 
-CLO currently uses Fluentd as collector/forwarder, Elasticsearch as default store and Kibana for visualization.
+CLO currently uses:
+* Fluentd as collector/forwarder
+* Elasticsearch as default store
+* Kibana for visualization.
+
 The goal is to *encapsulate* those technologies behind APIs so that:
 
 1. The user has less to learn, and has a simpler experience to control logging.

@@ -1,55 +1,39 @@
 package test
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
-	expectations "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
+	"sigs.k8s.io/yaml"
 )
 
-func StringsContain(list []string, value string) bool {
-	for _, item := range list {
-		if item == value {
-			return true
-		}
+func init() {
+	if os.Getenv("TEST_UNTRUNCATED_DIFF") != "" || os.Getenv("TEST_FULL_DIFF") != "" {
+		format.TruncatedDiff = false
 	}
-	return false
 }
 
 //Debug is a convenient log mechnism to spit content to STDOUT
 func Debug(value string, object interface{}) {
-	if os.Getenv("TEST_UNTRUNCATED_DIFF") != "" {
-		format.TruncatedDiff = false
-	}
 	if os.Getenv("TEST_DEBUG") != "" {
 		fmt.Printf("%s\n%v\n", value, object)
 	}
 }
 
-func normalize(in string) string {
-	out := []string{}
-	for _, line := range strings.Split(in, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			out = append(out, strings.TrimSpace(line))
-		}
+func marshalString(b []byte, err error) string {
+	if err != nil {
+		return err.Error()
 	}
-	return strings.Join(out, "\n")
+	return string(b)
 }
 
-//TestExpectation is a helper struct to allow chaining expectations
-type TestExpectation struct {
-	act string
+//JSONString returns a JSON string of a value, or an error message.
+func JSONString(v interface{}) string {
+	return marshalString(json.MarshalIndent(v, "", "  "))
 }
 
-func Expect(act string) *TestExpectation {
-	return &TestExpectation{act}
-}
-
-func (t *TestExpectation) ToEqual(exp string) {
-	Debug("actual:", t.act)
-	Debug("expected:", exp)
-	expectations.Expect(normalize(t.act)).To(expectations.Equal(normalize(exp)))
-}
+//YAMLString returns a YAML string of a value, using the sigs.k8s.io/yaml package,
+//or an error message.
+func YAMLString(v interface{}) string { return marshalString(yaml.Marshal(v)) }

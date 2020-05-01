@@ -12,7 +12,6 @@ import (
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
-	helpers "github.com/openshift/cluster-logging-operator/test"
 )
 
 const (
@@ -393,8 +392,8 @@ var _ = Describe("Normalizing Forwarding", func() {
 					sources = append(sources, string(pipeline.SourceType))
 				}
 				Expect(len(sources)).To(Equal(2), fmt.Sprintf("Sources: %v", sources))
-				Expect(helpers.StringsContain(sources, string(logging.LogSourceTypeApp))).To(BeTrue(), "Exp. the internal pipeline to include app logs")
-				Expect(helpers.StringsContain(sources, string(logging.LogSourceTypeInfra))).To(BeTrue(), "Exp. the internal pipeline to include infa logs")
+				Expect(sources).To(ContainElement(string(logging.LogSourceTypeApp)), "Exp. the internal pipeline to include app logs")
+				Expect(sources).To(ContainElement(string(logging.LogSourceTypeInfra)), "Exp. the internal pipeline to include infa logs")
 			})
 		})
 		Context("and forwarding is defined", func() {
@@ -410,8 +409,8 @@ var _ = Describe("Normalizing Forwarding", func() {
 						sources = append(sources, string(pipeline.SourceType))
 					}
 					Expect(len(sources)).To(Equal(2), fmt.Sprintf("Sources: %v", sources))
-					Expect(helpers.StringsContain(sources, string(logging.LogSourceTypeApp))).To(BeTrue(), "Exp. the internal pipeline to include app logs")
-					Expect(helpers.StringsContain(sources, string(logging.LogSourceTypeInfra))).To(BeTrue(), "Exp. the internal pipeline to include infa logs")
+					Expect(sources).To(ContainElement(string(logging.LogSourceTypeApp)), "Exp. the internal pipeline to include app logs")
+					Expect(sources).To(ContainElement(string(logging.LogSourceTypeInfra)), "Exp. the internal pipeline to include infa logs")
 				})
 			})
 			Context("and disableDefaultForwarding is true", func() {
@@ -450,7 +449,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 					It("should drop the undefined outputs", func() {
 						Expect(normalizedForwardingSpec.Outputs).To(Equal(request.ForwardingSpec.Outputs), "Exp. outputs to be included in the normalized forwarding")
 						Expect(normalizedForwardingSpec.Pipelines[0].OutputRefs).To(Equal([]string{output.Name}))
-						Expect(helpers.StringsContain(normalizedForwardingSpec.Pipelines[0].OutputRefs, theInternalOutputName)).To(Not(BeTrue()), "Exp. the internal log store to not be part of the pipelines")
+						Expect(normalizedForwardingSpec.Pipelines[0].OutputRefs).NotTo(ContainElement(theInternalOutputName), "Exp. the internal log store to not be part of the pipelines")
 					})
 				})
 				Context("and a pipline spec'd for defined outputs", func() {
@@ -475,7 +474,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 						Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(1), "Expected the pipeline to forward to its output")
 						pipeline := normalizedForwardingSpec.Pipelines[0]
 						Expect(pipeline.OutputRefs).To(Equal([]string{output.Name, otherOutput.Name}))
-						Expect(helpers.StringsContain(pipeline.OutputRefs, theInternalOutputName)).To(Not(BeTrue()), "Exp. the internal log store to not be part of the pipelines")
+						Expect(pipeline.OutputRefs).NotTo(ContainElement(theInternalOutputName), "Exp. the internal log store to not be part of the pipelines")
 					})
 				})
 			})

@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	test "github.com/openshift/cluster-logging-operator/test"
+	. "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("Generating fluentd config", func() {
@@ -97,7 +97,8 @@ var _ = Describe("Generating fluentd config", func() {
 		}
 		results, err := generator.generateSource(sets.NewString(string(forwarding.Pipelines[0].SourceType)), sets.NewString(forwarding.Pipelines[0].Namespaces...))
 		Expect(err).To(BeNil())
-		test.Expect(results[0]).ToEqual(`
+		Expect(results).To(HaveLen(1))
+		Expect(results[0]).To(EqualTrimLines(`
 # container logs
 <source>
   @type tail
@@ -125,7 +126,7 @@ var _ = Describe("Generating fluentd config", func() {
     </pattern>
   </parse>
 </source>
-		`)
+		`))
 	})
 
 	It("should exclude source to pipeline labels when there are no pipelines for a given sourceType (e.g. only logs-app)", func() {
@@ -147,7 +148,7 @@ var _ = Describe("Generating fluentd config", func() {
 		}
 		results, err := generator.Generate(forwarding)
 		Expect(err).To(BeNil())
-		test.Expect(results).ToEqual(`
+		Expect(results).To(EqualTrimLines(`
 			## CLO GENERATED CONFIGURATION ### 
 			# This file is a copy of the fluentd configuration entrypoint
 			# which should normally be supplied in a configmap.
@@ -507,13 +508,13 @@ var _ = Describe("Generating fluentd config", func() {
 				@include /etc/fluent/configs.d/syslog/syslog.conf
 			</match>
 		</label>
-	`)
+	`))
 	})
 
 	It("should produce well formed fluent.conf", func() {
 		results, err := generator.Generate(forwarding)
 		Expect(err).To(BeNil())
-		test.Expect(results).ToEqual(`
+		Expect(results).To(EqualTrimLines(`
 			## CLO GENERATED CONFIGURATION ### 
 			# This file is a copy of the fluentd configuration entrypoint
 			# which should normally be supplied in a configmap.
@@ -1331,7 +1332,7 @@ var _ = Describe("Generating fluentd config", func() {
 					@include /etc/fluent/configs.d/syslog/syslog.conf
 				</match>
 			</label>
-			`)
+			`))
 	})
 
 })

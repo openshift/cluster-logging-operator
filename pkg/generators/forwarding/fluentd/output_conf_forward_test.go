@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	test "github.com/openshift/cluster-logging-operator/test"
+	. "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("Generating fluentd secure forward output store config blocks", func() {
@@ -38,7 +38,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 			results, err := generator.generateOutputLabelBlocks(outputs)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
-			test.Expect(results[0]).ToEqual(`<label @SECUREFORWARD_RECEIVER>
+			Expect(results[0]).To(EqualTrimLines(`<label @SECUREFORWARD_RECEIVER>
 	<match **>
 		# https://docs.fluentd.org/v1.0/articles/in_forward
 	   @type forward
@@ -76,7 +76,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 	     port 9654
 	   </server>
 	</match>
-</label>`)
+</label>`))
 		})
 	})
 
@@ -94,7 +94,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 			results, err := generator.generateOutputLabelBlocks(outputs)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
-			test.Expect(results[0]).ToEqual(`<label @SECUREFORWARD_RECEIVER>
+			Expect(results[0]).To(EqualTrimLines(`<label @SECUREFORWARD_RECEIVER>
 			<match **>
 				# https://docs.fluentd.org/v1.0/articles/in_forward
 			  @type forward
@@ -120,7 +120,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 				port 9654
 			  </server>
 		   </match>
-</label>`)
+</label>`))
 		})
 	})
 })

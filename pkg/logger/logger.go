@@ -2,6 +2,7 @@ package logger
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -62,13 +63,19 @@ func init() {
 	logrus.SetLevel(parsed)
 }
 
+// JSONString returns a JSON string representation for logging.
+func JSONString(v interface{}) string {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Sprintf("Error marshalling %v for logging: %v", v, err)
+	} else {
+		return string(b)
+	}
+}
+
 //DebugObject pretty prints the given object
 func DebugObject(sprintfMessage string, object interface{}) {
 	if IsDebugEnabled() && object != nil {
-		pretty, err := json.MarshalIndent(object, "", "  ")
-		if err != nil {
-			logrus.Debugf("Error marshalling object %v for debug log: %v", object, err)
-		}
-		logrus.Debugf(sprintfMessage, string(pretty))
+		logrus.Debugf(sprintfMessage, JSONString(object))
 	}
 }

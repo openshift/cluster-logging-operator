@@ -34,14 +34,14 @@ var _ = Describe("literal command", func() {
 			tmpFile = f
 		})
 		It("should run complete pod cycle", func() {
-			oc.Literal().From("oc create ns test-log-gen").Output()
-			oc.Literal().From("oc apply -f ./podspec.yaml").Output()
-			oc.Literal().From("oc -n test-log-gen get pod -l component=test -o jsonpath={.items[0].metadata.name}").Output()
-			oc.Literal().From("oc -n test-log-gen wait --for=condition=Ready pod/log-generator").Output()
-			oc.Literal().From("oc -n test-log-gen logs log-generator -f").OutputFor(time.Second * 10)
+			Expect(oc.Literal().From("oc create ns test-log-gen").Output()).To(Succeed())
+			Expect(oc.Literal().From("oc apply -f ./podspec.yaml").Output()).To(Succeed())
+			Expect(oc.Literal().From("oc -n test-log-gen get pod -l component=test -o jsonpath={.items[0].metadata.name}").Output()).To(Succeed())
+			Expect(oc.Literal().From("oc -n test-log-gen wait --for=condition=Ready pod/log-generator").Output()).To(Succeed())
+			Expect(oc.Literal().From("oc -n test-log-gen logs log-generator -f").OutputFor(time.Second * 10)).To(Succeed())
 			// currently oc.Literal for oc exec does not support bash -c commands
-			oc.Literal().From("oc -n test-log-gen exec log-generator -c log-generator -- ls -al").Output()
-			oc.Literal().From("oc delete ns test-log-gen").Output()
+			Expect(oc.Literal().From("oc -n test-log-gen exec log-generator -c log-generator -- ls -al").Output()).To(Succeed())
+			Expect(oc.Literal().From("oc delete ns test-log-gen").Output()).To(Succeed())
 		})
 		AfterEach(func() {
 			if tmpFile != nil {

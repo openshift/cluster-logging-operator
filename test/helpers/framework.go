@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -255,18 +256,16 @@ func (tc *E2ETestFramework) CreateLogForwarding(forwarding *logforwarding.LogFor
 		return err
 	}
 	logger.Debugf("Creating LogForwarding: %s", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(logforwardingURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do()
+	cmd := exec.Command("oc", "create", "-f", "-")
+	cmd.Stdin = bytes.NewReader(body)
+	out, err := cmd.Output()
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", logforwardingURI)).
-			SetHeader("Content-Type", "application/json").
-			Do().Error()
+		return exec.Command("oc", "delete", fmt.Sprintf("%s/instance", logforwardingURI)).Run()
 	})
-	return result.Error()
+	if err != nil {
+		return fmt.Errorf("%v: %v", err, string(out))
+	}
+	return nil
 }
 
 func (tc *E2ETestFramework) Cleanup() {

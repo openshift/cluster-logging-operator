@@ -51,10 +51,13 @@ clean:
 	rm -rf tmp
 	go clean -cache -testcache ./...
 
-image:
+image: build
 	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		podman build -t $(IMAGE_TAG) . ; \
+		podman build -t $(IMAGE_TAG) -f Dockerfile.fast . ; \
 	fi
+
+image-ci:
+	podman build -t $(IMAGE_TAG) . ; \
 
 lint: fmt
 	@$(MAKE) golangci-lint

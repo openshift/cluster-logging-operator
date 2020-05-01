@@ -70,7 +70,7 @@ function login_to_ci_registry() {
             echo please oc login to the server for cluster $CI_CLUSTER_NAME
             rc=1
         else
-            docker login -u "$username" -p "$token" $CI_REGISTRY
+            podman login --tls-verify=false -u "$username" -p "$token" $CI_REGISTRY
         fi
     fi
     if [ -n "$savectx" ] ; then
@@ -182,11 +182,11 @@ function login_to_registry() {
             username=kubeadmin
         fi
     fi
-    docker login -u "$username" -p "$token" "$1" > /dev/null
+    podman login --tls-verify=false -u "$username" -p "$token" "$1" > /dev/null
 }
 
 function push_image() {
-    skopeo copy --dest-tls-verify=false docker-daemon:"$1" docker://"$2"
+    podman push --tls-verify=false "$1" "$2"
 }
 
 # debug_print [max_count [interval]]

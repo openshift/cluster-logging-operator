@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	test "github.com/openshift/cluster-logging-operator/test"
+	. "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("Generating fluentd config blocks", func() {
@@ -45,7 +45,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			results, err := generator.generatePipelineToOutputLabels([]logforwarding.PipelineSpec{pipeline})
 			Expect(err).To(BeNil())
 			Expect(len(results) > 0).To(BeTrue())
-			test.Expect(results[0]).ToEqual(`<label @MY_SECURE_PIPELINE>
+			Expect(results[0]).To(EqualTrimLines(`<label @MY_SECURE_PIPELINE>
 				<match **>
 					@type copy
 					<store>
@@ -57,13 +57,13 @@ var _ = Describe("Generating fluentd config blocks", func() {
 						@label @OTHER_ELASTICSEARCH
 					</store>
 				</match>
-			</label>`)
+			</label>`))
 		})
 
 		It("should produce well formed output label config", func() {
 			results, err := generator.generateOutputLabelBlocks(outputs)
 			Expect(err).To(BeNil())
-			test.Expect(results[0]).ToEqual(`<label @ONCLUSTER_ELASTICSEARCH>
+			Expect(results[0]).To(EqualTrimLines(`<label @ONCLUSTER_ELASTICSEARCH>
 	<match retry_oncluster_elasticsearch>
 		@type copy
 		<store>
@@ -151,7 +151,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			</buffer>
 		</store>
 	</match>
-</label>`)
+</label>`))
 		})
 	})
 
@@ -169,7 +169,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 		It("should produce well formed output label config", func() {
 			results, err := generator.generateOutputLabelBlocks(outputs)
 			Expect(err).To(BeNil())
-			test.Expect(results[0]).ToEqual(`<label @OTHER_ELASTICSEARCH>
+			Expect(results[0]).To(EqualTrimLines(`<label @OTHER_ELASTICSEARCH>
 	<match retry_other_elasticsearch>
 		@type copy
 		<store>
@@ -249,7 +249,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			</buffer>
 		</store>
 	</match>
-</label>`)
+</label>`))
 		})
 	})
 })

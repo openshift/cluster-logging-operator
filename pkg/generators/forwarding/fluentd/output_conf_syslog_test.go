@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	test "github.com/openshift/cluster-logging-operator/test"
+	. "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("Generating external syslog server output store config blocks", func() {
@@ -66,7 +66,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				results, err := generator.generateOutputLabelBlocks(outputs)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
-				test.Expect(results[0]).ToEqual(tcpConf)
+				Expect(results[0]).To(EqualTrimLines(tcpConf))
 			})
 		})
 
@@ -84,7 +84,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				results, err := generator.generateOutputLabelBlocks(outputs)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
-				test.Expect(results[0]).ToEqual(tcpConf)
+				Expect(results[0]).To(EqualTrimLines(tcpConf))
 			})
 		})
 
@@ -102,7 +102,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				results, err := generator.generateOutputLabelBlocks(outputs)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
-				test.Expect(results[0]).ToEqual(udpConf)
+				Expect(results[0]).To(EqualTrimLines(udpConf))
 			})
 		})
 	})
@@ -262,7 +262,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					results, err := generator.generateOutputLabelBlocks(outputs)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
-					test.Expect(results[0]).ToEqual(tcpConf)
+					Expect(results[0]).To(EqualTrimLines(tcpConf))
 				})
 			})
 			Context("with TLS enabled", func() {
@@ -282,7 +282,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					results, err := generator.generateOutputLabelBlocks(outputs)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
-					test.Expect(results[0]).ToEqual(tcpWithTLSConf)
+					Expect(results[0]).To(EqualTrimLines(tcpWithTLSConf))
 				})
 			})
 		})
@@ -302,7 +302,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					results, err := generator.generateOutputLabelBlocks(outputs)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
-					test.Expect(results[0]).ToEqual(udpConf)
+					Expect(results[0]).To(EqualTrimLines(udpConf))
 				})
 			})
 			Context("with TLS enabled", func() {
@@ -322,7 +322,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					results, err := generator.generateOutputLabelBlocks(outputs)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
-					test.Expect(results[0]).ToEqual(udpWithTLSConf)
+					Expect(results[0]).To(EqualTrimLines(udpWithTLSConf))
 				})
 			})
 		})

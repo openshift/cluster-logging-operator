@@ -53,7 +53,7 @@ clean:
 
 image:
 	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		podman build -t $(IMAGE_TAG) . ; \
+		podman build --no-cache -v `pwd`:/go/src/github.com/openshift/cluster-logging-operator:z -t $(IMAGE_TAG) -f Dockerfile.nocopy .; \
 	fi
 
 lint: fmt

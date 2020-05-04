@@ -6,14 +6,6 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-cluster-logging-operator:latest
-  - name: logging-elasticsearch6
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-logging-elasticsearch6:latest
-  - name: logging-kibana6
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-logging-kibana6:latest
   - name: logging-curator5
     from:
       kind: DockerImage
@@ -22,10 +14,6 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-logging-fluentd:latest
-  - name: oauth-proxy
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-oauth-proxy:latest
   - name: promtail
     from:
       kind: DockerImage

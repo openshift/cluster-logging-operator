@@ -107,12 +107,11 @@ func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging
 
 	if len(esList.Items) != 0 {
 		for _, cluster := range esList.Items {
-
 			nodeConditions := make(map[string]logging.ElasticsearchClusterConditions)
 
 			nodeStatus := logging.ElasticsearchStatus{
 				ClusterName:            cluster.Name,
-				NodeCount:              cluster.Spec.Nodes[0].NodeCount,
+				NodeCount:              cluster.Status.Cluster.NumNodes,
 				ClusterHealth:          cluster.Status.ClusterHealth,
 				Cluster:                cluster.Status.Cluster,
 				Pods:                   getPodMap(cluster.Status),

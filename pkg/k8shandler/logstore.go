@@ -244,7 +244,6 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		},
 		Spec: elasticsearch.ElasticsearchSpec{
 			Spec: elasticsearch.ElasticsearchNodeSpec{
-				Image:        utils.GetComponentImage("elasticsearch"),
 				Resources:    *resources,
 				NodeSelector: logStoreSpec.NodeSelector,
 				Tolerations:  logStoreSpec.Tolerations,

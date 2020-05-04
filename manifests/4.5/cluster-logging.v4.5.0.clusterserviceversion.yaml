@@ -315,16 +315,10 @@ spec:
                         fieldPath: metadata.name
                   - name: OPERATOR_NAME
                     value: "cluster-logging-operator"
-                  - name: ELASTICSEARCH_IMAGE
-                    value: "quay.io/openshift/origin-logging-elasticsearch6:latest"
                   - name: FLUENTD_IMAGE
                     value: "quay.io/openshift/origin-logging-fluentd:latest"
-                  - name: KIBANA_IMAGE
-                    value: "quay.io/openshift/origin-logging-kibana6:latest"
                   - name: CURATOR_IMAGE
                     value: "quay.io/openshift/origin-logging-curator5:latest"
-                  - name: OAUTH_PROXY_IMAGE
-                    value: "quay.io/openshift/origin-oauth-proxy:latest"
                   - name: PROMTAIL_IMAGE
                     value: "quay.io/openshift/origin-promtail:latest"
   customresourcedefinitions:

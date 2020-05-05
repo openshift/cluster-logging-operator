@@ -38,6 +38,7 @@ func HasPipelineStatus(status *logging.ForwardingStatus, pipelineName string, st
 	}
 	return false
 }
+
 func HasOutputStatus(status *logging.ForwardingStatus, outputName string, state logging.OutputState, reason logging.OutputConditionReason, skipReason bool) bool {
 	logger.Debugf("Output Status: %v", status.Outputs)
 	for _, output := range status.Outputs {

@@ -25,7 +25,7 @@ const (
 	//ForwardingAnnotation  Annotate CL instance with a value of "enabled"
 	ForwardingAnnotation = "clusterlogging.openshift.io/logforwardingtechpreview"
 
-	// UseOldRemoteSyslogPlugin Annotation in LogFprwarding to use old plugin (docebo/fluent-plugin-remote-syslog) to send syslog
+	// UseOldRemoteSyslogPlugin Annotation in LogForwarding to use old plugin (docebo/fluent-plugin-remote-syslog) to send syslog
 	UseOldRemoteSyslogPlugin = "clusterlogging.openshift.io/useoldremotesyslogplugin"
 )
 
@@ -35,10 +35,8 @@ var (
 )
 
 func isForwardingEnabled(cluster *logging.ClusterLogging) bool {
-	if value, _ := utils.GetAnnotation(ForwardingAnnotation, cluster.ObjectMeta); value == "enabled" {
-		return true
-	}
-	return false
+	value, found := utils.GetAnnotation(ForwardingAnnotation, cluster.ObjectMeta)
+	return found && value == "enabled"
 }
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
@@ -68,7 +66,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	}
 	generatedConfig, err := generator.Generate(&clusterRequest.ForwardingSpec)
 	if err != nil {
-		logger.Warnf("Unable to generate log confguraiton: %v", err)
+		logger.Warnf("Unable to generate log configuraton: %v", err)
 		return "",
 			clusterRequest.UpdateCondition(
 				logging.CollectorDeadEnd,

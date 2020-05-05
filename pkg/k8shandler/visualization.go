@@ -422,11 +422,8 @@ func HasCLORef(object metav1.Object, request *ClusterLoggingRequest) bool {
 }
 
 func AreRefsEqual(l *metav1.OwnerReference, r *metav1.OwnerReference) bool {
-	if l.Name == r.Name &&
+	return l.Name == r.Name &&
 		l.APIVersion == r.APIVersion &&
 		l.Kind == r.Kind &&
-		*l.Controller == *r.Controller {
-		return true
-	}
-	return false
+		*l.Controller == *r.Controller
 }

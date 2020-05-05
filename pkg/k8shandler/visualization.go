@@ -251,7 +251,6 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 		},
 		Spec: es.KibanaSpec{
 			ManagementState: es.ManagementStateManaged,
-			Image:           utils.GetComponentImage("kibana"),
 			Replicas:        1,
 			Resources: &v1.ResourceRequirements{
 				Limits: v1.ResourceList{

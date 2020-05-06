@@ -10,6 +10,7 @@ export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not 
 export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+MANIFESTS=manifests/$(OCP_VERSION)
 
 .PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk golangci-lint
 
@@ -30,8 +31,16 @@ build:
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
+# Run the CLO locally. Requires access to a cluster, but no deployment is needed.
+# Sets up a minimal environment to allow the CLO to be run locally,
+# watching for changes on the cluster and updates its CRs accordingly.
+RUN_CMD?=go run
 run:
-	mkdir $(CURDIR)/tmp||: && ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
+	$(MAKE) deploy-elasticsearch-operator
+	@oc get ns $(NAMESPACE) &> /dev/null || oc create ns $(NAMESPACE)
+	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
+	@mkdir -p $(CURDIR)/tmp
+	@ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana6:latest \
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator6:latest \
@@ -42,10 +51,10 @@ run:
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	$(RUN_OPTS) $(CURDIR)/bin/cluster-logging-operator
+	$(RUN_CMD) ./cmd/manager/main.go
 
 run-debug:
-	$(MAKE) run RUN_OPTS='dlv exec --'
+	$(MAKE) run RUN_CMD="dlv debug"
 
 clean:
 	@rm -f bin/operator-sdk bin/imagebuilder bin/golangci-lint bin/cluster-logging-operator
@@ -66,11 +75,10 @@ lint: fmt
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	@gofmt -s -l -w $(shell find pkg cmd -name '*.go')
+	@gofmt -s -l -w $(shell find pkg cmd test -name '*.go')
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
-MANIFESTS=manifests/$(OCP_VERSION)
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@echo generating code
@@ -114,6 +122,11 @@ deploy-example: deploy
 test-unit:
 	go test ./pkg/...
 
+test-cleanup:			# Only needed if tests are interrupted.
+	oc delete -n $(NAMESPACE) all --all
+	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name | grep -e -receiver | xargs --no-run-if-empty oc delete; done
+	@oc get ns -o name | grep clo- | xargs --no-run-if-empty oc delete
+
 test-e2e-olm:
 	hack/test-e2e-olm.sh
 
@@ -127,6 +140,7 @@ test-sec:
 
 undeploy:
 	hack/undeploy.sh
+	hack/undeploy-eo.sh
 
 
 

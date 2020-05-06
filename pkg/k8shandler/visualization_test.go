@@ -3,8 +3,6 @@ package k8shandler
 import (
 	"testing"
 
-	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 
@@ -39,9 +37,8 @@ func TestHasCLORef(t *testing.T) {
 			Spec:   logging.ClusterLoggingSpec{},
 			Status: logging.ClusterLoggingStatus{},
 		},
-		ForwardingRequest: nil,
-		ForwardingSpec:    v1alpha1.ForwardingSpec{},
-		Collector:         nil,
+		ForwarderSpec: logging.ClusterLogForwarderSpec{},
+		Collector:     nil,
 	}
 
 	obj := &apps.Deployment{

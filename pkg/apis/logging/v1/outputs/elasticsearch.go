@@ -1,5 +1,5 @@
 package outputs
 
 type ElasticSearch struct {
-	// TODO(alanconway) additional config
+	// TODO(alanconway) additional config?
 }

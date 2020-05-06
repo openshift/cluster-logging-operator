@@ -10,10 +10,9 @@ import (
 func ReconcileCollector(requestCluster *logging.ClusterLogging, collector *collector.CollectorSpec, requestClient client.Client) (err error) {
 	logger.Debugf("Reconciling collector: %v", collector)
 	clusterRequest := ClusterLoggingRequest{
-		client:            requestClient,
-		cluster:           requestCluster,
-		ForwardingRequest: nil,
-		Collector:         collector,
+		client:    requestClient,
+		cluster:   requestCluster,
+		Collector: collector,
 	}
 	if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
 		return

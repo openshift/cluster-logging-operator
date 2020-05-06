@@ -8,7 +8,6 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -162,7 +161,8 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 	return nil
 }
 
-//createOrUpdateFluentdLegacyForwardConfigMap to address Bug 1782566. To be removed for LogForwarding GA
+// includeLegacyForwardConfig to address Bug 1782566.
+// To be removed when legacy forwarding is unsupported
 func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
 	config := &v1.ConfigMap{
 		Data: map[string]string{},
@@ -177,7 +177,8 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
 	return found
 }
 
-//includeLegacySyslogConfig to address Bug 1799024. To be removed for LogForwarding GA
+// includeLegacySyslogConfig to address Bug 1799024.
+// To be removed when legacy syslog is no longer supported.
 func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
 	config := &v1.ConfigMap{
 		Data: map[string]string{},
@@ -194,7 +195,7 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
 
 // useOldPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
 func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
-	if enabled, found := clusterRequest.ForwardingRequest.Annotations[UseOldRemoteSyslogPlugin]; found && enabled == "enabled" {
+	if enabled, found := clusterRequest.ForwarderRequest.Annotations[UseOldRemoteSyslogPlugin]; found && enabled == "enabled" {
 		return true
 	}
 	return false
@@ -258,7 +259,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 	return nil
 }
 
-func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logforward.ForwardingSpec) v1.PodSpec {
+func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {
 	collectionSpec := logging.CollectionSpec{}
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
@@ -320,7 +321,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		{Name: metricsVolumeName, MountPath: "/etc/fluent/metrics"},
 	}
 	for _, target := range pipelineSpec.Outputs {
-		if target.Secret != nil {
+		if target.Secret != nil && target.Secret.Name != "" {
 			path := fmt.Sprintf("/var/run/ocp-collector/secrets/%s", target.Secret.Name)
 			fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts, v1.VolumeMount{Name: target.Name, MountPath: path})
 		}
@@ -382,7 +383,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		tolerations,
 	)
 	for _, target := range pipelineSpec.Outputs {
-		if target.Secret != nil {
+		if target.Secret != nil && target.Secret.Name != "" {
 			fluentdPodSpec.Volumes = append(fluentdPodSpec.Volumes, v1.Volume{Name: target.Name, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: target.Secret.Name}}})
 		}
 	}
@@ -425,7 +426,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 		return
 	}
 
-	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, fluentdTrustBundle, clusterRequest.ForwardingSpec)
+	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, fluentdTrustBundle, clusterRequest.ForwarderSpec)
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)

@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/test"
 )
 
@@ -24,9 +24,9 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		BeforeEach(func() {
 			outputs = []logging.OutputSpec{
 				{
-					Type:     logging.OutputTypeForward,
-					Name:     "secureforward-receiver",
-					Endpoint: "es.svc.messaging.cluster.local:9654",
+					Type: "fluentForward",
+					Name: "secureforward-receiver",
+					URL:  "es.svc.messaging.cluster.local:9654",
 					Secret: &logging.OutputSecretSpec{
 						Name: "my-infra-secret",
 					},
@@ -84,9 +84,9 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		BeforeEach(func() {
 			outputs = []logging.OutputSpec{
 				{
-					Type:     logging.OutputTypeForward,
-					Name:     "secureforward-receiver",
-					Endpoint: "es.svc.messaging.cluster.local:9654",
+					Type: "fluentForward",
+					Name: "secureforward-receiver",
+					URL:  "es.svc.messaging.cluster.local:9654",
 				},
 			}
 		})

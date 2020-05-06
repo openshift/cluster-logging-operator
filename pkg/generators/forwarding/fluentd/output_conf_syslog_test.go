@@ -3,8 +3,7 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/test"
 )
 
@@ -56,9 +55,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 			BeforeEach(func() {
 				outputs = []logging.OutputSpec{
 					{
-						Type:     logging.OutputTypeSyslog,
-						Name:     "syslog-receiver",
-						Endpoint: "sl.svc.messaging.cluster.local:9654",
+						Type: "syslog",
+						Name: "syslog-receiver",
+						URL:  "sl.svc.messaging.cluster.local:9654",
 					},
 				}
 			})
@@ -74,9 +73,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 			BeforeEach(func() {
 				outputs = []logging.OutputSpec{
 					{
-						Type:     logging.OutputTypeSyslog,
-						Name:     "syslog-receiver",
-						Endpoint: "tcp://sl.svc.messaging.cluster.local:9654",
+						Type: "syslog",
+						Name: "syslog-receiver",
+						URL:  "tcp://sl.svc.messaging.cluster.local:9654",
 					},
 				}
 			})
@@ -92,9 +91,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 			BeforeEach(func() {
 				outputs = []logging.OutputSpec{
 					{
-						Type:     logging.OutputTypeSyslog,
-						Name:     "syslog-receiver",
-						Endpoint: "udp://sl.svc.messaging.cluster.local:9654",
+						Type: "syslog",
+						Name: "syslog-receiver",
+						URL:  "udp://sl.svc.messaging.cluster.local:9654",
 					},
 				}
 			})
@@ -252,9 +251,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				BeforeEach(func() {
 					outputs = []logging.OutputSpec{
 						{
-							Type:     logging.OutputTypeSyslog,
-							Name:     "syslog-receiver",
-							Endpoint: "tcp://sl.svc.messaging.cluster.local:9654",
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "tcp://sl.svc.messaging.cluster.local:9654",
 						},
 					}
 				})
@@ -269,9 +268,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				BeforeEach(func() {
 					outputs = []logging.OutputSpec{
 						{
-							Type:     logging.OutputTypeSyslog,
-							Name:     "syslog-receiver",
-							Endpoint: "tcp://sl.svc.messaging.cluster.local:9654",
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "tcp://sl.svc.messaging.cluster.local:9654",
 							Secret: &logging.OutputSecretSpec{
 								Name: "some-secret",
 							},
@@ -292,9 +291,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				BeforeEach(func() {
 					outputs = []logging.OutputSpec{
 						{
-							Type:     logging.OutputTypeSyslog,
-							Name:     "syslog-receiver",
-							Endpoint: "udp://sl.svc.messaging.cluster.local:9654",
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "udp://sl.svc.messaging.cluster.local:9654",
 						},
 					}
 				})
@@ -309,9 +308,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				BeforeEach(func() {
 					outputs = []logging.OutputSpec{
 						{
-							Type:     logging.OutputTypeSyslog,
-							Name:     "syslog-receiver",
-							Endpoint: "udp://sl.svc.messaging.cluster.local:9654",
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "udp://sl.svc.messaging.cluster.local:9654",
 							Secret: &logging.OutputSecretSpec{
 								Name: "some-secret",
 							},

@@ -6,7 +6,6 @@ metadata:
   name: clusterlogging.v4.1.0
   namespace: placeholder
   annotations:
-    capabilities: Seamless Upgrades
     categories: "OpenShift Optional, Logging & Tracing"
     capabilities: "Seamless Upgrades"
     certified: "false"

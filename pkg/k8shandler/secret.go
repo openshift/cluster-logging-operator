@@ -66,14 +66,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateSecret(secret *core.S
 
 func (clusterRequest *ClusterLoggingRequest) GetSecret(secretName string) (*core.Secret, error) {
 	secret := &core.Secret{}
-	if err := clusterRequest.Get(secretName, secret); err != nil {
-		if errors.IsNotFound(err) {
-			return nil, err
-		}
-		return nil, fmt.Errorf("Failed to get %v secret: %v", secret.Name, err)
-	}
-
-	return secret, nil
+	err := clusterRequest.Get(secretName, secret)
+	return secret, err
 }
 
 //RemoveSecret with the given name in namespace

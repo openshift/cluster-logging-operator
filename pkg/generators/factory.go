@@ -27,8 +27,6 @@ func New(name string, addFunctions *template.FuncMap, templates ...string) (*Gen
 //Execute the named template using the given data
 func (gen *Generator) Execute(namedTemplate string, data interface{}) (string, error) {
 	var out bytes.Buffer
-	if err := gen.Template.ExecuteTemplate(&out, namedTemplate, data); err != nil {
-		return "", fmt.Errorf("Error processing template %s: %v", gen.Template.Name(), err)
-	}
-	return out.String(), nil
+	err := gen.Template.ExecuteTemplate(&out, namedTemplate, data)
+	return out.String(), err
 }

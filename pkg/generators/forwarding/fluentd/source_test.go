@@ -3,10 +3,9 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/util/sets"
-
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/test"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 var _ = Describe("generating source", func() {
@@ -24,7 +23,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs-app source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp)), sets.NewString())
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
@@ -63,7 +62,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs-infra source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeInfra)), sets.NewString())
+			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
@@ -93,7 +92,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs-audit source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeAudit)), sets.NewString())
+			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(3))
 		})
@@ -155,7 +154,7 @@ var _ = Describe("generating source", func() {
 	Context("for all log sources", func() {
 
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp), string(logging.LogSourceTypeInfra), string(logging.LogSourceTypeAudit)), sets.NewString())
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(5))
 		})

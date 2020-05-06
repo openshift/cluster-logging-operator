@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"github.com/openshift/cluster-logging-operator/pkg/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sets "k8s.io/apimachinery/pkg/util/sets"
 )
@@ -9,8 +10,12 @@ const ClusterLogForwarderKind = "ClusterLogForwarder"
 
 // ClusterLogForwarder is the schema for the `clusterlogforwarder` API.
 //
+// A forwarder defines:
+// - `inputs` that select logs to be forwarded `outputs`
+// - `outputs` that identify targets to receive logs.
+// - `pipelines` that forward logs from a set of inputs to a set of outputs.
+//
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=cluster
 // +kubebuilder:subresource:status
 type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -22,12 +27,20 @@ type ClusterLogForwarder struct {
 
 // ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
 type ClusterLogForwarderSpec struct {
+	// Inputs are named inputs of log messages
+	//
+	// +required
+	Inputs []InputSpec `json:"inputs,omitempty"`
 	// Outputs are named destinations for log messages.
 	//
 	// +required
 	Outputs []OutputSpec `json:"outputs,omitempty"`
 
-	// Pipelines select log messages to send to outputs.
+	// Pipelines forward messages from a set of inputs to a set of outputs.
+	//
+	// Pipelines refer to inputs and outputs by name. As well as then named inputs
+	// and outputs defined in the ClusterLogForwarder resource, there are some
+	// built-in names, see `inputRefs` and `outputRefs` for more.
 	//
 	// +required
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
@@ -35,7 +48,7 @@ type ClusterLogForwarderSpec struct {
 
 type ClusterLogForwarderStatus struct {
 	// Conditions of the log forwarder.
-	Conditions Conditions `json:"conditions,omitempty"`
+	Conditions status.Conditions `json:"conditions,omitempty"`
 	// Inputs maps input names to conditions of the input.
 	Inputs NamedConditions `json:"inputs,omitempty"`
 	// Outputs maps output names to conditions of the output.
@@ -44,19 +57,52 @@ type ClusterLogForwarderStatus struct {
 	Pipelines NamedConditions `json:"pipelines,omitempty"`
 }
 
+// IsReady returns true if all of the subordinate conditions are ready.
+func (status ClusterLogForwarderStatus) IsReady() bool {
+	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
+		for _, conds := range nc {
+			if !conds.IsTrueFor(ConditionReady) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// IsDegraded returns true if any of the subordinate conditions are degraded.
+func (status ClusterLogForwarderStatus) IsDegraded() bool {
+	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
+		for _, conds := range nc {
+			if conds.IsTrueFor(ConditionDegraded) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type PipelineSpec struct {
-	// OutputNames lists the names of outputs from this pipeline.
+	// OutputRefs lists the names of outputs from this pipeline.
+	//
+	// The following built-in names are always available:
+	//
+	// - 'default' Output to the default log store provided by ClusterLogging.
 	//
 	// +required
 	OutputRefs []string `json:"outputRefs"`
 
 	// InputRefs lists the names of inputs to this pipeline.
 	//
+	// The following built-in names are always available:
+	//
+	// - 'application' Container application logs (excludes infrastructure containers)
+	// - 'infrastructure' Infrastructure container logs and OS system logs.
+	// - 'audit' System audit logs.
+	//
 	// +required
 	InputRefs []string `json:"inputRefs"`
 
 	// Name is optional, but must be unique in the `pipelines` list if provided.
-	// Required to allow patch updates to the pipelines list.
 	//
 	// +optional
 	Name string `json:"name,omitempty"`
@@ -115,11 +161,11 @@ func (spec *ClusterLogForwarderSpec) OutputMap() map[string]*OutputSpec {
 	return m
 }
 
-// Built-in log input names
-const (
-	InputApplication    = "Application"    // Containers from non-infrastructure namespaces
-	InputInfrastructure = "Infrastructure" // Infrastructure containers and system logs
-	InputAudit          = "Audit"          // System audit logs
-)
-
-var BuiltInInputs = sets.NewString(InputApplication, InputInfrastructure, InputAudit)
+// InputMap returns a map of names to outputs.
+func (spec *ClusterLogForwarderSpec) InputMap() map[string]*InputSpec {
+	m := map[string]*InputSpec{}
+	for i := range spec.Inputs {
+		m[spec.Inputs[i].Name] = &spec.Inputs[i]
+	}
+	return m
+}

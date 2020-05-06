@@ -292,19 +292,19 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 {{ if .CollectInfraLogs }}
   <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
     @type relabel
-    @label @_LOGS_INFRA
+    @label @_INFRASTRUCTURE
   </match>
 {{- end}}
 {{ if .CollectAppLogs}}
   <match kubernetes.**>
     @type relabel
-    @label @_LOGS_APP
+    @label @_APPLICATION
   </match>
 {{- end}}
 {{ if .CollectAuditLogs}}
   <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
     @type relabel
-    @label @_LOGS_AUDIT
+    @label @_AUDIT
   </match>
 {{- end}}
   <match **>

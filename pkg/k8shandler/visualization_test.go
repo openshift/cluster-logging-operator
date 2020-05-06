@@ -4,19 +4,15 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
-
 	apps "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 //TODO: Remove this in the next release after removing old kibana code completely
@@ -46,9 +42,8 @@ func TestHasCLORef(t *testing.T) {
 			Spec:   logging.ClusterLoggingSpec{},
 			Status: logging.ClusterLoggingStatus{},
 		},
-		ForwardingRequest: nil,
-		ForwardingSpec:    v1alpha1.ForwardingSpec{},
-		Collector:         nil,
+		ForwarderSpec: logging.ClusterLogForwarderSpec{},
+		Collector:     nil,
 	}
 
 	obj := &apps.Deployment{
@@ -134,13 +129,13 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        1,
-					Resources: &v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
+					Resources: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
 						},
-						Requests: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
-							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						Requests: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
+							corev1.ResourceCPU:    defaultKibanaCpuRequest,
 						},
 					},
 				},
@@ -156,23 +151,23 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: logging.ClusterLoggingSpec{
 					Visualization: &logging.VisualizationSpec{
 						KibanaSpec: logging.KibanaSpec{
-							Resources: &v1.ResourceRequirements{
-								Limits: v1.ResourceList{
-									v1.ResourceMemory: resource.MustParse("136Mi"),
+							Resources: &corev1.ResourceRequirements{
+								Limits: corev1.ResourceList{
+									corev1.ResourceMemory: resource.MustParse("136Mi"),
 								},
-								Requests: v1.ResourceList{
-									v1.ResourceMemory: defaultKibanaMemory,
-									v1.ResourceCPU:    defaultKibanaCpuRequest,
+								Requests: corev1.ResourceList{
+									corev1.ResourceMemory: defaultKibanaMemory,
+									corev1.ResourceCPU:    defaultKibanaCpuRequest,
 								},
 							},
 							ProxySpec: logging.ProxySpec{
-								Resources: &v1.ResourceRequirements{
-									Limits: v1.ResourceList{
-										v1.ResourceMemory: resource.MustParse("136Mi"),
+								Resources: &corev1.ResourceRequirements{
+									Limits: corev1.ResourceList{
+										corev1.ResourceMemory: resource.MustParse("136Mi"),
 									},
-									Requests: v1.ResourceList{
-										v1.ResourceMemory: defaultKibanaMemory,
-										v1.ResourceCPU:    defaultKibanaCpuRequest,
+									Requests: corev1.ResourceList{
+										corev1.ResourceMemory: defaultKibanaMemory,
+										corev1.ResourceCPU:    defaultKibanaCpuRequest,
 									},
 								},
 							},
@@ -192,23 +187,23 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        1,
-					Resources: &v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse("136Mi"),
+					Resources: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: resource.MustParse("136Mi"),
 						},
-						Requests: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
-							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						Requests: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
+							corev1.ResourceCPU:    defaultKibanaCpuRequest,
 						},
 					},
 					ProxySpec: es.ProxySpec{
-						Resources: &v1.ResourceRequirements{
-							Limits: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("136Mi"),
+						Resources: &corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("136Mi"),
 							},
-							Requests: v1.ResourceList{
-								v1.ResourceMemory: defaultKibanaMemory,
-								v1.ResourceCPU:    defaultKibanaCpuRequest,
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: defaultKibanaMemory,
+								corev1.ResourceCPU:    defaultKibanaCpuRequest,
 							},
 						},
 					},
@@ -244,13 +239,13 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        1,
-					Resources: &v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
+					Resources: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
 						},
-						Requests: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
-							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						Requests: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
+							corev1.ResourceCPU:    defaultKibanaCpuRequest,
 						},
 					},
 					NodeSelector: map[string]string{
@@ -269,7 +264,7 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: logging.ClusterLoggingSpec{
 					Visualization: &logging.VisualizationSpec{
 						KibanaSpec: logging.KibanaSpec{
-							Tolerations: []v1.Toleration{
+							Tolerations: []corev1.Toleration{
 								{
 									Key:   "test",
 									Value: "test",
@@ -291,16 +286,16 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        1,
-					Resources: &v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
+					Resources: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
 						},
-						Requests: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
-							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						Requests: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
+							corev1.ResourceCPU:    defaultKibanaCpuRequest,
 						},
 					},
-					Tolerations: []v1.Toleration{
+					Tolerations: []corev1.Toleration{
 						{
 							Key:   "test",
 							Value: "test",
@@ -422,12 +417,12 @@ func TestIsKibanaCRDDifferent(t *testing.T) {
 			desc: "tolerations",
 			current: &es.Kibana{
 				Spec: es.KibanaSpec{
-					Tolerations: []v1.Toleration{},
+					Tolerations: []corev1.Toleration{},
 				},
 			},
 			desired: &es.Kibana{
 				Spec: es.KibanaSpec{
-					Tolerations: []v1.Toleration{
+					Tolerations: []corev1.Toleration{
 						{
 							Key: "test",
 						},
@@ -439,22 +434,22 @@ func TestIsKibanaCRDDifferent(t *testing.T) {
 			desc: "resources",
 			current: &es.Kibana{
 				Spec: es.KibanaSpec{
-					Resources: &v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
+					Resources: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
 						},
-						Requests: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
-							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						Requests: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
+							corev1.ResourceCPU:    defaultKibanaCpuRequest,
 						},
 					},
 				},
 			},
 			desired: &es.Kibana{
 				Spec: es.KibanaSpec{
-					Resources: &v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceMemory: defaultKibanaMemory,
+					Resources: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: defaultKibanaMemory,
 						},
 					},
 				},
@@ -465,13 +460,13 @@ func TestIsKibanaCRDDifferent(t *testing.T) {
 			current: &es.Kibana{
 				Spec: es.KibanaSpec{
 					ProxySpec: es.ProxySpec{
-						Resources: &v1.ResourceRequirements{
-							Limits: v1.ResourceList{
-								v1.ResourceMemory: defaultKibanaMemory,
+						Resources: &corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: defaultKibanaMemory,
 							},
-							Requests: v1.ResourceList{
-								v1.ResourceMemory: defaultKibanaMemory,
-								v1.ResourceCPU:    defaultKibanaCpuRequest,
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: defaultKibanaMemory,
+								corev1.ResourceCPU:    defaultKibanaCpuRequest,
 							},
 						},
 					},
@@ -480,9 +475,9 @@ func TestIsKibanaCRDDifferent(t *testing.T) {
 			desired: &es.Kibana{
 				Spec: es.KibanaSpec{
 					ProxySpec: es.ProxySpec{
-						Resources: &v1.ResourceRequirements{
-							Limits: v1.ResourceList{
-								v1.ResourceMemory: defaultKibanaMemory,
+						Resources: &corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceMemory: defaultKibanaMemory,
 							},
 						},
 					},

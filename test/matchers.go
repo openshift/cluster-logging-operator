@@ -44,7 +44,7 @@ func (m *lineMatcher) Match(actual interface{}) (success bool, err error) {
 }
 
 func (m *lineMatcher) FailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Unexpected diff (-expected, +actual):\n%s\n====\nActual value:\n%s\n", m.diff, actual)
+	return fmt.Sprintf("Expected:\n%s\nTo Equal:\n%s\n\nDiff:\n%s", m.expected, actual, m.diff)
 }
 
 func (m *lineMatcher) NegatedFailureMessage(actual interface{}) (message string) {

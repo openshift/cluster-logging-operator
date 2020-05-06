@@ -3,16 +3,16 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("Generating fluentd config blocks", func() {
 
 	var (
-		outputs   []logforwarding.OutputSpec
+		outputs   []logging.OutputSpec
 		generator *ConfigGenerator
-		pipeline  logforwarding.PipelineSpec
+		pipeline  logging.PipelineSpec
 	)
 	BeforeEach(func() {
 		var err error
@@ -22,19 +22,19 @@ var _ = Describe("Generating fluentd config blocks", func() {
 
 	Context("for a secure endpoint", func() {
 		BeforeEach(func() {
-			outputs = []logforwarding.OutputSpec{
+			outputs = []logging.OutputSpec{
 				{
-					Type:     logforwarding.OutputTypeElasticsearch,
-					Name:     "oncluster-elasticsearch",
-					Endpoint: "es.svc.messaging.cluster.local:9654",
-					Secret: &logforwarding.OutputSecretSpec{
+					Type: logging.OutputTypeElasticsearch,
+					Name: "oncluster-elasticsearch",
+					URL:  "es.svc.messaging.cluster.local:9654",
+					Secret: &logging.OutputSecretSpec{
 						Name: "my-es-secret",
 					},
 				},
 			}
-			pipeline = logforwarding.PipelineSpec{
+			pipeline = logging.PipelineSpec{
 				Name:       "my-secure-pipeline",
-				SourceType: logforwarding.LogSourceTypeApp,
+				InputRefs:  []string{logging.InputNameApplication},
 				OutputRefs: []string{"oncluster-elasticsearch"},
 			}
 		})
@@ -42,7 +42,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 		It("should produce well formed @OUTPUT label match stanza", func() {
 			pipeline.OutputRefs = append(pipeline.OutputRefs, "other-elasticsearch")
 			Expect(generator).To(Not(BeNil()))
-			results, err := generator.generatePipelineToOutputLabels([]logforwarding.PipelineSpec{pipeline})
+			results, err := generator.generatePipelineToOutputLabels([]logging.PipelineSpec{pipeline})
 			Expect(err).To(BeNil())
 			Expect(len(results) > 0).To(BeTrue())
 			Expect(results[0]).To(EqualTrimLines(`<label @MY_SECURE_PIPELINE>
@@ -158,11 +158,11 @@ var _ = Describe("Generating fluentd config blocks", func() {
 	Context("for an insecure endpoint", func() {
 		BeforeEach(func() {
 			pipeline.OutputRefs = []string{"other-elasticsearch"}
-			outputs = []logforwarding.OutputSpec{
+			outputs = []logging.OutputSpec{
 				{
-					Type:     logforwarding.OutputTypeElasticsearch,
-					Name:     "other-elasticsearch",
-					Endpoint: "es.svc.messaging.cluster.local:9654",
+					Type: logging.OutputTypeElasticsearch,
+					Name: "other-elasticsearch",
+					URL:  "es.svc.messaging.cluster.local:9654",
 				},
 			}
 		})

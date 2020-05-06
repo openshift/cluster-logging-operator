@@ -73,7 +73,7 @@ func JSONString(v interface{}) string {
 	}
 }
 
-//DebugObject pretty prints the given object
+//DebugObject pretty prints the given object(s)
 func DebugObject(sprintfMessage string, object interface{}) {
 	if IsDebugEnabled() && object != nil {
 		logrus.Debugf(sprintfMessage, JSONString(object))

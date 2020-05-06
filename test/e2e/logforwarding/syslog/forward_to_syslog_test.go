@@ -12,7 +12,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
@@ -24,7 +24,7 @@ const (
 	grepappname  = `grep APP-NAME %s | head -n 1 | awk -F',' '{printf("%%s\n",$3)}' | awk -F\'  '{printf("%%s\n",$2)}'`
 )
 
-var _ = Describe("LogForwarding", func() {
+var _ = Describe("LogForwarder", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -32,7 +32,7 @@ var _ = Describe("LogForwarding", func() {
 		syslogDeployment *apps.Deployment
 		e2e              = helpers.NewE2ETestFramework()
 		testDir          string
-		forwarding       *logforward.LogForwarding
+		forwarder        *logging.ClusterLogForwarder
 	)
 	BeforeEach(func() {
 		if err := e2e.DeployLogGenerator(); err != nil {
@@ -40,29 +40,29 @@ var _ = Describe("LogForwarding", func() {
 		}
 		testDir = filepath.Dir(filename)
 	})
-	Describe("when ClusterLogging is configured with 'forwarding' to an external syslog server", func() {
+	Describe("when ClusterLogging is configured with 'forwarder' to an external syslog server", func() {
 
 		BeforeEach(func() {
-			forwarding = &logforward.LogForwarding{
+			forwarder = &logging.ClusterLogForwarder{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       logforward.LogForwardingKind,
-					APIVersion: logforward.SchemeGroupVersion.String(),
+					Kind:       logging.ClusterLogForwarderKind,
+					APIVersion: logging.SchemeGroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "instance",
 				},
-				Spec: logforward.ForwardingSpec{
-					Outputs: []logforward.OutputSpec{
-						logforward.OutputSpec{
-							Name: helpers.SyslogReceiverName,
-							Type: logforward.OutputTypeSyslog,
+				Spec: logging.ClusterLogForwarderSpec{
+					Outputs: []logging.OutputSpec{
+						{
+							Name: "out",
+							Type: "syslog",
 						},
 					},
-					Pipelines: []logforward.PipelineSpec{
-						logforward.PipelineSpec{
+					Pipelines: []logging.PipelineSpec{
+						{
 							Name:       "test-infra",
-							OutputRefs: []string{helpers.SyslogReceiverName},
-							SourceType: logforward.LogSourceTypeInfra,
+							OutputRefs: []string{"out"},
+							InputRefs:  []string{"infrastructure"},
 						},
 					},
 				},
@@ -87,9 +87,9 @@ var _ = Describe("LogForwarding", func() {
 						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, rfc); err != nil {
 							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 						}
-						forwarding.Spec.Outputs[0].Endpoint = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-						if err := e2e.CreateLogForwarding(forwarding); err != nil {
-							Fail(fmt.Sprintf("Unable to create an instance of logforwarding: %v", err))
+						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+							Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 						}
 						components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 						for _, component := range components {
@@ -111,12 +111,12 @@ var _ = Describe("LogForwarding", func() {
 						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, rfc); err != nil {
 							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 						}
-						forwarding.Spec.Outputs[0].Endpoint = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-						forwarding.Spec.Outputs[0].Secret = &logforward.OutputSecretSpec{
+						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+						forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 							Name: syslogDeployment.ObjectMeta.Name,
 						}
-						if err := e2e.CreateLogForwarding(forwarding); err != nil {
-							Fail(fmt.Sprintf("Unable to create an instance of logforwarding: %v", err))
+						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+							Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 						}
 						components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 						for _, component := range components {
@@ -145,9 +145,9 @@ var _ = Describe("LogForwarding", func() {
 						if err := e2e.CreateClusterLogging(cr); err != nil {
 							Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 						}
-						forwarding.Spec.Outputs[0].Endpoint = fmt.Sprintf("udp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-						if err := e2e.CreateLogForwarding(forwarding); err != nil {
-							Fail(fmt.Sprintf("Unable to create an instance of logforwarding: %v", err))
+						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("udp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+							Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 						}
 						components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 						for _, component := range components {
@@ -173,12 +173,12 @@ var _ = Describe("LogForwarding", func() {
 						if err := e2e.CreateClusterLogging(cr); err != nil {
 							Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 						}
-						forwarding.Spec.Outputs[0].Endpoint = fmt.Sprintf("udp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-						forwarding.Spec.Outputs[0].Secret = &logforward.OutputSecretSpec{
+						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("udp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+						forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 							Name: syslogDeployment.ObjectMeta.Name,
 						}
-						if err := e2e.CreateLogForwarding(forwarding); err != nil {
-							Fail(fmt.Sprintf("Unable to create an instance of logforwarding: %v", err))
+						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+							Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 						}
 						components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 						for _, component := range components {
@@ -208,12 +208,12 @@ var _ = Describe("LogForwarding", func() {
 					if err := e2e.CreateClusterLogging(cr); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 					}
-					forwarding.Spec.Outputs[0].Endpoint = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-					forwarding.ObjectMeta.Annotations = map[string]string{
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.ObjectMeta.Annotations = map[string]string{
 						k8shandler.UseOldRemoteSyslogPlugin: "enabled",
 					}
-					if err := e2e.CreateLogForwarding(forwarding); err != nil {
-						Fail(fmt.Sprintf("Unable to create an instance of logforwarding: %v", err))
+					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+						Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 					}
 					components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 					for _, component := range components {
@@ -236,12 +236,12 @@ var _ = Describe("LogForwarding", func() {
 					if err := e2e.CreateClusterLogging(cr); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 					}
-					forwarding.Spec.Outputs[0].Endpoint = fmt.Sprintf("udp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-					forwarding.ObjectMeta.Annotations = map[string]string{
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("udp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.ObjectMeta.Annotations = map[string]string{
 						k8shandler.UseOldRemoteSyslogPlugin: "enabled",
 					}
-					if err := e2e.CreateLogForwarding(forwarding); err != nil {
-						Fail(fmt.Sprintf("Unable to create an instance of logforwarding: %v", err))
+					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+						Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 					}
 					components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 					for _, component := range components {

@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"github.com/openshift/cluster-logging-operator/pkg/status"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +28,7 @@ type ClusterLoggingStatus struct {
 	LogStore      LogStoreStatus      `json:"logStore"`
 	Collection    CollectionStatus    `json:"collection"`
 	Curation      CurationStatus      `json:"curation"`
-	Conditions    []ClusterCondition  `json:"clusterConditions,omitempty"`
+	Conditions    status.Conditions   `json:"clusterConditions,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)
@@ -244,33 +245,17 @@ const (
 	ManagementStateUnmanaged ManagementState = "Unmanaged"
 )
 
-// ConditionStatus contains details for the current condition of this elasticsearch cluster.
-// Status: the status of the condition.
-// LastTransitionTime: Last time the condition transitioned from one status to another.
-// Reason: Unique, one-word, CamelCase reason for the condition's last transition.
-// Message: Human-readable message indicating details about last transition.
-type ClusterCondition struct {
-	Type               ClusterConditionType `json:"type"`
-	Status             v1.ConditionStatus   `json:"status"`
-	LastTransitionTime metav1.Time          `json:"lastTransitionTime"`
-	Reason             string               `json:"reason,omitempty" protobuf:"bytes,5,opt,name=reason"`
-	Message            string               `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
-}
-
-// ClusterConditionType is a valid value for ClusterCondition.Type
-type ClusterConditionType string
-
 const (
-	IncorrectCRName     ClusterConditionType = "IncorrectCRName"
-	ContainerWaiting    ClusterConditionType = "ContainerWaiting"
-	ContainerTerminated ClusterConditionType = "ContainerTerminated"
-	Unschedulable       ClusterConditionType = "Unschedulable"
-	NodeStorage         ClusterConditionType = "NodeStorage"
-	CollectorDeadEnd    ClusterConditionType = "CollectorDeadEnd"
+	IncorrectCRName     status.ConditionType = "IncorrectCRName"
+	ContainerWaiting    status.ConditionType = "ContainerWaiting"
+	ContainerTerminated status.ConditionType = "ContainerTerminated"
+	Unschedulable       status.ConditionType = "Unschedulable"
+	NodeStorage         status.ConditionType = "NodeStorage"
+	CollectorDeadEnd    status.ConditionType = "CollectorDeadEnd"
 )
 
 // `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
-type ClusterConditions []ClusterCondition
+type ClusterConditions status.Conditions
 type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

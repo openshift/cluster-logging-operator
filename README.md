@@ -103,6 +103,7 @@ This test assumes:
 * the cluster-logging-operator image is available
 * the cluster-logging component images are available (i.e. $docker_registry_ip/openshift/$component)
 
+
 **Note:** This test will fail if the images are not pushed to the cluster
 on which the operator runs or can be pulled from a visible registry.
 

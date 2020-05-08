@@ -352,11 +352,6 @@ func isKibanaCRDDifferent(current *es.Kibana, desired *es.Kibana) bool {
 		different = true
 	}
 
-	if current.Spec.Image != desired.Spec.Image {
-		current.Spec.Image = desired.Spec.Image
-		different = true
-	}
-
 	if !reflect.DeepEqual(current.Spec.Resources, desired.Spec.Resources) {
 		current.Spec.Resources = desired.Spec.Resources
 		different = true

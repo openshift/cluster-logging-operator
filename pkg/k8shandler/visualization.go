@@ -240,6 +240,26 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 }
 
 func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string) *es.Kibana {
+	visSpec := cluster.Spec.Visualization
+
+	resources := visSpec.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: defaultKibanaMemory,
+			},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultKibanaMemory,
+				v1.ResourceCPU:    defaultKibanaCpuRequest,
+			},
+		}
+	}
+
+	replicas := visSpec.Replicas
+	if replicas == 0 {
+		replicas = 1
+	}
+
 	cr := &es.Kibana{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Kibana",
@@ -251,16 +271,10 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 		},
 		Spec: es.KibanaSpec{
 			ManagementState: es.ManagementStateManaged,
-			Replicas:        1,
-			Resources: &v1.ResourceRequirements{
-				Limits: v1.ResourceList{
-					v1.ResourceMemory: defaultKibanaMemory,
-				},
-				Requests: v1.ResourceList{
-					v1.ResourceMemory: defaultKibanaMemory,
-					v1.ResourceCPU:    defaultKibanaCpuRequest,
-				},
-			},
+			Replicas:        replicas,
+			Resources:       resources,
+			NodeSelector:    visSpec.NodeSelector,
+			Tolerations:     visSpec.Tolerations,
 		},
 		Status: []es.KibanaStatus{},
 	}

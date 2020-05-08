@@ -143,8 +143,8 @@ func main() {
 		log.Info(err.Error())
 	}
 
+	log.Info("This operator no longer honors the image specified by the custom resources so that it is able to properly coordinate the configuration with the image.")
 	log.Info("Starting the Cmd.")
-
 	// Start the Cmd
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		log.Error(err, "Manager exited non-zero")

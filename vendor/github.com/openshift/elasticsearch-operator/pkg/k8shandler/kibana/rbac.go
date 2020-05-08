@@ -106,7 +106,7 @@ func (clusterRequest *KibanaRequest) CreateClusterRole(name string, rules []rbac
 		Rules: rules,
 	}
 
-	utils.AddOwnerRefToObject(clusterRole, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(clusterRole, getOwnerRef(clusterRequest.cluster))
 
 	err := clusterRequest.Create(clusterRole)
 	if err != nil && !errors.IsAlreadyExists(err) {

@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/retry"
@@ -23,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	apis "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/openshift/elasticsearch-operator/pkg/constants"
 	"github.com/openshift/elasticsearch-operator/pkg/logger"
 	k8s "github.com/openshift/elasticsearch-operator/pkg/types/k8s"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
@@ -30,7 +30,6 @@ import (
 )
 
 const (
-	indexManagmentNamePrefix = "ocp-index-mgm"
 	indexManagementConfigmap = "indexmanagement-scripts"
 	defaultShardSize         = int32(40)
 )
@@ -38,7 +37,7 @@ const (
 var (
 	defaultCPURequest      = resource.MustParse("100m")
 	defaultMemoryRequest   = resource.MustParse("32Mi")
-	jobHistoryLimitFailed  = utils.GetInt32(2)
+	jobHistoryLimitFailed  = utils.GetInt32(1)
 	jobHistoryLimitSuccess = utils.GetInt32(1)
 
 	millisPerSecond = uint64(1000)
@@ -68,20 +67,18 @@ func RemoveCronJobsForMappings(apiclient client.Client, cluster *apis.Elasticsea
 	for _, mapping := range mappings {
 		policy := policies[mapping.PolicyRef]
 		if policy.Phases.Hot != nil {
-			expected.Insert(fmt.Sprintf("%s-rollover-%s", indexManagmentNamePrefix, mapping.Name))
+			expected.Insert(fmt.Sprintf("%s-rollover-%s", cluster.Name, mapping.Name))
 		}
 		if policy.Phases.Delete != nil {
-			expected.Insert(fmt.Sprintf("%s-delete-%s", indexManagmentNamePrefix, mapping.Name))
+			expected.Insert(fmt.Sprintf("%s-delete-%s", cluster.Name, mapping.Name))
 		}
 	}
 	logger.Debugf("Expecting to have cronjobs in %s: %v", cluster.Namespace, expected.List())
-	selector := labels.NewSelector()
-	for k, v := range imLabels {
-		req, _ := labels.NewRequirement(k, selection.Equals, []string{v})
-		selector.Add(*req)
-	}
+
+	labelSelector := labels.SelectorFromSet(imLabels)
+
 	cronList := &batch.CronJobList{}
-	if err := apiclient.List(context.TODO(), &client.ListOptions{Namespace: cluster.Namespace, LabelSelector: selector}, cronList); err != nil {
+	if err := apiclient.List(context.TODO(), &client.ListOptions{Namespace: cluster.Namespace, LabelSelector: labelSelector}, cronList); err != nil {
 		return err
 	}
 	existing := sets.NewString()
@@ -145,7 +142,7 @@ func ReconcileRolloverCronjob(apiclient client.Client, cluster *apis.Elasticsear
 		return err
 	}
 	conditions := calculateConditions(policy, primaryShards)
-	name := fmt.Sprintf("%s-rollover-%s", indexManagmentNamePrefix, mapping.Name)
+	name := fmt.Sprintf("%s-rollover-%s", cluster.Name, mapping.Name)
 	payload, err := utils.ToJson(map[string]rolloverConditions{"conditions": conditions})
 	if err != nil {
 		return fmt.Errorf("There was an error serializing the rollover conditions to JSON: %v", err)
@@ -161,7 +158,7 @@ func ReconcileRolloverCronjob(apiclient client.Client, cluster *apis.Elasticsear
 			"/tmp/scripts/rollover",
 		}
 	}
-	desired := newCronJob(cluster.Name, cluster.Spec.Spec.Image, cluster.Namespace, name, schedule, cluster.Spec.Spec.NodeSelector, cluster.Spec.Spec.Tolerations, envvars, fnContainerHandler)
+	desired := newCronJob(cluster.Name, constants.PackagedElasticsearchImage(), cluster.Namespace, name, schedule, cluster.Spec.Spec.NodeSelector, cluster.Spec.Spec.Tolerations, envvars, fnContainerHandler)
 
 	cluster.AddOwnerRefTo(desired)
 	return reconcileCronJob(apiclient, cluster, desired, areCronJobsSame)
@@ -180,9 +177,9 @@ func ReconcileCurationCronjob(apiclient client.Client, cluster *apis.Elasticsear
 	if err != nil {
 		return err
 	}
-	name := fmt.Sprintf("%s-delete-%s", indexManagmentNamePrefix, mapping.Name)
+	name := fmt.Sprintf("%s-delete-%s", cluster.Name, mapping.Name)
 	envvars := []core.EnvVar{
-		{Name: "ALIAS", Value: mapping.Name},
+		{Name: "POLICY_MAPPING", Value: mapping.Name},
 		{Name: "MIN_AGE", Value: strconv.FormatUint(minAgeMillis, 10)},
 	}
 	fnContainerHandler := func(container *core.Container) {
@@ -192,7 +189,7 @@ func ReconcileCurationCronjob(apiclient client.Client, cluster *apis.Elasticsear
 			"/tmp/scripts/delete",
 		}
 	}
-	desired := newCronJob(cluster.Name, cluster.Spec.Spec.Image, cluster.Namespace, name, schedule, cluster.Spec.Spec.NodeSelector, cluster.Spec.Spec.Tolerations, envvars, fnContainerHandler)
+	desired := newCronJob(cluster.Name, constants.PackagedElasticsearchImage(), cluster.Namespace, name, schedule, cluster.Spec.Spec.NodeSelector, cluster.Spec.Spec.Tolerations, envvars, fnContainerHandler)
 
 	cluster.AddOwnerRefTo(desired)
 	return reconcileCronJob(apiclient, cluster, desired, areCronJobsSame)
@@ -327,6 +324,7 @@ func newCronJob(clusterName, image, namespace, name, schedule string, nodeSelect
 			Labels:    imLabels,
 		},
 		Spec: batch.CronJobSpec{
+			ConcurrencyPolicy:          batch.ForbidConcurrent,
 			SuccessfulJobsHistoryLimit: jobHistoryLimitSuccess,
 			FailedJobsHistoryLimit:     jobHistoryLimitFailed,
 			Schedule:                   schedule,

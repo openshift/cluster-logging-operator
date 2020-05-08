@@ -6,10 +6,6 @@ import (
 	"github.com/openshift/elasticsearch-operator/pkg/k8shandler/kibana"
 
 	configv1 "github.com/openshift/api/config/v1"
-	"github.com/openshift/elasticsearch-operator/pkg/constants"
-
-	"github.com/openshift/elasticsearch-operator/pkg/utils"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -18,12 +14,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 var (
-	log             = logf.Log.WithName("controller_proxyconfig")
 	reconcilePeriod = 30 * time.Second
 	reconcileResult = reconcile.Result{RequeueAfter: reconcilePeriod}
 )
@@ -87,8 +81,4 @@ func (r *ReconcileProxyConfig) Reconcile(request reconcile.Request) (reconcile.R
 	}
 
 	return reconcile.Result{}, nil
-}
-
-func handleConfigMap(meta metav1.Object) bool {
-	return utils.ContainsString(constants.ReconcileForGlobalProxyList, meta.GetName())
 }

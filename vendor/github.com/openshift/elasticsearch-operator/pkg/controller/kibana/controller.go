@@ -11,11 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
-
-var log = logf.Log.WithName("controller_kibana")
 
 // Add creates a new Kibana Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -63,9 +60,10 @@ var (
 )
 
 func (r *ReconcileKibana) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+
 	if err := kibana.ReconcileKibanaInstance(request, r.client); err != nil {
 		return reconcileResult, err
 	}
 
-	return reconcile.Result{}, nil
+	return reconcileResult, nil
 }

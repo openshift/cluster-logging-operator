@@ -34,7 +34,9 @@ type esYmlStruct struct {
 }
 
 type log4j2PropertiesStruct struct {
-	RootLogger string
+	RootLogger       string
+	LogLevel         string
+	SecurityLogLevel string
 }
 
 type indexSettingsStruct struct {
@@ -54,17 +56,19 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateConfigMaps() (er
 	dataNodeCount := int((getDataCount(dpl)))
 	masterNodeCount := int((getMasterCount(dpl)))
 
+	logConfig := getLogConfig(dpl.GetAnnotations())
+
 	configmap := newConfigMap(
 		dpl.Name,
 		dpl.Namespace,
 		dpl.Labels,
 		kibanaIndexMode,
 		esUnicastHost(dpl.Name, dpl.Namespace),
-		rootLogger(elasticsearchRequest.cluster),
 		strconv.Itoa(masterNodeCount/2+1),
 		strconv.Itoa(dataNodeCount),
 		strconv.Itoa(dataNodeCount),
 		strconv.Itoa(calculateReplicaCount(dpl)),
+		logConfig,
 	)
 
 	addOwnerRefToObject(configmap, getOwnerRef(dpl))
@@ -113,7 +117,7 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateConfigMaps() (er
 	return nil
 }
 
-func renderData(kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount, rootLogger string) (error, map[string]string) {
+func renderData(kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount string, logConfig LogConfig) (error, map[string]string) {
 
 	data := map[string]string{}
 	buf := &bytes.Buffer{}
@@ -123,7 +127,7 @@ func renderData(kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShard
 	data[esConfig] = buf.String()
 
 	buf = &bytes.Buffer{}
-	if err := renderLog4j2Properties(buf, rootLogger); err != nil {
+	if err := renderLog4j2Properties(buf, logConfig); err != nil {
 		return err, data
 	}
 	data[log4jConfig] = buf.String()
@@ -139,9 +143,9 @@ func renderData(kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShard
 
 // newConfigMap returns a v1.ConfigMap object
 func newConfigMap(configMapName, namespace string, labels map[string]string,
-	kibanaIndexMode, esUnicastHost, rootLogger, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount string) *v1.ConfigMap {
+	kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount string, logConfig LogConfig) *v1.ConfigMap {
 
-	err, data := renderData(kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount, rootLogger)
+	err, data := renderData(kibanaIndexMode, esUnicastHost, nodeQuorum, recoverExpectedShards, primaryShardsCount, replicaShardsCount, logConfig)
 	if err != nil {
 		return nil
 	}
@@ -202,7 +206,7 @@ func renderEsYml(w io.Writer, kibanaIndexMode, esUnicastHost, nodeQuorum, recove
 	return t.Execute(w, esy)
 }
 
-func renderLog4j2Properties(w io.Writer, rootLogger string) error {
+func renderLog4j2Properties(w io.Writer, logConfig LogConfig) error {
 	t := template.New("log4j2.properties")
 	t, err := t.Parse(log4j2PropertiesTmpl)
 	if err != nil {
@@ -210,7 +214,9 @@ func renderLog4j2Properties(w io.Writer, rootLogger string) error {
 	}
 
 	log4jProp := log4j2PropertiesStruct{
-		RootLogger: rootLogger,
+		RootLogger:       logConfig.ServerAppender,
+		LogLevel:         logConfig.ServerLoglevel,
+		SecurityLogLevel: logConfig.LogLevel,
 	}
 
 	return t.Execute(w, log4jProp)

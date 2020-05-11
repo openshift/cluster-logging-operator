@@ -14,5 +14,5 @@ assert_resources_exist(){
 
 assert_kibana_instance_exists() {
 	# verify kibana crd
-	try_until_success "oc -n $NAMESPACE get kibana instance" ${TIMEOUT_MIN}
+	try_until_success "oc -n $NAMESPACE get kibana kibana" ${TIMEOUT_MIN}
 }

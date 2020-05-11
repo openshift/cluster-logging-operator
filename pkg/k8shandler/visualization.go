@@ -280,7 +280,7 @@ func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
 	err := clusterRequest.client.Get(context.TODO(),
 		client.ObjectKey{
 			Namespace: clusterRequest.cluster.Namespace,
-			Name:      "instance",
+			Name:      constants.KibanaName,
 		}, kb)
 
 	if err != nil {
@@ -290,7 +290,7 @@ func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaCR() error {
-	cr := newKibanaCustomResource(clusterRequest.cluster, constants.SingletonName)
+	cr := newKibanaCustomResource(clusterRequest.cluster, constants.KibanaName)
 
 	err := clusterRequest.Create(cr)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -366,7 +366,7 @@ func isKibanaCRDDifferent(current *es.Kibana, desired *es.Kibana) bool {
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
-	cr := newKibanaCustomResource(clusterRequest.cluster, constants.SingletonName)
+	cr := newKibanaCustomResource(clusterRequest.cluster, constants.KibanaName)
 
 	err := clusterRequest.Delete(cr)
 	if err != nil && !errors.IsNotFound(err) {

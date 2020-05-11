@@ -142,12 +142,7 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
-	// call for Fluentd to restart itself
-	if requestName == constants.FluentdTrustedCAName {
-		return clusterLoggingRequest.RestartFluentd(proxyConfig)
-	}
-
-	return nil
+	return clusterLoggingRequest.RestartFluentd(proxyConfig)
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {

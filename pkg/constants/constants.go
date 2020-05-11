@@ -22,4 +22,4 @@ const (
 	LogStoreService   = ElasticsearchFQDN + ":" + ElasticsearchPort
 )
 
-var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName, KibanaTrustedCAName}
+var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

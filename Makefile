@@ -13,8 +13,10 @@ FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
 .PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk golangci-lint
 
-# Run all local pre-merge tests. CI runs additional system tests on the image.
-all: generate fmt test-unit lint
+all: check image
+
+# Update code (generate, format), run unit tests and lint.
+check: generate fmt test-unit lint
 
 # Download tools if not available on local PATH.
 operator-sdk:
@@ -29,8 +31,15 @@ build:
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
+# Run the CLO locally - see HACKING.md
+RUN_CMD?=go run
 run:
-	mkdir $(CURDIR)/tmp||: && ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
+	$(MAKE) deploy-elasticsearch-operator
+	@oc create --dry-run=client ns $(NAMESPACE) -o json | oc apply -f -
+	@oc delete -n $(NAMESPACE) all --all
+	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
+	@mkdir -p $(CURDIR)/tmp
+	@ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana6:latest \
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator6:latest \
@@ -107,6 +116,16 @@ deploy-example: deploy
 test-unit:
 	go test ./pkg/...
 
+test-cluster:
+	go test -v ./test/... -- -root=$(CURDIR)
+
+test-cleanup:			# Only needed if e2e tests are interrupted.
+	oc create --dry-run=client ns $(NAMESPACE) -o json | oc apply -f -
+	oc delete -n $(NAMESPACE) all --all
+	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name; done | grep -e -receiver | xargs -r oc delete
+	@oc get ns -o name | grep clo- | xargs --no-run-if-empty oc delete
+
+# NOTE: This is the CI e2e entry point.
 test-e2e-olm:
 	hack/test-e2e-olm.sh
 
@@ -120,8 +139,6 @@ test-sec:
 
 undeploy:
 	hack/undeploy.sh
-
-
 
 cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-deploy
 

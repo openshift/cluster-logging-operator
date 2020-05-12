@@ -260,6 +260,17 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 		replicas = 1
 	}
 
+	proxyResources := visSpec.ProxySpec.Resources
+	if proxyResources == nil {
+		proxyResources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultKibanaProxyMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultKibanaProxyMemory,
+				v1.ResourceCPU:    defaultKibanaProxyCpuRequest,
+			},
+		}
+	}
+
 	cr := &es.Kibana{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Kibana",
@@ -275,6 +286,9 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 			Resources:       resources,
 			NodeSelector:    visSpec.NodeSelector,
 			Tolerations:     visSpec.Tolerations,
+			ProxySpec: es.ProxySpec{
+				Resources: proxyResources,
+			},
 		},
 		Status: []es.KibanaStatus{},
 	}

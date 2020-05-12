@@ -11,6 +11,9 @@ var (
 	defaultKibanaMemory     resource.Quantity = resource.MustParse("736Mi")
 	defaultKibanaCpuRequest resource.Quantity = resource.MustParse("100m")
 
+	defaultKibanaProxyMemory     resource.Quantity = resource.MustParse("256Mi")
+	defaultKibanaProxyCpuRequest resource.Quantity = resource.MustParse("100m")
+
 	defaultCuratorMemory     resource.Quantity = resource.MustParse("256Mi")
 	defaultCuratorCpuRequest resource.Quantity = resource.MustParse("100m")
 

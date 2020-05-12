@@ -162,6 +162,17 @@ func TestNewKibanaCR(t *testing.T) {
 									v1.ResourceCPU:    defaultKibanaCpuRequest,
 								},
 							},
+							ProxySpec: logging.ProxySpec{
+								Resources: &v1.ResourceRequirements{
+									Limits: v1.ResourceList{
+										v1.ResourceMemory: resource.MustParse("136Mi"),
+									},
+									Requests: v1.ResourceList{
+										v1.ResourceMemory: defaultKibanaMemory,
+										v1.ResourceCPU:    defaultKibanaCpuRequest,
+									},
+								},
+							},
 						},
 					},
 				},
@@ -185,6 +196,17 @@ func TestNewKibanaCR(t *testing.T) {
 						Requests: v1.ResourceList{
 							v1.ResourceMemory: defaultKibanaMemory,
 							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: resource.MustParse("136Mi"),
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: defaultKibanaMemory,
+								v1.ResourceCPU:    defaultKibanaCpuRequest,
+							},
 						},
 					},
 				},

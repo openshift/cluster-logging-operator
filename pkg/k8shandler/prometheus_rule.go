@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -42,7 +43,7 @@ func NewPrometheusRuleSpecFrom(filePath string) (*monitoringv1.PrometheusRuleSpe
 	if err := utils.CheckFileExists(filePath); err != nil {
 		return nil, err
 	}
-	fileContent, err := ioutil.ReadFile(filePath)
+	fileContent, err := ioutil.ReadFile(filepath.Clean(filePath))
 	if err != nil {
 		return nil, fmt.Errorf("'%s' not readable", filePath)
 	}

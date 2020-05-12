@@ -388,9 +388,9 @@ func GetSupportedBootDevices(client *gophercloud.ServiceClient, id string) (r Su
 // the value for ‘args’ is a keyword variable argument dictionary that is passed to the cleaning step
 // method.
 type CleanStep struct {
-	Interface string            `json:"interface" required:"true"`
-	Step      string            `json:"step" required:"true"`
-	Args      map[string]string `json:"args,omitempty"`
+	Interface string                 `json:"interface" required:"true"`
+	Step      string                 `json:"step" required:"true"`
+	Args      map[string]interface{} `json:"args,omitempty"`
 }
 
 // ProvisionStateOptsBuilder allows extensions to add additional parameters to the
@@ -523,9 +523,9 @@ const (
 type InterfaceType string
 
 const (
-	SATA DiskType = "sata"
-	SCSI DiskType = "scsi"
-	SAS  DiskType = "sas"
+	SATA InterfaceType = "sata"
+	SCSI InterfaceType = "scsi"
+	SAS  InterfaceType = "sas"
 )
 
 type LogicalDisk struct {

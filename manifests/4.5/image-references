@@ -1,0 +1,20 @@
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+spec:
+  tags:
+  - name: cluster-logging-operator
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-cluster-logging-operator:latest
+  - name: logging-curator5
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-logging-curator5:latest
+  - name: logging-fluentd
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-logging-fluentd:latest
+  - name: promtail
+    from:
+      kind: DockerImage
+      name: quay.io/openshift/origin-promtail:refBz1793551

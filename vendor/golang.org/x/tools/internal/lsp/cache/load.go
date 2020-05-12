@@ -7,291 +7,231 @@ package cache
 import (
 	"context"
 	"fmt"
+	"go/types"
+	"sort"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/internal/lsp/source"
-	"golang.org/x/tools/internal/lsp/xlog"
+	"golang.org/x/tools/internal/lsp/telemetry"
+	"golang.org/x/tools/internal/packagesinternal"
 	"golang.org/x/tools/internal/span"
+	"golang.org/x/tools/internal/telemetry/log"
+	"golang.org/x/tools/internal/telemetry/tag"
+	"golang.org/x/tools/internal/telemetry/trace"
+	errors "golang.org/x/xerrors"
 )
 
-func (v *view) loadParseTypecheck(ctx context.Context, f *goFile) ([]packages.Error, error) {
-	v.mcache.mu.Lock()
-	defer v.mcache.mu.Unlock()
+type metadata struct {
+	id              packageID
+	pkgPath         packagePath
+	name            string
+	goFiles         []span.URI
+	compiledGoFiles []span.URI
+	forTest         packagePath
+	typesSizes      types.Sizes
+	errors          []packages.Error
+	deps            []packageID
+	missingDeps     map[packagePath]struct{}
+	module          *packagesinternal.Module
 
-	// If the AST for this file is trimmed, and we are explicitly type-checking it,
-	// don't ignore function bodies.
-	if f.wrongParseMode(ctx, source.ParseFull) {
-		v.pcache.mu.Lock()
-		f.invalidateAST(ctx)
-		v.pcache.mu.Unlock()
-	}
-
-	// Get the metadata for the file.
-	meta, errs, err := v.checkMetadata(ctx, f)
-	if err != nil {
-		return errs, err
-	}
-	if meta == nil {
-		return nil, nil
-	}
-	for id, m := range meta {
-		imp := &importer{
-			view:          v,
-			seen:          make(map[packageID]struct{}),
-			ctx:           ctx,
-			fset:          v.session.cache.FileSet(),
-			topLevelPkgID: id,
-		}
-		// Start prefetching direct imports.
-		for importID := range m.children {
-			go imp.getPkg(ctx, importID)
-		}
-		// Type-check package.
-		pkg, err := imp.getPkg(ctx, imp.topLevelPkgID)
-		if err != nil {
-			return nil, err
-		}
-		if pkg == nil || pkg.IsIllTyped() {
-			return nil, fmt.Errorf("loadParseTypecheck: %s is ill typed", m.pkgPath)
-		}
-	}
-	if len(f.pkgs) == 0 {
-		return nil, fmt.Errorf("no packages found for %s", f.URI())
-	}
-	return nil, nil
+	// config is the *packages.Config associated with the loaded package.
+	config *packages.Config
 }
 
-func sameSet(x, y map[packagePath]struct{}) bool {
-	if len(x) != len(y) {
-		return false
-	}
-	for k := range x {
-		if _, ok := y[k]; !ok {
-			return false
+func (s *snapshot) load(ctx context.Context, scopes ...interface{}) error {
+	var query []string
+	var containsDir bool // for logging
+	for _, scope := range scopes {
+		switch scope := scope.(type) {
+		case packagePath:
+			// The only time we pass package paths is when we're doing a
+			// partial workspace load. In those cases, the paths came back from
+			// go list and should already be GOPATH-vendorized when appropriate.
+			query = append(query, string(scope))
+		case fileURI:
+			query = append(query, fmt.Sprintf("file=%s", span.URI(scope).Filename()))
+		case directoryURI:
+			filename := span.URI(scope).Filename()
+			q := fmt.Sprintf("%s/...", filename)
+			// Simplify the query if it will be run in the requested directory.
+			// This ensures compatibility with Go 1.12 that doesn't allow
+			// <directory>/... in GOPATH mode.
+			if s.view.folder.Filename() == filename {
+				q = "./..."
+			}
+			query = append(query, q)
+		case viewLoadScope:
+			// If we are outside of GOPATH, a module, or some other known
+			// build system, don't load subdirectories.
+			if !s.view.hasValidBuildConfiguration {
+				query = append(query, "./")
+			} else {
+				query = append(query, "./...")
+			}
+		default:
+			panic(fmt.Sprintf("unknown scope type %T", scope))
+		}
+		switch scope.(type) {
+		case directoryURI, viewLoadScope:
+			containsDir = true
 		}
 	}
-	return true
-}
+	sort.Strings(query) // for determinism
 
-// checkMetadata determines if we should run go/packages.Load for this file.
-// If yes, update the metadata for the file and its package.
-func (v *view) checkMetadata(ctx context.Context, f *goFile) (map[packageID]*metadata, []packages.Error, error) {
-	if !v.runGopackages(ctx, f) {
-		return f.meta, nil, nil
-	}
+	ctx, done := trace.StartSpan(ctx, "cache.view.load", telemetry.Query.Of(query))
+	defer done()
 
-	// Check if the context has been canceled before calling packages.Load.
+	cfg := s.Config(ctx)
+	pkgs, err := s.view.loadPackages(cfg, query...)
+
+	// If the context was canceled, return early. Otherwise, we might be
+	// type-checking an incomplete result. Check the context directly,
+	// because go/packages adds extra information to the error.
 	if ctx.Err() != nil {
-		return nil, nil, ctx.Err()
+		return ctx.Err()
 	}
 
-	pkgs, err := packages.Load(v.Config(ctx), fmt.Sprintf("file=%s", f.filename()))
+	log.Print(ctx, "go/packages.Load", tag.Of("snapshot", s.ID()), tag.Of("query", query), tag.Of("packages", len(pkgs)))
 	if len(pkgs) == 0 {
-		if err == nil {
-			err = fmt.Errorf("go/packages.Load: no packages found for %s", f.filename())
-		}
-		// Return this error as a diagnostic to the user.
-		return nil, []packages.Error{
-			{
-				Msg:  err.Error(),
-				Kind: packages.UnknownError,
-			},
-		}, err
+		return err
 	}
-	// Track missing imports as we look at the package's errors.
-	missingImports := make(map[packagePath]struct{})
-
-	xlog.Debugf(ctx, "packages.Load: found %v packages", len(pkgs))
 	for _, pkg := range pkgs {
-		xlog.Debugf(ctx, "packages.Load: package %s with files %v", pkg.PkgPath, pkg.CompiledGoFiles)
-		// If the package comes back with errors from `go list`,
-		// don't bother type-checking it.
-		if len(pkg.Errors) > 0 {
-			return nil, pkg.Errors, fmt.Errorf("package %s has errors, skipping type-checking", pkg.PkgPath)
+		if !containsDir || s.view.Options().VerboseOutput {
+			log.Print(ctx, "go/packages.Load", tag.Of("snapshot", s.ID()), tag.Of("package", pkg.PkgPath), tag.Of("files", pkg.CompiledGoFiles))
 		}
-		// Build the import graph for this package.
-		if err := v.link(ctx, packagePath(pkg.PkgPath), pkg, nil, missingImports); err != nil {
-			return nil, nil, err
+		// Ignore packages with no sources, since we will never be able to
+		// correctly invalidate that metadata.
+		if len(pkg.GoFiles) == 0 && len(pkg.CompiledGoFiles) == 0 {
+			continue
 		}
-	}
-	m, err := validateMetadata(ctx, missingImports, f)
-	if err != nil {
-		return nil, nil, err
-	}
-	return m, nil, nil
-}
-
-func validateMetadata(ctx context.Context, missingImports map[packagePath]struct{}, f *goFile) (map[packageID]*metadata, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	// If `go list` failed to get data for the file in question (this should never happen).
-	if len(f.meta) == 0 {
-		return nil, fmt.Errorf("loadParseTypecheck: no metadata found for %v", f.filename())
-	}
-
-	// If we have already seen these missing imports before, and we have type information,
-	// there is no need to continue.
-	if sameSet(missingImports, f.missingImports) && len(f.pkgs) != 0 {
-		return nil, nil
-	}
-	// Otherwise, update the missing imports map.
-	f.missingImports = missingImports
-	return f.meta, nil
-}
-
-// reparseImports reparses a file's package and import declarations to
-// determine if they have changed.
-func (v *view) runGopackages(ctx context.Context, f *goFile) (result bool) {
-	f.mu.Lock()
-	defer func() {
-		// Clear metadata if we are intending to re-run go/packages.
-		if result {
-			// Reset the file's metadata and type information if we are re-running `go list`.
-			for k := range f.meta {
-				delete(f.meta, k)
+		// Special case for the builtin package, as it has no dependencies.
+		if pkg.PkgPath == "builtin" {
+			if err := s.view.buildBuiltinPackage(ctx, pkg.GoFiles); err != nil {
+				return err
 			}
-			for k := range f.pkgs {
-				delete(f.pkgs, k)
-			}
+			continue
 		}
-
-		f.mu.Unlock()
-	}()
-
-	if len(f.meta) == 0 || len(f.missingImports) > 0 {
-		return true
-	}
-
-	// Get file content in case we don't already have it.
-	parsed, err := v.session.cache.ParseGoHandle(f.Handle(ctx), source.ParseHeader).Parse(ctx)
-	if err == context.Canceled {
-		return false
-	}
-	if parsed == nil {
-		return true
-	}
-
-	// Check if the package's name has changed, by checking if this is a filename
-	// we already know about, and if so, check if its package name has changed.
-	for _, m := range f.meta {
-		for _, filename := range m.files {
-			if filename == f.URI().Filename() {
-				if m.name != parsed.Name.Name {
-					return true
-				}
-			}
+		// Skip test main packages.
+		if isTestMain(ctx, pkg, s.view.gocache) {
+			continue
 		}
-	}
-
-	// If the package's imports have changed, re-run `go list`.
-	if len(f.imports) != len(parsed.Imports) {
-		return true
-	}
-
-	for i, importSpec := range f.imports {
-		if importSpec.Path.Value != parsed.Imports[i].Path.Value {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (v *view) link(ctx context.Context, pkgPath packagePath, pkg *packages.Package, parent *metadata, missingImports map[packagePath]struct{}) error {
-	id := packageID(pkg.ID)
-	m, ok := v.mcache.packages[id]
-
-	// If a file was added or deleted we need to invalidate the package cache
-	// so relevant packages get parsed and type-checked again.
-	if ok && !filenamesIdentical(m.files, pkg.CompiledGoFiles) {
-		v.pcache.mu.Lock()
-		v.remove(ctx, id, make(map[packageID]struct{}))
-		v.pcache.mu.Unlock()
-	}
-
-	// If we haven't seen this package before.
-	if !ok {
-		m = &metadata{
-			pkgPath:    pkgPath,
-			id:         id,
-			typesSizes: pkg.TypesSizes,
-			parents:    make(map[packageID]bool),
-			children:   make(map[packageID]bool),
-		}
-		v.mcache.packages[id] = m
-		v.mcache.ids[pkgPath] = id
-	}
-	// Reset any field that could have changed across calls to packages.Load.
-	m.name = pkg.Name
-	m.files = pkg.CompiledGoFiles
-	for _, filename := range m.files {
-		f, err := v.getFile(ctx, span.FileURI(filename))
+		// Set the metadata for this package.
+		m, err := s.setMetadata(ctx, packagePath(pkg.PkgPath), pkg, cfg, map[packageID]struct{}{})
 		if err != nil {
-			xlog.Errorf(ctx, "no file %s: %v", filename, err)
-			continue
+			return err
 		}
-		gof, ok := f.(*goFile)
-		if !ok {
-			xlog.Errorf(ctx, "not a Go file: %s", f.URI())
-			continue
-		}
-		if gof.meta == nil {
-			gof.meta = make(map[packageID]*metadata)
-		}
-		gof.meta[m.id] = m
-	}
-	// Connect the import graph.
-	if parent != nil {
-		m.parents[parent.id] = true
-		parent.children[id] = true
-	}
-	for importPath, importPkg := range pkg.Imports {
-		importPkgPath := packagePath(importPath)
-		if importPkgPath == pkgPath {
-			return fmt.Errorf("cycle detected in %s", importPath)
-		}
-		// Don't remember any imports with significant errors.
-		if importPkgPath != "unsafe" && len(pkg.CompiledGoFiles) == 0 {
-			missingImports[importPkgPath] = struct{}{}
-			continue
-		}
-		if _, ok := m.children[packageID(importPkg.ID)]; !ok {
-			if err := v.link(ctx, importPkgPath, importPkg, m, missingImports); err != nil {
-				xlog.Errorf(ctx, "error in dependency %s: %v", importPkgPath, err)
-			}
+		if _, err := s.buildPackageHandle(ctx, m.id, source.ParseFull); err != nil {
+			return err
 		}
 	}
-	// Clear out any imports that have been removed.
-	for importID := range m.children {
-		child, ok := v.mcache.packages[importID]
-		if !ok {
-			continue
-		}
-		importPath := string(child.pkgPath)
-		if _, ok := pkg.Imports[importPath]; ok {
-			continue
-		}
-		delete(m.children, importID)
-		delete(child.parents, id)
-	}
+	// Rebuild the import graph when the metadata is updated.
+	s.clearAndRebuildImportGraph()
+
 	return nil
 }
 
-// filenamesIdentical reports whether two sets of file names are identical.
-func filenamesIdentical(oldFiles, newFiles []string) bool {
-	if len(oldFiles) != len(newFiles) {
+func (s *snapshot) setMetadata(ctx context.Context, pkgPath packagePath, pkg *packages.Package, cfg *packages.Config, seen map[packageID]struct{}) (*metadata, error) {
+	id := packageID(pkg.ID)
+	if _, ok := seen[id]; ok {
+		return nil, errors.Errorf("import cycle detected: %q", id)
+	}
+	// Recreate the metadata rather than reusing it to avoid locking.
+	m := &metadata{
+		id:         id,
+		pkgPath:    pkgPath,
+		name:       pkg.Name,
+		forTest:    packagePath(packagesinternal.GetForTest(pkg)),
+		typesSizes: pkg.TypesSizes,
+		errors:     pkg.Errors,
+		config:     cfg,
+		module:     packagesinternal.GetModule(pkg),
+	}
+
+	for _, filename := range pkg.CompiledGoFiles {
+		uri := span.URIFromPath(filename)
+		m.compiledGoFiles = append(m.compiledGoFiles, uri)
+		s.addID(uri, m.id)
+	}
+	for _, filename := range pkg.GoFiles {
+		uri := span.URIFromPath(filename)
+		m.goFiles = append(m.goFiles, uri)
+		s.addID(uri, m.id)
+	}
+
+	copied := map[packageID]struct{}{
+		id: struct{}{},
+	}
+	for k, v := range seen {
+		copied[k] = v
+	}
+	for importPath, importPkg := range pkg.Imports {
+		importPkgPath := packagePath(importPath)
+		importID := packageID(importPkg.ID)
+
+		m.deps = append(m.deps, importID)
+
+		// Don't remember any imports with significant errors.
+		if importPkgPath != "unsafe" && len(importPkg.CompiledGoFiles) == 0 {
+			if m.missingDeps == nil {
+				m.missingDeps = make(map[packagePath]struct{})
+			}
+			m.missingDeps[importPkgPath] = struct{}{}
+			continue
+		}
+		if s.getMetadata(importID) == nil {
+			if _, err := s.setMetadata(ctx, importPkgPath, importPkg, cfg, copied); err != nil {
+				log.Error(ctx, "error in dependency", err)
+			}
+		}
+	}
+
+	// Add the metadata to the cache.
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// TODO: We should make sure not to set duplicate metadata,
+	// and instead panic here. This can be done by making sure not to
+	// reset metadata information for packages we've already seen.
+	if original, ok := s.metadata[m.id]; ok {
+		m = original
+	} else {
+		s.metadata[m.id] = m
+	}
+
+	// Set the workspace packages. If any of the package's files belong to the
+	// view, then the package is considered to be a workspace package.
+	for _, uri := range append(m.compiledGoFiles, m.goFiles...) {
+		// If the package's files are in this view, mark it as a workspace package.
+		if s.view.contains(uri) {
+			// A test variant of a package can only be loaded directly by loading
+			// the non-test variant with -test. Track the import path of the non-test variant.
+			if m.forTest != "" {
+				s.workspacePackages[m.id] = m.forTest
+			} else {
+				s.workspacePackages[m.id] = pkgPath
+			}
+			break
+		}
+	}
+	return m, nil
+}
+
+func isTestMain(ctx context.Context, pkg *packages.Package, gocache string) bool {
+	// Test mains must have an import path that ends with ".test".
+	if !strings.HasSuffix(pkg.PkgPath, ".test") {
 		return false
 	}
-	oldByName := make(map[string]struct{}, len(oldFiles))
-	for _, filename := range oldFiles {
-		oldByName[filename] = struct{}{}
+	// Test main packages are always named "main".
+	if pkg.Name != "main" {
+		return false
 	}
-	for _, newFilename := range newFiles {
-		if _, found := oldByName[newFilename]; !found {
-			return false
-		}
-		delete(oldByName, newFilename)
+	// Test mains always have exactly one GoFile that is in the build cache.
+	if len(pkg.GoFiles) > 1 {
+		return false
 	}
-	return len(oldByName) == 0
+	if !strings.HasPrefix(pkg.GoFiles[0], gocache) {
+		return false
+	}
+	return true
 }

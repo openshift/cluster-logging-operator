@@ -49,7 +49,7 @@ type Request struct {
 	WireRequest
 }
 
-// NewErrorf builds a Error struct for the suppied message and code.
+// NewErrorf builds a Error struct for the supplied message and code.
 // If args is not empty, message and args will be passed to Sprintf.
 func NewErrorf(code int64, format string, args ...interface{}) *Error {
 	return &Error{
@@ -110,7 +110,7 @@ func (c *Conn) Notify(ctx context.Context, method string, params interface{}) (e
 		return fmt.Errorf("marshalling notify request: %v", err)
 	}
 	for _, h := range c.handlers {
-		ctx = h.Request(ctx, Send, request)
+		ctx = h.Request(ctx, c, Send, request)
 	}
 	defer func() {
 		for _, h := range c.handlers {
@@ -145,16 +145,17 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		return fmt.Errorf("marshalling call request: %v", err)
 	}
 	for _, h := range c.handlers {
-		ctx = h.Request(ctx, Send, request)
+		ctx = h.Request(ctx, c, Send, request)
 	}
-	// we have to add ourselves to the pending map before we send, otherwise we
-	// are racing the response
-	rchan := make(chan *WireResponse)
+	// We have to add ourselves to the pending map before we send, otherwise we
+	// are racing the response. Also add a buffer to rchan, so that if we get a
+	// wire response between the time this call is cancelled and id is deleted
+	// from c.pending, the send to rchan will not block.
+	rchan := make(chan *WireResponse, 1)
 	c.pendingMu.Lock()
 	c.pending[id] = rchan
 	c.pendingMu.Unlock()
 	defer func() {
-		// clean up the pending response handler on the way out
 		c.pendingMu.Lock()
 		delete(c.pending, id)
 		c.pendingMu.Unlock()
@@ -175,7 +176,7 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 	select {
 	case response := <-rchan:
 		for _, h := range c.handlers {
-			ctx = h.Response(ctx, Receive, response)
+			ctx = h.Response(ctx, c, Receive, response)
 		}
 		// is it an error response?
 		if response.Error != nil {
@@ -189,7 +190,7 @@ func (c *Conn) Call(ctx context.Context, method string, params, result interface
 		}
 		return nil
 	case <-ctx.Done():
-		// allow the handler to propagate the cancel
+		// Allow the handler to propagate the cancel.
 		cancelled := false
 		for _, h := range c.handlers {
 			if h.Cancel(ctx, c, id, cancelled) {
@@ -233,7 +234,7 @@ func (r *Request) Reply(ctx context.Context, result interface{}, err error) erro
 		return fmt.Errorf("reply invoked more than once")
 	}
 	if r.IsNotify() {
-		return fmt.Errorf("reply not invoked with a valid call")
+		return fmt.Errorf("reply not invoked with a valid call: %v, %s", r.Method, r.Params)
 	}
 	// reply ends the handling phase of a call, so if we are not yet
 	// parallel we should be now. The go routine is allowed to continue
@@ -262,7 +263,7 @@ func (r *Request) Reply(ctx context.Context, result interface{}, err error) erro
 		return err
 	}
 	for _, h := range r.conn.handlers {
-		ctx = h.Response(ctx, Send, response)
+		ctx = h.Response(ctx, r.conn, Send, response)
 	}
 	n, err := r.conn.stream.Write(ctx, data)
 	for _, h := range r.conn.handlers {
@@ -305,7 +306,7 @@ type combined struct {
 // caused the termination.
 // It must be called exactly once for each Conn.
 // It returns only when the reader is closed or there is an error in the stream.
-func (c *Conn) Run(ctx context.Context) error {
+func (c *Conn) Run(runCtx context.Context) error {
 	// we need to make the next request "lock" in an unlocked state to allow
 	// the first incoming request to proceed. All later requests are unlocked
 	// by the preceding request going to parallel mode.
@@ -313,9 +314,10 @@ func (c *Conn) Run(ctx context.Context) error {
 	close(nextRequest)
 	for {
 		// get the data for a message
-		data, n, err := c.stream.Read(ctx)
+		data, n, err := c.stream.Read(runCtx)
 		if err != nil {
-			// the stream failed, we cannot continue
+			// The stream failed, we cannot continue. If the client disconnected
+			// normally, we should get ErrDisconnected here.
 			return err
 		}
 		// read a combined message
@@ -324,15 +326,15 @@ func (c *Conn) Run(ctx context.Context) error {
 			// a badly formed message arrived, log it and continue
 			// we trust the stream to have isolated the error to just this message
 			for _, h := range c.handlers {
-				h.Error(ctx, fmt.Errorf("unmarshal failed: %v", err))
+				h.Error(runCtx, fmt.Errorf("unmarshal failed: %v", err))
 			}
 			continue
 		}
-		// work out which kind of message we have
+		// Work out whether this is a request or response.
 		switch {
 		case msg.Method != "":
-			// if method is set it must be a request
-			ctx, cancelReq := context.WithCancel(ctx)
+			// If method is set it must be a request.
+			reqCtx, cancelReq := context.WithCancel(runCtx)
 			thisRequest := nextRequest
 			nextRequest = make(chan struct{})
 			req := &Request{
@@ -347,8 +349,8 @@ func (c *Conn) Run(ctx context.Context) error {
 				},
 			}
 			for _, h := range c.handlers {
-				ctx = h.Request(ctx, Receive, &req.WireRequest)
-				ctx = h.Read(ctx, n)
+				reqCtx = h.Request(reqCtx, c, Receive, &req.WireRequest)
+				reqCtx = h.Read(reqCtx, n)
 			}
 			c.setHandling(req, true)
 			go func() {
@@ -357,40 +359,38 @@ func (c *Conn) Run(ctx context.Context) error {
 				defer func() {
 					c.setHandling(req, false)
 					if !req.IsNotify() && req.state < requestReplied {
-						req.Reply(ctx, nil, NewErrorf(CodeInternalError, "method %q did not reply", req.Method))
+						req.Reply(reqCtx, nil, NewErrorf(CodeInternalError, "method %q did not reply", req.Method))
 					}
 					req.Parallel()
 					for _, h := range c.handlers {
-						h.Done(ctx, err)
+						h.Done(reqCtx, err)
 					}
 					cancelReq()
 				}()
 				delivered := false
 				for _, h := range c.handlers {
-					if h.Deliver(ctx, req, delivered) {
+					if h.Deliver(reqCtx, req, delivered) {
 						delivered = true
 					}
 				}
 			}()
 		case msg.ID != nil:
-			// we have a response, get the pending entry from the map
+			// If method is not set, this should be a response, in which case we must
+			// have an id to send the response back to the caller.
 			c.pendingMu.Lock()
-			rchan := c.pending[*msg.ID]
-			if rchan != nil {
-				delete(c.pending, *msg.ID)
-			}
+			rchan, ok := c.pending[*msg.ID]
 			c.pendingMu.Unlock()
-			// and send the reply to the channel
-			response := &WireResponse{
-				Result: msg.Result,
-				Error:  msg.Error,
-				ID:     msg.ID,
+			if ok {
+				response := &WireResponse{
+					Result: msg.Result,
+					Error:  msg.Error,
+					ID:     msg.ID,
+				}
+				rchan <- response
 			}
-			rchan <- response
-			close(rchan)
 		default:
 			for _, h := range c.handlers {
-				h.Error(ctx, fmt.Errorf("message not a call, notify or response, ignoring"))
+				h.Error(runCtx, fmt.Errorf("message not a call, notify or response, ignoring"))
 			}
 		}
 	}

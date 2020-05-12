@@ -14,27 +14,24 @@ func CompareResources(current, desired v1.ResourceRequirements) (bool, v1.Resour
 
 	changed := false
 
+	// Check CPU limits
 	if desired.Limits.Cpu().Cmp(*current.Limits.Cpu()) != 0 {
-		current.Limits[v1.ResourceCPU] = *desired.Limits.Cpu()
 		changed = true
 	}
 	// Check memory limits
 	if desired.Limits.Memory().Cmp(*current.Limits.Memory()) != 0 {
-		current.Limits[v1.ResourceMemory] = *desired.Limits.Memory()
 		changed = true
 	}
 	// Check CPU requests
 	if desired.Requests.Cpu().Cmp(*current.Requests.Cpu()) != 0 {
-		current.Requests[v1.ResourceCPU] = *desired.Requests.Cpu()
 		changed = true
 	}
 	// Check memory requests
 	if desired.Requests.Memory().Cmp(*current.Requests.Memory()) != 0 {
-		current.Requests[v1.ResourceMemory] = *desired.Requests.Memory()
 		changed = true
 	}
 
-	return changed, current
+	return changed, desired
 }
 
 func AreResourcesDifferent(current, desired interface{}) bool {

@@ -65,7 +65,7 @@ func (d *DocumentRef) Collection(id string) *CollectionRef {
 
 // Get retrieves the document. If the document does not exist, Get return a NotFound error, which
 // can be checked with
-//    grpc.Code(err) == codes.NotFound
+//    status.Code(err) == codes.NotFound
 // In that case, Get returns a non-nil DocumentSnapshot whose Exists method return false and whose
 // ReadTime is the time of the failed read operation.
 func (d *DocumentRef) Get(ctx context.Context) (_ *DocumentSnapshot, err error) {
@@ -122,9 +122,11 @@ func (d *DocumentRef) Get(ctx context.Context) (_ *DocumentSnapshot, err error) 
 //
 //   - omitempty: Do not encode this field if it is empty. A value is empty
 //     if it is a zero value, or an array, slice or map of length zero.
-//   - serverTimestamp: The field must be of type time.Time. When writing, if
-//     the field has the zero value, the server will populate the stored document with
-//     the time that the request is processed.
+//   - serverTimestamp: The field must be of type time.Time. serverTimestamp
+//     is a sentinel token that tells Firestore to substitute the server time
+//     into that field. When writing, if the field has the zero value, the
+//     server will populate the stored document with the time that the request
+//     is processed. However, if the field value is non-zero it won't be saved.
 func (d *DocumentRef) Create(ctx context.Context, data interface{}) (_ *WriteResult, err error) {
 	ctx = trace.StartSpan(ctx, "cloud.google.com/go/firestore.DocumentRef.Create")
 	defer func() { trace.EndSpan(ctx, err) }()
@@ -314,6 +316,13 @@ func (d *DocumentRef) fpvsToWrites(fpvs []fpv, pc *pb.Precondition) ([]*pb.Write
 				return nil, err
 			}
 			transforms = append(transforms, t)
+		case increment:
+			t, err := incrementTransform(fpv.value.(increment), fpv.fieldPath)
+			if err != nil {
+				return nil, err
+			}
+			transforms = append(transforms, t)
+
 		default:
 			switch fpv.value {
 			case Delete:
@@ -463,6 +472,47 @@ func arrayRemoveTransform(ar arrayRemove, fp FieldPath) (*pb.DocumentTransform_F
 		FieldPath: fp.toServiceFieldPath(),
 		TransformType: &pb.DocumentTransform_FieldTransform_RemoveAllFromArray{
 			RemoveAllFromArray: &pb.ArrayValue{Values: elems},
+		},
+	}, nil
+}
+
+type increment struct {
+	n interface{}
+}
+
+// Increment returns a special value that can be used with Set, Create, or
+// Update that tells the server to increment the field's current value
+// by the given value.
+//
+// The supported values are:
+//
+//    int, int8, int16, int32, int64
+//    uint8, uint16, uint32
+//    float32, float64
+//
+// If the field does not yet exist, the transformation will set the field to
+// the given value.
+func Increment(n interface{}) increment {
+	return increment{n: n}
+}
+
+func incrementTransform(ar increment, fp FieldPath) (*pb.DocumentTransform_FieldTransform, error) {
+	switch ar.n.(type) {
+	case int, int8, int16, int32, int64,
+		uint8, uint16, uint32,
+		float32, float64:
+	default:
+		return nil, fmt.Errorf("unsupported type %T for Increment; supported values include int, int8, int16, int32, int64, uint8, uint16, uint32, float32, float64", ar.n)
+	}
+
+	v, _, err := toProtoValue(reflect.ValueOf(ar.n))
+	if err != nil {
+		return nil, err
+	}
+	return &pb.DocumentTransform_FieldTransform{
+		FieldPath: fp.toServiceFieldPath(),
+		TransformType: &pb.DocumentTransform_FieldTransform_Increment{
+			Increment: v,
 		},
 	}, nil
 }

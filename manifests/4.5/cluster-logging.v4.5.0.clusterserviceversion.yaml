@@ -1,0 +1,501 @@
+#! validate-crd: deploy/chart/templates/0000_30_02-clusterserviceversion.crd.yaml
+#! parse-kind: ClusterServiceVersion
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  # The version value is substituted by the ART pipeline
+  name: clusterlogging.v4.5.0
+  namespace: placeholder
+  annotations:
+    "operatorframework.io/suggested-namespace": openshift-logging
+    "operatorframework.io/cluster-monitoring": "true"
+    capabilities: Seamless Upgrades
+    categories: "OpenShift Optional, Logging & Tracing"
+    certified: "false"
+    description: |-
+      The Cluster Logging Operator for OKD provides a means for configuring and managing your aggregated logging stack.
+    containerImage: quay.io/openshift/origin-cluster-logging-operator:latest
+    createdAt: 2018-08-01T08:00:00Z
+    support: AOS Logging
+    # The version value is substituted by the ART pipeline
+    olm.skipRange: ">=4.1.0 <4.5.0"
+    alm-examples: |-
+        [
+          {
+            "apiVersion": "logging.openshift.io/v1",
+            "kind": "ClusterLogging",
+            "metadata": {
+              "name": "instance",
+              "namespace": "openshift-logging"
+            },
+            "spec": {
+              "managementState": "Managed",
+              "logStore": {
+                "type": "elasticsearch",
+                "elasticsearch": {
+                  "nodeCount": 3,
+                  "redundancyPolicy": "SingleRedundancy",
+                  "storage": {
+                    "storageClassName": "gp2",
+                    "size": "200G"
+                  }
+                },
+                "retentionPolicy":{
+                  "logs.app":{
+                    "maxAge":"7d"
+                  }
+                }
+              },
+              "visualization": {
+                "type": "kibana",
+                "kibana": {
+                  "replicas": 1
+                }
+              },
+              "curation": {
+                "type": "curator",
+                "curator": {
+                  "schedule": "30 3 * * *"
+                }
+              },
+              "collection": {
+                "logs": {
+                  "type": "fluentd",
+                  "fluentd": {}
+                }
+              }
+            }
+          },
+          {
+            "apiVersion": "logging.openshift.io/v1alpha1",
+            "kind": "LogForwarding",
+            "metadata": {
+              "name": "instance",
+              "namespace": "openshift-logging"
+            },
+            "spec": {
+              "outputs": [
+                {
+                  "name": "clo-default-output-es",
+                  "type": "elasticsearch",
+                  "endpoint": "elasticsearch.openshift-logging.svc:9200",
+                  "secret": {
+                    "name": "elasticsearch"
+                  }
+                }
+              ],
+              "pipelines": [
+                {
+                  "name": "clo-default-app-pipeline",
+                  "inputSource": "logs-app",
+                  "outputRefs": ["clo-managaged-output-es"]
+                },
+                {
+                  "name": "clo-default-infra-pipeline",
+                  "inputSource": "logs-app",
+                  "outputRefs": ["clo-managaged-output-es"]
+                }
+              ]
+            }
+          }
+        ]
+spec:
+  # The version value is substituted by the ART pipeline
+  version: 4.5.0
+  displayName: Cluster Logging
+  minKubeVersion: 1.17.1
+  description: |
+    # Cluster Logging
+    The Cluster Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.
+
+    ##Features
+    * **Create/Destroy**: Launch and create an aggregated logging stack to support the entire OKD cluster.
+    * **Simplified Configuration**: Configure your aggregated logging cluster's structure like components and end points easily.
+
+    ## Prerequisites and Requirements
+    ### Cluster Logging Namespace
+    Cluster logging and the Cluster Logging Operator is only deployable to the **openshift-logging** namespace. This namespace
+    must be explicitly created by a cluster administrator (e.g. `oc create ns openshift-logging`). To enable metrics
+    service discovery add namespace label `openshift.io/cluster-monitoring: "true"`.
+
+    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/4.1/logging/efk-logging-deploying.html)
+    in the OpenShift product documentation.
+
+    ### Elasticsearch Operator
+    The Elasticsearch Operator is responsible for orchestrating and managing cluster logging's Elasticsearch cluster.  This
+    operator must be deployed to the global operator group namespace
+    ### Memory Considerations
+    Elasticsearch is a memory intensive application.  Cluster Logging will specify that each Elasticsearch node needs
+    16G of memory for both request and limit unless otherwise defined in the ClusterLogging custom resource. The initial
+    set of OKD nodes may not be large enough to support the Elasticsearch cluster.  Additional OKD nodes must be added
+    to the OKD cluster if you desire to run with the recommended(or better) memory. Each ES node can operate with a
+    lower memory setting though this is not recommended for production deployments.
+
+  keywords: ['elasticsearch', 'kibana', 'fluentd', 'logging', 'aggregated', 'efk']
+
+  maintainers:
+  - name: Red Hat
+    email: aos-logging@redhat.com
+
+  provider:
+    name: Red Hat, Inc
+
+  links:
+  - name: Elastic
+    url: https://www.elastic.co/
+  - name: Fluentd
+    url: https://www.fluentd.org/
+  - name: Documentation
+    url: https://github.com/openshift/cluster-logging-operator/blob/master/README.md
+  - name: Cluster Logging Operator
+    url: https://github.com/openshift/cluster-logging-operator
+  installModes:
+  - type: OwnNamespace
+    supported: true
+  - type: SingleNamespace
+    supported: true
+  - type: MultiNamespace
+    supported: false
+  - type: AllNamespaces
+    supported: false
+  install:
+    strategy: deployment
+    spec:
+      permissions:
+      - serviceAccountName: cluster-logging-operator
+        rules:
+        - apiGroups:
+          - logging.openshift.io
+          resources:
+          - "*"
+          verbs:
+          - "*"
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          - serviceaccounts
+          - serviceaccounts/finalizers
+          verbs:
+          - "*"
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - "*"
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          - routes/custom-host
+          verbs:
+          - "*"
+        - apiGroups:
+          - batch
+          resources:
+          - cronjobs
+          verbs:
+          - "*"
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - roles
+          - rolebindings
+          verbs:
+          - "*"
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          resourceNames:
+          - privileged
+          verbs:
+          - use
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          - prometheusrules
+          verbs:
+          - "*"
+        - apiGroups:
+          - apps
+          resources:
+          - deployments/finalizers
+          resourceNames:
+          - "cluster-logging-operator"
+          verbs:
+          - "update"
+      clusterPermissions:
+      - serviceAccountName: cluster-logging-operator
+        rules:
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consoleexternalloglinks
+          verbs:
+          - "*"
+        - apiGroups:
+          - scheduling.k8s.io
+          resources:
+          - priorityclasses
+          verbs:
+          - "*"
+        - apiGroups:
+          - oauth.openshift.io
+          resources:
+          - oauthclients
+          verbs:
+          - "*"
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterroles
+          - clusterrolebindings
+          verbs:
+          - "*"
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - proxies
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - namespaces
+          - services
+          - services/finalizers
+          verbs:
+          - get
+          - list
+          - watch
+      deployments:
+      - name: cluster-logging-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: cluster-logging-operator
+          template:
+            metadata:
+              labels:
+                name: cluster-logging-operator
+            spec:
+              nodeSelector:
+                kubernetes.io/os: linux
+              serviceAccountName: cluster-logging-operator
+              containers:
+              - name: cluster-logging-operator
+                image: quay.io/openshift/origin-cluster-logging-operator:latest
+                imagePullPolicy: IfNotPresent
+                command:
+                - cluster-logging-operator
+                env:
+                  - name: WATCH_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.annotations['olm.targetNamespaces']
+                  - name: POD_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: OPERATOR_NAME
+                    value: "cluster-logging-operator"
+                  - name: FLUENTD_IMAGE
+                    value: "quay.io/openshift/origin-logging-fluentd:latest"
+                  - name: CURATOR_IMAGE
+                    value: "quay.io/openshift/origin-logging-curator5:latest"
+                  - name: PROMTAIL_IMAGE
+                    value: "quay.io/openshift/origin-promtail:latest"
+  customresourcedefinitions:
+    owned:
+    - name: clusterloggings.logging.openshift.io
+      version: v1
+      kind: ClusterLogging
+      displayName: Cluster Logging
+      description: A Cluster Logging instance
+      resources:
+      - kind: Deployment
+        version: v1
+      - kind: DaemonSet
+        version: v1
+      - kind: CronJob
+        version: v1beta1
+      - kind: ReplicaSet
+        version: v1
+      - kind: Pod
+        version: v1
+      - kind: ConfigMap
+        version: v1
+      - kind: Secret
+        version: v1
+      - kind: Service
+        version: v1
+      - kind: Route
+        version: v1
+      - kind: Elasticsearch
+        version: v1
+      - kind: LogForwarding
+        version: v1alpha1
+      - kind: Collector
+        version: v1alpha1
+      specDescriptors:
+      - description: The desired number of Kibana Pods for the Visualization component
+        displayName: Kibana Size
+        path: visualization.kibana.replicas
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+      - description: Resource requirements for the Kibana pods
+        displayName: Kibana Resource Requirements
+        path: visualization.kibana.resources
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
+      - description: The node selector to use for the Kibana Visualization component
+        displayName: Kibana Node Selector
+        path: visualization.kibana.nodeSelector
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
+      - description: The desired number of Elasticsearch Nodes for the Log Storage component
+        displayName: Elasticsearch Size
+        path: logStore.elasticsearch.nodeCount
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+      - description: Resource requirements for each Elasticsearch node
+        displayName: Elasticsearch Resource Requirements
+        path: logStore.elasticsearch.resources
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
+      - description: The node selector to use for the Elasticsearch Log Storage component
+        displayName: Elasticsearch Node Selector
+        path: logStore.elasticsearch.nodeSelector
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
+      - description: Resource requirements for the Fluentd pods
+        displayName: Fluentd Resource Requirements
+        path: collection.logs.fluentd.resources
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
+      - description: The node selector to use for the Fluentd log collection component
+        displayName: Fluentd node selector
+        path: collection.logs.fluentd.nodeSelector
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
+      - description: The list of output targets that receive log messages
+        displayName: Forwarding Outputs
+        path: forwarding.outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingOutputs'
+      - description: The list of mappings between log sources (e.g. application logs) and forwarding outputs
+        displayName: Forwarding Pipelines
+        path: forwarding.pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingPipelines'
+      - description: Resource requirements for the Curator pods
+        displayName: Curator Resource Requirements
+        path: curation.curator.resources
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:resourceRequirements'
+      - description: The node selector to use for the Curator component
+        displayName: Curator Node Selector
+        path: curation.curator.nodeSelector
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
+      - description: The cron schedule for the Curator component
+        displayName: Curation Schedule
+        path: curation.curator.schedule
+      statusDescriptors:
+      - description: The status for each of the Kibana pods for the Visualization component
+        displayName: Kibana Status
+        path: visualization.kibanaStatus[0].pods
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
+      - description: The status for each of the Elasticsearch Client pods for the Log Storage component
+        displayName: Elasticsearch Client Pod Status
+        path: logStore.elasticsearchStatus[0].pods.client
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
+      - description: The status for each of the Elasticsearch Data pods for the Log Storage component
+        displayName: Elasticsearch Data Pod Status
+        path: logStore.elasticsearchStatus[0].pods.data
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
+      - description: The status for each of the Elasticsearch Master pods for the Log Storage component
+        displayName: Elasticsearch Master Pod Status
+        path: logStore.elasticsearchStatus[0].pods.master
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
+      - description: The cluster status for each of the Elasticsearch Clusters for the Log Storage component
+        displayName: Elasticsearch Cluster Health
+        path: logStore.elasticsearchStatus[0].clusterHealth
+      - description: The status for each of the Fluentd pods for the Log Collection component
+        displayName: Fluentd status
+        path: collection.logs.fluentdStatus.pods
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:podStatuses'
+      - description: The status for migration of a clusterlogging instance
+        displayName: Fluentd status
+        path: migration
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:migrationStatus'
+    - name: logforwardings.logging.openshift.io
+      version: v1alpha1
+      kind: LogForwarding
+      displayName: Log Forwarding
+      description: Log forwarding spec to define destinations for specific log sources
+      specDescriptors:
+      - description: The list of output targets that receive log messages
+        displayName: Forwarding Outputs
+        path: outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingOutputs'
+      - description: The list of mappings between log sources (e.g. application logs) and forwarding outputs
+        displayName: Forwarding Pipelines
+        path: pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingPipelines'
+      statusDescriptors:
+      - description: The status of the sources being collected
+        displayName: Source Status
+        path: sources
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:sourceStatuses'        
+      - description: The status of forwarding outputs
+        displayName: Outputs Status
+        path: outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:outputStatuses'        
+      - description: The status of forwarding pipelines
+        displayName: Pipelines Status
+        path: pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:pipelineStatuses'        
+      - description: The status of log forwarding resourece
+        displayName: Log Forwarding Status
+        path: status
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:logforwardingStatuses'        
+    - name: collectors.logging.openshift.io
+      version: v1alpha1
+      kind: Collector
+      displayName: Log Collector
+      description: Log Collector spec to define log collection
+      specDescriptors:
+      - description: The type of log collector
+        displayName: Collector type
+        path: type
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:collectorType'

@@ -24,6 +24,21 @@ type Elasticsearch struct {
 	Status ElasticsearchStatus `json:"status,omitempty"`
 }
 
+//AddOwnerRefTo appends the Elasticsearch object as an OwnerReference to the passed object
+func (es *Elasticsearch) AddOwnerRefTo(o metav1.Object) {
+	trueVar := true
+	ref := metav1.OwnerReference{
+		APIVersion: SchemeGroupVersion.String(),
+		Kind:       "Elasticsearch",
+		Name:       es.Name,
+		UID:        es.UID,
+		Controller: &trueVar,
+	}
+	if (metav1.OwnerReference{}) != ref {
+		o.SetOwnerReferences(append(o.GetOwnerReferences(), ref))
+	}
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ElasticsearchList contains a list of Elasticsearch
@@ -48,6 +63,7 @@ type ElasticsearchSpec struct {
 	RedundancyPolicy RedundancyPolicyType  `json:"redundancyPolicy"`
 	Nodes            []ElasticsearchNode   `json:"nodes"`
 	Spec             ElasticsearchNodeSpec `json:"nodeSpec"`
+	IndexManagement  *IndexManagementSpec  `json:"indexManagement"`
 }
 
 // ElasticsearchStatus defines the observed state of Elasticsearch
@@ -63,6 +79,7 @@ type ElasticsearchStatus struct {
 	ShardAllocationEnabled ShardAllocationState                  `json:"shardAllocationEnabled"`
 	Pods                   map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
 	Conditions             []ClusterCondition                    `json:"conditions"`
+	IndexManagementStatus  *IndexManagementStatus                `json:"indexManagement,omitempty"`
 }
 
 type ClusterHealth struct {
@@ -113,10 +130,11 @@ type ElasticsearchNodeStatus struct {
 }
 
 type ElasticsearchNodeUpgradeStatus struct {
-	ScheduledForUpgrade  v1.ConditionStatus        `json:"scheduledUpgrade,omitempty"`
-	ScheduledForRedeploy v1.ConditionStatus        `json:"scheduledRedeploy,omitempty"`
-	UnderUpgrade         v1.ConditionStatus        `json:"underUpgrade,omitempty"`
-	UpgradePhase         ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
+	ScheduledForUpgrade      v1.ConditionStatus        `json:"scheduledUpgrade,omitempty"`
+	ScheduledForRedeploy     v1.ConditionStatus        `json:"scheduledRedeploy,omitempty"`
+	ScheduledForCertRedeploy v1.ConditionStatus        `json:"scheduledCertRedeploy,omitempty"`
+	UnderUpgrade             v1.ConditionStatus        `json:"underUpgrade,omitempty"`
+	UpgradePhase             ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
 }
 
 // ClusterCondition contains details for the current condition of this elasticsearch cluster.

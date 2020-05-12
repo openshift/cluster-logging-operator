@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -16,18 +18,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
+const (
+	elasticsearchResourceName = "elasticsearch"
+)
 
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
+	if clusterRequest.cluster.Spec.LogStore == nil || clusterRequest.cluster.Spec.LogStore.Type == "" {
+		if err = clusterRequest.removeElasticsearch(); err != nil {
+			return
+		}
+		return nil
+	}
 	if clusterRequest.cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 
 		cluster := clusterRequest.cluster
 
 		if err = clusterRequest.createOrUpdateElasticsearchSecret(); err != nil {
-			return
+			return nil
 		}
 
 		if err = clusterRequest.createOrUpdateElasticsearchCR(); err != nil {
-			return
+			return nil
 		}
 
 		elasticsearchStatus, err := clusterRequest.getElasticsearchStatus()
@@ -38,24 +49,85 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 
 		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !reflect.DeepEqual(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
+			if !compareElasticsearchStatus(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
 				if printUpdateMessage {
 					logrus.Info("Updating status of Elasticsearch")
 					printUpdateMessage = false
 				}
 				cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
-				return clusterRequest.Update(cluster)
+				return clusterRequest.UpdateStatus(cluster)
 			}
 			return nil
 		})
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
 		}
-	} else {
-		clusterRequest.removeElasticsearch()
 	}
 
 	return nil
+}
+
+func compareElasticsearchStatus(lhs, rhs []logging.ElasticsearchStatus) bool {
+	// there should only ever be a single elasticsearch status object
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	if len(lhs) > 0 {
+		for index := range lhs {
+			if lhs[index].ClusterName != rhs[index].ClusterName {
+				return false
+			}
+
+			if lhs[index].NodeCount != rhs[index].NodeCount {
+				return false
+			}
+
+			if lhs[index].ClusterHealth != rhs[index].ClusterHealth {
+				return false
+			}
+
+			if lhs[index].Cluster != rhs[index].Cluster {
+				return false
+			}
+
+			if lhs[index].ShardAllocationEnabled != rhs[index].ShardAllocationEnabled {
+				return false
+			}
+
+			if len(lhs[index].Pods) != len(rhs[index].Pods) {
+				return false
+			}
+
+			if len(lhs[index].Pods) > 0 {
+				if !reflect.DeepEqual(lhs[index].Pods, rhs[index].Pods) {
+					return false
+				}
+			}
+
+			if len(lhs[index].ClusterConditions) != len(rhs[index].ClusterConditions) {
+				return false
+			}
+
+			if len(lhs[index].ClusterConditions) > 0 {
+				if !reflect.DeepEqual(lhs[index].ClusterConditions, rhs[index].ClusterConditions) {
+					return false
+				}
+			}
+
+			if len(lhs[index].NodeConditions) != len(rhs[index].NodeConditions) {
+				return false
+			}
+
+			if len(lhs[index].NodeConditions) > 0 {
+				if !reflect.DeepEqual(lhs[index].NodeConditions, rhs[index].NodeConditions) {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeElasticsearch() (err error) {
@@ -72,21 +144,23 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearch() (err error) {
 
 	return nil
 }
-
+func LoadElasticsearchSecretMap() map[string][]byte {
+	return map[string][]byte{
+		"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
+		"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
+		"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
+		"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
+		"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
+		"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
+		"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
+	}
+}
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret() error {
 
 	esSecret := NewSecret(
-		"elasticsearch",
+		elasticsearchResourceName,
 		clusterRequest.cluster.Namespace,
-		map[string][]byte{
-			"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
-			"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
-			"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
-			"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
-			"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
-			"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
-			"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
-		},
+		LoadElasticsearchSecretMap(),
 	)
 
 	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(clusterRequest.cluster))
@@ -102,8 +176,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret()
 func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName string) *elasticsearch.Elasticsearch {
 
 	var esNodes []elasticsearch.ElasticsearchNode
-
-	var resources = cluster.Spec.LogStore.Resources
+	logStoreSpec := logging.LogStoreSpec{}
+	if cluster.Spec.LogStore != nil {
+		logStoreSpec = *cluster.Spec.LogStore
+	}
+	var resources = logStoreSpec.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{
@@ -116,20 +193,20 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		}
 	}
 
-	if cluster.Spec.LogStore.NodeCount > 3 {
+	if logStoreSpec.NodeCount > 3 {
 
 		masterNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
 			NodeCount: 3,
-			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
 
 		esNodes = append(esNodes, masterNode)
 
 		dataNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
-			NodeCount: cluster.Spec.LogStore.NodeCount - 3,
-			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+			NodeCount: logStoreSpec.NodeCount - 3,
+			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
 
 		esNodes = append(esNodes, dataNode)
@@ -138,23 +215,28 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 
 		esNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
-			NodeCount: cluster.Spec.LogStore.NodeCount,
-			Storage:   cluster.Spec.LogStore.ElasticsearchSpec.Storage,
+			NodeCount: logStoreSpec.NodeCount,
+			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
 
 		// build Nodes
 		esNodes = append(esNodes, esNode)
 	}
 
-	redundancyPolicy := cluster.Spec.LogStore.ElasticsearchSpec.RedundancyPolicy
+	redundancyPolicy := logStoreSpec.ElasticsearchSpec.RedundancyPolicy
 	if redundancyPolicy == "" {
 		redundancyPolicy = elasticsearch.ZeroRedundancy
 	}
+
+	indexManagementSpec := indexmanagement.NewSpec(logStoreSpec.RetentionPolicy)
 
 	cr := &elasticsearch.Elasticsearch{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      elasticsearchName,
 			Namespace: cluster.Namespace,
+			Annotations: map[string]string{
+				"elasticsearch.openshift.io/loglevel": "trace",
+			},
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
@@ -162,14 +244,14 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		},
 		Spec: elasticsearch.ElasticsearchSpec{
 			Spec: elasticsearch.ElasticsearchNodeSpec{
-				Image:        utils.GetComponentImage("elasticsearch"),
 				Resources:    *resources,
-				NodeSelector: cluster.Spec.LogStore.NodeSelector,
-				Tolerations:  cluster.Spec.LogStore.Tolerations,
+				NodeSelector: logStoreSpec.NodeSelector,
+				Tolerations:  logStoreSpec.Tolerations,
 			},
 			Nodes:            esNodes,
 			ManagementState:  elasticsearch.ManagementStateManaged,
 			RedundancyPolicy: redundancyPolicy,
+			IndexManagement:  indexManagementSpec,
 		},
 	}
 
@@ -192,7 +274,7 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearchCR(elasticsearch
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchCR() (err error) {
 
-	esCR := newElasticsearchCR(clusterRequest.cluster, "elasticsearch")
+	esCR := newElasticsearchCR(clusterRequest.cluster, elasticsearchResourceName)
 
 	err = clusterRequest.Create(esCR)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -235,7 +317,7 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 
 	different := false
 
-	if !utils.AreSelectorsSame(current.Spec.Spec.NodeSelector, desired.Spec.Spec.NodeSelector) {
+	if !utils.AreMapsSame(current.Spec.Spec.NodeSelector, desired.Spec.Spec.NodeSelector) {
 		logrus.Infof("Elasticsearch nodeSelector change found, updating '%s'", current.Name)
 		current.Spec.Spec.NodeSelector = desired.Spec.Spec.NodeSelector
 		different = true
@@ -268,6 +350,12 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 	if nodes, ok := areNodesDifferent(current.Spec.Nodes, desired.Spec.Nodes); ok {
 		logrus.Infof("Elasticsearch node configuration change found, updating %v", current.Name)
 		current.Spec.Nodes = nodes
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.Spec.IndexManagement, desired.Spec.IndexManagement) {
+		logger.Infof("Elasticsearch IndexManagement change found, updating %v", current.Name)
+		current.Spec.IndexManagement = desired.Spec.IndexManagement
 		different = true
 	}
 

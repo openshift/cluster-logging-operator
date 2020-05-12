@@ -8,15 +8,17 @@ import (
 )
 
 type ElasticsearchRequest struct {
-	client  client.Client
-	cluster *elasticsearch.Elasticsearch
+	client          client.Client
+	cluster         *elasticsearch.Elasticsearch
+	FnCurlEsService func(clusterName, namespace string, payload *esCurlStruct, client client.Client)
 }
 
 func Reconcile(requestCluster *elasticsearch.Elasticsearch, requestClient client.Client) error {
 
 	elasticsearchRequest := ElasticsearchRequest{
-		client:  requestClient,
-		cluster: requestCluster,
+		client:          requestClient,
+		cluster:         requestCluster,
+		FnCurlEsService: curlESService,
 	}
 
 	// Ensure existence of servicesaccount
@@ -52,6 +54,11 @@ func Reconcile(requestCluster *elasticsearch.Elasticsearch, requestClient client
 	// Ensure existence of prometheus rules
 	if err := elasticsearchRequest.CreateOrUpdatePrometheusRules(); err != nil {
 		return fmt.Errorf("Failed to reconcile PrometheusRules for Elasticsearch cluster: %v", err)
+	}
+
+	// Ensure index management is in place
+	if err := elasticsearchRequest.CreateOrUpdateIndexManagement(); err != nil {
+		return fmt.Errorf("Failed to reconcile IndexMangement for Elasticsearch cluster: %v", err)
 	}
 
 	return nil

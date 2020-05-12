@@ -42,7 +42,7 @@ func TestNewCuratorCronJobWhenResourcesAreDefined(t *testing.T) {
 	requestCPU := resource.MustParse("500m")
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Curation: logging.CurationSpec{
+			Curation: &logging.CurationSpec{
 				Type: "curator",
 				CuratorSpec: logging.CuratorSpec{
 					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
@@ -75,7 +75,7 @@ func TestNewCuratorCronJobWhenNoScheduleDefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Curation: logging.CurationSpec{
+			Curation: &logging.CurationSpec{
 				Type:        "curator",
 				CuratorSpec: logging.CuratorSpec{},
 			},
@@ -97,7 +97,7 @@ func TestNewCuratorCronJobWhenScheduleDefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Curation: logging.CurationSpec{
+			Curation: &logging.CurationSpec{
 				Type: "curator",
 				CuratorSpec: logging.CuratorSpec{
 					Schedule: desiredSchedule,
@@ -121,7 +121,7 @@ func TestNewCuratorCronJobWhenNodeSelectorDefined(t *testing.T) {
 	}
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Curation: logging.CurationSpec{
+			Curation: &logging.CurationSpec{
 				Type: "curator",
 				CuratorSpec: logging.CuratorSpec{
 					NodeSelector: expSelector,
@@ -143,7 +143,7 @@ func TestNewCuratorNoTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Curation: logging.CurationSpec{
+			Curation: &logging.CurationSpec{
 				Type:        "curator",
 				CuratorSpec: logging.CuratorSpec{},
 			},
@@ -154,13 +154,13 @@ func TestNewCuratorNoTolerations(t *testing.T) {
 	tolerations := job.Spec.JobTemplate.Spec.Template.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }
 
 func TestNewCuratorWithTolerations(t *testing.T) {
 	expTolerations := []v1.Toleration{
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
@@ -169,7 +169,7 @@ func TestNewCuratorWithTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Curation: logging.CurationSpec{
+			Curation: &logging.CurationSpec{
 				Type: "curator",
 				CuratorSpec: logging.CuratorSpec{
 					Tolerations: expTolerations,
@@ -182,6 +182,6 @@ func TestNewCuratorWithTolerations(t *testing.T) {
 	tolerations := job.Spec.JobTemplate.Spec.Template.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }

@@ -2,20 +2,24 @@ package k8shandler
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 )
+
+var deprecatedKeys = sets.NewString("app-ca", "app-key", "app-cert", "infra-ca", "infra-key", "infra-cert")
 
 // golang doesn't allow for const maps
 var secretCertificates = map[string]map[string]string{
-	"master-certs": map[string]string{
+	"master-certs": {
 		"masterca":  "ca.crt",
 		"masterkey": "ca.key",
 	},
-	"elasticsearch": map[string]string{
+	"elasticsearch": {
 		"elasticsearch.key": "elasticsearch.key",
 		"elasticsearch.crt": "elasticsearch.crt",
 		"logging-es.key":    "logging-es.key",
@@ -24,16 +28,17 @@ var secretCertificates = map[string]map[string]string{
 		"admin-cert":        "system.admin.crt",
 		"admin-ca":          "ca.crt",
 	},
-	"kibana": map[string]string{
+	"kibana": {
 		"ca":   "ca.crt",
 		"key":  "system.logging.kibana.key",
 		"cert": "system.logging.kibana.crt",
 	},
-	"kibana-proxy": map[string]string{
-		"server-key":  "kibana-internal.key",
-		"server-cert": "kibana-internal.crt",
+	"kibana-proxy": {
+		"server-key":     "kibana-internal.key",
+		"server-cert":    "kibana-internal.crt",
+		"session-secret": "kibana-session-secret",
 	},
-	"curator": map[string]string{
+	"curator": {
 		"ca":       "ca.crt",
 		"key":      "system.logging.curator.key",
 		"cert":     "system.logging.curator.crt",
@@ -41,21 +46,10 @@ var secretCertificates = map[string]map[string]string{
 		"ops-key":  "system.logging.curator.key",
 		"ops-cert": "system.logging.curator.crt",
 	},
-	"fluentd": map[string]string{
-		"app-ca":     "ca.crt",
-		"app-key":    "system.logging.fluentd.key",
-		"app-cert":   "system.logging.fluentd.crt",
-		"infra-ca":   "ca.crt",
-		"infra-key":  "system.logging.fluentd.key",
-		"infra-cert": "system.logging.fluentd.crt",
-	},
-	"rsyslog": map[string]string{
-		"app-ca":     "ca.crt",
-		"app-key":    "system.logging.rsyslog.key",
-		"app-cert":   "system.logging.rsyslog.crt",
-		"infra-ca":   "ca.crt",
-		"infra-key":  "system.logging.rsyslog.key",
-		"infra-cert": "system.logging.rsyslog.crt",
+	"fluentd": {
+		"ca-bundle.crt": "ca.crt",
+		"tls.key":       "system.logging.fluentd.key",
+		"tls.crt":       "system.logging.fluentd.crt",
 	},
 }
 
@@ -72,7 +66,13 @@ func (clusterRequest *ClusterLoggingRequest) extractSecretToFile(secretName stri
 
 	// check to see if the map value exists
 	if !ok {
-		return fmt.Errorf("No secret data \"%s\" found", key)
+		if deprecatedKeys.Has(key) {
+			logger.Infof("No secret data %q found. Please be aware but likely not an issue for deprecated keys: %v", key, deprecatedKeys.List())
+		} else {
+			logger.Warnf("No secret data %q found", key)
+
+		}
+		return nil
 	}
 
 	return utils.WriteToWorkingDirFile(toFile, value)
@@ -130,12 +130,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	if err = clusterRequest.readSecrets(); err != nil {
 		return
 	}
-
-	cmd := exec.Command("bash", "scripts/cert_generation.sh")
-	cmd.Env = append(os.Environ(),
-		"NAMESPACE="+clusterRequest.cluster.Namespace,
-	)
-	if err = cmd.Run(); err != nil {
+	if err = GenerateCertificates(clusterRequest.cluster.Namespace, ".", "elasticsearch", utils.DefaultWorkingDir); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 
@@ -144,4 +139,20 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	}
 
 	return nil
+}
+
+func GenerateCertificates(namespace, rootDir, logStoreName, workDir string) (err error) {
+	script := fmt.Sprintf("%s/scripts/cert_generation.sh", rootDir)
+	return RunCertificatesScript(namespace, logStoreName, workDir, script)
+}
+
+func RunCertificatesScript(namespace, logStoreName, workDir, script string) (err error) {
+	logger.Debugf("Running script '%s %s %s %s'", script, workDir, namespace, logStoreName)
+	cmd := exec.Command(script, workDir, namespace, logStoreName)
+	result, err := cmd.Output()
+	if logger.IsDebugEnabled() {
+		logger.Debugf("cert_generation output: %s", string(result))
+		logger.Debugf("err: %v", err)
+	}
+	return err
 }

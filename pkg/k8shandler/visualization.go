@@ -1,104 +1,136 @@
 package k8shandler
 
 import (
-	"bytes"
+	"context"
 	"fmt"
 	"reflect"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/intstr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	apps "k8s.io/api/apps/v1"
+	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err error) {
-
-	if clusterRequest.cluster.Spec.Visualization.Type == logging.VisualizationTypeKibana {
-
-		cluster := clusterRequest.cluster
-
-		if err = clusterRequest.CreateOrUpdateServiceAccount("kibana"); err != nil {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy) (err error) {
+	if clusterRequest.cluster.Spec.Visualization == nil || clusterRequest.cluster.Spec.Visualization.Type == "" {
+		if err = clusterRequest.removeKibana(); err != nil {
 			return
 		}
+		return nil
+	}
 
-		if err = clusterRequest.createKibanaProxyClusterRoleBinding(); err != nil {
-			return
-		}
+	//TODO: Remove this in the next release after removing old kibana code completely
+	if err = clusterRequest.removeOldKibana(); err != nil {
+		return
+	}
 
-		if err = clusterRequest.createOrUpdateKibanaService(); err != nil {
-			return
-		}
+	if err = clusterRequest.createOrUpdateKibanaCR(); err != nil {
+		return
+	}
 
-		if err = clusterRequest.createOrUpdateKibanaRoute(); err != nil {
-			return
-		}
+	if err = clusterRequest.createOrUpdateKibanaSecret(); err != nil {
+		return
+	}
 
-		oauthSecret := utils.GetWorkingDirFileContents("kibana-proxy-oauth.secret")
-		if oauthSecret == nil {
-			oauthSecret = utils.GetRandomWord(64)
-			utils.WriteToWorkingDirFile("kibana-proxy-oauth.secret", oauthSecret)
-		}
-
-		if err = clusterRequest.createOrUpdateKibanaSecret(oauthSecret); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateOauthClient(string(oauthSecret)); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateKibanaDeployment(); err != nil {
-			return
-		}
-
-		kibanaStatus, err := clusterRequest.getKibanaStatus()
-
-		if err != nil {
-			return fmt.Errorf("Failed to get Kibana status for %q: %v", cluster.Name, err)
-		}
-
-		printUpdateMessage := true
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !reflect.DeepEqual(kibanaStatus, cluster.Status.Visualization.KibanaStatus) {
-				if printUpdateMessage {
-					logrus.Infof("Updating status of Kibana for %q", cluster.Name)
-					printUpdateMessage = false
-				}
-				cluster.Status.Visualization.KibanaStatus = kibanaStatus
-				return clusterRequest.Update(cluster)
-			}
-			return nil
-		})
-		if retryErr != nil {
-			return fmt.Errorf("Failed to update Kibana status for %q: %v", cluster.Name, retryErr)
-		}
-	} else {
-		clusterRequest.removeKibana()
+	if err = clusterRequest.UpdateKibanaStatus(); err != nil {
+		return
 	}
 
 	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
+	kibanaStatus, err := clusterRequest.getKibanaStatus()
+	if err != nil {
+		logrus.Errorf("Failed to get Kibana status for %q: %v", clusterRequest.cluster.Name, err)
+		return
+	}
+
+	printUpdateMessage := true
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if !compareKibanaStatus(kibanaStatus, clusterRequest.cluster.Status.Visualization.KibanaStatus) {
+			if printUpdateMessage {
+				logrus.Info("Updating status of Kibana")
+				printUpdateMessage = false
+			}
+			clusterRequest.cluster.Status.Visualization.KibanaStatus = kibanaStatus
+			return clusterRequest.UpdateStatus(clusterRequest.cluster)
+		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Failed to update Cluster Logging Kibana status: %v", retryErr)
+	}
+	return nil
+}
+
+func compareKibanaStatus(lhs, rhs []es.KibanaStatus) bool {
+	// there should only ever be a single kibana status object
+	if len(lhs) != len(rhs) {
+		return false
+	}
+
+	if len(lhs) > 0 {
+		for index := range lhs {
+			if lhs[index].Deployment != rhs[index].Deployment {
+				return false
+			}
+
+			if lhs[index].Replicas != rhs[index].Replicas {
+				return false
+			}
+
+			if len(lhs[index].ReplicaSets) != len(rhs[index].ReplicaSets) {
+				return false
+			}
+
+			if len(lhs[index].ReplicaSets) > 0 {
+				if !reflect.DeepEqual(lhs[index].ReplicaSets, rhs[index].ReplicaSets) {
+					return false
+				}
+			}
+
+			if len(lhs[index].Pods) != len(rhs[index].Pods) {
+				return false
+			}
+
+			if len(lhs[index].Pods) > 0 {
+				if !reflect.DeepEqual(lhs[index].Pods, rhs[index].Pods) {
+					return false
+				}
+			}
+
+			if len(lhs[index].Conditions) != len(rhs[index].Conditions) {
+				return false
+			}
+
+			if len(lhs[index].Conditions) > 0 {
+				if !reflect.DeepEqual(lhs[index].Conditions, rhs[index].Conditions) {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	if clusterRequest.isManaged() {
 		name := "kibana"
 		proxyName := "kibana-proxy"
-		if err = clusterRequest.RemoveServiceAccount(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap("sharing-config"); err != nil {
+		if err = clusterRequest.removeKibanaCR(); err != nil {
 			return
 		}
 
@@ -110,13 +142,17 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 			return
 		}
 
-		if err = clusterRequest.RemoveService(name); err != nil {
-			return
-		}
+	}
 
-		if err = clusterRequest.RemoveRoute(name); err != nil {
-			return
-		}
+	return nil
+}
+
+//TODO: Remove this in the next release after removing old kibana code completely
+// since kibana is now handled by the Elasticsearch Operator
+func (clusterRequest *ClusterLoggingRequest) removeOldKibana() (err error) {
+	if clusterRequest.isManaged() {
+		name := "kibana"
+		proxyName := "kibana-proxy"
 
 		if err = clusterRequest.RemoveDeployment(name); err != nil {
 			return
@@ -125,230 +161,41 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 		if err = clusterRequest.RemoveOAuthClient(proxyName); err != nil {
 			return
 		}
-	}
 
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createKibanaProxyClusterRoleBinding() (err error) {
-
-	subject := NewSubject(
-		"ServiceAccount",
-		"kibana",
-	)
-	subject.Namespace = clusterRequest.cluster.Namespace
-	subject.APIGroup = ""
-
-	clusterRoleBinding := NewClusterRoleBinding(
-		"kibana-proxy-oauth-delegator",
-		"system:auth-delegator",
-		NewSubjects(subject),
-	)
-
-	utils.AddOwnerRefToObject(clusterRoleBinding, utils.AsOwner(clusterRequest.cluster))
-
-	err = clusterRequest.Create(clusterRoleBinding)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana clusterrolebinding %q: %v", clusterRoleBinding.Name, err)
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment() (err error) {
-
-	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch")
-	kibanaDeployment := NewDeployment(
-		"kibana",
-		clusterRequest.cluster.Namespace,
-		"kibana",
-		"kibana",
-		kibanaPodSpec,
-	)
-
-	kibanaDeployment.Spec.Replicas = &clusterRequest.cluster.Spec.Visualization.KibanaSpec.Replicas
-
-	utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(clusterRequest.cluster))
-
-	err = clusterRequest.Create(kibanaDeployment)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana deployment for %q: %v", clusterRequest.cluster.Name, err)
-	}
-
-	if clusterRequest.isManaged() {
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			return clusterRequest.updateKibanaIfRequired(kibanaDeployment)
-		})
-		if retryErr != nil {
-			return retryErr
-		}
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateOauthClient(oauthSecret string) (err error) {
-
-	if err != nil {
-		return nil
-	}
-
-	redirectURIs := []string{}
-
-	kibanaURL, err := clusterRequest.GetRouteURL("kibana")
-	if err != nil {
-		return err
-	}
-
-	redirectURIs = []string{
-		kibanaURL,
-	}
-
-	oauthClient := NewOAuthClient(
-		"kibana-proxy",
-		clusterRequest.cluster.Namespace,
-		oauthSecret,
-		redirectURIs,
-		[]string{
-			"user:info",
-			"user:check-access",
-			"user:list-projects",
-		},
-	)
-
-	utils.AddOwnerRefToObject(oauthClient, utils.AsOwner(clusterRequest.cluster))
-
-	err = clusterRequest.Create(oauthClient)
-	if err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure constructing %v oauthclient for %q: %v", oauthClient.Name, clusterRequest.cluster.Name, err)
+		if err = clusterRequest.RemoveRoute(name); err != nil {
+			return
 		}
 
-		current := oauthClient.DeepCopy()
-
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err = clusterRequest.Get(oauthClient.Name, current); err != nil {
-				if errors.IsNotFound(err) {
-					// the object doesn't exist -- it was likely culled
-					// recreate it on the next time through if necessary
-					return nil
-				}
-				return fmt.Errorf("Failed to get %v oauthclient for %q: %v", oauthClient.Name, clusterRequest.cluster.Name, err)
-			}
-
-			current.RedirectURIs = oauthClient.RedirectURIs
-			current.Secret = oauthClient.Secret
-			current.ScopeRestrictions = oauthClient.ScopeRestrictions
-			if err = clusterRequest.Update(current); err != nil {
-				return err
-			}
-			return nil
-		})
-		if retryErr != nil {
-			return retryErr
+		if err = clusterRequest.RemoveConfigMap(name); err != nil {
+			return
 		}
+
+		if err = clusterRequest.RemoveConfigMap("sharing-config"); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveConfigMap(constants.KibanaTrustedCAName); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveService(name); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveServiceAccount(name); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveConsoleExternalLogLink(name); err != nil {
+			return
+		}
+
 	}
 
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaRoute() error {
-
-	cluster := clusterRequest.cluster
-
-	kibanaRoute := NewRoute(
-		"kibana",
-		cluster.Namespace,
-		"kibana",
-		utils.GetWorkingDirFilePath("ca.crt"),
-	)
-
-	utils.AddOwnerRefToObject(kibanaRoute, utils.AsOwner(cluster))
-
-	err := clusterRequest.Create(kibanaRoute)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana route for %q: %v", cluster.Name, err)
-	}
-
-	kibanaURL, err := clusterRequest.GetRouteURL("kibana")
-	if err != nil {
-		return err
-	}
-
-	sharedConfig := createSharedConfig(cluster.Namespace, kibanaURL, kibanaURL)
-	utils.AddOwnerRefToObject(sharedConfig, utils.AsOwner(cluster))
-
-	err = clusterRequest.Create(sharedConfig)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana route shared config: %v", err)
-	}
-
-	sharedRole := NewRole(
-		"sharing-config-reader",
-		cluster.Namespace,
-		NewPolicyRules(
-			NewPolicyRule(
-				[]string{""},
-				[]string{"configmaps"},
-				[]string{"sharing-config"},
-				[]string{"get"},
-			),
-		),
-	)
-
-	utils.AddOwnerRefToObject(sharedRole, utils.AsOwner(clusterRequest.cluster))
-
-	err = clusterRequest.Create(sharedRole)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana route shared config role for %q: %v", cluster.Name, err)
-	}
-
-	sharedRoleBinding := NewRoleBinding(
-		"openshift-logging-sharing-config-reader-binding",
-		cluster.Namespace,
-		"sharing-config-reader",
-		NewSubjects(
-			NewSubject(
-				"Group",
-				"system:authenticated",
-			),
-		),
-	)
-
-	utils.AddOwnerRefToObject(sharedRoleBinding, utils.AsOwner(clusterRequest.cluster))
-
-	err = clusterRequest.Create(sharedRoleBinding)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana route shared config role binding for %q: %v", cluster.Name, err)
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaService() error {
-
-	kibanaService := NewService(
-		"kibana",
-		clusterRequest.cluster.Namespace,
-		"kibana",
-		[]v1.ServicePort{
-			{Port: 443, TargetPort: intstr.IntOrString{
-				Type:   intstr.String,
-				StrVal: "oaproxy",
-			}},
-		})
-
-	utils.AddOwnerRefToObject(kibanaService, utils.AsOwner(clusterRequest.cluster))
-
-	err := clusterRequest.Create(kibanaService)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Kibana service for %q: %v", clusterRequest.cluster.Name, err)
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret(oauthSecret []byte) error {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error {
 
 	kibanaSecret := NewSecret(
 		"kibana",
@@ -366,12 +213,18 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret(oauthSec
 		return err
 	}
 
+	var sessionSecret []byte
+
+	sessionSecret = utils.GetWorkingDirFileContents("kibana-session-secret")
+	if sessionSecret == nil {
+		sessionSecret = utils.GetRandomWord(32)
+	}
+
 	proxySecret := NewSecret(
 		"kibana-proxy",
 		clusterRequest.cluster.Namespace,
 		map[string][]byte{
-			"oauth-secret":   oauthSecret,
-			"session-secret": utils.GetRandomWord(32),
+			"session-secret": sessionSecret,
 			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
 			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
 		})
@@ -386,61 +239,30 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret(oauthSec
 	return nil
 }
 
-func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasticsearchName string) v1.PodSpec {
+func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string) *es.Kibana {
+	visSpec := cluster.Spec.Visualization
 
-	var kibanaResources = cluster.Spec.Visualization.KibanaSpec.Resources
-	if kibanaResources == nil {
-		kibanaResources = &v1.ResourceRequirements{
-			Limits: v1.ResourceList{v1.ResourceMemory: defaultKibanaMemory},
+	resources := visSpec.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: defaultKibanaMemory,
+			},
 			Requests: v1.ResourceList{
 				v1.ResourceMemory: defaultKibanaMemory,
 				v1.ResourceCPU:    defaultKibanaCpuRequest,
 			},
 		}
 	}
-	kibanaContainer := NewContainer(
-		"kibana",
-		"kibana",
-		v1.PullIfNotPresent,
-		*kibanaResources,
-	)
 
-	var endpoint bytes.Buffer
-
-	endpoint.WriteString("https://")
-	endpoint.WriteString(elasticsearchName)
-	endpoint.WriteString(":9200")
-
-	kibanaContainer.Env = []v1.EnvVar{
-		{Name: "ELASTICSEARCH_URL", Value: endpoint.String()},
-		{Name: "KIBANA_MEMORY_LIMIT",
-			ValueFrom: &v1.EnvVarSource{
-				ResourceFieldRef: &v1.ResourceFieldSelector{
-					ContainerName: "kibana",
-					Resource:      "limits.memory",
-				},
-			},
-		},
+	replicas := visSpec.Replicas
+	if replicas == 0 {
+		replicas = 1
 	}
 
-	kibanaContainer.VolumeMounts = []v1.VolumeMount{
-		{Name: "kibana", ReadOnly: true, MountPath: "/etc/kibana/keys"},
-	}
-
-	kibanaContainer.ReadinessProbe = &v1.Probe{
-		Handler: v1.Handler{
-			Exec: &v1.ExecAction{
-				Command: []string{
-					"/usr/share/kibana/probe/readiness.sh",
-				},
-			},
-		},
-		InitialDelaySeconds: 5, TimeoutSeconds: 4, PeriodSeconds: 5,
-	}
-
-	var kibanaProxyResources = cluster.Spec.Visualization.ProxySpec.Resources
-	if kibanaProxyResources == nil {
-		kibanaProxyResources = &v1.ResourceRequirements{
+	proxyResources := visSpec.ProxySpec.Resources
+	if proxyResources == nil {
+		proxyResources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: defaultKibanaProxyMemory},
 			Requests: v1.ResourceList{
 				v1.ResourceMemory: defaultKibanaProxyMemory,
@@ -448,193 +270,157 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 			},
 		}
 	}
-	kibanaProxyContainer := NewContainer(
-		"kibana-proxy",
-		"kibana-proxy",
-		v1.PullIfNotPresent,
-		*kibanaProxyResources,
-	)
 
-	kibanaProxyContainer.Args = []string{
-		"--upstream-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-		"--https-address=:3000",
-		"-provider=openshift",
-		"-client-id=kibana-proxy",
-		"-client-secret-file=/secret/oauth-secret",
-		"-cookie-secret-file=/secret/session-secret",
-		"-upstream=http://localhost:5601",
-		"-scope=user:info user:check-access user:list-projects",
-		"--tls-cert=/secret/server-cert",
-		"-tls-key=/secret/server-key",
-		"-pass-access-token",
-		"-skip-provider-button",
-	}
-
-	kibanaProxyContainer.Env = []v1.EnvVar{
-		{Name: "OAP_DEBUG", Value: "false"},
-		{Name: "OCP_AUTH_PROXY_MEMORY_LIMIT",
-			ValueFrom: &v1.EnvVarSource{
-				ResourceFieldRef: &v1.ResourceFieldSelector{
-					ContainerName: "kibana-proxy",
-					Resource:      "limits.memory",
-				},
+	cr := &es.Kibana{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Kibana",
+			APIVersion: es.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      kibanaName,
+			Namespace: cluster.Namespace,
+		},
+		Spec: es.KibanaSpec{
+			ManagementState: es.ManagementStateManaged,
+			Replicas:        replicas,
+			Resources:       resources,
+			NodeSelector:    visSpec.NodeSelector,
+			Tolerations:     visSpec.Tolerations,
+			ProxySpec: es.ProxySpec{
+				Resources: proxyResources,
 			},
 		},
+		Status: []es.KibanaStatus{},
 	}
 
-	kibanaProxyContainer.Ports = []v1.ContainerPort{
-		{Name: "oaproxy", ContainerPort: 3000},
-	}
-
-	kibanaProxyContainer.VolumeMounts = []v1.VolumeMount{
-		{Name: "kibana-proxy", ReadOnly: true, MountPath: "/secret"},
-	}
-
-	kibanaPodSpec := NewPodSpec(
-		"kibana",
-		[]v1.Container{kibanaContainer, kibanaProxyContainer},
-		[]v1.Volume{
-			{Name: "kibana", VolumeSource: v1.VolumeSource{
-				Secret: &v1.SecretVolumeSource{
-					SecretName: "kibana",
-				},
-			},
-			},
-			{Name: "kibana-proxy", VolumeSource: v1.VolumeSource{
-				Secret: &v1.SecretVolumeSource{
-					SecretName: "kibana-proxy",
-				},
-			},
-			},
-		},
-		cluster.Spec.Visualization.KibanaSpec.NodeSelector,
-		cluster.Spec.Visualization.KibanaSpec.Tolerations,
-	)
-
-	kibanaPodSpec.Affinity = &v1.Affinity{
-		PodAntiAffinity: &v1.PodAntiAffinity{
-			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
-				{
-					Weight: 100,
-					PodAffinityTerm: v1.PodAffinityTerm{
-						LabelSelector: &metav1.LabelSelector{
-							MatchExpressions: []metav1.LabelSelectorRequirement{
-								{Key: "logging-infra",
-									Operator: metav1.LabelSelectorOpIn,
-									Values:   []string{"kibana"},
-								},
-							},
-						},
-						TopologyKey: "kubernetes.io/hostname",
-					},
-				},
-			},
-		},
-	}
-
-	return kibanaPodSpec
+	utils.AddOwnerRefToObject(cr, utils.AsOwner(cluster))
+	return cr
 }
 
-func (clusterRequest *ClusterLoggingRequest) updateKibanaIfRequired(desired *apps.Deployment) (err error) {
-	current := desired.DeepCopy()
-
-	if err = clusterRequest.Get(desired.Name, current); err != nil {
-		if errors.IsNotFound(err) {
-			// the object doesn't exist -- it was likely culled
-			// recreate it on the next time through if necessary
-			return nil
-		}
-		return fmt.Errorf("Failed to get Kibana deployment: %v", err)
+func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
+	var kb = &es.Kibana{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Kibana",
+			APIVersion: es.SchemeGroupVersion.String(),
+		},
 	}
 
-	current, different := isKibanaDifferent(current, desired)
+	err := clusterRequest.client.Get(context.TODO(),
+		client.ObjectKey{
+			Namespace: clusterRequest.cluster.Namespace,
+			Name:      constants.KibanaName,
+		}, kb)
 
-	if different {
-		if err = clusterRequest.Update(current); err != nil {
-			return err
+	if err != nil {
+		return nil, err
+	}
+	return kb, nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaCR() error {
+	cr := newKibanaCustomResource(clusterRequest.cluster, constants.KibanaName)
+
+	err := clusterRequest.Create(cr)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("unable to create kibana cr. E: %s", err.Error())
+	}
+
+	if clusterRequest.isManaged() {
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			return clusterRequest.updateKibanaCRDIfRequired(cr)
+		})
+		if retryErr != nil {
+			return retryErr
 		}
 	}
 
 	return nil
 }
 
-func isKibanaDifferent(current *apps.Deployment, desired *apps.Deployment) (*apps.Deployment, bool) {
+func (clusterRequest *ClusterLoggingRequest) updateKibanaCRDIfRequired(cr *es.Kibana) error {
+	current := &es.Kibana{}
 
+	if err := clusterRequest.Get(cr.Name, current); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to get kibana CR: %s", err.Error())
+	}
+
+	if isKibanaCRDDifferent(current, cr) {
+		if err := clusterRequest.Update(current); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Check if CRD is not equal to desired. If it's not, returns true and
+// updates the CURRENT crd to be equal to DESIRED
+func isKibanaCRDDifferent(current *es.Kibana, desired *es.Kibana) bool {
 	different := false
 
-	if !utils.AreSelectorsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
-		logrus.Infof("Kibana nodeSelector change found, updating '%s'", current.Name)
-		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
+	if current.Spec.ManagementState != desired.Spec.ManagementState {
+		current.Spec.ManagementState = desired.Spec.ManagementState
 		different = true
 	}
 
-	if !utils.AreTolerationsSame(current.Spec.Template.Spec.Tolerations, desired.Spec.Template.Spec.Tolerations) {
-		logrus.Infof("Kibana tolerations change found, updating '%s'", current.Name)
-		current.Spec.Template.Spec.Tolerations = desired.Spec.Template.Spec.Tolerations
-		different = true
-	}
-
-	if *current.Spec.Replicas != *desired.Spec.Replicas {
-		logrus.Infof("Kibana replica count change found, updating %q", current.Name)
+	if current.Spec.Replicas != desired.Spec.Replicas {
 		current.Spec.Replicas = desired.Spec.Replicas
 		different = true
 	}
 
-	if isDeploymentImageDifference(current, desired) {
-		logrus.Infof("Kibana image(s) change found, updating %q", current.Name)
-		current = updateCurrentImages(current, desired)
+	if !utils.AreMapsSame(current.Spec.NodeSelector, desired.Spec.NodeSelector) {
+		current.Spec.NodeSelector = desired.Spec.NodeSelector
 		different = true
 	}
 
-	if utils.AreResourcesDifferent(current, desired) {
-		logrus.Infof("Kibana resource(s) change found, updating %q", current.Name)
+	if !utils.AreTolerationsSame(current.Spec.Tolerations, desired.Spec.Tolerations) {
+		current.Spec.Tolerations = desired.Spec.Tolerations
 		different = true
 	}
 
-	return current, different
+	if current.Spec.Image != desired.Spec.Image {
+		current.Spec.Image = desired.Spec.Image
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.Spec.Resources, desired.Spec.Resources) {
+		current.Spec.Resources = desired.Spec.Resources
+		different = true
+	}
+
+	return different
 }
 
-func isDeploymentImageDifference(current *apps.Deployment, desired *apps.Deployment) bool {
+func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
+	cr := newKibanaCustomResource(clusterRequest.cluster, constants.KibanaName)
 
-	for _, curr := range current.Spec.Template.Spec.Containers {
-		for _, des := range desired.Spec.Template.Spec.Containers {
-			// Only compare the images of containers with the same name
-			if curr.Name == des.Name {
-				if curr.Image != des.Image {
-					return true
-				}
-			}
-		}
+	err := clusterRequest.Delete(cr)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("unable to delete kibana cr. E: %s", err.Error())
 	}
 
+	return nil
+}
+
+func HasCLORef(object metav1.Object, request *ClusterLoggingRequest) bool {
+	refs := object.GetOwnerReferences()
+	for _, r := range refs {
+		bref := utils.AsOwner(request.cluster)
+		if AreRefsEqual(&r, &bref) {
+			return true
+		}
+	}
 	return false
 }
 
-func updateCurrentImages(current *apps.Deployment, desired *apps.Deployment) *apps.Deployment {
-
-	containers := current.Spec.Template.Spec.Containers
-
-	for index, curr := range current.Spec.Template.Spec.Containers {
-		for _, des := range desired.Spec.Template.Spec.Containers {
-			// Only compare the images of containers with the same name
-			if curr.Name == des.Name {
-				if curr.Image != des.Image {
-					containers[index].Image = des.Image
-				}
-			}
-		}
+func AreRefsEqual(l *metav1.OwnerReference, r *metav1.OwnerReference) bool {
+	if l.Name == r.Name &&
+		l.APIVersion == r.APIVersion &&
+		l.Kind == r.Kind &&
+		*l.Controller == *r.Controller {
+		return true
 	}
-
-	return current
-}
-
-func createSharedConfig(namespace, kibanaAppURL, kibanaInfraURL string) *v1.ConfigMap {
-	return NewConfigMap(
-		"sharing-config",
-		namespace,
-		map[string]string{
-			"kibanaAppURL":   kibanaAppURL,
-			"kibanaInfraURL": kibanaInfraURL,
-		},
-	)
+	return false
 }

@@ -115,3 +115,20 @@ func (clusterRequest *ClusterLoggingRequest) CreateClusterRole(name string, rule
 	}
 	return clusterRole, nil
 }
+
+//RemoveClusterRoleBinding removes a cluster role binding
+func (clusterRequest *ClusterLoggingRequest) RemoveClusterRoleBinding(name string) error {
+
+	binding := NewClusterRoleBinding(
+		name,
+		"",
+		[]rbac.Subject{},
+	)
+
+	err := clusterRequest.Delete(binding)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("Failure deleting %q clusterrolebinding: %v", name, err)
+	}
+
+	return nil
+}

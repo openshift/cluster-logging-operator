@@ -1,19 +1,24 @@
 package k8shandler
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -34,22 +39,22 @@ func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 }
 
 func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
-	limitMemory := resource.MustParse("100Gi")
-	requestMemory := resource.MustParse("120Gi")
+	limitMemory := resource.MustParse("120Gi")
+	requestMemory := resource.MustParse("100Gi")
 	requestCPU := resource.MustParse("500m")
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
-				logging.LogCollectionSpec{
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
 					Type: "fluentd",
 					FluentdSpec: logging.FluentdSpec{
-						Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+						Resources: newResourceRequirements("120Gi", "", "100Gi", "500m"),
 					},
 				},
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -70,12 +75,12 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 
 	expectedTolerations := []v1.Toleration{
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
 		},
-		v1.Toleration{
+		{
 			Key:      "node.kubernetes.io/disk-pressure",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
@@ -84,17 +89,17 @@ func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
-				logging.LogCollectionSpec{
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
 					Type: "fluentd",
 				},
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 
 	if !reflect.DeepEqual(podSpec.Tolerations, expectedTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expectedTolerations, podSpec.Tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expectedTolerations, podSpec.Tolerations)
 	}
 }
 
@@ -104,8 +109,8 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 	}
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
-				logging.LogCollectionSpec{
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
 					Type: "fluentd",
 					FluentdSpec: logging.FluentdSpec{
 						NodeSelector: expSelector,
@@ -114,7 +119,7 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 
 	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, podSpec.NodeSelector)
@@ -123,12 +128,12 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 
 func TestNewFluentdPodNoTolerations(t *testing.T) {
 	expTolerations := []v1.Toleration{
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
 		},
-		v1.Toleration{
+		{
 			Key:      "node.kubernetes.io/disk-pressure",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
@@ -137,8 +142,8 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
-				logging.LogCollectionSpec{
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
 					Type:        "fluentd",
 					FluentdSpec: logging.FluentdSpec{},
 				},
@@ -146,11 +151,11 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }
 
@@ -164,12 +169,12 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 
 	expTolerations := []v1.Toleration{
 		providedToleration,
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
 		},
-		v1.Toleration{
+		{
 			Key:      "node.kubernetes.io/disk-pressure",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
@@ -178,8 +183,8 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Collection: logging.CollectionSpec{
-				logging.LogCollectionSpec{
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
 					Type: "fluentd",
 					FluentdSpec: logging.FluentdSpec{
 						Tolerations: []v1.Toleration{
@@ -191,10 +196,104 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name")
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logforward.ForwardingSpec{})
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
+	}
+}
+
+func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
+
+	cluster := &logging.ClusterLogging{}
+	httpproxy := "http://proxy-user@test.example.com/3128/"
+	noproxy := ".cluster.local,localhost"
+	caBundle := fmt.Sprint("-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n")
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name",
+		&configv1.Proxy{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Proxy",
+				APIVersion: "config.openshift.io/v1",
+			},
+			Spec: configv1.ProxySpec{
+				HTTPProxy:  httpproxy,
+				HTTPSProxy: httpproxy,
+				TrustedCA: configv1.ConfigMapNameReference{
+					Name: "user-ca-bundle",
+				},
+			},
+			Status: configv1.ProxyStatus{
+				HTTPProxy:  httpproxy,
+				HTTPSProxy: httpproxy,
+				NoProxy:    noproxy,
+			},
+		},
+		&v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "openshift-logging",
+				Name:      constants.FluentdTrustedCAName,
+			},
+			Data: map[string]string{
+				constants.TrustedCABundleKey: caBundle,
+			},
+		},
+		logforward.ForwardingSpec{},
+	)
+
+	if len(podSpec.Containers) != 1 {
+		t.Error("Exp. there to be 1 fluentd container")
+	}
+
+	checkFluentdProxyEnvVar(t, podSpec, "HTTP_PROXY", httpproxy)
+	checkFluentdProxyEnvVar(t, podSpec, "HTTPS_PROXY", httpproxy)
+	checkFluentdProxyEnvVar(t, podSpec, "NO_PROXY", noproxy)
+
+	checkFluentdProxyVolumesAndVolumeMounts(t, podSpec, constants.FluentdTrustedCAName)
+}
+
+func checkFluentdProxyEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {
+	env := podSpec.Containers[0].Env
+	found := false
+	for _, elem := range env {
+		if elem.Name == name {
+			found = true
+			if elem.Value != value {
+				t.Errorf("EnvVar %s: expected %s, actual %s", name, value, elem.Value)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("EnvVar %s not found", name)
+	}
+}
+
+func checkFluentdProxyVolumesAndVolumeMounts(t *testing.T, podSpec v1.PodSpec, trustedca string) {
+	volumemounts := podSpec.Containers[0].VolumeMounts
+	found := false
+	for _, elem := range volumemounts {
+		if elem.Name == trustedca {
+			found = true
+			if elem.MountPath != constants.TrustedCABundleMountDir {
+				t.Errorf("VolumeMounts %s: expected %s, actual %s", trustedca, constants.TrustedCABundleMountDir, elem.MountPath)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("VolumeMounts %s not found", trustedca)
+	}
+
+	volumes := podSpec.Volumes
+	found = false
+	for _, elem := range volumes {
+		if elem.Name == trustedca {
+			found = true
+			if elem.VolumeSource.ConfigMap.LocalObjectReference.Name != trustedca {
+				t.Errorf("Volume %s: expected %s, actual %s", trustedca, trustedca, elem.VolumeSource.Secret.SecretName)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("Volume %s not found", trustedca)
 	}
 }

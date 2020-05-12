@@ -6,101 +6,247 @@ package lsp
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"sync"
 
+	"golang.org/x/tools/internal/lsp/mod"
 	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
-	"golang.org/x/tools/internal/lsp/xlog"
-	"golang.org/x/tools/internal/span"
+	"golang.org/x/tools/internal/lsp/telemetry"
+	"golang.org/x/tools/internal/telemetry/log"
+	"golang.org/x/tools/internal/telemetry/trace"
+	"golang.org/x/tools/internal/xcontext"
 )
 
-func (s *Server) Diagnostics(ctx context.Context, view source.View, uri span.URI) {
-	f, err := view.GetFile(ctx, uri)
-	if err != nil {
-		xlog.Errorf(ctx, "no file for %s: %v", uri, err)
-		return
+type diagnosticKey struct {
+	id           source.FileIdentity
+	withAnalysis bool
+}
+
+func (s *Server) diagnoseDetached(snapshot source.Snapshot) {
+	ctx := snapshot.View().BackgroundContext()
+	ctx = xcontext.Detach(ctx)
+
+	reports := s.diagnose(ctx, snapshot, false)
+	s.publishReports(ctx, snapshot, reports)
+}
+
+func (s *Server) diagnoseSnapshot(snapshot source.Snapshot) {
+	ctx := snapshot.View().BackgroundContext()
+
+	reports := s.diagnose(ctx, snapshot, false)
+	s.publishReports(ctx, snapshot, reports)
+}
+
+// diagnose is a helper function for running diagnostics with a given context.
+// Do not call it directly.
+func (s *Server) diagnose(ctx context.Context, snapshot source.Snapshot, alwaysAnalyze bool) map[diagnosticKey][]source.Diagnostic {
+	ctx, done := trace.StartSpan(ctx, "lsp:background-worker")
+	defer done()
+
+	// Wait for a free diagnostics slot.
+	select {
+	case <-ctx.Done():
+		return nil
+	case s.diagnosticsSema <- struct{}{}:
 	}
-	// For non-Go files, don't return any diagnostics.
-	gof, ok := f.(source.GoFile)
-	if !ok {
-		return
+	defer func() { <-s.diagnosticsSema }()
+
+	allReports := make(map[diagnosticKey][]source.Diagnostic)
+	var reportsMu sync.Mutex
+	var wg sync.WaitGroup
+
+	// Diagnose the go.mod file.
+	reports, missingModules, err := mod.Diagnostics(ctx, snapshot)
+	if ctx.Err() != nil {
+		return nil
 	}
-	reports, err := source.Diagnostics(ctx, view, gof, s.disabledAnalyses)
 	if err != nil {
-		xlog.Errorf(ctx, "failed to compute diagnostics for %s: %v", gof.URI(), err)
-		return
+		log.Error(ctx, "diagnose: could not generate diagnostics for go.mod file", err)
+	}
+	// Ensure that the reports returned from mod.Diagnostics are only related to the
+	// go.mod file for the module.
+	if len(reports) > 1 {
+		panic("unexpected reports from mod.Diagnostics")
+	}
+	modURI, _ := snapshot.View().ModFiles()
+	for id, diags := range reports {
+		if id.URI != modURI {
+			panic("unexpected reports from mod.Diagnostics")
+		}
+		key := diagnosticKey{
+			id: id,
+		}
+		allReports[key] = diags
 	}
 
-	s.undeliveredMu.Lock()
-	defer s.undeliveredMu.Unlock()
+	// Diagnose all of the packages in the workspace.
+	wsPackages, err := snapshot.WorkspacePackages(ctx)
+	if ctx.Err() != nil {
+		return nil
+	}
+	if err != nil {
+		// If we encounter a genuine error when getting workspace packages,
+		// notify the user.
+		s.showedInitialErrorMu.Lock()
+		if !s.showedInitialError {
+			err := s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+				Type:    protocol.Error,
+				Message: fmt.Sprintf("Your workspace is misconfigured: %s. Please see https://github.com/golang/tools/blob/master/gopls/doc/troubleshooting.md for more information or file an issue (https://github.com/golang/go/issues/new) if you believe this is a mistake.", err.Error()),
+			})
+			s.showedInitialError = err == nil
+		}
+		s.showedInitialErrorMu.Unlock()
 
-	for uri, diagnostics := range reports {
-		if err := s.publishDiagnostics(ctx, view, uri, diagnostics); err != nil {
-			if s.undelivered == nil {
-				s.undelivered = make(map[span.URI][]source.Diagnostic)
+		log.Error(ctx, "diagnose: no workspace packages", err, telemetry.Snapshot.Of(snapshot.ID()), telemetry.Directory.Of(snapshot.View().Folder))
+		return nil
+	}
+	for _, ph := range wsPackages {
+		wg.Add(1)
+		go func(ph source.PackageHandle) {
+			defer wg.Done()
+			// Only run analyses for packages with open files.
+			withAnalyses := alwaysAnalyze
+			for _, fh := range ph.CompiledGoFiles() {
+				if snapshot.IsOpen(fh.File().Identity().URI) {
+					withAnalyses = true
+				}
 			}
-			xlog.Errorf(ctx, "failed to deliver diagnostic for %s (will retry): %v", uri, err)
-			s.undelivered[uri] = diagnostics
+			reports, warn, err := source.Diagnostics(ctx, snapshot, ph, missingModules, withAnalyses)
+			// Check if might want to warn the user about their build configuration.
+			if warn && !snapshot.View().ValidBuildConfiguration() {
+				s.client.ShowMessage(ctx, &protocol.ShowMessageParams{
+					Type: protocol.Warning,
+					// TODO(rstambler): We should really be able to point to a link on the website.
+					Message: `You are neither in a module nor in your GOPATH. Please see https://github.com/golang/go/wiki/Modules for information on how to set up your Go project.`,
+				})
+			}
+			if ctx.Err() != nil {
+				return
+			}
+			if err != nil {
+				log.Error(ctx, "diagnose: could not generate diagnostics for package", err, telemetry.Snapshot.Of(snapshot.ID()), telemetry.Package.Of(ph.ID()))
+				return
+			}
+			reportsMu.Lock()
+			for id, diags := range reports {
+				key := diagnosticKey{
+					id:           id,
+					withAnalysis: withAnalyses,
+				}
+				allReports[key] = diags
+			}
+			reportsMu.Unlock()
+		}(ph)
+	}
+	wg.Wait()
+	return allReports
+}
+
+func (s *Server) publishReports(ctx context.Context, snapshot source.Snapshot, reports map[diagnosticKey][]source.Diagnostic) {
+	// Check for context cancellation before publishing diagnostics.
+	if ctx.Err() != nil {
+		return
+	}
+
+	s.deliveredMu.Lock()
+	defer s.deliveredMu.Unlock()
+
+	for key, diagnostics := range reports {
+		// Don't deliver diagnostics if the context has already been canceled.
+		if ctx.Err() != nil {
+			break
+		}
+
+		// Pre-sort diagnostics to avoid extra work when we compare them.
+		source.SortDiagnostics(diagnostics)
+		toSend := sentDiagnostics{
+			version:      key.id.Version,
+			identifier:   key.id.Identifier,
+			sorted:       diagnostics,
+			withAnalysis: key.withAnalysis,
+			snapshotID:   snapshot.ID(),
+		}
+
+		// We use the zero values if this is an unknown file.
+		delivered := s.delivered[key.id.URI]
+
+		// Snapshot IDs are always increasing, so we use them instead of file
+		// versions to create the correct order for diagnostics.
+
+		// If we've already delivered diagnostics for a future snapshot for this file,
+		// do not deliver them.
+		if delivered.snapshotID > toSend.snapshotID {
+			// Do not update the delivered map since it already contains newer diagnostics.
 			continue
 		}
-		// In case we had old, undelivered diagnostics.
-		delete(s.undelivered, uri)
-	}
-	// Anytime we compute diagnostics, make sure to also send along any
-	// undelivered ones (only for remaining URIs).
-	for uri, diagnostics := range s.undelivered {
-		if err := s.publishDiagnostics(ctx, view, uri, diagnostics); err != nil {
-			xlog.Errorf(ctx, "failed to deliver diagnostic for %s (will not retry): %v", uri, err)
+
+		// Check if we should reuse the cached diagnostics.
+		if equalDiagnostics(delivered.sorted, diagnostics) {
+			// Make sure to update the delivered map.
+			s.delivered[key.id.URI] = toSend
+			continue
 		}
-		// If we fail to deliver the same diagnostics twice, just give up.
-		delete(s.undelivered, uri)
+
+		// If we've already delivered diagnostics for this file, at this
+		// snapshot, with analyses, do not send diagnostics without analyses.
+		if delivered.snapshotID == toSend.snapshotID && delivered.version == toSend.version &&
+			delivered.withAnalysis && !toSend.withAnalysis {
+			// Do not update the delivered map since it already contains better diagnostics.
+			continue
+		}
+
+		if err := s.client.PublishDiagnostics(ctx, &protocol.PublishDiagnosticsParams{
+			Diagnostics: toProtocolDiagnostics(diagnostics),
+			URI:         protocol.URIFromSpanURI(key.id.URI),
+			Version:     key.id.Version,
+		}); err != nil {
+			if ctx.Err() == nil {
+				log.Error(ctx, "publishReports: failed to deliver diagnostic", err, telemetry.File.Tag(ctx))
+			}
+			continue
+		}
+		// Update the delivered map.
+		s.delivered[key.id.URI] = toSend
 	}
 }
 
-func (s *Server) publishDiagnostics(ctx context.Context, view source.View, uri span.URI, diagnostics []source.Diagnostic) error {
-	protocolDiagnostics, err := toProtocolDiagnostics(ctx, view, diagnostics)
-	if err != nil {
-		return err
+// equalDiagnostics returns true if the 2 lists of diagnostics are equal.
+// It assumes that both a and b are already sorted.
+func equalDiagnostics(a, b []source.Diagnostic) bool {
+	if len(a) != len(b) {
+		return false
 	}
-	s.client.PublishDiagnostics(ctx, &protocol.PublishDiagnosticsParams{
-		Diagnostics: protocolDiagnostics,
-		URI:         protocol.NewURI(uri),
-	})
-	return nil
+	for i := 0; i < len(a); i++ {
+		if source.CompareDiagnostic(a[i], b[i]) != 0 {
+			return false
+		}
+	}
+	return true
 }
 
-func toProtocolDiagnostics(ctx context.Context, v source.View, diagnostics []source.Diagnostic) ([]protocol.Diagnostic, error) {
+func toProtocolDiagnostics(diagnostics []source.Diagnostic) []protocol.Diagnostic {
 	reports := []protocol.Diagnostic{}
 	for _, diag := range diagnostics {
-		diagnostic, err := toProtocolDiagnostic(ctx, v, diag)
-		if err != nil {
-			return nil, err
+		related := make([]protocol.DiagnosticRelatedInformation, 0, len(diag.Related))
+		for _, rel := range diag.Related {
+			related = append(related, protocol.DiagnosticRelatedInformation{
+				Location: protocol.Location{
+					URI:   protocol.URIFromSpanURI(rel.URI),
+					Range: rel.Range,
+				},
+				Message: rel.Message,
+			})
 		}
-		reports = append(reports, diagnostic)
+		reports = append(reports, protocol.Diagnostic{
+			Message:            strings.TrimSpace(diag.Message), // go list returns errors prefixed by newline
+			Range:              diag.Range,
+			Severity:           diag.Severity,
+			Source:             diag.Source,
+			Tags:               diag.Tags,
+			RelatedInformation: related,
+		})
 	}
-	return reports, nil
-}
-
-func toProtocolDiagnostic(ctx context.Context, v source.View, diag source.Diagnostic) (protocol.Diagnostic, error) {
-	_, m, err := getSourceFile(ctx, v, diag.Span.URI())
-	if err != nil {
-		return protocol.Diagnostic{}, err
-	}
-	var severity protocol.DiagnosticSeverity
-	switch diag.Severity {
-	case source.SeverityError:
-		severity = protocol.SeverityError
-	case source.SeverityWarning:
-		severity = protocol.SeverityWarning
-	}
-	rng, err := m.Range(diag.Span)
-	if err != nil {
-		return protocol.Diagnostic{}, err
-	}
-	return protocol.Diagnostic{
-		Message:  strings.TrimSpace(diag.Message), // go list returns errors prefixed by newline
-		Range:    rng,
-		Severity: severity,
-		Source:   diag.Source,
-	}, nil
+	return reports
 }

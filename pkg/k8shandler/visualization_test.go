@@ -4,187 +4,334 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 
+	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestCreateKibanaProxyClusterRoleBindingWithoutError(t *testing.T) {
-	clusterRoleBinding := &rbac.ClusterRoleBinding{}
-
-	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(clusterRoleBinding),
-		cluster: &logging.ClusterLogging{},
+//TODO: Remove this in the next release after removing old kibana code completely
+func TestHasCLORef(t *testing.T) {
+	clr := ClusterLoggingRequest{
+		client: nil,
+		cluster: &logging.ClusterLogging{
+			TypeMeta: metav1.TypeMeta{},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:                       "cluster-logging",
+				GenerateName:               "",
+				Namespace:                  "",
+				SelfLink:                   "",
+				UID:                        "123",
+				ResourceVersion:            "",
+				Generation:                 0,
+				CreationTimestamp:          metav1.Time{},
+				DeletionTimestamp:          nil,
+				DeletionGracePeriodSeconds: nil,
+				Labels:                     nil,
+				Annotations:                nil,
+				OwnerReferences:            nil,
+				Initializers:               nil,
+				Finalizers:                 nil,
+				ClusterName:                "",
+			},
+			Spec:   logging.ClusterLoggingSpec{},
+			Status: logging.ClusterLoggingStatus{},
+		},
+		ForwardingRequest: nil,
+		ForwardingSpec:    v1alpha1.ForwardingSpec{},
+		Collector:         nil,
 	}
 
-	if clusterLoggingRequest.createKibanaProxyClusterRoleBinding() != nil {
-		t.Error("Exp. no error when creating proxy cluster role binding")
+	obj := &apps.Deployment{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:                       "test-deployment",
+			GenerateName:               "",
+			Namespace:                  "",
+			SelfLink:                   "",
+			UID:                        "",
+			ResourceVersion:            "",
+			Generation:                 0,
+			CreationTimestamp:          metav1.Time{},
+			DeletionTimestamp:          nil,
+			DeletionGracePeriodSeconds: nil,
+			Labels:                     nil,
+			Annotations:                nil,
+			OwnerReferences:            nil,
+			Initializers:               nil,
+			Finalizers:                 nil,
+			ClusterName:                "",
+		},
+		Spec:   apps.DeploymentSpec{},
+		Status: apps.DeploymentStatus{},
+	}
+
+	utils.AddOwnerRefToObject(obj, utils.AsOwner(clr.cluster))
+
+	t.Log("refs:", obj.GetOwnerReferences())
+	if !HasCLORef(obj, &clr) {
+		t.Error("no owner reference found but it should be found")
 	}
 }
 
-func TestNewKibanaPodSpecWhenFieldsAreUndefined(t *testing.T) {
-
-	cluster := &logging.ClusterLogging{}
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch")
-
-	if len(podSpec.Containers) != 2 {
-		t.Error("Exp. there to be 2 container")
+func TestAreRefsEqual(t *testing.T) {
+	r1 := metav1.OwnerReference{
+		APIVersion: logging.SchemeGroupVersion.String(),
+		Kind:       "ClusterLogging",
+		Name:       "testRef",
+		Controller: func() *bool { t := true; return &t }(),
 	}
 
-	//check kibana
-	resources := podSpec.Containers[0].Resources
-	if resources.Limits[v1.ResourceMemory] != defaultKibanaMemory {
-		t.Errorf("Exp. the default memory limit to be %v", defaultKibanaMemory)
+	r2 := metav1.OwnerReference{
+		APIVersion: logging.SchemeGroupVersion.String(),
+		Kind:       "ClusterLogging",
+		Name:       "testRef",
+		Controller: func() *bool { t := true; return &t }(),
 	}
-	if resources.Requests[v1.ResourceMemory] != defaultKibanaMemory {
-		t.Errorf("Exp. the default memory request to be %v", defaultKibanaMemory)
-	}
-	if resources.Requests[v1.ResourceCPU] != defaultKibanaCpuRequest {
-		t.Errorf("Exp. the default CPU request to be %v", defaultKibanaCpuRequest)
-	}
-	// check node selecor
-	if podSpec.NodeSelector == nil {
-		t.Errorf("Exp. the nodeSelector to contains the linux allocation selector but was %T", podSpec.NodeSelector)
-	}
-	//check proxy
-	resources = podSpec.Containers[1].Resources
-	if resources.Limits[v1.ResourceMemory] != defaultKibanaProxyMemory {
-		t.Errorf("Exp. the default memory limit to be %v", defaultKibanaMemory)
-	}
-	if resources.Requests[v1.ResourceMemory] != defaultKibanaProxyMemory {
-		t.Errorf("Exp. the default memory request to be %v", defaultKibanaProxyMemory)
-	}
-	if resources.Requests[v1.ResourceCPU] != defaultKibanaCpuRequest {
-		t.Errorf("Exp. the default CPU request to be %v", defaultKibanaCpuRequest)
+
+	if !AreRefsEqual(&r1, &r2) {
+		t.Error("refs are not equal but they should be")
 	}
 }
 
-func TestNewKibanaPodSpecWhenResourcesAreDefined(t *testing.T) {
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
-				Type: "kibana",
-				KibanaSpec: logging.KibanaSpec{
-					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
-					ProxySpec: logging.ProxySpec{
-						Resources: newResourceRequirements("200Gi", "", "220Gi", "2500m"),
+func TestNewKibanaCR(t *testing.T) {
+	tests := []struct {
+		desc string
+		cl   *logging.ClusterLogging
+		want es.Kibana
+	}{
+		{
+			desc: "default spec",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{},
+					},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        1,
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "custom resources",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{
+							Resources: &v1.ResourceRequirements{
+								Limits: v1.ResourceList{
+									v1.ResourceMemory: resource.MustParse("136Mi"),
+								},
+								Requests: v1.ResourceList{
+									v1.ResourceMemory: defaultKibanaMemory,
+									v1.ResourceCPU:    defaultKibanaCpuRequest,
+								},
+							},
+							ProxySpec: logging.ProxySpec{
+								Resources: &v1.ResourceRequirements{
+									Limits: v1.ResourceList{
+										v1.ResourceMemory: resource.MustParse("136Mi"),
+									},
+									Requests: v1.ResourceList{
+										v1.ResourceMemory: defaultKibanaMemory,
+										v1.ResourceCPU:    defaultKibanaCpuRequest,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        1,
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("136Mi"),
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: resource.MustParse("136Mi"),
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: defaultKibanaMemory,
+								v1.ResourceCPU:    defaultKibanaCpuRequest,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "custom node selectors",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{
+							NodeSelector: map[string]string{
+								"test": "test",
+							},
+						},
+					},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        1,
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+					NodeSelector: map[string]string{
+						"test": "test",
+					},
+				},
+			},
+		},
+		{
+			desc: "custom tolerations",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{
+							Tolerations: []v1.Toleration{
+								{
+									Key:   "test",
+									Value: "test",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        1,
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+					Tolerations: []v1.Toleration{
+						{
+							Key:   "test",
+							Value: "test",
+						},
 					},
 				},
 			},
 		},
 	}
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch")
+	for _, test := range tests {
+		test := test
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+			got := newKibanaCustomResource(test.cl, "kibana")
 
-	limitMemory := resource.MustParse("100Gi")
-	requestMemory := resource.MustParse("120Gi")
-	requestCPU := resource.MustParse("500m")
+			if got.Spec.ManagementState != test.want.Spec.ManagementState {
+				t.Errorf("ManagementState: got %s, want %s", got.Spec.ManagementState, test.want.Spec.ManagementState)
+			}
 
-	if len(podSpec.Containers) != 2 {
-		t.Error("Exp. there to be 2 container")
-	}
+			if got.Spec.Replicas != test.want.Spec.Replicas {
+				t.Errorf("Replicas: got %d, want %d", got.Spec.Replicas, test.want.Spec.Replicas)
+			}
 
-	//check kibana
-	resources := podSpec.Containers[0].Resources
-	if resources.Limits[v1.ResourceMemory] != limitMemory {
-		t.Errorf("Exp. the default memory limit to be %v", limitMemory)
-	}
-	if resources.Requests[v1.ResourceMemory] != requestMemory {
-		t.Errorf("Exp. the default memory request to be %v", requestMemory)
-	}
-	if resources.Requests[v1.ResourceCPU] != requestCPU {
-		t.Errorf("Exp. the default CPU request to be %v", requestCPU)
-	}
+			if !reflect.DeepEqual(got.Spec.Resources, test.want.Spec.Resources) {
+				t.Errorf("Resources: got\n%v\n\nwant\n%v", got.Spec.Resources, test.want.Spec.Resources)
+			}
 
-	limitMemory = resource.MustParse("200Gi")
-	requestMemory = resource.MustParse("220Gi")
-	requestCPU = resource.MustParse("2500m")
-	//check proxy
-	resources = podSpec.Containers[1].Resources
-	if resources.Limits[v1.ResourceMemory] != limitMemory {
-		t.Errorf("Exp. the default memory limit to be %v", limitMemory)
-	}
-	if resources.Requests[v1.ResourceMemory] != requestMemory {
-		t.Errorf("Exp. the default memory request to be %v", requestMemory)
-	}
-	if resources.Requests[v1.ResourceCPU] != requestCPU {
-		t.Errorf("Exp. the default CPU request to be %v", requestCPU)
-	}
+			if !reflect.DeepEqual(got.Spec.NodeSelector, test.want.Spec.NodeSelector) {
+				t.Errorf("NodeSelector: got\n%v\n\nwant\n%v", got.Spec.NodeSelector, test.want.Spec.NodeSelector)
+			}
 
-}
-func TestNewKibanaPodSpecWhenNodeSelectorIsDefined(t *testing.T) {
-	expSelector := map[string]string{
-		"foo":             "bar",
-		utils.OsNodeLabel: utils.LinuxValue,
-	}
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
-				Type: "kibana",
-				KibanaSpec: logging.KibanaSpec{
-					NodeSelector: expSelector,
-				},
-			},
-		},
-	}
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch")
-
-	//check kibana
-	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
-		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, podSpec.NodeSelector)
-	}
-
-}
-
-func TestNewKibanaPodNoTolerations(t *testing.T) {
-	expTolerations := []v1.Toleration{}
-
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
-				Type:       "kibana",
-				KibanaSpec: logging.KibanaSpec{},
-			},
-		},
-	}
-
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name")
-	tolerations := podSpec.Tolerations
-
-	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
-	}
-}
-
-func TestNewKibanaPodWithTolerations(t *testing.T) {
-
-	expTolerations := []v1.Toleration{
-		v1.Toleration{
-			Key:      "node-role.kubernetes.io/master",
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
-
-	cluster := &logging.ClusterLogging{
-		Spec: logging.ClusterLoggingSpec{
-			Visualization: logging.VisualizationSpec{
-				Type: "kibana",
-				KibanaSpec: logging.KibanaSpec{
-					Tolerations: expTolerations,
-				},
-			},
-		},
-	}
-
-	podSpec := newKibanaPodSpec(cluster, "test-app-name", "test-infra-name")
-	tolerations := podSpec.Tolerations
-
-	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+			if !reflect.DeepEqual(got.Spec.Tolerations, test.want.Spec.Tolerations) {
+				t.Errorf("Tolerations: got\n%v\n\nwant\n%v", got.Spec.Tolerations, test.want.Spec.Tolerations)
+			}
+		})
 	}
 }

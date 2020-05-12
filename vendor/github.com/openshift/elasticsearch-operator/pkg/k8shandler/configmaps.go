@@ -60,7 +60,7 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateConfigMaps() (er
 		dpl.Labels,
 		kibanaIndexMode,
 		esUnicastHost(dpl.Name, dpl.Namespace),
-		rootLogger(),
+		rootLogger(elasticsearchRequest.cluster),
 		strconv.Itoa(masterNodeCount/2+1),
 		strconv.Itoa(dataNodeCount),
 		strconv.Itoa(dataNodeCount),

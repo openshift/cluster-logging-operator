@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	esutils "github.com/openshift/elasticsearch-operator/test/utils"
@@ -39,7 +40,7 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 	}
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeSelector: expSelector,
@@ -58,7 +59,7 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
@@ -91,7 +92,7 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
@@ -103,7 +104,7 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					Resources: newResourceRequirements("10Gi", "", "12Gi", "500m"),
@@ -122,7 +123,7 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 1,
@@ -134,7 +135,7 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 2,
@@ -153,7 +154,7 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 func TestDefaultRedundancyUsedWhenOmitted(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type:              "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{},
 			},
@@ -170,7 +171,7 @@ func TestDefaultRedundancyUsedWhenOmitted(t *testing.T) {
 func TestUseRedundancyWhenSpecified(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					RedundancyPolicy: elasticsearch.SingleRedundancy,
@@ -196,7 +197,7 @@ func TestNotSplitRolesWhenNodeCountIsEq3(t *testing.T) {
 func TestSplitRolesWhenNodeCountIsGt3(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 4,
@@ -256,7 +257,7 @@ func TestSplitRolesWhenNodeCountIsGt3(t *testing.T) {
 func createAndCheckSingleNodeWithNodeCount(t *testing.T, expectedNodeCount int32) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: expectedNodeCount,
@@ -291,7 +292,7 @@ func createAndCheckSingleNodeWithNodeCount(t *testing.T, expectedNodeCount int32
 func TestDifferenceFoundWhenNodeCountExceeds3(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 3,
@@ -303,7 +304,7 @@ func TestDifferenceFoundWhenNodeCountExceeds3(t *testing.T) {
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 4,
@@ -322,7 +323,7 @@ func TestDifferenceFoundWhenNodeCountExceeds3(t *testing.T) {
 func TestDifferenceFoundWhenNodeCountExceeds4(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 4,
@@ -334,7 +335,7 @@ func TestDifferenceFoundWhenNodeCountExceeds4(t *testing.T) {
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 5,
@@ -355,7 +356,7 @@ func TestNewESCRNoTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type:              "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{},
 			},
@@ -366,14 +367,14 @@ func TestNewESCRNoTolerations(t *testing.T) {
 	tolerations := elasticsearchCR.Spec.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }
 
 func TestNewESCRWithTolerations(t *testing.T) {
 
 	expTolerations := []v1.Toleration{
-		v1.Toleration{
+		{
 			Key:      "node-role.kubernetes.io/master",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
@@ -382,7 +383,7 @@ func TestNewESCRWithTolerations(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					Tolerations: expTolerations,
@@ -395,14 +396,14 @@ func TestNewESCRWithTolerations(t *testing.T) {
 	tolerations := elasticsearchCR.Spec.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
-		t.Errorf("Exp. the tolerations to be %q but was %q", expTolerations, tolerations)
+		t.Errorf("Exp. the tolerations to be %v but was %v", expTolerations, tolerations)
 	}
 }
 
 func TestGenUUIDPreservedWhenNodeCountExceeds4(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 3,
@@ -416,7 +417,7 @@ func TestGenUUIDPreservedWhenNodeCountExceeds4(t *testing.T) {
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 4,
@@ -439,7 +440,7 @@ func TestGenUUIDPreservedWhenNodeCountExceeds4(t *testing.T) {
 func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 1,
@@ -453,7 +454,7 @@ func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			LogStore: logging.LogStoreSpec{
+			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					NodeCount: 3,
@@ -470,5 +471,41 @@ func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
 
 	if diffCR.Spec.Nodes[0].GenUUID == nil || *diffCR.Spec.Nodes[0].GenUUID != dataUUID {
 		t.Errorf("Expected that original GenUUID would be preserved as %v but was %v", dataUUID, diffCR.Spec.Nodes[0].GenUUID)
+	}
+}
+
+func TestIndexManagementChanges(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				RetentionPolicy: &logging.RetentionPoliciesSpec{
+					App: &logging.RetentionPolicySpec{
+						MaxAge: elasticsearch.TimeUnit("12h"),
+					},
+				},
+			},
+		},
+	}
+	elasticsearchCR1 := newElasticsearchCR(cluster, "test-app-name")
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				RetentionPolicy: &logging.RetentionPoliciesSpec{
+					Audit: &logging.RetentionPolicySpec{
+						MaxAge: elasticsearch.TimeUnit("12h"),
+					},
+				},
+			},
+		},
+	}
+	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR1, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to retention policy change")
+	}
+	if !(diffCR.Spec.IndexManagement.Policies[0].Name == indexmanagement.PolicyNameAudit) {
+		t.Errorf("Expected that difference would be found due to retention policy change")
 	}
 }

@@ -6,16 +6,21 @@
 // The Language Server Protocol allows any text editor
 // to be extended with IDE-like features;
 // see https://langserver.org/ for details.
+//
+// See https://github.com/golang/tools/tree/master/gopls
+// for the most up-to-date information on the gopls status.
 package main // import "golang.org/x/tools/gopls"
 
 import (
 	"context"
 	"os"
 
+	"golang.org/x/tools/gopls/internal/hooks"
 	"golang.org/x/tools/internal/lsp/cmd"
 	"golang.org/x/tools/internal/tool"
 )
 
 func main() {
-	tool.Main(context.Background(), cmd.New("", nil), os.Args[1:])
+	ctx := context.Background()
+	tool.Main(ctx, cmd.New("gopls", "", nil, hooks.Options), os.Args[1:])
 }

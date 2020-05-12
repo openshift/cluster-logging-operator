@@ -47,13 +47,21 @@ spec:
                           properties:
                             limits:
                               additionalProperties:
-                                type: string
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
                               description: 'Limits describes the maximum amount of
                                 compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                               type: object
                             requests:
                               additionalProperties:
-                                type: string
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
                               description: 'Requests describes the minimum amount
                                 of compute resources required. If Requests is omitted
                                 for a container, it defaults to Limits if that is
@@ -128,13 +136,21 @@ spec:
                       properties:
                         limits:
                           additionalProperties:
-                            type: string
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                           description: 'Limits describes the maximum amount of compute
                             resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                           type: object
                         requests:
                           additionalProperties:
-                            type: string
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                           description: 'Requests describes the minimum amount of compute
                             resources required. If Requests is omitted for a container,
                             it defaults to Limits if that is explicitly specified,
@@ -208,11 +224,13 @@ spec:
                         type: string
                       type: object
                     redundancyPolicy:
-                      description: RedundancyPolicyType controls number of elasticsearch
-                        replica shards FullRedundancy - each index is fully replicated
-                        on every Data node in the cluster MultipleRedundancy - each
-                        index is spread over half of the Data nodes SingleRedundancy
-                        - one replica shard ZeroRedundancy - no replica shards
+                      description: The policy towards data redundancy to specify the
+                        number of redundant primary shards
+                      enum:
+                      - FullRedundancy
+                      - MultipleRedundancy
+                      - SingleRedundancy
+                      - ZeroRedundancy
                       type: string
                     resources:
                       description: ResourceRequirements describes the compute resource
@@ -220,13 +238,21 @@ spec:
                       properties:
                         limits:
                           additionalProperties:
-                            type: string
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                           description: 'Limits describes the maximum amount of compute
                             resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                           type: object
                         requests:
                           additionalProperties:
-                            type: string
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                           description: 'Requests describes the minimum amount of compute
                             resources required. If Requests is omitted for a container,
                             it defaults to Limits if that is explicitly specified,
@@ -237,8 +263,15 @@ spec:
                     storage:
                       properties:
                         size:
-                          type: string
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: The capacity of storage to provision.
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
                         storageClassName:
+                          description: 'The class of storage to provision. More info:
+                            https://kubernetes.io/docs/concepts/storage/storage-classes/'
                           type: string
                       type: object
                     tolerations:
@@ -343,13 +376,21 @@ spec:
                           properties:
                             limits:
                               additionalProperties:
-                                type: string
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
                               description: 'Limits describes the maximum amount of
                                 compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                               type: object
                             requests:
                               additionalProperties:
-                                type: string
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                x-kubernetes-int-or-string: true
                               description: 'Requests describes the minimum amount
                                 of compute resources required. If Requests is omitted
                                 for a container, it defaults to Limits if that is
@@ -369,13 +410,21 @@ spec:
                       properties:
                         limits:
                           additionalProperties:
-                            type: string
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                           description: 'Limits describes the maximum amount of compute
                             resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                           type: object
                         requests:
                           additionalProperties:
-                            type: string
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
                           description: 'Requests describes the minimum amount of compute
                             resources required. If Requests is omitted for a container,
                             it defaults to Limits if that is explicitly specified,
@@ -621,20 +670,19 @@ spec:
                         type: object
                       clusterConditions:
                         items:
-                          description: 'ClusterCondition contains details for the
-                            current condition of this elasticsearch cluster. Status:
-                            the status of the condition. LastTransitionTime: Last
-                            time the condition transitioned from one status to another.
-                            Reason: Unique, one-word, CamelCase reason for the condition''s
-                            last transition. Message: Human-readable message indicating
-                            details about last transition.'
                           properties:
                             lastTransitionTime:
+                              description: Last time the condition transitioned from
+                                one status to another.
                               format: date-time
                               type: string
                             message:
+                              description: Human-readable message indicating details
+                                about last transition.
                               type: string
                             reason:
+                              description: Unique, one-word, CamelCase reason for
+                                the condition's last transition.
                               type: string
                             status:
                               type: string
@@ -659,20 +707,19 @@ spec:
                       nodeConditions:
                         additionalProperties:
                           items:
-                            description: 'ClusterCondition contains details for the
-                              current condition of this elasticsearch cluster. Status:
-                              the status of the condition. LastTransitionTime: Last
-                              time the condition transitioned from one status to another.
-                              Reason: Unique, one-word, CamelCase reason for the condition''s
-                              last transition. Message: Human-readable message indicating
-                              details about last transition.'
                             properties:
                               lastTransitionTime:
+                                description: Last time the condition transitioned
+                                  from one status to another.
                                 format: date-time
                                 type: string
                               message:
+                                description: Human-readable message indicating details
+                                  about last transition.
                                 type: string
                               reason:
+                                description: Unique, one-word, CamelCase reason for
+                                  the condition's last transition.
                                 type: string
                               status:
                                 type: string
@@ -729,20 +776,19 @@ spec:
                       clusterCondition:
                         additionalProperties:
                           items:
-                            description: 'ClusterCondition contains details for the
-                              current condition of this elasticsearch cluster. Status:
-                              the status of the condition. LastTransitionTime: Last
-                              time the condition transitioned from one status to another.
-                              Reason: Unique, one-word, CamelCase reason for the condition''s
-                              last transition. Message: Human-readable message indicating
-                              details about last transition.'
                             properties:
                               lastTransitionTime:
+                                description: Last time the condition transitioned
+                                  from one status to another.
                                 format: date-time
                                 type: string
                               message:
+                                description: Human-readable message indicating details
+                                  about last transition.
                                 type: string
                               reason:
+                                description: Unique, one-word, CamelCase reason for
+                                  the condition's last transition.
                                 type: string
                               status:
                                 type: string

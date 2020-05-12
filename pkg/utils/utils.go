@@ -22,6 +22,7 @@ import (
 
 const (
 	DefaultWorkingDir = "/tmp/ocp-clo"
+	DefaultScriptsDir = "./scripts"
 	OsNodeLabel       = "kubernetes.io/os"
 	LinuxValue        = "linux"
 )
@@ -184,6 +185,14 @@ func GetShareDir() string {
 		return "/usr/share/logging"
 	}
 	return shareDir
+}
+
+func GetScriptsDir() string {
+	scriptsDir := os.Getenv("SCRIPTS_DIR")
+	if scriptsDir == "" {
+		return DefaultScriptsDir
+	}
+	return scriptsDir
 }
 
 func GetWorkingDirFileContents(filePath string) []byte {

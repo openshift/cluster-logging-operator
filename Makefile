@@ -114,6 +114,7 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-unit:
+	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	go test ./pkg/...
 
 test-cluster:

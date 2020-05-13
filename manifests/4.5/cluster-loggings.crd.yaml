@@ -15,6 +15,14 @@ spec:
     openAPIV3Schema:
       type: object
       properties:
+        metadata:
+          description: Specification of the metadata for the cluster
+          properties:
+            name:
+              description: The name of the clusterlogging object
+              type: string
+              enum:
+              - "instance"
         spec:
           description: Specification of the desired behavior of the Logging cluster.
           type: object

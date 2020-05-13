@@ -5,7 +5,7 @@ import (
 	"sort"
 	"text/template"
 
-	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -14,9 +14,10 @@ import (
 //ConfigGenerator is a config generator for fluentd
 type ConfigGenerator struct {
 	*generators.Generator
-	includeLegacyForwardConfig bool
-	includeLegacySyslogConfig  bool
-	useOldRemoteSyslogPlugin   bool
+	includeLegacyForwardConfig    bool
+	includeLegacySyslogConfig     bool
+	useOldRemoteSyslogPlugin      bool
+	storeTemplate, outputTemplate string
 }
 
 //NewConfigGenerator creates an instance of FluentdConfigGenerator
@@ -30,12 +31,18 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigGenerator{engine, includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin}, nil
+	return &ConfigGenerator{
+			Generator:                  engine,
+			includeLegacyForwardConfig: includeLegacyForwardConfig,
+			includeLegacySyslogConfig:  includeLegacySyslogConfig,
+			useOldRemoteSyslogPlugin:   useOldRemoteSyslogPlugin,
+		},
+		nil
 }
 
 //Generate the fluent.conf file using the forwarding information
-func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (string, error) {
-	logger.DebugObject("Generating fluent.conf using %s", forwarding)
+func (engine *ConfigGenerator) Generate(forwarder *logging.ClusterLogForwarderSpec) (string, error) {
+	logger.DebugObject("Generating fluent.conf using %s", forwarder)
 	//sanitize here
 	var sourceInputLabels []string
 	var sourceToPipelineLabels []string
@@ -43,22 +50,22 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	var outputLabels []string
 	var err error
 
-	logTypes, appNs := gatherLogSourceTypes(forwarding.Pipelines)
+	inputs, namespaces := gatherSources(forwarder)
 
-	if sourceInputLabels, err = engine.generateSource(logTypes, appNs); err != nil {
+	if sourceInputLabels, err = engine.generateSource(inputs, namespaces); err != nil {
 		logger.Tracef("Error generating source blocks: %v", err)
 		return "", err
 	}
-	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(mapSourceTypesToPipelineNames(forwarding.Pipelines)); err != nil {
+	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(inputsToPipelines(forwarder.Pipelines)); err != nil {
 		logger.Tracef("Error generating source to pipeline blocks: %v", err)
 		return "", err
 	}
 	sort.Strings(sourceToPipelineLabels)
-	if pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(forwarding.Pipelines); err != nil {
+	if pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(forwarder.Pipelines); err != nil {
 		logger.Tracef("Error generating pipeline to output labels blocks: %v", err)
 		return "", err
 	}
-	if outputLabels, err = engine.generateOutputLabelBlocks(forwarding.Outputs); err != nil {
+	if outputLabels, err = engine.generateOutputLabelBlocks(forwarder.Outputs); err != nil {
 		logger.Tracef("Error generating to output label blocks: %v", err)
 		return "", err
 	}
@@ -76,9 +83,9 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	}{
 		engine.includeLegacyForwardConfig,
 		engine.includeLegacySyslogConfig,
-		logTypes.Has(string(logforward.LogSourceTypeInfra)),
-		logTypes.Has(string(logforward.LogSourceTypeApp)),
-		logTypes.Has(string(logforward.LogSourceTypeAudit)),
+		inputs.Has(string(logging.InputNameInfrastructure)),
+		inputs.Has(string(logging.InputNameApplication)),
+		inputs.Has(string(logging.InputNameAudit)),
 		sourceInputLabels,
 		sourceToPipelineLabels,
 		pipelineToOutputLabels,
@@ -93,33 +100,40 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 	return result, nil
 }
 
-func gatherLogSourceTypes(pipelines []logforward.PipelineSpec) (sets.String, sets.String) {
-	types := sets.NewString()
-	appNamespaces := sets.NewString()
-	for _, pipeline := range pipelines {
-		types.Insert(string(pipeline.SourceType))
-		if pipeline.SourceType == logforward.LogSourceTypeApp {
-			appNamespaces.Insert(pipeline.Namespaces...)
+func gatherSources(forwarder *logging.ClusterLogForwarderSpec) (types sets.String, namespaces sets.String) {
+	types, namespaces = sets.NewString(), sets.NewString()
+	specs := forwarder.InputMap()
+	for inputName := range logging.NewRoutes(forwarder.Pipelines).ByInput {
+		if logging.ReservedInputNames.Has(inputName) {
+			types.Insert(inputName) // Use name as type.
+		} else if spec, ok := specs[inputName]; ok {
+			if app := spec.Application; app != nil {
+				types.Insert(logging.InputNameApplication)
+				namespaces.Insert(app.Namespaces...)
+			}
+			if spec.Infrastructure != nil {
+				types.Insert(logging.InputNameInfrastructure)
+			}
+			if spec.Audit != nil {
+				types.Insert(logging.InputNameAudit)
+			}
 		}
 	}
-	return types, appNamespaces
+	return types, namespaces
 }
 
-func mapSourceTypesToPipelineNames(pipelines []logforward.PipelineSpec) map[logforward.LogSourceType][]string {
-	result := map[logforward.LogSourceType][]string{}
+func inputsToPipelines(pipelines []logging.PipelineSpec) logging.RouteMap {
+	result := logging.RouteMap{}
 	for _, pipeline := range pipelines {
-		names, ok := result[pipeline.SourceType]
-		if !ok {
-			names = []string{}
+		for _, inRef := range pipeline.InputRefs {
+			result.Insert(inRef, pipeline.Name)
 		}
-		names = append(names, pipeline.Name)
-		result[pipeline.SourceType] = names
 	}
 	return result
 }
 
 //generateSourceToPipelineLabels generates fluentd label stanzas to fan source types to multiple pipelines
-func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines map[logforward.LogSourceType][]string) ([]string, error) {
+func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines logging.RouteMap) ([]string, error) {
 	configs := []string{}
 	for sourceType, pipelineNames := range sourcesToPipelines {
 		data := struct {
@@ -131,7 +145,7 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 			engine.includeLegacyForwardConfig,
 			engine.includeLegacySyslogConfig,
 			string(sourceType),
-			pipelineNames,
+			pipelineNames.List(),
 		}
 		result, err := engine.Execute("sourceToPipelineCopyTemplate", data)
 		if err != nil {
@@ -142,7 +156,7 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 	return configs, nil
 }
 
-func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []logforward.PipelineSpec) ([]string, error) {
+func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []logging.PipelineSpec) ([]string, error) {
 	configs := []string{}
 	for _, pipeline := range pipelines {
 		data := struct {
@@ -166,39 +180,36 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []logfor
 //  <match retry_elasticsearch_offcluster>
 //  @type copy
 //  <store>
-//	  @type elasticsearch
+//		@type elasticsearch
 //  </store>
 //  </match>
 //  <match **>
 //    @type copy
 //  </match>
 // </label>
-func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logforward.OutputSpec) ([]string, error) {
+func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.OutputSpec) ([]string, error) {
 	configs := []string{}
-	logger.Debugf("Evaluating %v forwarding outputs...", len(outputs))
+	logger.Debugf("Evaluating %v forwarder logging...", len(outputs))
 	for _, output := range outputs {
 		logger.Debugf("Generate output type %v", output.Type)
-		outputTemplateName := "outputLabelConf"
-		var storeTemplateName string
+		engine.outputTemplate = "outputLabelConf" // Default
 		switch output.Type {
-		case logforward.OutputTypeElasticsearch:
-			storeTemplateName = "storeElasticsearch"
-		case logforward.OutputTypeForward:
-			storeTemplateName = "forward"
-			outputTemplateName = "outputLabelConfNoCopy"
-		case logforward.OutputTypeSyslog:
+		case logging.OutputTypeElasticsearch:
+			engine.storeTemplate = "storeElasticsearch"
+		case logging.OutputTypeFluentForward:
+			engine.storeTemplate, engine.outputTemplate = "forward", "outputLabelConfNoCopy"
+		case logging.OutputTypeSyslog:
 			if engine.useOldRemoteSyslogPlugin {
-				storeTemplateName = "storeSyslogOld"
+				engine.storeTemplate = "storeSyslogOld"
 			} else {
-				storeTemplateName = "storeSyslog"
+				engine.storeTemplate = "storeSyslog"
 			}
-			outputTemplateName = "outputLabelConfNoRetry"
+			engine.outputTemplate = "outputLabelConfNoRetry"
 		default:
-			logger.Warnf("Pipeline targets include an unrecognized type: %q", output.Type)
-			continue
+			return nil, fmt.Errorf("Unknown outpt type: %v", output.Type)
 		}
-		conf := newOutputLabelConf(engine.Template, storeTemplateName, output)
-		result, err := engine.Execute(outputTemplateName, conf)
+		conf := newOutputLabelConf(engine.Template, engine.storeTemplate, output)
+		result, err := engine.Execute(engine.outputTemplate, conf)
 		if err != nil {
 			return nil, fmt.Errorf("Error generating fluentd config Processing template outputLabelConf: %v", err)
 		}

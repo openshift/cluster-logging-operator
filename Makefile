@@ -15,6 +15,7 @@ FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
 # Run all local pre-merge tests. CI runs additional system tests on the image.
 all: generate fmt test-unit lint
+	go build ./...	       # Make sure all code builds.
 
 # Download tools if not available on local PATH.
 operator-sdk:
@@ -66,17 +67,20 @@ fmt:
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
+MANIFESTS=manifests/$(OCP_VERSION)
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@echo generating code
 	@$(MAKE) operator-sdk
 	@operator-sdk generate k8s
 	@operator-sdk generate crds
+	@mv deploy/crds/logging.openshift.io_clusterlogforwarders_crd.yaml $(MANIFESTS)
+	@rm -rf deploy
 	@$(MAKE) fmt
 	@touch $@
 
 regenerate:
-	@rm -f $(GEN_TIMESTAMP)
+	@rm -f $(GEN_TIMESTAMP) $(shell find pkg -name zz_generated_*.go)
 	@$(MAKE) generate
 
 deploy-image: image

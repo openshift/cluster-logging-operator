@@ -10,13 +10,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 
-var _ = Describe("LogForwarding", func() {
+var _ = Describe("ClusterLogForwarder", func() {
 
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
@@ -24,7 +24,7 @@ var _ = Describe("LogForwarding", func() {
 		err error
 		e2e = helpers.NewE2ETestFramework()
 	)
-	Describe("when ClusterLogging is configured with 'forwarding' to an administrator managed Elasticsearch", func() {
+	Describe("when ClusterLogging is configured with 'forwarder' to an administrator managed Elasticsearch", func() {
 
 		BeforeEach(func() {
 			rootDir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
@@ -43,46 +43,46 @@ var _ = Describe("LogForwarding", func() {
 			if err := e2e.CreateClusterLogging(cr); err != nil {
 				Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 			}
-			forwarding := &logforward.LogForwarding{
+			forwarder := &logging.ClusterLogForwarder{
 				TypeMeta: metav1.TypeMeta{
-					Kind:       logforward.LogForwardingKind,
-					APIVersion: logforward.SchemeGroupVersion.String(),
+					Kind:       logging.ClusterLogForwarderKind,
+					APIVersion: logging.SchemeGroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "instance",
 				},
-				Spec: logforward.ForwardingSpec{
-					Outputs: []logforward.OutputSpec{
-						logforward.OutputSpec{
+				Spec: logging.ClusterLogForwarderSpec{
+					Outputs: []logging.OutputSpec{
+						{
 							Name: elasticsearch.Name,
-							Secret: &logforward.OutputSecretSpec{
+							Secret: &logging.OutputSecretSpec{
 								Name: pipelineSecret.ObjectMeta.Name,
 							},
-							Type:     logforward.OutputTypeElasticsearch,
-							Endpoint: fmt.Sprintf("%s.%s.svc:9200", elasticsearch.Name, elasticsearch.Namespace),
+							Type: logging.OutputTypeElasticsearch,
+							URL:  fmt.Sprintf("%s.%s.svc:9200", elasticsearch.Name, elasticsearch.Namespace),
 						},
 					},
-					Pipelines: []logforward.PipelineSpec{
-						logforward.PipelineSpec{
+					Pipelines: []logging.PipelineSpec{
+						{
 							Name:       "test-app",
 							OutputRefs: []string{elasticsearch.Name},
-							SourceType: logforward.LogSourceTypeApp,
+							InputRefs:  []string{logging.InputNameApplication},
 						},
-						logforward.PipelineSpec{
+						{
 							Name:       "test-infra",
 							OutputRefs: []string{elasticsearch.Name},
-							SourceType: logforward.LogSourceTypeInfra,
+							InputRefs:  []string{logging.InputNameInfrastructure},
 						},
-						logforward.PipelineSpec{
+						{
 							Name:       "test-audit",
 							OutputRefs: []string{elasticsearch.Name},
-							SourceType: logforward.LogSourceTypeAudit,
+							InputRefs:  []string{logging.InputNameAudit},
 						},
 					},
 				},
 			}
-			if err := e2e.CreateLogForwarding(forwarding); err != nil {
-				Fail(fmt.Sprintf("Unable to create an instance of logforwarding: %v", err))
+			if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+				Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 			}
 			components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
 			for _, component := range components {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentd"
 )
 
@@ -18,9 +17,9 @@ func NewConfigGenerator(collector logging.LogCollectionType, includeLegacyForwar
 	}
 }
 
-//ConfigGenerator is a config generator for a given ForwardingSpec
+//ConfigGenerator is a config generator for a given ClusterLogForwarderSpec
 type ConfigGenerator interface {
 
 	//Generate the config
-	Generate(pipeline *logforward.ForwardingSpec) (string, error)
+	Generate(pipeline *logging.ClusterLogForwarderSpec) (string, error)
 }

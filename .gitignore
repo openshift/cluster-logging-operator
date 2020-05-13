@@ -1,3 +1,5 @@
+**/.kube/*
+_output/
 pf.log
 # GoLand
 .idea

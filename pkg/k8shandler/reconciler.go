@@ -2,11 +2,11 @@ package k8shandler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,10 +21,10 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		cluster: requestCluster,
 	}
 
-	forwarding := clusterLoggingRequest.getLogForwarding()
-	if forwarding != nil {
-		clusterLoggingRequest.ForwardingRequest = forwarding
-		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
+	forwarder := clusterLoggingRequest.getLogForwarder()
+	if forwarder != nil {
+		clusterLoggingRequest.ForwarderRequest = forwarder
+		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
@@ -57,14 +57,14 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	return nil
 }
 
-func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestClient client.Client) (err error) {
-	logger.DebugObject("Reconciling LogForwarding instance: %v", forwarding)
+func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client) (err error) {
+	logger.DebugObject("Reconciling ClusterLogForwarder instance: %v", forwarder)
 	clusterLoggingRequest := ClusterLoggingRequest{
 		client: requestClient,
 	}
-	if forwarding != nil {
-		clusterLoggingRequest.ForwardingRequest = forwarding
-		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
+	if forwarder != nil {
+		clusterLoggingRequest.ForwarderRequest = forwarder
+		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
@@ -80,10 +80,14 @@ func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestC
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
+	err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig)
+	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
+	logger.DebugObject("ClusterLogForwarder status after updating collection: %v", forwarder.Status)
+	if err != nil {
+		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		logger.Errorf(msg)
+		return errors.New(msg)
 	}
-
 	return nil
 }
 
@@ -104,10 +108,10 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 		return nil
 	}
 
-	forwarding := clusterLoggingRequest.getLogForwarding()
-	if forwarding != nil {
-		clusterLoggingRequest.ForwardingRequest = forwarding
-		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
+	forwarder := clusterLoggingRequest.getLogForwarder()
+	if forwarder != nil {
+		clusterLoggingRequest.ForwarderRequest = forwarder
+		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
 	// Reconcile Collection
@@ -134,10 +138,10 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 		return nil
 	}
 
-	forwarding := clusterLoggingRequest.getLogForwarding()
-	if forwarding != nil {
-		clusterLoggingRequest.ForwardingRequest = forwarding
-		clusterLoggingRequest.ForwardingSpec = forwarding.Spec
+	forwarder := clusterLoggingRequest.getLogForwarder()
+	if forwarder != nil {
+		clusterLoggingRequest.ForwarderRequest = forwarder
+		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
@@ -178,15 +182,15 @@ func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
 	return proxyConfig
 }
 
-func (clusterRequest *ClusterLoggingRequest) getLogForwarding() *logforwarding.LogForwarding {
-	logForwardingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
-	logForwarding := &logforwarding.LogForwarding{}
-	logger.Debug("logforwarding-controller fetching LF instance")
-	if err := clusterRequest.client.Get(context.TODO(), logForwardingNamespacedName, logForwarding); err != nil {
+func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {
+	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
+	forwarder := &logging.ClusterLogForwarder{}
+	logger.Debug("clusterlogforwarder-controller fetching LF instance")
+	if err := clusterRequest.client.Get(context.TODO(), nsname, forwarder); err != nil {
 		if !apierrors.IsNotFound(err) {
-			fmt.Printf("Encountered unexpected error getting %v", logForwardingNamespacedName)
+			fmt.Printf("Encountered unexpected error getting %v", nsname)
 		}
 	}
 
-	return logForwarding
+	return forwarder
 }

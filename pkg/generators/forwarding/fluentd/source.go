@@ -4,31 +4,35 @@ import (
 	"fmt"
 	"strings"
 
-	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+// FIXME(alanconway) generateSource scrapes files for all requested namespaces.
+// We need to also filter them per-user-SourceSpec since different SourceSpecs
+// might request different namespaces.
+
 func (engine *ConfigGenerator) generateSource(sources sets.String, appNs sets.String) (results []string, err error) {
-	//looking to control order
+	// Order of templates matters.
 	templates := []string{}
-	appNsPaths := []string{}
-	if sources.Has(string(logforward.LogSourceTypeInfra)) {
+	nsPaths := []string{}
+	if sources.Has(string(logging.InputNameInfrastructure)) {
 		templates = append(templates, "inputSourceJournalTemplate")
 	}
-	if sources.Has(string(logforward.LogSourceTypeApp)) {
+	if sources.Has(string(logging.InputNameApplication)) {
 		templates = append(templates, "inputSourceContainerTemplate")
 		for _, ns := range appNs.List() {
-			appNsPaths = append(appNsPaths, fmt.Sprintf("\"/var/log/containers/*_%s_*.log\"", ns))
+			nsPaths = append(nsPaths, fmt.Sprintf("\"/var/log/containers/*_%s_*.log\"", ns))
 		}
 	}
-	if sources.Has(string(logforward.LogSourceTypeAudit)) {
+	if sources.Has(string(logging.InputNameAudit)) {
 		templates = append(templates, "inputSourceHostAuditTemplate")
 		templates = append(templates, "inputSourceK8sAuditTemplate")
 		templates = append(templates, "inputSourceOpenShiftAuditTemplate")
 	}
 	if len(templates) == 0 {
-		return results, fmt.Errorf("Unable to generate source configs for supported source types: %v", sources.List())
+		return results, fmt.Errorf("No recognized input types: %v", sources.List())
 	}
 	data := struct {
 		LoggingNamespace           string
@@ -41,7 +45,7 @@ func (engine *ConfigGenerator) generateSource(sources sets.String, appNs sets.St
 		constants.FluentdName,
 		constants.ElasticsearchName,
 		constants.KibanaName,
-		strings.Join(appNsPaths, ", "),
+		strings.Join(nsPaths, ", "),
 	}
 	for _, template := range templates {
 		result, err := engine.Execute(template, data)

@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"time"
+
+	"github.com/openshift/elasticsearch-operator/pkg/utils/comparators"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -53,7 +56,7 @@ func (deploymentNode *deploymentNode) populateReference(nodeName string, node ap
 	}
 
 	progressDeadlineSeconds := int32(1800)
-
+	logConfig := getLogConfig(cluster.GetAnnotations())
 	deployment.Spec = apps.DeploymentSpec{
 		Replicas: &replicas,
 		Selector: &metav1.LabelSelector{
@@ -64,7 +67,7 @@ func (deploymentNode *deploymentNode) populateReference(nodeName string, node ap
 		},
 		ProgressDeadlineSeconds: &progressDeadlineSeconds,
 		Paused:                  false,
-		Template:                newPodTemplateSpec(nodeName, cluster.Name, cluster.Namespace, node, cluster.Spec.Spec, labels, roleMap, client),
+		Template:                newPodTemplateSpec(nodeName, cluster.Name, cluster.Namespace, node, cluster.Spec.Spec, labels, roleMap, client, logConfig),
 	}
 
 	addOwnerRefToObject(&deployment, getOwnerRef(cluster))
@@ -123,8 +126,8 @@ func (node *deploymentNode) state() api.ElasticsearchNodeStatus {
 	}
 }
 
-func (node *deploymentNode) delete() {
-	node.client.Delete(context.TODO(), &node.self)
+func (node *deploymentNode) delete() error {
+	return node.client.Delete(context.TODO(), &node.self)
 }
 
 func (node *deploymentNode) create() error {
@@ -373,7 +376,9 @@ func (node *deploymentNode) rollingRestart(upgradeStatus *api.ElasticsearchNodeS
 
 		// if the node doesn't exist -- create it
 		if node.isMissing() {
-			node.create()
+			if err := node.create(); err != nil {
+				logrus.Warnf("unable to create node. E: %s\r\n", err.Error())
+			}
 		}
 
 		if err := node.setReplicaCount(1); err != nil {
@@ -508,7 +513,9 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 	if upgradeStatus.UpgradeStatus.UpgradePhase == api.NodeRestarting {
 
 		// do a unpause, wait, and pause again
-		node.unpause()
+		if err := node.unpause(); err != nil {
+			logrus.Warnf("unable to unpause node. E: %s\r\n", err.Error())
+		}
 
 		// wait for rollout
 		if err := node.waitForNodeRollout(node.currentRevision); err != nil {
@@ -517,7 +524,9 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 		}
 
 		// pause again
-		node.pause()
+		if err := node.pause(); err != nil {
+			logrus.Warnf("unable to pause node. E: %s\r\n", err.Error())
+		}
 
 		// once we've restarted this is taken care of
 		node.refreshHashes()
@@ -583,8 +592,12 @@ func (node *deploymentNode) progressUnshedulableNode(upgradeStatus *api.Elastics
 		if err := node.unpause(); err != nil {
 			return err
 		}
-		// if unpause is succesfull, always try to pause
-		defer node.pause()
+		// if unpause is successful, always try to pause
+		defer func() {
+			if err := node.pause(); err != nil {
+				logrus.Warnf("unable to unpause node. E: %s\r\n", err.Error())
+			}
+		}()
 
 		logrus.Debugf("Waiting for node '%s' to rollout...", node.name())
 
@@ -651,6 +664,16 @@ func (node *deploymentNode) isChanged() bool {
 			changed = true
 		}
 
+		if !comparators.EnvValueEqual(desiredContainer.Env, nodeContainer.Env) {
+			nodeContainer.Env = desiredContainer.Env
+			logger.Debugf("Container EnvVars are different between current and desired for %s", nodeContainer.Name)
+			changed = true
+		}
+		if !reflect.DeepEqual(desiredContainer.Args, nodeContainer.Args) {
+			nodeContainer.Args = desiredContainer.Args
+			logger.Debugf("Container Args are different between current and desired for %s", nodeContainer.Name)
+			changed = true
+		}
 		var updatedContainer v1.Container
 		var resourceUpdated bool
 		if updatedContainer, resourceUpdated = updateResources(node, nodeContainer, desiredContainer); resourceUpdated {

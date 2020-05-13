@@ -10,12 +10,10 @@ const (
 	modeUnique    = "unique"
 	modeSharedOps = "shared_ops"
 
-	defaultMode               = modeSharedOps
-	defaultMasterCPURequest   = "100m"
-	defaultCPURequest         = "100m"
-	defaultMemoryLimit        = "4Gi"
-	defaultMemoryRequest      = "1Gi"
-	elasticsearchDefaultImage = "quay.io/openshift/origin-logging-elasticsearch6"
+	defaultMode          = modeSharedOps
+	defaultCPURequest    = "100m"
+	defaultMemoryLimit   = "4Gi"
+	defaultMemoryRequest = "1Gi"
 
 	maxMasterCount = 3
 
@@ -24,8 +22,6 @@ const (
 	heapDumpLocation        = "/elasticsearch/persistent/heapdump.hprof"
 
 	k8sTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-
-	logAppenderAnnotation = "elasticsearch.openshift.io/develLogAppender"
 )
 
 func kibanaIndexMode(mode string) (string, error) {
@@ -40,13 +36,6 @@ func kibanaIndexMode(mode string) (string, error) {
 
 func esUnicastHost(clusterName, namespace string) string {
 	return fmt.Sprintf("%v-cluster.%v.svc", clusterName, namespace)
-}
-
-func rootLogger(cluster *api.Elasticsearch) string {
-	if value, ok := cluster.GetAnnotations()[logAppenderAnnotation]; ok {
-		return value
-	}
-	return "console"
 }
 
 func calculateReplicaCount(dpl *api.Elasticsearch) int {

@@ -1,4 +1,5 @@
 pf.log
+**/.kube/**
 # GoLand
 .idea
 # Temporary Build Files

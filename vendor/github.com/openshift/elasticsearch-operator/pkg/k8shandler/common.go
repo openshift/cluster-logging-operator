@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/openshift/elasticsearch-operator/pkg/constants"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,12 +25,8 @@ func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 	}
 }
 
-func getImage(commonImage string) string {
-	image := commonImage
-	if image == "" {
-		image = utils.LookupEnvWithDefault("ELASTICSEARCH_IMAGE", elasticsearchDefaultImage)
-	}
-	return image
+func getImage() string {
+	return utils.LookupEnvWithDefault("ELASTICSEARCH_IMAGE", constants.ElasticsearchDefaultImage)
 }
 
 func getNodeRoleMap(node api.ElasticsearchNode) map[api.ElasticsearchNodeRole]bool {
@@ -67,36 +64,6 @@ func getOwnerRef(v *api.Elasticsearch) metav1.OwnerReference {
 		UID:        v.UID,
 		Controller: &trueVar,
 	}
-}
-
-func isOnlyClientNode(node api.ElasticsearchNode) bool {
-	for _, role := range node.Roles {
-		if role != api.ElasticsearchRoleClient {
-			return false
-		}
-	}
-
-	return true
-}
-
-func isClientNode(node api.ElasticsearchNode) bool {
-	for _, role := range node.Roles {
-		if role == api.ElasticsearchRoleClient {
-			return true
-		}
-	}
-
-	return false
-}
-
-func isOnlyMasterNode(node api.ElasticsearchNode) bool {
-	for _, role := range node.Roles {
-		if role != api.ElasticsearchRoleMaster {
-			return false
-		}
-	}
-
-	return true
 }
 
 func isMasterNode(node api.ElasticsearchNode) bool {
@@ -169,12 +136,12 @@ func newElasticsearchContainer(imageName string, envVars []v1.EnvVar, resourceRe
 		ImagePullPolicy: "IfNotPresent",
 		Env:             envVars,
 		Ports: []v1.ContainerPort{
-			v1.ContainerPort{
+			{
 				Name:          "cluster",
 				ContainerPort: 9300,
 				Protocol:      v1.ProtocolTCP,
 			},
-			v1.ContainerPort{
+			{
 				ContainerPort: 9200,
 				Protocol:      v1.ProtocolTCP,
 			},
@@ -192,15 +159,15 @@ func newElasticsearchContainer(imageName string, envVars []v1.EnvVar, resourceRe
 			},
 		},
 		VolumeMounts: []v1.VolumeMount{
-			v1.VolumeMount{
+			{
 				Name:      "elasticsearch-storage",
 				MountPath: "/elasticsearch/persistent",
 			},
-			v1.VolumeMount{
+			{
 				Name:      "elasticsearch-config",
 				MountPath: elasticsearchConfigPath,
 			},
-			v1.VolumeMount{
+			{
 				Name:      "certificates",
 				MountPath: elasticsearchCertsPath,
 			},
@@ -209,7 +176,7 @@ func newElasticsearchContainer(imageName string, envVars []v1.EnvVar, resourceRe
 	}
 }
 
-func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
+func newProxyContainer(imageName, clusterName, namespace string, logConfig LogConfig) (v1.Container, error) {
 	cpuLimit, err := resource.ParseQuantity("100m")
 	if err != nil {
 		return v1.Container{}, err
@@ -225,32 +192,47 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 		Image:           imageName,
 		ImagePullPolicy: "IfNotPresent",
 		Ports: []v1.ContainerPort{
-			v1.ContainerPort{
+			{
 				Name:          "restapi",
 				ContainerPort: 60000,
 				Protocol:      v1.ProtocolTCP,
 			},
 		},
+		Env: []v1.EnvVar{
+			{
+				Name:  "LOG_LEVEL",
+				Value: logConfig.LogLevel,
+			},
+		},
 		VolumeMounts: []v1.VolumeMount{
-			v1.VolumeMount{
+			{
 				Name:      fmt.Sprintf("%s-%s", clusterName, "metrics"),
 				MountPath: "/etc/proxy/secrets",
 			},
-			v1.VolumeMount{
+			{
 				Name:      "certificates",
 				MountPath: "/etc/proxy/elasticsearch",
 			},
 		},
 		Args: []string{
+			// HTTPS default listener for Elasticsearch
 			"--listening-address=:60000",
-			"--tls-cert=/etc/proxy/secrets/tls.crt",
-			"--tls-key=/etc/proxy/secrets/tls.key",
+			"--tls-cert=/etc/proxy/elasticsearch/logging-es.crt",
+			"--tls-key=/etc/proxy/elasticsearch/logging-es.key",
+			"--tls-client-ca=/etc/proxy/elasticsearch/admin-ca",
+
+			// HTTPs listener for metrics
+			"--metrics-listening-address=:60001",
+			"--metrics-tls-cert=/etc/proxy/secrets/tls.crt",
+			"--metrics-tls-key=/etc/proxy/secrets/tls.key",
+
 			"--upstream-ca=/etc/proxy/elasticsearch/admin-ca",
 			"--cache-expiry=60s",
-			`--auth-backend-role=sg_role_admin={"namespace": "default", "verb": "view", "resource": "pods/metrics"}`,
+			`--auth-backend-role=admin_reader={"namespace": "default", "verb": "get", "resource": "pods/log"}`,
 			`--auth-backend-role=prometheus={"verb": "get", "resource": "/metrics"}`,
 			`--auth-backend-role=jaeger={"verb": "get", "resource": "/jaeger", "resourceAPIGroup": "elasticsearch.jaegertracing.io"}`,
-			`--cl-infra-role-name=sg_role_admin`,
+			`--auth-backend-role=elasticsearch-operator={"namespace": "*", "verb": "*", "resource": "*", "resourceAPIGroup": "logging.openshift.io"}`,
+			fmt.Sprintf("--auth-backend-role=index-management={\"namespace\":\"%s\", \"verb\": \"*\", \"resource\": \"indices\", \"resourceAPIGroup\": \"elasticsearch.openshift.io\"}", namespace),
 		},
 		Resources: v1.ResourceRequirements{
 			Limits: v1.ResourceList{
@@ -268,11 +250,11 @@ func newProxyContainer(imageName, clusterName string) (v1.Container, error) {
 func newEnvVars(nodeName, clusterName, instanceRam string, roleMap map[api.ElasticsearchNodeRole]bool) []v1.EnvVar {
 
 	return []v1.EnvVar{
-		v1.EnvVar{
+		{
 			Name:  "DC_NAME",
 			Value: nodeName,
 		},
-		v1.EnvVar{
+		{
 			Name: "NAMESPACE",
 			ValueFrom: &v1.EnvVarSource{
 				FieldRef: &v1.ObjectFieldSelector{
@@ -280,47 +262,55 @@ func newEnvVars(nodeName, clusterName, instanceRam string, roleMap map[api.Elast
 				},
 			},
 		},
-		v1.EnvVar{
+		{
+			Name: "POD_IP",
+			ValueFrom: &v1.EnvVarSource{
+				FieldRef: &v1.ObjectFieldSelector{
+					FieldPath: "status.podIP",
+				},
+			},
+		},
+		{
 			Name:  "KUBERNETES_MASTER",
 			Value: "https://kubernetes.default.svc",
 		},
-		v1.EnvVar{
+		{
 			Name:  "KUBERNETES_TRUST_CERT",
 			Value: "true",
 		},
-		v1.EnvVar{
+		{
 			Name:  "SERVICE_DNS",
 			Value: fmt.Sprintf("%s-cluster", clusterName),
 		},
-		v1.EnvVar{
+		{
 			Name:  "CLUSTER_NAME",
 			Value: clusterName,
 		},
-		v1.EnvVar{
+		{
 			Name:  "INSTANCE_RAM",
 			Value: instanceRam,
 		},
-		v1.EnvVar{
+		{
 			Name:  "HEAP_DUMP_LOCATION",
 			Value: heapDumpLocation,
 		},
-		v1.EnvVar{
+		{
 			Name:  "RECOVER_AFTER_TIME",
 			Value: "5m",
 		},
-		v1.EnvVar{
+		{
 			Name:  "READINESS_PROBE_TIMEOUT",
 			Value: "30",
 		},
-		v1.EnvVar{
+		{
 			Name:  "POD_LABEL",
 			Value: fmt.Sprintf("cluster=%s", clusterName),
 		},
-		v1.EnvVar{
+		{
 			Name:  "IS_MASTER",
 			Value: strconv.FormatBool(roleMap[api.ElasticsearchRoleMaster]),
 		},
-		v1.EnvVar{
+		{
 			Name:  "HAS_DATA",
 			Value: strconv.FormatBool(roleMap[api.ElasticsearchRoleData]),
 		},
@@ -352,11 +342,11 @@ func newLabelSelector(clusterName, nodeName string, roleMap map[api.Elasticsearc
 	}
 }
 
-func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.ElasticsearchNode, commonSpec api.ElasticsearchNodeSpec, labels map[string]string, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) v1.PodTemplateSpec {
+func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.ElasticsearchNode, commonSpec api.ElasticsearchNodeSpec, labels map[string]string, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client, logConfig LogConfig) v1.PodTemplateSpec {
 
 	resourceRequirements := newResourceRequirements(node.Resources, commonSpec.Resources)
-	proxyImage := utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", "quay.io/openshift/elasticsearch-proxy:latest")
-	proxyContainer, _ := newProxyContainer(proxyImage, clusterName)
+	proxyImage := utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", "quay.io/openshift/origin-elasticsearch-proxy:latest")
+	proxyContainer, _ := newProxyContainer(proxyImage, clusterName, namespace, logConfig)
 
 	selectors := mergeSelectors(node.NodeSelector, commonSpec.NodeSelector)
 	// We want to make sure the pod ends up allocated on linux node. Thus we make sure the
@@ -365,7 +355,7 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 
 	tolerations := appendTolerations(node.Tolerations, commonSpec.Tolerations)
 	tolerations = appendTolerations(tolerations, []v1.Toleration{
-		v1.Toleration{
+		{
 			Key:      "node.kubernetes.io/disk-pressure",
 			Operator: v1.TolerationOpExists,
 			Effect:   v1.TaintEffectNoSchedule,
@@ -380,7 +370,7 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 			Affinity: newAffinity(roleMap),
 			Containers: []v1.Container{
 				newElasticsearchContainer(
-					getImage(commonSpec.Image),
+					getImage(),
 					newEnvVars(nodeName, clusterName, resourceRequirements.Limits.Memory().String(), roleMap),
 					resourceRequirements,
 				),
@@ -544,7 +534,7 @@ func newResourceRequirements(nodeResRequirements, commonResRequirements v1.Resou
 
 func newVolumes(clusterName, nodeName, namespace string, node api.ElasticsearchNode, client client.Client) []v1.Volume {
 	return []v1.Volume{
-		v1.Volume{
+		{
 			Name: "elasticsearch-config",
 			VolumeSource: v1.VolumeSource{
 				ConfigMap: &v1.ConfigMapVolumeSource{
@@ -554,11 +544,11 @@ func newVolumes(clusterName, nodeName, namespace string, node api.ElasticsearchN
 				},
 			},
 		},
-		v1.Volume{
+		{
 			Name:         "elasticsearch-storage",
 			VolumeSource: newVolumeSource(clusterName, nodeName, namespace, node, client),
 		},
-		v1.Volume{
+		{
 			Name: "certificates",
 			VolumeSource: v1.VolumeSource{
 				Secret: &v1.SecretVolumeSource{
@@ -566,7 +556,7 @@ func newVolumes(clusterName, nodeName, namespace string, node api.ElasticsearchN
 				},
 			},
 		},
-		v1.Volume{
+		{
 			Name: fmt.Sprintf("%s-%s", clusterName, "metrics"),
 			VolumeSource: v1.VolumeSource{
 				Secret: &v1.SecretVolumeSource{
@@ -620,7 +610,7 @@ func newVolumeSource(clusterName, nodeName, namespace string, node api.Elasticse
 
 func sortDataHashKeys(dataHash map[string][32]byte) []string {
 	keys := []string{}
-	for key, _ := range dataHash {
+	for key := range dataHash {
 		keys = append(keys, key)
 	}
 

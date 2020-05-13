@@ -23,7 +23,7 @@ func NewPodSpec(serviceAccountName string, containers []core.Container, volumes 
 func NewContainer(containerName string, imageName string, pullPolicy core.PullPolicy, resources core.ResourceRequirements) core.Container {
 	return core.Container{
 		Name:            containerName,
-		Image:           utils.GetComponentImage(imageName),
+		Image:           imageName,
 		ImagePullPolicy: pullPolicy,
 		Resources:       resources,
 	}

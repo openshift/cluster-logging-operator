@@ -349,11 +349,13 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
 		different = true
 	}
+
 	if !utils.PodVolumeEquivalent(current.Spec.Template.Spec.Volumes, desired.Spec.Template.Spec.Volumes) {
 		logrus.Infof("Collector volumes change found, updating %q", current.Name)
 		current.Spec.Template.Spec.Volumes = desired.Spec.Template.Spec.Volumes
 		different = true
 	}
+
 	if !reflect.DeepEqual(current.Spec.Template.Spec.Containers[0].VolumeMounts, desired.Spec.Template.Spec.Containers[0].VolumeMounts) {
 		logrus.Infof("Collector container volumemounts change found, updating %q", current.Name)
 		current.Spec.Template.Spec.Containers[0].VolumeMounts = desired.Spec.Template.Spec.Containers[0].VolumeMounts

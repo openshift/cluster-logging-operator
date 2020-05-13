@@ -230,10 +230,12 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 
 	kibanaTrustBundle := &v1.ConfigMap{}
 
-	// Create cluster proxy trusted CA bundle.
-	err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
-	if err != nil {
-		return
+	// Create cluster proxy trusted CA bundle
+	if proxyConfig != nil {
+		kibanaTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
+		if err != nil {
+			return
+		}
 	}
 
 	kibanaPodSpec := newKibanaPodSpec(clusterRequest.cluster, "kibana", "elasticsearch.openshift-logging.svc.cluster.local", proxyConfig, kibanaTrustBundle)

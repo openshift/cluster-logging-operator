@@ -412,9 +412,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 
 	fluentdTrustBundle := &v1.ConfigMap{}
 	// Create or update cluster proxy trusted CA bundle.
-	err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
-	if err != nil {
-		return
+	if proxyConfig != nil {
+		fluentdTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
+		if err != nil {
+			return
+		}
 	}
 
 	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, fluentdTrustBundle, clusterRequest.ForwardingSpec)
@@ -469,12 +471,7 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	}
 
 	flushBuffer := isBufferFlushRequired(current, desired)
-	desired, different := isDaemonsetDifferent(current, desired)
-
-	// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
-	if current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] != desired.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] {
-		different = true
-	}
+	desired, different := isFluentdDaemonsetDifferent(current, desired)
 
 	if different {
 		current.Spec = desired.Spec
@@ -567,4 +564,17 @@ func updateEnvVar(value v1.EnvVar, values []v1.EnvVar) []v1.EnvVar {
 		values = append(values, value)
 	}
 	return values
+}
+
+func isFluentdDaemonsetDifferent(current, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
+	current, different := isDaemonsetDifferent(current, desired)
+
+	currentHash := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
+	desiredHash := desired.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
+	if currentHash != desiredHash {
+		current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = desiredHash
+		different = true
+	}
+
+	return current, different
 }

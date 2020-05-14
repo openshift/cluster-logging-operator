@@ -79,17 +79,17 @@ GEN_TIMESTAMP=.zz_generate_timestamp
 MANIFESTS=manifests/$(OCP_VERSION)
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
-	@echo generating code
+	@echo generating code and CRDs
 	@$(MAKE) operator-sdk
 	@operator-sdk generate k8s
 	@operator-sdk generate crds
-	@mv deploy/crds/logging.openshift.io_clusterlogforwarders_crd.yaml $(MANIFESTS)
+	@mv deploy/crds/*_crd.yaml $(MANIFESTS)
 	@rm -rf deploy
 	@$(MAKE) fmt
 	@touch $@
 
 regenerate:
-	@rm -f $(GEN_TIMESTAMP) $(shell find pkg -name zz_generated_*.go)
+	@rm -f $(GEN_TIMESTAMP) $(shell find pkg -name zz_generated_*.go) $(MANIFESTS)/logging.openshift.io_*_crd.yaml
 	@$(MAKE) generate
 
 deploy-image: image

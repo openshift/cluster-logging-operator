@@ -10,8 +10,11 @@ node:
   data: ${HAS_DATA}
   max_local_storage_nodes: 1
 
+action.auto_create_index: "-*-write,+*"
+
 network:
-  host: 0.0.0.0
+  publish_host: ${POD_IP}
+  bind_host: ["${POD_IP}",_local_]
 
 discovery.zen:
   ping.unicast.hosts: {{.EsUnicastHost}}
@@ -57,6 +60,9 @@ status = error
 logger.action.name = org.elasticsearch.action
 logger.action.level = debug
 
+logger.security.name = com.amazon.opendistroforelasticsearch.security
+logger.security.level = {{.SecurityLogLevel}}  
+
 appender.console.type = Console
 appender.console.name = console
 appender.console.layout.type = PatternLayout
@@ -77,7 +83,7 @@ appender.rolling.policies.size.size=100MB
 appender.rolling.strategy.type=DefaultRolloverStrategy
 appender.rolling.strategy.max=5
 
-rootLogger.level = info
+rootLogger.level = {{.LogLevel}}
 rootLogger.appenderRef.{{.RootLogger}}.ref = {{.RootLogger}}
 
 appender.deprecation_rolling.type = RollingFile

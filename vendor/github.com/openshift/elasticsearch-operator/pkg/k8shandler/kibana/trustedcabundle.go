@@ -25,7 +25,7 @@ func (clusterRequest *KibanaRequest) createOrUpdateTrustedCABundleConfigMap(conf
 	configMap.ObjectMeta.Labels = make(map[string]string)
 	configMap.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
 
-	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(configMap, getOwnerRef(clusterRequest.cluster))
 
 	err := clusterRequest.CreateOrUpdateTrustedCaBundleConfigMap(configMap)
 	return err

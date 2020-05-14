@@ -6,7 +6,6 @@ import (
 	"github.com/openshift/elasticsearch-operator/pkg/logger"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 
 	core "k8s.io/api/core/v1"
@@ -40,7 +39,7 @@ func (clusterRequest *KibanaRequest) CreateOrUpdateServiceAccount(name string, a
 		}
 	}
 
-	utils.AddOwnerRefToObject(serviceAccount, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(serviceAccount, getOwnerRef(clusterRequest.cluster))
 
 	logger.DebugObject("Attempting to create serviceacccount %v", serviceAccount)
 	if err := clusterRequest.Create(serviceAccount); err != nil {
@@ -95,15 +94,4 @@ func (clusterRequest *KibanaRequest) RemoveServiceAccount(serviceAccountName str
 	}
 
 	return nil
-}
-
-func NewLogCollectorServiceAccountRef(uid types.UID) metav1.OwnerReference {
-	return metav1.OwnerReference{
-		APIVersion:         "v1", // apiversion for serviceaccounts/finalizers in cluster-logging.<VER>.clusterserviceversion.yaml
-		Kind:               "ServiceAccount",
-		Name:               "logcollector",
-		UID:                uid,
-		BlockOwnerDeletion: utils.GetBool(true),
-		Controller:         utils.GetBool(true),
-	}
 }

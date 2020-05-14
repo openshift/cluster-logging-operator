@@ -485,11 +485,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fa57bc34a78ad3e895531090427fc008d4c8e8a9cf340e0b3a79ce3e5772f1ad"
+  digest = "1:d5d841944b2d4f7cc3141e26e02df95067712049d617c0ba3e046e4a433773d0"
   name = "github.com/openshift/elasticsearch-operator"
   packages = [
     "pkg/apis",
     "pkg/apis/logging/v1",
+    "pkg/constants",
     "pkg/indexmanagement",
     "pkg/k8shandler",
     "pkg/logger",
@@ -500,7 +501,7 @@
     "test/utils",
   ]
   pruneopts = "NT"
-  revision = "a7585c151adecede39fb2f4440ebe941f10fdc95"
+  revision = "dc477ed5cf1f8b7e4295f82d73d2b15190e3f6e1"
 
 [[projects]]
   digest = "1:0087f38751ec1995bafa67afd0ded9519a46297ecf571165c695fb9ba943688d"

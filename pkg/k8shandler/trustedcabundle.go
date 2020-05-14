@@ -6,17 +6,16 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
-	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
-/*
- * Create or update Trusted CA Bundle ConfigMap
- * By setting label "config.openshift.io/inject-trusted-cabundle: true", the cert is automatically filled/updated.
- */
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateTrustedCABundleConfigMap(configMapName string) error {
-	logrus.Debug("createOrUpdateTrustedCABundleConfigMap...")
+//createOrGetTrustedCABundleConfigMap creates or returns an existing Trusted CA Bundle ConfigMap.
+//By setting label "config.openshift.io/inject-trusted-cabundle: true", the cert is automatically filled/updated.
+func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap(name string) (*corev1.ConfigMap, error) {
+	logrus.Debug("createOrGetTrustedCABundleConfigMap...")
 	configMap := NewConfigMap(
-		configMapName,
+		name,
 		clusterRequest.cluster.Namespace,
 		map[string]string{
 			constants.TrustedCABundleKey: "",
@@ -27,11 +26,26 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateTrustedCABundleConfig
 
 	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.cluster))
 
-	err := clusterRequest.CreateOrUpdateTrustedCaBundleConfigMap(configMap)
-	return err
+	err := clusterRequest.Create(configMap)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return nil, fmt.Errorf("failed to create trusted CA bundle config map %q for %q: %s", name, clusterRequest.cluster.Name, err)
+		}
+
+		// Get the existing config map which may include an injected CA bundle
+		if err = clusterRequest.Get(configMap.Name, configMap); err != nil {
+			if errors.IsNotFound(err) {
+				// the object doesn't exist -- it was likely culled
+				// recreate it on the next time through if necessary
+				return nil, fmt.Errorf("failed to find trusted CA bundle config map %q for %q: %s", name, clusterRequest.cluster.Name, err)
+			}
+			return nil, fmt.Errorf("failed to get trusted CA bundle config map %q for %q: %s", name, clusterRequest.cluster.Name, err)
+		}
+	}
+	return configMap, err
 }
 
-func hasTrustedCABundle(configMap *core.ConfigMap) bool {
+func hasTrustedCABundle(configMap *corev1.ConfigMap) bool {
 	if configMap == nil {
 		return false
 	}
@@ -39,7 +53,7 @@ func hasTrustedCABundle(configMap *core.ConfigMap) bool {
 	return ok && caBundle != ""
 }
 
-func calcTrustedCAHashValue(configMap *core.ConfigMap) (string, error) {
+func calcTrustedCAHashValue(configMap *corev1.ConfigMap) (string, error) {
 	hashValue := ""
 	var err error
 

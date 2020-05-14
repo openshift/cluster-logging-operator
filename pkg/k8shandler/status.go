@@ -115,7 +115,7 @@ func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging
 				ClusterHealth:          cluster.Status.ClusterHealth,
 				Cluster:                cluster.Status.Cluster,
 				Pods:                   getPodMap(cluster.Status),
-				ClusterConditions:      cluster.Status.Conditions,
+				ClusterConditions:      logging.ElasticsearchClusterConditions(cluster.Status.Conditions),
 				ShardAllocationEnabled: cluster.Status.ShardAllocationEnabled,
 			}
 
@@ -131,7 +131,7 @@ func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging
 				}
 
 				if node.Conditions != nil {
-					nodeConditions[nodeName] = node.Conditions
+					nodeConditions[nodeName] = logging.ElasticsearchClusterConditions(node.Conditions)
 				} else {
 					nodeConditions[nodeName] = []elasticsearch.ClusterCondition{}
 				}

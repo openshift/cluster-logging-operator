@@ -13,17 +13,45 @@ import (
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 
+const (
+	loglevelAnnotation          = "elasticsearch.openshift.io/loglevel"
+	serverLogAppenderAnnotation = "elasticsearch.openshift.io/develLogAppender"
+	serverLoglevelAnnotation    = "elasticsearch.openshift.io/esloglevel"
+)
+
+type LogConfig struct {
+	//LogLevel of the proxy and server security
+	LogLevel string
+	//ServerLogLevel of the remainder of Elasticsearch
+	ServerLoglevel string
+	//ServerAppender where to log messages
+	ServerAppender string
+}
+
+func getLogConfig(annotations map[string]string) LogConfig {
+	config := LogConfig{"info", "info", "console"}
+	if value, found := annotations[loglevelAnnotation]; found {
+		if strings.TrimSpace(value) != "" {
+			config.LogLevel = value
+		}
+	}
+	if value, found := annotations[serverLoglevelAnnotation]; found {
+		if strings.TrimSpace(value) != "" {
+			config.ServerLoglevel = value
+		}
+	}
+	if value, found := annotations[serverLogAppenderAnnotation]; found {
+		if strings.TrimSpace(value) != "" {
+			config.ServerAppender = value
+		}
+	}
+	return config
+}
+
 func selectorForES(nodeRole string, clusterName string) map[string]string {
 
 	return map[string]string{
 		nodeRole:       "true",
-		"cluster-name": clusterName,
-	}
-}
-
-func labelsForESCluster(clusterName string) map[string]string {
-
-	return map[string]string{
 		"cluster-name": clusterName,
 	}
 }
@@ -120,15 +148,6 @@ func appendTolerations(nodeTolerations, commonTolerations []v1.Toleration) []v1.
 	return append(commonTolerations, nodeTolerations...)
 }
 
-// getPodNames returns the pod names of the array of pods passed in
-func getPodNames(pods []v1.Pod) []string {
-	var podNames []string
-	for _, pod := range pods {
-		podNames = append(podNames, pod.Name)
-	}
-	return podNames
-}
-
 func getMasterCount(dpl *api.Elasticsearch) int32 {
 	masterCount := int32(0)
 	for _, node := range dpl.Spec.Nodes {
@@ -148,17 +167,6 @@ func getDataCount(dpl *api.Elasticsearch) int32 {
 		}
 	}
 	return dataCount
-}
-
-func getClientCount(dpl *api.Elasticsearch) int32 {
-	clientCount := int32(0)
-	for _, node := range dpl.Spec.Nodes {
-		if isClientNode(node) {
-			clientCount = clientCount + node.NodeCount
-		}
-	}
-
-	return clientCount
 }
 
 func isValidMasterCount(dpl *api.Elasticsearch) bool {

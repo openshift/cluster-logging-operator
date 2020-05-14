@@ -332,7 +332,7 @@ func UpdateReplicaCount(clusterName, namespace string, client client.Client, rep
 	return nil
 }
 
-func (req *ElasticsearchRequest) CreateIndex(name string, index *estypes.Index) error {
+func (elasticsearchRequest *ElasticsearchRequest) CreateIndex(name string, index *estypes.Index) error {
 	body, err := utils.ToJson(index)
 	if err != nil {
 		return err
@@ -343,7 +343,7 @@ func (req *ElasticsearchRequest) CreateIndex(name string, index *estypes.Index) 
 		RequestBody: body,
 	}
 	logger.DebugObject("CreateIndex with payload: %s", index)
-	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	elasticsearchRequest.FnCurlEsService(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace, payload, elasticsearchRequest.client)
 	if payload.Error != nil {
 		return payload.Error
 	}
@@ -352,7 +352,7 @@ func (req *ElasticsearchRequest) CreateIndex(name string, index *estypes.Index) 
 	}
 	return nil
 }
-func (req *ElasticsearchRequest) CreateIndexTemplate(name string, template *estypes.IndexTemplate) error {
+func (elasticsearchRequest *ElasticsearchRequest) CreateIndexTemplate(name string, template *estypes.IndexTemplate) error {
 	body, err := utils.ToJson(template)
 	if err != nil {
 		return err
@@ -364,7 +364,7 @@ func (req *ElasticsearchRequest) CreateIndexTemplate(name string, template *esty
 	}
 
 	logger.DebugObject("CreateIndexTemplate with payload: %s", template)
-	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	elasticsearchRequest.FnCurlEsService(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace, payload, elasticsearchRequest.client)
 	if payload.Error != nil {
 		return payload.Error
 	}
@@ -374,13 +374,13 @@ func (req *ElasticsearchRequest) CreateIndexTemplate(name string, template *esty
 	return nil
 }
 
-func (req *ElasticsearchRequest) DeleteIndexTemplate(name string) error {
+func (elasticsearchRequest *ElasticsearchRequest) DeleteIndexTemplate(name string) error {
 	payload := &esCurlStruct{
 		Method: http.MethodDelete,
 		URI:    fmt.Sprintf("_template/%s", name),
 	}
 
-	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	elasticsearchRequest.FnCurlEsService(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace, payload, elasticsearchRequest.client)
 	if payload.Error != nil {
 		return payload.Error
 	}
@@ -391,13 +391,13 @@ func (req *ElasticsearchRequest) DeleteIndexTemplate(name string) error {
 }
 
 //ListTemplates returns a list of templates
-func (req *ElasticsearchRequest) ListTemplates() (sets.String, error) {
+func (elasticsearchRequest *ElasticsearchRequest) ListTemplates() (sets.String, error) {
 	payload := &esCurlStruct{
 		Method: http.MethodGet,
 		URI:    "_template",
 	}
 
-	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	elasticsearchRequest.FnCurlEsService(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace, payload, elasticsearchRequest.client)
 	if payload.Error != nil {
 		return nil, payload.Error
 	}
@@ -412,13 +412,13 @@ func (req *ElasticsearchRequest) ListTemplates() (sets.String, error) {
 }
 
 //ListIndicesForAlias returns a list of indices and the alias for the given pattern (e.g. foo-*, *-write)
-func (req *ElasticsearchRequest) ListIndicesForAlias(aliasPattern string) ([]string, error) {
+func (elasticsearchRequest *ElasticsearchRequest) ListIndicesForAlias(aliasPattern string) ([]string, error) {
 	payload := &esCurlStruct{
 		Method: http.MethodGet,
 		URI:    fmt.Sprintf("_alias/%s", aliasPattern),
 	}
 
-	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	elasticsearchRequest.FnCurlEsService(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace, payload, elasticsearchRequest.client)
 	if payload.Error != nil {
 		return nil, payload.Error
 	}
@@ -435,7 +435,7 @@ func (req *ElasticsearchRequest) ListIndicesForAlias(aliasPattern string) ([]str
 	return response, nil
 }
 
-func (req *ElasticsearchRequest) AddAliasForOldIndices() bool {
+func (elasticsearchRequest *ElasticsearchRequest) AddAliasForOldIndices() bool {
 	// get .operations.*/_alias
 	// get project.*/_alias
 	/*
@@ -458,7 +458,7 @@ func (req *ElasticsearchRequest) AddAliasForOldIndices() bool {
 		URI:    "project.*,.operations.*/_alias",
 	}
 
-	req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, payload, req.client)
+	elasticsearchRequest.FnCurlEsService(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace, payload, elasticsearchRequest.client)
 
 	// alias name choice based on https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model
 	for index := range payload.ResponseBody {
@@ -494,7 +494,7 @@ func (req *ElasticsearchRequest) AddAliasForOldIndices() bool {
 						URI:    fmt.Sprintf("%s/_alias/%s", index, indexAlias),
 					}
 
-					req.FnCurlEsService(req.cluster.Name, req.cluster.Namespace, putPayload, req.client)
+					elasticsearchRequest.FnCurlEsService(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace, putPayload, elasticsearchRequest.client)
 					// check the response here -- if any failed then we want to return "false"
 					// but want to continue trying to process as many as we can now.
 					if putPayload.Error != nil || !parseBool("acknowledged", putPayload.ResponseBody) {

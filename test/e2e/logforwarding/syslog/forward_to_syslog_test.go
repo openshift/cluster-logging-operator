@@ -24,7 +24,7 @@ const (
 	grepappname  = `grep APP-NAME %s | head -n 1 | awk -F',' '{printf("%%s\n",$3)}' | awk -F\'  '{printf("%%s\n",$2)}'`
 )
 
-var _ = Describe("LogForwarder", func() {
+var _ = PDescribe("LogForwarder", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (

@@ -6,11 +6,14 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -28,9 +31,7 @@ import (
 )
 
 const (
-	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
-	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterlogforwarders"
-	DefaultCleanUpTimeout  = 60.0 * 2
+	DefaultCleanUpTimeout = 60.0 * 2
 )
 
 var (
@@ -120,10 +121,87 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 		},
 	}
 	_, err := tc.KubeClient.CoreV1().Namespaces().Create(namespace)
-	if err != nil {
+	if err != nil && !errors.IsAlreadyExists(err) {
 		logger.Error(err)
 	}
 	return name
+}
+
+// forceCreate does client.Create(config), deleting an existing instance if necessary.
+// It adds the new object to the cleanup list with deleteOpts
+// Panics if the client or config values are invalid or mismatched.
+func (tc *E2ETestFramework) forceCreate(client, config interface{}, deleteOpts *metav1.DeleteOptions) (newConfig interface{}, err error) {
+	rclient := reflect.ValueOf(client)
+	createMethod := rclient.MethodByName("Create")
+	deleteMethod := rclient.MethodByName("Delete")
+	if !createMethod.IsValid() || !deleteMethod.IsValid() {
+		panic(fmt.Errorf("not a kube client interface: %#v", client))
+	}
+	name := reflect.ValueOf(config).Elem().FieldByName("Name")
+	if !name.IsValid() {
+		panic(fmt.Errorf("not a valid config object, no Name: %#v", config))
+	}
+
+	create := func() (reflect.Value, error) {
+		result := createMethod.Call([]reflect.Value{reflect.ValueOf(config)})
+		return result[0], valueToError(result[1])
+	}
+	delete := func() error {
+		result := deleteMethod.Call([]reflect.Value{name, reflect.ValueOf(deleteOpts)})
+		return valueToError(result[0])
+	}
+	v, err := create()
+	if errors.IsAlreadyExists(err) {
+		if err = delete(); err == nil {
+			v, err = create()
+		}
+	}
+	tc.AddCleanup(delete)
+	return v.Interface(), err
+}
+
+func valueToError(v reflect.Value) error {
+	if ierr := v.Interface(); ierr == nil {
+		return nil
+	} else {
+		return ierr.(error)
+	}
+}
+
+func (tc *E2ETestFramework) CreateServiceAccount(name string) (*corev1.ServiceAccount, error) {
+	config := k8shandler.NewServiceAccount(name, OpenshiftLoggingNS)
+	client := tc.KubeClient.Core().ServiceAccounts(OpenshiftLoggingNS)
+	newConfig, err := tc.forceCreate(client, config, nil)
+	return newConfig.(*corev1.ServiceAccount), err
+}
+
+func (tc *E2ETestFramework) CreateConfigMap(name string, data map[string]string) (*corev1.ConfigMap, error) {
+	config := k8shandler.NewConfigMap(name, OpenshiftLoggingNS, data)
+	client := tc.KubeClient.Core().ConfigMaps(OpenshiftLoggingNS)
+	newConfig, err := tc.forceCreate(client, config, nil)
+	return newConfig.(*corev1.ConfigMap), err
+}
+
+func (tc *E2ETestFramework) CreateDeployment(config *apps.Deployment) (*apps.Deployment, error) {
+	client := tc.KubeClient.Apps().Deployments(OpenshiftLoggingNS)
+	var zero int64
+	deleteOpts := &metav1.DeleteOptions{GracePeriodSeconds: &zero}
+	newConfig, err := tc.forceCreate(client, config, deleteOpts)
+	return newConfig.(*apps.Deployment), err
+}
+
+func (tc *E2ETestFramework) CreateService(config *corev1.Service) (*corev1.Service, error) {
+	client := tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS)
+	var zero int64
+	deleteOpts := &metav1.DeleteOptions{GracePeriodSeconds: &zero}
+	newConfig, err := tc.forceCreate(client, config, deleteOpts)
+	return newConfig.(*corev1.Service), err
+}
+
+func (tc *E2ETestFramework) CreateSecret(config *corev1.Secret) (*corev1.Secret, error) {
+	client := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS)
+	newConfig, err := tc.forceCreate(client, config, nil)
+	return newConfig.(*corev1.Secret), err
 }
 
 func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
@@ -230,43 +308,46 @@ func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentTy
 }
 
 func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLogging) error {
-	body, err := json.Marshal(clusterlogging)
+	return tc.forceCreateREST(clusterlogging)
+}
+
+// forceCreateREST creates config using the REST client, deleting existing instance if necessary.
+// It adds the new object to the cleanup list.
+func (tc *E2ETestFramework) forceCreateREST(config interface{}) error {
+	body, err := json.Marshal(config)
 	if err != nil {
 		return err
 	}
-	logger.Debugf("Creating ClusterLogging: %s", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterLoggingURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do()
-	tc.AddCleanup(func() error {
+	var nk struct{ Name, Kind string }
+	if err = json.Unmarshal(body, &nk); err != nil {
+		return err
+	}
+	kind := strings.ToLower(nk.Kind) + "s"
+	uri := fmt.Sprintf("apis/logging.openshift.io/v1/namespaces/openshift-logging/%s", kind)
+	create := func() error {
+		logger.Debugf("Creating %s/%s: %s", uri, nk.Name, string(body))
+		return tc.KubeClient.RESTClient().Post().RequestURI(uri).
+			SetHeader("Content-Type", "application/json").Body(body).
+			Do().Error()
+	}
+	delete := func() error {
 		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
+			RequestURI(fmt.Sprintf("%s/%s", uri, nk.Name)).
 			SetHeader("Content-Type", "application/json").
 			Do().Error()
-	})
-	return result.Error()
+	}
+	err = create()
+	if errors.IsAlreadyExists(err) {
+		if err = delete(); err == nil {
+			err = create()
+		}
+	}
+	tc.AddCleanup(delete)
+	return err
 }
 
 func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.ClusterLogForwarder) error {
-	body, err := json.Marshal(forwarder)
-	if err != nil {
-		return err
-	}
-	logger.Debugf("Creating ClusterLogForwarder: %s", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterlogforwarderURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do()
-	tc.AddCleanup(func() error {
-		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", clusterlogforwarderURI)).
-			SetHeader("Content-Type", "application/json").
-			Do().Error()
-	})
-	return result.Error()
+	return tc.forceCreateREST(forwarder)
 }
 
 func (tc *E2ETestFramework) Cleanup() {
@@ -353,7 +434,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		data,
 	)
 	logger.Debugf("Creating secret %s for logStore %s", secret.Name, logStoreName)
-	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
+	if secret, err = tc.CreateSecret(secret); err != nil {
 		return nil, err
 	}
 	return secret, nil

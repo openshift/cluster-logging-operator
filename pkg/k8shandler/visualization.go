@@ -241,6 +241,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 
 func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string) *es.Kibana {
 	visSpec := cluster.Spec.Visualization
+	if visSpec == nil {
+		visSpec = &logging.VisualizationSpec{}
+	}
 
 	resources := visSpec.Resources
 	if resources == nil {

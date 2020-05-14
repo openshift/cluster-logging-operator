@@ -32,12 +32,16 @@ build:
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
+test-cleanup:			# Clean up if e2e tests are interrupted.
+	oc delete -n $(NAMESPACE) all --all
+	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name; done | grep -e -receiver | xargs -r oc delete
+	@oc get ns -o name | grep clo-test | xargs --no-run-if-empty oc delete
+
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run
 run:
 	$(MAKE) deploy-elasticsearch-operator
 	@oc create --dry-run=client ns $(NAMESPACE) -o json | oc apply -f -
-	@oc delete -n $(NAMESPACE) all --all
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	@ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
@@ -121,22 +125,17 @@ test-unit:
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	go test ./pkg/...
 
-test-cluster:
-	go test -v ./test/... -- -root=$(CURDIR)
-
-test-cleanup:			# Only needed if e2e tests are interrupted.
-	oc create --dry-run=client ns $(NAMESPACE) -o json | oc apply -f -
-	oc delete -n $(NAMESPACE) all --all
-	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name; done | grep -e -receiver | xargs -r oc delete
-	@oc get ns -o name | grep clo- | xargs --no-run-if-empty oc delete
-
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm:
 	hack/test-e2e-olm.sh
 
-test-e2e-local: deploy-image
+test-e2e-local: undeploy deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
-	hack/test-e2e.sh
+	$(MAKE) test-e2e-olm
+
+# Run the e2e tests against an already-running CLO instance.
+test-e2e-run:
+	go test -v ./test/e2e/...
 
 test-sec:
 	go get -u github.com/securego/gosec/cmd/gosec
@@ -144,6 +143,10 @@ test-sec:
 
 undeploy:
 	hack/undeploy.sh
+	$(MAKE) undeploy-elasticsearch-operator
+
+undeploy-elasticsearch-operator:
+	make -C ../elasticsearch-operator elasticsearch-cleanup
 
 cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-deploy
 

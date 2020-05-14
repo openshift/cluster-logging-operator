@@ -56,7 +56,7 @@ var _ = Describe("oc get pod", func() {
 				}
 			})
 			AfterEach(func() {
-				Expect(oc.Literal().From("oc delete ns test-log-gen").Run()).To(Succeed())
+				_, _ = oc.Literal().From("oc delete ns test-log-gen").Run()
 				if tmpFile != nil {
 					os.Remove(tmpFile.Name())
 				} else {

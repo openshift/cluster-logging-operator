@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +8,7 @@ import (
 
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -102,7 +102,7 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 		return false, err
 	}
 	if len(pods.Items) == 0 {
-		return false, errors.New("No pods found for fluent receiver")
+		return false, fmt.Errorf("No pods found for fluent receiver")
 	}
 	logger.Debugf("Pod %s", pods.Items[0].Name)
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
@@ -134,7 +134,7 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 		return "", err
 	}
 	if len(pods.Items) == 0 {
-		return "", errors.New("No pods found for fluent receiver")
+		return "", fmt.Errorf("No pods found for fluent receiver")
 	}
 	logger.Debugf("Pod %s", pods.Items[0].Name)
 	cmd := fmt.Sprintf("cat %s", file)
@@ -170,17 +170,7 @@ func (es *fluentReceiverLogStore) GrepLogs(expr string, timeToWait time.Duration
 	return "Not Found", fmt.Errorf("Not implemented")
 }
 
-func (tc *E2ETestFramework) createServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
-	serviceAccount = k8shandler.NewServiceAccount("fluent-receiver", OpenshiftLoggingNS)
-	if serviceAccount, err = tc.KubeClient.Core().ServiceAccounts(OpenshiftLoggingNS).Create(serviceAccount); err != nil {
-		return nil, err
-	}
-	tc.AddCleanup(func() error {
-		return tc.KubeClient.Core().ServiceAccounts(OpenshiftLoggingNS).Delete(serviceAccount.Name, nil)
-	})
-	return serviceAccount, nil
-}
-
+// FIXME(alanconway) RBAC
 func (tc *E2ETestFramework) createRbac(name string) (err error) {
 	saRole := k8shandler.NewRole(
 		name,
@@ -194,7 +184,7 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 			),
 		),
 	)
-	if _, err = tc.KubeClient.Rbac().Roles(OpenshiftLoggingNS).Create(saRole); err != nil {
+	if _, err = tc.KubeClient.Rbac().Roles(OpenshiftLoggingNS).Create(saRole); err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
 	tc.AddCleanup(func() error {
@@ -213,7 +203,7 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 			subject,
 		),
 	)
-	if _, err = tc.KubeClient.Rbac().RoleBindings(OpenshiftLoggingNS).Create(roleBinding); err != nil {
+	if _, err = tc.KubeClient.Rbac().RoleBindings(OpenshiftLoggingNS).Create(roleBinding); err != nil && !errors.IsAlreadyExists(err) {
 		return err
 	}
 	tc.AddCleanup(func() error {
@@ -226,7 +216,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	logStore := &fluentReceiverLogStore{
 		tc: tc,
 	}
-	serviceAccount, err := tc.createServiceAccount()
+	serviceAccount, err := tc.CreateServiceAccount("fluent-receiver")
 	if err != nil {
 		return nil, err
 	}
@@ -296,10 +286,9 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		})
 	}
 
-	config := k8shandler.NewConfigMap(container.Name, OpenshiftLoggingNS, map[string]string{
+	config, err := tc.CreateConfigMap(container.Name, map[string]string{
 		"fluent.conf": fluentConf,
 	})
-	config, err = tc.KubeClient.Core().ConfigMaps(OpenshiftLoggingNS).Create(config)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +304,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		podSpec,
 	)
 
-	fluentDeployment, err = tc.KubeClient.Apps().Deployments(OpenshiftLoggingNS).Create(fluentDeployment)
+	fluentDeployment, err = tc.CreateDeployment(fluentDeployment)
 	if err != nil {
 		return nil, err
 	}
@@ -329,20 +318,10 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 			},
 		},
 	)
-	tc.AddCleanup(func() error {
-		var zerograce int64
-		deleteopts := metav1.DeleteOptions{
-			GracePeriodSeconds: &zerograce,
-		}
-		return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(fluentDeployment.Name, &deleteopts)
-	})
-	service, err = tc.KubeClient.Core().Services(OpenshiftLoggingNS).Create(service)
+	_, err = tc.CreateService(service)
 	if err != nil {
 		return nil, err
 	}
-	tc.AddCleanup(func() error {
-		return tc.KubeClient.Core().Services(OpenshiftLoggingNS).Delete(service.Name, nil)
-	})
 	logStore.deployment = fluentDeployment
 	tc.LogStore = logStore
 	return fluentDeployment, tc.waitForDeployment(OpenshiftLoggingNS, fluentDeployment.Name, defaultRetryInterval, defaultTimeout)

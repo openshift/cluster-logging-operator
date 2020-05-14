@@ -53,6 +53,9 @@ TIMEOUT_MIN=$((2 * $minute))
 # wait for operator to be ready
 os::cmd::try_until_text "oc -n $NAMESPACE get deployment cluster-logging-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
+# test the validation of an invalid cr
+os::cmd::expect_failure_and_text "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr_invalid.yaml" "invalid: metadata.name: Unsupported value"
+
 # deploy cluster logging
 os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
 

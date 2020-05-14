@@ -150,6 +150,19 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateElasticsearchClu
 					int32(calculateReplicaCount(elasticsearchRequest.cluster))); err != nil {
 					logrus.Error(err)
 				}
+				if aliasNeededMap == nil {
+					aliasNeededMap = make(map[string]bool)
+				}
+				if val, ok := aliasNeededMap[nodeMapKey(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace)]; !ok || val {
+					// add alias to old indices if they exist and don't have one
+					// this should be removed after one release...
+					successful := elasticsearchRequest.AddAliasForOldIndices()
+
+					if successful {
+						aliasNeededMap[nodeMapKey(elasticsearchRequest.cluster.Name, elasticsearchRequest.cluster.Namespace)] = false
+					}
+
+				}
 			}
 		}
 	}
@@ -170,6 +183,9 @@ func (elasticsearchRequest *ElasticsearchRequest) updateMinMasters() {
 
 	desiredMasterCount := getMasterCount(cluster)/2 + 1
 	currentNodeCount, err := GetClusterNodeCount(cluster.Name, cluster.Namespace, elasticsearchRequest.client)
+	if err != nil {
+		logrus.Warnf("unable to get cluster node count. E: %s\r\n", err.Error())
+	}
 
 	// check that we have the required number of master nodes in the cluster...
 	if currentNodeCount >= desiredMasterCount {
@@ -198,7 +214,8 @@ func getNodeUpgradeInProgress(cluster *api.Elasticsearch) NodeTypeInterface {
 
 func progressUnshedulableNodes(cluster *api.Elasticsearch) {
 	for _, node := range cluster.Status.Nodes {
-		if isPodUnschedulableConditionTrue(node.Conditions) {
+		if isPodUnschedulableConditionTrue(node.Conditions) ||
+			isPodImagePullBackOff(node.Conditions) {
 			for _, nodeTypeInterface := range nodes[nodeMapKey(cluster.Name, cluster.Namespace)] {
 				if node.DeploymentName == nodeTypeInterface.name() ||
 					node.StatefulSetName == nodeTypeInterface.name() {
@@ -294,7 +311,9 @@ func (elasticsearchRequest *ElasticsearchRequest) getNodes() {
 				elasticsearchRequest.updateMinMasters()
 				minMasterUpdated = true
 			}
-			node.delete()
+			if err := node.delete(); err != nil {
+				logrus.Warnf("unable to delete node. E: %s\r\n", err.Error())
+			}
 
 			// remove from status.Nodes
 			if index, _ := getNodeStatus(node.name(), &cluster.Status); index != NOT_FOUND_INDEX {
@@ -476,7 +495,9 @@ func (elasticsearchRequest *ElasticsearchRequest) performFullClusterRestart() er
 				_, nodeStatus := getNodeStatus(node.name(), clusterStatus)
 				node.fullClusterRestart(nodeStatus)
 				addNodeState(node, nodeStatus)
-				elasticsearchRequest.setNodeStatus(node, nodeStatus, clusterStatus)
+				if err := elasticsearchRequest.setNodeStatus(node, nodeStatus, clusterStatus); err != nil {
+					logrus.Warnf("unable to set node status. %s", err.Error())
+				}
 			}
 
 			// check that all nodes have been restarted by seeing if they still have the need to cert restart

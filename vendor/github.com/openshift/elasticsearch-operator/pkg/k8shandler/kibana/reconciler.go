@@ -1,7 +1,6 @@
 package kibana
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -46,6 +45,11 @@ func ReconcileKibana(requestCluster *kibana.Kibana, requestClient client.Client,
 		return nil
 	}
 
+	// ensure that we have the certs pulled in from the secret first... required for route generation
+	if err := clusterKibanaRequest.readSecrets(); err != nil {
+		return err
+	}
+
 	if err := clusterKibanaRequest.CreateOrUpdateServiceAccount(kibanaServiceAccountName, &kibanaServiceAccountAnnotations); err != nil {
 		return err
 	}
@@ -62,7 +66,15 @@ func ReconcileKibana(requestCluster *kibana.Kibana, requestClient client.Client,
 		return err
 	}
 
+	if err := clusterKibanaRequest.createOrUpdateKibanaConsoleLinks(); err != nil {
+		return err
+	}
+
 	if err := clusterKibanaRequest.createOrUpdateKibanaDeployment(proxyConfig); err != nil {
+		return err
+	}
+
+	if err := clusterKibanaRequest.removeSharedConfigMapPre45x(); err != nil {
 		return err
 	}
 
@@ -97,7 +109,12 @@ func ReconcileKibana(requestCluster *kibana.Kibana, requestClient client.Client,
 
 func ReconcileKibanaInstance(request reconcile.Request, rClient client.Client) error {
 	kibanaInstance := &kibana.Kibana{}
-	err := rClient.Get(context.TODO(), request.NamespacedName, kibanaInstance)
+	key := types.NamespacedName{
+		Namespace: request.Namespace,
+		Name:      constants.KibanaInstanceName,
+	}
+
+	err := rClient.Get(context.TODO(), key, kibanaInstance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return nil
@@ -140,7 +157,7 @@ func compareKibanaStatus(lhs, rhs []kibana.KibanaStatus) bool {
 	}
 
 	if len(lhs) > 0 {
-		for index, _ := range lhs {
+		for index := range lhs {
 			if lhs[index].Deployment != rhs[index].Deployment {
 				return false
 			}
@@ -195,7 +212,11 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaDeployment(proxyConfig 
 		}
 	}
 
-	kibanaPodSpec := newKibanaPodSpec(clusterRequest, "elasticsearch.openshift-logging.svc.cluster.local", proxyConfig, kibanaTrustBundle)
+	kibanaPodSpec := newKibanaPodSpec(clusterRequest,
+		fmt.Sprintf("elasticsearch.%s.svc.cluster.local", clusterRequest.cluster.Namespace),
+		proxyConfig,
+		kibanaTrustBundle)
+
 	kibanaDeployment := NewDeployment(
 		"kibana",
 		clusterRequest.cluster.Namespace,
@@ -213,7 +234,7 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaDeployment(proxyConfig 
 
 	kibanaDeployment.Spec.Template.ObjectMeta.Annotations = annotations
 
-	utils.AddOwnerRefToObject(kibanaDeployment, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(kibanaDeployment, getOwnerRef(clusterRequest.cluster))
 
 	err = clusterRequest.Create(kibanaDeployment)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -242,13 +263,12 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaDeployment(proxyConfig 
 
 			for _, secretName := range []string{"kibana", "kibana-proxy"} {
 				hashKey := fmt.Sprintf("%s%s", constants.SecretHashPrefix, secretName)
-				if kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey] != current.Spec.Template.ObjectMeta.Annotations[hashKey] {
+				if current.Spec.Template.ObjectMeta.Annotations[hashKey] != kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey] {
 					different = true
 				}
 			}
 
 			if different {
-				current.Spec = kibanaDeployment.Spec
 				return clusterRequest.Update(current)
 			}
 			return nil
@@ -267,7 +287,7 @@ func (clusterRequest *KibanaRequest) getKibanaAnnotations(deployment *apps.Deplo
 	annotations := deployment.Spec.Template.ObjectMeta.Annotations
 
 	kibanaTrustBundle := &v1.ConfigMap{}
-	kibanaTrustBundleName := types.NamespacedName{Name: constants.KibanaTrustedCAName, Namespace: constants.OpenshiftNS}
+	kibanaTrustBundleName := types.NamespacedName{Name: constants.KibanaTrustedCAName, Namespace: clusterRequest.cluster.Namespace}
 	if err := clusterRequest.client.Get(context.TODO(), kibanaTrustBundleName, kibanaTrustBundle); err != nil {
 		if !errors.IsNotFound(err) {
 			return annotations, err
@@ -338,8 +358,7 @@ func isDeploymentDifferent(current *apps.Deployment, desired *apps.Deployment) (
 		different = true
 	}
 
-	if !utils.EnvValueEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
-		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
+	if updateCurrentDeploymentEnvIfDifferent(current, desired) {
 		different = true
 	}
 
@@ -380,6 +399,27 @@ func updateCurrentDeploymentImages(current *apps.Deployment, desired *apps.Deplo
 	return current
 }
 
+func updateCurrentDeploymentEnvIfDifferent(current *apps.Deployment, desired *apps.Deployment) bool {
+
+	different := false
+
+	containers := current.Spec.Template.Spec.Containers
+
+	for index, curr := range current.Spec.Template.Spec.Containers {
+		for _, des := range desired.Spec.Template.Spec.Containers {
+			// Only compare the env of containers with the same name
+			if curr.Name == des.Name {
+				if !utils.EnvValueEqual(curr.Env, des.Env) {
+					containers[index].Env = des.Env
+					different = true
+				}
+			}
+		}
+	}
+
+	return different
+}
+
 func (clusterRequest *KibanaRequest) createOrUpdateKibanaService() error {
 
 	kibanaService := NewService(
@@ -393,7 +433,7 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaService() error {
 			}},
 		})
 
-	utils.AddOwnerRefToObject(kibanaService, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(kibanaService, getOwnerRef(clusterRequest.cluster))
 
 	err := clusterRequest.Create(kibanaService)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -401,6 +441,14 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaService() error {
 	}
 
 	return nil
+}
+
+func getImage() string {
+	return utils.LookupEnvWithDefault("KIBANA_IMAGE", kibanaDefaultImage)
+}
+
+func getProxyImage() string {
+	return utils.LookupEnvWithDefault("PROXY_IMAGE", kibanaProxyDefaultImage)
 }
 
 func newKibanaPodSpec(cluster *KibanaRequest, elasticsearchName string, proxyConfig *configv1.Proxy,
@@ -419,22 +467,24 @@ func newKibanaPodSpec(cluster *KibanaRequest, elasticsearchName string, proxyCon
 			},
 		}
 	}
+
+	kibanaImage := getImage()
 	kibanaContainer := NewContainer(
 		"kibana",
-		"kibana",
+		kibanaImage,
 		v1.PullIfNotPresent,
 		*kibanaResources,
 	)
 
-	var endpoint bytes.Buffer
-
-	endpoint.WriteString("https://")
-	endpoint.WriteString(elasticsearchName)
-	endpoint.WriteString(":9200")
+	endpoints := fmt.Sprintf(`["https://%s:9200"]`, elasticsearchName)
 
 	kibanaContainer.Env = []v1.EnvVar{
-		{Name: "ELASTICSEARCH_URL", Value: endpoint.String()},
-		{Name: "KIBANA_MEMORY_LIMIT",
+		{
+			Name:  "ELASTICSEARCH_HOSTS",
+			Value: endpoints,
+		},
+		{
+			Name: "KIBANA_MEMORY_LIMIT",
 			ValueFrom: &v1.EnvVarSource{
 				ResourceFieldRef: &v1.ResourceFieldSelector{
 					ContainerName: "kibana",
@@ -469,9 +519,11 @@ func newKibanaPodSpec(cluster *KibanaRequest, elasticsearchName string, proxyCon
 			},
 		}
 	}
+
+	proxyImage := getProxyImage()
 	kibanaProxyContainer := NewContainer(
 		"kibana-proxy",
-		"kibana-proxy",
+		proxyImage,
 		v1.PullIfNotPresent,
 		*kibanaProxyResources,
 	)
@@ -480,7 +532,7 @@ func newKibanaPodSpec(cluster *KibanaRequest, elasticsearchName string, proxyCon
 		"--upstream-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
 		"--https-address=:3000",
 		"-provider=openshift",
-		"-client-id=system:serviceaccount:openshift-logging:kibana",
+		fmt.Sprintf("-client-id=system:serviceaccount:%s:kibana", cluster.cluster.Namespace),
 		"-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token",
 		"-cookie-secret-file=/secret/session-secret",
 		"-upstream=http://localhost:5601",
@@ -590,31 +642,13 @@ func newKibanaPodSpec(cluster *KibanaRequest, elasticsearchName string, proxyCon
 	return kibanaPodSpec
 }
 
-func updateCurrentImages(current *apps.Deployment, desired *apps.Deployment) *apps.Deployment {
-
-	containers := current.Spec.Template.Spec.Containers
-
-	for index, curr := range current.Spec.Template.Spec.Containers {
-		for _, des := range desired.Spec.Template.Spec.Containers {
-			// Only compare the images of containers with the same name
-			if curr.Name == des.Name {
-				if curr.Image != des.Image {
-					containers[index].Image = des.Image
-				}
-			}
-		}
+func getOwnerRef(v *kibana.Kibana) metav1.OwnerReference {
+	trueVar := true
+	return metav1.OwnerReference{
+		APIVersion: kibana.SchemeGroupVersion.String(),
+		Kind:       "Kibana",
+		Name:       v.Name,
+		UID:        v.UID,
+		Controller: &trueVar,
 	}
-
-	return current
-}
-
-func createSharedConfig(namespace, kibanaAppURL, kibanaInfraURL string) *v1.ConfigMap {
-	return NewConfigMap(
-		"sharing-config",
-		namespace,
-		map[string]string{
-			"kibanaAppURL":   kibanaAppURL,
-			"kibanaInfraURL": kibanaInfraURL,
-		},
-	)
 }

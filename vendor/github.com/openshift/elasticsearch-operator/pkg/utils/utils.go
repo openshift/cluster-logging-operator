@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	DefaultWorkingDir = "/tmp/ocp-clo"
+	DefaultWorkingDir = "/tmp/ocp-eo"
 	OsNodeLabel       = "kubernetes.io/os"
 	LinuxValue        = "linux"
 )

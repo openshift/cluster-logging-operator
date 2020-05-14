@@ -8,7 +8,6 @@ import (
 // KibanaSpec defines the desired state of Kibana
 // +k8s:openapi-gen=true
 type KibanaSpec struct {
-	Image           string                   `json:"image"`
 	ManagementState ManagementState          `json:"managementState"`
 	Resources       *v1.ResourceRequirements `json:"resources"`
 	NodeSelector    map[string]string        `json:"nodeSelector,omitempty"`
@@ -18,7 +17,6 @@ type KibanaSpec struct {
 }
 
 type ProxySpec struct {
-	Image     string                   `json:"image"`
 	Resources *v1.ResourceRequirements `json:"resources"`
 }
 
@@ -31,8 +29,6 @@ type KibanaStatus struct {
 	Pods        PodStateMap                  `json:"pods"`
 	Conditions  map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
-
-type ClusterConditions []ClusterCondition
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

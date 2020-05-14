@@ -5,7 +5,6 @@ import (
 	"time"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/sirupsen/logrus"
 
@@ -67,11 +66,8 @@ var (
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	if request.Name != constants.SingletonName {
-		// TODO: update status
-		return reconcile.Result{}, nil
-	}
 	logrus.Debugf("Clusterlogging reconcile request.Name: '%s'", request.Name)
+
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)

@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"reflect"
 
-	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
 )
 
 //NewConfigMap stubs an instance of Configmap
-func NewConfigMap(configmapName string, namespace string, data map[string]string) *core.ConfigMap {
-	return &core.ConfigMap{
+func NewConfigMap(configmapName string, namespace string, data map[string]string) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
-			APIVersion: core.SchemeGroupVersion.String(),
+			APIVersion: corev1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configmapName,
@@ -25,22 +25,16 @@ func NewConfigMap(configmapName string, namespace string, data map[string]string
 	}
 }
 
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateTrustedCaBundleConfigMap(configMap *core.ConfigMap) error {
-	return clusterRequest.createOrUpdateConfigMap(configMap, false)
-}
-
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateConfigMap(configMap *core.ConfigMap) error {
-	return clusterRequest.createOrUpdateConfigMap(configMap, true)
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateConfigMap(configMap *core.ConfigMap, checkData bool) error {
+//CreateOrUpdateConfigMap creates a new config map resource unless it exists whereas it will update
+//the existing config map if the data section changed.
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateConfigMap(configMap *corev1.ConfigMap) error {
 	err := clusterRequest.Create(configMap)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating configmap: %v", err)
 		}
 
-		current := &core.ConfigMap{}
+		current := &corev1.ConfigMap{}
 
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			if err = clusterRequest.Get(configMap.Name, current); err != nil {
@@ -52,12 +46,10 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateConfigMap(configMap *
 				return fmt.Errorf("Failed to get %v configmap for %q: %v", configMap.Name, clusterRequest.cluster.Name, err)
 			}
 
-			if checkData {
-				if reflect.DeepEqual(configMap.Data, current.Data) {
-					return nil
-				}
-				current.Data = configMap.Data
+			if reflect.DeepEqual(configMap.Data, current.Data) {
+				return nil
 			}
+			current.Data = configMap.Data
 
 			changed := false
 			// if configMap specified labels ensure that current has them...

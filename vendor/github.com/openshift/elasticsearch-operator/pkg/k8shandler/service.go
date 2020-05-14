@@ -63,7 +63,7 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServices() error
 		dpl.Namespace,
 		dpl.Name,
 		"restapi",
-		60000,
+		60001,
 		selectorForES("es-node-client", dpl.Name),
 		annotations,
 		false,
@@ -145,7 +145,7 @@ func newService(serviceName, namespace, clusterName, targetPortName string, port
 		Spec: v1.ServiceSpec{
 			Selector: selector,
 			Ports: []v1.ServicePort{
-				v1.ServicePort{
+				{
 					Port:       port,
 					Protocol:   "TCP",
 					TargetPort: intstr.FromString(targetPortName),

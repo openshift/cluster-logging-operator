@@ -78,7 +78,7 @@ type ElasticsearchStatus struct {
 	Cluster                ClusterHealth                         `json:"cluster"`
 	ShardAllocationEnabled ShardAllocationState                  `json:"shardAllocationEnabled"`
 	Pods                   map[ElasticsearchNodeRole]PodStateMap `json:"pods"`
-	Conditions             []ClusterCondition                    `json:"conditions"`
+	Conditions             ClusterConditions                     `json:"conditions"`
 	IndexManagementStatus  *IndexManagementStatus                `json:"indexManagement,omitempty"`
 }
 
@@ -115,8 +115,10 @@ type ElasticsearchNodeSpec struct {
 }
 
 type ElasticsearchStorageSpec struct {
-	StorageClassName *string            `json:"storageClassName,omitempty"`
-	Size             *resource.Quantity `json:"size,omitempty"`
+	// The class of storage to provision. More info: https://kubernetes.io/docs/concepts/storage/storage-classes/
+	StorageClassName *string `json:"storageClassName,omitempty"`
+	// The capacity of storage to provision.
+	Size *resource.Quantity `json:"size,omitempty"`
 }
 
 // ElasticsearchNodeStatus represents the status of individual Elasticsearch node
@@ -126,7 +128,7 @@ type ElasticsearchNodeStatus struct {
 	Status          string                         `json:"status,omitempty"`
 	UpgradeStatus   ElasticsearchNodeUpgradeStatus `json:"upgradeStatus,omitempty"`
 	Roles           []ElasticsearchNodeRole        `json:"roles,omitempty"`
-	Conditions      []ClusterCondition             `json:"conditions,omitempty"`
+	Conditions      ClusterConditions              `json:"conditions,omitempty"`
 }
 
 type ElasticsearchNodeUpgradeStatus struct {
@@ -137,31 +139,33 @@ type ElasticsearchNodeUpgradeStatus struct {
 	UpgradePhase             ElasticsearchUpgradePhase `json:"upgradePhase,omitempty"`
 }
 
-// ClusterCondition contains details for the current condition of this elasticsearch cluster.
-// Status: the status of the condition.
-// LastTransitionTime: Last time the condition transitioned from one status to another.
-// Reason: Unique, one-word, CamelCase reason for the condition's last transition.
-// Message: Human-readable message indicating details about last transition.
 type ClusterCondition struct {
-	Type               ClusterConditionType `json:"type"`
-	Status             v1.ConditionStatus   `json:"status"`
-	LastTransitionTime metav1.Time          `json:"lastTransitionTime"`
-	Reason             string               `json:"reason,omitempty" protobuf:"bytes,5,opt,name=reason"`
-	Message            string               `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
+	Type   ClusterConditionType `json:"type"`
+	Status v1.ConditionStatus   `json:"status"`
+	// Last time the condition transitioned from one status to another.
+	LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+	// Unique, one-word, CamelCase reason for the condition's last transition.
+	Reason string `json:"reason,omitempty" protobuf:"bytes,5,opt,name=reason"`
+	// Human-readable message indicating details about last transition.
+	Message string `json:"message,omitempty" protobuf:"bytes,6,opt,name=message"`
 }
 
-// RedundancyPolicyType controls number of elasticsearch replica shards
-// FullRedundancy - each index is fully replicated on every Data node in the cluster
-// MultipleRedundancy - each index is spread over half of the Data nodes
-// SingleRedundancy - one replica shard
-// ZeroRedundancy - no replica shards
+type ClusterConditions []ClusterCondition
+
+// +kubebuilder:validation:Enum=FullRedundancy;MultipleRedundancy;SingleRedundancy;ZeroRedundancy
+
+// The policy towards data redundancy to specify the number of redundant primary shards
 type RedundancyPolicyType string
 
 const (
-	FullRedundancy     RedundancyPolicyType = "FullRedundancy"
+	// FullRedundancy - each index is fully replicated on every Data node in the cluster
+	FullRedundancy RedundancyPolicyType = "FullRedundancy"
+	// MultipleRedundancy - each index is spread over half of the Data nodes
 	MultipleRedundancy RedundancyPolicyType = "MultipleRedundancy"
-	SingleRedundancy   RedundancyPolicyType = "SingleRedundancy"
-	ZeroRedundancy     RedundancyPolicyType = "ZeroRedundancy"
+	// SingleRedundancy - one replica shard
+	SingleRedundancy RedundancyPolicyType = "SingleRedundancy"
+	// ZeroRedundancy - no replica shards
+	ZeroRedundancy RedundancyPolicyType = "ZeroRedundancy"
 )
 
 type ElasticsearchNodeRole string
@@ -226,6 +230,7 @@ const (
 	ProxyContainerTerminated ClusterConditionType = "ProxyContainerTerminated"
 	Unschedulable            ClusterConditionType = "Unschedulable"
 	NodeStorage              ClusterConditionType = "NodeStorage"
+	CustomImage              ClusterConditionType = "CustomImageIgnored"
 )
 
 type ClusterEvent string

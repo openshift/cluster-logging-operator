@@ -342,12 +342,12 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
   @type tail
   @id container-input
   path "/var/log/containers/*.log"
+  exclude_path ["/var/log/containers/{{.CollectorPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.LogStorePodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.VisualizationPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log"]
   pos_file "/var/log/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
-  exclude_path []
   @label @CONCAT
   <parse>
     @type multi_format

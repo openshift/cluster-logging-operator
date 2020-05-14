@@ -4,26 +4,8 @@ export MERGE_JSON_LOG=${MERGE_JSON_LOG:-false}
 CFG_DIR=/etc/fluent/configs.d
 ENABLE_PROMETHEUS_ENDPOINT=${ENABLE_PROMETHEUS_ENDPOINT:-"true"}
 OCP_OPERATIONS_PROJECTS=${OCP_OPERATIONS_PROJECTS:-"default openshift openshift- kube-"}
-LOGGING_FILE_PATH=${LOGGING_FILE_PATH:-"/var/log/fluentd/fluentd.log"}
 
-loggingargs=""
-if [ ${LOGGING_FILE_PATH} != "console" ] ; then
-    echo "============================="
-    echo "Fluentd logs have been redirected to: $LOGGING_FILE_PATH"
-    echo "If you want to print out the logs, use command:"
-    echo "oc exec <pod_name> -- logs"
-    echo "============================="
-
-    dirname=$( dirname $LOGGING_FILE_PATH )
-    if [ ! -d $dirname ] ; then
-        mkdir -p $dirname
-    fi
-    touch $LOGGING_FILE_PATH; exec >> $LOGGING_FILE_PATH 2>&1
-
-    loggingargs="-o $LOGGING_FILE_PATH --log-rotate-age $LOGGING_FILE_AGE --log-rotate-size $LOGGING_FILE_SIZE"
-fi
-
-fluentdargs="--no-supervisor $loggingargs"
+fluentdargs="--no-supervisor"
 # find the sniffer class file
 sniffer=$( gem contents fluent-plugin-elasticsearch|grep elasticsearch_simple_sniffer.rb )
 if [ -z "$sniffer" ] ; then

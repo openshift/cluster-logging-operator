@@ -1,7 +1,9 @@
 package k8shandler
 
 import (
+	"k8s.io/client-go/kubernetes/scheme"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
@@ -333,5 +335,34 @@ func TestNewKibanaCR(t *testing.T) {
 				t.Errorf("Tolerations: got\n%v\n\nwant\n%v", got.Spec.Tolerations, test.want.Spec.Tolerations)
 			}
 		})
+	}
+}
+
+func TestRemoveKibanaCR(t *testing.T) {
+	_ = es.SchemeBuilder.AddToScheme(scheme.Scheme)
+	
+	kbn := &es.Kibana{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kibana",
+			Namespace: "openshift-logging",
+		},
+		Spec: es.KibanaSpec{
+			ManagementState: es.ManagementStateManaged,
+			Replicas:        1,
+		},
+	}
+
+	clr := &ClusterLoggingRequest{
+		cluster: &logging.ClusterLogging{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "openshift-logging",
+			},
+		},
+	}
+
+	clr.client = fake.NewFakeClient(kbn)
+
+	if err := clr.removeKibanaCR(); err != nil {
+		t.Error(err)
 	}
 }

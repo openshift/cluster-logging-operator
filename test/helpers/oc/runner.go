@@ -79,7 +79,7 @@ func (r *runner) runCmd() (string, error) {
 
 func (r *runner) RunFor(d time.Duration) (string, error) {
 	time.AfterFunc(d, func() {
-		r.Kill()
+		_ = r.Kill()
 	})
 	return r.Run()
 }

@@ -24,4 +24,4 @@ const (
 	CollectorSecretName = "fluentd"
 )
 
-var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName, KibanaTrustedCAName}
+var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

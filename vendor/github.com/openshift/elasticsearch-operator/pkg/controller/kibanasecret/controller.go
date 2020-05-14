@@ -3,7 +3,6 @@ package kibanasecret
 import (
 	"time"
 
-	"github.com/openshift/elasticsearch-operator/pkg/constants"
 	"github.com/openshift/elasticsearch-operator/pkg/k8shandler/kibana"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -80,5 +79,5 @@ func (r *ReconcileKibanaSecret) Reconcile(request reconcile.Request) (reconcile.
 
 // handleSecret returns true if meta namespace is "openshift-logging" and name is "kibana" or "kibana-proxy".
 func handleSecret(meta metav1.Object) bool {
-	return meta.GetNamespace() == constants.OpenshiftNS && utils.ContainsString([]string{"kibana", "kibana-proxy"}, meta.GetName())
+	return utils.ContainsString([]string{"kibana", "kibana-proxy"}, meta.GetName())
 }

@@ -1,7 +1,8 @@
 package constants
 
+import "github.com/openshift/elasticsearch-operator/pkg/utils"
+
 const (
-	OpenshiftNS                = "openshift-logging"
 	ProxyName                  = "cluster"
 	TrustedCABundleKey         = "ca-bundle.crt"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
@@ -10,6 +11,15 @@ const (
 	TrustedCABundleHashName    = "logging.openshift.io/hash"
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	SecretHashPrefix           = "logging.openshift.io/"
+	KibanaInstanceName         = "kibana"
+	ElasticsearchDefaultImage  = "quay.io/openshift/origin-logging-elasticsearch6"
 )
 
-var ReconcileForGlobalProxyList = []string{KibanaTrustedCAName}
+var (
+	ReconcileForGlobalProxyList = []string{KibanaTrustedCAName}
+	packagedElasticsearchImage  = utils.LookupEnvWithDefault("ELASTICSEARCH_IMAGE", ElasticsearchDefaultImage)
+)
+
+func PackagedElasticsearchImage() string {
+	return packagedElasticsearchImage
+}

@@ -5,7 +5,7 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/elasticsearch-operator/pkg/constants"
-	kibana_handler "github.com/openshift/elasticsearch-operator/pkg/k8shandler/kibana"
+	kibanahandler "github.com/openshift/elasticsearch-operator/pkg/k8shandler/kibana"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,7 +77,7 @@ type ReconcileTrustedCABundle struct {
 // When the user configured and/or system certs are updated, the pods are triggered to restart.
 func (r *ReconcileTrustedCABundle) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	if request.Name == constants.KibanaTrustedCAName {
-		if err := kibana_handler.ReconcileKibanaInstance(request, r.client); err != nil {
+		if err := kibanahandler.ReconcileKibanaInstance(request, r.client); err != nil {
 			// Failed to reconcile - requeuing.
 			return reconcileResult, err
 		}
@@ -88,5 +88,5 @@ func (r *ReconcileTrustedCABundle) Reconcile(request reconcile.Request) (reconci
 
 // handleConfigMap returns true if meta namespace is "openshift-logging".
 func handleConfigMap(meta metav1.Object) bool {
-	return meta.GetNamespace() == constants.OpenshiftNS && utils.ContainsString(constants.ReconcileForGlobalProxyList, meta.GetName())
+	return utils.ContainsString(constants.ReconcileForGlobalProxyList, meta.GetName())
 }

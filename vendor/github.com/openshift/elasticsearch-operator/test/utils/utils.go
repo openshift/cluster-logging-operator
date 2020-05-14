@@ -36,6 +36,17 @@ func GetFileContents(filePath string) []byte {
 	return contents
 }
 
+func ConfigMap(name, namespace string, labels, data map[string]string) *v1.ConfigMap {
+	return &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Data: data,
+	}
+}
+
 func Secret(secretName string, namespace string, data map[string][]byte) *v1.Secret {
 	return &v1.Secret{
 		TypeMeta: metav1.TypeMeta{

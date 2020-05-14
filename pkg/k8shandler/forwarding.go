@@ -20,7 +20,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	default:
 		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.cluster.Spec.Collection.Logs.Type)
 	}
-
+	if clusterRequest.ForwarderRequest == nil {
+		clusterRequest.ForwarderRequest = &logging.ClusterLogForwarder{}
+	}
 	spec, status := clusterRequest.normalizeForwarder()
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status

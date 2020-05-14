@@ -19,7 +19,7 @@ type NodeTypeInterface interface {
 	progressUnshedulableNode(upgradeStatus *api.ElasticsearchNodeStatus) error
 	name() string
 	updateReference(node NodeTypeInterface)
-	delete()
+	delete() error
 	isMissing() bool
 }
 

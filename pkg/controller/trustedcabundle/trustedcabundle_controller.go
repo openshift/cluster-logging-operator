@@ -64,7 +64,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileTrustedCABundle{}
 
-// ReconcileProxyConfig reconciles a ClusterLogging object
+//ReconcileTrustedCABundle reconciles the trusted CA bundle config map.
 type ReconcileTrustedCABundle struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
@@ -77,13 +77,9 @@ type ReconcileTrustedCABundle struct {
 // When the user configured and/or system certs are updated, the pods are triggered to restart.
 func (r *ReconcileTrustedCABundle) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 
-	// do one for fluentd and one for kibana separate...
-	if utils.ContainsString(constants.ReconcileForGlobalProxyList, request.Name) {
-
-		if err := k8shandler.ReconcileForTrustedCABundle(request.Name, r.client); err != nil {
-			// Failed to reconcile - requeuing.
-			return reconcileResult, err
-		}
+	if err := k8shandler.ReconcileForTrustedCABundle(request.Name, r.client); err != nil {
+		// Failed to reconcile - requeuing.
+		return reconcileResult, err
 	}
 
 	return reconcile.Result{}, nil

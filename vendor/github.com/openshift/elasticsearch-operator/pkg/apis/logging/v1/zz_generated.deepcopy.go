@@ -209,7 +209,7 @@ func (in *ElasticsearchNodeStatus) DeepCopyInto(out *ElasticsearchNodeStatus) {
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]ClusterCondition, len(*in))
+		*out = make(ClusterConditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -310,7 +310,7 @@ func (in *ElasticsearchStatus) DeepCopyInto(out *ElasticsearchStatus) {
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]ClusterCondition, len(*in))
+		*out = make(ClusterConditions, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

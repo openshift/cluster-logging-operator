@@ -196,7 +196,7 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		switch output.Type {
 		case logging.OutputTypeElasticsearch:
 			engine.storeTemplate = "storeElasticsearch"
-		case logging.OutputTypeFluentForward:
+		case logging.OutputTypeFluentdForward:
 			engine.storeTemplate, engine.outputTemplate = "forward", "outputLabelConfNoCopy"
 		case logging.OutputTypeSyslog:
 			if engine.useOldRemoteSyslogPlugin {

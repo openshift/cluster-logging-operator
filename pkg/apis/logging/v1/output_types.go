@@ -12,9 +12,9 @@ func IsReservedOutputName(s string) bool { return s == OutputNameDefault }
 
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
 const (
-	OutputTypeElasticsearch = "elasticsearch"
-	OutputTypeFluentForward = "fluentForward"
-	OutputTypeSyslog        = "syslog"
+	OutputTypeElasticsearch  = "elasticsearch"
+	OutputTypeFluentdForward = "fluentdForward"
+	OutputTypeSyslog         = "syslog"
 )
 
 // Output defines a destination for log messages.
@@ -81,7 +81,7 @@ type OutputTypeSpec struct {
 	// +optional
 	Syslog *Syslog `json:"syslog,omitempty"`
 	// +optional
-	FluentForward *FluentForward `json:"fluentForward,omitempty"`
+	FluentdForward *FluentdForward `json:"fluentdForward,omitempty"`
 	// +optional
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 }
@@ -137,5 +137,5 @@ type Syslog struct {
 
 // Placeholders for configuration of other types
 
-type FluentForward struct{}
+type FluentdForward struct{}
 type Elasticsearch struct{}

@@ -24,7 +24,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		BeforeEach(func() {
 			outputs = []logging.OutputSpec{
 				{
-					Type: "fluentForward",
+					Type: "fluentdForward",
 					Name: "secureforward-receiver",
 					URL:  "es.svc.messaging.cluster.local:9654",
 					Secret: &logging.OutputSecretSpec{
@@ -84,7 +84,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		BeforeEach(func() {
 			outputs = []logging.OutputSpec{
 				{
-					Type: "fluentForward",
+					Type: "fluentdForward",
 					Name: "secureforward-receiver",
 					URL:  "es.svc.messaging.cluster.local:9654",
 				},

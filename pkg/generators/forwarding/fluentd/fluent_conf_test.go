@@ -135,7 +135,7 @@ var _ = Describe("Generating fluentd config", func() {
 		forwarder = &logging.ClusterLogForwarderSpec{
 			Outputs: []logging.OutputSpec{
 				{
-					Type: "fluentForward",
+					Type: "fluentdForward",
 					Name: "secureforward-receiver",
 					URL:  "es.svc.messaging.cluster.local:9654",
 				},

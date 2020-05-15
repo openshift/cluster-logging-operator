@@ -240,7 +240,7 @@ var _ = Describe("Normalizing forwarder", func() {
 			It("should drop outputs that have empty URL", func() {
 				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs, logging.OutputSpec{
 					Name: "aName",
-					Type: "fluentForward",
+					Type: "fluentdForward",
 					URL:  "",
 				})
 				spec, status := request.normalizeForwarder()
@@ -251,7 +251,7 @@ var _ = Describe("Normalizing forwarder", func() {
 			It("should drop outputs that have an invalid URL", func() {
 				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs, logging.OutputSpec{
 					Name: "aName",
-					Type: "fluentForward",
+					Type: "fluentdForward",
 					URL:  "",
 				})
 				spec, status := request.normalizeForwarder()
@@ -451,7 +451,7 @@ pipelines:
 	Entry("regression test 1", `
 outputs:
 - name: foo
-  type: fluentForward
+  type: fluentdForward
   url: blah.blah
 pipelines:
 - inputRefs:

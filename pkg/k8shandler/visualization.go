@@ -130,6 +130,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	if clusterRequest.isManaged() {
 		name := "kibana"
 		proxyName := "kibana-proxy"
+
 		if err = clusterRequest.removeKibanaCR(); err != nil {
 			return
 		}
@@ -389,7 +390,12 @@ func isKibanaCRDDifferent(current *es.Kibana, desired *es.Kibana) bool {
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
-	cr := newKibanaCustomResource(clusterRequest.cluster, constants.KibanaName)
+	cr := &es.Kibana{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.KibanaName,
+			Namespace: clusterRequest.cluster.Namespace,
+		},
+	}
 
 	err := clusterRequest.Delete(cr)
 	if err != nil && !errors.IsNotFound(err) {

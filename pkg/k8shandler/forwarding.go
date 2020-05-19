@@ -206,6 +206,8 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 	}
 	clusterRequest.ForwardingRequest.Status.LogSources = logSources.List()
 
+	normalized.DisableDefaultForwarding = clusterRequest.ForwardingSpec.DisableDefaultForwarding
+
 	return normalized
 }
 

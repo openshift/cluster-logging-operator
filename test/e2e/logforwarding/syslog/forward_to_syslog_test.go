@@ -52,6 +52,7 @@ var _ = Describe("LogForwarding", func() {
 					Name: "instance",
 				},
 				Spec: logforward.ForwardingSpec{
+					DisableDefaultForwarding: true,
 					Outputs: []logforward.OutputSpec{
 						logforward.OutputSpec{
 							Name: helpers.SyslogReceiverName,

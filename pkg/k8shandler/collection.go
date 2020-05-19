@@ -356,6 +356,12 @@ func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*ap
 		different = true
 	}
 
+	if len(current.Spec.Template.Spec.InitContainers) != len(desired.Spec.Template.Spec.InitContainers) {
+		logrus.Infof("Number of init containers found to be different, updating %q", current.Name)
+		current.Spec.Template.Spec.InitContainers = desired.Spec.Template.Spec.InitContainers
+		different = true
+	}
+
 	return current, different
 }
 

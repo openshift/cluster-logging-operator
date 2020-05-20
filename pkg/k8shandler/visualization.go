@@ -711,6 +711,18 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 		"-pass-access-token",
 	}
 
+	// if user provides a logout-url append it to args
+	// e.g. https://github.com/logout (for github IdP)
+
+	// TODO: come up with mechanism for user to specify
+	logoutURL := ""
+	if logoutURL != "" {
+		kibanaProxyContainer.Args = append(
+			kibanaProxyContainer.Args,
+			fmt.Sprintf("--logout-url=%s", logoutURL),
+		)
+	}
+
 	kibanaProxyContainer.Env = []v1.EnvVar{
 		{Name: "OAP_DEBUG", Value: "false"},
 		{Name: "OCP_AUTH_PROXY_MEMORY_LIMIT",

@@ -243,6 +243,120 @@ func TestNewKibanaPodSpecWhenProxyConfigExists(t *testing.T) {
 	checkKibanaProxyVolumesAndVolumeMounts(t, podSpec, constants.KibanaTrustedCAName)
 }
 
+func TestDeploymentDifferentWithKibanaEnvVar(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Visualization: &logging.VisualizationSpec{
+				Type:       "kibana",
+				KibanaSpec: logging.KibanaSpec{},
+			},
+		},
+	}
+
+	lhsPodSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch.openshift-logging.svc.cluster.local", nil, nil)
+
+	lhsDeployment := NewDeployment(
+		"kibana",
+		"openshift-logging",
+		"kibana",
+		"kibana",
+		lhsPodSpec,
+	)
+
+	rhsPodSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch.openshift-logging.svc.cluster.local", nil, nil)
+
+	index := -1
+	for k, v := range rhsPodSpec.Containers {
+		if v.Name == "kibana" {
+			index = k
+			break
+		}
+	}
+
+	if index == -1 {
+		t.Error("Unable to find kibana container in deployment")
+	}
+
+	rhsPodSpec.Containers[index].Env = append(
+		rhsPodSpec.Containers[index].Env,
+		v1.EnvVar{Name: "TEST_VALUE", Value: "true"})
+
+	rhsDeployment := NewDeployment(
+		"kibana",
+		"openshift-logging",
+		"kibana",
+		"kibana",
+		rhsPodSpec,
+	)
+
+	actual, different := isDeploymentDifferent(lhsDeployment, rhsDeployment)
+	if !different {
+		t.Errorf("Exp. the kibana container to be different due to env vars")
+	}
+
+	// verify that we get back something that matches rhsDeployment now
+	if _, different := isDeploymentDifferent(actual, rhsDeployment); different {
+		t.Errorf("Exp. the lhs container to be updated to match rhs container")
+	}
+}
+
+func TestDeploymentDifferentWithProxyEnvVar(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Visualization: &logging.VisualizationSpec{
+				Type:       "kibana",
+				KibanaSpec: logging.KibanaSpec{},
+			},
+		},
+	}
+
+	lhsPodSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch.openshift-logging.svc.cluster.local", nil, nil)
+
+	lhsDeployment := NewDeployment(
+		"kibana",
+		"openshift-logging",
+		"kibana",
+		"kibana",
+		lhsPodSpec,
+	)
+
+	rhsPodSpec := newKibanaPodSpec(cluster, "test-app-name", "elasticsearch.openshift-logging.svc.cluster.local", nil, nil)
+
+	index := -1
+	for k, v := range rhsPodSpec.Containers {
+		if v.Name == "kibana-proxy" {
+			index = k
+			break
+		}
+	}
+
+	if index == -1 {
+		t.Error("Unable to find kibana container in deployment")
+	}
+
+	rhsPodSpec.Containers[index].Env = append(
+		rhsPodSpec.Containers[index].Env,
+		v1.EnvVar{Name: "TEST_VALUE", Value: "true"})
+
+	rhsDeployment := NewDeployment(
+		"kibana",
+		"openshift-logging",
+		"kibana",
+		"kibana",
+		rhsPodSpec,
+	)
+
+	actual, different := isDeploymentDifferent(lhsDeployment, rhsDeployment)
+	if !different {
+		t.Errorf("Exp. the kibana-proxy container to be different due to env vars")
+	}
+
+	// verify that we get back something that matches rhsDeployment now
+	if _, different := isDeploymentDifferent(actual, rhsDeployment); different {
+		t.Errorf("Exp. the lhs container to be updated to match rhs container")
+	}
+}
+
 func checkKibanaProxyEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {
 	env := podSpec.Containers[1].Env
 	found := false

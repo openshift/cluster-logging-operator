@@ -286,13 +286,12 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 			for _, secretName := range []string{"kibana", "kibana-proxy"} {
 
 				hashKey := fmt.Sprintf("%s%s", constants.SecretHashPrefix, secretName)
-				if kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey] != current.Spec.Template.ObjectMeta.Annotations[hashKey] {
+				if current.Spec.Template.ObjectMeta.Annotations[hashKey] != kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey] {
 					different = true
 				}
 			}
 
 			if different {
-				current.Spec = kibanaDeployment.Spec
 				return clusterRequest.Update(current)
 			}
 			return nil
@@ -382,8 +381,7 @@ func isDeploymentDifferent(current *apps.Deployment, desired *apps.Deployment) (
 		different = true
 	}
 
-	if !utils.EnvValueEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
-		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
+	if updateCurrentDeploymentEnvIfDifferent(current, desired) {
 		different = true
 	}
 
@@ -422,6 +420,27 @@ func updateCurrentDeploymentImages(current *apps.Deployment, desired *apps.Deplo
 	}
 
 	return current
+}
+
+func updateCurrentDeploymentEnvIfDifferent(current *apps.Deployment, desired *apps.Deployment) bool {
+
+	different := false
+
+	containers := current.Spec.Template.Spec.Containers
+
+	for index, curr := range current.Spec.Template.Spec.Containers {
+		for _, des := range desired.Spec.Template.Spec.Containers {
+			// Only compare the env of containers with the same name
+			if curr.Name == des.Name {
+				if !utils.EnvValueEqual(curr.Env, des.Env) {
+					containers[index].Env = des.Env
+					different = true
+				}
+			}
+		}
+	}
+
+	return different
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaRoute() error {

@@ -14,7 +14,3 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-logging-fluentd:latest
-  - name: promtail
-    from:
-      kind: DockerImage
-      name: quay.io/openshift/origin-promtail:refBz1793551

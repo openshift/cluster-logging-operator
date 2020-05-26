@@ -73,7 +73,7 @@ spec:
                 properties:
                   elasticsearch:
                     type: object
-                  fluentForward:
+                  fluentdForward:
                     type: object
                   insecure:
                     description: Insecure must be true for intentionally insecure

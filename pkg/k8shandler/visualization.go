@@ -386,6 +386,11 @@ func isKibanaCRDDifferent(current *es.Kibana, desired *es.Kibana) bool {
 		different = true
 	}
 
+	if !reflect.DeepEqual(current.Spec.ProxySpec, desired.Spec.ProxySpec) {
+		current.Spec.ProxySpec = desired.Spec.ProxySpec
+		different = true
+	}
+
 	return different
 }
 

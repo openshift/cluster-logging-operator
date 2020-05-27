@@ -1,10 +1,11 @@
 package k8shandler
 
 import (
-	"k8s.io/client-go/kubernetes/scheme"
 	"reflect"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
+
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 
@@ -340,7 +341,7 @@ func TestNewKibanaCR(t *testing.T) {
 
 func TestRemoveKibanaCR(t *testing.T) {
 	_ = es.SchemeBuilder.AddToScheme(scheme.Scheme)
-	
+
 	kbn := &es.Kibana{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kibana",
@@ -364,5 +365,142 @@ func TestRemoveKibanaCR(t *testing.T) {
 
 	if err := clr.removeKibanaCR(); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestIsKibanaCRDDifferent(t *testing.T) {
+	tests := []struct {
+		desc    string
+		current *es.Kibana
+		desired *es.Kibana
+	}{
+		{
+			desc: "management state",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateUnmanaged,
+				},
+			},
+		},
+		{
+			desc: "replicas",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Replicas: 1,
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Replicas: 2,
+				},
+			},
+		},
+		{
+			desc: "node selectors",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					NodeSelector: map[string]string{
+						"sel1": "value1",
+					},
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					NodeSelector: map[string]string{
+						"sel1": "value1",
+						"sel2": "value2",
+					},
+				},
+			},
+		},
+		{
+			desc: "tolerations",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Tolerations: []v1.Toleration{},
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Tolerations: []v1.Toleration{
+						{
+							Key: "test",
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "resources",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "proxy resources",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: defaultKibanaMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: defaultKibanaMemory,
+								v1.ResourceCPU:    defaultKibanaCpuRequest,
+							},
+						},
+					},
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: defaultKibanaMemory,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+			got := isKibanaCRDDifferent(test.current, test.desired)
+			if !got {
+				t.Errorf("kibana crd not marked different, got %t", got)
+			}
+			if !reflect.DeepEqual(test.current.Spec, test.desired.Spec) {
+				t.Errorf("kibana CR current spec not matching desired, got %v, want %v", test.current.Spec, test.desired.Spec)
+			}
+		})
 	}
 }

@@ -67,7 +67,7 @@ spec:
                   name:
                     type: string
                   namespaces:
-                    description: Namespaces to be captured for "logs-app" source type,
+                    description: Namespaces to be captured for "logs.app" source type,
                       ignored for other LogSourceTypes Empty value means no filtering
                       based on namespace, all container logs will be collected.
                     items:

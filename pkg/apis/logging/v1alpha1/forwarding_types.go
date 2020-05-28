@@ -12,14 +12,14 @@ const (
 	LogForwardingKind string = "LogForwarding"
 
 	//LogSourceTypeApp are container logs from non-infra structure containers
-	LogSourceTypeApp LogSourceType = "logs-app"
+	LogSourceTypeApp LogSourceType = "logs.app"
 
 	//LogSourceTypeInfra are logs from infra structure containers or node logs
-	LogSourceTypeInfra LogSourceType = "logs-infra"
+	LogSourceTypeInfra LogSourceType = "logs.infra"
 
 	//LogSourceTypeAudit are audit logs from the nodes and the k8s and
 	// openshift apiservers
-	LogSourceTypeAudit LogSourceType = "logs-audit"
+	LogSourceTypeAudit LogSourceType = "logs.audit"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -45,7 +45,7 @@ type ForwardingSpec struct {
 type PipelineSpec struct {
 	Name       string        `json:"name,omitempty"`
 	SourceType LogSourceType `json:"inputSource,omitempty"`
-	// Namespaces to be captured for "logs-app" source type, ignored for other LogSourceTypes
+	// Namespaces to be captured for "logs.app" source type, ignored for other LogSourceTypes
 	// Empty value means no filtering based on namespace, all container logs will be collected.
 	Namespaces []string `json:"namespaces,omitempty"`
 

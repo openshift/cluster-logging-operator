@@ -313,7 +313,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 
 </label>
 
-# Relabel specific sources (e.g. logs-apps) to multiple pipelines
+# Relabel specific sources (e.g. logs.apps) to multiple pipelines
 {{- range .SourceToPipelineLabels }}
 {{ . }}
 {{- end}}

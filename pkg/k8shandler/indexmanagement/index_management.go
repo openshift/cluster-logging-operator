@@ -25,9 +25,9 @@ const (
 )
 
 var (
-	AliasesApp   = []string{"app", "logs-app"}
-	AliasesInfra = []string{"infra", "logs-infra"}
-	AliasesAudit = []string{"audit", "logs-audit"}
+	AliasesApp   = []string{"app", "logs.app"}
+	AliasesInfra = []string{"infra", "logs.infra"}
+	AliasesAudit = []string{"audit", "logs.audit"}
 
 	agePattern = regexp.MustCompile("^(?P<number>\\d+)(?P<unit>[yMwdhHms])$")
 )

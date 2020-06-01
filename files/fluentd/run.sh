@@ -74,6 +74,10 @@ if [ ! -f "$FLUENT_CONF" ] ; then
     exit 1
 fi
 NUM_OUTPUTS=$(grep "path.*'$FILE_BUFFER_PATH" $FLUENT_CONF | wc -l)
+if [ $NUM_OUTPUTS -eq 0 ]; then
+    # Reset to default single output if log forwarding outputs all invalid
+    NUM_OUTPUTS=1
+fi
 
 # Get the available disk size.
 DF_LIMIT=$(df -B1 $FILE_BUFFER_PATH | grep -v Filesystem | awk '{print $2}')

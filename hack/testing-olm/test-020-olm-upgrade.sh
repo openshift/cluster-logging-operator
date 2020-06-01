@@ -87,7 +87,7 @@ payload="$payload,{\"op\":\"replace\",\"path\":\"/spec/channel\",\"value\":\"$ve
 oc -n $NAMESPACE patch subscription cluster-logging-operator --type json -p "[$payload]"
 
 #verify deployment is rolled out
-OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-4.5}
+OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-4.6}
 IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:cluster-logging-operator}
 if [ -n "${IMAGE_FORMAT:-}" ] ; then
   IMAGE_CLUSTER_LOGGING_OPERATOR=$(echo $IMAGE_FORMAT | sed -e "s,\${component},cluster-logging-operator,")

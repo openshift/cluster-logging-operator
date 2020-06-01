@@ -115,7 +115,7 @@ func (tc *E2ETestFramework) consumedLogs(inputName string) (logs, error) {
 
 	// Hack Teach kafka-console-consumer to output a proper json array
 	out := "[" + strings.TrimRight(strings.Replace(stdout, "\n", ",", -1), ",") + "]"
-	ioutil.WriteFile("/tmp/consumed.logs", []byte(out), os.ModePerm)
+	_ = ioutil.WriteFile("/tmp/consumed.logs", []byte(out), os.ModePerm)
 	logs, err := ParseLogs(out)
 	if err != nil {
 		return nil, fmt.Errorf("Parse error: %s", err)

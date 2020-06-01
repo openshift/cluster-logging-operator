@@ -151,8 +151,12 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	return result, nil
 }
 
-func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (string, error) {
-	return fluent.logs("/tmp/app-logs", timeToWait)
+func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
+	fl, err := fluent.logs("/tmp/app-logs", timeToWait)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLogs(fl)
 }
 
 func (fluent fluentReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
@@ -168,6 +172,10 @@ func (fluent *fluentReceiverLogStore) HasAuditLogs(timeToWait time.Duration) (bo
 
 func (es *fluentReceiverLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
 	return "Not Found", fmt.Errorf("Not implemented")
+}
+
+func (fluent *fluentReceiverLogStore) ClusterLocalEndpoint() string {
+	panic("Not implemented")
 }
 
 func (tc *E2ETestFramework) createServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {

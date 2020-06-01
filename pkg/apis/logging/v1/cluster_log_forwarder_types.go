@@ -46,6 +46,7 @@ type ClusterLogForwarderSpec struct {
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 }
 
+// ClusterLogForwarder represents the current status of ClusterLogForwarder
 type ClusterLogForwarderStatus struct {
 	// Conditions of the log forwarder.
 	Conditions status.Conditions `json:"conditions,omitempty"`

@@ -7,11 +7,13 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 //TODO: Remove this in the next release after removing old kibana code completely
@@ -328,6 +330,172 @@ func TestNewKibanaCR(t *testing.T) {
 
 			if !reflect.DeepEqual(got.Spec.Tolerations, test.want.Spec.Tolerations) {
 				t.Errorf("Tolerations: got\n%v\n\nwant\n%v", got.Spec.Tolerations, test.want.Spec.Tolerations)
+			}
+		})
+	}
+}
+
+func TestRemoveKibanaCR(t *testing.T) {
+	_ = es.SchemeBuilder.AddToScheme(scheme.Scheme)
+
+	kbn := &es.Kibana{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kibana",
+			Namespace: "openshift-logging",
+		},
+		Spec: es.KibanaSpec{
+			ManagementState: es.ManagementStateManaged,
+			Replicas:        1,
+		},
+	}
+
+	clr := &ClusterLoggingRequest{
+		cluster: &logging.ClusterLogging{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "openshift-logging",
+			},
+		},
+	}
+
+	clr.client = fake.NewFakeClient(kbn)
+
+	if err := clr.removeKibanaCR(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestIsKibanaCRDDifferent(t *testing.T) {
+	tests := []struct {
+		desc    string
+		current *es.Kibana
+		desired *es.Kibana
+	}{
+		{
+			desc: "management state",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateUnmanaged,
+				},
+			},
+		},
+		{
+			desc: "replicas",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Replicas: 1,
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Replicas: 2,
+				},
+			},
+		},
+		{
+			desc: "node selectors",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					NodeSelector: map[string]string{
+						"sel1": "value1",
+					},
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					NodeSelector: map[string]string{
+						"sel1": "value1",
+						"sel2": "value2",
+					},
+				},
+			},
+		},
+		{
+			desc: "tolerations",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Tolerations: []v1.Toleration{},
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Tolerations: []v1.Toleration{
+						{
+							Key: "test",
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "resources",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "proxy resources",
+			current: &es.Kibana{
+				Spec: es.KibanaSpec{
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: defaultKibanaMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: defaultKibanaMemory,
+								v1.ResourceCPU:    defaultKibanaCpuRequest,
+							},
+						},
+					},
+				},
+			},
+			desired: &es.Kibana{
+				Spec: es.KibanaSpec{
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: defaultKibanaMemory,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.desc, func(t *testing.T) {
+			t.Parallel()
+			got := isKibanaCRDDifferent(test.current, test.desired)
+			if !got {
+				t.Errorf("kibana crd not marked different, got %t", got)
+			}
+			if !reflect.DeepEqual(test.current.Spec, test.desired.Spec) {
+				t.Errorf("kibana CR current spec not matching desired, got %v, want %v", test.current.Spec, test.desired.Spec)
 			}
 		})
 	}

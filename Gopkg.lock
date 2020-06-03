@@ -665,11 +665,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9d50deb37aa05addd476491619e875f59eb2d7d12ef3984f9188465bb7c8a61b"
+  digest = "1:7e8830af3eb0c5cd9ba2e44f2e3c69fa09ba3e3cbf40224a8e21896dec4581dc"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "NT"
-  revision = "78000ba7a073cafc0278790f6bce552a0f25850e"
+  revision = "279210d13fedf5be6d476bad5df6a015042bb905"
 
 [[projects]]
   branch = "master"
@@ -1187,6 +1187,7 @@
     "github.com/onsi/ginkgo/extensions/table",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/format",
+    "github.com/onsi/gomega/types",
     "github.com/openshift/api/config/v1",
     "github.com/openshift/api/console/v1",
     "github.com/openshift/api/oauth/v1",
@@ -1220,6 +1221,7 @@
     "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/client-go/kubernetes",
+    "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/clientcmd",

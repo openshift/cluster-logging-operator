@@ -2,6 +2,8 @@ package k8shandler
 
 import (
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,9 +12,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	helpers "github.com/openshift/cluster-logging-operator/test"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 const (
@@ -21,7 +25,7 @@ const (
 	theInternalOutputName = "clo-default-output-es"
 )
 
-func HasPipelineStatus(status *logging.ForwardingStatus, pipelineName string, state logging.PipelineState, reason logging.PipelineConditionReason) bool {
+func HasPipelineStatus(status *loggingv1alpha1.ForwardingStatus, pipelineName string, state loggingv1alpha1.PipelineState, reason loggingv1alpha1.PipelineConditionReason) bool {
 	logger.Debugf("Pipeline Status: %v", status.Pipelines)
 	for _, pipeline := range status.Pipelines {
 		if pipeline.Name == pipelineName && pipeline.State == state {
@@ -39,7 +43,7 @@ func HasPipelineStatus(status *logging.ForwardingStatus, pipelineName string, st
 	return false
 }
 
-func HasOutputStatus(status *logging.ForwardingStatus, outputName string, state logging.OutputState, reason logging.OutputConditionReason, skipReason bool) bool {
+func HasOutputStatus(status *loggingv1alpha1.ForwardingStatus, outputName string, state loggingv1alpha1.OutputState, reason loggingv1alpha1.OutputConditionReason, skipReason bool) bool {
 	logger.Debugf("Output Status: %v", status.Outputs)
 	for _, output := range status.Outputs {
 		if output.Name == outputName && output.State == state {
@@ -60,20 +64,20 @@ var _ = Describe("Normalizing Forwarding", func() {
 
 	var (
 		cluster                  *cl.ClusterLogging
-		normalizedForwardingSpec logging.ForwardingSpec
-		output                   logging.OutputSpec
-		otherOutput              logging.OutputSpec
+		normalizedForwardingSpec loggingv1alpha1.ForwardingSpec
+		output                   loggingv1alpha1.OutputSpec
+		otherOutput              loggingv1alpha1.OutputSpec
 		request                  *ClusterLoggingRequest
 	)
 	BeforeEach(func() {
-		output = logging.OutputSpec{
+		output = loggingv1alpha1.OutputSpec{
 			Name:     "myOutput",
-			Type:     logging.OutputTypeElasticsearch,
+			Type:     loggingv1alpha1.OutputTypeElasticsearch,
 			Endpoint: "anOutPut",
 		}
-		otherOutput = logging.OutputSpec{
+		otherOutput = loggingv1alpha1.OutputSpec{
 			Name:     otherTargetName,
-			Type:     logging.OutputTypeElasticsearch,
+			Type:     loggingv1alpha1.OutputTypeElasticsearch,
 			Endpoint: "someotherendpoint",
 		}
 		request = &ClusterLoggingRequest{
@@ -85,37 +89,37 @@ var _ = Describe("Normalizing Forwarding", func() {
 					},
 				},
 			},
-			ForwardingRequest: &logging.LogForwarding{},
+			ForwardingRequest: &loggingv1alpha1.LogForwarding{},
 		}
 		cluster = request.cluster
 	})
 
 	It("should have sourceType application", func() {
-		Expect(sourceTypes.Has(string(logging.LogSourceTypeApp))).To(BeTrue())
+		Expect(sourceTypes.Has(string(loggingv1alpha1.LogSourceTypeApp))).To(BeTrue())
 	})
 	It("should have sourceType infra", func() {
-		Expect(sourceTypes.Has(string(logging.LogSourceTypeInfra))).To(BeTrue())
+		Expect(sourceTypes.Has(string(loggingv1alpha1.LogSourceTypeInfra))).To(BeTrue())
 	})
 	It("should have outputType Elastic", func() {
-		Expect(outputTypes.Has(string(logging.OutputTypeElasticsearch))).To(BeTrue())
+		Expect(outputTypes.Has(string(loggingv1alpha1.OutputTypeElasticsearch))).To(BeTrue())
 	})
 	It("should have outputType Forward", func() {
-		Expect(outputTypes.Has(string(logging.OutputTypeForward))).To(BeTrue())
+		Expect(outputTypes.Has(string(loggingv1alpha1.OutputTypeForward))).To(BeTrue())
 	})
 
 	Context("while validating ", func() {
 
 		BeforeEach(func() {
-			request.ForwardingSpec = logging.ForwardingSpec{
-				Outputs: []logging.OutputSpec{
+			request.ForwardingSpec = loggingv1alpha1.ForwardingSpec{
+				Outputs: []loggingv1alpha1.OutputSpec{
 					output,
 					otherOutput,
 				},
-				Pipelines: []logging.PipelineSpec{
+				Pipelines: []loggingv1alpha1.PipelineSpec{
 					{
 						Name:       "aPipeline",
 						OutputRefs: []string{output.Name, otherOutput.Name},
-						SourceType: logging.LogSourceTypeApp,
+						SourceType: loggingv1alpha1.LogSourceTypeApp,
 					},
 				},
 			}
@@ -123,100 +127,100 @@ var _ = Describe("Normalizing Forwarding", func() {
 		Context("pipelines", func() {
 
 			It("should only include logsources if there is atleast one valid pipeline", func() {
-				request.ForwardingSpec.Pipelines = []logging.PipelineSpec{
+				request.ForwardingSpec.Pipelines = []loggingv1alpha1.PipelineSpec{
 					{
 						Name:       "aPipeline",
 						OutputRefs: []string{"someotherendpoint"},
-						SourceType: logging.LogSourceTypeApp,
+						SourceType: loggingv1alpha1.LogSourceTypeApp,
 					},
 				}
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(0), "Exp. all pipelines to be dropped")
-				Expect(request.ForwardingRequest.Status.LogSources).To(Equal([]logging.LogSourceType{}), "Exp. no log sources")
+				Expect(request.ForwardingRequest.Status.LogSources).To(Equal([]loggingv1alpha1.LogSourceType{}), "Exp. no log sources")
 			})
 
 			It("should drop pipelines that do not have unique names", func() {
 				request.ForwardingSpec.Pipelines = append(request.ForwardingSpec.Pipelines,
-					logging.PipelineSpec{
+					loggingv1alpha1.PipelineSpec{
 						Name:       "aPipeline",
 						OutputRefs: []string{output.Name, otherOutput.Name},
-						SourceType: logging.LogSourceTypeApp,
+						SourceType: loggingv1alpha1.LogSourceTypeApp,
 					})
 				//sanity check
 				Expect(len(request.ForwardingSpec.Pipelines)).To(Equal(2))
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(1), "Exp. non-unique pipelines to be dropped")
-				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "pipeline[1]", logging.PipelineStateDropped, logging.PipelineConditionReasonUniqueName)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "pipeline[1]", loggingv1alpha1.PipelineStateDropped, loggingv1alpha1.PipelineConditionReasonUniqueName)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop pipelines that have empty names", func() {
 				request.ForwardingSpec.Pipelines = append(request.ForwardingSpec.Pipelines,
-					logging.PipelineSpec{
+					loggingv1alpha1.PipelineSpec{
 						Name:       "",
 						OutputRefs: []string{output.Name, otherOutput.Name},
-						SourceType: logging.LogSourceTypeApp,
+						SourceType: loggingv1alpha1.LogSourceTypeApp,
 					})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				logger.Debug(normalizedForwardingSpec.Pipelines)
 				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(1), "Exp. empty pipelines to be dropped")
-				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "pipeline[1]", logging.PipelineStateDropped, logging.PipelineConditionReasonMissingName)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "pipeline[1]", loggingv1alpha1.PipelineStateDropped, loggingv1alpha1.PipelineConditionReasonMissingName)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop pipelines that conflict with the internally reserved name", func() {
 				request.ForwardingSpec.Pipelines = append(request.ForwardingSpec.Pipelines,
-					logging.PipelineSpec{
+					loggingv1alpha1.PipelineSpec{
 						Name:       defaultAppPipelineName,
 						OutputRefs: []string{output.Name, otherOutput.Name},
-						SourceType: logging.LogSourceTypeApp,
+						SourceType: loggingv1alpha1.LogSourceTypeApp,
 					})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(1), "Exp. pipelines with an internal name conflict to be dropped")
-				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "pipeline[1]", logging.PipelineStateDropped, logging.PipelineConditionReasonReservedNameConflict)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "pipeline[1]", loggingv1alpha1.PipelineStateDropped, loggingv1alpha1.PipelineConditionReasonReservedNameConflict)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop pipelines that have missing sources", func() {
 				request.ForwardingSpec.Pipelines = append(request.ForwardingSpec.Pipelines,
-					logging.PipelineSpec{
+					loggingv1alpha1.PipelineSpec{
 						Name:       "someDefinedPipeline",
 						OutputRefs: []string{output.Name, otherOutput.Name},
 						SourceType: "",
 					})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(1), "Exp. pipelines with an empty source to be dropped")
-				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "someDefinedPipeline", logging.PipelineStateDropped, logging.PipelineConditionReasonMissingSource)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "someDefinedPipeline", loggingv1alpha1.PipelineStateDropped, loggingv1alpha1.PipelineConditionReasonMissingSource)).To(BeTrue(), "Exp. the status to be updated")
 			})
 			It("should drop pipelines that have unrecognized sources", func() {
 				request.ForwardingSpec.Pipelines = append(request.ForwardingSpec.Pipelines,
-					logging.PipelineSpec{
+					loggingv1alpha1.PipelineSpec{
 						Name:       "someDefinedPipeline",
 						OutputRefs: []string{output.Name, otherOutput.Name},
 						SourceType: "foo",
 					})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(1), "Exp. outputs with an unrecognized type to be dropped")
-				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "someDefinedPipeline", logging.PipelineStateDropped, logging.PipelineConditionReasonUnrecognizedSourceType)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "someDefinedPipeline", loggingv1alpha1.PipelineStateDropped, loggingv1alpha1.PipelineConditionReasonUnrecognizedSourceType)).To(BeTrue(), "Exp. the status to be updated")
 			})
 			It("should drop pipelines that have no outputRefs", func() {
 				request.ForwardingSpec.Pipelines = append(request.ForwardingSpec.Pipelines,
-					logging.PipelineSpec{
+					loggingv1alpha1.PipelineSpec{
 						Name:       "someDefinedPipeline",
 						OutputRefs: []string{},
-						SourceType: logging.LogSourceTypeApp,
+						SourceType: loggingv1alpha1.LogSourceTypeApp,
 					})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(1), "Exp. outputs with an unrecognized type to be dropped")
-				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "someDefinedPipeline", logging.PipelineStateDropped, logging.PipelineConditionReasonMissingOutputs)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "someDefinedPipeline", loggingv1alpha1.PipelineStateDropped, loggingv1alpha1.PipelineConditionReasonMissingOutputs)).To(BeTrue(), "Exp. the status to be updated")
 			})
 			It("should degrade pipelines where there are fewer outputs then defined outputRefs", func() {
 				request.ForwardingSpec.Pipelines = append(request.ForwardingSpec.Pipelines,
-					logging.PipelineSpec{
+					loggingv1alpha1.PipelineSpec{
 						Name:       "someDefinedPipeline",
 						OutputRefs: []string{output.Name, otherOutput.Name, "aMissingOutput"},
-						SourceType: logging.LogSourceTypeApp,
+						SourceType: loggingv1alpha1.LogSourceTypeApp,
 					})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Pipelines)).To(Equal(2), "Exp. all defined pipelines")
-				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "someDefinedPipeline", logging.PipelineStateDegraded, logging.PipelineConditionReasonMissingOutputs)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasPipelineStatus(request.ForwardingRequest.Status, "someDefinedPipeline", loggingv1alpha1.PipelineStateDegraded, loggingv1alpha1.PipelineConditionReasonMissingOutputs)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 		})
@@ -224,95 +228,95 @@ var _ = Describe("Normalizing Forwarding", func() {
 		Context("outputs", func() {
 
 			It("should drop outputs that do not have unique names", func() {
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "myOutput",
-					Type:     logging.OutputTypeElasticsearch,
+					Type:     loggingv1alpha1.OutputTypeElasticsearch,
 					Endpoint: "anOutPut",
 				})
 				//sanity check
 				Expect(len(request.ForwardingSpec.Outputs)).To(Equal(3))
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. non-unique outputs to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "output[2]", logging.OutputStateDropped, logging.OutputConditionReasonNonUniqueName, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "output[2]", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonNonUniqueName, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop outputs that have empty names", func() {
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "",
-					Type:     logging.OutputTypeElasticsearch,
+					Type:     loggingv1alpha1.OutputTypeElasticsearch,
 					Endpoint: "anOutPut",
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with an empty name to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "output[2]", logging.OutputStateDropped, logging.OutputConditionReasonMissingName, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "output[2]", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonMissingName, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop outputs that conflict with the internally reserved name", func() {
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     internalOutputName,
-					Type:     logging.OutputTypeElasticsearch,
+					Type:     loggingv1alpha1.OutputTypeElasticsearch,
 					Endpoint: "anOutPut",
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with an internal name conflict to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "output[2]", logging.OutputStateDropped, logging.OutputConditionReasonReservedNameConflict, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "output[2]", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonReservedNameConflict, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop outputs that have empty types", func() {
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "aName",
 					Type:     "",
 					Endpoint: "anOutPut",
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with an empty type to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateDropped, logging.OutputConditionReasonMissingType, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonMissingType, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 			It("should drop outputs that have unrecognized types", func() {
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "aName",
 					Type:     "foo",
 					Endpoint: "anOutPut",
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with an unrecognized type to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateDropped, logging.OutputConditionReasonUnrecognizedType, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonUnrecognizedType, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 			It("should drop outputs that have empty endpoints", func() {
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "aName",
 					Type:     "fluentForward",
 					Endpoint: "",
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with an empty endpoint to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateDropped, logging.OutputConditionReasonMissingEndpoint, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonMissingEndpoint, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop outputs that have secrets with no names", func() {
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "aName",
-					Type:     logging.OutputTypeElasticsearch,
+					Type:     loggingv1alpha1.OutputTypeElasticsearch,
 					Endpoint: "an output",
-					Secret:   &logging.OutputSecretSpec{},
+					Secret:   &loggingv1alpha1.OutputSecretSpec{},
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with empty secrets to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateDropped, logging.OutputConditionReasonMissingSecretName, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonMissingSecretName, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop outputs that have secrets which don't exist", func() {
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "aName",
-					Type:     logging.OutputTypeElasticsearch,
+					Type:     loggingv1alpha1.OutputTypeElasticsearch,
 					Endpoint: "an output",
-					Secret: &logging.OutputSecretSpec{
+					Secret: &loggingv1alpha1.OutputSecretSpec{
 						Name: "mysecret",
 					},
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with non-existent secrets to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateDropped, logging.OutputConditionReasonSecretDoesNotExist, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonSecretDoesNotExist, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should drop forward outputs that have secrets and is missing shared_key", func() {
@@ -323,7 +327,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mysecret",
-						Namespace: "openshift-logging",
+						Namespace: "openshift-loggingv1alpha1",
 					},
 					Type: "Opaque",
 					Data: map[string][]byte{
@@ -331,17 +335,17 @@ var _ = Describe("Normalizing Forwarding", func() {
 					},
 				}
 				request.client = fake.NewFakeClient(secret)
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "aName",
-					Type:     logging.OutputTypeForward,
+					Type:     loggingv1alpha1.OutputTypeForward,
 					Endpoint: "an output",
-					Secret: &logging.OutputSecretSpec{
+					Secret: &loggingv1alpha1.OutputSecretSpec{
 						Name: "mysecret",
 					},
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(2), "Exp. outputs with missing shared_key to be dropped")
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateDropped, logging.OutputConditionReasonSecretMissingSharedKey, false)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", loggingv1alpha1.OutputStateDropped, loggingv1alpha1.OutputConditionReasonSecretMissingSharedKey, false)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 			It("should accept well formed outputs", func() {
@@ -352,20 +356,20 @@ var _ = Describe("Normalizing Forwarding", func() {
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "mysecret",
-						Namespace: "openshift-logging",
+						Namespace: "openshift-loggingv1alpha1",
 					},
 				})
-				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, logging.OutputSpec{
+				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "aName",
-					Type:     logging.OutputTypeElasticsearch,
+					Type:     loggingv1alpha1.OutputTypeElasticsearch,
 					Endpoint: "an output",
-					Secret: &logging.OutputSecretSpec{
+					Secret: &loggingv1alpha1.OutputSecretSpec{
 						Name: "mysecret",
 					},
 				})
 				normalizedForwardingSpec := request.normalizeLogForwarding(namespace, cluster)
 				Expect(len(normalizedForwardingSpec.Outputs)).To(Equal(3))
-				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", logging.OutputStateAccepted, logging.OutputConditionReasonSecretDoesNotExist, true)).To(BeTrue(), "Exp. the status to be updated")
+				Expect(HasOutputStatus(request.ForwardingRequest.Status, "aName", loggingv1alpha1.OutputStateAccepted, loggingv1alpha1.OutputConditionReasonSecretDoesNotExist, true)).To(BeTrue(), "Exp. the status to be updated")
 			})
 
 		})
@@ -374,7 +378,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 	Context("and a logstore is not spec'd", func() {
 		It("should return an empty forwarding spec", func() {
 			spec := request.normalizeLogForwarding(namespace, cluster)
-			Expect(spec).To(Equal(logging.ForwardingSpec{Outputs: []logging.OutputSpec{}, Pipelines: nil}))
+			Expect(spec).To(Equal(loggingv1alpha1.ForwardingSpec{Outputs: []loggingv1alpha1.OutputSpec{}, Pipelines: nil}))
 		})
 	})
 	Context("and a logstore is spec'd", func() {
@@ -394,8 +398,8 @@ var _ = Describe("Normalizing Forwarding", func() {
 					sources = append(sources, string(pipeline.SourceType))
 				}
 				Expect(len(sources)).To(Equal(2), fmt.Sprintf("Sources: %v", sources))
-				Expect(helpers.StringsContain(sources, string(logging.LogSourceTypeApp))).To(BeTrue(), "Exp. the internal pipeline to include app logs")
-				Expect(helpers.StringsContain(sources, string(logging.LogSourceTypeInfra))).To(BeTrue(), "Exp. the internal pipeline to include infa logs")
+				Expect(helpers.StringsContain(sources, string(loggingv1alpha1.LogSourceTypeApp))).To(BeTrue(), "Exp. the internal pipeline to include app logs")
+				Expect(helpers.StringsContain(sources, string(loggingv1alpha1.LogSourceTypeInfra))).To(BeTrue(), "Exp. the internal pipeline to include infa logs")
 			})
 		})
 		Context("and forwarding is defined", func() {
@@ -411,20 +415,20 @@ var _ = Describe("Normalizing Forwarding", func() {
 						sources = append(sources, string(pipeline.SourceType))
 					}
 					Expect(len(sources)).To(Equal(2), fmt.Sprintf("Sources: %v", sources))
-					Expect(helpers.StringsContain(sources, string(logging.LogSourceTypeApp))).To(BeTrue(), "Exp. the internal pipeline to include app logs")
-					Expect(helpers.StringsContain(sources, string(logging.LogSourceTypeInfra))).To(BeTrue(), "Exp. the internal pipeline to include infa logs")
+					Expect(helpers.StringsContain(sources, string(loggingv1alpha1.LogSourceTypeApp))).To(BeTrue(), "Exp. the internal pipeline to include app logs")
+					Expect(helpers.StringsContain(sources, string(loggingv1alpha1.LogSourceTypeInfra))).To(BeTrue(), "Exp. the internal pipeline to include infa logs")
 				})
 			})
 			Context("and disableDefaultForwarding is true", func() {
 
 				Context("and a pipline spec'd for undefined outputs", func() {
 					BeforeEach(func() {
-						request.ForwardingSpec = logging.ForwardingSpec{
-							Pipelines: []logging.PipelineSpec{
+						request.ForwardingSpec = loggingv1alpha1.ForwardingSpec{
+							Pipelines: []loggingv1alpha1.PipelineSpec{
 								{
 									Name:       "mypipeline",
 									OutputRefs: []string{output.Name},
-									SourceType: logging.LogSourceTypeApp,
+									SourceType: loggingv1alpha1.LogSourceTypeApp,
 								},
 							},
 						}
@@ -436,13 +440,13 @@ var _ = Describe("Normalizing Forwarding", func() {
 				})
 				Context("and a pipline spec'd with some undefined outputs", func() {
 					BeforeEach(func() {
-						request.ForwardingSpec = logging.ForwardingSpec{
-							Outputs: []logging.OutputSpec{output},
-							Pipelines: []logging.PipelineSpec{
+						request.ForwardingSpec = loggingv1alpha1.ForwardingSpec{
+							Outputs: []loggingv1alpha1.OutputSpec{output},
+							Pipelines: []loggingv1alpha1.PipelineSpec{
 								{
 									Name:       "mypipeline",
 									OutputRefs: []string{otherOutput.Name, output.Name},
-									SourceType: logging.LogSourceTypeApp,
+									SourceType: loggingv1alpha1.LogSourceTypeApp,
 								},
 							},
 						}
@@ -456,16 +460,16 @@ var _ = Describe("Normalizing Forwarding", func() {
 				})
 				Context("and a pipline spec'd for defined outputs", func() {
 					BeforeEach(func() {
-						request.ForwardingSpec = logging.ForwardingSpec{
-							Outputs: []logging.OutputSpec{
+						request.ForwardingSpec = loggingv1alpha1.ForwardingSpec{
+							Outputs: []loggingv1alpha1.OutputSpec{
 								output,
 								otherOutput,
 							},
-							Pipelines: []logging.PipelineSpec{
+							Pipelines: []loggingv1alpha1.PipelineSpec{
 								{
 									Name:       "mypipeline",
 									OutputRefs: []string{output.Name, otherOutput.Name},
-									SourceType: logging.LogSourceTypeApp,
+									SourceType: loggingv1alpha1.LogSourceTypeApp,
 								},
 							},
 						}
@@ -483,3 +487,94 @@ var _ = Describe("Normalizing Forwarding", func() {
 		})
 	})
 })
+
+func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
+	_ = loggingv1.SchemeBuilder.AddToScheme(scheme.Scheme)
+	_ = loggingv1alpha1.SchemeBuilder.AddToScheme(scheme.Scheme)
+
+	type fields struct {
+		client            client.Client
+		cluster           *loggingv1.ClusterLogging
+		ForwardingRequest *loggingv1alpha1.LogForwarding
+		ForwardingSpec    loggingv1alpha1.ForwardingSpec
+		Collector         *loggingv1alpha1.CollectorSpec
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		wantConfig string
+		wantErr    bool
+	}{
+		{
+			name: "Valid collector config",
+			fields: fields{
+				cluster:           &loggingv1.ClusterLogging{
+					Spec: loggingv1.ClusterLoggingSpec{
+						LogStore:   nil,
+						Collection: &loggingv1.CollectionSpec{
+							Logs: loggingv1.LogCollectionSpec{
+								Type:        "fluentd",
+								FluentdSpec: loggingv1.FluentdSpec{
+									Resources:    &core.ResourceRequirements{
+										Limits:   core.ResourceList{
+											"Memory": defaultFluentdMemory,
+										},
+										Requests: core.ResourceList{
+											"Memory": defaultFluentdMemory,
+										},
+									},
+									NodeSelector: map[string]string{"123":"123"},
+								},
+							},
+						},
+					},
+				},
+				ForwardingRequest: nil,
+				ForwardingSpec:    loggingv1alpha1.ForwardingSpec{},
+			},
+		},
+		{
+			name: "Collection not specified. Shouldn't crash",
+			fields: fields{
+				cluster:           &loggingv1.ClusterLogging{
+					Spec: loggingv1.ClusterLoggingSpec{
+						LogStore:   nil,
+					},
+				},
+				ForwardingRequest: nil,
+				ForwardingSpec:    loggingv1alpha1.ForwardingSpec{},
+				Collector:         nil,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clusterRequest := &ClusterLoggingRequest{
+				client:            tt.fields.client,
+				cluster:           tt.fields.cluster,
+				ForwardingRequest: tt.fields.ForwardingRequest,
+				ForwardingSpec:    tt.fields.ForwardingSpec,
+				Collector:         tt.fields.Collector,
+			}
+
+			config := &core.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "secure-forward",
+				},
+				Data:       map[string]string{},
+				BinaryData: nil,
+			}
+
+			clusterRequest.client = fake.NewFakeClient(tt.fields.cluster, config)
+
+			gotConfig, err := clusterRequest.generateCollectorConfig()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("generateCollectorConfig() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotConfig != tt.wantConfig {
+				t.Errorf("generateCollectorConfig() gotConfig = %v, want %v", gotConfig, tt.wantConfig)
+			}
+		})
+	}
+}

@@ -41,6 +41,11 @@ func isForwardingEnabled(cluster *logging.ClusterLogging) bool {
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 
+	if clusterRequest.cluster == nil || clusterRequest.cluster.Spec.Collection == nil {
+		logger.Warnf("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
+		return "", nil
+	}
+
 	switch clusterRequest.cluster.Spec.Collection.Logs.Type {
 	case logging.LogCollectionTypeFluentd:
 		break

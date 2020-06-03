@@ -37,16 +37,20 @@ To get a code review of unfinished work, create a PR with "[WIP]" at the start o
 
 ## Setting up a test cluster
 
-You can use a real cluster (for example an AWS cluster) or create a virtual cluster on your development box with [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download)
+By default `make` pulls images from the openshift CI registry.
+You need to get a pull secret and add it to you cluster secrets as follows:
 
-If you use CRC, you may need to start with more memory than the default, e.g.:
+Copy the `oc login` command from https://api.ci.openshift.org/oauth/token/request, then:
 ```
-crc start -m 12288
+oc login api.ci.openshift.org ... # command from the web page
+oc registry login --to my-secret-file
+oc logout
+# This creates or adds to my-secret-file, use it when creating your cluster.
 ```
 
-Log in as a user with the role `cluster-admin` - user `kubeadmin` is often predefined with this role.
+You can use a cluster provider such as AWS, or create a local cluster with [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download) For CRC you may need more memory than the default, e.g. `crc start -m 12288`
 
-You can `export KUBECONFIG=/path/to/cluster/config` or copy/add your config to `$HOME/.kube/config`. Depending on how you set it up, you may also need to `oc login` to your cluster and add pull secrets to your credentials.
+You can `export KUBECONFIG=/path/to/my/cluster/config` or copy your config to `$HOME/.kube/config`. Log in to your cluster as a user with the `cluster-admin` role. User `kubeadmin` is usually predefined with this role.
 
 ## Building and running tests
 

@@ -118,7 +118,7 @@ spec:
     must be explicitly created by a cluster administrator (e.g. `oc create ns openshift-logging`). To enable metrics
     service discovery add namespace label `openshift.io/cluster-monitoring: "true"`.
 
-    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/4.1/logging/efk-logging-deploying.html)
+    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/4.6/logging/cluster-logging-deploying.html)
     in the OpenShift product documentation.
 
     ### Elasticsearch Operator

@@ -192,16 +192,13 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
 	return found
 }
 
-// useOldPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
+// useOldRemoteSyslogPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
 func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 	if clusterRequest.ForwardingRequest == nil {
 		return false
 	}
-
-	if enabled, found := clusterRequest.ForwardingRequest.Annotations[UseOldRemoteSyslogPlugin]; found && enabled == "enabled" {
-		return true
-	}
-	return false
+	enabled, found := clusterRequest.ForwardingRequest.Annotations[UseOldRemoteSyslogPlugin]
+	return found && enabled == "enabled"
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(fluentConf string) error {

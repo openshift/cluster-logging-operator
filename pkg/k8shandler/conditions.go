@@ -70,22 +70,8 @@ func removeCondition(conditions []logging.ClusterCondition, index int) []logging
 }
 
 func isConditionDifferent(lhs, rhs logging.ClusterCondition) bool {
-
-	if lhs.Type != rhs.Type {
-		return true
-	}
-
-	if lhs.Status != rhs.Status {
-		return true
-	}
-
-	if lhs.Reason != rhs.Reason {
-		return true
-	}
-
-	if lhs.Message != rhs.Message {
-		return true
-	}
-
-	return false
+	return lhs.Type != rhs.Type ||
+		lhs.Status != rhs.Status ||
+		lhs.Reason != rhs.Reason ||
+		lhs.Message != rhs.Message
 }

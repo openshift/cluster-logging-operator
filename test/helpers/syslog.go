@@ -429,7 +429,9 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		return tc.KubeClient.Core().Services(OpenshiftLoggingNS).Delete(service.Name, nil)
 	})
 	logStore.deployment = syslogDeployment
-	tc.LogStore = logStore
+
+	name := syslogDeployment.GetName()
+	tc.LogStores[name] = logStore
 	return syslogDeployment, tc.waitForDeployment(OpenshiftLoggingNS, syslogDeployment.Name, defaultRetryInterval, defaultTimeout)
 }
 

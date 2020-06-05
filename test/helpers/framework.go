@@ -72,7 +72,7 @@ type E2ETestFramework struct {
 	KubeClient     *kubernetes.Clientset
 	ClusterLogging *cl.ClusterLogging
 	CleanupFns     []func() error
-	LogStore       LogStore
+	LogStores      map[string]LogStore
 }
 
 func NewE2ETestFramework() *E2ETestFramework {
@@ -80,6 +80,7 @@ func NewE2ETestFramework() *E2ETestFramework {
 	framework := &E2ETestFramework{
 		RestConfig: config,
 		KubeClient: client,
+		LogStores:  make(map[string]LogStore, 4),
 	}
 	return framework
 }
@@ -246,7 +247,7 @@ func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInte
 
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
 	tc.ClusterLogging = NewClusterLogging(componentTypes...)
-	tc.LogStore = &ElasticLogStore{
+	tc.LogStores["elasticsearch"] = &ElasticLogStore{
 		Framework: tc,
 	}
 	return tc.CreateClusterLogging(tc.ClusterLogging)

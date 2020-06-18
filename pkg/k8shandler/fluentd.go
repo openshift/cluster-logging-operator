@@ -25,9 +25,10 @@ import (
 )
 
 const (
-	fluentdAlertsFile = "fluentd/fluentd_prometheus_alerts.yaml"
-	fluentdName       = "fluentd"
-	syslogName        = "syslog"
+	fluentdAlertsFile        = "fluentd/fluentd_prometheus_alerts.yaml"
+	fluentdName              = "fluentd"
+	syslogName               = "syslog"
+	fluentdRequiredESVersion = "6"
 )
 
 func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
@@ -412,7 +413,42 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	// Shorten the termination grace period from the default 30 sec to 10 sec.
 	fluentdPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
 
+	if !pipelineSpec.DisableDefaultForwarding {
+		fluentdPodSpec.InitContainers = []v1.Container{
+			newFluentdInitContainer(cluster),
+		}
+	} else {
+		fluentdPodSpec.InitContainers = []v1.Container{}
+	}
+
 	return fluentdPodSpec
+}
+
+func newFluentdInitContainer(cluster *logging.ClusterLogging) v1.Container {
+	collectionSpec := logging.CollectionSpec{}
+	resources := collectionSpec.Logs.FluentdSpec.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultFluentdMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultFluentdMemory,
+				v1.ResourceCPU:    defaultFluentdCpuRequest,
+			},
+		}
+	}
+	initContainer := NewContainer("fluentd-init", "fluentd", v1.PullIfNotPresent, *resources)
+
+	initContainer.VolumeMounts = []v1.VolumeMount{
+		{Name: "certs", ReadOnly: true, MountPath: "/etc/fluent/keys"},
+	}
+
+	initContainer.Command = []string{
+		"./wait_for_es_version.sh",
+		fluentdRequiredESVersion,
+		fmt.Sprintf("https://%s.%s.svc:9200", elasticsearchResourceName, cluster.Namespace),
+	}
+
+	return initContainer
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string, proxyConfig *configv1.Proxy) (err error) {

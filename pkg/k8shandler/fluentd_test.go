@@ -252,6 +252,50 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 	checkFluentdProxyVolumesAndVolumeMounts(t, podSpec, constants.FluentdTrustedCAName)
 }
 
+func TestFluentdPodInitContainerWithDefaultForwarding(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
+					Type:        "fluentd",
+					FluentdSpec: logging.FluentdSpec{},
+				},
+			},
+		},
+	}
+
+	forwardingSpec := logforward.ForwardingSpec{}
+
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, forwardingSpec)
+
+	if len(podSpec.InitContainers) == 0 {
+		t.Error("Expected pod to have defined init container")
+	}
+}
+
+func TestFluentdPodNoInitContainerWithOutDefaultForwarding(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
+					Type:        "fluentd",
+					FluentdSpec: logging.FluentdSpec{},
+				},
+			},
+		},
+	}
+
+	forwardingSpec := logforward.ForwardingSpec{
+		DisableDefaultForwarding: true,
+	}
+
+	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, forwardingSpec)
+
+	if len(podSpec.InitContainers) > 0 {
+		t.Error("Expected pod to have no init containers")
+	}
+}
+
 func checkFluentdProxyEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {
 	env := podSpec.Containers[0].Env
 	found := false

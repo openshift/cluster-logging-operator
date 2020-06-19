@@ -41,7 +41,7 @@ metadata:
                   }
                 },
                 "retentionPolicy":{
-                  "logs.app":{
+                  "application":{
                     "maxAge":"7d"
                   }
                 }

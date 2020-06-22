@@ -1,7 +1,11 @@
-KUBECONFIG?=$(HOME)/.kube/config
+export KUBECONFIG?=$(HOME)/.kube/config
 
 export GOBIN=$(CURDIR)/bin
 export PATH:=$(GOBIN):$(PATH)
+
+export GOROOT=$(shell go env GOROOT)
+export GOFLAGS=-mod=vendor
+export GO111MODULE=on
 
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
@@ -23,7 +27,7 @@ operator-sdk:
 	@type -p operator-sdk > /dev/null || bash hack/get-operator-sdk.sh
 
 golangci-lint:
-	@type -p golangci-lint > /dev/null || go get github.com/golangci/golangci-lint/cmd/golangci-lint
+	@type -p golangci-lint > /dev/null || GOFLAGS="" GO111MODULE=off go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
 build:
 	go build $(BUILD_OPTS) -o bin/cluster-logging-operator ./cmd/manager
@@ -139,7 +143,7 @@ test-e2e-local: deploy-image
 	hack/test-e2e.sh
 
 test-sec:
-	go get -u github.com/securego/gosec/cmd/gosec
+	GOFLAGS="" GO111MODULE=off go get -u github.com/securego/gosec/cmd/gosec
 	gosec -severity medium --confidence medium -quiet ./...
 
 undeploy:

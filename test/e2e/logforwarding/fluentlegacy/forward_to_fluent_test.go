@@ -18,9 +18,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
-// This test verifies we still support managed CL and forwarding without enabling the LogForwarding
-// feature for cases like 4.2 and prior
-var _ = Describe("LogForwarding prior to LF feature", func() {
+// This test verifies we still support latency secure-forward with no ClusterLogForwarder.
+var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -35,8 +34,7 @@ var _ = Describe("LogForwarding prior to LF feature", func() {
 		}
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})
-	Describe("when ClusterLogging is configured with LogForwarding disabled and 'forwarding' to an administrator managed fluentd", func() {
-
+	Describe("when ClusterLogging is configured with no ClusterLogForwarder instance and 'forwarder' to an administrator managed fluentd", func() {
 		Context("and the receiver is secured", func() {
 
 			BeforeEach(func() {
@@ -45,10 +43,11 @@ var _ = Describe("LogForwarding prior to LF feature", func() {
 				}
 				//sanity check
 				initialWaitForLogsTimeout, _ := time.ParseDuration("30s")
-				if exist, _ := e2e.LogStore.HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
+				name := fluentDeployment.GetName()
+				if exist, _ := e2e.LogStores[name].HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
 					Fail("Found logs when we didnt expect them")
 				}
-				if exist, _ := e2e.LogStore.HasApplicationLogs(initialWaitForLogsTimeout); exist {
+				if exist, _ := e2e.LogStores[name].HasApplicationLogs(initialWaitForLogsTimeout); exist {
 					Fail("Found logs when we didnt expect them")
 				}
 
@@ -81,7 +80,6 @@ var _ = Describe("LogForwarding prior to LF feature", func() {
 
 				components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
 				cr := helpers.NewClusterLogging(components...)
-				cr.ObjectMeta.Annotations[k8shandler.ForwardingAnnotation] = "disabled"
 				if err := e2e.CreateClusterLogging(cr); err != nil {
 					Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 				}
@@ -93,8 +91,9 @@ var _ = Describe("LogForwarding prior to LF feature", func() {
 
 			})
 			It("should send logs to the forward.Output logstore", func() {
-				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				name := fluentDeployment.GetName()
+				Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 			})
 		})
 

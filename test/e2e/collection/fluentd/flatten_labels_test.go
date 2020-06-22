@@ -45,6 +45,7 @@ var _ = Describe("Fluentd message filtering", func() {
 				Name: "instance",
 			},
 			Spec: logforward.ForwardingSpec{
+				DisableDefaultForwarding: true,
 				Outputs: []logforward.OutputSpec{
 					logforward.OutputSpec{
 						Name:     fluentDeployment.ObjectMeta.Name,

@@ -223,15 +223,15 @@ func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) 
 
 	for _, nodePod := range nodePodList.Items {
 
-		var conditions []logging.ClusterCondition
+		var conditions []logging.Condition
 
 		isUnschedulable := false
 		for _, podCondition := range nodePod.Status.Conditions {
 			if podCondition.Type == v1.PodScheduled && podCondition.Status == v1.ConditionFalse {
-				conditions = append(conditions, logging.ClusterCondition{
+				conditions = append(conditions, logging.Condition{
 					Type:               logging.Unschedulable,
 					Status:             v1.ConditionTrue,
-					Reason:             podCondition.Reason,
+					Reason:             logging.ConditionReason(podCondition.Reason),
 					Message:            podCondition.Message,
 					LastTransitionTime: podCondition.LastTransitionTime,
 				})
@@ -242,19 +242,19 @@ func (clusterRequest *ClusterLoggingRequest) getPodConditions(component string) 
 		if !isUnschedulable {
 			for _, containerStatus := range nodePod.Status.ContainerStatuses {
 				if containerStatus.State.Waiting != nil {
-					conditions = append(conditions, logging.ClusterCondition{
+					conditions = append(conditions, logging.Condition{
 						Type:               logging.ContainerWaiting,
 						Status:             v1.ConditionTrue,
-						Reason:             containerStatus.State.Waiting.Reason,
+						Reason:             logging.ConditionReason(containerStatus.State.Waiting.Reason),
 						Message:            containerStatus.State.Waiting.Message,
 						LastTransitionTime: metav1.Now(),
 					})
 				}
 				if containerStatus.State.Terminated != nil {
-					conditions = append(conditions, logging.ClusterCondition{
+					conditions = append(conditions, logging.Condition{
 						Type:               logging.ContainerTerminated,
 						Status:             v1.ConditionTrue,
-						Reason:             containerStatus.State.Terminated.Reason,
+						Reason:             logging.ConditionReason(containerStatus.State.Terminated.Reason),
 						Message:            containerStatus.State.Terminated.Message,
 						LastTransitionTime: containerStatus.State.Terminated.FinishedAt,
 					})

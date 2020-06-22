@@ -94,7 +94,7 @@ gather_logging_resources() {
   oc -n ${LOGGING_NS} get ds -o wide > $outdir/daemonsets.txt 2>&1 ||    :
   oc -n ${LOGGING_NS} get pods -o wide > $outdir/pods.txt 2>&1 || :
   oc -n ${LOGGING_NS} get clusterlogging instance -o yaml > $outdir/clusterlogging.instance.yaml  ||:
-  oc -n ${LOGGING_NS} get logforwarding instance -o yaml > $outdir/logforwarding.instance.yaml  ||:
+  oc -n ${LOGGING_NS} get clusterlogforwarder instance -o yaml > $outdir/clusterlogforwarder.instance.yaml  ||:
 
   oc -n ${LOGGING_NS} extract secret/elasticsearch --to=$outdir ||:
   oc -n ${LOGGING_NS} extract configmap/fluentd --to=$outdir ||:

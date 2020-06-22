@@ -3,9 +3,8 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	test "github.com/openshift/cluster-logging-operator/test"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	. "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("Generating external syslog server output store config blocks", func() {
@@ -56,9 +55,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 			BeforeEach(func() {
 				outputs = []logging.OutputSpec{
 					{
-						Type:     logging.OutputTypeSyslog,
-						Name:     "syslog-receiver",
-						Endpoint: "sl.svc.messaging.cluster.local:9654",
+						Type: "syslog",
+						Name: "syslog-receiver",
+						URL:  "sl.svc.messaging.cluster.local:9654",
 					},
 				}
 			})
@@ -66,7 +65,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				results, err := generator.generateOutputLabelBlocks(outputs)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
-				test.Expect(results[0]).ToEqual(tcpConf)
+				Expect(results[0]).To(EqualTrimLines(tcpConf))
 			})
 		})
 
@@ -74,9 +73,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 			BeforeEach(func() {
 				outputs = []logging.OutputSpec{
 					{
-						Type:     logging.OutputTypeSyslog,
-						Name:     "syslog-receiver",
-						Endpoint: "tcp://sl.svc.messaging.cluster.local:9654",
+						Type: "syslog",
+						Name: "syslog-receiver",
+						URL:  "tcp://sl.svc.messaging.cluster.local:9654",
 					},
 				}
 			})
@@ -84,7 +83,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				results, err := generator.generateOutputLabelBlocks(outputs)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
-				test.Expect(results[0]).ToEqual(tcpConf)
+				Expect(results[0]).To(EqualTrimLines(tcpConf))
 			})
 		})
 
@@ -92,9 +91,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 			BeforeEach(func() {
 				outputs = []logging.OutputSpec{
 					{
-						Type:     logging.OutputTypeSyslog,
-						Name:     "syslog-receiver",
-						Endpoint: "udp://sl.svc.messaging.cluster.local:9654",
+						Type: "syslog",
+						Name: "syslog-receiver",
+						URL:  "udp://sl.svc.messaging.cluster.local:9654",
 					},
 				}
 			})
@@ -102,7 +101,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				results, err := generator.generateOutputLabelBlocks(outputs)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
-				test.Expect(results[0]).ToEqual(udpConf)
+				Expect(results[0]).To(EqualTrimLines(udpConf))
 			})
 		})
 	})
@@ -252,9 +251,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				BeforeEach(func() {
 					outputs = []logging.OutputSpec{
 						{
-							Type:     logging.OutputTypeSyslog,
-							Name:     "syslog-receiver",
-							Endpoint: "tcp://sl.svc.messaging.cluster.local:9654",
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "tcp://sl.svc.messaging.cluster.local:9654",
 						},
 					}
 				})
@@ -262,16 +261,16 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					results, err := generator.generateOutputLabelBlocks(outputs)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
-					test.Expect(results[0]).ToEqual(tcpConf)
+					Expect(results[0]).To(EqualTrimLines(tcpConf))
 				})
 			})
 			Context("with TLS enabled", func() {
 				BeforeEach(func() {
 					outputs = []logging.OutputSpec{
 						{
-							Type:     logging.OutputTypeSyslog,
-							Name:     "syslog-receiver",
-							Endpoint: "tcp://sl.svc.messaging.cluster.local:9654",
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "tcp://sl.svc.messaging.cluster.local:9654",
 							Secret: &logging.OutputSecretSpec{
 								Name: "some-secret",
 							},
@@ -282,7 +281,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					results, err := generator.generateOutputLabelBlocks(outputs)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
-					test.Expect(results[0]).ToEqual(tcpWithTLSConf)
+					Expect(results[0]).To(EqualTrimLines(tcpWithTLSConf))
 				})
 			})
 		})
@@ -292,9 +291,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				BeforeEach(func() {
 					outputs = []logging.OutputSpec{
 						{
-							Type:     logging.OutputTypeSyslog,
-							Name:     "syslog-receiver",
-							Endpoint: "udp://sl.svc.messaging.cluster.local:9654",
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "udp://sl.svc.messaging.cluster.local:9654",
 						},
 					}
 				})
@@ -302,16 +301,16 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					results, err := generator.generateOutputLabelBlocks(outputs)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
-					test.Expect(results[0]).ToEqual(udpConf)
+					Expect(results[0]).To(EqualTrimLines(udpConf))
 				})
 			})
 			Context("with TLS enabled", func() {
 				BeforeEach(func() {
 					outputs = []logging.OutputSpec{
 						{
-							Type:     logging.OutputTypeSyslog,
-							Name:     "syslog-receiver",
-							Endpoint: "udp://sl.svc.messaging.cluster.local:9654",
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "udp://sl.svc.messaging.cluster.local:9654",
 							Secret: &logging.OutputSecretSpec{
 								Name: "some-secret",
 							},
@@ -322,7 +321,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					results, err := generator.generateOutputLabelBlocks(outputs)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
-					test.Expect(results[0]).ToEqual(udpWithTLSConf)
+					Expect(results[0]).To(EqualTrimLines(udpWithTLSConf))
 				})
 			})
 		})

@@ -13,6 +13,7 @@ FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
 .PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk golangci-lint
 
+# Run checks and build the image
 all: check image
 
 # Update code (generate, format), run unit tests and lint.
@@ -75,17 +76,20 @@ fmt:
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
+MANIFESTS=manifests/$(OCP_VERSION)
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@echo generating code
 	@$(MAKE) operator-sdk
 	@operator-sdk generate k8s
 	@operator-sdk generate crds
+	@mv deploy/crds/logging.openshift.io_clusterlogforwarders_crd.yaml $(MANIFESTS)
+	@rm -rf deploy
 	@$(MAKE) fmt
 	@touch $@
 
 regenerate:
-	@rm -f $(GEN_TIMESTAMP)
+	@rm -f $(GEN_TIMESTAMP) $(shell find pkg -name zz_generated_*.go)
 	@$(MAKE) generate
 
 deploy-image: image
@@ -115,10 +119,11 @@ deploy-example: deploy
 
 test-unit:
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	go test ./pkg/...
+	LOG_LEVEL=fatal \
+	go test -cover -race ./pkg/...
 
 test-cluster:
-	go test -v ./test/... -- -root=$(CURDIR)
+	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 test-cleanup:			# Only needed if e2e tests are interrupted.
 	oc create --dry-run=client ns $(NAMESPACE) -o json | oc apply -f -

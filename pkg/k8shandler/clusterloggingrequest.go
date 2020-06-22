@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -11,7 +12,6 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	collector "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -19,11 +19,11 @@ type ClusterLoggingRequest struct {
 	client  client.Client
 	cluster *logging.ClusterLogging
 
-	//forwardingRequest is a logforwarding instance
-	ForwardingRequest *logforward.LogForwarding
+	// ForwarderRequest is a logforwarder instance
+	ForwarderRequest *logging.ClusterLogForwarder
 
-	//ForwardingSpec is the normalized and sanitized logforwarding spec
-	ForwardingSpec logforward.ForwardingSpec
+	// ForwarderSpec is the normalized and sanitized logforwarder spec
+	ForwarderSpec logging.ClusterLogForwarderSpec
 
 	Collector *collector.CollectorSpec
 }
@@ -91,4 +91,11 @@ func (clusterRequest *ClusterLoggingRequest) List(selector map[string]string, ob
 func (clusterRequest *ClusterLoggingRequest) Delete(object runtime.Object) error {
 	logrus.Debugf("Deleting: %v", object)
 	return clusterRequest.client.Delete(context.TODO(), object)
+}
+
+func (clusterRequest *ClusterLoggingRequest) UpdateCondition(t logging.ConditionType, message string, reason logging.ConditionReason, status v1.ConditionStatus) error {
+	if logging.SetCondition(&clusterRequest.cluster.Status.Conditions, t, status, reason, message) {
+		return clusterRequest.UpdateStatus(clusterRequest.cluster)
+	}
+	return nil
 }

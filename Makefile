@@ -115,10 +115,10 @@ deploy-example: deploy
 
 test-unit:
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	go test ./pkg/...
+	go test -race -cover ./pkg/...
 
 test-cluster:
-	go test -v ./test/... -- -root=$(CURDIR)
+	go test -race -cover ./test/... -- -root=$(CURDIR)
 
 test-cleanup:			# Only needed if e2e tests are interrupted.
 	oc create --dry-run=client ns $(NAMESPACE) -o json | oc apply -f -

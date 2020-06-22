@@ -261,6 +261,9 @@ func TestFluentdPodInitContainerWithDefaultForwarding(t *testing.T) {
 					FluentdSpec: logging.FluentdSpec{},
 				},
 			},
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+			},
 		},
 	}
 

@@ -413,7 +413,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	// Shorten the termination grace period from the default 30 sec to 10 sec.
 	fluentdPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
 
-	if !pipelineSpec.DisableDefaultForwarding {
+	if !pipelineSpec.DisableDefaultForwarding && cluster.Spec.LogStore != nil {
 		fluentdPodSpec.InitContainers = []v1.Container{
 			newFluentdInitContainer(cluster),
 		}

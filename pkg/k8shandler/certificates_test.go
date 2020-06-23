@@ -110,7 +110,7 @@ var _ = Describe("Reconciling", func() {
 			}
 
 			os.Setenv("SCRIPTS_DIR", scriptsDir)
-			clusterRequest.CreateOrUpdateCertificates()
+			Expect(clusterRequest.CreateOrUpdateCertificates()).To(Succeed())
 		})
 
 		It("should generate a self-signed CA", func() {

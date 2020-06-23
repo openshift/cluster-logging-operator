@@ -21,10 +21,8 @@ var _ = Describe("ClusterLogForwarder", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
-		err            error
-		e2e            = helpers.NewE2ETestFramework()
-		pipelineSecret *corev1.Secret
-		elasticsearch  *elasticsearch.Elasticsearch
+		err error
+		e2e = helpers.NewE2ETestFramework()
 	)
 	Describe("when ClusterLogging is configured with 'forwarder' to an administrator managed Elasticsearch", func() {
 
@@ -35,7 +33,8 @@ var _ = Describe("ClusterLogForwarder", func() {
 			if err != nil {
 				Fail(fmt.Sprintf("Unable to deploy log generator. E: %s", err.Error()))
 			}
-
+			var pipelineSecret *corev1.Secret
+			var elasticsearch *elasticsearch.Elasticsearch
 			if elasticsearch, pipelineSecret, err = e2e.DeployAnElasticsearchCluster(rootDir); err != nil {
 				Fail(fmt.Sprintf("Unable to deploy an elastic instance: %v", err))
 			}
@@ -100,10 +99,9 @@ var _ = Describe("ClusterLogForwarder", func() {
 		})
 
 		It("should send logs to the forward.Output logstore", func() {
-			name := elasticsearch.GetName()
-			Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-			Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
-			Expect(e2e.LogStores[name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+			Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+			Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+			Expect(e2e.LogStore.HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 		})
 
 	})

@@ -88,7 +88,7 @@ type ElasticLogStore struct {
 	Framework *E2ETestFramework
 }
 
-func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
+func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (string, error) {
 	panic("Method not implemented")
 }
 
@@ -139,10 +139,6 @@ func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) 
 
 func (es *ElasticLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
 	return "Not Found", fmt.Errorf("Not implemented")
-}
-
-func (es *ElasticLogStore) ClusterLocalEndpoint() string {
-	panic("Not implemented")
 }
 
 //Indices fetches the list of indices stored by Elasticsearch
@@ -244,9 +240,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		SetHeader("Content-Type", "application/json").
 		Body(body).
 		Do()
-
-	name := cr.GetName()
-	tc.LogStores[name] = &ElasticLogStore{
+	tc.LogStore = &ElasticLogStore{
 		Framework: tc,
 	}
 	return cr, pipelineSecret, result.Error()

@@ -97,11 +97,9 @@ var _ = PDescribe("LogForwarder", func() {
 								Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 							}
 						}
-
-						name := syslogDeployment.GetName()
-						Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						Expect(e2e.LogStores[name].GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
-						Expect(e2e.LogStores[name].GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
+						Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						Expect(e2e.LogStore.GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
+						Expect(e2e.LogStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
 					},
 						//Entry("with rfc 3164", helpers.Rfc3164))
 						Entry("with rfc 5424", helpers.Rfc5424))
@@ -126,11 +124,9 @@ var _ = PDescribe("LogForwarder", func() {
 								Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 							}
 						}
-
-						name := syslogDeployment.GetName()
-						Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						Expect(e2e.LogStores[name].GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
-						Expect(e2e.LogStores[name].GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
+						Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						Expect(e2e.LogStore.GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
+						Expect(e2e.LogStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
 					},
 						//Entry("with rfc 3164", helpers.Rfc3164))
 						Entry("with rfc 5424", helpers.Rfc5424))
@@ -159,11 +155,9 @@ var _ = PDescribe("LogForwarder", func() {
 								Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 							}
 						}
-
-						name := syslogDeployment.GetName()
-						Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						Expect(e2e.LogStores[name].GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
-						Expect(e2e.LogStores[name].GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
+						Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						Expect(e2e.LogStore.GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
+						Expect(e2e.LogStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
 					},
 						//Entry("with rfc 3164", helpers.Rfc3164))
 						Entry("with rfc 5424", helpers.Rfc5424))
@@ -192,11 +186,9 @@ var _ = PDescribe("LogForwarder", func() {
 								Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 							}
 						}
-
-						name := syslogDeployment.GetName()
-						Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						Expect(e2e.LogStores[name].GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
-						Expect(e2e.LogStores[name].GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
+						Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						Expect(e2e.LogStore.GrepLogs(grepprogname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected syslogtag to be \"fluentd\"")
+						Expect(e2e.LogStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal("fluentd"), "Expected APP-NAME to be \"fluentd\"")
 					},
 						//Entry("with rfc 3164", helpers.Rfc3164))
 						Entry("with rfc 5424", helpers.Rfc5424))
@@ -229,9 +221,7 @@ var _ = PDescribe("LogForwarder", func() {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
 					}
-
-					name := syslogDeployment.GetName()
-					Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				},
 					Entry("with rfc 3164", helpers.Rfc3164))
 			})
@@ -259,9 +249,7 @@ var _ = PDescribe("LogForwarder", func() {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
 					}
-
-					name := syslogDeployment.GetName()
-					Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				},
 					Entry("with rfc 3164", helpers.Rfc3164))
 			})

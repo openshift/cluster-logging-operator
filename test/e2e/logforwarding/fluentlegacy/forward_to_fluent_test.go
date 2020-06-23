@@ -43,11 +43,10 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 				}
 				//sanity check
 				initialWaitForLogsTimeout, _ := time.ParseDuration("30s")
-				name := fluentDeployment.GetName()
-				if exist, _ := e2e.LogStores[name].HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
+				if exist, _ := e2e.LogStore.HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
 					Fail("Found logs when we didnt expect them")
 				}
-				if exist, _ := e2e.LogStores[name].HasApplicationLogs(initialWaitForLogsTimeout); exist {
+				if exist, _ := e2e.LogStore.HasApplicationLogs(initialWaitForLogsTimeout); exist {
 					Fail("Found logs when we didnt expect them")
 				}
 
@@ -91,9 +90,8 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 
 			})
 			It("should send logs to the forward.Output logstore", func() {
-				name := fluentDeployment.GetName()
-				Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 			})
 		})
 

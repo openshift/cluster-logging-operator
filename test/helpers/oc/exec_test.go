@@ -72,7 +72,7 @@ var _ = Describe("oc exec pod", func() {
 				AfterEach(func() {
 					Expect(oc.Literal().From("oc delete ns test-log-gen").Run()).To(Succeed())
 					if tmpFile != nil {
-						os.Remove(tmpFile.Name())
+						_ = os.Remove(tmpFile.Name())
 					} else {
 						logger.Error("tmpfile is nil")
 					}

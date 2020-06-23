@@ -17,6 +17,7 @@ var templateRegistry = []string{
 	forwardTemplate,
 	storeSyslogTemplateOld,
 	storeSyslogTemplate,
+	storeKafkaTemplate,
 }
 
 const fluentConfTemplate = `{{- define "fluentConf" -}}
@@ -292,19 +293,19 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 {{ if .CollectInfraLogs }}
   <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
     @type relabel
-    @label @_LOGS_INFRA
+    @label @_INFRASTRUCTURE
   </match>
 {{- end}}
 {{ if .CollectAppLogs}}
   <match kubernetes.**>
     @type relabel
-    @label @_LOGS_APP
+    @label @_APPLICATION
   </match>
 {{- end}}
 {{ if .CollectAuditLogs}}
   <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
     @type relabel
-    @label @_LOGS_AUDIT
+    @label @_AUDIT
   </match>
 {{- end}}
   <match **>
@@ -668,3 +669,30 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
   </buffer>
 </store>
 {{- end}}`
+
+const storeKafkaTemplate = `{{- define "storeKafka" -}}
+@type kafka2
+brokers {{.Brokers}}
+default_topic {{.Topic}}
+{{ if .Target.Secret -}}
+ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
+ssl_client_cert '{{ .SecretPath "tls.crt"}}'
+ssl_client_cert_key '{{ .SecretPath "tls.key"}}'
+{{ end -}}
+<format>
+  @type json
+</format>
+<buffer {{.Topic}}>
+  @type file
+  path '{{.BufferPath}}'
+  flush_interval 1s
+  flush_thread_count 2
+  flush_at_shutdown false
+  retry_max_interval 300
+  retry_forever true
+  queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+  overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+</buffer>
+{{- end}}
+`

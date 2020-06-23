@@ -37,16 +37,39 @@ To get a code review of unfinished work, create a PR with "[WIP]" at the start o
 
 ## Setting up a test cluster
 
-You can use a real cluster (for example an AWS cluster) or create a virtual cluster on your development box with [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download)
+Should work with any k8s cluster; tested with AWS and [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download). See below for extra steps with some specific cluster providers.
 
-If you use CRC, you may need to start with more memory than the default, e.g.:
+Cluster creation requires a pull-secret from the cluster provider. You need
+to add a secret to this file so `make` can pull images from the openshift
+CI registry:
+
+Copy the `oc login` command from https://api.ci.openshift.org/oauth/token/request, then:
 ```
-crc start -m 12288
+oc login api.ci.openshift.org ... # command from the web page
+oc registry login --to my-secret-file
+oc logout
+# This creates or adds to my-secret-file
 ```
 
-Log in as a user with the role `cluster-admin` - user `kubeadmin` is often predefined with this role.
+Once created, you can `export KUBECONFIG=/path/to/my/cluster/config` or copy your config to `$HOME/.kube/config`.
 
-You can `export KUBECONFIG=/path/to/cluster/config` or copy/add your config to `$HOME/.kube/config`. Depending on how you set it up, you may also need to `oc login` to your cluster and add pull secrets to your credentials.
+**Note**: Don't symlink `$HOME/.kube/config`. Some commands may overwrite this file and break the symlink, causing much confusion.
+
+Log in to your cluster as a user with the `cluster-admin` role. User `kubeadmin` is usually predefined with this role.
+
+### Configuration for CRC
+
+Download the crc command from [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download) and read the install instructions. 
+
+The following is suggested configuration to set before calling `crc start`
+```
+# Increase memory - default 8k may not be enough
+crc config set memory 12288
+# my-pull-secret is the CRC pull secret with the openshift CI secret added, explained above.
+crc config set pull-secret-file my-pull-secret
+# This test sometimes fails incorrectly on systems where libvirtd is triggered by a socket.
+crc config set skip-check-libvirt-running true
+```
 
 ## Building and running tests
 
@@ -71,7 +94,7 @@ To do a complete deploy, test, cleanup cycle exactly as CI does (this must start
 
 Some other useful targets (read the Makefile for more) 
 * `make image`: Build the image as $IMAGE_TAG, do not deploy it.
-* `make` or `make all`: Run `make check` and build the CLO image.
+* ``$HOME/.kube/config`make` or `make all`: Run `make check` and build the CLO image.
 
 ## More about `make run`
 

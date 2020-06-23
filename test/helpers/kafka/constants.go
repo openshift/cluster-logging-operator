@@ -13,6 +13,7 @@ const (
 	InfraLogsTopic         = "clo-infra-topic"
 	DeploymentName         = "kafka"
 	ConsumerDeploymentName = "kafka-consumer"
+	InsidePort             = kafkaInsidePort
 )
 
 var (

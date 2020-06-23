@@ -77,9 +77,9 @@ var _ = Describe("LogForwarding", func() {
 			It("should send logs to the fluentd receiver and elasticsearch", func() {
 				stores := []string{fluentRcv.GetName(), elasticsearch.GetName()}
 				for _, name := range stores {
-					Expect(e2e.LogStores[name].HasInfraStructureLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs in store %q", name)
-					Expect(e2e.LogStores[name].HasApplicationLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs in store %q", name)
-					Expect(e2e.LogStores[name].HasAuditLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs in store %q", name)
+					Expect(e2e.LogStore.HasInfraStructureLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs in store %q", name)
+					Expect(e2e.LogStore.HasApplicationLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs in store %q", name)
+					Expect(e2e.LogStore.HasAuditLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs in store %q", name)
 				}
 			})
 		})
@@ -98,7 +98,7 @@ var _ = Describe("LogForwarding", func() {
 						Namespace: constants.OpenshiftNS,
 					},
 				}
-				e2e.LogStores[elasticsearch.GetClusterName()] = &ElasticLogStore{Framework: e2e}
+				e2e.LogStore = &ElasticLogStore{Framework: e2e}
 
 				cr := NewClusterLogging(ComponentTypeCollector)
 				if err := e2e.CreateClusterLogging(cr); err != nil {
@@ -121,9 +121,9 @@ var _ = Describe("LogForwarding", func() {
 
 			It("should send logs to the fluentd receiver only", func() {
 				fluentd := fluentRcv.GetName()
-				Expect(e2e.LogStores[fluentd].HasInfraStructureLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs in store %q", fluentd)
-				Expect(e2e.LogStores[fluentd].HasApplicationLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs in store %q", fluentd)
-				Expect(e2e.LogStores[fluentd].HasAuditLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs in store %q", fluentd)
+				Expect(e2e.LogStore.HasInfraStructureLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs in store %q", fluentd)
+				Expect(e2e.LogStore.HasApplicationLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs in store %q", fluentd)
+				Expect(e2e.LogStore.HasAuditLogs(DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs in store %q", fluentd)
 			})
 		})
 

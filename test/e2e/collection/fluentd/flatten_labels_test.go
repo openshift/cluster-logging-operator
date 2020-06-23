@@ -3,7 +3,9 @@ package fluentd
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -77,18 +79,22 @@ var _ = Describe("Fluentd message filtering", func() {
 	}, helpers.DefaultCleanUpTimeout)
 
 	It("should remove 'kubernetes.labels' and create 'kubernetes.flat_labels' with an array of 'kubernetes.labels'", func() {
-		Expect(e2e.LogStores[helpers.FluentdLogStore].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+		Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 
 		//verify infra namespaces are not stored to their own index
-		logs, err := e2e.LogStores[helpers.FluentdLogStore].ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
+		response, err := e2e.LogStore.ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
 		Expect(err).To(BeNil(), fmt.Sprintf("Error fetching logs: %v", err))
+		logs := strings.Split(response, "\n")
 		Expect(len(logs)).To(Not(Equal(0)), "There were no documents returned in the logs")
 
 		//verify the new key exists
-		Expect(logs[0].Kubernetes.FlatLabels).To(Not(BeNil()), fmt.Sprintf("Expected to find the kubernetes.flat_labels key in %#v", logs[0]))
+		reTimeUnit := regexp.MustCompile(".*\\\"flat_labels\\\":\\[(.*=.*)*,?\\].*")
+		Expect(reTimeUnit.MatchString(logs[0])).To(BeTrue(), fmt.Sprintf("Expected to find the kubernetes.flat_labels key in '%s'", logs[0]))
 
 		//verify we removed the old key
-		Expect(logs[0].Kubernetes.Labels).To(BeNil(), fmt.Sprintf("Did not expect to find the kubernetes.labels key in %#v", logs[0]))
+		reTimeUnit = regexp.MustCompile(".*\\\"labels\\\":{")
+		Expect(reTimeUnit.MatchString(logs[0])).To(BeFalse(), fmt.Sprintf("Did not expect to find the kubernetes.labels key in '%s'", logs[0]))
+
 	})
 
 })

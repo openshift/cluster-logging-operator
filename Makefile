@@ -13,11 +13,10 @@ FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
 .PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk golangci-lint
 
-# Run checks and build the image
-all: check image
-
-# Update code (generate, format), run unit tests and lint.
-check: generate fmt test-unit lint
+# Update code (generate, format), run unit tests and lint. Make sure e2e tests build.
+check: generate fmt test-unit
+	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
+	$(MAKE) lint
 
 # Download tools if not available on local PATH.
 operator-sdk:
@@ -34,10 +33,7 @@ build-debug:
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run
-run:
-	$(MAKE) deploy-elasticsearch-operator
-	@oc create --dry-run=client ns $(NAMESPACE) -o json | oc apply -f -
-	@oc delete -n $(NAMESPACE) all --all
+run: deploy-elasticsearch-operator test-cleanup
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	@ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
@@ -51,14 +47,14 @@ run:
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	$(RUN_OPTS) $(CURDIR)/bin/cluster-logging-operator
+	$(RUN_CMD) cmd/manager/main.go
 
 run-debug:
-	$(MAKE) run RUN_OPTS='dlv exec --'
+	$(MAKE) run RUN_CMD='dlv debug'
 
 clean:
 	@rm -f bin/operator-sdk bin/imagebuilder bin/golangci-lint bin/cluster-logging-operator
-	rm -rf tmp
+	rm -rf tmp _output
 	go clean -cache -testcache ./...
 
 image:
@@ -113,6 +109,8 @@ deploy-catalog:
 
 deploy-elasticsearch-operator:
 	hack/deploy-eo.sh
+undeploy-elasticsearch-operator:
+	make -C ../elasticsearch-operator elasticsearch-cleanup
 
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
@@ -126,10 +124,11 @@ test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 test-cleanup:			# Only needed if e2e tests are interrupted.
-	oc create --dry-run=client ns $(NAMESPACE) -o json | oc apply -f -
-	oc delete -n $(NAMESPACE) all --all
-	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name; done | grep -e -receiver | xargs -r oc delete
-	@oc get ns -o name | grep clo- | xargs --no-run-if-empty oc delete
+	oc delete --ignore-not-found -n $(NAMESPACE) all --all
+	oc delete --ignore-not-found ns $(NAMESPACE)
+	oc create ns $(NAMESPACE)
+	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name; done | grep -e -receiver | xargs --verbose --no-run-if-empty oc delete
+	@oc get ns -o name | grep clo- | xargs --verbose --no-run-if-empty oc delete
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm:
@@ -145,6 +144,9 @@ test-sec:
 
 undeploy:
 	hack/undeploy.sh
+redeploy:
+	$(MAKE) undeploy
+	$(MAKE) deploy
 
 cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-deploy
 

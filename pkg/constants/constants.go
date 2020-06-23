@@ -14,15 +14,16 @@ const (
 	FluentdTrustedCAName       = "fluentd-trusted-ca-bundle"
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	// internal elasticsearch FQDN to prevent to connect to the global proxy
-	ElasticsearchFQDN  = "elasticsearch.openshift-logging.svc.cluster.local"
-	ElasticsearchName  = "elasticsearch"
-	ElasticsearchPort  = "9200"
-	FluentdName        = "fluentd"
-	KibanaName         = "kibana"
-	KibanaProxyName    = "kibana-proxy"
-	CuratorName        = "curator"
-	LogStoreService    = ElasticsearchFQDN + ":" + ElasticsearchPort
-	MasterCASecretName = "master-certs"
+	ElasticsearchFQDN   = "elasticsearch.openshift-logging.svc.cluster.local"
+	ElasticsearchName   = "elasticsearch"
+	ElasticsearchPort   = "9200"
+	FluentdName         = "fluentd"
+	KibanaName          = "kibana"
+	KibanaProxyName     = "kibana-proxy"
+	CuratorName         = "curator"
+	LogStoreURL         = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
+	MasterCASecretName  = "master-certs"
+	CollectorSecretName = "fluentd"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

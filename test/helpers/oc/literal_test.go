@@ -41,7 +41,7 @@ var _ = Describe("literal command", func() {
 			Expect(oc.Literal().From("oc -n test-log-gen logs log-generator -f").OutputFor(time.Second * 10)).To(Succeed())
 			// currently oc.Literal for oc exec does not support bash -c commands
 			Expect(oc.Literal().From("oc -n test-log-gen exec log-generator -c log-generator -- ls -al").Output()).To(Succeed())
-			Expect(oc.Literal().From("oc delete ns test-log-gen").Output())
+			Expect(oc.Literal().From("oc delete ns test-log-gen").Output()).To(Succeed())
 		})
 		AfterEach(func() {
 			if tmpFile != nil {

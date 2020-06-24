@@ -2,6 +2,8 @@ package helpers
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -19,13 +21,12 @@ type kafkaReceiver struct {
 	topics []string
 }
 
-func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (string, error) {
+func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (logs, error) {
 	logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 	if err != nil {
-		return "", fmt.Errorf("Failed to read consumed application logs: %s", err)
+		return nil, fmt.Errorf("Failed to read consumed application logs: %s", err)
 	}
-	// FIXME(alanconway) return only app- logs here?
-	return logs, nil
+	return logs.ByIndex(ProjectIndexPrefix), nil
 }
 
 func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, error) {
@@ -34,8 +35,7 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 		if err != nil {
 			return false, err
 		}
-		// FIXME(alanconway) proper check for infra- in logs here?
-		return strings.Contains(logs, InfraIndexPrefix), nil
+		return logs.ByIndex(InfraIndexPrefix).NonEmpty(), nil
 	})
 	return true, err
 }
@@ -46,8 +46,7 @@ func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error)
 		if err != nil {
 			return false, err
 		}
-		// FIXME(alanconway) proper check for infra- in logs here?
-		return strings.Contains(logs, ProjectIndexPrefix), nil
+		return logs.ByIndex(ProjectIndexPrefix).NonEmpty(), nil
 	})
 	return true, err
 }
@@ -58,14 +57,17 @@ func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		// FIXME(alanconway) proper check for audit- in logs here?
-		return strings.Contains(logs, AuditIndexPrefix), nil
+		return logs.ByIndex(AuditIndexPrefix).NonEmpty(), nil
 	})
 	return true, err
 }
 
 func (kr *kafkaReceiver) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
 	return "Not Found", fmt.Errorf("Not implemented")
+}
+
+func (kr *kafkaReceiver) ClusterLocalEndpoint() string {
+	return kafka.ClusterLocalEndpoint(OpenshiftLoggingNS)
 }
 
 func (tc *E2ETestFramework) DeployKafkaReceiver(topics []string) (*apps.StatefulSet, error) {
@@ -83,7 +85,7 @@ func (tc *E2ETestFramework) DeployKafkaReceiver(topics []string) (*apps.Stateful
 		app:    app,
 		topics: topics,
 	}
-	tc.LogStore = receiver
+	tc.LogStores[app.Name] = receiver
 
 	if err := tc.createKafkaConsumers(receiver); err != nil {
 		return nil, err
@@ -92,8 +94,8 @@ func (tc *E2ETestFramework) DeployKafkaReceiver(topics []string) (*apps.Stateful
 	return app, nil
 }
 
-func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (string, error) {
-	rcv := tc.LogStore.(*kafkaReceiver)
+func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error) {
+	rcv := tc.LogStores[rcvName].(*kafkaReceiver)
 	topic := kafka.TopicForInputName(rcv.topics, inputName)
 	name := kafka.ConsumerNameForTopic(topic)
 
@@ -102,21 +104,27 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (string, err
 	}
 	pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if len(pods.Items) == 0 {
-		return "", fmt.Errorf("No pods found for %s", name)
+		return nil, fmt.Errorf("No pods found for %s", name)
 	}
 
 	logger.Debugf("Pod %s", pods.Items[0].Name)
 	stdout, err := tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"cat", "/shared/consumed.logs"})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Hack Teach kafka-console-consumer to output a proper json array
 	out := "[" + strings.TrimRight(strings.Replace(stdout, "\n", ",", -1), ",") + "]"
-	return out, nil
+	_ = ioutil.WriteFile("/tmp/consumed.logs", []byte(out), os.ModePerm)
+	logs, err := ParseLogs(out)
+	if err != nil {
+		return nil, fmt.Errorf("Parse error: %s", err)
+	}
+
+	return logs, nil
 }
 
 func (tc *E2ETestFramework) createKafkaBroker() (*apps.StatefulSet, error) {

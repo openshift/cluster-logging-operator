@@ -44,8 +44,8 @@ var _ = Describe("CLO Managed ClusterLogForwarder", func() {
 		}, helpers.DefaultCleanUpTimeout)
 
 		It("should default to forwarding logs to the spec'd logstore", func() {
-			Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-			Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+			Expect(e2e.LogStores["elasticsearch"].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+			Expect(e2e.LogStores["elasticsearch"].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 
 			//verify infra namespaces are not stored to their own index
 			elasticSearch := helpers.ElasticLogStore{Framework: e2e}

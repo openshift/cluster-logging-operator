@@ -77,6 +77,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 						},
 					},
 				}
+				logger.Infof("FIXME creating %v", forwarder)
 				if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 					Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 				}
@@ -90,9 +91,10 @@ var _ = Describe("ClusterLogForwarder", func() {
 			})
 
 			It("should send logs to the forward.Output logstore", func() {
-				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
-				Expect(e2e.LogStore.HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+				name := fluentDeployment.GetName()
+				Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStores[name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 			})
 		})
 
@@ -104,10 +106,11 @@ var _ = Describe("ClusterLogForwarder", func() {
 				}
 				//sanity check
 				initialWaitForLogsTimeout, _ := time.ParseDuration("30s")
-				if exist, _ := e2e.LogStore.HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
+				name := fluentDeployment.GetName()
+				if exist, _ := e2e.LogStores[name].HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
 					Fail("Found logs when we didnt expect them")
 				}
-				if exist, _ := e2e.LogStore.HasApplicationLogs(initialWaitForLogsTimeout); exist {
+				if exist, _ := e2e.LogStores[name].HasApplicationLogs(initialWaitForLogsTimeout); exist {
 					Fail("Found logs when we didnt expect them")
 				}
 
@@ -166,15 +169,17 @@ var _ = Describe("ClusterLogForwarder", func() {
 			})
 
 			It("should send logs to the forward.Output logstore", func() {
-				Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStore.HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
-				Expect(e2e.LogStore.HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+				name := fluentDeployment.GetName()
+				Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStores[name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 			})
 		})
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluent-receiver", "fluentd"})
+			// FIXME(alanconway)
+			// e2e.WaitForCleanupCompletion([]string{"fluent-receiver", "fluentd"})
 		})
 
 	})

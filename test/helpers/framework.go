@@ -54,7 +54,7 @@ func init() {
 
 type LogStore interface {
 	//ApplicationLogs returns app logs for a given log store
-	ApplicationLogs(timeToWait time.Duration) (string, error)
+	ApplicationLogs(timeToWait time.Duration) (logs, error)
 
 	HasApplicationLogs(timeToWait time.Duration) (bool, error)
 
@@ -63,6 +63,8 @@ type LogStore interface {
 	HasAuditLogs(timeToWait time.Duration) (bool, error)
 
 	GrepLogs(expr string, timeToWait time.Duration) (string, error)
+
+	ClusterLocalEndpoint() string
 }
 
 type E2ETestFramework struct {
@@ -70,7 +72,7 @@ type E2ETestFramework struct {
 	KubeClient     *kubernetes.Clientset
 	ClusterLogging *cl.ClusterLogging
 	CleanupFns     []func() error
-	LogStore       LogStore
+	LogStores      map[string]LogStore
 }
 
 func NewE2ETestFramework() *E2ETestFramework {
@@ -78,6 +80,7 @@ func NewE2ETestFramework() *E2ETestFramework {
 	framework := &E2ETestFramework{
 		RestConfig: config,
 		KubeClient: client,
+		LogStores:  make(map[string]LogStore, 4),
 	}
 	return framework
 }
@@ -244,7 +247,7 @@ func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInte
 
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
 	tc.ClusterLogging = NewClusterLogging(componentTypes...)
-	tc.LogStore = &ElasticLogStore{
+	tc.LogStores["elasticsearch"] = &ElasticLogStore{
 		Framework: tc,
 	}
 	return tc.CreateClusterLogging(tc.ClusterLogging)

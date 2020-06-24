@@ -68,7 +68,8 @@ var _ = Describe("ClusterLogForwarder", func() {
 				})
 
 				It("should send logs to the forward.Output logstore", func() {
-					Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					name := syslogDeployment.GetName()
+					Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				})
 			})
 
@@ -107,7 +108,8 @@ var _ = Describe("ClusterLogForwarder", func() {
 				})
 
 				It("should send logs to the forward.Output logstore", func() {
-					Expect(e2e.LogStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					name := syslogDeployment.GetName()
+					Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				})
 			})
 

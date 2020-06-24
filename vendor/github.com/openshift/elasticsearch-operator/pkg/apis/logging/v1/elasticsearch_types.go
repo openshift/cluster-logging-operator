@@ -179,9 +179,10 @@ const (
 type ShardAllocationState string
 
 const (
-	ShardAllocationAll     ShardAllocationState = "all"
-	ShardAllocationNone    ShardAllocationState = "none"
-	ShardAllocationUnknown ShardAllocationState = "shard allocation unknown"
+	ShardAllocationAll       ShardAllocationState = "all"
+	ShardAllocationNone      ShardAllocationState = "none"
+	ShardAllocationPrimaries ShardAllocationState = "primaries"
+	ShardAllocationUnknown   ShardAllocationState = "shard allocation unknown"
 )
 
 type PodStateMap map[PodStateType][]string

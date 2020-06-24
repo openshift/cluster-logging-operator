@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -150,7 +151,8 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	options := metav1.ListOptions{
 		LabelSelector: "component=elasticsearch",
 	}
-	pods, err := es.Framework.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+
+	pods, err := es.Framework.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
 	if err != nil {
 		return nil, err
 	}
@@ -177,13 +179,14 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		return nil, nil, err
 	}
 
+	opts := metav1.CreateOptions{}
 	esSecret := k8shandler.NewSecret(
 		logStoreName,
 		OpenshiftLoggingNS,
 		k8shandler.LoadElasticsearchSecretMap(),
 	)
 	logger.Debugf("Creating secret for an elasticsearch cluster: %s", esSecret.Name)
-	if esSecret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(esSecret); err != nil {
+	if esSecret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), esSecret, opts); err != nil {
 		return nil, nil, err
 	}
 	pvcSize := resource.MustParse("200G")
@@ -222,12 +225,13 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		result := tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/%s", elasticsearchesLoggingURI, cr.Name)).
 			SetHeader("Content-Type", "application/json").
-			Do()
+			Do(context.TODO())
 		return result.Error()
 	})
 	tc.AddCleanup(func() error {
+		opts := metav1.DeleteOptions{}
 		for _, name := range []string{esSecret.Name, pipelineSecret.Name} {
-			if err := tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(name, nil); err != nil {
+			if err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Delete(context.TODO(), name, opts); err != nil {
 				return err
 			}
 		}
@@ -243,7 +247,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		RequestURI(elasticsearchesLoggingURI).
 		SetHeader("Content-Type", "application/json").
 		Body(body).
-		Do()
+		Do(context.TODO())
 
 	name := cr.GetName()
 	tc.LogStores[name] = &ElasticLogStore{

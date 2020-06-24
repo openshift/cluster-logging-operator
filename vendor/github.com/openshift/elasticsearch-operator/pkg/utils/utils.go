@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -483,4 +484,19 @@ func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {
 			})
 	}
 	return envVars
+}
+
+func Contains(list []string, s string) bool {
+	for _, item := range list {
+		if s == item {
+			return true
+		}
+	}
+
+	return false
+}
+
+func GetMajorVersion(v string) string {
+	ver := strings.Split(v, ".")
+	return ver[0]
 }

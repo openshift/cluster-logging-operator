@@ -202,7 +202,7 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	return value, nil
 }
 
-func (syslog *syslogReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (string, error) {
+func (syslog *syslogReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
 	panic("Method not implemented")
 }
 
@@ -220,6 +220,10 @@ func (syslog *syslogReceiverLogStore) HasAuditLogs(timeToWait time.Duration) (bo
 
 func (syslog *syslogReceiverLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
 	return syslog.grepLogs(expr, "/var/log/infra.log", timeToWait)
+}
+
+func (syslog *syslogReceiverLogStore) ClusterLocalEndpoint() string {
+	panic("Not implemented")
 }
 
 func (tc *E2ETestFramework) createSyslogServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
@@ -425,7 +429,9 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		return tc.KubeClient.Core().Services(OpenshiftLoggingNS).Delete(service.Name, nil)
 	})
 	logStore.deployment = syslogDeployment
-	tc.LogStore = logStore
+
+	name := syslogDeployment.GetName()
+	tc.LogStores[name] = logStore
 	return syslogDeployment, tc.waitForDeployment(OpenshiftLoggingNS, syslogDeployment.Name, defaultRetryInterval, defaultTimeout)
 }
 

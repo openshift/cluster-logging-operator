@@ -24,6 +24,7 @@ import (
 const (
 	aNamespace      = "aNamespace"
 	otherTargetName = "someothername"
+	n
 )
 
 // Match condition by type, status and reason if reason != "".

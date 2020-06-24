@@ -137,7 +137,7 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 		return "", errors.New("No pods found for fluent receiver")
 	}
 	logger.Debugf("Pod %s", pods.Items[0].Name)
-	cmd := fmt.Sprintf("cat %s", file)
+	cmd := fmt.Sprintf("cat %s | awk -F '\t' '{print $3}'| head -n 1", file)
 	result := ""
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		if result, err = fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
@@ -156,7 +156,8 @@ func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) 
 	if err != nil {
 		return nil, err
 	}
-	return ParseLogs(fl)
+	out := "[" + strings.TrimRight(strings.Replace(fl, "\n", ",", -1), ",") + "]"
+	return ParseLogs(out)
 }
 
 func (fluent fluentReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {

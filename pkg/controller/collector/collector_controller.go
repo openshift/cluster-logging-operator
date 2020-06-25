@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	collector "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
@@ -98,7 +98,7 @@ func (r *ReconcileCollector) Reconcile(request reconcile.Request) (reconcile.Res
 
 	if instance.Name == constants.SingletonName && value == "enabled" {
 
-		clInstance := &loggingv1.ClusterLogging{}
+		clInstance := &logging.ClusterLogging{}
 		clName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 		err = r.client.Get(context.TODO(), clName, clInstance)
 		if err != nil && !errors.IsNotFound(err) {

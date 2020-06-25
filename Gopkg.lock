@@ -226,6 +226,20 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:e00bcdc04348236e3cc33317fe91a85d8b22c3519c703599f8e769802b08c81d"
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/flags",
+    "cmp/internal/function",
+    "cmp/internal/value",
+  ]
+  pruneopts = "NT"
+  revision = "5a6f75716e1203a923a78c9efb94089d857df0f6"
+  version = "v0.4.0"
+
+[[projects]]
   digest = "1:3ec6c8e4b700377066dbb5ab3155c55f97109ab6147fee9423a68506d79bbafa"
   name = "github.com/google/gofuzz"
   packages = ["."]
@@ -439,6 +453,8 @@
   packages = [
     ".",
     "format",
+    "gstruct",
+    "gstruct/errors",
     "internal/assertion",
     "internal/asyncassertion",
     "internal/oraclematcher",
@@ -1183,10 +1199,13 @@
   analyzer-version = 1
   input-imports = [
     "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1",
+    "github.com/google/go-cmp/cmp",
     "github.com/onsi/ginkgo",
     "github.com/onsi/ginkgo/extensions/table",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/format",
+    "github.com/onsi/gomega/gstruct",
+    "github.com/onsi/gomega/matchers",
     "github.com/onsi/gomega/types",
     "github.com/openshift/api/config/v1",
     "github.com/openshift/api/console/v1",
@@ -1216,6 +1235,7 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/types",
+    "k8s.io/apimachinery/pkg/util/clock",
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/wait",
@@ -1248,6 +1268,7 @@
     "sigs.k8s.io/controller-runtime/pkg/runtime/signals",
     "sigs.k8s.io/controller-runtime/pkg/source",
     "sigs.k8s.io/controller-tools/pkg/crd/generator",
+    "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

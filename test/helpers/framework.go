@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	clusterLoggingURI     = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
-	logforwardingURI      = "apis/logging.openshift.io/v1alpha1/namespaces/openshift-logging/logforwardings"
-	DefaultCleanUpTimeout = 60.0 * 2
+	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
+	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterlogforwarders"
+	DefaultCleanUpTimeout  = 60.0 * 2
 )
 
 var (
@@ -54,7 +54,7 @@ func init() {
 
 type LogStore interface {
 	//ApplicationLogs returns app logs for a given log store
-	ApplicationLogs(timeToWait time.Duration) (string, error)
+	ApplicationLogs(timeToWait time.Duration) (logs, error)
 
 	HasApplicationLogs(timeToWait time.Duration) (bool, error)
 
@@ -63,6 +63,8 @@ type LogStore interface {
 	HasAuditLogs(timeToWait time.Duration) (bool, error)
 
 	GrepLogs(expr string, timeToWait time.Duration) (string, error)
+
+	ClusterLocalEndpoint() string
 }
 
 type E2ETestFramework struct {
@@ -70,7 +72,7 @@ type E2ETestFramework struct {
 	KubeClient     *kubernetes.Clientset
 	ClusterLogging *cl.ClusterLogging
 	CleanupFns     []func() error
-	LogStore       LogStore
+	LogStores      map[string]LogStore
 }
 
 func NewE2ETestFramework() *E2ETestFramework {
@@ -78,6 +80,7 @@ func NewE2ETestFramework() *E2ETestFramework {
 	framework := &E2ETestFramework{
 		RestConfig: config,
 		KubeClient: client,
+		LogStores:  make(map[string]LogStore, 4),
 	}
 	return framework
 }
@@ -216,14 +219,35 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []stri
 			logger.Infof("No pods found for label selection: %s", labels)
 			return true, nil
 		}
-		logger.Debug("pods still running...")
+		logger.Debugf("%v pods still running", len(pods.Items))
 		return false, nil
 	})
 }
 
+func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInterval, timeout time.Duration) error {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		deployment, err := tc.KubeClient.Apps().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		replicas := int(*deployment.Spec.Replicas)
+		if int(deployment.Status.ReadyReplicas) == replicas {
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
 	tc.ClusterLogging = NewClusterLogging(componentTypes...)
-	tc.LogStore = &ElasticLogStore{
+	tc.LogStores["elasticsearch"] = &ElasticLogStore{
 		Framework: tc,
 	}
 	return tc.CreateClusterLogging(tc.ClusterLogging)
@@ -249,20 +273,20 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	return result.Error()
 }
 
-func (tc *E2ETestFramework) CreateLogForwarding(forwarding *logforwarding.LogForwarding) error {
-	body, err := json.Marshal(forwarding)
+func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.ClusterLogForwarder) error {
+	body, err := json.Marshal(forwarder)
 	if err != nil {
 		return err
 	}
-	logger.Debugf("Creating LogForwarding: %s", string(body))
+	logger.Debugf("Creating ClusterLogForwarder: %s", string(body))
 	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(logforwardingURI).
+		RequestURI(clusterlogforwarderURI).
 		SetHeader("Content-Type", "application/json").
 		Body(body).
 		Do()
 	tc.AddCleanup(func() error {
 		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", logforwardingURI)).
+			RequestURI(fmt.Sprintf("%s/instance", clusterlogforwarderURI)).
 			SetHeader("Content-Type", "application/json").
 			Do().Error()
 	})
@@ -294,7 +318,7 @@ func RunCleanupScript() {
 		args := strings.Split(value, " ")
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Env = nil
-		result, err := cmd.Output()
+		result, err := cmd.CombinedOutput()
 		logger.Infof("RunCleanupScript output: %s", string(result))
 		logger.Infof("RunCleanupScript err: %v", err)
 	}

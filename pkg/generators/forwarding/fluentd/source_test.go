@@ -3,10 +3,9 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	. "github.com/openshift/cluster-logging-operator/test"
 	"k8s.io/apimachinery/pkg/util/sets"
-
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	test "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("generating source", func() {
@@ -24,13 +23,13 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs.app source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp)), sets.NewString())
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
 
 		It("should produce a container config", func() {
-			test.Expect(results[0]).ToEqual(`# container logs
+			Expect(results[0]).To(EqualTrimLines(`# container logs
 		  <source>
 			@type tail
 			@id container-input
@@ -57,19 +56,19 @@ var _ = Describe("generating source", func() {
 			  </pattern>
 			</parse>
 		  </source>
-		  `)
+		  `))
 		})
 	})
 
 	Context("for only logs.infra source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeInfra)), sets.NewString())
+			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
 
 		It("should produce a journal config", func() {
-			test.Expect(results[0]).ToEqual(`
+			Expect(results[0]).To(EqualTrimLines(`
 			#journal logs to gather node
 			<source>
 				@type systemd
@@ -87,19 +86,19 @@ var _ = Describe("generating source", func() {
 				tag journal
 				read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
 			</source>
-		  `)
+		  `))
 		})
 	})
 
 	Context("for only logs.audit source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeAudit)), sets.NewString())
+			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(3))
 		})
 
 		It("should produce configs for the audit logs", func() {
-			test.Expect(results[0]).ToEqual(`
+			Expect(results[0]).To(EqualTrimLines(`
             # linux audit logs
             <source>
               @type tail
@@ -112,8 +111,8 @@ var _ = Describe("generating source", func() {
                 @type viaq_host_audit
               </parse>
             </source>
-		  `)
-			test.Expect(results[1]).ToEqual(`
+		  `))
+			Expect(results[1]).To(EqualTrimLines(`
             # k8s audit logs
             <source>
               @type tail
@@ -130,8 +129,8 @@ var _ = Describe("generating source", func() {
                 time_format %Y-%m-%dT%H:%M:%S.%N%z
               </parse>
             </source>
-		  `)
-			test.Expect(results[2]).ToEqual(`
+		  `))
+			Expect(results[2]).To(EqualTrimLines(`
             # Openshift audit logs
             <source>
               @type tail
@@ -148,21 +147,21 @@ var _ = Describe("generating source", func() {
                 time_format %Y-%m-%dT%H:%M:%S.%N%z
               </parse>
             </source>
-		  `)
+		  `))
 		})
 	})
 
 	Context("for all log sources", func() {
 
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(string(logging.LogSourceTypeApp), string(logging.LogSourceTypeInfra), string(logging.LogSourceTypeAudit)), sets.NewString())
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(5))
 		})
 		Context("for journal input", func() {
 
 			It("should produce a config with no exclusions", func() {
-				test.Expect(results[0]).ToEqual(`
+				Expect(results[0]).To(EqualTrimLines(`
 			#journal logs to gather node
 			<source>
 				@type systemd
@@ -179,14 +178,14 @@ var _ = Describe("generating source", func() {
 				matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
 				tag journal
 				read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
-			</source>`)
+			</source>`))
 			})
 		})
 
 		Context("for container inputs", func() {
 
 			It("should produce a config", func() {
-				test.Expect(results[1]).ToEqual(`# container logs
+				Expect(results[1]).To(EqualTrimLines(`# container logs
 			  <source>
 				@type tail
 				@id container-input
@@ -213,14 +212,14 @@ var _ = Describe("generating source", func() {
 				  </pattern>
 				</parse>
 			  </source>
-			  `)
+			  `))
 			})
 		})
 
 		Context("for audit inputs", func() {
 
 			It("should produce a config with no exclusions", func() {
-				test.Expect(results[2]).ToEqual(`
+				Expect(results[2]).To(EqualTrimLines(`
               # linux audit logs
               <source>
                 @type tail
@@ -233,8 +232,8 @@ var _ = Describe("generating source", func() {
                   @type viaq_host_audit
                 </parse>
               </source>
-		    `)
-				test.Expect(results[3]).ToEqual(`
+		    `))
+				Expect(results[3]).To(EqualTrimLines(`
               # k8s audit logs
               <source>
                 @type tail
@@ -251,8 +250,8 @@ var _ = Describe("generating source", func() {
                   time_format %Y-%m-%dT%H:%M:%S.%N%z
                 </parse>
               </source>
-		    `)
-				test.Expect(results[4]).ToEqual(`
+		    `))
+				Expect(results[4]).To(EqualTrimLines(`
               # Openshift audit logs
               <source>
                 @type tail
@@ -269,7 +268,7 @@ var _ = Describe("generating source", func() {
                   time_format %Y-%m-%dT%H:%M:%S.%N%z
                 </parse>
               </source>
-		    `)
+		    `))
 			})
 		})
 	})

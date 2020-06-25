@@ -322,6 +322,17 @@ spec:
                   - name: PROMTAIL_IMAGE
                     value: "quay.io/openshift/origin-promtail:latest"
   customresourcedefinitions:
+    required:
+    - name: elasticsearches.logging.openshift.io
+      version: v1
+      kind: Elasticsearch
+      displayName: Elasticsearch
+      description: Represents an Elasticsearch instance
+    - name: kibanas.logging.openshift.io
+      version: v1
+      kind: Kibana
+      displayName: Kibana
+      description: Represents a Kibana instance
     owned:
     - name: clusterloggings.logging.openshift.io
       version: v1
@@ -348,6 +359,8 @@ spec:
       - kind: Route
         version: v1
       - kind: Elasticsearch
+        version: v1
+      - kind: Kibana
         version: v1
       - kind: LogForwarding
         version: v1alpha1

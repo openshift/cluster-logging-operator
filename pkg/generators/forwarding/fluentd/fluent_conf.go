@@ -7,7 +7,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	logforward "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 )
 
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
@@ -15,7 +15,7 @@ var protocolSeparator = "://"
 
 type outputLabelConf struct {
 	Name            string
-	Target          logforward.OutputSpec
+	Target          logging.OutputSpec
 	Counter         int
 	fluentTags      sets.String
 	TemplateContext *template.Template
@@ -23,7 +23,7 @@ type outputLabelConf struct {
 	storeTemplate   string
 }
 
-func newOutputLabelConf(t *template.Template, storeTemplate string, target logforward.OutputSpec, fluentTags ...string) *outputLabelConf {
+func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, fluentTags ...string) *outputLabelConf {
 	return &outputLabelConf{
 		Name:            target.Name,
 		Target:          target,
@@ -45,12 +45,12 @@ func (conf *outputLabelConf) Template() *template.Template {
 	return conf.TemplateContext
 }
 func (conf *outputLabelConf) Host() string {
-	endpoint := stripProtocol(conf.Target.Endpoint)
+	endpoint := stripProtocol(conf.Target.URL)
 	return strings.Split(endpoint, ":")[0]
 }
 
 func (conf *outputLabelConf) Port() string {
-	endpoint := stripProtocol(conf.Target.Endpoint)
+	endpoint := stripProtocol(conf.Target.URL)
 	parts := strings.Split(endpoint, ":")
 	if len(parts) == 1 {
 		return "9200"
@@ -59,7 +59,7 @@ func (conf *outputLabelConf) Port() string {
 }
 
 func (conf *outputLabelConf) Protocol() string {
-	endpoint := conf.Target.Endpoint
+	endpoint := conf.Target.URL
 	if index := strings.Index(endpoint, protocolSeparator); index != -1 {
 		return endpoint[:index]
 	}

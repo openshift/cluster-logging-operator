@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
-	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
-
+	"github.com/openshift/cluster-logging-operator/pkg/status"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,10 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-const (
-	singletonMessage = "LogForwarding is a singleton. Only an instance named 'instance' is allowed"
-)
-
 // Add creates a new Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
@@ -31,19 +28,19 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileForwarding{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileForwarder{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("logforwarding-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("clusterlogforwarder-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
 	// Watch for changes to primary resource ClusterLogging
-	err = c.Watch(&source.Kind{Type: &logforwarding.LogForwarding{}}, &handler.EnqueueRequestForObject{})
+	err = c.Watch(&source.Kind{Type: &logging.ClusterLogForwarder{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
@@ -51,10 +48,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-var _ reconcile.Reconciler = &ReconcileForwarding{}
+var _ reconcile.Reconciler = &ReconcileForwarder{}
 
-// ReconcileForwarding reconciles a LogForwarding object
-type ReconcileForwarding struct {
+// ReconcileForwarder reconciles a ClusterLogForwarder object
+type ReconcileForwarder struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
@@ -66,28 +63,39 @@ var (
 	reconcileResult = reconcile.Result{RequeueAfter: reconcilePeriod}
 )
 
-// Reconcile reads that state of the cluster for a LogForwarding object and makes changes based on the state read
-// and what is in the LogForwarding.Spec
+var condReady = status.Condition{Type: logging.ConditionReady, Status: corev1.ConditionTrue}
+
+func condNotReady(r status.ConditionReason, format string, args ...interface{}) status.Condition {
+	return logging.NewCondition(logging.ConditionReady, corev1.ConditionFalse, r, format, args...)
+}
+
+func condDegraded(r status.ConditionReason, format string, args ...interface{}) status.Condition {
+	return logging.NewCondition(logging.ConditionReady, corev1.ConditionTrue, r, format, args...)
+}
+
+func condInvalid(format string, args ...interface{}) status.Condition {
+	return condNotReady(logging.ReasonInvalid, format, args...)
+}
+
+// Reconcile reads that state of the cluster for a ClusterLogForwarder object and makes changes based on the state read
+// and what is in the Logging.Spec
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	logger.DebugObject("logforwarding-controller Reconciling request: %s", request)
-	// Fetch the LogForwarding instance
-	instance := &logforwarding.LogForwarding{}
-	logger.Debug("logforwarding-controller fetching LF instance")
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
-	if err != nil {
-		logger.Debugf("logforwarding-controller Error getting instance. It will be retried if other then 'NotFound': %v", err)
+func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	logger.DebugObject("clusterlogforwarder-controller Reconciling: %v", request)
+	// Fetch the ClusterLogForwarder instance
+	instance := &logging.ClusterLogForwarder{}
+	logger.Debug("clusterlogforwarder-controller fetching LF instance")
+	if err := r.client.Get(context.TODO(), request.NamespacedName, instance); err != nil {
+		logger.Debugf("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound': %v", err)
 		if !errors.IsNotFound(err) {
-			// Error reading the - requeue the request.
+			// Error reading - requeue the request.
 			return reconcileResult, err
 		}
-
 		// else the object is not found -- meaning it was removed so do clean up manually
-		reconcileErr := k8shandler.ReconcileForLogForwarding(instance, r.client)
-
+		reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.client)
 		if reconcileErr != nil {
-			logger.Debugf("logforwarding-controller returning, error: %v", reconcileErr)
+			logger.Debugf("clusterlogforwarder-controller returning, error: %v", reconcileErr)
 		}
 		return reconcile.Result{}, reconcileErr
 	}
@@ -96,30 +104,32 @@ func (r *ReconcileForwarding) Reconcile(request reconcile.Request) (reconcile.Re
 
 	//check for instancename and then update status
 	if instance.Name != constants.SingletonName {
-		instance.Status = logforwarding.NewForwardingStatus(logforwarding.LogForwardingStateRejected, logforwarding.LogForwardingReasonName, singletonMessage)
-
-		logger.Debugf("logforwarding-controller updating status of instance: %v", instance)
-		if err = r.client.Status().Update(context.TODO(), instance); err != nil {
-			logger.Debugf("logforwarding-controller error updating status: %v", err)
-			return reconcileResult, err
-		}
-
-		return reconcile.Result{}, nil
+		instance.Status.Conditions.SetCondition(condInvalid("Invalid name %q, singleton instance must be named %q", instance.Name, constants.SingletonName))
+		return r.updateStatus(instance)
+	}
+	if instance.Status.IsReady() {
+		instance.Status.Conditions.SetCondition(condReady)
+	}
+	if instance.Status.IsDegraded() {
+		instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, "Some pipelines are degraded or invalid"))
+	}
+	if result, err := r.updateStatus(instance); err != nil {
+		return result, err
 	}
 
-	instance.Status = logforwarding.NewForwardingStatus(logforwarding.LogForwardingStateAccepted, logforwarding.LogForwardingReasonName, "")
-
-	logger.Debugf("logforwarding-controller updating status of instance: %v", instance)
-	if err = r.client.Status().Update(context.TODO(), instance); err != nil {
-		logger.Debugf("logforwarding-controller error updating status: %v", err)
-		return reconcileResult, err
-	}
-
-	logger.Debug("logforwarding-controller calling ClusterLogging reconciler...")
-	reconcileErr := k8shandler.ReconcileForLogForwarding(instance, r.client)
-
+	logger.Debug("clusterlogforwarder-controller calling ClusterLogging reconciler...")
+	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.client)
 	if reconcileErr != nil {
-		logger.Debugf("logforwarding-controller returning, error: %v", reconcileErr)
+		logger.Debugf("clusterlogforwarder-controller returning, error: %v", reconcileErr)
 	}
 	return reconcile.Result{}, reconcileErr
+}
+
+func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (reconcile.Result, error) {
+	logger.DebugObject("clusterlogforwarder-controller updating status of: %v", instance)
+	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+		logger.Errorf("clusterlogforwarder-controller error updating status: %v", err)
+		return reconcileResult, err
+	}
+	return reconcile.Result{}, nil
 }

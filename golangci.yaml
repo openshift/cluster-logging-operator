@@ -5,4 +5,7 @@ linters:
     - gosimple
     - staticcheck
     - unused
+    - interfacer
+    - errcheck
+    - prealloc
 

@@ -156,7 +156,7 @@ var _ = Describe("Generating fluentd config", func() {
 			# which should normally be supplied in a configmap.
 
 			<system>
-  				@log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
+  				log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
 			</system>
 
 			# In each section below, pre- and post- includes don't include anything initially;
@@ -522,7 +522,7 @@ var _ = Describe("Generating fluentd config", func() {
 			# which should normally be supplied in a configmap.
 
 			<system>
-  				@log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
+  				log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
 			</system>
 
 			# In each section below, pre- and post- includes don't include anything initially;

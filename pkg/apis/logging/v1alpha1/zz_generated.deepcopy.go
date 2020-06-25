@@ -40,7 +40,7 @@ func (in *Collector) DeepCopyObject() runtime.Object {
 func (in *CollectorList) DeepCopyInto(out *CollectorList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]CollectorSpec, len(*in))

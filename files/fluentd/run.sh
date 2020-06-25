@@ -17,13 +17,13 @@ fi
 
 if [[ $VERBOSE ]]; then
   set -ex
-  fluentdargs="$fluentdargs -vv --log-event-verbose"
+  fluentdargs="$fluentdargs --log-event-verbose"
   echo ">>>>>> ENVIRONMENT VARS <<<<<"
   env | sort
   echo ">>>>>>>>>>>>><<<<<<<<<<<<<<<<"
 else
   set -e
-  fluentdargs="-q --suppress-config-dump $fluentdargs"
+  fluentdargs="--suppress-config-dump $fluentdargs"
 fi
 
 

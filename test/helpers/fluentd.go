@@ -27,7 +27,7 @@ const (
 	receiverName             = "fluent-receiver"
 	secureFluentConfTemplate = `
 <system>
-	@log_level info
+	log_level info
 </system>
 <source>
   @type forward
@@ -64,7 +64,7 @@ const (
 	`
 	unsecureFluentConf = `
 <system>
-	@log_level warn
+	log_level warn
 </system>
 <source>
   @type forward

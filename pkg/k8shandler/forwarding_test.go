@@ -3,6 +3,8 @@ package k8shandler
 import (
 	"testing"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -15,8 +17,8 @@ import (
 	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/yaml"
 )
@@ -75,7 +77,12 @@ var _ = Describe("Normalizing forwarder", func() {
 					Namespace: aNamespace,
 				},
 			},
-			ForwarderRequest: &logging.ClusterLogForwarder{},
+			ForwarderRequest: &logging.ClusterLogForwarder{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: aNamespace,
+				},
+			},
 		}
 		cluster = request.cluster
 	})
@@ -427,6 +434,10 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 			name: "Valid collector config",
 			fields: fields{
 				cluster: &logging.ClusterLogging{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "instance",
+						Namespace: "openshift-logging",
+					},
 					Spec: logging.ClusterLoggingSpec{
 						LogStore: nil,
 						Collection: &logging.CollectionSpec{
@@ -447,25 +458,40 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 						},
 					},
 				},
-				ForwarderRequest: nil,
-				ForwarderSpec:    logging.ClusterLogForwarderSpec{},
+				ForwarderRequest: &logging.ClusterLogForwarder{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "instance",
+						Namespace: "openshift-logging",
+					},
+				},
+				ForwarderSpec: logging.ClusterLogForwarderSpec{},
 			},
 		},
 		{
 			name: "Collection not specified. Shouldn't crash",
 			fields: fields{
 				cluster: &logging.ClusterLogging{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "instance",
+						Namespace: "openshift-logging",
+					},
 					Spec: logging.ClusterLoggingSpec{
 						LogStore: nil,
 					},
 				},
-				ForwarderRequest: nil,
-				ForwarderSpec:    logging.ClusterLogForwarderSpec{},
-				Collector:        nil,
+				ForwarderRequest: &logging.ClusterLogForwarder{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "instance",
+						Namespace: "openshift-logging",
+					},
+				},
+				ForwarderSpec: logging.ClusterLogForwarderSpec{},
+				Collector:     nil,
 			},
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			clusterRequest := &ClusterLoggingRequest{
 				client:           tt.fields.client,
@@ -477,7 +503,8 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 
 			config := &core.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "secure-forward",
+					Name:      "secure-forward",
+					Namespace: tt.fields.cluster.Namespace,
 				},
 				Data:       map[string]string{},
 				BinaryData: nil,

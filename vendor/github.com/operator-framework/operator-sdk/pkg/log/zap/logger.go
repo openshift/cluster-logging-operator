@@ -23,7 +23,7 @@ import (
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
+	zapf "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 func Logger() logr.Logger {
@@ -31,10 +31,14 @@ func Logger() logr.Logger {
 }
 
 func LoggerTo(destWriter io.Writer) logr.Logger {
-	syncer := zapcore.AddSync(destWriter)
 	conf := getConfig()
+	return createLogger(conf, destWriter)
+}
 
-	conf.encoder = &logf.KubeAwareEncoder{Encoder: conf.encoder, Verbose: conf.level.Level() < 0}
+func createLogger(conf config, destWriter io.Writer) logr.Logger {
+	syncer := zapcore.AddSync(destWriter)
+
+	conf.encoder = &zapf.KubeAwareEncoder{Encoder: conf.encoder, Verbose: conf.level.Level() < 0}
 	if conf.sample {
 		conf.opts = append(conf.opts, zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 			return zapcore.NewSampler(core, time.Second, 100, 100)
@@ -47,32 +51,48 @@ func LoggerTo(destWriter io.Writer) logr.Logger {
 }
 
 type config struct {
-	encoder zapcore.Encoder
-	level   zap.AtomicLevel
-	sample  bool
-	opts    []zap.Option
+	encoder         zapcore.Encoder
+	level           zap.AtomicLevel
+	opts            []zap.Option
+	stackTraceLevel zapcore.Level
+	sample          bool
 }
 
 func getConfig() config {
 	var c config
 
+	var newEncoder func(...encoderConfigFunc) zapcore.Encoder
+
 	// Set the defaults depending on the log mode (development vs. production)
 	if development {
-		c.encoder = consoleEncoder()
+		newEncoder = newConsoleEncoder
 		c.level = zap.NewAtomicLevelAt(zap.DebugLevel)
-		c.opts = append(c.opts, zap.Development(), zap.AddStacktrace(zap.ErrorLevel))
+		c.opts = append(c.opts, zap.Development())
 		c.sample = false
+		c.stackTraceLevel = zap.WarnLevel
 	} else {
-		c.encoder = jsonEncoder()
+		newEncoder = newJSONEncoder
 		c.level = zap.NewAtomicLevelAt(zap.InfoLevel)
-		c.opts = append(c.opts, zap.AddStacktrace(zap.WarnLevel))
 		c.sample = true
+		c.stackTraceLevel = zap.ErrorLevel
 	}
 
 	// Override the defaults if the flags were set explicitly on the command line
-	if encoderVal.set {
-		c.encoder = encoderVal.encoder
+	if stacktraceLevel.set {
+		c.stackTraceLevel = stacktraceLevel.level
 	}
+	c.opts = append(c.opts, zap.AddStacktrace(c.stackTraceLevel))
+
+	var ecfs []encoderConfigFunc
+	if encoderVal.set {
+		newEncoder = encoderVal.newEncoder
+	}
+	if timeEncodingVal.set {
+		ecfs = append(ecfs, withTimeEncoding(timeEncodingVal.timeEncoder))
+	}
+
+	c.encoder = newEncoder(ecfs...)
+
 	if levelVal.set {
 		c.level = zap.NewAtomicLevelAt(levelVal.level)
 	}

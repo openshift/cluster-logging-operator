@@ -6,6 +6,8 @@ COPY cmd ./cmd
 COPY version ./version
 COPY scripts ./scripts
 COPY files ./files
+COPY go.mod .
+COPY go.sum .
 COPY vendor ./vendor
 COPY manifests ./manifests
 COPY Makefile ./Makefile

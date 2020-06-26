@@ -22,14 +22,9 @@ import (
 	"strings"
 )
 
-const (
-	// EnvironmentFilepathName captures the name of the environment variable containing the path to the file
-	// to be used while populating the Azure Environment.
-	EnvironmentFilepathName = "AZURE_ENVIRONMENT_FILEPATH"
-
-	// NotAvailable is used for endpoints and resource IDs that are not available for a given cloud.
-	NotAvailable = "N/A"
-)
+// EnvironmentFilepathName captures the name of the environment variable containing the path to the file
+// to be used while populating the Azure Environment.
+const EnvironmentFilepathName = "AZURE_ENVIRONMENT_FILEPATH"
 
 var environments = map[string]Environment{
 	"AZURECHINACLOUD":        ChinaCloud,
@@ -38,40 +33,29 @@ var environments = map[string]Environment{
 	"AZUREUSGOVERNMENTCLOUD": USGovernmentCloud,
 }
 
-// ResourceIdentifier contains a set of Azure resource IDs.
-type ResourceIdentifier struct {
-	Graph               string `json:"graph"`
-	KeyVault            string `json:"keyVault"`
-	Datalake            string `json:"datalake"`
-	Batch               string `json:"batch"`
-	OperationalInsights string `json:"operationalInsights"`
-	Storage             string `json:"storage"`
-}
-
 // Environment represents a set of endpoints for each of Azure's Clouds.
 type Environment struct {
-	Name                         string             `json:"name"`
-	ManagementPortalURL          string             `json:"managementPortalURL"`
-	PublishSettingsURL           string             `json:"publishSettingsURL"`
-	ServiceManagementEndpoint    string             `json:"serviceManagementEndpoint"`
-	ResourceManagerEndpoint      string             `json:"resourceManagerEndpoint"`
-	ActiveDirectoryEndpoint      string             `json:"activeDirectoryEndpoint"`
-	GalleryEndpoint              string             `json:"galleryEndpoint"`
-	KeyVaultEndpoint             string             `json:"keyVaultEndpoint"`
-	GraphEndpoint                string             `json:"graphEndpoint"`
-	ServiceBusEndpoint           string             `json:"serviceBusEndpoint"`
-	BatchManagementEndpoint      string             `json:"batchManagementEndpoint"`
-	StorageEndpointSuffix        string             `json:"storageEndpointSuffix"`
-	SQLDatabaseDNSSuffix         string             `json:"sqlDatabaseDNSSuffix"`
-	TrafficManagerDNSSuffix      string             `json:"trafficManagerDNSSuffix"`
-	KeyVaultDNSSuffix            string             `json:"keyVaultDNSSuffix"`
-	ServiceBusEndpointSuffix     string             `json:"serviceBusEndpointSuffix"`
-	ServiceManagementVMDNSSuffix string             `json:"serviceManagementVMDNSSuffix"`
-	ResourceManagerVMDNSSuffix   string             `json:"resourceManagerVMDNSSuffix"`
-	ContainerRegistryDNSSuffix   string             `json:"containerRegistryDNSSuffix"`
-	CosmosDBDNSSuffix            string             `json:"cosmosDBDNSSuffix"`
-	TokenAudience                string             `json:"tokenAudience"`
-	ResourceIdentifiers          ResourceIdentifier `json:"resourceIdentifiers"`
+	Name                         string `json:"name"`
+	ManagementPortalURL          string `json:"managementPortalURL"`
+	PublishSettingsURL           string `json:"publishSettingsURL"`
+	ServiceManagementEndpoint    string `json:"serviceManagementEndpoint"`
+	ResourceManagerEndpoint      string `json:"resourceManagerEndpoint"`
+	ActiveDirectoryEndpoint      string `json:"activeDirectoryEndpoint"`
+	GalleryEndpoint              string `json:"galleryEndpoint"`
+	KeyVaultEndpoint             string `json:"keyVaultEndpoint"`
+	GraphEndpoint                string `json:"graphEndpoint"`
+	ServiceBusEndpoint           string `json:"serviceBusEndpoint"`
+	BatchManagementEndpoint      string `json:"batchManagementEndpoint"`
+	StorageEndpointSuffix        string `json:"storageEndpointSuffix"`
+	SQLDatabaseDNSSuffix         string `json:"sqlDatabaseDNSSuffix"`
+	TrafficManagerDNSSuffix      string `json:"trafficManagerDNSSuffix"`
+	KeyVaultDNSSuffix            string `json:"keyVaultDNSSuffix"`
+	ServiceBusEndpointSuffix     string `json:"serviceBusEndpointSuffix"`
+	ServiceManagementVMDNSSuffix string `json:"serviceManagementVMDNSSuffix"`
+	ResourceManagerVMDNSSuffix   string `json:"resourceManagerVMDNSSuffix"`
+	ContainerRegistryDNSSuffix   string `json:"containerRegistryDNSSuffix"`
+	CosmosDBDNSSuffix            string `json:"cosmosDBDNSSuffix"`
+	TokenAudience                string `json:"tokenAudience"`
 }
 
 var (
@@ -98,14 +82,6 @@ var (
 		ContainerRegistryDNSSuffix:   "azurecr.io",
 		CosmosDBDNSSuffix:            "documents.azure.com",
 		TokenAudience:                "https://management.azure.com/",
-		ResourceIdentifiers: ResourceIdentifier{
-			Graph:               "https://graph.windows.net/",
-			KeyVault:            "https://vault.azure.net",
-			Datalake:            "https://datalake.azure.net/",
-			Batch:               "https://batch.core.windows.net/",
-			OperationalInsights: "https://api.loganalytics.io",
-			Storage:             "https://storage.azure.com/",
-		},
 	}
 
 	// USGovernmentCloud is the cloud environment for the US Government
@@ -131,14 +107,6 @@ var (
 		ContainerRegistryDNSSuffix:   "azurecr.us",
 		CosmosDBDNSSuffix:            "documents.azure.us",
 		TokenAudience:                "https://management.usgovcloudapi.net/",
-		ResourceIdentifiers: ResourceIdentifier{
-			Graph:               "https://graph.windows.net/",
-			KeyVault:            "https://vault.usgovcloudapi.net",
-			Datalake:            NotAvailable,
-			Batch:               "https://batch.core.usgovcloudapi.net/",
-			OperationalInsights: "https://api.loganalytics.us",
-			Storage:             "https://storage.azure.com/",
-		},
 	}
 
 	// ChinaCloud is the cloud environment operated in China
@@ -164,14 +132,6 @@ var (
 		ContainerRegistryDNSSuffix:   "azurecr.cn",
 		CosmosDBDNSSuffix:            "documents.azure.cn",
 		TokenAudience:                "https://management.chinacloudapi.cn/",
-		ResourceIdentifiers: ResourceIdentifier{
-			Graph:               "https://graph.chinacloudapi.cn/",
-			KeyVault:            "https://vault.azure.cn",
-			Datalake:            NotAvailable,
-			Batch:               "https://batch.chinacloudapi.cn/",
-			OperationalInsights: NotAvailable,
-			Storage:             "https://storage.azure.com/",
-		},
 	}
 
 	// GermanCloud is the cloud environment operated in Germany
@@ -194,17 +154,9 @@ var (
 		ServiceBusEndpointSuffix:     "servicebus.cloudapi.de",
 		ServiceManagementVMDNSSuffix: "azurecloudapp.de",
 		ResourceManagerVMDNSSuffix:   "cloudapp.microsoftazure.de",
-		ContainerRegistryDNSSuffix:   NotAvailable,
-		CosmosDBDNSSuffix:            "documents.microsoftazure.de",
-		TokenAudience:                "https://management.microsoftazure.de/",
-		ResourceIdentifiers: ResourceIdentifier{
-			Graph:               "https://graph.cloudapi.de/",
-			KeyVault:            "https://vault.microsoftazure.de",
-			Datalake:            NotAvailable,
-			Batch:               "https://batch.cloudapi.de/",
-			OperationalInsights: NotAvailable,
-			Storage:             "https://storage.azure.com/",
-		},
+		// ContainerRegistryDNSSuffix:   "", ACR not present yet in the German Cloud
+		CosmosDBDNSSuffix: "documents.microsoftazure.de",
+		TokenAudience:     "https://management.microsoftazure.de/",
 	}
 )
 

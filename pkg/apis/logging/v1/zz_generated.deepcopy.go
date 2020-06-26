@@ -103,7 +103,7 @@ func (in *ClusterLogForwarder) DeepCopyObject() runtime.Object {
 func (in *ClusterLogForwarderList) DeepCopyInto(out *ClusterLogForwarderList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterLogForwarder, len(*in))
@@ -275,7 +275,7 @@ func (in *ClusterLogging) DeepCopyObject() runtime.Object {
 func (in *ClusterLoggingList) DeepCopyInto(out *ClusterLoggingList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterLogging, len(*in))

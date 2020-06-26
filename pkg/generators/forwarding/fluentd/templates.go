@@ -18,6 +18,7 @@ var templateRegistry = []string{
 	storeSyslogTemplateOld,
 	storeSyslogTemplate,
 	storeKafkaTemplate,
+	storeLokiTemplate,
 }
 
 const fluentConfTemplate = `{{- define "fluentConf" -}}
@@ -683,6 +684,52 @@ ssl_client_cert_key '{{ .SecretPath "tls.key"}}'
   @type json
 </format>
 <buffer {{.Topic}}>
+  @type file
+  path '{{.BufferPath}}'
+  flush_interval 1s
+  flush_thread_count 2
+  flush_at_shutdown false
+  retry_max_interval 300
+  retry_forever true
+  queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+  overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+</buffer>
+{{- end}}
+`
+
+const storeLokiTemplate = `{{- define "storeLoki" }}
+@type loki
+url {{.LokiURL}}
+tenant {{.LokiTenant}}
+line_format json
+extract_kubernetes_labels true
+remove_keys docker, kubernetes, pipeline_metadata, hostname, index_name
+{{ if .Target.Secret -}}
+ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
+cert '{{ .SecretPath "tls.crt"}}'
+key '{{ .SecretPath "tls.key"}}'
+{{ end -}}
+<label>
+  # docker
+  container_id $.docker.container_id
+
+  # kubernetes
+  container_name $.kubernetes.container_name
+  container_image $.kubernetes.container_image
+  container_image_id $.kubernetes.container_image_id
+  kubernetes_host $.kubernetes.host
+  master_url $.kubernetes.master_url
+  pod_name $.kubernetes.pod_name
+  pod_id $.kubernetes.pod_id
+  namespace_name $.kubernetes.namespace_name
+  namespace_id $.kubernetes.namespace_id
+
+  # general
+  index_name $.viaq_index_name
+  hostname $.hostname
+</label>
+<buffer>
   @type file
   path '{{.BufferPath}}'
   flush_interval 1s

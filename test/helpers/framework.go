@@ -249,6 +249,29 @@ func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInte
 	return nil
 }
 
+func (tc *E2ETestFramework) waitForPod(namespace, name string, retryInterval, timeout time.Duration) error {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		opts := metav1.GetOptions{}
+		pod, err := tc.KubeClient.CoreV1().Pods(namespace).Get(context.TODO(), name, opts)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		for _, status := range pod.Status.ContainerStatuses {
+			if status.Ready {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
 	tc.ClusterLogging = NewClusterLogging(componentTypes...)
 	tc.LogStores["elasticsearch"] = &ElasticLogStore{

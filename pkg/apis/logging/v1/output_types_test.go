@@ -12,10 +12,11 @@ func (h *handler) ElasticSearch(o *Elasticsearch) error   { h.what = o; return n
 func (h *handler) FluentdForward(o *FluentdForward) error { h.what = o; return nil }
 func (h *handler) Syslog(o *Syslog) error                 { h.what = o; return nil }
 func (h *handler) Kafka(o *Kafka) error                   { h.what = o; return nil }
+func (h *handler) Loki(o *Loki) error                     { h.what = o; return nil }
 
 var _ = Describe("OutputSpec", func() {
 	It("recognizes valid type names", func() {
-		for _, s := range []string{OutputTypeElasticsearch, OutputTypeFluentdForward, OutputTypeSyslog} {
+		for _, s := range []string{OutputTypeElasticsearch, OutputTypeFluentdForward, OutputTypeSyslog, OutputTypeLoki} {
 			Expect(IsOutputTypeName(s)).To(BeTrue(), "expect recognize %s", s)
 		}
 	})

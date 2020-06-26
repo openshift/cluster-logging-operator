@@ -16,6 +16,7 @@ const (
 	OutputTypeFluentdForward = "fluentdForward"
 	OutputTypeSyslog         = "syslog"
 	OutputTypeKafka          = "kafka"
+	OutputTypeLoki           = "loki"
 )
 
 // Output defines a destination for log messages.
@@ -87,6 +88,8 @@ type OutputTypeSpec struct {
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 	// +optional
 	Kafka *Kafka `json:"kafka,omitempty"`
+	// +optional
+	Loki *Loki `json:"loki,omitempty"`
 }
 
 var otsType = reflect.TypeOf(OutputTypeSpec{})
@@ -151,6 +154,14 @@ type Kafka struct {
 	//
 	// +optional
 	Brokers []string `json:"brokers,omitempty"`
+}
+
+// Loki provides optional extra properties for `type: loki`
+type Loki struct {
+	// Tenant is the name of the tenant of the log records.
+	//
+	// +optional
+	TenantID string `json:"tenantId,omitempty"`
 }
 
 // Placeholders for configuration of other types

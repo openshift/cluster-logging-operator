@@ -8,26 +8,33 @@ spec:
     kind: ClusterLogForwarder
     listKind: ClusterLogForwarderList
     plural: clusterlogforwarders
+    shortNames:
+    - clf
     singular: clusterlogforwarder
   scope: Namespaced
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: "ClusterLogForwarder is the schema for the `clusterlogforwarder`
-          API. \n A forwarder defines: - `inputs` that select logs to be forwarded
-          `outputs` - `outputs` that identify targets to receive logs. - `pipelines`
-          that forward logs from a set of inputs to a set of outputs."
+        description: "ClusterLogForwarder is an API to configure forwarding logs.
+          \n You configure forwarding by specifying a list of `pipelines`, which forward
+          from a set of named inputs to a set of named outputs. \n There are built-in
+          input names for common log categories, and you can define custom inputs
+          to do additional filtering. \n There is a built-in output name for the default
+          openshift log store, but you can define your own outputs with a URL and
+          other connection information to forward logs to other stores or processors,
+          inside or outside the cluster. \n For more details see the documentation
+          on the API fields."
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
               of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
             description: 'Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -35,29 +42,31 @@ spec:
             description: ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
             properties:
               inputs:
-                description: Inputs are named inputs of log messages
+                description: "Inputs are named filters for log messages to be forwarded.
+                  \n There are three built-in inputs named `application`, `infrastructure`
+                  and `audit`. You don't need to define inputs here if those are sufficient
+                  for your needs. See `inputRefs` for more."
                 items:
                   description: InputSpec defines a selector of log messages.
                   properties:
                     application:
-                      description: 'Enable `application` logs. Use `application: {}`
-                        to enable with no filter.'
+                      description: Application, if present, enables `application`
+                        logs.
                       properties:
                         namespaces:
-                          description: Only collect logs from applications in these
-                            namespaces. If empty, all application container logs will
-                            be collected.
+                          description: Namespaces is a list of namespaces from which
+                            to collect application logs. If the list is empty, logs
+                            are collected from all namespaces.
                           items:
                             type: string
                           type: array
                       type: object
                     audit:
-                      description: 'Enable `audit` logs. Use `infrastructure: {}`
-                        to enable with no filter.'
+                      description: Audit, if present, enables `audit` logs.
                       type: object
                     infrastructure:
-                      description: 'Enable `infrastructure` logs. Use `infrastructure:
-                        {}` to enable with no filter.'
+                      description: Infrastructure, if present, enables `infrastructure`
+                        logs.
                       type: object
                     name:
                       description: Name used to refer to the input of a `pipeline`.
@@ -67,7 +76,10 @@ spec:
                   type: object
                 type: array
               outputs:
-                description: Outputs are named destinations for log messages.
+                description: "Outputs are named destinations for log messages. \n
+                  There is a built-in output named `default` which forwards to the
+                  default openshift log store. You can define outputs to forward to
+                  other stores or log processors, inside or outside the cluster."
                 items:
                   description: Output defines a destination for log messages.
                   properties:
@@ -75,11 +87,6 @@ spec:
                       type: object
                     fluentdForward:
                       type: object
-                    insecure:
-                      description: Insecure must be true for intentionally insecure
-                        outputs. Has no function other than a marker to help avoid
-                        configuration mistakes.
-                      type: boolean
                     kafka:
                       description: 'Kafka provides optional extra properties for `type:
                         kafka`'
@@ -149,7 +156,12 @@ spec:
                           type: string
                       type: object
                     type:
-                      description: Type of output plugin, for example 'syslog'
+                      description: Type of output plugin.
+                      enum:
+                      - syslog
+                      - fluentdForward
+                      - elasticsearch
+                      - kafka
                       type: string
                     url:
                       description: "URL to send log messages to. \n Must be an absolute
@@ -166,19 +178,17 @@ spec:
                   type: object
                 type: array
               pipelines:
-                description: "Pipelines forward messages from a set of inputs to a
-                  set of outputs. \n Pipelines refer to inputs and outputs by name.
-                  As well as then named inputs and outputs defined in the ClusterLogForwarder
-                  resource, there are some built-in names, see `inputRefs` and `outputRefs`
-                  for more."
+                description: Pipelines forward the messages selected by a set of inputs
+                  to a set of outputs.
                 items:
                   properties:
                     inputRefs:
-                      description: "InputRefs lists the names of inputs to this pipeline.
-                        \n The following built-in names are always available: \n -
-                        'application' Container application logs (excludes infrastructure
-                        containers) - 'infrastructure' Infrastructure container logs
-                        and OS system logs. - 'audit' System audit logs."
+                      description: "InputRefs lists the names (`input.name`) of inputs
+                        to this pipeline. \n The following built-in input names are
+                        always available: \n `application` selects all logs from application
+                        pods. \n `infrastructure` selects logs from openshift and
+                        kubernetes pods and some node logs. \n `audit` selects node
+                        logs related to security audits."
                       items:
                         type: string
                       type: array
@@ -187,10 +197,10 @@ spec:
                         list if provided.
                       type: string
                     outputRefs:
-                      description: "OutputRefs lists the names of outputs from this
-                        pipeline. \n The following built-in names are always available:
-                        \n - 'default' Output to the default log store provided by
-                        ClusterLogging."
+                      description: "OutputRefs lists the names (`output.name`) of
+                        outputs from this pipeline. \n The following built-in names
+                        are always available: \n 'default' Output to the default log
+                        store provided by ClusterLogging."
                       items:
                         type: string
                       type: array
@@ -285,7 +295,7 @@ spec:
                     - type
                     type: object
                   type: array
-                description: Inputs maps input names to conditions of the input.
+                description: Inputs maps input name to condition of the input.
                 type: object
               outputs:
                 additionalProperties:
@@ -329,7 +339,7 @@ spec:
                     - type
                     type: object
                   type: array
-                description: Outputs maps output names to conditions of the output.
+                description: Outputs maps output name to condition of the output.
                 type: object
               pipelines:
                 additionalProperties:
@@ -373,7 +383,7 @@ spec:
                     - type
                     type: object
                   type: array
-                description: Pipelines maps pipeline names to conditions of the pipeline.
+                description: Pipelines maps pipeline name to condition of the pipeline.
                 type: object
             type: object
         type: object

@@ -1,4 +1,4 @@
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.12 AS builder
+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.13 AS builder
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
 
 # COPY steps are in the reverse order of frequency of change

@@ -1,6 +1,7 @@
 package fluentlegacy
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -52,6 +53,7 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 				}
 
 				//create configmap secure-forward/"secure-forward.conf"
+				opts := metav1.CreateOptions{}
 				fluentdConfigMap := k8shandler.NewConfigMap(
 					"secure-forward",
 					fluentDeployment.Namespace,
@@ -59,23 +61,27 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 						"secure-forward.conf": string(utils.GetFileContents(filepath.Join(rootDir, "test/files/secure-forward.conf"))),
 					},
 				)
-				if _, err = e2e.KubeClient.Core().ConfigMaps(fluentDeployment.Namespace).Create(fluentdConfigMap); err != nil {
+				if _, err = e2e.KubeClient.CoreV1().ConfigMaps(fluentDeployment.Namespace).Create(context.TODO(), fluentdConfigMap, opts); err != nil {
 					Fail(fmt.Sprintf("Unable to create legacy fluent.conf configmap: %v", err))
 				}
 				e2e.AddCleanup(func() error {
-					return e2e.KubeClient.Core().ConfigMaps(fluentdConfigMap.ObjectMeta.Namespace).Delete(fluentdConfigMap.ObjectMeta.Name, nil)
+					opts := metav1.DeleteOptions{}
+					return e2e.KubeClient.CoreV1().ConfigMaps(fluentdConfigMap.ObjectMeta.Namespace).Delete(context.TODO(), fluentdConfigMap.ObjectMeta.Name, opts)
 				})
 
 				var secret *v1.Secret
-				if secret, err = e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Get(fluentDeployment.Name, metav1.GetOptions{}); err != nil {
+				if secret, err = e2e.KubeClient.CoreV1().Secrets(fluentDeployment.Namespace).Get(context.TODO(), fluentDeployment.Name, metav1.GetOptions{}); err != nil {
 					Fail(fmt.Sprintf("There was an error fetching the fluent-reciever secrets: %v", err))
 				}
+
+				sOpts := metav1.CreateOptions{}
 				secret = k8shandler.NewSecret("secure-forward", fluentDeployment.Namespace, secret.Data)
-				if _, err = e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Create(secret); err != nil {
+				if _, err = e2e.KubeClient.CoreV1().Secrets(fluentDeployment.Namespace).Create(context.TODO(), secret, sOpts); err != nil {
 					Fail(fmt.Sprintf("Unable to create secure-forward secret: %v", err))
 				}
 				e2e.AddCleanup(func() error {
-					return e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Delete(secret.ObjectMeta.Name, nil)
+					opts := metav1.DeleteOptions{}
+					return e2e.KubeClient.CoreV1().Secrets(fluentDeployment.Namespace).Delete(context.TODO(), secret.ObjectMeta.Name, opts)
 				})
 
 				components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}

@@ -44,8 +44,6 @@ IPADDR6=${NODE_IPV6:-$( /usr/sbin/ip -6 addr show dev eth0 | grep inet | sed -e 
 
 export IPADDR4 IPADDR6
 
-BUFFER_SIZE_LIMIT=${BUFFER_SIZE_LIMIT:-16777216}
-
 # Generate throttle configs and outputs
 ruby generate_throttle_configs.rb
 # have output plugins handle back pressure
@@ -57,7 +55,6 @@ export BUFFER_QUEUE_FULL_ACTION=${BUFFER_QUEUE_FULL_ACTION:-block}
 # output to the viaq data model format
 K8S_FILTER_REMOVE_KEYS="log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID"
 export K8S_FILTER_REMOVE_KEYS ENABLE_ES_INDEX_NAME
-
 # Check bearer_token_file for fluent-plugin-kubernetes_metadata_filter.
 if [ ! -s /var/run/secrets/kubernetes.io/serviceaccount/token ] ; then
     echo "ERROR: Bearer_token_file (/var/run/secrets/kubernetes.io/serviceaccount/token) to access the Kubernetes API server is missing or empty."
@@ -67,12 +64,17 @@ fi
 # If FILE_BUFFER_PATH exists and it is not a directory, mkdir fails with the error.
 FILE_BUFFER_PATH=/var/lib/fluentd
 mkdir -p $FILE_BUFFER_PATH
-
 FLUENT_CONF=$CFG_DIR/user/fluent.conf
 if [ ! -f "$FLUENT_CONF" ] ; then
     echo "ERROR: The configuration $FLUENT_CONF does not exist"
     exit 1
 fi
+
+###
+# Calculate the max allowed for each output buffer given the number of
+# buffer file paths
+###
+
 NUM_OUTPUTS=$(grep "path.*'$FILE_BUFFER_PATH" $FLUENT_CONF | wc -l)
 if [ $NUM_OUTPUTS -eq 0 ]; then
     # Reset to default single output if log forwarding outputs all invalid
@@ -86,34 +88,29 @@ if [ $DF_LIMIT -eq 0 ]; then
     echo "ERROR: No disk space is available for file buffer in $FILE_BUFFER_PATH."
     exit 1
 fi
-# Determine final total given the number of outputs we have.
-TOTAL_LIMIT=$(echo ${FILE_BUFFER_LIMIT:-2Gi} | sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc) || :
-if [ $TOTAL_LIMIT -le 0 ]; then
-    echo "ERROR: Invalid file buffer limit ($FILE_BUFFER_LIMIT) is given.  Failed to convert to bytes."
-    exit 1
-fi
 
-TOTAL_LIMIT=$(expr $TOTAL_LIMIT \* $NUM_OUTPUTS) || :
-if [ $DF_LIMIT -lt $TOTAL_LIMIT ]; then
-    echo "WARNING: Available disk space ($DF_LIMIT bytes) is less than the user specified file buffer limit ($FILE_BUFFER_LIMIT times $NUM_OUTPUTS)."
-    TOTAL_LIMIT=$DF_LIMIT
+# Default to 15% of disk which is approximately 18G
+ALLOWED_PERCENT_OF_DISK=${ALLOWED_PERCENT_OF_DISK:-15}
+if [ $ALLOWED_PERCENT_OF_DISK -gt 100 ] || [ $ALLOWED_PERCENT_OF_DISK -le 0 ] ; then
+  ALLOWED_PERCENT_OF_DISK=15
+  echo ALLOWED_PERCENT_OF_DISK is out of the allowed range. Setting to ${ALLOWED_PERCENT_OF_DISK}%
 fi
+# Determine allowed total given the number of outputs we have.
+ALLOWED_DF_LIMIT=$(expr $DF_LIMIT \* $ALLOWED_PERCENT_OF_DISK / 100) || :
 
-BUFFER_SIZE_LIMIT=$(echo $BUFFER_SIZE_LIMIT |  sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc)
-BUFFER_SIZE_LIMIT=${BUFFER_SIZE_LIMIT:-16777216}
+# TOTAL_LIMIT_SIZE per buffer
+TOTAL_LIMIT_SIZE=$(expr $ALLOWED_DF_LIMIT / $NUM_OUTPUTS) || :
+echo "Setting each total_size_limit for $NUM_OUTPUTS buffers to $TOTAL_LIMIT_SIZE bytes"
+export TOTAL_LIMIT_SIZE
 
-# TOTAL_BUFFER_SIZE_LIMIT per buffer
-TOTAL_BUFFER_SIZE_LIMIT=$(expr $TOTAL_LIMIT / $NUM_OUTPUTS) || :
-if [ -z $TOTAL_BUFFER_SIZE_LIMIT -o $TOTAL_BUFFER_SIZE_LIMIT -eq 0 ]; then
-    echo "ERROR: Calculated TOTAL_BUFFER_SIZE_LIMIT is 0. TOTAL_LIMIT $TOTAL_LIMIT is too small compared to NUM_OUTPUTS $NUM_OUTPUTS. Please increase FILE_BUFFER_LIMIT $FILE_BUFFER_LIMIT and/or the volume size of $FILE_BUFFER_PATH."
-    exit 1
-fi
-BUFFER_QUEUE_LIMIT=$(expr $TOTAL_BUFFER_SIZE_LIMIT / $BUFFER_SIZE_LIMIT) || :
-if [ -z $BUFFER_QUEUE_LIMIT -o $BUFFER_QUEUE_LIMIT -eq 0 ]; then
-    echo "ERROR: Calculated BUFFER_QUEUE_LIMIT is 0. TOTAL_BUFFER_SIZE_LIMIT $TOTAL_BUFFER_SIZE_LIMIT is too small compared to BUFFER_SIZE_LIMIT $BUFFER_SIZE_LIMIT. Please increase FILE_BUFFER_LIMIT $FILE_BUFFER_LIMIT and/or the volume size of $FILE_BUFFER_PATH."
-    exit 1
-fi
-export BUFFER_QUEUE_LIMIT BUFFER_SIZE_LIMIT
+##
+# Calculate the max number of queued chunks given the size of each chunk
+# and the max allowed space per buffer
+## 
+BUFFER_SIZE_LIMIT=$(echo ${BUFFER_SIZE_LIMIT:-8m} |  sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc)
+BUFFER_QUEUE_LIMIT=$(expr $TOTAL_LIMIT_SIZE / $BUFFER_SIZE_LIMIT)
+echo "Setting queued_chunks_limit_size for each buffer to $BUFFER_QUEUE_LIMIT"
+export BUFFER_QUEUE_LIMIT
 
 # http://docs.fluentd.org/v0.12/articles/monitoring
 if [ "${ENABLE_MONITOR_AGENT:-}" = true ] ; then

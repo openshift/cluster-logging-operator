@@ -82,7 +82,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	// Reconcile Collection
 	err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig)
 	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
-	logger.DebugObject("ClusterLogForwarder status after updating collection: %v", forwarder.Status)
+	logger.DebugObject("ClusterLogForwarder status after updating collection: %#v", forwarder.Status)
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
 		logger.Errorf(msg)

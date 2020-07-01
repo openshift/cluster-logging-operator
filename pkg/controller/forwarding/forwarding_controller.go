@@ -82,54 +82,61 @@ func condInvalid(format string, args ...interface{}) status.Condition {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	logger.DebugObject("clusterlogforwarder-controller Reconciling: %v", request)
+	logger.DebugObject("clusterlogforwarder-controller Reconciling: %#v", request)
+
+	logger.Debug("clusterlogforwarder-controller fetching LF instance")
+
 	// Fetch the ClusterLogForwarder instance
 	instance := &logging.ClusterLogForwarder{}
-	logger.Debug("clusterlogforwarder-controller fetching LF instance")
 	if err := r.client.Get(context.TODO(), request.NamespacedName, instance); err != nil {
 		logger.Debugf("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound': %v", err)
 		if !errors.IsNotFound(err) {
 			// Error reading - requeue the request.
 			return reconcileResult, err
 		}
-		// else the object is not found -- meaning it was removed so do clean up manually
-		reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.client)
-		if reconcileErr != nil {
-			logger.Debugf("clusterlogforwarder-controller returning, error: %v", reconcileErr)
-		}
-		return reconcile.Result{}, reconcileErr
+		// else the object is not found -- meaning it was removed so stop reconciliation
+		return reconcile.Result{}, nil
 	}
 
-	logger.DebugObject("logforwarding-controller fetched LF instance: %v", instance)
+	logger.DebugObject("clusterlogforwarder-controller fetched LF instance: %#v", instance)
+
+	logger.Debug("clusterlogforwarder-controller run reconciler...")
+
+	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.client)
+	if reconcileErr != nil {
+		logger.Debugf("clusterlogforwarder-controller returning, error: %v", reconcileErr)
+	}
+
+	logger.DebugObject("clusterlogforwarder-controller instance in status: %#v", instance.Status)
 
 	//check for instancename and then update status
 	if instance.Name != constants.SingletonName {
 		instance.Status.Conditions.SetCondition(condInvalid("Invalid name %q, singleton instance must be named %q", instance.Name, constants.SingletonName))
 		return r.updateStatus(instance)
 	}
+
 	if instance.Status.IsReady() {
 		instance.Status.Conditions.SetCondition(condReady)
 	}
+
 	if instance.Status.IsDegraded() {
 		instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, "Some pipelines are degraded or invalid"))
 	}
+
 	if result, err := r.updateStatus(instance); err != nil {
 		return result, err
 	}
 
-	logger.Debug("clusterlogforwarder-controller calling ClusterLogging reconciler...")
-	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.client)
-	if reconcileErr != nil {
-		logger.Debugf("clusterlogforwarder-controller returning, error: %v", reconcileErr)
-	}
 	return reconcile.Result{}, reconcileErr
 }
 
 func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (reconcile.Result, error) {
-	logger.DebugObject("clusterlogforwarder-controller updating status of: %v", instance)
+	logger.DebugObject("clusterlogforwarder-controller updating status of: %#v", instance.Status)
+
 	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
 		logger.Errorf("clusterlogforwarder-controller error updating status: %v", err)
 		return reconcileResult, err
 	}
+
 	return reconcile.Result{}, nil
 }

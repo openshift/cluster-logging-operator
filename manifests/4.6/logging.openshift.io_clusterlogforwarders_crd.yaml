@@ -8,9 +8,9 @@ spec:
     kind: ClusterLogForwarder
     listKind: ClusterLogForwarderList
     plural: clusterlogforwarders
+    singular: clusterlogforwarder
     shortNames:
     - clf
-    singular: clusterlogforwarder
   scope: Namespaced
   versions:
   - name: v1

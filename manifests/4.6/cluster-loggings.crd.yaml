@@ -9,6 +9,8 @@ spec:
     listKind: ClusterLoggingList
     plural: clusterloggings
     singular: clusterlogging
+    shortNames:
+    - cl
   scope: Namespaced
   version: v1
   validation:

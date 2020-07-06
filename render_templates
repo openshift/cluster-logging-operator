@@ -1,3 +1,1 @@
-# This file is required in the cpaas operator build flow
-# reference: https://gitlab.sat.engineering.redhat.com/cpaas/documentation/-/blob/building-operators/schema/product/builds/brew_container_operator.adoc#user-content-render-templates
-
+manifests/render_templates

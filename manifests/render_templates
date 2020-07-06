@@ -1,0 +1,12 @@
+# This file is required in the cpaas operator build flow
+# reference: https://gitlab.sat.engineering.redhat.com/cpaas/documentation/-/blob/building-operators/schema/product/builds/brew_container_operator.adoc#user-content-render-templates
+
+echo "!!! render_templates !!!"
+
+echo "Printing all envitronment variables:"
+echo "--- BEGIN ---"
+env 
+echo "---  END  ---"
+
+python3 -m pip install pyyaml
+./manifests/generate_manifest.py

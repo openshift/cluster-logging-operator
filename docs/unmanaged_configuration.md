@@ -19,7 +19,7 @@ from 3.11 and earlier deployments where it was `true`.
 
 Enable the feature by:
 ```
-oc set env dc/fluentd MERGE_JSON_LOG=true
+oc set env ds/fluentd MERGE_JSON_LOG=true
 ```
 **NOTE:** Enabling this feature comes with [risks](https://github.com/openshift/origin-aggregated-logging/issues/1492) summarized here:
 * Possible log loss due to Elasticsearch rejecting documents due to inconsistent type mappings

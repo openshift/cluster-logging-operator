@@ -103,7 +103,7 @@ spec:
   # The version value is substituted by the ART pipeline
   version: 4.6.0
   displayName: Cluster Logging
-  minKubeVersion: 1.17.1
+  minKubeVersion: 1.18.3
   description: |
     # Cluster Logging
     The Cluster Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.

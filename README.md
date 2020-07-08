@@ -26,7 +26,9 @@ The CLO (Cluster Logging Operator) *owns* the following APIs:
 
 To install a released version of cluster logging see the [Openshift Documentation](https://docs.openshift.com/)
 
-To experiment or contribute to the development of cluster logging, see [HACKING.md](./HACKING.md)
+To experiment or contribute to the development of cluster logging, see [HACKING.md](./docs/HACKING.md)
+
+To find currently known Cluster Logging Operator issues with work-arounds, see the [Troubleshooting](./docs/troubleshooting.md) guide.
 
 [Elasticsearch Operator]: https://github.com/openshift/elasticsearch-operator
 [daemonset]: https://kubernetes.io/docs/concepts/workloads/controllers/daemonset

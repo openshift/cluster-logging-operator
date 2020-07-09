@@ -6,6 +6,10 @@ metadata:
   # The version value is substituted by the ART pipeline
   name: clusterlogging.v4.4.0
   namespace: placeholder
+  labels:
+    "operatorframework.io/arch.amd64": supported
+    "operatorframework.io/arch.ppc64le": supported
+    "operatorframework.io/arch.s390x": supported
   annotations:
     "operatorframework.io/suggested-namespace": openshift-logging
     "operatorframework.io/cluster-monitoring": "true"

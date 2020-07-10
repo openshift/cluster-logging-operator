@@ -228,6 +228,90 @@ spec:
               required:
               - type
               type: object
+            forwarder:
+              description: Specification for Forwarder component for the cluster
+              nullable: true
+              properties:
+                fluentd:
+                  description: FluentdForwarderSpec represents the configuration for
+                    forwarders of type fluentd.
+                  properties:
+                    buffer:
+                      description: "FluentdBufferSpec represents a subset of fluentd
+                        buffer parameters to tune the buffer configuration for all
+                        fluentd outputs. It supports a subset of parameters to configure
+                        buffer and queue sizing, flush operations and retry flushing.
+                        \n For general parameters refer to: https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
+                        \n For flush parameters refer to: https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
+                        \n For retry parameters refer to: https://docs.fluentd.org/configuration/buffer-section#retries-parameters"
+                      properties:
+                        chunkLimitSize:
+                          description: ChunkLimitSize represents the maximum size
+                            of each chunk. Events will be written into chunks until
+                            the size of chunks become this size.
+                          pattern: ^([0-9]+)([kmgtKMGT]{0,1})$
+                          type: string
+                        flushInterval:
+                          description: 'FlushInterval represents the time duration
+                            to wait between two consecutive flush operations. Takes
+                            only effect used together with `flushMode: interval`.'
+                          pattern: ^([0-9]+)([smhd]{0,1})$
+                          type: string
+                        flushMode:
+                          description: FlushMode represents the mode of the flushing
+                            thread to write chunks. The mode allows lazy (if `time`
+                            parameter set), per interval or immediate flushing.
+                          enum:
+                          - lazy
+                          - interval
+                          - immediate
+                          type: string
+                        flushThreadCount:
+                          description: FlushThreadCount reprents the number of threads
+                            used by the fluentd buffer plugin to flush/write chunks
+                            in parallel.
+                          format: int32
+                          type: integer
+                        overflowAction:
+                          description: 'OverflowAction represents the action for the
+                            fluentd buffer plugin to execute when a buffer queue is
+                            full. (Default: block)'
+                          enum:
+                          - throw_exception
+                          - block
+                          - drop_oldest_chunk
+                          type: string
+                        retryMaxInterval:
+                          description: 'RetryMaxInterval represents the maxixum time
+                            interval for exponential backoff between retries. Takes
+                            only effect if used together with `retryType: exponential_backoff`.'
+                          pattern: ^([0-9]+)([smhd]{0,1})$
+                          type: string
+                        retryType:
+                          description: RetryType represents the type of retrying flush
+                            operations. Flush operations can be retried either periodically
+                            or by applying exponential backoff.
+                          enum:
+                          - exponential_backoff
+                          - periodic
+                          type: string
+                        retryWait:
+                          description: RetryWait represents the time duration between
+                            two consecutive retries to flush buffers for periodic
+                            retries or a constant factor of time on retries with exponential
+                            backoff.
+                          pattern: ^([0-9]+)([smhd]{0,1})$
+                          type: string
+                        totalLimitSize:
+                          description: TotalLimitSize represents the threshold of
+                            node space allowed per fluentd buffer to allocate. Once
+                            this threshold is reached, all append operations will
+                            fail with error (and data will be lost).
+                          pattern: ^([0-9]+)([kmgtKMGT]{0,1})$
+                          type: string
+                      type: object
+                  type: object
+              type: object
             logStore:
               description: Specification of the Log Storage component for the cluster
               nullable: true

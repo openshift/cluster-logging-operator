@@ -48,7 +48,8 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 				corev1.ConditionTrue,
 			)
 	}
-	generatedConfig, err := generator.Generate(&clusterRequest.ForwarderSpec)
+
+	generatedConfig, err := generator.Generate(&clusterRequest.ForwarderSpec, clusterRequest.cluster.Spec.Forwarder)
 	if err != nil {
 		logger.Warnf("Unable to generate log configuration: %v", err)
 		return "",

@@ -12,11 +12,32 @@ import (
 type ClusterLoggingSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	ManagementState ManagementState    `json:"managementState"`
-	Visualization   *VisualizationSpec `json:"visualization,omitempty"`
-	LogStore        *LogStoreSpec      `json:"logStore,omitempty"`
-	Collection      *CollectionSpec    `json:"collection,omitempty"`
-	Curation        *CurationSpec      `json:"curation,omitempty"`
+
+	// Indicator if the resource is 'Managed' or 'Unmanaged' by the operator
+	//
+	// +kubebuilder:validation:Enum:=Managed;Unmanaged
+	// +optional
+	ManagementState ManagementState `json:"managementState"`
+
+	// Specification of the Visualization component for the cluster
+	//
+	// +nullable
+	Visualization *VisualizationSpec `json:"visualization,omitempty"`
+
+	// Specification of the Log Storage component for the cluster
+	//
+	// +nullable
+	LogStore *LogStoreSpec `json:"logStore,omitempty"`
+
+	// Specification of the Collection component for the cluster
+	//
+	// +nullable
+	Collection *CollectionSpec `json:"collection,omitempty"`
+
+	// Specification of the Curation component for the cluster
+	//
+	// +nullable
+	Curation *CurationSpec `json:"curation,omitempty"`
 }
 
 // ClusterLoggingStatus defines the observed state of ClusterLogging
@@ -24,64 +45,124 @@ type ClusterLoggingSpec struct {
 type ClusterLoggingStatus struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+
+	// +optional
 	Visualization VisualizationStatus `json:"visualization"`
-	LogStore      LogStoreStatus      `json:"logStore"`
-	Collection    CollectionStatus    `json:"collection"`
-	Curation      CurationStatus      `json:"curation"`
-	Conditions    status.Conditions   `json:"clusterConditions,omitempty"`
+
+	// +optional
+	LogStore LogStoreStatus `json:"logStore"`
+
+	// +optional
+	Collection CollectionStatus `json:"collection"`
+
+	// +optional
+	Curation CurationStatus `json:"curation"`
+
+	// +optional
+	Conditions status.Conditions `json:"clusterConditions,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)
 type VisualizationSpec struct {
-	Type       VisualizationType `json:"type"`
+	// The type of Visualization to configure
+	Type VisualizationType `json:"type"`
+
+	// Specification of the Kibana Visualization component
 	KibanaSpec `json:"kibana,omitempty"`
 }
 
 type KibanaSpec struct {
-	Resources    *v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
-	Replicas     int32                    `json:"replicas"`
-	ProxySpec    `json:"proxy,omitempty"`
+	// The resource requirements for Kibana
+	//
+	// +nullable
+	// +optional
+	Resources *v1.ResourceRequirements `json:"resources"`
+
+	// Define which Nodes the Pods are scheduled on.
+	//
+	// +nullable
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
+
+	// Number of instances to deploy for a Kibana deployment
+	Replicas int32 `json:"replicas"`
+
+	// Specification of the Kibana Proxy component
+	ProxySpec `json:"proxy,omitempty"`
 }
 
 type ProxySpec struct {
+	// +nullable
 	Resources *v1.ResourceRequirements `json:"resources"`
 }
 
 // This is the struct that will contain information pertinent to Log storage (Elasticsearch)
 type LogStoreSpec struct {
-	Type              LogStoreType `json:"type"`
+	// The type of Log Storage to configure
+	Type LogStoreType `json:"type"`
+
+	// Specification of the Elasticsearch Log Store component
 	ElasticsearchSpec `json:"elasticsearch,omitempty"`
-	RetentionPolicy   *RetentionPoliciesSpec `json:"retentionPolicy,omitempty"`
+
+	// Retention policy defines the maximum age for an index after which it should be deleted
+	//
+	// +nullable
+	RetentionPolicy *RetentionPoliciesSpec `json:"retentionPolicy,omitempty"`
 }
 
 type RetentionPoliciesSpec struct {
-	App   *RetentionPolicySpec `json:"application,omitempty"`
+	// +nullable
+	App *RetentionPolicySpec `json:"application,omitempty"`
+
+	// +nullable
 	Infra *RetentionPolicySpec `json:"infra,omitempty"`
+
+	// +nullable
 	Audit *RetentionPolicySpec `json:"audit,omitempty"`
 }
 
 type RetentionPolicySpec struct {
+	// +optional
 	MaxAge elasticsearch.TimeUnit `json:"maxAge"`
 }
 
 type ElasticsearchSpec struct {
-	Resources        *v1.ResourceRequirements               `json:"resources"`
-	NodeCount        int32                                  `json:"nodeCount"`
-	NodeSelector     map[string]string                      `json:"nodeSelector,omitempty"`
-	Tolerations      []v1.Toleration                        `json:"tolerations,omitempty"`
-	Storage          elasticsearch.ElasticsearchStorageSpec `json:"storage"`
-	RedundancyPolicy elasticsearch.RedundancyPolicyType     `json:"redundancyPolicy"`
+	// The resource requirements for Elasticsearch
+	//
+	// +nullable
+	// +optional
+	Resources *v1.ResourceRequirements `json:"resources"`
+
+	// Number of nodes to deploy for Elasticsearch
+	NodeCount int32 `json:"nodeCount"`
+
+	// Define which Nodes the Pods are scheduled on.
+	//
+	// +nullable
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
+
+	// The storage specification for Elasticsearch data nodes
+	//
+	// +nullable
+	// +optional
+	Storage elasticsearch.ElasticsearchStorageSpec `json:"storage"`
+
+	// +optional
+	RedundancyPolicy elasticsearch.RedundancyPolicyType `json:"redundancyPolicy"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection
 type CollectionSpec struct {
+	// Specification of Log Collection for the cluster
 	Logs LogCollectionSpec `json:"logs,omitempty"`
 }
 
 type LogCollectionSpec struct {
-	Type        LogCollectionType `json:"type"`
+	// The type of Log Collection to configure
+	Type LogCollectionType `json:"type"`
+
+	// Specification of the Fluentd Log Collection component
 	FluentdSpec `json:"fluentd,omitempty"`
 }
 
@@ -90,70 +171,118 @@ type EventCollectionSpec struct {
 }
 
 type FluentdSpec struct {
-	Resources    *v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
+	// The resource requirements for Fluentd
+	//
+	// +nullable
+	// +optional
+	Resources *v1.ResourceRequirements `json:"resources"`
+
+	// Define which Nodes the Pods are scheduled on.
+	//
+	// +nullable
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log curation (Curator)
 type CurationSpec struct {
-	Type        CurationType `json:"type"`
+	// The kind of curation to configure
+	Type CurationType `json:"type"`
+
+	// The specification of curation to configure
 	CuratorSpec `json:"curator,omitempty"`
 }
 
 type CuratorSpec struct {
-	Resources    *v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
-	Schedule     string                   `json:"schedule"`
+	// The resource requirements for Curator
+	//
+	// +nullable
+	// +optional
+	Resources *v1.ResourceRequirements `json:"resources"`
+
+	// Define which Nodes the Pods are scheduled on.
+	//
+	// +nullable
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
+
+	// The cron schedule that the Curator job is run. Defaults to "30 3 * * *"
+	Schedule string `json:"schedule"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // ClusterLogging is the Schema for the clusterloggings API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:shortName=cl
+//
+// ClusterLogging is the Schema for the clusterloggings API
 type ClusterLogging struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterLoggingSpec   `json:"spec,omitempty"`
+	// Specification of the desired behavior of the Logging cluster.
+	Spec ClusterLoggingSpec `json:"spec,omitempty"`
+
+	// ClusterLoggingStatus defines the observed state of ClusterLogging
 	Status ClusterLoggingStatus `json:"status,omitempty"`
 }
 
 type VisualizationStatus struct {
+	// +optional
 	KibanaStatus []elasticsearch.KibanaStatus `json:"kibanaStatus,omitempty"`
 }
 
 type KibanaStatus struct {
-	Replicas    int32                        `json:"replicas"`
-	Deployment  string                       `json:"deployment"`
-	ReplicaSets []string                     `json:"replicaSets"`
-	Pods        PodStateMap                  `json:"pods"`
-	Conditions  map[string]ClusterConditions `json:"clusterCondition,omitempty"`
+	// +optional
+	Replicas int32 `json:"replicas"`
+	// +optional
+	Deployment string `json:"deployment"`
+	// +optional
+	ReplicaSets []string `json:"replicaSets"`
+	// +optional
+	Pods PodStateMap `json:"pods"`
+	// +optional
+	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type LogStoreStatus struct {
+	// +optional
 	ElasticsearchStatus []ElasticsearchStatus `json:"elasticsearchStatus,omitempty"`
 }
 
 type ElasticsearchStatus struct {
-	ClusterName            string                                    `json:"clusterName"`
-	NodeCount              int32                                     `json:"nodeCount"`
-	ReplicaSets            []string                                  `json:"replicaSets,omitempty"`
-	Deployments            []string                                  `json:"deployments,omitempty"`
-	StatefulSets           []string                                  `json:"statefulSets,omitempty"`
-	ClusterHealth          string                                    `json:"clusterHealth,omitempty"`
-	Cluster                elasticsearch.ClusterHealth               `json:"cluster"`
-	Pods                   map[ElasticsearchRoleType]PodStateMap     `json:"pods"`
-	ShardAllocationEnabled elasticsearch.ShardAllocationState        `json:"shardAllocationEnabled"`
-	ClusterConditions      ElasticsearchClusterConditions            `json:"clusterConditions,omitempty"`
-	NodeConditions         map[string]ElasticsearchClusterConditions `json:"nodeConditions,omitempty"`
+	// +optional
+	ClusterName string `json:"clusterName"`
+	// +optional
+	NodeCount int32 `json:"nodeCount"`
+	// +optional
+	ReplicaSets []string `json:"replicaSets,omitempty"`
+	// +optional
+	Deployments []string `json:"deployments,omitempty"`
+	// +optional
+	StatefulSets []string `json:"statefulSets,omitempty"`
+	// +optional
+	ClusterHealth string `json:"clusterHealth,omitempty"`
+	// +optional
+	Cluster elasticsearch.ClusterHealth `json:"cluster"`
+	// +optional
+	Pods map[ElasticsearchRoleType]PodStateMap `json:"pods"`
+	// +optional
+	ShardAllocationEnabled elasticsearch.ShardAllocationState `json:"shardAllocationEnabled"`
+	// +optional
+	ClusterConditions ElasticsearchClusterConditions `json:"clusterConditions,omitempty"`
+	// +optional
+	NodeConditions map[string]ElasticsearchClusterConditions `json:"nodeConditions,omitempty"`
 }
 
 type CollectionStatus struct {
+	// +optional
 	Logs LogCollectionStatus `json:"logs,omitempty"`
 }
 
 type LogCollectionStatus struct {
+	// +optional
 	FluentdStatus FluentdCollectorStatus `json:"fluentdStatus,omitempty"`
 }
 
@@ -161,31 +290,45 @@ type EventCollectionStatus struct {
 }
 
 type FluentdCollectorStatus struct {
-	DaemonSet  string                       `json:"daemonSet"`
-	Nodes      map[string]string            `json:"nodes"`
-	Pods       PodStateMap                  `json:"pods"`
+	// +optional
+	DaemonSet string `json:"daemonSet"`
+	// +optional
+	Nodes map[string]string `json:"nodes"`
+	// +optional
+	Pods PodStateMap `json:"pods"`
+	// +optional
 	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type FluentdNormalizerStatus struct {
-	Replicas    int32                        `json:"replicas"`
-	ReplicaSets []string                     `json:"replicaSets"`
-	Pods        PodStateMap                  `json:"pods"`
-	Conditions  map[string]ClusterConditions `json:"clusterCondition,omitempty"`
+	// +optional
+	Replicas int32 `json:"replicas"`
+	// +optional
+	ReplicaSets []string `json:"replicaSets"`
+	// +optional
+	Pods PodStateMap `json:"pods"`
+	// +optional
+	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 
 type NormalizerStatus struct {
+	// +optional
 	FluentdStatus []FluentdNormalizerStatus `json:"fluentdStatus,omitempty"`
 }
 
 type CurationStatus struct {
+	// +optional
 	CuratorStatus []CuratorStatus `json:"curatorStatus,omitempty"`
 }
 
 type CuratorStatus struct {
-	CronJob    string                       `json:"cronJobs"`
-	Schedule   string                       `json:"schedules"`
-	Suspended  bool                         `json:"suspended"`
+	// +optional
+	CronJob string `json:"cronJobs"`
+	// +optional
+	Schedule string `json:"schedules"`
+	// +optional
+	Suspended bool `json:"suspended"`
+	// +optional
 	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
 

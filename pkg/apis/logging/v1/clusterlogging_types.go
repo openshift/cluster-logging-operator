@@ -38,6 +38,11 @@ type ClusterLoggingSpec struct {
 	//
 	// +nullable
 	Curation *CurationSpec `json:"curation,omitempty"`
+
+	// Specification for output tuning parameters
+	//
+	// +nullable
+	Output *OutputConfSpec `json:"output,omitempty"`
 }
 
 // ClusterLoggingStatus defines the observed state of ClusterLogging
@@ -208,6 +213,147 @@ type CuratorSpec struct {
 
 	// The cron schedule that the Curator job is run. Defaults to "30 3 * * *"
 	Schedule string `json:"schedule"`
+}
+
+// OutputConfSpec represents the output configuration for tuning parameters per
+// output type, e.g. Fluentd. The tuning parameters are applied for all outputs
+// of the same type. Currently supported: `fluentd`.
+type OutputConfSpec struct {
+	Fluentd *FluentdOutputSpec `json:"fluentd,omitempty"`
+}
+
+// FluentdOutputSpec represents the configuration for outputs of type fluentd.
+// It supports overriding settings for fluentd buffer configurations. The settings
+// apply to all buffer configurations of each fluentd output.
+type FluentdOutputSpec struct {
+	Buffer *FluentdBufferSpec `json:"buffer,omitempty"`
+}
+
+const (
+	// ThrowExceptionAction raises an exception when output buffer is full
+	ThrowExceptionAction OverflowActionType = "throw_exception"
+	// BlockAction blocks processing inputs when output buffer is full
+	BlockAction OverflowActionType = "block"
+	// DropOldestChunkAction drops oldest chunk to accept newly incoming chunks
+	// when buffer is full
+	DropOldestChunkAction OverflowActionType = "drop_oldest_chunk"
+)
+
+type OverflowActionType string
+
+const (
+	// Flush one chunk per time key
+	FlushModeLazy FlushModeType = "lazy"
+	// Flush chunks per specified time via FlushInterval
+	FlushModeInterval FlushModeType = "interval"
+	// Flush immediately after events appended to chunks
+	FlushModeImmediate FlushModeType = "immediate"
+)
+
+type FlushModeType string
+
+const (
+	// RetryExponentialBackoff increases wait time exponentially between failures
+	RetryExponentialBackoff RetryTypeType = "exponential_backoff"
+	// RetryPeriodic to retry sending to output periodically on fixed intervals
+	RetryPeriodic RetryTypeType = "periodic"
+)
+
+type RetryTypeType string
+
+// FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
+// the buffer configuration for all fluentd outputs. It supports a subset of
+// parameters to configure buffer and queue sizing, flush operations and retry
+// flushing.
+//
+// For general parameters refer to:
+// https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
+//
+// For flush parameters refer to:
+// https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
+//
+// For retry parameters refer to:
+// https://docs.fluentd.org/configuration/buffer-section#retries-parameters
+type FluentdBufferSpec struct {
+	// ChunkLimitSize represents the maximum size of each chunk. Events will be
+	// written into chunks until the size of chunks become this size. For data
+	// type pattern see:
+	// https://docs.fluentd.org/configuration/config-file#supported-data-types-for-values
+	//
+	// Notice: The OpenAPI validation pattern is an ECMA262 regular expression
+	// (See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#properties)
+	//
+	// +kubebuilder:validation:Pattern:="^([0-9]+)([kmgtKMGT]{0,1})$"
+	ChunkLimitSize string `json:"chunkLimitSize"`
+
+	// TotalLimitSize represents the threshold of node space allowed per fluentd
+	// buffer to allocate. Once this threshold is reached, all append operations
+	// will fail with error (and data will be lost). For data type pattern see:
+	// https://docs.fluentd.org/configuration/config-file#supported-data-types-for-values
+	//
+	// Notice: The OpenAPI validation pattern is an ECMA262 regular expression
+	// (See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#properties)
+	//
+	// +kubebuilder:validation:Pattern:="^([0-9]+)([kmgtKMGT]{0,1})$"
+	TotalLimitSize string `json:"totalLimitSize"`
+
+	// OverflowAction represents the action for the fluentd buffer plugin to
+	// execute when a buffer queue is full.
+	//
+	// +kubebuilder:validation:Enum:=throw_exception;block;drop_oldest_chunk
+	OverflowAction OverflowActionType `json:"overflowAction"`
+
+	// FlushThreadCount reprents the number of threads used by the fluentd buffer
+	// plugin to flush/write chunks in parallel.
+	FlushThreadCount int32 `json:"flushThreadCount"`
+
+	// FlushMode represents the mode of the flushing thread to write chunks. The mode
+	// allows lazy (if `time` parameter set), per interval or immediate flushing.
+	//
+	// +kubebuilder:validation:Enum:=lazy;interval;immediate
+	FlushMode FlushModeType `json:"flushMode"`
+
+	// FlushInterval represents the time duration to wait between two consecutive flush
+	// operations. Takes only effect used together with `flushMode: interval`. For data
+	// type pattern see:
+	// https://docs.fluentd.org/configuration/config-file#supported-data-types-for-values
+	//
+	// Notice: The OpenAPI validation pattern is an ECMA262 regular expression
+	// (See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#properties)
+	//
+	// +kubebuilder:validation:Pattern:="^([0-9]+)([smhd]{0,1})$"
+	FlushInterval string `json:"flushInterval"`
+
+	// FlushAtShutdown represents the switch to flush all buffers on fluentd shutdown.
+	FlushAtShutdown bool `json:"flushAtShutdown"`
+
+	// RetryWait represents the time duration between two consecutive retries to flush
+	// buffers for periodic retries or a constant factor of time on retries with exponential
+	// backoff. For data type pattern see:
+	// https://docs.fluentd.org/configuration/config-file#supported-data-types-for-values
+	//
+	// Notice: The OpenAPI validation pattern is an ECMA262 regular expression
+	// (See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#properties)
+	//
+	// +kubebuilder:validation:Pattern:="^([0-9]+)([smhd]{0,1})$"
+	RetryWait string `json:"retryWait"`
+
+	// RetryType represents the type of retrying flush operations. Flush operations can
+	// be retried either periodically or by applying exponential backoff.
+	//
+	// +kubebuilder:validation:Enum:=exponential_backoff;periodic
+	RetryType RetryTypeType `json:"retryType"`
+
+	// RetryMaxInterval represents the maxixum time interval for exponential backoff
+	// between retries. Takes only effect if used together with `retryType: exponential_backoff`.
+	// For data type pattern see:
+	// https://docs.fluentd.org/configuration/config-file#supported-data-types-for-values
+	//
+	// Notice: The OpenAPI validation pattern is an ECMA262 regular expression
+	// (See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#properties)
+	//
+	// +kubebuilder:validation:Pattern:="^([0-9.]+)([smhd]{0,1})$"
+	RetryMaxInterval string `json:"retryMaxInterval"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

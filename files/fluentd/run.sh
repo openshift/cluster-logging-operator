@@ -46,10 +46,6 @@ export IPADDR4 IPADDR6
 
 # Generate throttle configs and outputs
 ruby generate_throttle_configs.rb
-# have output plugins handle back pressure
-# if you want the old behavior to be forced anyway, set env
-# BUFFER_QUEUE_FULL_ACTION=exception
-export BUFFER_QUEUE_FULL_ACTION=${BUFFER_QUEUE_FULL_ACTION:-block}
 
 # this is the list of keys to remove when the record is transformed from the raw systemd journald
 # output to the viaq data model format
@@ -106,11 +102,13 @@ export TOTAL_LIMIT_SIZE
 ##
 # Calculate the max number of queued chunks given the size of each chunk
 # and the max allowed space per buffer
-## 
+##
 BUFFER_SIZE_LIMIT=$(echo ${BUFFER_SIZE_LIMIT:-8m} |  sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc)
 BUFFER_QUEUE_LIMIT=$(expr $TOTAL_LIMIT_SIZE / $BUFFER_SIZE_LIMIT)
 echo "Setting queued_chunks_limit_size for each buffer to $BUFFER_QUEUE_LIMIT"
 export BUFFER_QUEUE_LIMIT
+echo "Setting chunk_limit_size for each buffer to $BUFFER_SIZE_LIMIT"
+export BUFFER_SIZE_LIMIT
 
 # http://docs.fluentd.org/v0.12/articles/monitoring
 if [ "${ENABLE_MONITOR_AGENT:-}" = true ] ; then

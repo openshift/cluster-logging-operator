@@ -12,238 +12,45 @@ spec:
     - clf
     singular: clusterlogforwarder
   scope: Namespaced
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      description: "ClusterLogForwarder is the schema for the `clusterlogforwarder`
-        API. \n A forwarder defines: - `inputs` that select logs to be forwarded `outputs`
-        - `outputs` that identify targets to receive logs. - `pipelines` that forward
-        logs from a set of inputs to a set of outputs."
-      properties:
-        apiVersion:
-          description: 'APIVersion defines the versioned schema of this representation
-            of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
-          type: string
-        kind:
-          description: 'Kind is a string value representing the REST resource this
-            object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
-          type: string
-        metadata:
-          type: object
-        spec:
-          description: ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
-          properties:
-            inputs:
-              description: Inputs are named inputs of log messages
-              items:
-                description: InputSpec defines a selector of log messages.
-                properties:
-                  application:
-                    description: 'Enable `application` logs. Use `application: {}`
-                      to enable with no filter.'
-                    properties:
-                      namespaces:
-                        description: Only collect logs from applications in these
-                          namespaces. If empty, all application container logs will
-                          be collected.
-                        items:
-                          type: string
-                        type: array
-                    type: object
-                  audit:
-                    description: 'Enable `audit` logs. Use `infrastructure: {}` to
-                      enable with no filter.'
-                    type: object
-                  infrastructure:
-                    description: 'Enable `infrastructure` logs. Use `infrastructure:
-                      {}` to enable with no filter.'
-                    type: object
-                  name:
-                    description: Name used to refer to the input of a `pipeline`.
-                    type: string
-                required:
-                - name
-                type: object
-              type: array
-            outputs:
-              description: Outputs are named destinations for log messages.
-              items:
-                description: Output defines a destination for log messages.
-                properties:
-                  elasticsearch:
-                    type: object
-                  fluentdForward:
-                    type: object
-                  insecure:
-                    description: Insecure must be true for intentionally insecure
-                      outputs. Has no function other than a marker to help avoid configuration
-                      mistakes.
-                    type: boolean
-                  kafka:
-                    description: 'Kafka provides optional extra properties for `type:
-                      kafka`'
-                    properties:
-                      brokers:
-                        description: Brokers specifies the list of brokers to register
-                          in addition to the main output URL on initial connect to
-                          enhance reliability.
-                        items:
-                          type: string
-                        type: array
-                      topic:
-                        description: Topic specifies the target topic to send logs
-                          to.
-                        type: string
-                    type: object
-                  name:
-                    description: Name used to refer to the output from a `pipeline`.
-                    type: string
-                  secret:
-                    description: "Secret for secure communication. Secrets must be
-                      stored in the namespace containing the cluster logging operator.
-                      \n Client-authenticated TLS is enabled if the secret contains
-                      keys `tls.crt`, `tls.key` and `ca.crt`. Output types with password
-                      authentication will use keys `password` and `username`, not
-                      the exposed 'username@password' part of the `url`."
-                    properties:
-                      name:
-                        description: Name of a secret in the namespace configured
-                          for log forwarder secrets.
-                        type: string
-                    required:
-                    - name
-                    type: object
-                  syslog:
-                    description: Syslog provides optional extra properties for output
-                      type `syslog`
-                    properties:
-                      facility:
-                        description: "Facility to set on outgoing syslog records.
-                          \n Facility values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1.
-                          The value can be a decimal integer. Facility keywords are
-                          not standardized, this API recognizes at least the following
-                          case-insensitive keywords (defined by https://en.wikipedia.org/wiki/Syslog#Facility_Levels):
-                          \n     kernel user mail daemon auth syslog lpr news     uucp
-                          cron authpriv ftp ntp security console solaris-cron     local0
-                          local1 local2 local3 local4 local5 local6 local7"
-                        type: string
-                      payloadKey:
-                        description: PayloadKey specifies record field to use as payload.
-                        type: string
-                      severity:
-                        description: "Severity to set on outgoing syslog records.
-                          \n Severity values are defined in https://tools.ietf.org/html/rfc5424#section-6.2.1
-                          The value can be a decimal integer or one of these case-insensitive
-                          keywords: \n     Emergency Alert Critical Error Warning
-                          Notice Informational Debug"
-                        type: string
-                      tagKey:
-                        description: TagKey specifies a record field  to  use as tag.
-                        type: string
-                      trimPrefix:
-                        description: TrimPrefix is a prefix to trim from the tag.
-                        type: string
-                    type: object
-                  type:
-                    description: Type of output plugin, for example 'syslog'
-                    type: string
-                  url:
-                    description: "URL to send log messages to. \n Must be an absolute
-                      URL, with a scheme. Valid URL schemes depend on `type`. Special
-                      schemes 'tcp', 'udp' and 'tls' are used for output types that
-                      don't define their own URL scheme.  Example: \n     { type:
-                      syslog, url: tls://syslog.example.com:1234 } \n TLS with server
-                      authentication is enabled by the URL scheme, for example 'tls'
-                      or 'https'.  See `secret` for TLS client authentication."
-                    type: string
-                required:
-                - name
-                - type
-                type: object
-              type: array
-            pipelines:
-              description: "Pipelines forward messages from a set of inputs to a set
-                of outputs. \n Pipelines refer to inputs and outputs by name. As well
-                as then named inputs and outputs defined in the ClusterLogForwarder
-                resource, there are some built-in names, see `inputRefs` and `outputRefs`
-                for more."
-              items:
-                properties:
-                  inputRefs:
-                    description: "InputRefs lists the names of inputs to this pipeline.
-                      \n The following built-in names are always available: \n - 'application'
-                      Container application logs (excludes infrastructure containers)
-                      - 'infrastructure' Infrastructure container logs and OS system
-                      logs. - 'audit' System audit logs."
-                    items:
-                      type: string
-                    type: array
-                  name:
-                    description: Name is optional, but must be unique in the `pipelines`
-                      list if provided.
-                    type: string
-                  outputRefs:
-                    description: "OutputRefs lists the names of outputs from this
-                      pipeline. \n The following built-in names are always available:
-                      \n - 'default' Output to the default log store provided by ClusterLogging."
-                    items:
-                      type: string
-                    type: array
-                required:
-                - inputRefs
-                - outputRefs
-                type: object
-              type: array
-          type: object
-        status:
-          description: ClusterLogForwarder represents the current status of ClusterLogForwarder
-          properties:
-            conditions:
-              description: Conditions of the log forwarder.
-              items:
-                description: "Condition represents an observation of an object's state.
-                  Conditions are an extension mechanism intended to be used when the
-                  details of an observation are not a priori known or would not apply
-                  to all instances of a given Kind. \n Conditions should be added
-                  to explicitly convey properties that users and components care about
-                  rather than requiring those properties to be inferred from other
-                  observations. Once defined, the meaning of a Condition can not be
-                  changed arbitrarily - it becomes part of the API, and has the same
-                  backwards- and forwards-compatibility concerns of any other part
-                  of the API."
-                properties:
-                  lastTransitionTime:
-                    format: date-time
-                    type: string
-                  message:
-                    type: string
-                  reason:
-                    description: ConditionReason is intended to be a one-word, CamelCase
-                      representation of the category of cause of the current status.
-                      It is intended to be used in concise output, such as one-line
-                      kubectl get output, and in summarizing occurrences of causes.
-                    type: string
-                  status:
-                    type: string
-                  type:
-                    description: "ConditionType is the type of the condition and is
-                      typically a CamelCased word or short phrase. \n Condition types
-                      should indicate state in the \"abnormal-true\" polarity. For
-                      example, if the condition indicates when a policy is invalid,
-                      the \"is valid\" case is probably the norm, so the condition
-                      should be called \"Invalid\"."
-                    type: string
-                required:
-                - status
-                - type
-                type: object
-              type: array
-            inputs:
-              additionalProperties:
-                description: Conditions is a set of Condition instances.
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: "ClusterLogForwarder is an API to configure forwarding logs.
+          \n You configure forwarding by specifying a list of `pipelines`, which forward
+          from a set of named inputs to a set of named outputs. \n There are built-in
+          input names for common log categories, and you can define custom inputs
+          to do additional filtering. \n There is a built-in output name for the default
+          openshift log store, but you can define your own outputs with a URL and
+          other connection information to forward logs to other stores or processors,
+          inside or outside the cluster. \n For more details see the documentation
+          on the API fields."
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            properties:
+              name:
+                enum:
+                - instance
+                type: string
+            type: object
+          spec:
+            description: ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
+            properties:
+              inputs:
+                description: "Inputs are named filters for log messages to be forwarded.
+                  \n There are three built-in inputs named `application`, `infrastructure`
+                  and `audit`. You don't need to define inputs here if those are sufficient
+                  for your needs. See `inputRefs` for more."
                 items:
                   description: InputSpec defines a selector of log messages.
                   properties:

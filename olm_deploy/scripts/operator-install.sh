@@ -11,7 +11,7 @@ else
 fi
 
 set +e
-oc annotate ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} openshift.io/cluster-monitoring=true --overwrite
+oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} openshift.io/cluster-monitoring=true --overwrite
 oc annotate ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} openshift.io/node-selector="" --overwrite
 set -e
 

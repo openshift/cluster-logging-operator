@@ -38,7 +38,7 @@ for dir in $(ls -d $TEST_DIR); do
   log::info "Deploying cluster-logging-operator"
   ${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
   ${repo_dir}/olm_deploy/scripts/operator-install.sh
-  artifact_dir=$ARTIFACT_DIR/$(basename $dir)
+  artifact_dir=$ARTIFACT_DIR/logforwarding/$(basename $dir)
 
   mkdir -p $artifact_dir
   GENERATOR_NS="clo-test-$RANDOM"

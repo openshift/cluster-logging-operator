@@ -22,6 +22,12 @@ var _ = Describe("Generating external syslog server output store config blocks",
 		})
 
 		tcpConf := `<label @SYSLOG_RECEIVER>
+		<filter **>
+		  @type parse_json_field
+		  json_fields  message
+		  merge_json_log false
+		  replace_json_log true
+		</filter>
 		<match **>
 		@type copy
 		<store>
@@ -37,6 +43,12 @@ var _ = Describe("Generating external syslog server output store config blocks",
 	</label>`
 
 		udpConf := `<label @SYSLOG_RECEIVER>
+		<filter **>
+		  @type parse_json_field
+		  json_fields  message
+		  merge_json_log false
+		  replace_json_log true
+		</filter>
 		<match **>
 		@type copy
 		<store>
@@ -112,136 +124,156 @@ var _ = Describe("Generating external syslog server output store config blocks",
 			Expect(err).To(BeNil())
 		})
 		tcpConf := `<label @SYSLOG_RECEIVER>
+  <filter **>
+	@type parse_json_field
+	json_fields  message
+	merge_json_log false
+	replace_json_log true
+  </filter>
   <match **>
-  @type copy
+    @type copy
     <store>
-      @type remote_syslog
-      @id syslog_receiver
-      host sl.svc.messaging.cluster.local
-      port 9654
-      rfc rfc5424
-      facility user
-      severity debug
-      program fluentd
-      protocol tcp
-      packet_size 4096
-      timeout 60
-      timeout_exception true
-      keep_alive true
-      keep_alive_idle 75
-      keep_alive_cnt 9
-      keep_alive_intvl 7200
-      <buffer>
-        @type file
-        path '/var/lib/fluentd/syslog_receiver'
-        flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-        flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-        flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-        retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-        retry_forever true
-        queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-        chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-        overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-      </buffer>
+    	@type remote_syslog
+    	@id syslog_receiver
+    	host sl.svc.messaging.cluster.local
+    	port 9654
+    	rfc rfc5424
+    	facility user
+        severity debug
+    	protocol tcp
+    	packet_size 4096
+		timeout 60
+		timeout_exception true
+	    keep_alive true
+        keep_alive_idle 75
+        keep_alive_cnt 9
+        keep_alive_intvl 7200
+		<buffer >
+    		@type file
+    		path '/var/lib/fluentd/syslog_receiver'
+    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+    		retry_forever true
+    		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+    	</buffer>
     </store>
   </match>
 </label>`
 		udpConf := `<label @SYSLOG_RECEIVER>
+  <filter **>
+	@type parse_json_field
+	json_fields  message
+	merge_json_log false
+	replace_json_log true
+  </filter>
   <match **>
-  @type copy
+    @type copy
     <store>
-      @type remote_syslog
-      @id syslog_receiver
-      host sl.svc.messaging.cluster.local
-      port 9654
-      rfc rfc5424
-      facility user
-      severity debug
-      program fluentd
-      protocol udp
-      packet_size 4096
-      <buffer>
-        @type file
-        path '/var/lib/fluentd/syslog_receiver'
-        flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-        flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-        flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-        retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-        retry_forever true
-        queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-        chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-        overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-      </buffer>
+    	@type remote_syslog
+    	@id syslog_receiver
+    	host sl.svc.messaging.cluster.local
+    	port 9654
+    	rfc rfc5424
+    	facility user
+        severity debug
+    	protocol udp
+    	packet_size 4096
+        <buffer >
+    		@type file
+    		path '/var/lib/fluentd/syslog_receiver'
+    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+    		retry_forever true
+    		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+    	</buffer>
     </store>
   </match>
 </label>`
 		tcpWithTLSConf := `<label @SYSLOG_RECEIVER>
+  <filter **>
+	@type parse_json_field
+	json_fields  message
+	merge_json_log false
+	replace_json_log true
+  </filter>
   <match **>
     @type copy
     <store>
-      @type remote_syslog
-      @id syslog_receiver
-      host sl.svc.messaging.cluster.local
-      port 9654
-      rfc rfc5424
-      facility user
-      severity debug
-      program fluentd
-      protocol tcp
-      packet_size 4096
-      tls true
-      ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
-      verify_mode true
-      timeout 60
-      timeout_exception true
-      keep_alive true
-      keep_alive_idle 75
-      keep_alive_cnt 9
-      keep_alive_intvl 7200
-      <buffer>
-        @type file
-        path '/var/lib/fluentd/syslog_receiver'
-        flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-        flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-        flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-        retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-        retry_forever true
-        queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-        chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-        overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-      </buffer>
+    	@type remote_syslog
+    	@id syslog_receiver
+    	host sl.svc.messaging.cluster.local
+    	port 9654
+    	rfc rfc5424
+    	facility user
+        severity debug
+    	protocol tcp
+    	packet_size 4096
+        tls true
+        ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
+        verify_mode true
+        timeout 60
+        timeout_exception true
+        keep_alive true
+        keep_alive_idle 75
+        keep_alive_cnt 9
+        keep_alive_intvl 7200
+        <buffer >
+    		@type file
+    		path '/var/lib/fluentd/syslog_receiver'
+    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+    		retry_forever true
+    		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+    	</buffer>
     </store>
   </match>
 </label>`
 		udpWithTLSConf := `<label @SYSLOG_RECEIVER>
+  <filter **>
+	@type parse_json_field
+	json_fields  message
+	merge_json_log false
+	replace_json_log true
+  </filter>
   <match **>
     @type copy
     <store>
-      @type remote_syslog
-      @id syslog_receiver
-      host sl.svc.messaging.cluster.local
-      port 9654
-      rfc rfc5424
-      facility user
-      severity debug
-      program fluentd
-      protocol udp
-      packet_size 4096
-      tls true
-      ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
-      verify_mode true
-      <buffer>
-        @type file
-        path '/var/lib/fluentd/syslog_receiver'
-        flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-        flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-        flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-        retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-        retry_forever true
-        queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-        chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-        overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-      </buffer>
+    	@type remote_syslog
+    	@id syslog_receiver
+    	host sl.svc.messaging.cluster.local
+    	port 9654
+    	rfc rfc5424
+    	facility user
+        severity debug
+    	protocol udp
+    	packet_size 4096
+        tls true
+        ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
+        verify_mode true
+        <buffer >
+    		@type file
+    		path '/var/lib/fluentd/syslog_receiver'
+    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+    		retry_forever true
+    		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+    	</buffer>
     </store>
   </match>
 </label>`

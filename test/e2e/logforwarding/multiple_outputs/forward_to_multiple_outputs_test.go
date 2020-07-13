@@ -13,6 +13,7 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/helpers"
 	eologgingv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -129,7 +130,7 @@ var _ = Describe("LogForwarding", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(selectors)
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, selectors)
 		})
 	})
 })

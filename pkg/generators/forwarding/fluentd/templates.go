@@ -13,6 +13,7 @@ var templateRegistry = []string{
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
 	outputLabelConfNoretryTemplate,
+	outputLabelConfJsonParseNoretryTemplate,
 	storeElasticsearchTemplate,
 	forwardTemplate,
 	storeSyslogTemplateOld,
@@ -526,6 +527,21 @@ const outputLabelConfNoretryTemplate = `{{- define "outputLabelConfNoRetry" -}}
 </label>
 {{- end}}`
 
+const outputLabelConfJsonParseNoretryTemplate = `{{- define "outputLabelConfJsonParseNoRetry" -}}
+<label {{.LabelName}}>
+  <filter **>
+	@type parse_json_field
+	json_fields  message
+	merge_json_log false
+	replace_json_log true
+  </filter>
+  <match **>
+    @type copy
+{{include .StoreTemplate . "" | indent 4}}
+  </match>
+</label>
+{{- end}}`
+
 const forwardTemplate = `{{- define "forward" -}}
 # https://docs.fluentd.org/v1.0/articles/in_forward
 @type forward
@@ -632,16 +648,27 @@ const storeSyslogTemplateOld = `{{- define "storeSyslogOld" -}}
 //      hostname ${hostname}
 const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 <store>
-  @type remote_syslog
-  @id {{.StoreID}}
-  host {{.Host}}
-  port {{.Port}}
-  rfc {{.Rfc}}
-  facility user
-  severity debug
-  program fluentd
-  protocol {{.Protocol}}
-  packet_size 4096
+	@type remote_syslog
+	@id {{.StoreID}}
+	host {{.Host}}
+	port {{.Port}}
+	rfc {{.Rfc}}
+	facility {{.Facility}}
+    severity {{.Severity}}
+	{{if .Target.Syslog.AppName -}}
+	appname {{.AppName}}
+	{{end -}}
+	{{if .Target.Syslog.MsgID -}}
+	msgid {{.MsgID}}
+	{{end -}}
+	{{if .Target.Syslog.ProcID -}}
+	procid {{.ProcID}}
+	{{end -}}
+	{{if .Target.Syslog.Tag -}}
+	program {{.Tag}}
+	{{end -}}
+	protocol {{.Protocol}}
+	packet_size 4096
 {{ if .Target.Secret -}}
   tls true
   ca_file '{{ .SecretPath "ca-bundle.crt"}}'
@@ -655,18 +682,24 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
   keep_alive_cnt 9
   keep_alive_intvl 7200
 {{ end -}}
-  <buffer>
-    @type file
-    path '{{.BufferPath}}'
-    flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-    retry_forever true
-    queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-    overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-  </buffer>
+	{{if .PayloadKey -}}
+	<format>
+	  @type single_value
+	  message_key {{.PayloadKey}}
+	</format>
+	{{end -}}
+	<buffer {{.ChunkKeys}}>
+		@type file
+		path '{{.BufferPath}}'
+		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+		retry_forever true
+		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+	</buffer>
 </store>
 {{- end}}`
 

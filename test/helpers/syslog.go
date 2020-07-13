@@ -85,20 +85,21 @@ input(type="imudp" port="24224" ruleset="test")
 	ruleSetRfc5424 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc5424"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_DebugFormat")
+    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
 
 	ruleSetRfc3164 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc3164"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_DebugFormat")
+    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
+	// includes both rfc parsers
 	ruleSetRfc3164Rfc5424 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc3164","rsyslog.rfc5424"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_DebugFormat")
+    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
 )
@@ -107,22 +108,22 @@ ruleset(name="test" parser=["rsyslog.rfc3164","rsyslog.rfc5424"]){
 type SyslogRfc int
 
 const (
-	// Rfc3164 rfc3164
-	Rfc3164 SyslogRfc = iota
-	// Rfc5424 rfc5424
-	Rfc5424
-	// Rfc3164Rfc5424 either rfc3164 or rfc5424
-	Rfc3164Rfc5424
+	// RFC3164 rfc3164
+	RFC3164 SyslogRfc = iota
+	// RFC5424 rfc5424
+	RFC5424
+	// RFC3164RFC5424 either rfc3164 or rfc5424
+	RFC3164RFC5424
 )
 
 func (e SyslogRfc) String() string {
 	switch e {
-	case Rfc3164:
-		return "Rfc3164"
-	case Rfc5424:
-		return "Rfc5424"
-	case Rfc3164Rfc5424:
-		return "Rfc3164 or Rfc5424"
+	case RFC3164:
+		return "RFC3164"
+	case RFC5424:
+		return "RFC5424"
+	case RFC3164RFC5424:
+		return "RFC3164 or RFC5424"
 	default:
 		return "Unknown rfc"
 	}
@@ -130,11 +131,11 @@ func (e SyslogRfc) String() string {
 
 func generateRsyslogConf(conf string, rfc SyslogRfc) string {
 	switch rfc {
-	case Rfc5424:
+	case RFC5424:
 		return strings.Join([]string{conf, ruleSetRfc5424}, "\n")
-	case Rfc3164:
+	case RFC3164:
 		return strings.Join([]string{conf, ruleSetRfc3164}, "\n")
-	case Rfc3164Rfc5424:
+	case RFC3164RFC5424:
 		return strings.Join([]string{conf, ruleSetRfc3164Rfc5424}, "\n")
 	}
 	return "Invalid Conf"
@@ -151,11 +152,11 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	if len(pods.Items) == 0 {
 		return false, errors.New("No pods found for syslog receiver")
 	}
-	logger.Debugf("Pod %s", pods.Items[0].Name)
+	podName := pods.Items[0].Name
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
+		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, podName, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
 			return false, err
 		}
@@ -189,10 +190,10 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	logger.Debugf("running expression %s", cmd)
 	var value string
 
-	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err = wait.Poll(defaultRetryInterval, timeToWait, func() (bool, error) {
 		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 		value = strings.TrimSpace(output)
 		return true, nil

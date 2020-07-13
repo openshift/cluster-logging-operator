@@ -40,7 +40,7 @@ var _ = Describe("CLO Managed ClusterLogForwarder", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "elasticsearch"})
 		}, helpers.DefaultCleanUpTimeout)
 
 		It("should default to forwarding logs to the spec'd logstore", func() {

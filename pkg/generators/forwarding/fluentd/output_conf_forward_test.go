@@ -58,7 +58,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 	   <buffer>
 	     @type file
 	     path '/var/lib/fluentd/secureforward_receiver'
-	     queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+	     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
 	     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
 	     flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
 	     flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
@@ -102,7 +102,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 			  <buffer>
 				@type file
 				path '/var/lib/fluentd/secureforward_receiver'
-				queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
 				chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
 				flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
 				flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"

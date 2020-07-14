@@ -22,6 +22,9 @@ check: generate fmt test-unit
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
 	$(MAKE) lint
 
+openshift-client:
+	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
+
 # Download tools if not available on local PATH.
 operator-sdk:
 	@type -p operator-sdk > /dev/null || bash hack/get-operator-sdk.sh
@@ -81,9 +84,13 @@ generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@echo generating code
 	@$(MAKE) operator-sdk
+	@$(MAKE) openshift-client
 	@operator-sdk generate k8s
 	@operator-sdk generate crds
 	@mv deploy/crds/logging.openshift.io_clusterlogforwarders_crd.yaml $(MANIFESTS)
+	@echo patching metadata crd singeltons
+	@oc kustomize $(MANIFESTS) > $(MANIFESTS)/logging.openshift.io_clusterlogforwarders_crd.patched.yaml
+	@mv $(MANIFESTS)/logging.openshift.io_clusterlogforwarders_crd.patched.yaml $(MANIFESTS)/logging.openshift.io_clusterlogforwarders_crd.yaml
 	@rm -rf deploy
 	@$(MAKE) fmt
 	@touch $@

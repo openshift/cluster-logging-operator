@@ -108,8 +108,9 @@ var _ = Describe("Generating fluentd config", func() {
   path "/var/log/containers/*_project1-namespace_*.log", "/var/log/containers/*_project2-namespace_*.log"
   exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
   pos_file "/var/log/es-containers.log.pos"
+  pos_file_compaction_interval 300
   refresh_interval 5
-  rotate_wait 5
+  rotate_wait 1
   tag kubernetes.*
   read_from_head "true"
   @label @CONCAT
@@ -200,8 +201,9 @@ var _ = Describe("Generating fluentd config", func() {
 				path "/var/log/containers/*.log"
 				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
+				pos_file_compaction_interval 300
 				refresh_interval 5
-				rotate_wait 5
+				rotate_wait 1
 				tag kubernetes.*
 				read_from_head "true"
 				@label @CONCAT
@@ -477,8 +479,9 @@ var _ = Describe("Generating fluentd config", func() {
 				<buffer>
 					@type file
 					path '/var/lib/fluentd/secureforward_receiver'
-					queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+					queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
 					chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
+					total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 					flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
 					flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 					flush_thread_count "#{ENV['FLUSH_THREAD_COUNT'] || 2}"
@@ -584,8 +587,9 @@ var _ = Describe("Generating fluentd config", func() {
 				path "/var/log/containers/*.log"
 				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
+				pos_file_compaction_interval 300
 				refresh_interval 5
-				rotate_wait 5
+				rotate_wait 1
 				tag kubernetes.*
 				read_from_head "true"
 				@label @CONCAT
@@ -612,6 +616,7 @@ var _ = Describe("Generating fluentd config", func() {
               @label @INGRESS
               path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
               pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+              pos_file_compaction_interval 300
               tag linux-audit.log
               <parse>
                 @type viaq_host_audit
@@ -625,6 +630,7 @@ var _ = Describe("Generating fluentd config", func() {
               @label @INGRESS
               path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
               pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+              pos_file_compaction_interval 300
               tag k8s-audit.log
               <parse>
                 @type json
@@ -642,6 +648,7 @@ var _ = Describe("Generating fluentd config", func() {
               @label @INGRESS
               path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
               pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+              pos_file_compaction_interval 300
               tag openshift-audit.log
               <parse>
                 @type json
@@ -1002,8 +1009,9 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 							retry_forever true
-							queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 						</buffer>
 					</store>
@@ -1046,8 +1054,9 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 							retry_forever true
-							queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 						</buffer>
 					</store>
@@ -1091,8 +1100,9 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 							retry_forever true
-							queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 						</buffer>
 					</store>
@@ -1135,8 +1145,9 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 							retry_forever true
-							queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 						</buffer>
 					</store>
@@ -1180,8 +1191,9 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 							retry_forever true
-							queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 						</buffer>
 					</store>
@@ -1224,8 +1236,9 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 							retry_forever true
-							queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 						</buffer>
 					</store>
@@ -1269,8 +1282,9 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 							retry_forever true
-							queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 						</buffer>
 					</store>
@@ -1313,8 +1327,9 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 							retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 							retry_forever true
-							queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 						</buffer>
 					</store>

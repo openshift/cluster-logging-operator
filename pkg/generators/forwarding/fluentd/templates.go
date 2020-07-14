@@ -382,8 +382,9 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
   {{end -}}
   exclude_path ["/var/log/containers/{{.CollectorPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.LogStorePodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.VisualizationPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log"]
   pos_file "/var/log/es-containers.log.pos"
+  pos_file_compaction_interval 300
   refresh_interval 5
-  rotate_wait 5
+  rotate_wait 1
   tag kubernetes.*
   read_from_head "true"
   @label @CONCAT
@@ -412,6 +413,7 @@ const inputSourceHostAuditTemplate = `{{- define "inputSourceHostAuditTemplate" 
   @label @INGRESS
   path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
   pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+  pos_file_compaction_interval 300
   tag linux-audit.log
   <parse>
     @type viaq_host_audit
@@ -427,6 +429,7 @@ const inputSourceK8sAuditTemplate = `{{- define "inputSourceK8sAuditTemplate" -}
   @label @INGRESS
   path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
   pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+  pos_file_compaction_interval 300
   tag k8s-audit.log
   <parse>
     @type json
@@ -446,6 +449,7 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
   @label @INGRESS
   path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
   pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+  pos_file_compaction_interval 300
   tag openshift-audit.log
   <parse>
     @type json
@@ -563,8 +567,9 @@ tls_cert_path {{ .SecretPath "ca-bundle.crt"}}
 <buffer>
   @type file
   path '{{.BufferPath}}'
-  queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+  queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
   chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
+  total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
   flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
   flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
   flush_thread_count "#{ENV['FLUSH_THREAD_COUNT'] || 2}"
@@ -626,8 +631,9 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
     flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
     retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
     retry_forever true
-    queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+    total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
     overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
   </buffer>
 </store>
@@ -696,8 +702,9 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 		retry_forever true
-		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    		queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+    		total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 	</buffer>
 </store>

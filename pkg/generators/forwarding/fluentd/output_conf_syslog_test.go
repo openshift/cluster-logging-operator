@@ -116,7 +116,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
   <match **>
   @type copy
     <store>
-<<<<<<< HEAD
       @type remote_syslog
       @id syslog_receiver
       host sl.svc.messaging.cluster.local

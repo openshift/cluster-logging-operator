@@ -5,6 +5,7 @@ set -e
 MANIFESTS_DIR=${1:-"manifests/${OCP_VERSION}"}
 CLF_CRD_FILE="logging.openshift.io_clusterlogforwarders_crd.yaml"
 CLO_CRD_FILE="logging.openshift.io_clusterloggings_crd.yaml"
+COL_CRD_FILE="logging.openshift.io_collectors_crd.yaml"
 
 echo "--------------------------------------------------------------"
 echo "Generate k8s golang code"
@@ -16,6 +17,7 @@ echo "Generate CRDs for apiVersion v1beta1"
 echo "--------------------------------------------------------------"
 operator-sdk generate crds --crd-version v1beta1
 mv "deploy/crds/${CLO_CRD_FILE}" "${MANIFESTS_DIR}"
+mv "deploy/crds/${COL_CRD_FILE}" "${MANIFESTS_DIR}"
 
 echo "--------------------------------------------------------------"
 echo "Generate CRDs for apiVersion v1"

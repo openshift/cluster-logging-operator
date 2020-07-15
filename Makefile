@@ -85,12 +85,7 @@ $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@echo generating code
 	@$(MAKE) operator-sdk
 	@$(MAKE) openshift-client
-	@operator-sdk generate k8s
-	@operator-sdk generate crds
-	@mv deploy/crds/logging.openshift.io_clusterlogforwarders_crd.yaml $(MANIFESTS)
-	@echo patching metadata crd singeltons
-	@oc kustomize $(MANIFESTS) > $(MANIFESTS)/logging.openshift.io_clusterlogforwarders_crd.patched.yaml
-	@mv $(MANIFESTS)/logging.openshift.io_clusterlogforwarders_crd.patched.yaml $(MANIFESTS)/logging.openshift.io_clusterlogforwarders_crd.yaml
+	@bash ./hack/generate-crd.sh
 	@rm -rf deploy
 	@$(MAKE) fmt
 	@touch $@

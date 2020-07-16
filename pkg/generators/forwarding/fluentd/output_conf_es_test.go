@@ -101,7 +101,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 				retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 				retry_forever true
-				queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 				chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
 				overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 			</buffer>
@@ -145,7 +145,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 				retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 				retry_forever true
-				queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 				chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
 				overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 			</buffer>
@@ -203,7 +203,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 				retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 				retry_forever true
-				queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 				chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
 				overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 			</buffer>
@@ -243,7 +243,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 				retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
 				retry_forever true
-				queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 				chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
 				overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
 			</buffer>

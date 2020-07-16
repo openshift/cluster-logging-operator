@@ -86,7 +86,6 @@ $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@$(MAKE) operator-sdk
 	@$(MAKE) openshift-client
 	@bash ./hack/generate-crd.sh
-	@rm -rf deploy
 	@$(MAKE) fmt
 	@touch $@
 

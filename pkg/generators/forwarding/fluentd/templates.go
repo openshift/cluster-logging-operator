@@ -716,9 +716,11 @@ brokers {{.Brokers}}
 default_topic {{.Topic}}
 use_event_time true
 {{ if .Target.Secret -}}
+{{ $tlsCert := .SecretPath "tls.crt" }}
+{{ $tlsKey := .SecretPath "tls.key" }}
 ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
-ssl_client_cert '{{ .SecretPath "tls.crt"}}'
-ssl_client_cert_key '{{ .SecretPath "tls.key"}}'
+ssl_client_cert "#{File.exist?('{{ $tlsCert }}') ? '{{ $tlsCert }}' : use_nil}"
+ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : use_nil}"
 {{ end -}}
 <format>
   @type json

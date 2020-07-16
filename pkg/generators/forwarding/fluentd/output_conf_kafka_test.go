@@ -83,8 +83,8 @@ var _ = Describe("Generating external kafka server output store config block", f
            default_topic topic
            use_event_time true
            ssl_ca_cert '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
-           ssl_client_cert '/var/run/ocp-collector/secrets/some-secret/tls.crt'
-           ssl_client_cert_key '/var/run/ocp-collector/secrets/some-secret/tls.key'
+           ssl_client_cert "#{File.exist?('/var/run/ocp-collector/secrets/some-secret/tls.crt') ? '/var/run/ocp-collector/secrets/some-secret/tls.crt' : use_nil}"
+           ssl_client_cert_key "#{File.exist?('/var/run/ocp-collector/secrets/some-secret/tls.key') ? '/var/run/ocp-collector/secrets/some-secret/tls.key' : use_nil}"
            <format>
                @type json
            </format>

@@ -6,6 +6,7 @@ import (
 )
 
 //Collector is an instance of a collector
+//
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=true
 type Collector struct {
@@ -15,12 +16,23 @@ type Collector struct {
 }
 
 //CollectorSpec is the specification for deployable collectors
+//
 // +k8s:openapi-gen=true
 type CollectorSpec struct {
-	Type         CollectorType            `json:"spec,omitempty"`
-	Resources    *v1.ResourceRequirements `json:"resources,omitempty"`
-	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
+	// The type of Log Collection to configure
+	//
+	// +kubebuilder:validation:Enum:=promtail
+	Type CollectorType `json:"spec,omitempty"`
+
+	// +nullable
+	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Define which Nodes the Pods are scheduled on.
+	//
+	// +nullable
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
+
 	PromTailSpec `json:"promtail,omitempty"`
 }
 

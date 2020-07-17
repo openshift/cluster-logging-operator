@@ -15,18 +15,17 @@ import (
 
 func (engine *ConfigGenerator) generateSource(sources sets.String, appNs sets.String) (results []string, err error) {
 	// Order of templates matters.
-	templates := []string{}
-	nsPaths := []string{}
-	if sources.Has(string(logging.InputNameInfrastructure)) {
+	var templates, nsPaths []string
+	if sources.Has(logging.InputNameInfrastructure) {
 		templates = append(templates, "inputSourceJournalTemplate")
 	}
-	if sources.Has(string(logging.InputNameApplication)) {
+	if sources.Has(logging.InputNameApplication) {
 		templates = append(templates, "inputSourceContainerTemplate")
 		for _, ns := range appNs.List() {
 			nsPaths = append(nsPaths, fmt.Sprintf("\"/var/log/containers/*_%s_*.log\"", ns))
 		}
 	}
-	if sources.Has(string(logging.InputNameAudit)) {
+	if sources.Has(logging.InputNameAudit) {
 		templates = append(templates, "inputSourceHostAuditTemplate")
 		templates = append(templates, "inputSourceK8sAuditTemplate")
 		templates = append(templates, "inputSourceOpenShiftAuditTemplate")

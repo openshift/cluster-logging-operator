@@ -46,6 +46,7 @@ type log struct {
 	Timestamp        string            `json:"@timestamp"`
 	IndexName        string            `json:"viaq_index_name"`
 	MessageID        string            `json:"viaq_msg_id"`
+	OpenshiftLabels  string            `json:"openshift"`
 }
 
 func ParseLogs(in string) (logs, error) {
@@ -66,6 +67,19 @@ func (l logs) ByIndex(prefix string) logs {
 	filtered := []log{}
 	for _, entry := range l {
 		if strings.HasPrefix(entry.IndexName, prefix) {
+			filtered = append(filtered, entry)
+		}
+	}
+	return filtered
+}
+
+func (l logs) ByOpenshiftLabel(label string) logs {
+	filtered := []log{}
+	for _, entry := range l {
+		if len(entry.OpenshiftLabels) == 0 {
+			continue
+		}
+		if strings.Contains(entry.OpenshiftLabels, label) {
 			filtered = append(filtered, entry)
 		}
 	}

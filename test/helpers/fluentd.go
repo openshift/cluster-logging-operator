@@ -172,8 +172,26 @@ func (fluent *fluentReceiverLogStore) HasAuditLogs(timeToWait time.Duration) (bo
 	return fluent.hasLogs("/tmp/audit.logs", timeToWait)
 }
 
-func (es *fluentReceiverLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
+func (fluent *fluentReceiverLogStore) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
 	return "Not Found", fmt.Errorf("Not implemented")
+}
+
+func (fluent *fluentReceiverLogStore) RetrieveLogs() (map[string]string, error) {
+	result := map[string]string{
+		"infra": "",
+		"audit": "",
+		"app":   "",
+	}
+	var err error
+	for key := range result {
+		var s string
+		s, err = fluent.logs(fmt.Sprintf("/tmp/%s.logs", key), 30*time.Second)
+		if err != nil {
+			continue
+		}
+		result[key] = s
+	}
+	return result, err
 }
 
 func (fluent *fluentReceiverLogStore) ClusterLocalEndpoint() string {

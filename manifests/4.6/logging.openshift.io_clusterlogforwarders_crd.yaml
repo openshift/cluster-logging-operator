@@ -221,6 +221,11 @@ spec:
                       items:
                         type: string
                       type: array
+                    labels:
+                      additionalProperties:
+                        type: string
+                      description: Labels lists labels applied to this pipeline
+                      type: object
                     name:
                       description: Name is optional, but must be unique in the `pipelines`
                         list if provided.

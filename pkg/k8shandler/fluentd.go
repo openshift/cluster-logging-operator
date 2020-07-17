@@ -209,8 +209,8 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 		fluentdName,
 		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"fluent.conf":          fluentConf,
-			"run.sh":               string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/run.sh")),
+			"fluent.conf": fluentConf,
+			"run.sh":      string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/run.sh")),
 		},
 	)
 

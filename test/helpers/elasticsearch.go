@@ -142,6 +142,10 @@ func (es *ElasticLogStore) GrepLogs(expr string, timeToWait time.Duration) (stri
 	return "Not Found", fmt.Errorf("Not implemented")
 }
 
+func (es *ElasticLogStore) RetrieveLogs() (map[string]string, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
+
 func (es *ElasticLogStore) ClusterLocalEndpoint() string {
 	panic("Not implemented")
 }

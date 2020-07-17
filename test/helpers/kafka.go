@@ -67,6 +67,10 @@ func (kr *kafkaReceiver) GrepLogs(expr string, timeToWait time.Duration) (string
 	return "Not Found", fmt.Errorf("Not implemented")
 }
 
+func (kr *kafkaReceiver) RetrieveLogs() (map[string]string, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
+
 func (kr *kafkaReceiver) ClusterLocalEndpoint() string {
 	return kafka.ClusterLocalEndpoint(OpenshiftLoggingNS)
 }

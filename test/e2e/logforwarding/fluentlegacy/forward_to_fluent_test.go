@@ -79,7 +79,7 @@ var _ = Describe("LogForwarding prior to LF feature", func() {
 					return e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Delete(secret.ObjectMeta.Name, nil)
 				})
 
-				components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+				components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 				cr := helpers.NewClusterLogging(components...)
 				cr.ObjectMeta.Annotations[k8shandler.ForwardingAnnotation] = "disabled"
 				if err := e2e.CreateClusterLogging(cr); err != nil {

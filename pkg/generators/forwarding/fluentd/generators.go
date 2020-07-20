@@ -37,30 +37,64 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (string, error) {
 	logger.DebugObject("Generating fluent.conf using %s", forwarding)
 	//sanitize here
-	var sourceInputLabels []string
-	var sourceToPipelineLabels []string
-	var pipelineToOutputLabels []string
-	var outputLabels []string
-	var err error
+	var (
+		logTypes               sets.String
+		appNs                  sets.String
+		sourceInputLabels      []string
+		pipelineNames          map[logforward.LogSourceType][]string
+		sourceToPipelineLabels []string
+		pipelineToOutputLabels []string
+		outputLabels           []string
+		err                    error
+	)
 
-	logTypes, appNs := gatherLogSourceTypes(forwarding.Pipelines)
+	// Provide logTypes for legacy forwarding protocols w/o a user-provided
+	// LogFowarding instance to enable logTypes and appNs for template generation.
+	if engine.includeLegacyForwardConfig || engine.includeLegacySyslogConfig {
+		logTypes = sets.NewString(
+			string(logforward.LogSourceTypeApp),
+			string(logforward.LogSourceTypeAudit),
+			string(logforward.LogSourceTypeInfra),
+		)
+		pipelineNames = map[logforward.LogSourceType][]string{
+			logforward.LogSourceTypeApp:   {},
+			logforward.LogSourceTypeAudit: {},
+			logforward.LogSourceTypeInfra: {},
+		}
+	} else {
+		logTypes, appNs = gatherLogSourceTypes(forwarding.Pipelines)
+		pipelineNames = mapSourceTypesToPipelineNames(forwarding.Pipelines)
+	}
 
-	if sourceInputLabels, err = engine.generateSource(logTypes, appNs); err != nil {
+	sourceInputLabels, err = engine.generateSource(logTypes, appNs)
+	if err != nil {
 		logger.Tracef("Error generating source blocks: %v", err)
 		return "", err
 	}
-	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(mapSourceTypesToPipelineNames(forwarding.Pipelines)); err != nil {
+
+	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(pipelineNames)
+	if err != nil {
 		logger.Tracef("Error generating source to pipeline blocks: %v", err)
 		return "", err
 	}
 	sort.Strings(sourceToPipelineLabels)
-	if pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(forwarding.Pipelines); err != nil {
-		logger.Tracef("Error generating pipeline to output labels blocks: %v", err)
-		return "", err
+
+	// Omit generation for missing pipelines, i.e. legacy methods don't provide any
+	if len(forwarding.Pipelines) > 0 {
+		pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(forwarding.Pipelines)
+		if err != nil {
+			logger.Tracef("Error generating pipeline to output labels blocks: %v", err)
+			return "", err
+		}
 	}
-	if outputLabels, err = engine.generateOutputLabelBlocks(forwarding.Outputs); err != nil {
-		logger.Tracef("Error generating to output label blocks: %v", err)
-		return "", err
+
+	// Omit generation for missing outputs, i.e. legacy methods provide them via configmap
+	if len(forwarding.Outputs) > 0 {
+		outputLabels, err = engine.generateOutputLabelBlocks(forwarding.Outputs)
+		if err != nil {
+			logger.Tracef("Error generating to output label blocks: %v", err)
+			return "", err
+		}
 	}
 
 	data := struct {

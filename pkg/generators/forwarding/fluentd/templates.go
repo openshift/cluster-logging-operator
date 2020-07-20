@@ -714,6 +714,7 @@ const storeKafkaTemplate = `{{- define "storeKafka" -}}
 @type kafka2
 brokers {{.Brokers}}
 default_topic {{.Topic}}
+use_event_time true
 {{ if .Target.Secret -}}
 ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
 ssl_client_cert '{{ .SecretPath "tls.crt"}}'

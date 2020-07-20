@@ -41,35 +41,72 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 }
 
 //Generate the fluent.conf file using the forwarding information
-func (engine *ConfigGenerator) Generate(pipelines *logging.ClusterLogForwarderSpec, forwarderSpec *logging.ForwarderSpec) (string, error) {
-	logger.DebugObject("Generating fluent.conf using %s", pipelines)
-	logger.DebugObject("Generating fluent.conf using buffer config: %s", forwarderSpec)
+func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec, fwSpec *logging.ForwarderSpec) (string, error) {
+	logger.DebugObject("Generating fluent.conf using %s", clfSpec)
+	logger.DebugObject("Generating fluent.conf using buffer config: %s", fwSpec)
 
 	//sanitize here
-	var sourceInputLabels []string
-	var sourceToPipelineLabels []string
-	var pipelineToOutputLabels []string
-	var outputLabels []string
-	var err error
+	var (
+		inputs                 sets.String
+		namespaces             sets.String
+		routeMap               logging.RouteMap
+		sourceInputLabels      []string
+		sourceToPipelineLabels []string
+		pipelineToOutputLabels []string
+		outputLabels           []string
+		err                    error
+	)
 
-	inputs, namespaces := gatherSources(pipelines)
+	// Provide inputs and inputsPipelines for legacy forwarding protocols
+	// w/o a user-provided ClusterLogFowarder instance to enable inputs and
+	// inputs-to-pipelines a.k.a. route map template generation.
+	if engine.includeLegacyForwardConfig || engine.includeLegacySyslogConfig {
+		inputs = sets.NewString(
+			string(logging.InputNameInfrastructure),
+			string(logging.InputNameApplication),
+			string(logging.InputNameAudit),
+		)
 
-	if sourceInputLabels, err = engine.generateSource(inputs, namespaces); err != nil {
+		routeMap = logging.RouteMap{
+			logging.InputNameInfrastructure: sets.NewString(),
+			logging.InputNameApplication:    sets.NewString(),
+			logging.InputNameAudit:          sets.NewString(),
+		}
+	} else {
+		inputs, namespaces = gatherSources(clfSpec)
+		routeMap = inputsToPipelines(clfSpec.Pipelines)
+	}
+
+	sourceInputLabels, err = engine.generateSource(inputs, namespaces)
+	if err != nil {
+
 		logger.Tracef("Error generating source blocks: %v", err)
 		return "", err
 	}
-	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(inputsToPipelines(pipelines.Pipelines)); err != nil {
+
+	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(routeMap)
+	if err != nil {
 		logger.Tracef("Error generating source to pipeline blocks: %v", err)
 		return "", err
 	}
 	sort.Strings(sourceToPipelineLabels)
-	if pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(pipelines.Pipelines); err != nil {
-		logger.Tracef("Error generating pipeline to output labels blocks: %v", err)
-		return "", err
+
+	// Omit generation for missing pipelines, i.e. legacy methods don't provide any
+	if len(clfSpec.Pipelines) > 0 {
+		pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(clfSpec.Pipelines)
+		if err != nil {
+			logger.Tracef("Error generating pipeline to output labels blocks: %v", err)
+			return "", err
+		}
 	}
-	if outputLabels, err = engine.generateOutputLabelBlocks(pipelines.Outputs, forwarderSpec); err != nil {
-		logger.Tracef("Error generating to output label blocks: %v", err)
-		return "", err
+
+	// Omit generation for missing outputs, i.e. legacy methods provide them via configmap
+	if len(clfSpec.Outputs) > 0 {
+		outputLabels, err = engine.generateOutputLabelBlocks(clfSpec.Outputs, fwSpec)
+		if err != nil {
+			logger.Tracef("Error generating to output label blocks: %v", err)
+			return "", err
+		}
 	}
 
 	data := struct {

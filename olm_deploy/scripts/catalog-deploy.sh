@@ -6,7 +6,6 @@ export IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry
 export IMAGE_OAUTH_PROXY=${IMAGE_OAUTH_PROXY:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:elasticsearch-proxy}
 export IMAGE_LOGGING_CURATOR5=${IMAGE_LOGGING_CURATOR5:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:logging-curator5}
 export IMAGE_LOGGING_FLUENTD=${IMAGE_LOGGING_FLUENTD:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:logging-fluentd}
-export IMAGE_PROMTAIL=${IMAGE_PROMTAIL:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:promtail}
 export IMAGE_ELASTICSEARCH6=${IMAGE_ELASTICSEARCH6:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:logging-elasticsearch6}
 export IMAGE_LOGGING_KIBANA6=${IMAGE_LOGGING_KIBANA6:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:logging-kibana6}
 
@@ -18,7 +17,6 @@ if [ -n "${IMAGE_FORMAT:-}" ] ; then
   export IMAGE_OAUTH_PROXY=$(echo $IMAGE_FORMAT | sed -e "s,\${component},oauth-proxy,")
   export IMAGE_LOGGING_CURATOR5=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-curator5,")
   export IMAGE_LOGGING_FLUENTD=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-fluentd,")
-  export IMAGE_PROMTAIL=$(echo $IMAGE_FORMAT | sed -e "s,\${component},promtail,")
   export IMAGE_ELASTICSEARCH6=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-elasticsearch6,")
   export IMAGE_LOGGING_KIBANA6=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-kibana6,")
 fi
@@ -29,7 +27,6 @@ echo "cluster logging operator: ${IMAGE_CLUSTER_LOGGING_OPERATOR}"
 echo "oauth proxy: ${IMAGE_OAUTH_PROXY}"
 echo "curator5: ${IMAGE_LOGGING_CURATOR5}"
 echo "fluentd: ${IMAGE_LOGGING_FLUENTD}"
-echo "promtail: ${IMAGE_PROMTAIL}"
 echo "elastic6: ${IMAGE_ELASTICSEARCH6}"
 echo "kibana: ${IMAGE_LOGGING_KIBANA6}"
 

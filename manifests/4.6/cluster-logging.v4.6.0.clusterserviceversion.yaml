@@ -323,8 +323,6 @@ spec:
                     value: "quay.io/openshift/origin-logging-fluentd:latest"
                   - name: CURATOR_IMAGE
                     value: "quay.io/openshift/origin-logging-curator5:latest"
-                  - name: PROMTAIL_IMAGE
-                    value: "quay.io/openshift/origin-promtail:latest"
   customresourcedefinitions:
     owned:
     - name: clusterloggings.logging.openshift.io
@@ -355,8 +353,6 @@ spec:
         version: v1
       - kind: ClusterLogForwarder
         version: v1
-      - kind: Collector
-        version: v1alpha1
       specDescriptors:
       - description: The desired number of Kibana Pods for the Visualization component
         displayName: Kibana Size
@@ -487,15 +483,3 @@ spec:
         path: pipelines
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:pipelineConditions'
-    - name: collectors.logging.openshift.io
-      version: v1alpha1
-      kind: Collector
-      displayName: Log Collector
-      description: Log Collector spec to define log collection
-      specDescriptors:
-      - description: The type of log collector
-        displayName: Collector type
-        path: type
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:collectorType'
- 

@@ -48,7 +48,6 @@ run: deploy-elasticsearch-operator test-cleanup
 	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana6:latest \
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator6:latest \
 	OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
-	PROMTAIL_IMAGE=quay.io/openshift/origin-promtail:latest \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \

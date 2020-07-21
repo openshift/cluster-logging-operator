@@ -43,7 +43,6 @@ func TestHasCLORef(t *testing.T) {
 			Status: logging.ClusterLoggingStatus{},
 		},
 		ForwarderSpec: logging.ClusterLogForwarderSpec{},
-		Collector:     nil,
 	}
 
 	obj := &apps.Deployment{

@@ -92,8 +92,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
           pos_file "/var/log/es-containers.log.pos"
           pos_file_compaction_interval 1800
-          refresh_interval 1
-          rotate_wait 300
+          refresh_interval 5
+          rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
           @label @CONCAT
@@ -536,8 +536,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
           pos_file "/var/log/es-containers.log.pos"
           pos_file_compaction_interval 1800
-          refresh_interval 1
-          rotate_wait 300
+          refresh_interval 5
+          rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
           @label @CONCAT
@@ -981,8 +981,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
           pos_file "/var/log/es-containers.log.pos"
           pos_file_compaction_interval 1800
-          refresh_interval 1
-          rotate_wait 300
+          refresh_interval 5
+          rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
           @label @CONCAT

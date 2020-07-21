@@ -386,8 +386,8 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
   exclude_path ["/var/log/containers/{{.CollectorPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.LogStorePodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.VisualizationPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log"]
   pos_file "/var/log/es-containers.log.pos"
   pos_file_compaction_interval 1800
-  refresh_interval 1
-  rotate_wait 300
+  refresh_interval 5
+  rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
   @label @CONCAT

@@ -15,6 +15,10 @@ oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} openshift.io/cluster-monitorin
 oc annotate ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} openshift.io/node-selector="" --overwrite
 set -e
 
+echo "##################"
+echo "oc version"
+oc version
+echo "##################"
 
 # create the operatorgroup
 envsubst < olm_deploy/subscription/operator-group.yaml | oc apply -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -

@@ -560,13 +560,10 @@ var _ = Describe("LogForwarder", func() {
 						generatorPayload["marker"] = logGenPod
 					})
 					It("should take from payload_key", func() {
-						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
+						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
 							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 						}
-						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-						forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
-							Name: syslogDeployment.ObjectMeta.Name,
-						}
+						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 						forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
 						forwarder.Spec.Outputs[0].Syslog.Tag = "$.message.tag_key"
 						forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"

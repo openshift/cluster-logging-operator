@@ -214,6 +214,11 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 						v1.ResourceMemory: resource.MustParse("3Gi"),
 					},
 				},
+				ProxyResources: corev1.ResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourceMemory: resource.MustParse("128Mi"),
+					},
+				},
 			},
 			Nodes:            []elasticsearch.ElasticsearchNode{node},
 			ManagementState:  elasticsearch.ManagementStateManaged,

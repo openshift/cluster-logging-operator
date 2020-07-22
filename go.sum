@@ -713,8 +713,8 @@ github.com/opencontainers/runtime-tools v0.0.0-20181011054405-1d69bd0f9c39/go.mo
 github.com/openshift/api v0.0.0-20200602204738-768b7001fe69 h1:DURNJoru8nZfZi3hOxCQ7UrAOdC/qeR0Oal2qbq+tE8=
 github.com/openshift/api v0.0.0-20200602204738-768b7001fe69/go.mod h1:l6TGeqJ92DrZBuWMNKcot1iZUHfbYSJyBWHGgg6Dn6s=
 github.com/openshift/build-machinery-go v0.0.0-20200424080330-082bf86082cc/go.mod h1:1CkcsT3aVebzRBzVTSbiKSkJMsC/CASqxesfqEMfJEc=
-github.com/openshift/elasticsearch-operator v0.0.0-20200623181452-d07538bbcdb6 h1:LPG6CyYzaAzS8kRb6kItphtE84xkDDuq7fAWFb+2+Gg=
-github.com/openshift/elasticsearch-operator v0.0.0-20200623181452-d07538bbcdb6/go.mod h1:5XoHR+C3nWvH2B35mczYGBb9uliKwKBWIAmaT4EyPWA=
+github.com/openshift/elasticsearch-operator v0.0.0-20200722044541-14fae5dcddfd h1:bcpKEl7oq2JffVenX9N07lvnBJhJ6zZpJ0lIP9w9W0I=
+github.com/openshift/elasticsearch-operator v0.0.0-20200722044541-14fae5dcddfd/go.mod h1:Vir+Zs5Fq5UveEoo5dLMAv4HxSc5pcCB4GPneAIqhFs=
 github.com/openshift/origin v0.0.0-20160503220234-8f127d736703/go.mod h1:0Rox5r9C8aQn6j1oAOQ0c1uC86mYbUFObzjBRvUKHII=
 github.com/openshift/prom-label-proxy v0.1.1-0.20191016113035-b8153a7f39f1/go.mod h1:p5MuxzsYP1JPsNGwtjtcgRHHlGziCJJfztff91nNixw=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=

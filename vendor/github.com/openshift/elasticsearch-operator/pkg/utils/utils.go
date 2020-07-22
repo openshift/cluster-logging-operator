@@ -440,12 +440,9 @@ func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
 }
 
 func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelector) bool {
-	if (resource1.ContainerName == resource2.ContainerName) &&
-		(resource1.Resource == resource2.Resource) &&
-		(resource1.Divisor.Cmp(resource2.Divisor) == 0) {
-		return true
-	}
-	return false
+	return resource1.ContainerName == resource2.ContainerName &&
+		resource1.Resource == resource2.Resource &&
+		resource1.Divisor.Cmp(resource2.Divisor) == 0
 }
 
 func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {

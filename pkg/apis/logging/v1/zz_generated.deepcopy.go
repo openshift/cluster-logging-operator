@@ -570,6 +570,7 @@ func (in *ElasticsearchSpec) DeepCopyInto(out *ElasticsearchSpec) {
 		}
 	}
 	in.Storage.DeepCopyInto(&out.Storage)
+	in.ProxySpec.DeepCopyInto(&out.ProxySpec)
 	return
 }
 

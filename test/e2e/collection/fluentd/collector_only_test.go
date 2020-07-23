@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
-var _ = Describe("Fluentd Only Deployment", func() {
+var _ = Describe("[Collection] Provides only a fluentd daemonset", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -18,7 +18,7 @@ var _ = Describe("Fluentd Only Deployment", func() {
 		components []helpers.LogComponentType
 	)
 
-	Describe("when ClusterLogging is configured only with a collector", func() {
+	Describe("when ClusterLogging is configured only with a collection spec", func() {
 
 		BeforeEach(func() {
 			if err := e2e.DeployLogGenerator(); err != nil {

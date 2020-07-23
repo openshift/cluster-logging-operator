@@ -20,7 +20,7 @@ import (
 )
 
 // This test verifies we still support latency secure-forward with no ClusterLogForwarder.
-var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() {
+var _ = Describe("[ClusterLogging] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -35,7 +35,9 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 		}
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})
-	Describe("when ClusterLogging is configured with no ClusterLogForwarder instance and 'forwarder' to an administrator managed fluentd", func() {
+
+	Describe("when the output in `secure-forward.conf` confimap is a third-party managed fluentd", func() {
+
 		Context("and the receiver is secured", func() {
 
 			BeforeEach(func() {

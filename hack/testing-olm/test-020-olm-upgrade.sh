@@ -10,12 +10,17 @@ exit 0
 set -euo pipefail
 
 repo_dir="$( cd "$(dirname "$0")/../.." ; pwd -P )"
+source "$(dirname "${BASH_SOURCE[0]}" )/../lib/init.sh"
 source "$repo_dir/hack/testing-olm/utils"
 source "$repo_dir/hack/testing-olm/assertions"
 
+test_name=test-020-olm-upgrade
+mkdir -p /tmp/artifacts/junit
+os::test::junit::declare_suite_start "[ClusterLogging] Upgrade via OLM"
+
 start_seconds=$(date +%s)
 
-ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output/"}
+ARTIFACT_DIR=${ARTIFACT_DIR/$test_name:-"$repo_dir/_output/"}
 ARTIFACT_DIR="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
 if [ ! -d $ARTIFACT_DIR ] ; then
   mkdir -p $ARTIFACT_DIR
@@ -31,8 +36,11 @@ previous_version=$(echo $version | awk '{print $1 - 0.2}')
 
 cleanup(){
   local return_code="$?"
+
+  os::test::junit::declare_suite_end
+
   set +e
-  log::info "Running cleanup"
+  os::log::info "Running cleanup"
   end_seconds=$(date +%s)
   runtime="$(($end_seconds - $start_seconds))s"
   oc -n openshift-operators-redhat -o yaml get subscription elasticsearch-operator > $ARTIFACT_DIR/subscription-eo.yml 2>&1 ||:
@@ -47,12 +55,13 @@ cleanup(){
   oc -n ${NAMESPACE} -o yaml get catalogsource cluster-logging > $ARTIFACT_DIR/catalogsource-clo.yml 2>&1 ||:
   oc describe -n ${NAMESPACE} deployment/cluster-logging-operator > $ARTIFACT_DIR/cluster-logging-operator.describe.after_update  2>&1 ||:
 
-  get_all_olm_logs $outdir $runtime
+  get_all_olm_logs $ARTIFACT_DIR $runtime
 
   if [ "${DO_CLEANUP:-true}" == "true" ] ; then
       ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
       ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
   fi
+
   set -e
   exit ${return_code}
 }
@@ -60,15 +69,15 @@ trap cleanup exit
 
 
 # verify operator is ready
-log::info "Verifing elasticsearch-operator is ready..."
-try_until_text "oc -n openshift-operators-redhat get deployment elasticsearch-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
+os::log::info "Verifing elasticsearch-operator is ready..."
+os::cmd::try_until_text "oc -n openshift-operators-redhat get deployment elasticsearch-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 # deploy CLO
-log::info "Deploying cluster-logging-operator from marketplace..."
+os::log::info "Deploying cluster-logging-operator from marketplace..."
 deploy_marketplace_operator "openshift-logging" "cluster-logging-operator" "$previous_version" "cluster-logging"
 
 # verify operator is ready
-try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
+os::cmd::try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 # deploy cluster logging
 oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml
@@ -92,10 +101,9 @@ IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci
 if [ -n "${IMAGE_FORMAT:-}" ] ; then
   IMAGE_CLUSTER_LOGGING_OPERATOR=$(echo $IMAGE_FORMAT | sed -e "s,\${component},cluster-logging-operator,")
 fi
-try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.spec.template.spec.containers[0].image}" "${IMAGE_CLUSTER_LOGGING_OPERATOR}" ${TIMEOUT_MIN}
+os::cmd::try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.spec.template.spec.containers[0].image}" "${IMAGE_CLUSTER_LOGGING_OPERATOR}" ${TIMEOUT_MIN}
 
 # verify operator is ready
-try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
-
+os::cmd::try_until_text "oc -n openshift-logging get deployment cluster-logging-operator -o jsonpath={.status.updatedReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 assert_resources_exist

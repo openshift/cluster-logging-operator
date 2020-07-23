@@ -8,6 +8,9 @@ var (
 	defaultEsMemory     resource.Quantity = resource.MustParse("16Gi")
 	defaultEsCpuRequest resource.Quantity = resource.MustParse("1")
 
+	defaultEsProxyMemory     resource.Quantity = resource.MustParse("64Mi")
+	defaultEsProxyCpuRequest resource.Quantity = resource.MustParse("100m")
+
 	defaultKibanaMemory     resource.Quantity = resource.MustParse("736Mi")
 	defaultKibanaCpuRequest resource.Quantity = resource.MustParse("100m")
 

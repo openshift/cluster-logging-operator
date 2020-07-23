@@ -10,21 +10,21 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
-	"github.com/openshift/elasticsearch-operator/pkg/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	goctx "context"
+	loggingv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
+	"github.com/openshift/elasticsearch-operator/pkg/utils"
 
-	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
-	framework "github.com/operator-framework/operator-sdk/pkg/test"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/operator-framework/operator-sdk/pkg/test"
 )
 
 func GetFileContents(filePath string) []byte {
@@ -37,8 +37,8 @@ func GetFileContents(filePath string) []byte {
 	return contents
 }
 
-func ConfigMap(name, namespace string, labels, data map[string]string) *v1.ConfigMap {
-	return &v1.ConfigMap{
+func ConfigMap(name, namespace string, labels, data map[string]string) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -48,11 +48,11 @@ func ConfigMap(name, namespace string, labels, data map[string]string) *v1.Confi
 	}
 }
 
-func Secret(secretName string, namespace string, data map[string][]byte) *v1.Secret {
-	return &v1.Secret{
+func Secret(secretName string, namespace string, data map[string][]byte) *corev1.Secret {
+	return &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
-			APIVersion: v1.SchemeGroupVersion.String(),
+			APIVersion: corev1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -63,14 +63,89 @@ func Secret(secretName string, namespace string, data map[string][]byte) *v1.Sec
 	}
 }
 
-func WaitForNodeStatusCondition(t *testing.T, f *framework.Framework, namespace, name string, condition api.ElasticsearchNodeUpgradeStatus, retryInterval, timeout time.Duration) error {
-	elasticsearchCR := &api.Elasticsearch{}
+func WaitForPods(t *testing.T, f *test.Framework, namespace string, labels map[string]string, retryInterval, timeout time.Duration) (*corev1.PodList, error) {
+	pods := &corev1.PodList{}
+
+	err := wait.Poll(retryInterval, timeout, func() (bool, error) {
+		opts := []client.ListOption{
+			client.InNamespace(namespace),
+			client.MatchingLabels(labels),
+		}
+		err := f.Client.Client.List(context.TODO(), pods, opts...)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, err
+			}
+			return false, nil
+		}
+		return true, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pods, nil
+}
+
+func WaitForRolloutComplete(t *testing.T, f *test.Framework, namespace string, labels map[string]string, excludePods []string, retryInterval, timeout time.Duration) (*corev1.PodList, error) {
+	pods := &corev1.PodList{}
+	opts := []client.ListOption{
+		client.InNamespace(namespace),
+		client.MatchingLabels(labels),
+	}
+
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		err = f.Client.Client.List(context.TODO(), pods, opts...)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				t.Logf("Waiting for availability of pods with labels: %v in Namespace: %s \n", labels, namespace)
+				return false, nil
+			}
+			return false, err
+		}
+
+		readyPods := 0
+		for _, pod := range pods.Items {
+			for _, excluded := range excludePods {
+				if pod.GetName() == excluded {
+					// Retry we matched at least one excluded pod
+					return false, nil
+				}
+			}
+
+			for _, cond := range pod.Status.Conditions {
+				if cond.Type == corev1.PodReady {
+					readyPods = readyPods + 1
+				}
+			}
+		}
+
+		if len(pods.Items) == readyPods {
+			return true, nil
+		}
+
+		t.Logf("Waiting for availability of pods with labels: %v in Namespace: %s (%d/%d)\n",
+			labels, namespace, readyPods, len(pods.Items),
+		)
+
+		return false, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	t.Logf("Pods ready")
+	return pods, nil
+}
+
+func WaitForNodeStatusCondition(t *testing.T, f *test.Framework, namespace, name string, condition loggingv1.ElasticsearchNodeUpgradeStatus, retryInterval, timeout time.Duration) error {
+	elasticsearchCR := &loggingv1.Elasticsearch{}
 	elasticsearchName := types.NamespacedName{Name: name, Namespace: namespace}
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		err = f.Client.Get(goctx.TODO(), elasticsearchName, elasticsearchCR)
+		err = f.Client.Get(context.TODO(), elasticsearchName, elasticsearchCR)
 		if err != nil {
-			if apierrors.IsNotFound(err) {
+			if errors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s elasticsearch\n", name)
 				return false, nil
 			}
@@ -103,14 +178,14 @@ func WaitForNodeStatusCondition(t *testing.T, f *framework.Framework, namespace,
 	return nil
 }
 
-func WaitForClusterStatusCondition(t *testing.T, f *framework.Framework, namespace, name string, condition api.ClusterCondition, retryInterval, timeout time.Duration) error {
-	elasticsearchCR := &api.Elasticsearch{}
+func WaitForClusterStatusCondition(t *testing.T, f *test.Framework, namespace, name string, condition loggingv1.ClusterCondition, retryInterval, timeout time.Duration) error {
+	elasticsearchCR := &loggingv1.Elasticsearch{}
 	elasticsearchName := types.NamespacedName{Name: name, Namespace: namespace}
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		err = f.Client.Get(goctx.TODO(), elasticsearchName, elasticsearchCR)
+		err = f.Client.Get(context.TODO(), elasticsearchName, elasticsearchCR)
 		if err != nil {
-			if apierrors.IsNotFound(err) {
+			if errors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s elasticsearch\n", name)
 				return false, nil
 			}
@@ -139,11 +214,37 @@ func WaitForClusterStatusCondition(t *testing.T, f *framework.Framework, namespa
 	return nil
 }
 
+func WaitForReadyDeployment(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, replicas int,
+	retryInterval, timeout time.Duration) error {
+	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+		deployment, err := kubeclient.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				t.Logf("Waiting for availability of Deployment: %s in Namespace: %s \n", name, namespace)
+				return false, nil
+			}
+			return false, err
+		}
+
+		if int(deployment.Status.ReadyReplicas) >= replicas {
+			return true, nil
+		}
+		t.Logf("Waiting for full readiness of %s deployment (%d/%d)\n", name,
+			deployment.Status.ReadyReplicas, replicas)
+		return false, nil
+	})
+	if err != nil {
+		return err
+	}
+	t.Logf("Deployment ready (%d/%d)\n", replicas, replicas)
+	return nil
+}
+
 func WaitForStatefulset(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, replicas int, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		statefulset, err := kubeclient.AppsV1().StatefulSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
-			if apierrors.IsNotFound(err) {
+			if errors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s statefulset\n", name)
 				return false, nil
 			}
@@ -255,7 +356,7 @@ func WaitForIndexReplicas(t *testing.T, kubeclient kubernetes.Interface, namespa
 	return nil
 }
 
-func getMockedSecret(clusterName, namespace string) *v1.Secret {
+func getMockedSecret(clusterName, namespace string) *corev1.Secret {
 	return Secret(
 		clusterName,
 		namespace,

@@ -280,7 +280,10 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 			current, different := isDeploymentDifferent(current, kibanaDeployment)
 
 			// Check trustedCA certs have been updated or not by comparing the hash values in annotation.
-			if current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] != kibanaDeployment.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] {
+			currentTrustedCAHash := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
+			desiredTrustedCAHash := kibanaDeployment.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
+			if currentTrustedCAHash != desiredTrustedCAHash {
+				current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = desiredTrustedCAHash
 				different = true
 			}
 
@@ -757,7 +760,7 @@ func newKibanaPodSpec(cluster *logging.ClusterLogging, kibanaName string, elasti
 
 	addTrustedCAVolume := false
 	// If trusted CA bundle ConfigMap exists and its hash value is non-zero, mount the bundle.
-	if trustedCABundleCM != nil && hasTrustedCABundle(trustedCABundleCM) {
+	if hasTrustedCABundle(trustedCABundleCM) {
 		addTrustedCAVolume = true
 		kibanaProxyContainer.VolumeMounts = append(kibanaProxyContainer.VolumeMounts,
 			v1.VolumeMount{

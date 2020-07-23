@@ -1,6 +1,6 @@
 #!/bin/sh 
 set -eou pipefail
-OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-4.5}
+OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-4.6}
 export IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:cluster-logging-operator-registry}
 export IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:cluster-logging-operator}
 export IMAGE_OAUTH_PROXY=${IMAGE_OAUTH_PROXY:-registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:elasticsearch-proxy}

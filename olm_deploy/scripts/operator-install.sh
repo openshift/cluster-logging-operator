@@ -17,11 +17,11 @@ set -e
 
 
 # create the operatorgroup
-envsubst < olm_deploy/subscription/operator-group.yaml | oc create -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -
+envsubst < olm_deploy/subscription/operator-group.yaml | oc apply -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -
 
 # create the subscription
 export OPERATOR_PACKAGE_CHANNEL=\"$(grep name manifests/cluster-logging.package.yaml | grep  -oh "[0-9]\+\.[0-9]\+")\"
-envsubst < olm_deploy/subscription/subscription.yaml | oc create -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -
+envsubst < olm_deploy/subscription/subscription.yaml | oc apply -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -
 
 olm_deploy/scripts/wait_for_deployment.sh ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} cluster-logging-operator
 oc wait -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} --timeout=180s --for=condition=available deployment/cluster-logging-operator

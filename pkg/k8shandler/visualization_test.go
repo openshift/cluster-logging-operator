@@ -4,19 +4,16 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 //TODO: Remove this in the next release after removing old kibana code completely
@@ -46,9 +43,8 @@ func TestHasCLORef(t *testing.T) {
 			Spec:   logging.ClusterLoggingSpec{},
 			Status: logging.ClusterLoggingStatus{},
 		},
-		ForwardingRequest: nil,
-		ForwardingSpec:    v1alpha1.ForwardingSpec{},
-		Collector:         nil,
+		ForwarderSpec: logging.ClusterLogForwarderSpec{},
+		Collector:     nil,
 	}
 
 	obj := &apps.Deployment{

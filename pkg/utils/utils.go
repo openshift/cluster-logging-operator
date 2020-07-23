@@ -22,6 +22,7 @@ import (
 
 const (
 	DefaultWorkingDir = "/tmp/ocp-clo"
+	DefaultScriptsDir = "./scripts"
 	OsNodeLabel       = "kubernetes.io/os"
 	LinuxValue        = "linux"
 )
@@ -31,6 +32,7 @@ var COMPONENT_IMAGES = map[string]string{
 	"curator":  "CURATOR_IMAGE",
 	"fluentd":  "FLUENTD_IMAGE",
 	"promtail": "PROMTAIL_IMAGE",
+	"kibana":   "KIBANA_IMAGE",
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found
@@ -184,6 +186,14 @@ func GetShareDir() string {
 		return "/usr/share/logging"
 	}
 	return shareDir
+}
+
+func GetScriptsDir() string {
+	scriptsDir := os.Getenv("SCRIPTS_DIR")
+	if scriptsDir == "" {
+		return DefaultScriptsDir
+	}
+	return scriptsDir
 }
 
 func GetWorkingDirFileContents(filePath string) []byte {
@@ -389,12 +399,9 @@ func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
 }
 
 func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelector) bool {
-	if (resource1.ContainerName == resource2.ContainerName) &&
-		(resource1.Resource == resource2.Resource) &&
-		(resource1.Divisor.Cmp(resource2.Divisor) == 0) {
-		return true
-	}
-	return false
+	return resource1.ContainerName == resource2.ContainerName &&
+		resource1.Resource == resource2.Resource &&
+		resource1.Divisor.Cmp(resource2.Divisor) == 0
 }
 
 func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {

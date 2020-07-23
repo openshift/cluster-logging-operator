@@ -29,10 +29,9 @@ const (
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	"curator":  "CURATOR_IMAGE",
-	"fluentd":  "FLUENTD_IMAGE",
-	"promtail": "PROMTAIL_IMAGE",
-	"kibana":   "KIBANA_IMAGE",
+	"curator": "CURATOR_IMAGE",
+	"fluentd": "FLUENTD_IMAGE",
+	"kibana":  "KIBANA_IMAGE",
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found

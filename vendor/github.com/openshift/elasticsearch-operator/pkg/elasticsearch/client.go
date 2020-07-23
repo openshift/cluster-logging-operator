@@ -34,6 +34,8 @@ const (
 )
 
 type Client interface {
+	ClusterName() string
+
 	// Cluster Settings API
 	GetClusterNodeVersions() ([]string, error)
 	GetThresholdEnabled() (bool, error)
@@ -119,6 +121,10 @@ func (ec *esClient) SetSendRequestFn(fn FnEsSendRequest) {
 	ec.fnSendEsRequest = fn
 }
 
+func (ec *esClient) ClusterName() string {
+	return ec.cluster
+}
+
 func sendEsRequest(cluster, namespace string, payload *EsRequest, client k8sclient.Client) {
 	urlString := fmt.Sprintf("https://%s.%s.svc:9200/%s", cluster, namespace, payload.URI)
 	urlURL, err := url.Parse(urlString)
@@ -164,7 +170,8 @@ func sendEsRequest(cluster, namespace string, payload *EsRequest, client k8sclie
 	}
 
 	request.Header = ensureTokenHeader(request.Header)
-	httpClient := getClient(cluster, namespace, client)
+	// we use the insecure TLS client here because we are providing the SA token.
+	httpClient := getTLSClient(cluster, namespace, client)
 	resp, err := httpClient.Do(request)
 
 	if resp != nil {
@@ -179,7 +186,7 @@ func sendEsRequest(cluster, namespace string, payload *EsRequest, client k8sclie
 
 			// Not sure why, but just trying to reuse the request with the old client
 			// resulted in a 400 every time. Doing it this way got a 200 response as expected.
-			sendRequestWithOldClient(cluster, namespace, payload, client)
+			sendRequestWithMTlsClient(cluster, namespace, payload, client)
 			return
 		}
 
@@ -195,7 +202,7 @@ func sendEsRequest(cluster, namespace string, payload *EsRequest, client k8sclie
 	payload.Error = err
 }
 
-func sendRequestWithOldClient(clusterName, namespace string, payload *EsRequest, client client.Client) {
+func sendRequestWithMTlsClient(clusterName, namespace string, payload *EsRequest, client client.Client) {
 
 	urlString := fmt.Sprintf("https://%s.%s.svc:9200/%s", clusterName, namespace, payload.URI)
 	urlURL, err := url.Parse(urlString)
@@ -240,7 +247,7 @@ func sendRequestWithOldClient(clusterName, namespace string, payload *EsRequest,
 		return
 	}
 
-	httpClient := getOldClient(clusterName, namespace, client)
+	httpClient := getMTlsClient(clusterName, namespace, client)
 	resp, err := httpClient.Do(request)
 
 	if resp != nil {
@@ -287,7 +294,8 @@ func readSAToken(tokenFile string) (string, bool) {
 	return string(token), true
 }
 
-func getClient(clusterName, namespace string, client client.Client) *http.Client {
+// this client is used with the SA token, it does not present any client certs
+func getTLSClient(clusterName, namespace string, client client.Client) *http.Client {
 
 	// get the contents of the secret
 	extractSecret(clusterName, namespace, client)
@@ -308,13 +316,14 @@ func getClient(clusterName, namespace string, client client.Client) *http.Client
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: false,
 				RootCAs:            getRootCA(clusterName, namespace),
-				Certificates:       getClientCertificates(clusterName, namespace),
 			},
 		},
 	}
 }
 
-func getOldClient(clusterName, namespace string, client client.Client) *http.Client {
+// this client is used in the case where the SA token is not honored. it presents client certs
+// and validates the ES cluster CA cert
+func getMTlsClient(clusterName, namespace string, client client.Client) *http.Client {
 
 	// get the contents of the secret
 	extractSecret(clusterName, namespace, client)

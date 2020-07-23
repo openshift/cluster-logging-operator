@@ -150,6 +150,9 @@ type ElasticsearchSpec struct {
 
 	// +optional
 	RedundancyPolicy elasticsearch.RedundancyPolicyType `json:"redundancyPolicy"`
+
+	// Specification of the Elasticsearch Proxy component
+	ProxySpec `json:"proxy,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection

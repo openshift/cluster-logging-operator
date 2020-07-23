@@ -157,7 +157,7 @@ github.com/openshift/api/config/v1
 github.com/openshift/api/console/v1
 github.com/openshift/api/oauth/v1
 github.com/openshift/api/route/v1
-# github.com/openshift/elasticsearch-operator v0.0.0-20200623181452-d07538bbcdb6
+# github.com/openshift/elasticsearch-operator v0.0.0-20200722044541-14fae5dcddfd
 github.com/openshift/elasticsearch-operator/pkg/apis
 github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1
 github.com/openshift/elasticsearch-operator/pkg/elasticsearch

@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test"
 	core "k8s.io/api/core/v1"
@@ -422,7 +421,6 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 		cluster          *logging.ClusterLogging
 		ForwarderRequest *logging.ClusterLogForwarder
 		ForwarderSpec    logging.ClusterLogForwarderSpec
-		Collector        *loggingv1alpha1.CollectorSpec
 	}
 	tests := []struct {
 		name       string
@@ -486,7 +484,6 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 					},
 				},
 				ForwarderSpec: logging.ClusterLogForwarderSpec{},
-				Collector:     nil,
 			},
 		},
 	}
@@ -498,7 +495,6 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 				cluster:          tt.fields.cluster,
 				ForwarderRequest: tt.fields.ForwarderRequest,
 				ForwarderSpec:    tt.fields.ForwarderSpec,
-				Collector:        tt.fields.Collector,
 			}
 
 			config := &core.ConfigMap{

@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("LogForwarding", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 
@@ -41,7 +41,7 @@ var _ = Describe("LogForwarding", func() {
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})
 
-	Describe("when ClusterLogging is configured with 'forwarding' to multiple outputs", func() {
+	Describe("when multiple outputs are configured", func() {
 
 		Describe("and both are accepting logs", func() {
 

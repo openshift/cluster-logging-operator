@@ -161,8 +161,8 @@ wait_for_deployment_to_be_ready(){
   local namespace=$1
   local name=$2
   local timeout=$3
-  log::info "Waiting for $namespace/deployment/$name to be ready..."
-  try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
+  os::log::info "Waiting for $namespace/deployment/$name to be ready..."
+  os::cmd::try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
 }
 
 deploy_marketplace_operator(){

@@ -60,7 +60,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 								Name: pipelineSecret.ObjectMeta.Name,
 							},
 							Type: logging.OutputTypeElasticsearch,
-							URL:  fmt.Sprintf("%s.%s.svc:9200", elasticsearch.Name, elasticsearch.Namespace),
+							URL:  fmt.Sprintf("https://%s.%s.svc:9200", elasticsearch.Name, elasticsearch.Namespace),
 						},
 					},
 					Pipelines: []logging.PipelineSpec{

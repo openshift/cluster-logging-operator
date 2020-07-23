@@ -139,20 +139,24 @@ func newClusterLogForwarder(fluentRcv *apps.Deployment, elasticsearch *eologging
 	fluentdOutput := loggingv1.OutputSpec{
 		Name: fluentRcv.GetName(),
 		Type: loggingv1.OutputTypeFluentdForward,
-		URL:  fmt.Sprintf("%s.%s.svc:24224", fluentRcv.GetName(), fluentRcv.GetNamespace()),
+		URL:  fmt.Sprintf("tcp://%s.%s.svc:24224", fluentRcv.GetName(), fluentRcv.GetNamespace()),
 	}
 
 	elasticOutput := loggingv1.OutputSpec{
 		Name: elasticsearch.GetName(),
 		Type: loggingv1.OutputTypeElasticsearch,
-		URL:  fmt.Sprintf("%s.%s.svc:9200", elasticsearch.GetName(), elasticsearch.GetNamespace()),
 	}
 
+	var schema string
 	if pipelineSecret != nil {
+		schema = "https"
 		elasticOutput.Secret = &loggingv1.OutputSecretSpec{
 			Name: pipelineSecret.GetName(),
 		}
+	} else {
+		schema = "http"
 	}
+	elasticOutput.URL = fmt.Sprintf("%s://%s.%s.svc:9200", schema, elasticsearch.GetName(), elasticsearch.GetNamespace())
 
 	return &loggingv1.ClusterLogForwarder{
 		TypeMeta: metav1.TypeMeta{

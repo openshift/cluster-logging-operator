@@ -226,6 +226,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 		case len(status.Inputs[input.Name]) > 0:
 			badName("duplicate name: %q", input.Name)
 		default:
+			spec.Inputs = append(spec.Inputs, input)
 			status.Inputs.Set(input.Name, condReady)
 		}
 	}

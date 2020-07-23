@@ -531,6 +531,11 @@ var _ = DescribeTable("Normalizing rounnd trip of valid YAML specs",
 				},
 			},
 		}
+		// Allow "default" output, need a logstore.
+		request.cluster.Spec.LogStore = &logging.LogStoreSpec{
+			Type: logging.LogStoreTypeElasticsearch,
+		}
+
 		Expect(yaml.Unmarshal([]byte(yamlSpec), &request.ForwarderSpec)).To(Succeed())
 		spec, status := request.normalizeForwarder()
 		Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""), JSONString(status))
@@ -588,5 +593,17 @@ pipelines:
   name: test-audit
   outputRefs:
   - foo
+`),
+
+	Entry("with application input filter", `
+inputs:
+- name: foo
+  application:
+    namespaces: [x, y]
+pipelines:
+- inputRefs:
+  - foo
+  outputRefs:
+  - default
 `),
 )

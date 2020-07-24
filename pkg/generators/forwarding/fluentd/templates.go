@@ -711,12 +711,12 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
   keep_alive_intvl 7200
 {{ end -}}
 
-	{{if .PayloadKey -}}
+{{if .PayloadKey -}}
 	<format>
 	  @type single_value
 	  message_key {{.PayloadKey}}
 	</format>
-	{{end -}}
+{{end -}}
   <buffer {{.ChunkKeys}}>
     @type file
     path '{{.BufferPath}}'

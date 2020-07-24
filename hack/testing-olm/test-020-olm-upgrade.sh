@@ -3,10 +3,6 @@
 # of cluster logging by asserting CLO creates the resources
 # that begets the operands that make up logging.
 
-# TODO: Renable this test when the OLM schema validation regression(https://bugzilla.redhat.com/show_bug.cgi?id=1825330)
-# is resolved.
-exit 0
-
 set -euo pipefail
 
 repo_dir="$( cd "$(dirname "$0")/../.." ; pwd -P )"

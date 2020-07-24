@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -179,12 +180,21 @@ func GetFileContents(filePath string) []byte {
 	return contents
 }
 
+const defaultShareDir = "/usr/share/logging"
+
 func GetShareDir() string {
-	shareDir := os.Getenv("LOGGING_SHARE_DIR")
-	if shareDir == "" {
-		return "/usr/share/logging"
+	// shareDir is <repo-root>/files - try to find from working dir.
+	const sep = string(os.PathSeparator)
+	const repoRoot = sep + "cluster-logging-operator" + sep
+	wd, err := os.Getwd()
+	if err != nil {
+		return defaultShareDir
 	}
-	return shareDir
+	i := strings.LastIndex(wd, repoRoot)
+	if i >= 0 {
+		return filepath.Join(wd[0:i+len(repoRoot)] + "files")
+	}
+	return defaultShareDir
 }
 
 func GetScriptsDir() string {

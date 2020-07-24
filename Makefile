@@ -52,7 +52,6 @@ run: deploy-elasticsearch-operator test-cleanup
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
-	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	$(RUN_CMD) cmd/manager/main.go
 
 run-debug:
@@ -120,7 +119,6 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-unit:
-	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	LOG_LEVEL=fatal \
 	go test -cover -race ./pkg/...
 

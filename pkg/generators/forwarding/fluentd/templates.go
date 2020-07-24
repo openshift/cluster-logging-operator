@@ -673,7 +673,7 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 	{{if .Target.Syslog.Tag -}}
 	program {{.Tag}}
 	{{end -}}
-	protocol {{.Protocol}}
+	protocol {{.SyslogProtocol}}
 	packet_size 4096
 {{ if .Target.Secret -}}
   tls true

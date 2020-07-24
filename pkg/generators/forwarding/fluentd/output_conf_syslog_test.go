@@ -10,9 +10,10 @@ import (
 var _ = Describe("Generating external syslog server output store config blocks", func() {
 
 	var (
-		err       error
-		outputs   []logging.OutputSpec
-		generator *ConfigGenerator
+		err           error
+		outputs       []logging.OutputSpec
+		forwarderSpec *logging.ForwarderSpec
+		generator     *ConfigGenerator
 	)
 	Context("based on old syslog plugin", func() {
 
@@ -74,7 +75,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				}
 			})
 			It("should produce well formed output label config", func() {
-				results, err := generator.generateOutputLabelBlocks(outputs)
+				results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
 				Expect(results[0]).To(EqualTrimLines(tcpConf))
@@ -92,7 +93,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				}
 			})
 			It("should produce well formed output label config", func() {
-				results, err := generator.generateOutputLabelBlocks(outputs)
+				results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
 				Expect(results[0]).To(EqualTrimLines(tcpConf))
@@ -110,7 +111,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				}
 			})
 			It("should produce well formed output label config", func() {
-				results, err := generator.generateOutputLabelBlocks(outputs)
+				results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
 				Expect(results[0]).To(EqualTrimLines(udpConf))
@@ -149,18 +150,21 @@ var _ = Describe("Generating external syslog server output store config blocks",
         keep_alive_cnt 9
         keep_alive_intvl 7200
 		<buffer >
-    		@type file
-    		path '/var/lib/fluentd/syslog_receiver'
-    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-    		retry_forever true
-        	queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-        	total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-    	</buffer>
+        @type file
+        path '/var/lib/fluentd/syslog_receiver'
+        flush_mode interval
+        flush_interval 1s
+        flush_thread_count 2
+        flush_at_shutdown true
+        retry_type exponential_backoff
+        retry_wait 1s
+        retry_max_interval 300s
+        retry_forever true
+        queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+        total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+        chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+        overflow_action block
+      </buffer>
     </store>
   </match>
 </label>`
@@ -184,18 +188,21 @@ var _ = Describe("Generating external syslog server output store config blocks",
     	protocol udp
     	packet_size 4096
         <buffer >
-    		@type file
-    		path '/var/lib/fluentd/syslog_receiver'
-    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-    		retry_forever true
-        	queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-        	total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-    	</buffer>
+        @type file
+        path '/var/lib/fluentd/syslog_receiver'
+        flush_mode interval
+        flush_interval 1s
+        flush_thread_count 2
+        flush_at_shutdown true
+        retry_type exponential_backoff
+        retry_wait 1s
+        retry_max_interval 300s
+        retry_forever true
+        queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+        total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+        chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+        overflow_action block
+      </buffer>
     </store>
   </match>
 </label>`
@@ -229,17 +236,20 @@ var _ = Describe("Generating external syslog server output store config blocks",
         keep_alive_intvl 7200
         <buffer >
     		@type file
-    		path '/var/lib/fluentd/syslog_receiver'
-    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-    		retry_forever true
-        	queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-        	total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-    	</buffer>
+        path '/var/lib/fluentd/syslog_receiver'
+        flush_mode interval
+        flush_interval 1s
+        flush_thread_count 2
+        flush_at_shutdown true
+        retry_type exponential_backoff
+        retry_wait 1s
+        retry_max_interval 300s
+        retry_forever true
+        queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+        total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+        chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+        overflow_action block
+      </buffer>
     </store>
   </match>
 </label>`
@@ -266,18 +276,21 @@ var _ = Describe("Generating external syslog server output store config blocks",
         ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
         verify_mode true
         <buffer >
-    		@type file
-    		path '/var/lib/fluentd/syslog_receiver'
-    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-    		retry_forever true
-        	queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-        	total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-    	</buffer>
+        @type file
+        path '/var/lib/fluentd/syslog_receiver'
+        flush_mode interval
+        flush_interval 1s
+        flush_thread_count 2
+        flush_at_shutdown true
+        retry_type exponential_backoff
+        retry_wait 1s
+        retry_max_interval 300s
+        retry_forever true
+        queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+        total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+        chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+        overflow_action block
+      </buffer>
     </store>
   </match>
 </label>`
@@ -294,7 +307,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 				})
 				It("should produce well formed output label config", func() {
-					results, err := generator.generateOutputLabelBlocks(outputs)
+					results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
 					Expect(results[0]).To(EqualTrimLines(tcpConf))
@@ -314,7 +327,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 				})
 				It("should produce well formed output label config", func() {
-					results, err := generator.generateOutputLabelBlocks(outputs)
+					results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
 					Expect(results[0]).To(EqualTrimLines(tcpWithTLSConf))
@@ -334,7 +347,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 				})
 				It("should produce well formed output label config", func() {
-					results, err := generator.generateOutputLabelBlocks(outputs)
+					results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
 					Expect(results[0]).To(EqualTrimLines(udpConf))
@@ -354,7 +367,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 				})
 				It("should produce well formed output label config", func() {
-					results, err := generator.generateOutputLabelBlocks(outputs)
+					results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
 					Expect(results[0]).To(EqualTrimLines(udpWithTLSConf))

@@ -11,9 +11,10 @@ import (
 var _ = Describe("Generating fluentd secure forward output store config blocks", func() {
 
 	var (
-		err       error
-		outputs   []logging.OutputSpec
-		generator *ConfigGenerator
+		err           error
+		outputs       []logging.OutputSpec
+		forwarderSpec *logging.ForwarderSpec
+		generator     *ConfigGenerator
 	)
 	BeforeEach(func() {
 		generator, err = NewConfigGenerator(false, false, true)
@@ -35,7 +36,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		})
 
 		It("should produce well formed output label config", func() {
-			results, err := generator.generateOutputLabelBlocks(outputs)
+			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(`<label @SECUREFORWARD_RECEIVER>
@@ -59,17 +60,20 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 	     @type file
 	     path '/var/lib/fluentd/secureforward_receiver'
 	     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
-	     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
 	     total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-	     flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
-	     flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-	     flush_thread_count "#{ENV['FLUSH_THREAD_COUNT'] || 2}"
-	     retry_max_interval "#{ENV['FORWARD_RETRY_WAIT'] || '300'}"
+	     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
+       flush_mode interval
+	     flush_interval 5s       
+	     flush_at_shutdown true
+	     flush_thread_count 2
+       retry_type exponential_backoff
+       retry_wait 1s
+	     retry_max_interval 300s
 	     retry_forever true
 	     # the systemd journald 0.0.8 input plugin will just throw away records if the buffer
 	     # queue limit is hit - 'block' will halt further reads and keep retrying to flush the
-	     # buffer to the remote - default is 'exception' because in_tail handles that case
-	     overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'exception'}"
+	     # buffer to the remote - default is 'block' because in_tail handles that case
+	     overflow_action block
 	   </buffer>
 
 	   <server>
@@ -92,7 +96,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 			}
 		})
 		It("should produce well formed output label config", func() {
-			results, err := generator.generateOutputLabelBlocks(outputs)
+			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(`<label @SECUREFORWARD_RECEIVER>
@@ -104,17 +108,20 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 				@type file
 				path '/var/lib/fluentd/secureforward_receiver'
 				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
-				chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
-				total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-				flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
-				flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-				flush_thread_count "#{ENV['FLUSH_THREAD_COUNT'] || 2}"
-				retry_max_interval "#{ENV['FORWARD_RETRY_WAIT'] || '300'}"
+        total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+				chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
+        flush_mode interval
+				flush_interval 5s
+				flush_at_shutdown true
+				flush_thread_count 2
+        retry_type exponential_backoff
+        retry_wait 1s
+				retry_max_interval 300s
 				retry_forever true
 				# the systemd journald 0.0.8 input plugin will just throw away records if the buffer
 				# queue limit is hit - 'block' will halt further reads and keep retrying to flush the
-				# buffer to the remote - default is 'exception' because in_tail handles that case
-				overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'exception'}"
+				# buffer to the remote - default is 'block' because in_tail handles that case
+				overflow_action block
 			  </buffer>
 	   
 			  <server>

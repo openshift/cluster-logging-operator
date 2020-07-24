@@ -21,5 +21,5 @@ func NewConfigGenerator(collector logging.LogCollectionType, includeLegacyForwar
 type ConfigGenerator interface {
 
 	//Generate the config
-	Generate(pipeline *logging.ClusterLogForwarderSpec) (string, error)
+	Generate(pipelines *logging.ClusterLogForwarderSpec, forwarder *logging.ForwarderSpec) (string, error)
 }

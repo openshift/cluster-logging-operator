@@ -568,17 +568,28 @@ tls_cert_path {{ .SecretPath "ca-bundle.crt"}}
   @type file
   path '{{.BufferPath}}'
   queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
-  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
+  {{ if .TotalLimitSize }}
+  total_limit_size {{.TotalLimitSize}}
+  {{ else }}
   total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-  flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
-  flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-  flush_thread_count "#{ENV['FLUSH_THREAD_COUNT'] || 2}"
-  retry_max_interval "#{ENV['FORWARD_RETRY_WAIT'] || '300'}"
+  {{end}}
+  {{ if .ChunkLimitSize }}
+  chunk_limit_size {{.ChunkLimitSize}}
+  {{else}}
+  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
+  {{end}}
+  flush_mode {{.FlushMode}}
+  flush_interval {{.FlushInterval}}
+  flush_at_shutdown true
+  flush_thread_count {{.FlushThreadCount}}
+  retry_type {{.RetryType}}
+  retry_wait {{.RetryWait}}
+  retry_max_interval {{.RetryMaxInterval}}
   retry_forever true
   # the systemd journald 0.0.8 input plugin will just throw away records if the buffer
   # queue limit is hit - 'block' will halt further reads and keep retrying to flush the
-  # buffer to the remote - default is 'exception' because in_tail handles that case
-  overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'exception'}"
+  # buffer to the remote - default is 'block' because in_tail handles that case
+  overflow_action {{.OverflowAction}}
 </buffer>
 
 <server>
@@ -626,15 +637,26 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   <buffer>
     @type file
     path '{{.BufferPath}}'
-    flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+    flush_mode {{.FlushMode}}
+    flush_interval {{.FlushInterval}}
+    flush_thread_count {{.FlushThreadCount}}
+    flush_at_shutdown true
+    retry_type {{.RetryType}}
+    retry_wait {{.RetryWait}}
+    retry_max_interval {{.RetryMaxInterval}}
     retry_forever true
     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+    {{ if .TotalLimitSize }}
+    total_limit_size {{.TotalLimitSize}}
+    {{ else }}
     total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-    overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+    {{end}}
+    {{ if .ChunkLimitSize }}
+    chunk_limit_size {{.ChunkLimitSize}}
+    {{else}}
+    chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+    {{end}}
+    overflow_action {{.OverflowAction}}
   </buffer>
 </store>
 {{- end}}`
@@ -688,25 +710,37 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
   keep_alive_cnt 9
   keep_alive_intvl 7200
 {{ end -}}
-	{{if .PayloadKey -}}
+
+{{if .PayloadKey -}}
 	<format>
 	  @type single_value
 	  message_key {{.PayloadKey}}
 	</format>
-	{{end -}}
-	<buffer {{.ChunkKeys}}>
-		@type file
-		path '{{.BufferPath}}'
-		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-		retry_forever true
-    		queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-    		total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
-	</buffer>
+{{end -}}
+  <buffer {{.ChunkKeys}}>
+    @type file
+    path '{{.BufferPath}}'
+    flush_mode {{.FlushMode}}
+    flush_interval {{.FlushInterval}}
+    flush_thread_count {{.FlushThreadCount}}
+    flush_at_shutdown true
+    retry_type {{.RetryType}}
+    retry_wait {{.RetryWait}}
+    retry_max_interval {{.RetryMaxInterval}}
+    retry_forever true
+    queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    {{ if .TotalLimitSize }}
+    total_limit_size {{.TotalLimitSize}}
+    {{ else }}
+    total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+    {{end}}
+    {{ if .ChunkLimitSize }}
+    chunk_limit_size {{.ChunkLimitSize}}
+    {{else}}
+    chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+    {{end}}
+    overflow_action {{.OverflowAction}}
+  </buffer>
 </store>
 {{- end}}`
 
@@ -728,14 +762,26 @@ ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : use_nil}
 <buffer {{.Topic}}>
   @type file
   path '{{.BufferPath}}'
-  flush_interval 1s
-  flush_thread_count 2
-  flush_at_shutdown false
-  retry_max_interval 300
+  flush_mode {{.FlushMode}}
+  flush_interval {{.FlushInterval}}
+  flush_thread_count {{.FlushThreadCount}}
+  flush_at_shutdown true
+  retry_type {{.RetryType}}
+  retry_wait {{.RetryWait}}
+  retry_max_interval {{.RetryMaxInterval}}
   retry_forever true
   queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-  overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+  {{ if .TotalLimitSize }}
+  total_limit_size {{.TotalLimitSize}}
+  {{ else }}
+  total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+  {{end}}
+  {{ if .ChunkLimitSize }}
+  chunk_limit_size {{.ChunkLimitSize}}
+  {{else}}
+  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+  {{end}}
+  overflow_action {{.OverflowAction}}
 </buffer>
 {{- end}}
 `

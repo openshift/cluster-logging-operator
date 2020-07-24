@@ -16,6 +16,7 @@ var protocolSeparator = "://"
 type outputLabelConf struct {
 	Name            string
 	Target          logging.OutputSpec
+	forwarder       *logging.ForwarderSpec
 	Counter         int
 	fluentTags      sets.String
 	TemplateContext *template.Template
@@ -23,16 +24,18 @@ type outputLabelConf struct {
 	storeTemplate   string
 }
 
-func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, fluentTags ...string) *outputLabelConf {
+func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, config *logging.ForwarderSpec, fluentTags ...string) *outputLabelConf {
 	if target.Type == logging.OutputTypeSyslog && target.Syslog == nil {
 		target.Syslog = &logging.Syslog{
 			RFC: "RFC5424",
 		}
 	}
+
 	return &outputLabelConf{
 		Name:            target.Name,
 		Target:          target,
 		TemplateContext: t,
+		forwarder:       config,
 		fluentTags:      sets.NewString(fluentTags...),
 		storeTemplate:   storeTemplate,
 	}

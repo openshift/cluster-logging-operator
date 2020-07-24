@@ -1,7 +1,6 @@
 # Define the target to run if make is called with no arguments.
 default: check
 
-export LOG_LEVEL?=9
 export KUBECONFIG?=$(HOME)/.kube/config
 
 export GOBIN=$(CURDIR)/bin
@@ -64,7 +63,7 @@ build-debug:
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run
-run: 
+run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
@@ -73,7 +72,6 @@ run:
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
-	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	$(RUN_CMD) cmd/manager/main.go
 
 run-debug:
@@ -148,8 +146,6 @@ test-functional:
 test-unit:
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
-	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	LOG_LEVEL=$(LOG_LEVEL) \
 	go test -cover -race ./pkg/...
 
 test-cluster:

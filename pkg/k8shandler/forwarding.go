@@ -26,9 +26,11 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	default:
 		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.cluster.Spec.Collection.Logs.Type)
 	}
+
 	if clusterRequest.ForwarderRequest == nil {
 		clusterRequest.ForwarderRequest = &logging.ClusterLogForwarder{}
 	}
+
 	spec, status := clusterRequest.normalizeForwarder()
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
@@ -37,7 +39,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		clusterRequest.cluster.Spec.Collection.Logs.Type,
 		clusterRequest.includeLegacyForwardConfig(),
 		clusterRequest.includeLegacySyslogConfig(),
-		clusterRequest.useOldRemoteSyslogPlugin())
+		clusterRequest.useOldRemoteSyslogPlugin(),
+	)
+
 	if err != nil {
 		logger.Warnf("Unable to create collector config generator: %v", err)
 		return "",
@@ -49,7 +53,10 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 			)
 	}
 
-	generatedConfig, err := generator.Generate(&clusterRequest.ForwarderSpec, clusterRequest.cluster.Spec.Forwarder)
+	clfSpec := &clusterRequest.ForwarderSpec
+	fwSpec := clusterRequest.cluster.Spec.Forwarder
+	generatedConfig, err := generator.Generate(clfSpec, fwSpec)
+
 	if err != nil {
 		logger.Warnf("Unable to generate log configuration: %v", err)
 		return "",

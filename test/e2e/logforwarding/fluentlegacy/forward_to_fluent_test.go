@@ -84,7 +84,7 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 					return e2e.KubeClient.CoreV1().Secrets(fluentDeployment.Namespace).Delete(context.TODO(), secret.ObjectMeta.Name, opts)
 				})
 
-				components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+				components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 				cr := helpers.NewClusterLogging(components...)
 				if err := e2e.CreateClusterLogging(cr); err != nil {
 					Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))

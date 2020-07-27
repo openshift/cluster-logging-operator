@@ -55,7 +55,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 						Fail(fmt.Sprintf("Unable to create legacy syslog.conf configmap: %v", err))
 					}
 
-					components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+					components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 					cr := helpers.NewClusterLogging(components...)
 					if err := e2e.CreateClusterLogging(cr); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))

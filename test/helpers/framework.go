@@ -21,6 +21,7 @@ import (
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -30,6 +31,7 @@ import (
 const (
 	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
 	clusterlogforwarderURI = "apis/logging.openshift.io/v1/clusterlogforwarders"
+	logforwardingURI       = "apis/logging.openshift.io/v1alpha1/namespaces/openshift-logging/logforwardings"
 	DefaultCleanUpTimeout  = 60.0 * 2
 )
 
@@ -358,6 +360,30 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
 	})
+	return result.Error()
+}
+
+func (tc *E2ETestFramework) CreateLogForwardingTechPreview(fw *loggingv1alpha1.LogForwarding) error {
+	body, err := json.Marshal(fw)
+	if err != nil {
+		return err
+	}
+
+	logger.Debugf("Creating LogForwarding: %s", string(body))
+
+	result := tc.KubeClient.RESTClient().Post().
+		RequestURI(logforwardingURI).
+		SetHeader("Content-Type", "application/json").
+		Body(body).
+		Do(context.TODO())
+
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.RESTClient().Delete().
+			RequestURI(fmt.Sprintf("%s/instance", logforwardingURI)).
+			SetHeader("Content-Type", "application/json").
+			Do(context.TODO()).Error()
+	})
+
 	return result.Error()
 }
 

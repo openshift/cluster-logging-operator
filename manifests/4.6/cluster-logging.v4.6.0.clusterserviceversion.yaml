@@ -368,6 +368,8 @@ spec:
         version: v1
       - kind: ClusterLogForwarder
         version: v1
+      - kind: LogForwarding
+        version: v1alpha1
       specDescriptors:
       - description: The desired number of Kibana Pods for the Visualization component
         displayName: Kibana Size
@@ -498,3 +500,40 @@ spec:
         path: pipelines
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:pipelineConditions'
+    - name: logforwardings.logging.openshift.io
+      version: v1alpha1
+      kind: LogForwarding
+      displayName: Log Forwarding
+      description: Log forwarding spec to define destinations for specific log sources
+      specDescriptors:
+      - description: The list of output targets that receive log messages
+        displayName: Forwarding Outputs
+        path: outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingOutputs'
+      - description: The list of mappings between log sources (e.g. application logs) and forwarding outputs
+        displayName: Forwarding Pipelines
+        path: pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:forwardingPipelines'
+      statusDescriptors:
+      - description: The status of the sources being collected
+        displayName: Source Status
+        path: sources
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:sourceStatuses'
+      - description: The status of forwarding outputs
+        displayName: Outputs Status
+        path: outputs
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:outputStatuses'
+      - description: The status of forwarding pipelines
+        displayName: Pipelines Status
+        path: pipelines
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:pipelineStatuses'
+      - description: The status of log forwarding resourece
+        displayName: Log Forwarding Status
+        path: status
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:logforwardingStatuses'

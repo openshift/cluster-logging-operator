@@ -288,18 +288,9 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"}}},
-		{Name: "MERGE_JSON_LOG", Value: "false"},
-		{Name: "PRESERVE_JSON_LOG", Value: "true"},
-		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
 		{Name: "METRICS_CERT", Value: "/etc/fluent/metrics/tls.crt"},
 		{Name: "METRICS_KEY", Value: "/etc/fluent/metrics/tls.key"},
-		{Name: "BUFFER_QUEUE_LIMIT", Value: "32"},
-		{Name: "BUFFER_SIZE_LIMIT", Value: "8m"},
-		{Name: "FILE_BUFFER_LIMIT", Value: "256Mi"},
-		{Name: "FLUENTD_CPU_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "fluentd", Resource: "limits.cpu"}}},
-		{Name: "FLUENTD_MEMORY_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "fluentd", Resource: "limits.memory"}}},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
-		{Name: "CDM_KEEP_EMPTY_FIELDS", Value: "message"}, // by default, keep empty messages
 	}
 
 	proxyEnv := utils.SetProxyEnvVars(proxyConfig)

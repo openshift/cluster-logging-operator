@@ -6,79 +6,6 @@ minute=$(( 60 * second ))
 
 LOGGING_NS="openshift-logging"
 
-log::info(){
-  echo " [INFO] $@"
-}
-
-log::error(){
-  echo "[ERROR] $@"
-}
-
-indent() {
-  INDENT="      "
-  sed "s/^/$INDENT/" | sed "s/^${INDENT}\($1\)/${INDENT:0:-2}- \1/"
-}
-
-expect_success(){
-  local cmd=$1
-  echo "Running '$cmd'"
-  if $cmd ; then
-    return 0
-  fi  
-  return 1
-}
-
-try_until_failure() {
-  local cmd=$1
-  local timeout=$2
-  local interval=${3:-0.2}
-  local now=$(date +%s)
-  local expire=$(($now + $timeout))
-  while [ $now -lt $expire ]; do
-    if ! $cmd ; then
-      return 0
-    fi  
-    sleep $interval
-    now=$(date +%s)
-  done
-  return 1
-}
-try_until_success() {
-  local cmd=$1
-  local timeout=$2
-  local interval=${3:-0.2}
-  local now=$(date +%s%3N)
-  local expire=$(($now + $timeout))
-  while [ $now -lt $expire ]; do
-    if $cmd ; then
-      return 0
-    fi  
-    sleep $interval
-    now=$(date +%s%3N)
-  done
-  return 1
-}
-
-try_until_text() {
-  local cmd=$1
-  local expected=$2
-  local timeout=$3
-  local interval=${4:-0.2}
-  local now=$(date +%s%3N)
-  local expire=$(($now + $timeout))
-  while [ $now -lt $expire ]; do
-    if [[ "$($cmd)" == "${expected}" ]] ; then
-      echo "success, command: \"$cmd\" outputted: $expected"
-      return 0
-    fi  
-      echo "waiting up to $timeout for command: \"$cmd\" to output: $expected"
-    sleep $interval
-    now=$(date +%s%3N)
-  done
-  log::error "try_until_text expired for '$cmd' == '$expected'"
-  return 1
-}
-
 gather_logging_resources() {
   set +e
   local LOGGING_NS=$1
@@ -161,8 +88,8 @@ wait_for_deployment_to_be_ready(){
   local namespace=$1
   local name=$2
   local timeout=$3
-  log::info "Waiting for $namespace/deployment/$name to be ready..."
-  try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
+  os::log::info "Waiting for $namespace/deployment/$name to be ready..."
+  os::cmd::try_until_text "oc -n $namespace get deployment $name -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" $timeout
 }
 
 deploy_marketplace_operator(){

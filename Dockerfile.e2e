@@ -5,3 +5,4 @@
 FROM registry.svc.ci.openshift.org/ocp/4.6:elasticsearch-operator-src
 ADD . /go/src/github.com/openshift/cluster-logging-operator
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
+RUN make junitreport

@@ -11,6 +11,8 @@ ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/c
 ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
 popd
 
+export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
+
 for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
 	os::log::info "==============================================================="
 	os::log::info "running e2e $test "
@@ -35,6 +37,8 @@ ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat ../elasticsearch-ope
 popd
 
 get_logging_pod_logs
+
+ARTIFACT_DIR="/tmp/artifacts/junit/" os::test::junit::generate_report
 
 if [[ -n "${failed:-}" ]]; then
     exit 1

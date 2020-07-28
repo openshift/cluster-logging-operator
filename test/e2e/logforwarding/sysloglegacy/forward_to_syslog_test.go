@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
-var _ = Describe("ClusterLogForwarder", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -29,7 +29,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 		}
 		testDir = filepath.Dir(filename)
 	})
-	Describe("when ClusterLogging is configured with 'forwarder' to an external syslog server", func() {
+	Describe("when the output in `syslog.conf` configmap is a third-party managed syslog", func() {
 
 		Context("with the legacy syslog plugin", func() {
 

@@ -16,7 +16,7 @@ function os::test::junit::declare_suite_start() {
     local suite_name=$1
     local num_suites=${NUM_OS_JUNIT_SUITES_IN_FLIGHT:-0}
 
-    echo "=== BEGIN TEST SUITE github.com/openshift/origin/test/${suite_name} ===" >> "${JUNIT_REPORT_OUTPUT:-/dev/null}"
+    echo "=== BEGIN TEST SUITE ${suite_name} ===" >> "${JUNIT_REPORT_OUTPUT:-/dev/null}"
     NUM_OS_JUNIT_SUITES_IN_FLIGHT=$(( ${num_suites} + 1 ))
     export NUM_OS_JUNIT_SUITES_IN_FLIGHT
 }
@@ -183,15 +183,15 @@ function os::test::junit::generate_report() {
 #  export JUNIT_REPORT_NUM_FAILED
 function os::test::junit::internal::generate_report() {
     local report_type="$1"
-    os::util::ensure::built_binary_exists 'junitreport'
+    os::util::ensure::system_binary_exists 'junitreport'
 
     local report_file
     report_file="$( mktemp "${ARTIFACT_DIR}/${report_type}_report_XXXXX" ).xml"
     os::log::info "jUnit XML report placed at $( os::util::repository_relative_path ${report_file} )"
-    junitreport --type "${report_type}"             \
-                --suites nested                     \
-                --roots github.com/openshift/origin \
-                --output "${report_file}"           \
+    junitreport --type "${report_type}"    \
+                --suites nested            \
+                --roots "[ClusterLogging]" \
+                --output "${report_file}"  \
                 <"${JUNIT_REPORT_OUTPUT}"
 
     local summary

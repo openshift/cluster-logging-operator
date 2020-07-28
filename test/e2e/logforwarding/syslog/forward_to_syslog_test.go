@@ -1,4 +1,4 @@
-package fluent
+package syslog
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ const (
 	rsyslogFormatStr = `grep %s %%s| grep pod_name | tail -n 1 | awk -F' ' '{print %s}'`
 )
 
-var _ = Describe("LogForwarder", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -62,7 +62,7 @@ var _ = Describe("LogForwarder", func() {
 		grepprocid = fmt.Sprintf(rsyslogFormatStr, logGenPod, "$5")
 		grepmsgid = fmt.Sprintf(rsyslogFormatStr, logGenPod, "$6")
 	})
-	Describe("for Syslog", func() {
+	Describe("when the output is a third-party managed syslog", func() {
 		BeforeEach(func() {
 			cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector)
 			if err := e2e.CreateClusterLogging(cr); err != nil {

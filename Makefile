@@ -15,7 +15,7 @@ export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
-.PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk golangci-lint
+.PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk golangci-lint junitreport
 
 # Update code (generate, format), run unit tests and lint. Make sure e2e tests build.
 check: generate fmt test-unit
@@ -31,6 +31,9 @@ operator-sdk:
 
 golangci-lint:
 	@type -p golangci-lint > /dev/null || GOFLAGS="" GO111MODULE=off go get github.com/golangci/golangci-lint/cmd/golangci-lint
+
+junitreport:
+	@type -p junitreport > /dev/null || GOFLAGS="" go get -v -u github.com/openshift/origin/tools/junitreport
 
 build:
 	go build $(BUILD_OPTS) -o bin/cluster-logging-operator ./cmd/manager

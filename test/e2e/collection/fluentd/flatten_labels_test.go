@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
-var _ = Describe("Fluentd message filtering", func() {
+var _ = Describe("[Collection] Fluentd message filtering", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (

@@ -3,6 +3,7 @@ WORKDIR /go/src/github.com/openshift/cluster-logging-operator
 
 # COPY steps are in the reverse order of frequency of change
 COPY cmd ./cmd
+COPY must-gather ./must-gather
 COPY version ./version
 COPY scripts ./scripts
 COPY files ./files
@@ -15,9 +16,12 @@ COPY pkg ./pkg
 
 RUN make build
 
+FROM registry.svc.ci.openshift.org/ocp/4.6:cli as origincli
+
 FROM centos:centos7
 RUN INSTALL_PKGS=" \
       openssl \
+      rsync \
       " && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
@@ -26,15 +30,19 @@ RUN INSTALL_PKGS=" \
     chmod og+w /tmp/ocp-clo
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/bin/cluster-logging-operator /usr/bin/
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/scripts/* /usr/bin/scripts/
+
 RUN mkdir -p /usr/share/logging/
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/ /usr/share/logging/
 
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
 RUN rm /manifests/art.yaml
 
+COPY --from=origincli /usr/bin/oc /usr/bin/
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/* /usr/bin/
+
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
-ENTRYPOINT ["/usr/bin/cluster-logging-operator"]
+CMD ["/usr/bin/cluster-logging-operator"]
 LABEL io.k8s.display-name="OpenShift cluster-logging-operator" \
       io.k8s.description="This is a component of OpenShift Container Platform that manages the lifecycle of the Aggregated logging stack." \
       io.openshift.tags="openshift,logging,cluster-logging" \

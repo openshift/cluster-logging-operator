@@ -414,6 +414,38 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	// Shorten the termination grace period from the default 30 sec to 10 sec.
 	fluentdPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
 
+	// FIXME: The following conditional branch is a refactoring candidate
+	// To address here https://issues.redhat.com/browse/LOG-833
+	//
+	// Why do we need this branch at all?
+	//
+	// The ClusterLogging CR supports three additional use cases without providing
+	// a logStore stanza namely:
+	// Case 1: A collection only stanza to use with secure forward
+	// Case 2: A collection only stanza to use with syslog
+	// Case 3: A collection only stanza to use with ClusterLogFowarder API
+	//
+	// Supporting all three cases implies:
+	// 1. We don't want to add the init container if `cluster.Spec.LogStore == nil`.
+	// 2. We don't want to add the init container if `cluster.Spec.LogStore == nil`
+	//    and a ClusterLogFowarder CR and does not provide a default output (only
+	//    relevant for case 3)
+	//
+	// What is the init container bound to a log store stanza?
+	//
+	// The init container implementation is only relevant for the default ES log store.
+	// It checks for the version of an ES cluster being >=6. In upgrade scenarios
+	// an ES cluster can eventually provide nodes with multiple version (5.x and 6.x)
+	// until all nodes are upgraded. The data model used in 6.x is not backward
+	// compatible to 5.x, thus preventing fluentd from starting avoids data model
+	// inconsistencies during ES upgrades from 5.x to 6.x.
+	//
+	// Why does this work w/o a ClusterLogForwarder CR provided?
+	//
+	// ClusterLogging and ClusterLogFowarder CR reconciliation share the same logic
+	// for collection config generation. If first is provided without the latter a
+	// ClusterLogFowarder with default fields is assumed.
+	// (See ClusterLoggingRequest#getLogForwarder)
 	if pipelineSpec.HasDefaultOutput() && cluster.Spec.LogStore != nil {
 		fluentdPodSpec.InitContainers = []v1.Container{
 			newFluentdInitContainer(cluster),

@@ -46,7 +46,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Type: loggingv1.OutputTypeElasticsearch,
 					Name: "other-elasticsearch",
-					URL:  "es.svc.messaging.cluster.local:9654",
+					URL:  "http://es.svc.messaging.cluster.local:9654",
 				},
 			}
 		})
@@ -259,7 +259,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Type: "fluentdForward",
 					Name: "secureforward-receiver",
-					URL:  "es.svc.messaging.cluster.local:9654",
+					URL:  "http://es.svc.messaging.cluster.local:9654",
 				},
 			}
 		})

@@ -70,7 +70,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					{
 						Type: "syslog",
 						Name: "syslog-receiver",
-						URL:  "sl.svc.messaging.cluster.local:9654",
+						URL:  "tcp://sl.svc.messaging.cluster.local:9654",
 					},
 				}
 			})
@@ -319,7 +319,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 						{
 							Type: "syslog",
 							Name: "syslog-receiver",
-							URL:  "tcp://sl.svc.messaging.cluster.local:9654",
+							URL:  "tls://sl.svc.messaging.cluster.local:9654",
 							Secret: &logging.OutputSecretSpec{
 								Name: "some-secret",
 							},
@@ -359,7 +359,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 						{
 							Type: "syslog",
 							Name: "syslog-receiver",
-							URL:  "udp://sl.svc.messaging.cluster.local:9654",
+							URL:  "udps://sl.svc.messaging.cluster.local:9654",
 							Secret: &logging.OutputSecretSpec{
 								Name: "some-secret",
 							},

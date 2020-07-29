@@ -31,7 +31,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Type:   logging.OutputTypeElasticsearch,
 					Name:   "apps-es-1",
-					URL:    "es.svc.messaging.cluster.local:9654",
+					URL:    "https://es.svc.messaging.cluster.local:9654",
 					Secret: &logging.OutputSecretSpec{Name: "my-es-secret"},
 				},
 				{
@@ -45,7 +45,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Type: logging.OutputTypeElasticsearch,
 					Name: "audit-es",
-					URL:  "es.svc.audit.cluster:9654",
+					URL:  "https://es.svc.audit.cluster:9654",
 					Secret: &logging.OutputSecretSpec{
 						Name: "my-audit-secret",
 					},
@@ -77,7 +77,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Type: logging.OutputTypeElasticsearch,
 					Name: "apps-es-1",
-					URL:  "es.svc.messaging.cluster.local:9654",
+					URL:  "https://es.svc.messaging.cluster.local:9654",
 					Secret: &logging.OutputSecretSpec{
 						Name: "my-es-secret",
 					},
@@ -141,7 +141,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Type: "fluentdForward",
 					Name: "secureforward-receiver",
-					URL:  "es.svc.messaging.cluster.local:9654",
+					URL:  "http://es.svc.messaging.cluster.local:9654",
 				},
 			},
 			Pipelines: []logging.PipelineSpec{

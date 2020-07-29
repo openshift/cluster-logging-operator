@@ -129,10 +129,10 @@ type OutputSpec struct {
 	// URL to send log messages to.
 	//
 	// Must be an absolute URL, with a scheme. Valid URL schemes depend on `type`.
-	// Special schemes 'tcp', 'udp' and 'tls' are used for output types that don't
+	// Special schemes 'tcp', 'tls', 'udp' and 'udps are used for output types that don't
 	// define their own URL scheme.  Example:
 	//
-	//     { type: syslog, url: tls://syslog.example.com:1234 }
+	//     { type: syslog, url: udps://syslog.example.com:1234 }
 	//
 	// TLS with server authentication is enabled by the URL scheme, for
 	// example 'tls' or 'https'.  See `secret` for TLS client authentication.

@@ -75,13 +75,13 @@ var _ = Describe("generating source", func() {
 				@type systemd
 				@id systemd-input
 				@label @INGRESS
-				path "#{if (val = ENV.fetch('JOURNAL_SOURCE','')) && (val.length > 0); val; else '/run/log/journal'; end}"
+				path '/run/log/journal'
 				<storage>
 				@type local
 				persistent true
 				# NOTE: if this does not end in .json, fluentd will think it
 				# is the name of a directory - see fluentd storage_local.rb
-				path "#{ENV['JOURNAL_POS_FILE'] || '/var/log/journal_pos.json'}"
+				path '/var/log/journal_pos.json'
 				</storage>
 				matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
 				tag journal
@@ -171,13 +171,13 @@ var _ = Describe("generating source", func() {
 				@type systemd
 				@id systemd-input
 				@label @INGRESS
-				path "#{if (val = ENV.fetch('JOURNAL_SOURCE','')) && (val.length > 0); val; else '/run/log/journal'; end}"
+				path '/run/log/journal'
 				<storage>
 				@type local
 				persistent true
 				# NOTE: if this does not end in .json, fluentd will think it
 				# is the name of a directory - see fluentd storage_local.rb
-				path "#{ENV['JOURNAL_POS_FILE'] || '/var/log/journal_pos.json'}"
+				path '/var/log/journal_pos.json'
 				</storage>
 				matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
 				tag journal

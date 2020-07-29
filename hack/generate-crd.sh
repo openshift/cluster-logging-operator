@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-set -e
+set -euo pipefail
 
 MANIFESTS_DIR=${1:-"manifests/${OCP_VERSION}"}
 CLF_CRD_FILE="logging.openshift.io_clusterlogforwarders_crd.yaml"

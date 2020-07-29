@@ -137,6 +137,19 @@ test-cleanup:			# Only needed if e2e tests are interrupted.
 	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name; done | grep -e -receiver | xargs --verbose --no-run-if-empty oc delete
 	@oc get ns -o name | grep clo- | xargs --verbose --no-run-if-empty oc delete
 
+opm:
+	@if [ ! -f "${GOPATH}/src/github.com/operator-framework/operator-registry/opm" ] ; then \
+		mkdir -p ${GOPATH}/src/github.com/operator-framework ||: ; \
+		pushd ${GOPATH}/src/github.com/operator-framework ; \
+		[ ! -d ./operator-registry ] && git clone https://github.com/operator-framework/operator-registry ; \
+		cd operator-registry ; \
+		go build ./cmd/opm/ ; \
+		popd ; \
+	fi
+
+generate-bundle: opm
+	mkdir -p bundle; pushd bundle; ${GOPATH}/src/github.com/operator-framework/operator-registry/opm alpha bundle generate --directory ../manifests/4.6/ --package cluster-logging-operator --channels 4.6 --output-dir .; popd
+
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm:
 	hack/test-e2e-olm.sh

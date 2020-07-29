@@ -21,7 +21,6 @@ const (
 	defaultRetryMaxInterval = "300s"
 
 	// Output fluentdForward default
-	fluentdForwardChunkLimitSize = "8m"
 	fluentdForwardOverflowAction = "block"
 	fluentdForwardFlushInterval  = "5s"
 )

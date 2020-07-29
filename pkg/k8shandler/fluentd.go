@@ -210,7 +210,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 		clusterRequest.cluster.Namespace,
 		map[string]string{
 			"fluent.conf":          fluentConf,
-			"throttle-config.yaml": string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/fluentd-throttle-config.yaml")),
 			"run.sh":               string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/run.sh")),
 		},
 	)

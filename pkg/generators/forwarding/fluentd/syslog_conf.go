@@ -72,19 +72,6 @@ func (conf *outputLabelConf) Tag() string {
 	return tag
 }
 
-func (conf *outputLabelConf) SyslogProtocol() string {
-	switch strings.ToLower(conf.Protocol()) {
-	case "":
-		fallthrough
-	case "tls":
-		return "tcp"
-	case "udp":
-		return "udp"
-	default:
-		return conf.Protocol()
-	}
-}
-
 func (conf *outputLabelConf) PayloadKey() string {
 	return conf.Target.Syslog.PayloadKey
 }

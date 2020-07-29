@@ -1,0 +1,21 @@
+#!/bin/bash
+
+get_env() {
+  local pod=$1
+  local env_file=$2/$pod
+  local ns=${3:-$NAMESPACE}
+  local pattern=${4:-"Dockerfile-*logging*"}
+  echo ---- Env for $pod
+  containers=$(oc -n $ns get po $pod -o jsonpath='{.spec.containers[*].name}')
+  for container in $containers
+  do
+    dockerfile=$(oc -n $ns exec $pod -c $container -- find /root/buildinfo -name $pattern || :)
+    if [ -n "$dockerfile" ]
+    then
+      echo Image info: $dockerfile > $env_file
+      oc -n $ns exec $pod -c $container -- grep -o "\"build-date\"=\"[^[:blank:]]*\"" $dockerfile >> $env_file || echo "---- Unable to get build date"
+    fi
+    echo -- Environment Variables >> $env_file
+    oc -n $ns exec $pod -c $container -- env | sort >> $env_file
+  done
+}

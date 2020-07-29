@@ -28,6 +28,8 @@ To install a released version of cluster logging see the [Openshift Documentatio
 
 To experiment or contribute to the development of cluster logging, see [HACKING.md](./docs/HACKING.md)
 
+To debug the cluster logging stack, see [README.md](./must-gather/README.md)
+
 To find currently known Cluster Logging Operator issues with work-arounds, see the [Troubleshooting](./docs/troubleshooting.md) guide.
 
 [Elasticsearch Operator]: https://github.com/openshift/elasticsearch-operator

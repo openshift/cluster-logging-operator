@@ -8,7 +8,9 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/client/k8s/configmap"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
@@ -45,11 +47,14 @@ func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
 			return
 		}
 
-		if err = clusterRequest.RemoveConfigMap(fluentdName); err != nil {
+		hasCLORef := func(object metav1.Object) bool {
+			return HasCLORef(object, clusterRequest)
+		}
+		if err = configmap.Remove(clusterRequest, clusterRequest.cluster.Namespace, fluentdName, hasCLORef); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveConfigMap(constants.FluentdTrustedCAName); err != nil {
+		if err = configmap.Remove(clusterRequest, clusterRequest.cluster.Namespace, constants.FluentdTrustedCAName, hasCLORef); err != nil {
 			return
 		}
 
@@ -205,12 +210,12 @@ func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(fluentConf string) error {
 	logrus.Debug("createOrUpdateFluentdConfigMap...")
-	fluentdConfigMap := NewConfigMap(
+	fluentdConfigMap := configmap.New(
 		fluentdName,
 		clusterRequest.cluster.Namespace,
 		map[string]string{
-			"fluent.conf":          fluentConf,
-			"run.sh":               string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/run.sh")),
+			"fluent.conf": fluentConf,
+			"run.sh":      string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/run.sh")),
 		},
 	)
 
@@ -498,7 +503,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 
 	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, fluentdTrustBundle, clusterRequest.ForwarderSpec)
 
-	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
+	fluentdDaemonset := factory.NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
 
 	annotations, err := clusterRequest.getFluentdAnnotations(fluentdDaemonset)

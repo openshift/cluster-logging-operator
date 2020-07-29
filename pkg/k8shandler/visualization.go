@@ -7,6 +7,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/openshift/cluster-logging-operator/pkg/client/k8s/configmap"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
@@ -167,15 +168,18 @@ func (clusterRequest *ClusterLoggingRequest) removeOldKibana() (err error) {
 			return
 		}
 
-		if err = clusterRequest.RemoveConfigMap(name); err != nil {
+		hasCLORef := func(object metav1.Object) bool {
+			return HasCLORef(object, clusterRequest)
+		}
+		if err = configmap.Remove(clusterRequest, clusterRequest.cluster.Namespace, name, hasCLORef); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveConfigMap("sharing-config"); err != nil {
+		if err = configmap.Remove(clusterRequest, clusterRequest.cluster.Namespace, "sharing-config", hasCLORef); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveConfigMap(constants.KibanaTrustedCAName); err != nil {
+		if err = configmap.Remove(clusterRequest, clusterRequest.cluster.Namespace, constants.KibanaTrustedCAName, hasCLORef); err != nil {
 			return
 		}
 

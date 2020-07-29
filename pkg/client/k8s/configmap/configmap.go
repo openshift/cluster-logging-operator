@@ -1,4 +1,4 @@
-package k8shandler
+package configmap
 
 import (
 	"fmt"
@@ -8,10 +8,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
+
+	"github.com/openshift/cluster-logging-operator/pkg/client/k8s"
 )
 
-//NewConfigMap stubs an instance of Configmap
-func NewConfigMap(configmapName string, namespace string, data map[string]string) *corev1.ConfigMap {
+//New stubs an instance of Configmap
+func New(configmapName string, namespace string, data map[string]string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -25,10 +27,10 @@ func NewConfigMap(configmapName string, namespace string, data map[string]string
 	}
 }
 
-//CreateOrUpdateConfigMap creates a new config map resource unless it exists whereas it will update
+//Reconcile creates a new config map resource unless it exists whereas it will update
 //the existing config map if the data section changed.
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateConfigMap(configMap *corev1.ConfigMap) error {
-	err := clusterRequest.Create(configMap)
+func Reconcile(client k8s.Client, configMap *corev1.ConfigMap) error {
+	err := client.Create(configMap)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating configmap: %v", err)
@@ -37,13 +39,13 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateConfigMap(configMap *
 		current := &corev1.ConfigMap{}
 
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err = clusterRequest.Get(configMap.Name, current); err != nil {
+			if err = client.Get(configMap.Name, current); err != nil {
 				if errors.IsNotFound(err) {
 					// the object doesn't exist -- it was likely culled
 					// recreate it on the next time through if necessary
 					return nil
 				}
-				return fmt.Errorf("Failed to get %v configmap for %q: %v", configMap.Name, clusterRequest.cluster.Name, err)
+				return fmt.Errorf("Failed to get %v configmap: %v", configMap.Name, err)
 			}
 
 			if reflect.DeepEqual(configMap.Data, current.Data) {
@@ -73,30 +75,30 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateConfigMap(configMap *
 				return nil
 			}
 
-			return clusterRequest.Update(current)
+			return client.Update(current)
 		})
 		return retryErr
 	}
 	return nil
 }
 
-//RemoveConfigMap with a given name and namespace
-func (clusterRequest *ClusterLoggingRequest) RemoveConfigMap(configmapName string) error {
+//Remove configmap with a given name and namespace
+func Remove(client k8s.Client, namespace, name string, HasCLORef func(object metav1.Object) bool) error {
 
-	configMap := NewConfigMap(
-		configmapName,
-		clusterRequest.cluster.Namespace,
+	configMap := New(
+		name,
+		namespace,
 		map[string]string{},
 	)
 
 	//TODO: Remove this in the next release after removing old kibana code completely
-	if !HasCLORef(configMap, clusterRequest) {
+	if !HasCLORef(configMap) {
 		return nil
 	}
 
-	err := clusterRequest.Delete(configMap)
+	err := client.Delete(configMap)
 	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting %v configmap: %v", configmapName, err)
+		return fmt.Errorf("Failure deleting %v configmap: %v", name, err)
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
+	"github.com/openshift/cluster-logging-operator/pkg/client/k8s/configmap"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
@@ -14,7 +15,7 @@ import (
 //By setting label "config.openshift.io/inject-trusted-cabundle: true", the cert is automatically filled/updated.
 func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap(name string) (*corev1.ConfigMap, error) {
 	logrus.Debug("createOrGetTrustedCABundleConfigMap...")
-	configMap := NewConfigMap(
+	configMap := configmap.New(
 		name,
 		clusterRequest.cluster.Namespace,
 		map[string]string{

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/openshift/cluster-logging-operator/pkg/client/k8s/configmap"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -121,7 +123,10 @@ func (clusterRequest *ClusterLoggingRequest) removeCurator() (err error) {
 			return
 		}
 
-		if err = clusterRequest.RemoveConfigMap("curator"); err != nil {
+		hasCLORef := func(object metav1.Object) bool {
+			return HasCLORef(object, clusterRequest)
+		}
+		if err = configmap.Remove(clusterRequest, clusterRequest.cluster.Namespace, "curator", hasCLORef); err != nil {
 			return
 		}
 
@@ -148,7 +153,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorServiceAccount
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorConfigMap() error {
 
-	curatorConfigMap := NewConfigMap(
+	curatorConfigMap := configmap.New(
 		"curator",
 		clusterRequest.cluster.Namespace,
 		map[string]string{
@@ -248,7 +253,7 @@ func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elas
 		schedule = defaultSchedule
 	}
 
-	curatorCronJob := NewCronJob(
+	curatorCronJob := factory.NewCronJob(
 		curatorName,
 		cluster.Namespace,
 		"curator",

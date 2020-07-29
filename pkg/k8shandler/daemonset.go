@@ -3,51 +3,13 @@ package k8shandler
 import (
 	"fmt"
 
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/factory"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-//NewDaemonSet stubs an instance of a daemonset
-func NewDaemonSet(daemonsetName, namespace, loggingComponent, component string, podSpec core.PodSpec) *apps.DaemonSet {
-	labels := map[string]string{
-		"provider":      "openshift",
-		"component":     component,
-		"logging-infra": loggingComponent,
-	}
-	return &apps.DaemonSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "DaemonSet",
-			APIVersion: apps.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      daemonsetName,
-			Namespace: namespace,
-			Labels:    labels,
-		},
-		Spec: apps.DaemonSetSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
-			},
-			Template: core.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:   daemonsetName,
-					Labels: labels,
-					Annotations: map[string]string{
-						"scheduler.alpha.kubernetes.io/critical-pod": "",
-					},
-				},
-				Spec: podSpec,
-			},
-			UpdateStrategy: apps.DaemonSetUpdateStrategy{
-				Type:          apps.RollingUpdateDaemonSetStrategyType,
-				RollingUpdate: &apps.RollingUpdateDaemonSet{},
-			},
-		},
-	}
-}
 
 //GetDaemonSetList lists DS in namespace with given selector
 func (clusterRequest *ClusterLoggingRequest) GetDaemonSetList(selector map[string]string) (*apps.DaemonSetList, error) {
@@ -69,7 +31,7 @@ func (clusterRequest *ClusterLoggingRequest) GetDaemonSetList(selector map[strin
 //RemoveDaemonset with given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveDaemonset(daemonsetName string) error {
 
-	daemonset := NewDaemonSet(
+	daemonset := factory.NewDaemonSet(
 		daemonsetName,
 		clusterRequest.cluster.Namespace,
 		daemonsetName,

@@ -86,11 +86,11 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 			type_name _doc
 			write_operation create
-			reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
+			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
-			reload_after "#{ENV['ES_RELOAD_AFTER'] || '200'}"
+			reload_after '200'
 			# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-			sniffer_class_name "#{ENV['ES_SNIFFER_CLASS_NAME'] || 'Fluent::Plugin::ElasticsearchSimpleSniffer'}"
+			
 			reload_on_failure false
 			# 2 ^ 31
 			request_timeout 2147483648
@@ -134,11 +134,11 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			type_name _doc
 			retry_tag retry_oncluster_elasticsearch
 			write_operation create
-			reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
+			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
-			reload_after "#{ENV['ES_RELOAD_AFTER'] || '200'}"
+			reload_after '200'
 			# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-			sniffer_class_name "#{ENV['ES_SNIFFER_CLASS_NAME'] || 'Fluent::Plugin::ElasticsearchSimpleSniffer'}"
+			
 			reload_on_failure false
 			# 2 ^ 31
 			request_timeout 2147483648
@@ -196,11 +196,11 @@ var _ = Describe("Generating fluentd config blocks", func() {
 
 			type_name _doc
 			write_operation create
-			reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
+			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
-			reload_after "#{ENV['ES_RELOAD_AFTER'] || '200'}"
+			reload_after '200'
 			# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-			sniffer_class_name "#{ENV['ES_SNIFFER_CLASS_NAME'] || 'Fluent::Plugin::ElasticsearchSimpleSniffer'}"
+			
 			reload_on_failure false
 			# 2 ^ 31
 			request_timeout 2147483648
@@ -240,11 +240,11 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			type_name _doc
 			retry_tag retry_other_elasticsearch
 			write_operation create
-			reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
+			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
-			reload_after "#{ENV['ES_RELOAD_AFTER'] || '200'}"
+			reload_after '200'
 			# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-			sniffer_class_name "#{ENV['ES_SNIFFER_CLASS_NAME'] || 'Fluent::Plugin::ElasticsearchSimpleSniffer'}"
+			
 			reload_on_failure false
 			# 2 ^ 31
 			request_timeout 2147483648

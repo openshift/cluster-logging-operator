@@ -173,32 +173,32 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 
   <filter kubernetes.**>
     @type kubernetes_metadata
-    kubernetes_url "#{ENV['K8S_HOST_URL']}"
-    cache_size "#{ENV['K8S_METADATA_CACHE_SIZE'] || '1000'}"
-    watch "#{ENV['K8S_METADATA_WATCH'] || 'false'}"
-    use_journal "#{ENV['USE_JOURNAL'] || 'nil'}"
-    ssl_partial_chain "#{ENV['SSL_PARTIAL_CHAIN'] || 'true'}"
+    kubernetes_url 'https://kubernetes.default.svc'
+    cache_size '1000'
+    watch 'false'
+    use_journal 'nil'
+    ssl_partial_chain 'true'
   </filter>
 
   <filter kubernetes.journal.**>
     @type parse_json_field
-    merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
-    preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
-    json_fields "#{ENV['JSON_FIELDS'] || 'MESSAGE,log'}"
+    merge_json_log 'false'
+    preserve_json_log 'true'
+    json_fields 'log,MESSAGE'
   </filter>
 
   <filter kubernetes.var.log.containers.**>
     @type parse_json_field
-    merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
-    preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
-    json_fields "#{ENV['JSON_FIELDS'] || 'log,MESSAGE'}"
+    merge_json_log 'false'
+    preserve_json_log 'true'
+    json_fields 'log,MESSAGE'
   </filter>
 
   <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
-    json_fields "#{ENV['JSON_FIELDS'] || 'log,MESSAGE'}"
+    json_fields 'log,MESSAGE'
   </filter>
 
   <filter **kibana**>
@@ -214,19 +214,19 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @type viaq_data_model
     elasticsearch_index_prefix_field 'viaq_index_name'
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
-    extra_keep_fields "#{ENV['CDM_EXTRA_KEEP_FIELDS'] || ''}"
-    keep_empty_fields "#{ENV['CDM_KEEP_EMPTY_FIELDS'] || 'message'}"
-    use_undefined "#{ENV['CDM_USE_UNDEFINED'] || false}"
-    undefined_name "#{ENV['CDM_UNDEFINED_NAME'] || 'undefined'}"
-    rename_time "#{ENV['CDM_RENAME_TIME'] || true}"
-    rename_time_if_missing "#{ENV['CDM_RENAME_TIME_IF_MISSING'] || false}"
-    src_time_name "#{ENV['CDM_SRC_TIME_NAME'] || 'time'}"
-    dest_time_name "#{ENV['CDM_DEST_TIME_NAME'] || '@timestamp'}"
-    pipeline_type "#{ENV['PIPELINE_TYPE'] || 'collector'}"
-    undefined_to_string "#{ENV['CDM_UNDEFINED_TO_STRING'] || 'false'}"
-    undefined_dot_replace_char "#{ENV['CDM_UNDEFINED_DOT_REPLACE_CHAR'] || 'UNUSED'}"
-    undefined_max_num_fields "#{ENV['CDM_UNDEFINED_MAX_NUM_FIELDS'] || '-1'}"
-    process_kubernetes_events "#{ENV['TRANSFORM_EVENTS'] || 'false'}"
+    extra_keep_fields ''
+    keep_empty_fields 'message'
+    use_undefined false
+    undefined_name 'undefined'
+    rename_time true
+    rename_time_if_missing false
+    src_time_name 'time'
+    dest_time_name '@timestamp'
+    pipeline_type 'collector'
+    undefined_to_string 'false'
+    undefined_to_replace_char 'UNUSED'
+    undefined_max_num_fields '-1'
+    process_kubernetes_events 'false'
     <formatter>
       tag "system.var.log**"
       type sys_var_log
@@ -240,13 +240,13 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     <formatter>
       tag "kubernetes.journal.container**"
       type k8s_journal
-      remove_keys "#{ENV['K8S_FILTER_REMOVE_KEYS'] || 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'}"
+      remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
       tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
-      process_kubernetes_events "#{ENV['TRANSFORM_EVENTS'] || 'true'}"
+      process_kubernetes_events 'true'
     </formatter>
     <formatter>
       tag "kubernetes.var.log.containers**"
@@ -254,19 +254,19 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
     <elasticsearch_index_name>
-      enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
+      enabled 'true'
       tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
     <elasticsearch_index_name>
-      enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
+      enabled 'true'
       tag "linux-audit.log** k8s-audit.log** openshift-audit.log**"
       name_type static
       static_index_name audit-write
     </elasticsearch_index_name>
     <elasticsearch_index_name>
-      enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
+      enabled 'true'
       tag "**"
       name_type static
       static_index_name app-write
@@ -277,7 +277,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @type elasticsearch_genid_ext
     hash_id_key viaq_msg_id
     alt_key kubernetes.event.metadata.uid
-    alt_tags "#{ENV['GENID_ALT_TAG'] || 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'}"
+    alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
 
   #flatten labels to prevent field explosion in ES
@@ -359,13 +359,13 @@ const inputSourceJournalTemplate = `{{- define "inputSourceJournalTemplate" -}}
   @type systemd
   @id systemd-input
   @label @INGRESS
-  path "#{if (val = ENV.fetch('JOURNAL_SOURCE','')) && (val.length > 0); val; else '/run/log/journal'; end}"
+  path '/run/log/journal'
   <storage>
     @type local
     persistent true
     # NOTE: if this does not end in .json, fluentd will think it
     # is the name of a directory - see fluentd storage_local.rb
-    path "#{ENV['JOURNAL_POS_FILE'] || '/var/log/journal_pos.json'}"
+    path '/var/log/journal_pos.json'
   </storage>
   matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
   tag journal
@@ -629,11 +629,11 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   retry_tag {{.RetryTag}}
 {{- end }}
   write_operation create
-  reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
+  reload_connections 'true'
   # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
-  reload_after "#{ENV['ES_RELOAD_AFTER'] || '200'}"
+  reload_after '200'
   # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-  sniffer_class_name "#{ENV['ES_SNIFFER_CLASS_NAME'] || 'Fluent::Plugin::ElasticsearchSimpleSniffer'}"
+  
   reload_on_failure false
   # 2 ^ 31
   request_timeout 2147483648

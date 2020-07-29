@@ -111,7 +111,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 				}
 				if protocol == corev1.ProtocolTCP {
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 				} else {
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("udp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 				}
@@ -156,7 +156,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
 							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 						}
-						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 						forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 							Name: syslogDeployment.ObjectMeta.Name,
 						}
@@ -188,7 +188,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
@@ -218,7 +218,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
@@ -255,7 +255,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
@@ -290,7 +290,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
@@ -328,7 +328,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
@@ -394,7 +394,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 				}
 				if protocol == corev1.ProtocolTCP {
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 				} else {
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("udp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 				}
@@ -443,7 +443,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
@@ -468,7 +468,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
@@ -494,7 +494,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
@@ -527,7 +527,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
-					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}

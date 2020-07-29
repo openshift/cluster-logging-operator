@@ -47,7 +47,7 @@ var _ = Describe("[Collection] Fluentd message filtering", func() {
 					{
 						Name: fluentDeployment.ObjectMeta.Name,
 						Type: logging.OutputTypeFluentdForward,
-						URL:  fmt.Sprintf("%s.%s.svc:24224", fluentDeployment.ObjectMeta.Name, fluentDeployment.Namespace),
+						URL:  fmt.Sprintf("tcp://%s.%s.svc:24224", fluentDeployment.ObjectMeta.Name, fluentDeployment.Namespace),
 					},
 				},
 				Pipelines: []logging.PipelineSpec{

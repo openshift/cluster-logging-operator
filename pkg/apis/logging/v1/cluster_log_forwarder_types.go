@@ -137,6 +137,9 @@ type OutputSpec struct {
 	// TLS with server authentication is enabled by the URL scheme, for
 	// example 'tls' or 'https'.  See `secret` for TLS client authentication.
 	//
+	// This field is optional and can be empty if there is an output-type field with alternative connection information.
+	//
+	// +kubebuilder:validation:Pattern:=`^$|[a-zA-z]+:\/\/.*`
 	// +optional
 	URL string `json:"url"`
 

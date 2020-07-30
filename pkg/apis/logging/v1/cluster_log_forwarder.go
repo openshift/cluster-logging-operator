@@ -108,3 +108,18 @@ func (spec *ClusterLogForwarderSpec) HasDefaultOutput() bool {
 	_, ok := spec.OutputMap()[OutputNameDefault]
 	return ok
 }
+
+// Types returns the set of input types that are used to by the input spec.
+func (input *InputSpec) Types() sets.String {
+	result := sets.NewString()
+	if input.Application != nil {
+		result.Insert(InputNameApplication)
+	}
+	if input.Infrastructure != nil {
+		result.Insert(InputNameInfrastructure)
+	}
+	if input.Audit != nil {
+		result.Insert(InputNameAudit)
+	}
+	return result
+}

@@ -23,7 +23,7 @@ func (engine *ConfigGenerator) generateSource(sources sets.String, appNs sets.St
 	if sources.Has(string(logging.InputNameApplication)) {
 		templates = append(templates, "inputSourceContainerTemplate")
 		for _, ns := range appNs.List() {
-			nsPaths = append(nsPaths, fmt.Sprintf("\"/var/log/containers/*_%s_*.log\"", ns))
+			nsPaths = append(nsPaths, fmt.Sprintf("/var/log/containers/*_%s_*.log", ns))
 		}
 	}
 	if sources.Has(string(logging.InputNameAudit)) {

@@ -74,7 +74,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		}
 	} else {
 		inputs, namespaces = gatherSources(clfSpec)
-		routeMap = inputsToPipelines(clfSpec.Pipelines)
+		routeMap = inputsToPipelines(clfSpec)
 	}
 
 	sourceInputLabels, err = engine.generateSource(inputs, namespaces)
@@ -161,11 +161,20 @@ func gatherSources(forwarder *logging.ClusterLogForwarderSpec) (types sets.Strin
 	return types, namespaces
 }
 
-func inputsToPipelines(pipelines []logging.PipelineSpec) logging.RouteMap {
+func inputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMap {
 	result := logging.RouteMap{}
-	for _, pipeline := range pipelines {
+	inputs := fwdspec.InputMap()
+	for _, pipeline := range fwdspec.Pipelines {
 		for _, inRef := range pipeline.InputRefs {
-			result.Insert(inRef, pipeline.Name)
+			if input, ok := inputs[inRef]; ok {
+				// User defined input spec, unwrap.
+				for t := range input.Types() {
+					result.Insert(t, pipeline.Name)
+				}
+			} else {
+				// Not a user defined type, insert direct.
+				result.Insert(inRef, pipeline.Name)
+			}
 		}
 	}
 	return result

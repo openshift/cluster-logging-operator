@@ -20,22 +20,25 @@ FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 # Update code (generate, format), run unit tests and lint. Make sure e2e tests build.
 check: generate fmt test-unit
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
-	$(MAKE) lint
+	$(MAKE) lint				  # Only lint if code builds.
 
-openshift-client:
+bin:
+	mkdir -p bin
+
+openshift-client: bin
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
 
 # Download tools if not available on local PATH.
-operator-sdk:
+operator-sdk: bin
 	@type -p operator-sdk > /dev/null || bash hack/get-operator-sdk.sh
 
-golangci-lint:
+golangci-lint: bin
 	@type -p golangci-lint > /dev/null || GOFLAGS="" GO111MODULE=off go get github.com/golangci/golangci-lint/cmd/golangci-lint
 
-junitreport:
+junitreport: bin
 	@type -p junitreport > /dev/null || GOFLAGS="" go get -v -u github.com/openshift/origin/tools/junitreport
 
-build:
+build: bin
 	go build $(BUILD_OPTS) -o bin/cluster-logging-operator ./cmd/manager
 
 build-debug:
@@ -62,16 +65,16 @@ run-debug:
 	$(MAKE) run RUN_CMD='dlv debug'
 
 clean:
-	@rm -f bin/operator-sdk bin/imagebuilder bin/golangci-lint bin/cluster-logging-operator
-	rm -rf tmp _output
+	@rm -rf bin tmp _output
 	go clean -cache -testcache ./...
 
-image:
+# Only build image with lint-free code. CI will fail on lint errors.
+image: lint
 	@if [ $${SKIP_BUILD:-false} = false ] ; then \
 		podman build -t $(IMAGE_TAG) . ; \
 	fi
 
-lint: fmt
+lint:
 	@$(MAKE) golangci-lint
 	golangci-lint run -c golangci.yaml
 
@@ -96,9 +99,6 @@ regenerate:
 	@$(MAKE) generate
 
 deploy-image: image
-	hack/deploy-image.sh
-
-deploy-image-no-build:
 	hack/deploy-image.sh
 
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
@@ -152,6 +152,7 @@ test-sec:
 
 undeploy:
 	hack/undeploy.sh
+
 redeploy:
 	$(MAKE) undeploy
 	$(MAKE) deploy

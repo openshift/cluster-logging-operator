@@ -3,6 +3,8 @@ export KUBECONFIG?=$(HOME)/.kube/config
 export GOBIN=$(CURDIR)/bin
 export PATH:=$(GOBIN):$(PATH)
 
+include .bingo/Variables.mk
+
 export GOROOT=$(shell go env GOROOT)
 export GOFLAGS=-mod=vendor
 export GO111MODULE=on
@@ -15,7 +17,7 @@ export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
-.PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run operator-sdk golangci-lint junitreport
+.PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run
 
 # Update code (generate, format), run unit tests and lint. Make sure e2e tests build.
 check: generate fmt test-unit
@@ -27,16 +29,6 @@ bin:
 
 openshift-client: bin
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
-
-# Download tools if not available on local PATH.
-operator-sdk: bin
-	@type -p operator-sdk > /dev/null || bash hack/get-operator-sdk.sh
-
-golangci-lint: bin
-	@type -p golangci-lint > /dev/null || GOFLAGS="" GO111MODULE=off go get github.com/golangci/golangci-lint/cmd/golangci-lint
-
-junitreport: bin
-	@type -p junitreport > /dev/null || GOFLAGS="" go get -v -u github.com/openshift/origin/tools/junitreport
 
 build: bin
 	go build $(BUILD_OPTS) -o bin/cluster-logging-operator ./cmd/manager
@@ -74,9 +66,8 @@ image: lint
 		podman build -t $(IMAGE_TAG) . ; \
 	fi
 
-lint:
-	@$(MAKE) golangci-lint
-	golangci-lint run -c golangci.yaml
+lint: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run -c golangci.yaml
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
@@ -85,16 +76,15 @@ fmt:
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
 MANIFESTS=manifests/$(OCP_VERSION)
-generate: $(GEN_TIMESTAMP)
+generate: $(GEN_TIMESTAMP) $(OPERATOR_SDK)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@echo generating code
-	@$(MAKE) operator-sdk
 	@$(MAKE) openshift-client
 	@bash ./hack/generate-crd.sh
 	@$(MAKE) fmt
 	@touch $@
 
-regenerate:
+regenerate: $(OPERATOR_SDK)
 	@rm -f $(GEN_TIMESTAMP) $(shell find pkg -name zz_generated_*.go)
 	@$(MAKE) generate
 
@@ -137,24 +127,18 @@ test-cleanup:			# Only needed if e2e tests are interrupted.
 	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name; done | grep -e -receiver | xargs --verbose --no-run-if-empty oc delete
 	@oc get ns -o name | grep clo- | xargs --verbose --no-run-if-empty oc delete
 
-opm:
-	@if [ ! -f "${GOPATH}/src/github.com/operator-framework/operator-registry/opm" ] ; then \
-		mkdir -p ${GOPATH}/src/github.com/operator-framework ||: ; \
-		pushd ${GOPATH}/src/github.com/operator-framework ; \
-		[ ! -d ./operator-registry ] && git clone https://github.com/operator-framework/operator-registry ; \
-		cd operator-registry ; \
-		go build ./cmd/opm/ ; \
-		popd ; \
-	fi
-
-generate-bundle: opm
-	mkdir -p bundle; pushd bundle; ${GOPATH}/src/github.com/operator-framework/operator-registry/opm alpha bundle generate --directory ../manifests/4.6/ --package cluster-logging-operator --channels 4.6 --output-dir .; popd
+generate-bundle: $(OPM)
+	mkdir -p bundle; \
+	pushd bundle; \
+	$(OPM) alpha bundle generate --directory ../manifests/$(OCP_VERSION)/ --package cluster-logging-operator --channels $(OCP_VERSION) --output-dir .; \
+	popd
+.PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
-test-e2e-olm:
+test-e2e-olm: $(JUNITREPORT)
 	hack/test-e2e-olm.sh
 
-test-e2e-local: deploy-image
+test-e2e-local: $(JUNITREPORT) deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh

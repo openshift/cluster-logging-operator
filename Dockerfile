@@ -11,6 +11,7 @@ COPY go.mod .
 COPY go.sum .
 COPY vendor ./vendor
 COPY manifests ./manifests
+COPY .bingo .bingo
 COPY Makefile ./Makefile
 COPY pkg ./pkg
 

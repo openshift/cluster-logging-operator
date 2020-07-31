@@ -142,23 +142,24 @@ var _ = Describe("Generating external syslog server output store config blocks",
         severity debug
     	protocol tcp
     	packet_size 4096
-		timeout 60
-		timeout_exception true
-	    keep_alive true
+	timeout 60
+	timeout_exception true
+	keep_alive true
         keep_alive_idle 75
         keep_alive_cnt 9
         keep_alive_intvl 7200
-		<buffer >
-    		@type file
-    		path '/var/lib/fluentd/syslog_receiver'
-    		flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    		flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    		flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    		retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
-    		retry_forever true
-    		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-    		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+	<buffer >
+    	  @type file
+    	  path '/var/lib/fluentd/syslog_receiver'
+    	  flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
+    	  flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
+    	  flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
+    	  retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+    	  retry_forever true
+    	  queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+    	  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+       	  total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+    	  overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
     	</buffer>
     </store>
   </match>
@@ -192,6 +193,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
     		retry_forever true
     		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
     		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+       	        total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
     		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
     	</buffer>
     </store>
@@ -235,6 +237,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
     		retry_forever true
     		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
     		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+        	total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
     		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
     	</buffer>
     </store>
@@ -272,6 +275,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
     		retry_forever true
     		queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
     		chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
+       		total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
     		overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
     	</buffer>
     </store>

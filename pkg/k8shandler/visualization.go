@@ -413,6 +413,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
 func HasCLORef(object metav1.Object, request *ClusterLoggingRequest) bool {
 	refs := object.GetOwnerReferences()
 	for _, r := range refs {
+		r := r
 		bref := utils.AsOwner(request.cluster)
 		if AreRefsEqual(&r, &bref) {
 			return true

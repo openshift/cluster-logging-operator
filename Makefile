@@ -143,10 +143,6 @@ test-e2e-local: $(JUNITREPORT) deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh
 
-test-sec:
-	GOFLAGS="" GO111MODULE=off go get -u github.com/securego/gosec/cmd/gosec
-	gosec -severity medium --confidence medium -quiet ./...
-
 undeploy:
 	hack/undeploy.sh
 

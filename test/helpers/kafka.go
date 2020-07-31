@@ -3,8 +3,6 @@ package helpers
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 
@@ -124,7 +122,6 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error
 
 	// Hack Teach kafka-console-consumer to output a proper json array
 	out := "[" + strings.TrimRight(strings.Replace(stdout, "\n", ",", -1), ",") + "]"
-	_ = ioutil.WriteFile("/tmp/consumed.logs", []byte(out), os.ModePerm)
 	logs, err := ParseLogs(out)
 	if err != nil {
 		return nil, fmt.Errorf("Parse error: %s", err)

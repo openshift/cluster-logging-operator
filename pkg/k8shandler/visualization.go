@@ -292,6 +292,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 
 				hashKey := fmt.Sprintf("%s%s", constants.SecretHashPrefix, secretName)
 				if current.Spec.Template.ObjectMeta.Annotations[hashKey] != kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey] {
+					current.Spec.Template.ObjectMeta.Annotations[hashKey] = kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey]
 					different = true
 				}
 			}

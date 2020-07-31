@@ -54,6 +54,11 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
 	}
 
+	// Reconcile Metrics Dashboards
+	if err = clusterLoggingRequest.CreateOrUpdateDashboards(); err != nil {
+		return fmt.Errorf("Unable to create or update metrics dashboards for %q: %w", clusterLoggingRequest.cluster.Name, err)
+	}
+
 	return nil
 }
 

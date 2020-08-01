@@ -1,6 +1,7 @@
 package fluentd
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"text/template"
@@ -122,9 +123,9 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	}{
 		engine.includeLegacyForwardConfig,
 		engine.includeLegacySyslogConfig,
-		inputs.Has(string(logging.InputNameInfrastructure)),
-		inputs.Has(string(logging.InputNameApplication)),
-		inputs.Has(string(logging.InputNameAudit)),
+		inputs.Has(logging.InputNameInfrastructure),
+		inputs.Has(logging.InputNameApplication),
+		inputs.Has(logging.InputNameAudit),
 		sourceInputLabels,
 		sourceToPipelineLabels,
 		pipelineToOutputLabels,
@@ -182,7 +183,7 @@ func inputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMa
 
 //generateSourceToPipelineLabels generates fluentd label stanzas to fan source types to multiple pipelines
 func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines logging.RouteMap) ([]string, error) {
-	configs := []string{}
+	var configs []string
 	for sourceType, pipelineNames := range sourcesToPipelines {
 		data := struct {
 			IncludeLegacySecureForward bool
@@ -192,7 +193,7 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 		}{
 			engine.includeLegacyForwardConfig,
 			engine.includeLegacySyslogConfig,
-			string(sourceType),
+			sourceType,
 			pipelineNames.List(),
 		}
 		result, err := engine.Execute("sourceToPipelineCopyTemplate", data)
@@ -205,14 +206,26 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 }
 
 func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []logging.PipelineSpec) ([]string, error) {
-	configs := []string{}
+	var configs []string
 	for _, pipeline := range pipelines {
+		var jsonLabels string
+
+		if pipeline.Labels != nil {
+			marshalledLabels, err := json.Marshal(pipeline.Labels)
+			if err != nil {
+				return nil, fmt.Errorf("unable to marshal pipeline labels: %v", err)
+			}
+			jsonLabels = string(marshalledLabels)
+		}
+
 		data := struct {
-			Name    string
-			Outputs []string
+			Name           string
+			Outputs        []string
+			PipelineLabels string
 		}{
 			pipeline.Name,
 			pipeline.OutputRefs,
+			jsonLabels,
 		}
 		result, err := engine.Execute("pipelineToOutputCopyTemplate", data)
 		if err != nil {
@@ -236,7 +249,7 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 //  </match>
 // </label>
 func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.OutputSpec, outputConf *logging.ForwarderSpec) ([]string, error) {
-	configs := []string{}
+	var configs []string
 	logger.Debugf("Evaluating %v forwarder logging...", len(outputs))
 	for _, output := range outputs {
 		logger.Debugf("Generate output type %v", output.Type)

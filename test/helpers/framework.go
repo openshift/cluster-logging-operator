@@ -64,6 +64,8 @@ type LogStore interface {
 
 	GrepLogs(expr string, timeToWait time.Duration) (string, error)
 
+	RetrieveLogs() (map[string]string, error)
+
 	ClusterLocalEndpoint() string
 }
 

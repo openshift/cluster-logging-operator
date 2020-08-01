@@ -224,6 +224,10 @@ func (syslog *syslogReceiverLogStore) GrepLogs(expr string, timeToWait time.Dura
 	return syslog.grepLogs(expr, "/var/log/infra.log", timeToWait)
 }
 
+func (syslog *syslogReceiverLogStore) RetrieveLogs() (map[string]string, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
+
 func (syslog *syslogReceiverLogStore) ClusterLocalEndpoint() string {
 	panic("Not implemented")
 }

@@ -1,0 +1,37 @@
+#!/bin/bash
+BASE_COLLECTION_PATH="${1:-/must-gather}"
+mkdir -p "${BASE_COLLECTION_PATH}"
+
+# resource list
+resources=()
+
+# cluser logging operator namespace
+resources+=(ns/openshift-logging)
+
+# elatiscsearch operator namespace
+resources+=(ns/openshift-operators-redhat)
+
+# cluster-scoped resources
+resources+=(nodes)
+resources+=(events)
+resources+=(persistentvolumes)
+
+# run the collection of resources using must-gather
+for resource in ${resources[@]}; do
+  oc adm inspect --dest-dir="${BASE_COLLECTION_PATH}" --all-namespaces "${resource}" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+done
+
+{
+    # Call operator and installation gather scripts
+    ./gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH"
+    ./gather_elasticsearch_operator_resources "$BASE_COLLECTION_PATH"
+    ./gather_install_resources "$BASE_COLLECTION_PATH"
+
+    # Call per component gather scripts
+    ./gather_collection_resources "$BASE_COLLECTION_PATH"
+    ./gather_curation_resources "$BASE_COLLECTION_PATH"
+    ./gather_logstore_resources "$BASE_COLLECTION_PATH"
+    ./gather_visualization_resources "$BASE_COLLECTION_PATH"
+} >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+
+exit 0

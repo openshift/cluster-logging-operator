@@ -27,7 +27,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 				{
 					Type: "fluentdForward",
 					Name: "secureforward-receiver",
-					URL:  "es.svc.messaging.cluster.local:9654",
+					URL:  "https://es.svc.messaging.cluster.local:9654",
 					Secret: &logging.OutputSecretSpec{
 						Name: "my-infra-secret",
 					},
@@ -91,7 +91,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 				{
 					Type: "fluentdForward",
 					Name: "secureforward-receiver",
-					URL:  "es.svc.messaging.cluster.local:9654",
+					URL:  "http://es.svc.messaging.cluster.local:9654",
 				},
 			}
 		})
@@ -103,7 +103,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 			<match **>
 				# https://docs.fluentd.org/v1.0/articles/in_forward
 			  @type forward
-	   
+
 			  <buffer>
 				@type file
 				path '/var/lib/fluentd/secureforward_receiver'

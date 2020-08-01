@@ -8,10 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/url"
 )
 
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
-var protocolSeparator = "://"
 
 type outputLabelConf struct {
 	Name            string
@@ -22,15 +22,17 @@ type outputLabelConf struct {
 	TemplateContext *template.Template
 	hints           sets.String
 	storeTemplate   string
+	URL             *url.URL
 }
 
-func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, config *logging.ForwarderSpec, fluentTags ...string) *outputLabelConf {
-	if target.Type == logging.OutputTypeSyslog && target.Syslog == nil {
-		target.Syslog = &logging.Syslog{
-			RFC: "RFC5424",
-		}
+func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, config *logging.ForwarderSpec, fluentTags ...string) (*outputLabelConf, error) {
+	u, err := url.ParseAbsoluteOrEmpty(target.URL)
+	if err != nil {
+		return nil, fmt.Errorf("url field: %v", err)
 	}
-
+	if target.Type == logging.OutputTypeSyslog && target.Syslog == nil {
+		target.Syslog = &logging.Syslog{RFC: "RFC5424"}
+	}
 	return &outputLabelConf{
 		Name:            target.Name,
 		Target:          target,
@@ -38,8 +40,10 @@ func newOutputLabelConf(t *template.Template, storeTemplate string, target loggi
 		forwarder:       config,
 		fluentTags:      sets.NewString(fluentTags...),
 		storeTemplate:   storeTemplate,
-	}
+		URL:             u,
+	}, nil
 }
+
 func (conf *outputLabelConf) StoreTemplate() string {
 	return conf.storeTemplate
 }
@@ -52,33 +56,27 @@ func (conf *outputLabelConf) Hints() sets.String {
 func (conf *outputLabelConf) Template() *template.Template {
 	return conf.TemplateContext
 }
-func (conf *outputLabelConf) Host() string {
-	endpoint := stripProtocol(conf.Target.URL)
-	return strings.Split(endpoint, ":")[0]
-}
+func (conf *outputLabelConf) Host() string { return conf.URL.Hostname() }
 
 func (conf *outputLabelConf) Port() string {
-	endpoint := stripProtocol(conf.Target.URL)
-	parts := strings.Split(endpoint, ":")
-	if len(parts) == 1 {
+	p := conf.URL.Port()
+	if p == "" {
 		return "9200"
 	}
-	return parts[1]
+	return p
 }
 
+// Protocol returns the insecure base protocol name used in fluentd configuration.
 func (conf *outputLabelConf) Protocol() string {
-	endpoint := conf.Target.URL
-	if index := strings.Index(endpoint, protocolSeparator); index != -1 {
-		return endpoint[:index]
+	protocol := strings.ToLower(conf.URL.Scheme)
+	switch protocol {
+	case "tls":
+		return "tcp" // Fluentd uses "tcp" for TLS connections, TLS is dealt with elsewhere.
+	case "udps":
+		return "udp"
+	default:
+		return protocol
 	}
-	return ""
-}
-
-func stripProtocol(endpoint string) string {
-	if index := strings.Index(endpoint, protocolSeparator); index != -1 {
-		endpoint = endpoint[index+len(protocolSeparator):]
-	}
-	return endpoint
 }
 
 func (conf *outputLabelConf) BufferPath() string {

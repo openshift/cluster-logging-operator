@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/status"
+	"github.com/openshift/cluster-logging-operator/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -248,6 +249,10 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			output.Name = fmt.Sprintf("output[%v]", i)
 			status.Outputs.Set(output.Name, condInvalid(format, args...))
 		}
+		var urlErr error
+		if output.URL != "" { // Allow missing URL
+			_, urlErr = url.ParseAbsolute(output.URL)
+		}
 		switch {
 		case output.Name == "":
 			badName("output must have a name")
@@ -257,8 +262,8 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			badName("duplicate name: %q", output.Name)
 		case !logging.IsOutputTypeName(output.Type):
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
-		case output.URL == "":
-			status.Outputs.Set(output.Name, condInvalid("output %q: missing URL", output.Name))
+		case urlErr != nil:
+			status.Outputs.Set(output.Name, condInvalid("%v", urlErr))
 		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
 			break
 		default:
@@ -267,6 +272,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		}
 		names.Insert(output.Name)
 	}
+
 	// Add the default output if required and available.
 	routes := logging.NewRoutes(clusterRequest.ForwarderSpec.Pipelines)
 	name := logging.OutputNameDefault

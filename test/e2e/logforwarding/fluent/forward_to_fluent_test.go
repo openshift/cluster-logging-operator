@@ -78,7 +78,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						},
 					},
 				}
-				logger.Infof("FIXME creating %v", forwarder)
 				if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 					Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 				}

@@ -259,10 +259,13 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		default:
 			return nil, fmt.Errorf("Unknown outpt type: %v", output.Type)
 		}
-		conf := newOutputLabelConf(engine.Template, engine.storeTemplate, output, outputConf)
+		conf, err := newOutputLabelConf(engine.Template, engine.storeTemplate, output, outputConf)
+		if err != nil {
+			return nil, fmt.Errorf("generating fluentd output label: %v", err)
+		}
 		result, err := engine.Execute(engine.outputTemplate, conf)
 		if err != nil {
-			return nil, fmt.Errorf("Error generating fluentd config Processing template outputLabelConf: %v", err)
+			return nil, fmt.Errorf("generating fluent output label: %v", err)
 		}
 		configs = append(configs, result)
 	}

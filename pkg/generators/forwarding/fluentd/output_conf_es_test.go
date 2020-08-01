@@ -27,7 +27,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				{
 					Type: logging.OutputTypeElasticsearch,
 					Name: "oncluster-elasticsearch",
-					URL:  "es.svc.messaging.cluster.local:9654",
+					URL:  "https://es.svc.messaging.cluster.local:9654",
 					Secret: &logging.OutputSecretSpec{
 						Name: "my-es-secret",
 					},
@@ -171,7 +171,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				{
 					Type: logging.OutputTypeElasticsearch,
 					Name: "other-elasticsearch",
-					URL:  "es.svc.messaging.cluster.local:9654",
+					URL:  "http://es.svc.messaging.cluster.local:9654",
 				},
 			}
 		})

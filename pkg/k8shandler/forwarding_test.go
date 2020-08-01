@@ -531,7 +531,7 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 	}
 }
 
-var _ = DescribeTable("Normalizing rounnd trip of valid YAML specs",
+var _ = DescribeTable("Normalizing round trip of valid YAML specs",
 
 	func(yamlSpec string) {
 		request := ClusterLoggingRequest{

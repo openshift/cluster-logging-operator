@@ -492,6 +492,14 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
 
 const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" -}}
 <label {{labelName .Name}}>
+  {{ if .PipelineLabels -}}
+  <filter **>
+    @type record_transformer
+    <record>
+      openshift { "labels": {{.PipelineLabels}} }
+    </record>
+  </filter>
+  {{ end -}}
   <match **>
     @type copy
 {{ range $index, $target := .Outputs }}

@@ -183,7 +183,7 @@ func inputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMa
 
 //generateSourceToPipelineLabels generates fluentd label stanzas to fan source types to multiple pipelines
 func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines logging.RouteMap) ([]string, error) {
-	var configs []string
+	configs := []string{}
 	for sourceType, pipelineNames := range sourcesToPipelines {
 		data := struct {
 			IncludeLegacySecureForward bool
@@ -206,7 +206,7 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 }
 
 func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []logging.PipelineSpec) ([]string, error) {
-	var configs []string
+	configs := []string{}
 	for _, pipeline := range pipelines {
 		var jsonLabels string
 
@@ -249,7 +249,7 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 //  </match>
 // </label>
 func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.OutputSpec, outputConf *logging.ForwarderSpec) ([]string, error) {
-	var configs []string
+	configs := []string{}
 	logger.Debugf("Evaluating %v forwarder logging...", len(outputs))
 	for _, output := range outputs {
 		logger.Debugf("Generate output type %v", output.Type)

@@ -5,6 +5,8 @@ metadata:
 spec:
   group: logging.openshift.io
   names:
+    categories:
+    - logging
     kind: ClusterLogForwarder
     listKind: ClusterLogForwarderList
     plural: clusterlogforwarders

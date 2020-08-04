@@ -140,26 +140,42 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdServiceMonitor
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule() error {
-
+	ctx := context.TODO()
 	cluster := clusterRequest.cluster
 
-	promRule := NewPrometheusRule(fluentdName, cluster.Namespace)
+	rule := NewPrometheusRule(fluentdName, cluster.Namespace)
 
-	promRuleSpec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + fluentdAlertsFile)
+	spec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + fluentdAlertsFile)
 	if err != nil {
-		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
+		return fmt.Errorf("failure creating the fluentd PrometheusRule: %w", err)
 	}
 
-	promRule.Spec = *promRuleSpec
+	rule.Spec = *spec
 
-	utils.AddOwnerRefToObject(promRule, utils.AsOwner(cluster))
+	utils.AddOwnerRefToObject(rule, utils.AsOwner(cluster))
 
-	err = clusterRequest.Create(promRule)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
+	err = clusterRequest.Create(rule)
+	if err == nil {
+		return nil
+	}
+	if !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("failure creating the fluentd PrometheusRule: %w", err)
 	}
 
-	return nil
+	current := &monitoringv1.PrometheusRule{}
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		err = clusterRequest.client.Get(ctx, types.NamespacedName{Name: rule.Name, Namespace: rule.Namespace}, current)
+		if err != nil {
+			logrus.Debugf("could not get prometheus rule %q: %v", rule.Name, err)
+			return err
+		}
+		current.Spec = rule.Spec
+		if err = clusterRequest.client.Update(ctx, current); err != nil {
+			return err
+		}
+		logrus.Debug("updated prometheus rules")
+		return nil
+	})
 }
 
 // includeLegacyForwardConfig to address Bug 1782566.

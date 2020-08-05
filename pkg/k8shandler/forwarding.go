@@ -244,7 +244,8 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
 	status.Outputs = logging.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
-	for i, output := range clusterRequest.ForwarderSpec.Outputs {
+	for i, out := range clusterRequest.ForwarderSpec.Outputs {
+		output := out
 		badName := func(format string, args ...interface{}) {
 			output.Name = fmt.Sprintf("output[%v]", i)
 			status.Outputs.Set(output.Name, condInvalid(format, args...))

@@ -404,6 +404,7 @@ func RunCleanupScript() {
 			return
 		}
 		args := strings.Split(value, " ")
+		// #nosec G204
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Env = nil
 		result, err := cmd.CombinedOutput()

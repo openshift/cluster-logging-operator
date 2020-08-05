@@ -1,6 +1,7 @@
 package utils
 
 import (
+	// #nosec G501
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -56,6 +57,7 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 
 //CalculateMD5Hash returns a MD5 hash of the give text
 func CalculateMD5Hash(text string) (string, error) {
+	// #nosec G401
 	hasher := md5.New()
 	_, err := hasher.Write([]byte(text))
 	if err != nil {
@@ -209,7 +211,7 @@ func GetWorkingDirFilePath(toFile string) string {
 
 func WriteToWorkingDirFile(toFile string, value []byte) error {
 
-	if err := ioutil.WriteFile(GetWorkingDirFilePath(toFile), value, 0644); err != nil {
+	if err := ioutil.WriteFile(GetWorkingDirFilePath(toFile), value, 0600); err != nil {
 		return fmt.Errorf("Unable to write to working dir: %v", err)
 	}
 

@@ -1,5 +1,7 @@
 #!/usr/bin/bash
 
+source .bingo/variables.env
+
 set -euo pipefail
 
 MANIFESTS_DIR=${1:-"manifests/${OCP_VERSION}"}
@@ -9,18 +11,18 @@ CLO_CRD_FILE="logging.openshift.io_clusterloggings_crd.yaml"
 echo "--------------------------------------------------------------"
 echo "Generate k8s golang code"
 echo "--------------------------------------------------------------"
-operator-sdk generate k8s
+$OPERATOR_SDK generate k8s
 
 echo "--------------------------------------------------------------"
 echo "Generate CRDs for apiVersion v1beta1"
 echo "--------------------------------------------------------------"
-operator-sdk generate crds --crd-version v1beta1
+$OPERATOR_SDK generate crds --crd-version v1beta1
 mv "deploy/crds/${CLO_CRD_FILE}" "${MANIFESTS_DIR}"
 
 echo "--------------------------------------------------------------"
 echo "Generate CRDs for apiVersion v1"
 echo "--------------------------------------------------------------"
-operator-sdk generate crds --crd-version v1
+$OPERATOR_SDK generate crds --crd-version v1
 mv "deploy/crds/${CLF_CRD_FILE}" "${MANIFESTS_DIR}"
 
 echo "---------------------------------------------------------------"

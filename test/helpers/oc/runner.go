@@ -48,6 +48,7 @@ func (r *runner) Run() (string, error) {
 }
 
 func (r *runner) runCmd() (string, error) {
+	// #nosec G204
 	r.Cmd = osexec.Command(CMD, r.args...)
 	var outbuf bytes.Buffer
 	var errbuf bytes.Buffer

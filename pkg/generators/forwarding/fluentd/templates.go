@@ -224,7 +224,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     dest_time_name '@timestamp'
     pipeline_type 'collector'
     undefined_to_string 'false'
-    undefined_to_replace_char 'UNUSED'
+    undefined_dot_replace_char 'UNUSED'
     undefined_max_num_fields '-1'
     process_kubernetes_events 'false'
     <formatter>
@@ -385,7 +385,6 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
   {{end -}}
   exclude_path ["/var/log/containers/{{.CollectorPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.LogStorePodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.VisualizationPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log"]
   pos_file "/var/log/es-containers.log.pos"
-  pos_file_compaction_interval 1800
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
@@ -416,7 +415,6 @@ const inputSourceHostAuditTemplate = `{{- define "inputSourceHostAuditTemplate" 
   @label @INGRESS
   path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
   pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
-  pos_file_compaction_interval 1800
   tag linux-audit.log
   <parse>
     @type viaq_host_audit
@@ -432,7 +430,6 @@ const inputSourceK8sAuditTemplate = `{{- define "inputSourceK8sAuditTemplate" -}
   @label @INGRESS
   path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
   pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
-  pos_file_compaction_interval 1800
   tag k8s-audit.log
   <parse>
     @type json
@@ -452,7 +449,6 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
   @label @INGRESS
   path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
   pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
-  pos_file_compaction_interval 1800
   tag openshift-audit.log
   <parse>
     @type json

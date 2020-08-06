@@ -111,7 +111,6 @@ var _ = Describe("Generating fluentd config", func() {
   path /var/log/containers/*_project1-namespace_*.log, /var/log/containers/*_project2-namespace_*.log
   exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
   pos_file "/var/log/es-containers.log.pos"
-  pos_file_compaction_interval 1800
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
@@ -204,7 +203,6 @@ var _ = Describe("Generating fluentd config", func() {
 				path "/var/log/containers/*.log"
 				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
-				pos_file_compaction_interval 1800
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
@@ -368,7 +366,7 @@ var _ = Describe("Generating fluentd config", func() {
 					dest_time_name '@timestamp'
 					pipeline_type 'collector'
 					undefined_to_string 'false'
-					undefined_to_replace_char 'UNUSED'
+					undefined_dot_replace_char 'UNUSED'
 					undefined_max_num_fields '-1'
 					process_kubernetes_events 'false'
 					<formatter>
@@ -571,7 +569,6 @@ var _ = Describe("Generating fluentd config", func() {
 				path "/var/log/containers/*.log"
 				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
 				pos_file "/var/log/es-containers.log.pos"
-				pos_file_compaction_interval 1800
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
@@ -600,7 +597,6 @@ var _ = Describe("Generating fluentd config", func() {
               @label @INGRESS
               path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
               pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
-              pos_file_compaction_interval 1800
               tag linux-audit.log
               <parse>
                 @type viaq_host_audit
@@ -614,7 +610,6 @@ var _ = Describe("Generating fluentd config", func() {
               @label @INGRESS
               path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
               pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
-              pos_file_compaction_interval 1800
               tag k8s-audit.log
               <parse>
                 @type json
@@ -632,7 +627,6 @@ var _ = Describe("Generating fluentd config", func() {
               @label @INGRESS
               path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
               pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
-              pos_file_compaction_interval 1800
               tag openshift-audit.log
               <parse>
                 @type json
@@ -785,7 +779,7 @@ var _ = Describe("Generating fluentd config", func() {
 					dest_time_name '@timestamp'
 					pipeline_type 'collector'
 					undefined_to_string 'false'
-					undefined_to_replace_char 'UNUSED'
+					undefined_dot_replace_char 'UNUSED'
 					undefined_max_num_fields '-1'
 					process_kubernetes_events 'false'
 					<formatter>
@@ -1407,7 +1401,6 @@ var _ = Describe("Generating fluentd config", func() {
       path /var/log/containers/*_project1_*.log, /var/log/containers/*_project2_*.log
       exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
       pos_file "/var/log/es-containers.log.pos"
-      pos_file_compaction_interval 1800
       refresh_interval 5
       rotate_wait 5
       tag kubernetes.*
@@ -1585,7 +1578,7 @@ var _ = Describe("Generating fluentd config", func() {
         dest_time_name '@timestamp'
         pipeline_type 'collector'
         undefined_to_string 'false'
-        undefined_to_replace_char 'UNUSED'
+        undefined_dot_replace_char 'UNUSED'
         undefined_max_num_fields '-1'
         process_kubernetes_events 'false'
         <formatter>

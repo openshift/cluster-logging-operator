@@ -31,13 +31,34 @@
     "labels":
       "service": "fluentd"
       "severity": "critical"
-  - "alert": "FluentdErrorsHigh"
-    "annotations":
-      "message": "In the last minute, {{ $value }} errors reported by fluentd {{ $labels.instance }}."
-      "summary": "Fluentd reports high number of errors"
-    "expr": |
-      sum by(instance, job) (rate(fluentd_output_status_num_errors[1m])) > 10
-    "for": "1m"
-    "labels":
-      "service": "fluentd"
-      "severity": "critical"
+
+  - alert: FluentDHighErrorRate
+    annotations:
+      message: |-
+        {{ $value }}% of records have resulted in an error by fluentd {{ $labels.instance }}.
+      summary: FluentD output errors are high
+    expr: |
+      100 * (
+        sum by(instance)(rate(fluentd_output_status_num_errors[2m]))
+      /
+        sum by(instance)(rate(fluentd_output_status_emit_records[2m]))
+      ) > 10
+    for: 15m
+    labels:
+      severity: warning
+
+  - alert: FluentDVeryHighErrorRate
+    annotations:
+      message: |-
+        {{ $value }}% of records have resulted in an error by fluentd {{ $labels.instance }}.
+      summary: FluentD output errors are very high
+    expr: |
+      100 * (
+        sum by(instance)(rate(fluentd_output_status_num_errors[2m]))
+      /
+        sum by(instance)(rate(fluentd_output_status_emit_records[2m]))
+      ) > 25
+    for: 15m
+    labels:
+      severity: critical
+

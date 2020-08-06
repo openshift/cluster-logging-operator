@@ -575,7 +575,9 @@ func TestIndexManagementChanges(t *testing.T) {
 	if !different {
 		t.Errorf("Expected that difference would be found due to retention policy change")
 	}
-	if !(diffCR.Spec.IndexManagement.Policies[0].Name == indexmanagement.PolicyNameAudit) {
+
+	if diffCR.Spec.IndexManagement.Policies[2].Name != indexmanagement.PolicyNameAudit ||
+		diffCR.Spec.IndexManagement.Policies[2].Phases.Delete.MinAge != cluster.Spec.LogStore.RetentionPolicy.Audit.MaxAge {
 		t.Errorf("Expected that difference would be found due to retention policy change")
 	}
 }

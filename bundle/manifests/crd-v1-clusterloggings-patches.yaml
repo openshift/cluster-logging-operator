@@ -1,5 +1,5 @@
 - op: replace
-  path: /spec/validation/openAPIV3Schema/properties/metadata
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/metadata
   value:
     type: object
     properties:
@@ -8,6 +8,6 @@
         enum:
         - "instance"
 - op: replace
-  path: /spec/validation/openAPIV3Schema/properties/status
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/status
   value:
     type: object

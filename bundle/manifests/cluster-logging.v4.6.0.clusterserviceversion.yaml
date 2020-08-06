@@ -250,6 +250,12 @@ spec:
           verbs:
           - "*"
         - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - "*"
+        - apiGroups:
           - scheduling.k8s.io
           resources:
           - priorityclasses

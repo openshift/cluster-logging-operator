@@ -641,7 +641,7 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
   reload_after '200'
   # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-  
+  sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
   reload_on_failure false
   # 2 ^ 31
   request_timeout 2147483648

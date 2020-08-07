@@ -72,6 +72,9 @@ spec:
                       - logs.app
                       - logs.infra
                       - logs.audit
+                  labels:
+                    type: map
+                    description: Pipeline labels in the key:value format
               required:
               - name
               - source

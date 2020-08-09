@@ -38,7 +38,7 @@ var serviceAccountLogCollectorUID types.UID
 
 //CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfig *configv1.Proxy) (err error) {
-	cluster := clusterRequest.cluster
+	cluster := clusterRequest.Cluster
 	collectorConfig := ""
 	collectorConfHash := ""
 
@@ -120,7 +120,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 
 func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 
-	cluster := clusterRequest.cluster
+	cluster := clusterRequest.Cluster
 
 	fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
 	if err != nil {
@@ -188,7 +188,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityCla
 
 	collectionPriorityClass := NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging Collector")
 
-	utils.AddOwnerRefToObject(collectionPriorityClass, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(collectionPriorityClass, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(collectionPriorityClass)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -200,11 +200,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityCla
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccount() (*core.ServiceAccount, error) {
 
-	cluster := clusterRequest.cluster
+	cluster := clusterRequest.Cluster
 
 	collectorServiceAccount := NewServiceAccount("logcollector", cluster.Namespace)
 
-	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(clusterRequest.Cluster))
 
 	delfinalizer := false
 	if collectorServiceAccount.ObjectMeta.DeletionTimestamp.IsZero() {

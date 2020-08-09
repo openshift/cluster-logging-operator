@@ -83,13 +83,13 @@ func (clusterRequest *ClusterLoggingRequest) writeSecret() (err error) {
 
 	secret := NewSecret(
 		constants.MasterCASecretName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string][]byte{
 			"masterca":  utils.GetWorkingDirFileContents("ca.crt"),
 			"masterkey": utils.GetWorkingDirFileContents("ca.key"),
 		})
 
-	utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.Cluster))
 
 	err = clusterRequest.CreateOrUpdateSecret(secret)
 	if err != nil {
@@ -133,7 +133,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	}
 
 	scriptsDir := utils.GetScriptsDir()
-	if err = GenerateCertificates(clusterRequest.cluster.Namespace, scriptsDir, "elasticsearch", utils.DefaultWorkingDir); err != nil {
+	if err = GenerateCertificates(clusterRequest.Cluster.Namespace, scriptsDir, "elasticsearch", utils.DefaultWorkingDir); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 

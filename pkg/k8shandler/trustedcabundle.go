@@ -16,7 +16,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap
 	logrus.Debug("createOrGetTrustedCABundleConfigMap...")
 	configMap := NewConfigMap(
 		name,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string]string{
 			constants.TrustedCABundleKey: "",
 		},
@@ -24,12 +24,12 @@ func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap
 	configMap.ObjectMeta.Labels = make(map[string]string)
 	configMap.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
 
-	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(configMap)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("failed to create trusted CA bundle config map %q for %q: %s", name, clusterRequest.cluster.Name, err)
+			return nil, fmt.Errorf("failed to create trusted CA bundle config map %q for %q: %s", name, clusterRequest.Cluster.Name, err)
 		}
 
 		// Get the existing config map which may include an injected CA bundle
@@ -37,9 +37,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap
 			if errors.IsNotFound(err) {
 				// the object doesn't exist -- it was likely culled
 				// recreate it on the next time through if necessary
-				return nil, fmt.Errorf("failed to find trusted CA bundle config map %q for %q: %s", name, clusterRequest.cluster.Name, err)
+				return nil, fmt.Errorf("failed to find trusted CA bundle config map %q for %q: %s", name, clusterRequest.Cluster.Name, err)
 			}
-			return nil, fmt.Errorf("failed to get trusted CA bundle config map %q for %q: %s", name, clusterRequest.cluster.Name, err)
+			return nil, fmt.Errorf("failed to get trusted CA bundle config map %q for %q: %s", name, clusterRequest.Cluster.Name, err)
 		}
 	}
 	return configMap, err

@@ -32,8 +32,8 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client: fake.NewFakeClient(),
-		cluster: &logging.ClusterLogging{
+		Client: fake.NewFakeClient(),
+		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "instance",
 				Namespace: "test-namespace",
@@ -94,8 +94,8 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client: fake.NewFakeClient(),
-		cluster: &logging.ClusterLogging{
+		Client: fake.NewFakeClient(),
+		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "instance",
 				Namespace: "test-namespace",
@@ -169,8 +169,8 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client: fake.NewFakeClient(),
-		cluster: &logging.ClusterLogging{
+		Client: fake.NewFakeClient(),
+		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "instance",
 				Namespace: "test-namespace",
@@ -236,8 +236,8 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client: fake.NewFakeClient(),
-		cluster: &logging.ClusterLogging{
+		Client: fake.NewFakeClient(),
+		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "instance",
 				Namespace: "test-namespace",

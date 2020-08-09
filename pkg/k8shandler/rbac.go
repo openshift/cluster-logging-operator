@@ -107,7 +107,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateClusterRole(name string, rule
 		Rules: rules,
 	}
 
-	utils.AddOwnerRefToObject(clusterRole, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(clusterRole, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(clusterRole)
 	if err != nil && !errors.IsAlreadyExists(err) {

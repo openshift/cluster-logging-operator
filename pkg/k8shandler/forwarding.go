@@ -16,28 +16,28 @@ import (
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 
-	if clusterRequest.cluster == nil || clusterRequest.cluster.Spec.Collection == nil {
+	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
 		logger.Warnf("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
 		return "", nil
 	}
 
-	switch clusterRequest.cluster.Spec.Collection.Logs.Type {
+	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
 	case logging.LogCollectionTypeFluentd:
 		break
 	default:
-		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.cluster.Spec.Collection.Logs.Type)
+		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Logs.Type)
 	}
 
 	if clusterRequest.ForwarderRequest == nil {
 		clusterRequest.ForwarderRequest = &logging.ClusterLogForwarder{}
 	}
 
-	spec, status := clusterRequest.normalizeForwarder()
+	spec, status := clusterRequest.NormalizeForwarder()
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
 
 	generator, err := forwarding.NewConfigGenerator(
-		clusterRequest.cluster.Spec.Collection.Logs.Type,
+		clusterRequest.Cluster.Spec.Collection.Logs.Type,
 		clusterRequest.includeLegacyForwardConfig(),
 		clusterRequest.includeLegacySyslogConfig(),
 		clusterRequest.useOldRemoteSyslogPlugin(),
@@ -55,7 +55,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	}
 
 	clfSpec := &clusterRequest.ForwarderSpec
-	fwSpec := clusterRequest.cluster.Spec.Forwarder
+	fwSpec := clusterRequest.Cluster.Spec.Forwarder
 	generatedConfig, err := generator.Generate(clfSpec, fwSpec)
 
 	if err != nil {
@@ -79,13 +79,13 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	return generatedConfig, err
 }
 
-// normalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
-func (clusterRequest *ClusterLoggingRequest) normalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
+// NormalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
+func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
 	logger.DebugObject("Normalizing ClusterLogForwarder from request: %v", clusterRequest)
 
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
-		if clusterRequest.cluster.Spec.LogStore != nil && clusterRequest.cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
+		if clusterRequest.Cluster.Spec.LogStore != nil && clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 			logger.Debug("ClusterLogForwarder forwarding to default store")
 			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
 				{
@@ -278,7 +278,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 	routes := logging.NewRoutes(clusterRequest.ForwarderSpec.Pipelines)
 	name := logging.OutputNameDefault
 	if _, ok := routes.ByOutput[name]; ok {
-		if clusterRequest.cluster.Spec.LogStore == nil {
+		if clusterRequest.Cluster.Spec.LogStore == nil {
 			status.Outputs.Set(name, condNotReady(logging.ReasonMissingResource, "no default log store specified"))
 		} else {
 			spec.Outputs = append(spec.Outputs, logging.OutputSpec{

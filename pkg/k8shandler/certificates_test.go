@@ -105,8 +105,8 @@ var _ = Describe("Reconciling", func() {
 				curatorSecret,
 			)
 			clusterRequest = &ClusterLoggingRequest{
-				client:  client,
-				cluster: cluster,
+				Client:  client,
+				Cluster: cluster,
 			}
 
 			os.Setenv("SCRIPTS_DIR", scriptsDir)

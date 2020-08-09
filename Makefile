@@ -22,6 +22,7 @@ FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 # Update code (generate, format), run unit tests and lint. Make sure e2e tests build.
 check: generate fmt test-unit
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
+	go build $(BUILD_OPTS) -o bin/forwarder-generator ./internal/cmd/forwarder-generator
 	$(MAKE) lint				  # Only lint if code builds.
 
 bin:

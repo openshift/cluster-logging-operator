@@ -447,8 +447,8 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
   @type tail
   @id openshift-audit-input
   @label @INGRESS
-  path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
-  pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+  pos_file /var/log/oauth-apiserver.audit.log
   tag openshift-audit.log
   <parse>
     @type json

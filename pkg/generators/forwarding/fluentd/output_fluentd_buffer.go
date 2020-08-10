@@ -43,7 +43,11 @@ func (olc *outputLabelConf) TotalLimitSize() string {
 
 func (olc *outputLabelConf) OverflowAction() string {
 	if hasBufferConfig(olc.forwarder) {
-		return string(olc.forwarder.Fluentd.Buffer.OverflowAction)
+		oa := string(olc.forwarder.Fluentd.Buffer.OverflowAction)
+
+		if oa != "" {
+			return oa
+		}
 	}
 
 	switch olc.Target.Type {
@@ -56,7 +60,11 @@ func (olc *outputLabelConf) OverflowAction() string {
 
 func (olc *outputLabelConf) FlushThreadCount() string {
 	if hasBufferConfig(olc.forwarder) {
-		return fmt.Sprintf("%d", olc.forwarder.Fluentd.Buffer.FlushThreadCount)
+		ftc := olc.forwarder.Fluentd.Buffer.FlushThreadCount
+
+		if ftc > 0 {
+			return fmt.Sprintf("%d", ftc)
+		}
 	}
 
 	return defaultFlushThreadCount
@@ -64,7 +72,11 @@ func (olc *outputLabelConf) FlushThreadCount() string {
 
 func (olc *outputLabelConf) FlushMode() string {
 	if hasBufferConfig(olc.forwarder) {
-		return string(olc.forwarder.Fluentd.Buffer.FlushMode)
+		fm := string(olc.forwarder.Fluentd.Buffer.FlushMode)
+
+		if fm != "" {
+			return fm
+		}
 	}
 
 	return defaultFlushMode
@@ -72,7 +84,11 @@ func (olc *outputLabelConf) FlushMode() string {
 
 func (olc *outputLabelConf) FlushInterval() string {
 	if hasBufferConfig(olc.forwarder) {
-		return string(olc.forwarder.Fluentd.Buffer.FlushInterval)
+		fi := string(olc.forwarder.Fluentd.Buffer.FlushInterval)
+
+		if fi != "" {
+			return fi
+		}
 	}
 
 	switch olc.Target.Type {
@@ -85,7 +101,11 @@ func (olc *outputLabelConf) FlushInterval() string {
 
 func (olc *outputLabelConf) RetryWait() string {
 	if hasBufferConfig(olc.forwarder) {
-		return string(olc.forwarder.Fluentd.Buffer.RetryWait)
+		rw := string(olc.forwarder.Fluentd.Buffer.RetryWait)
+
+		if rw != "" {
+			return rw
+		}
 	}
 
 	return defaultRetryWait
@@ -93,7 +113,11 @@ func (olc *outputLabelConf) RetryWait() string {
 
 func (olc *outputLabelConf) RetryType() string {
 	if hasBufferConfig(olc.forwarder) {
-		return string(olc.forwarder.Fluentd.Buffer.RetryType)
+		rt := string(olc.forwarder.Fluentd.Buffer.RetryType)
+
+		if rt != "" {
+			return rt
+		}
 	}
 
 	return defaultRetryType
@@ -101,7 +125,11 @@ func (olc *outputLabelConf) RetryType() string {
 
 func (olc *outputLabelConf) RetryMaxInterval() string {
 	if hasBufferConfig(olc.forwarder) {
-		return string(olc.forwarder.Fluentd.Buffer.RetryMaxInterval)
+		rmi := string(olc.forwarder.Fluentd.Buffer.RetryMaxInterval)
+
+		if rmi != "" {
+			return rmi
+		}
 	}
 
 	return defaultRetryMaxInterval

@@ -312,7 +312,6 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
 
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{
-		{Name: "runlogjournal", MountPath: "/run/log/journal"},
 		{Name: "varlog", MountPath: "/var/log"},
 		{Name: "varlibdockercontainers", ReadOnly: true, MountPath: "/var/lib/docker"},
 		{Name: "config", ReadOnly: true, MountPath: "/etc/fluent/configs.d/user"},
@@ -371,7 +370,6 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		"logcollector",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{
-			{Name: "runlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/run/log/journal"}}},
 			{Name: "varlog", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log"}}},
 			{Name: "varlibdockercontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/docker"}}},
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},

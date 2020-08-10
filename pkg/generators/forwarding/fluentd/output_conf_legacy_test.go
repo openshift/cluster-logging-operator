@@ -72,7 +72,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @type systemd
           @id systemd-input
           @label @INGRESS
-          path '/run/log/journal'
+          path '/var/log/journal'
           <storage>
             @type local
             persistent true
@@ -512,7 +512,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @type systemd
           @id systemd-input
           @label @INGRESS
-          path '/run/log/journal'
+          path '/var/log/journal'
           <storage>
             @type local
             persistent true
@@ -953,7 +953,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @type systemd
           @id systemd-input
           @label @INGRESS
-          path '/run/log/journal'
+          path '/var/log/journal'
           <storage>
             @type local
             persistent true

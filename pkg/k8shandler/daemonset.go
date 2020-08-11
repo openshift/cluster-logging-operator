@@ -71,7 +71,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveDaemonset(daemonsetName strin
 
 	daemonset := NewDaemonSet(
 		daemonsetName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		daemonsetName,
 		daemonsetName,
 		core.PodSpec{},

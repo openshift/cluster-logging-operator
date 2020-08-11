@@ -24,7 +24,7 @@ func NewServiceMonitor(serviceMonitorName, namespace string) *monitoringv1.Servi
 
 func (clusterRequest *ClusterLoggingRequest) RemoveServiceMonitor(smName string) error {
 
-	serviceMonitor := NewServiceMonitor(smName, clusterRequest.cluster.Namespace)
+	serviceMonitor := NewServiceMonitor(smName, clusterRequest.Cluster.Namespace)
 
 	err := clusterRequest.Delete(serviceMonitor)
 	if err != nil && !errors.IsNotFound(err) {

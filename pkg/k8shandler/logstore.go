@@ -23,15 +23,15 @@ const (
 )
 
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
-	if clusterRequest.cluster.Spec.LogStore == nil || clusterRequest.cluster.Spec.LogStore.Type == "" {
+	if clusterRequest.Cluster.Spec.LogStore == nil || clusterRequest.Cluster.Spec.LogStore.Type == "" {
 		if err = clusterRequest.removeElasticsearch(); err != nil {
 			return
 		}
 		return nil
 	}
-	if clusterRequest.cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
+	if clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 
-		cluster := clusterRequest.cluster
+		cluster := clusterRequest.Cluster
 
 		if err = clusterRequest.createOrUpdateElasticsearchSecret(); err != nil {
 			return nil
@@ -159,11 +159,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret()
 
 	esSecret := NewSecret(
 		elasticsearchResourceName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		LoadElasticsearchSecretMap(),
 	)
 
-	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.CreateOrUpdateSecret(esSecret)
 	if err != nil {
@@ -272,11 +272,11 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 
 func (clusterRequest *ClusterLoggingRequest) removeElasticsearchCR(elasticsearchName string) error {
 
-	esCr := newElasticsearchCR(clusterRequest.cluster, elasticsearchName)
+	esCr := newElasticsearchCR(clusterRequest.Cluster, elasticsearchName)
 
 	err := clusterRequest.Delete(esCr)
 	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting %v elasticsearch CR for %q: %v", elasticsearchName, clusterRequest.cluster.Name, err)
+		return fmt.Errorf("Failure deleting %v elasticsearch CR for %q: %v", elasticsearchName, clusterRequest.Cluster.Name, err)
 	}
 
 	return nil
@@ -284,7 +284,7 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearchCR(elasticsearch
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchCR() (err error) {
 
-	esCR := newElasticsearchCR(clusterRequest.cluster, elasticsearchResourceName)
+	esCR := newElasticsearchCR(clusterRequest.Cluster, elasticsearchResourceName)
 
 	err = clusterRequest.Create(esCR)
 	if err != nil && !errors.IsAlreadyExists(err) {

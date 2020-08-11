@@ -38,7 +38,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveService(serviceName string) e
 
 	service := NewService(
 		serviceName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		serviceName,
 		[]core.ServicePort{},
 	)

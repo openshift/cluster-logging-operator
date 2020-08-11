@@ -24,7 +24,7 @@ const defaultSchedule = "30 3,9,15,21 * * *"
 //CreateOrUpdateCuration reconciles curation for an instance of ClusterLogging
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error) {
 
-	cluster := clusterRequest.cluster
+	cluster := clusterRequest.Cluster
 	if cluster.Spec.Curation == nil || cluster.Spec.Curation.Type == "" {
 		if err = clusterRequest.removeCurator(); err != nil {
 			return
@@ -135,12 +135,12 @@ func (clusterRequest *ClusterLoggingRequest) removeCurator() (err error) {
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorServiceAccount() error {
 
-	curatorServiceAccount := NewServiceAccount("curator", clusterRequest.cluster.Namespace)
-	utils.AddOwnerRefToObject(curatorServiceAccount, utils.AsOwner(clusterRequest.cluster))
+	curatorServiceAccount := NewServiceAccount("curator", clusterRequest.Cluster.Namespace)
+	utils.AddOwnerRefToObject(curatorServiceAccount, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(curatorServiceAccount)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Curator service account for %q: %v", clusterRequest.cluster.Name, err)
+		return fmt.Errorf("Failure creating Curator service account for %q: %v", clusterRequest.Cluster.Name, err)
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorConfigMap() er
 
 	curatorConfigMap := NewConfigMap(
 		"curator",
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string]string{
 			"actions.yaml":  string(utils.GetFileContents(utils.GetShareDir() + "/curator/curator-actions.yaml")),
 			"curator5.yaml": string(utils.GetFileContents(utils.GetShareDir() + "/curator/curator5-config.yaml")),
@@ -158,11 +158,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorConfigMap() er
 		},
 	)
 
-	utils.AddOwnerRefToObject(curatorConfigMap, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(curatorConfigMap, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(curatorConfigMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing Curator configmap for %q: %v", clusterRequest.cluster.Name, err)
+		return fmt.Errorf("Failure constructing Curator configmap for %q: %v", clusterRequest.Cluster.Name, err)
 	}
 
 	return nil
@@ -172,7 +172,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorSecret() error
 
 	curatorSecret := NewSecret(
 		"curator",
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string][]byte{
 			"ca":       utils.GetWorkingDirFileContents("ca.crt"),
 			"key":      utils.GetWorkingDirFileContents("system.logging.curator.key"),
@@ -182,7 +182,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorSecret() error
 			"ops-cert": utils.GetWorkingDirFileContents("system.logging.curator.crt"),
 		})
 
-	utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.CreateOrUpdateSecret(curatorSecret)
 	if err != nil {
@@ -285,7 +285,7 @@ func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elas
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorCronJob() (err error) {
 
-	curatorCronJob := newCuratorCronJob(clusterRequest.cluster, "curator", "elasticsearch")
+	curatorCronJob := newCuratorCronJob(clusterRequest.Cluster, "curator", "elasticsearch")
 
 	err = clusterRequest.Create(curatorCronJob)
 	if err != nil && !errors.IsAlreadyExists(err) {

@@ -43,7 +43,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveOAuthClient(clientName string
 
 	oauthClient := NewOAuthClient(
 		clientName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		"",
 		[]string{},
 		[]string{},

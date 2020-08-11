@@ -77,7 +77,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveDeployment(deploymentName str
 
 	deployment := NewDeployment(
 		deploymentName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		deploymentName,
 		deploymentName,
 		core.PodSpec{},

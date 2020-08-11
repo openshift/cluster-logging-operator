@@ -116,8 +116,8 @@ var _ = Describe("Reconciling", func() {
 					fluentdCABundle,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					client:  client,
-					cluster: cluster,
+					Client:  client,
+					Cluster: cluster,
 				}
 			})
 

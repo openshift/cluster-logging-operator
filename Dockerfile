@@ -39,7 +39,7 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manife
 RUN rm /manifests/art.yaml
 
 COPY --from=origincli /usr/bin/oc /usr/bin/
-COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/* /usr/bin/
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/
 
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin

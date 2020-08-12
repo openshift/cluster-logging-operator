@@ -34,15 +34,7 @@ var (
 
 func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagementSpec {
 
-	// create a default sane policy if it isn't defined...
-	if retentionPolicy == nil {
-		retentionPolicy = newDefaultPoliciesSpec()
-	}
-	if retentionPolicy.App == nil && retentionPolicy.Infra == nil && retentionPolicy.Audit == nil {
-		logger.Info("Retention policy not defined for any log source. Cannot create Index management spec.")
-		return nil
-	}
-
+	retentionPolicy = newDefaultPoliciesSpec(retentionPolicy)
 	indexManagement := esapi.IndexManagementSpec{}
 	if retentionPolicy.App != nil {
 		hotPhaseAgeApp, err := getHotPhaseAge(retentionPolicy.App.MaxAge)
@@ -80,9 +72,9 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 	return &indexManagement
 }
 
-func newDefaultPoliciesSpec() *logging.RetentionPoliciesSpec {
+func newDefaultPoliciesSpec(spec *logging.RetentionPoliciesSpec) *logging.RetentionPoliciesSpec {
 
-	return &logging.RetentionPoliciesSpec{
+	defaultSpec := &logging.RetentionPoliciesSpec{
 		App: &logging.RetentionPolicySpec{
 			MaxAge: esapi.TimeUnit("7d"),
 		},
@@ -93,6 +85,18 @@ func newDefaultPoliciesSpec() *logging.RetentionPoliciesSpec {
 			MaxAge: esapi.TimeUnit("7d"),
 		},
 	}
+	if spec != nil {
+		if spec.App != nil {
+			defaultSpec.App = spec.App
+		}
+		if spec.Infra != nil {
+			defaultSpec.Infra = spec.Infra
+		}
+		if spec.Audit != nil {
+			defaultSpec.Audit = spec.Audit
+		}
+	}
+	return defaultSpec
 }
 
 func newPolicySpec(name string, maxIndexAge esapi.TimeUnit, hotPhaseAge esapi.TimeUnit) esapi.IndexManagementPolicySpec {

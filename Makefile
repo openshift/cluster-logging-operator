@@ -151,11 +151,10 @@ test-unit:
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-generate-bundle: $(OPM)
-	mkdir -p bundle; \
-	pushd bundle; \
-	$(OPM) alpha bundle generate --directory ../manifests/$(OCP_VERSION)/ --package cluster-logging-operator --channels $(OCP_VERSION) --output-dir .; \
-	popd
+MANIFEST_VERSION?="4.6"
+generate-bundle: regenerate $(OPM)
+	MANIFEST_VERSION=${MANIFEST_VERSION} hack/generate-bundle.sh
+	
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.

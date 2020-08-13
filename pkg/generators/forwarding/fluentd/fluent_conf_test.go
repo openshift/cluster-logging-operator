@@ -352,6 +352,15 @@ var _ = Describe("Generating fluentd config", func() {
 					</record>
 					remove_keys req,res,msg,name,level,v,pid,err
 				</filter>
+
+				<filter k8s-audit.log**>
+				  @type record_transformer
+				  <record>
+				    k8s_audit_level ${record['level']}
+				  </record>
+				  remove_keys level
+				</filter>
+
 				<filter **>
 					@type viaq_data_model
 					elasticsearch_index_prefix_field 'viaq_index_name'
@@ -765,6 +774,15 @@ var _ = Describe("Generating fluentd config", func() {
 					</record>
 					remove_keys req,res,msg,name,level,v,pid,err
 				</filter>
+
+				<filter k8s-audit.log**>
+				  @type record_transformer
+				  <record>
+				    k8s_audit_level ${record['level']}
+				  </record>
+				  remove_keys level
+				</filter>
+
 				<filter **>
 					@type viaq_data_model
 					elasticsearch_index_prefix_field 'viaq_index_name'
@@ -1564,6 +1582,14 @@ var _ = Describe("Generating fluentd config", func() {
         remove_keys req,res,msg,name,level,v,pid,err
       </filter>
     
+      <filter k8s-audit.log**>
+        @type record_transformer
+        <record>
+          k8s_audit_level ${record['level']}
+        </record>
+        remove_keys level
+      </filter>
+
       <filter **>
         @type viaq_data_model
         elasticsearch_index_prefix_field 'viaq_index_name'

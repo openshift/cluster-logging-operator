@@ -213,7 +213,10 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 		}
 		status.Pipelines.Set(pipeline.Name, condReady) // Ready, possibly degraded.
 		spec.Pipelines = append(spec.Pipelines, logging.PipelineSpec{
-			Name: pipeline.Name, InputRefs: goodIn.List(), OutputRefs: goodOut.List(),
+			Name:       pipeline.Name,
+			InputRefs:  goodIn.List(),
+			OutputRefs: goodOut.List(),
+			Labels:     pipeline.Labels,
 		})
 	}
 }

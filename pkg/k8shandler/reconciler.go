@@ -50,7 +50,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
+	if err = clusterLoggingRequest.ReconcileLogForwardingTopology(proxyConfig); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 

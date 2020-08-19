@@ -102,19 +102,24 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			}
 		}
 	} else {
-		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
-			return
-		}
-
-		if err = clusterRequest.removeFluentd(); err != nil {
-			return
-		}
+		return clusterRequest.UndeployCollector()
 	}
 
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) UndeployCollector() (err error) {
+	if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
+		return
+	}
+
+	if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
+		return
+	}
+
+	if err = clusterRequest.removeFluentd(); err != nil {
+		return
+	}
 	return nil
 }
 

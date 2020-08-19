@@ -1,0 +1,223 @@
+package normalizer
+
+import (
+	"fmt"
+	"reflect"
+
+	configv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	"github.com/openshift/cluster-logging-operator/pkg/factory"
+	topologyapi "github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
+)
+
+const (
+	collectorConfigName  = "fluentbit"
+	normalizerConfigName = "normalizer"
+)
+
+type CentralNormalizerTopology struct {
+	OwnerRef                metav1.OwnerReference
+	APIClient               topologyapi.APIClient
+	ReconcilePriorityClass  func() error
+	ReconcileServiceAccount func() (*core.ServiceAccount, error)
+	ReconcileConfigMap      func(configMap *core.ConfigMap) error
+	ReconcileSecrets        func() error
+	ReconcileTopology       func(proxyConfig *configv1.Proxy) error
+	RemoveServiceAccount    func() error
+	RemoveSecrets           func() error
+	RemovePriorityClass     func() error
+}
+
+func (topology CentralNormalizerTopology) Reconcile(proxyConfig *configv1.Proxy) (err error) {
+
+	if err = topology.ReconcilePriorityClass(); err != nil {
+		return
+	}
+	var serviceAccount *core.ServiceAccount
+	if serviceAccount, err = topology.ReconcileServiceAccount(); err != nil {
+		return
+	}
+	if serviceAccount != nil {
+		// remove our finalizer from the list and update it.
+		serviceAccount.ObjectMeta.Finalizers = utils.RemoveString(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
+		if err = topology.APIClient.Update(serviceAccount); err != nil {
+			logger.Warnf("Unable to update the collector serviceaccount %q finalizers: %v", serviceAccount.Name, err)
+			return nil
+		}
+	}
+	if err = ReconcileServices(topology.APIClient, topology.OwnerRef); err != nil {
+		return
+	}
+
+	//SM
+	//PromRules
+	//genconfig
+	if err = ReconcileConfigMaps(topology.ReconcileConfigMap); err != nil {
+		return
+	}
+	if err = topology.ReconcileSecrets(); err != nil {
+		return
+	}
+
+	//need proxy config here for normalizer?
+	//add conf hash
+	if err = reconcileNormalizer(topology.APIClient, topology.OwnerRef); err != nil {
+		return
+	}
+	//add conf hash
+	if err = reconcileCollector(topology.APIClient, topology.OwnerRef); err != nil {
+		return
+	}
+	return nil
+}
+
+func (topology CentralNormalizerTopology) Undeploy() (err error) {
+	if err = topology.APIClient.Delete(NewCollector()); err != nil {
+		logger.Warnf("Unable to remove collector: %v", err)
+	}
+	if err = topology.APIClient.Delete(NewNormalizer()); err != nil {
+		logger.Warnf("Unable to remove normalizer: %v", err)
+	}
+	if err = topology.RemoveSecrets(); err != nil {
+		logger.Warnf("Unable to remove secrets: %v", err)
+	}
+	config := factory.NewConfigMap(collectorConfigName, constants.OpenshiftNS, map[string]string{})
+	if err = topology.APIClient.Delete(config); err != nil {
+		logger.Warnf("Unable to remove configmap: %v", err)
+	}
+	config = factory.NewConfigMap(normalizerConfigName, constants.OpenshiftNS, map[string]string{})
+	if err = topology.APIClient.Delete(config); err != nil {
+		logger.Warnf("Unable to remove configmap: %v", err)
+	}
+	if err = topology.APIClient.Delete(NewService()); err != nil {
+		logger.Warnf("Unable to remove normalizer service: %v", err)
+	}
+	if err = topology.RemoveServiceAccount(); err != nil {
+		logger.Warnf("Unable to remove serviceaccount: %v", err)
+	}
+	if err = topology.RemovePriorityClass(); err != nil {
+		logger.Warnf("Unable to remove priorityclass: %v", err)
+	}
+	return nil
+}
+
+func ReconcileServices(apiClient topologyapi.APIClient, ownerRef metav1.OwnerReference) (err error) {
+	desired := NewService()
+	utils.AddOwnerRefToObject(desired, ownerRef)
+	err = apiClient.Create(desired)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating service %q: %v", desired.Name, err)
+		}
+
+		current := &core.Service{}
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err := apiClient.Get(desired.Name, current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get service %q: %v", desired.Name, err)
+			}
+			if reflect.DeepEqual(current.Spec, desired.Spec) {
+				return nil
+			}
+			current.Spec = desired.Spec
+			return apiClient.Update(current)
+		})
+	}
+
+	return err
+}
+
+func ReconcileConfigMaps(reconcileConfigMap func(configMap *core.ConfigMap) error) (err error) {
+	//collector
+	data := map[string]string{
+		"fluent-bit.conf": fluentbitConf,
+		"parsers.conf":    fluetnbitParserConf,
+	}
+	configmap := factory.NewConfigMap(collectorConfigName, constants.OpenshiftNS, data)
+	if err = reconcileConfigMap(configmap); err != nil {
+		return err
+	}
+	//normalizer
+	data = map[string]string{
+		"fluent.conf": fluentConf, //TODO: Generate me
+		"run.sh":      string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/run.sh")),
+	}
+	configmap = factory.NewConfigMap(normalizerConfigName, constants.OpenshiftNS, data)
+	if err = reconcileConfigMap(configmap); err != nil {
+		return err
+	}
+	return nil
+}
+
+func reconcileCollector(apiClient topologyapi.APIClient, ownerRef metav1.OwnerReference) (err error) {
+	desired := NewCollector()
+	utils.AddOwnerRefToObject(desired, ownerRef)
+	err = apiClient.Create(desired)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating %s/%s: %v", desired.Kind, desired.Name, err)
+		}
+
+		current := &apps.DaemonSet{}
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err := apiClient.Get(desired.Name, current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get %s/%s: %v", desired.Kind, desired.Name, err)
+			}
+			//TODO: More explicit comparison
+			if reflect.DeepEqual(current.Spec, desired.Spec) {
+				return nil
+			}
+			current.Spec = desired.Spec
+			return apiClient.Update(current)
+		})
+	}
+
+	return err
+}
+
+func reconcileNormalizer(apiClient topologyapi.APIClient, ownerRef metav1.OwnerReference) (err error) {
+	desired := NewNormalizer()
+	utils.AddOwnerRefToObject(desired, ownerRef)
+	err = apiClient.Create(desired)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating %s/%s: %v", desired.Kind, desired.Name, err)
+		}
+
+		current := &apps.StatefulSet{}
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err := apiClient.Get(desired.Name, current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get %s/%s: %v", desired.Kind, desired.Name, err)
+			}
+			//TODO: More explicit comparison
+			if reflect.DeepEqual(current.Spec, desired.Spec) {
+				return nil
+			}
+			current.Spec = desired.Spec
+			return apiClient.Update(current)
+		})
+	}
+
+	return err
+}

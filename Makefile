@@ -1,3 +1,6 @@
+# Define the target to run if make is called with no arguments.
+default: check
+
 export KUBECONFIG?=$(HOME)/.kube/config
 
 export GOBIN=$(CURDIR)/bin
@@ -18,6 +21,14 @@ export NAMESPACE?=openshift-logging
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
 .PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run
+
+# Do a  `make pre-submit` *before* submitting a PR, it ensurse generated code and tools
+# are up to date, source is formatted and lint-free and unit tests pass.
+pre-submit: tools regenerate check
+	echo "Git status after pre-submt (check for unexpected changes)"
+	git status
+
+tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 
 # Update code (generate, format), run unit tests and lint. Make sure e2e tests build.
 check: generate fmt test-unit
@@ -77,15 +88,15 @@ fmt:
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
 MANIFESTS=manifests/$(OCP_VERSION)
-generate: $(GEN_TIMESTAMP) $(OPERATOR_SDK)
-$(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
+generate: $(GEN_TIMESTAMP)
+$(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
 	@echo generating code
 	@$(MAKE) openshift-client
 	@bash ./hack/generate-crd.sh
 	@$(MAKE) fmt
 	@touch $@
 
-regenerate: $(OPERATOR_SDK)
+regenerate:
 	@rm -f $(GEN_TIMESTAMP) $(shell find pkg -name zz_generated_*.go)
 	@$(MAKE) generate
 
@@ -120,13 +131,6 @@ test-unit:
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
-
-test-cleanup:			# Only needed if e2e tests are interrupted.
-	oc delete --ignore-not-found -n $(NAMESPACE) all --all
-	oc delete --ignore-not-found ns $(NAMESPACE)
-	oc create ns $(NAMESPACE)
-	@for TYPE in sa role rolebinding configmap; do oc get $$TYPE -o name; done | grep -e -receiver | xargs --verbose --no-run-if-empty oc delete
-	@oc get ns -o name | grep clo- | xargs --verbose --no-run-if-empty oc delete
 
 generate-bundle: $(OPM)
 	mkdir -p bundle; \

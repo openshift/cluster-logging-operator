@@ -21,6 +21,26 @@ CI, but is close enough for many purposes. Put a symlink early in your path:
 ln -s $(which docker) /somewhere/early/in/my/PATH/podman`
 ```
 
+## Makefile tagets
+
+Quick summary of main targets only, see below and the Makefile itself for more details.
+
+* `pre-submit`: This target must pass before you submit a PR.
+  Does `make check` plus forces code generation and update of tools, to ensure CI doesn't have to do it.
+* `make check`: Generate and format code, run unit tests and linter.
+
+To build, deploy and test the CLO image in your own cluster:
+* `make deploy`: Build CLO image and deploy to cluster with elasticsearch.
+* `make undeploy`: Undo `make deploy`.
+
+To run CLO as a local process:
+* `make run`: Run CLO as a local process. Does not require `make deploy`.
+* `make debug`: Run CLO in the `dlv` debugger.
+
+To do a complete deploy, test, cleanup cycle:
+* `make test-olm-e2e`: Run e2e tests using locally built images.
+* `make test-olm-e2e`: Run e2e tests using CI latest images.
+
 ## Testing Overview
 
 There are two types of test:
@@ -71,31 +91,6 @@ crc config set pull-secret-file my-pull-secret
 crc config set skip-check-libvirt-running true
 ```
 
-## Building and running tests
-
-Unit tests can be run without a cluster:
-* `make check`: Generate and format code, run unit tests and lint.
-   You should run *at least* this set of checks before a commit.
-
-To build, deploy and test the CLO image in your own cluster:
-* `make deploy`: Build CLO image and deploy to cluster with elasticsearch.
-* `make undeploy`: Undo `make deploy`.
-
-To run CLO as a local process:
-* `make run`: Run CLO as a local process. Does not require `make deploy`.
-* `make debug`: Run CLO in the `dlv` debugger.
-
-After running `make deploy`, `make run` or `make debug`, you can run e2e tests:
-* `make test-cluster` Run all e2e tests against the running CLO.
-* `go run ./test/e2e/something`: Run tests individually, in a debugger or whatever.
-
-To do a complete deploy, test, cleanup cycle exactly as CI does (this must start from a clean cluster e.g. after `make undeploy`):
-* `make test-olm-e2e`: Run e2e tests the same way CI does. See below for more.
-
-Some other useful targets (read the Makefile for more) 
-* `make image`: Build the image as $IMAGE_TAG, do not deploy it.
-* ``$HOME/.kube/config`make` or `make all`: Run `make check` and build the CLO image.
-
 ## More about `make run`
 
 You can run the CLO as a local process, outside the cluster. This is *not* the
@@ -121,7 +116,7 @@ RUN_CMD=foo make run # Run CLO under imaginary "foo" debugger/profiler.
 
 Note `make run` will not return until you terminate the CLO.
 
-### More about * `make test-olm-e2e`
+### More about `make test-olm-e2e`
 
 This test assumes:
 * the cluster-logging-catalog image is available
@@ -135,7 +130,7 @@ on which the operator runs or can be pulled from a visible registry.
 in order to run this test against local changes to the `cluster-logging-operator`. For example:
 ```
 $ make deploy-image && IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest make test-e2e
-``**
+```
 
 **Note:** To skip cleanup of resources while hacking/debugging an E2E test apply `DO_CLEANUP=false`.
 

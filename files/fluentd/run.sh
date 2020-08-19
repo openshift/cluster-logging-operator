@@ -92,4 +92,9 @@ if type -p jemalloc-config > /dev/null 2>&1 ; then
     export LD_PRELOAD=$( jemalloc-config --libdir )/libjemalloc.so.$( jemalloc-config --revision )
     export LD_BIND_NOW=1 # workaround for https://bugzilla.redhat.com/show_bug.cgi?id=1544815
 fi
+if [ -f /var/log/openshift-apiserver/audit.log.pos ] ; then
+  #https://bugzilla.redhat.com/show_bug.cgi?id=1867687
+  mv /var/log/openshift-apiserver/audit.log.pos /var/log/oauth-apiserver.audit.log
+fi
+
 exec fluentd $fluentdargs

@@ -148,6 +148,9 @@ test-e2e-local: $(JUNITREPORT) deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh
 
+test-svt:
+	hack/svt/test-svt.sh
+
 undeploy:
 	hack/undeploy.sh
 

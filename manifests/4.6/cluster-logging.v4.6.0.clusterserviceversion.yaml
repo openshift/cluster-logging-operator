@@ -40,7 +40,6 @@ metadata:
                   "nodeCount": 3,
                   "redundancyPolicy": "SingleRedundancy",
                   "storage": {
-                    "storageClassName": "gp2",
                     "size": "200G"
                   }
                 },

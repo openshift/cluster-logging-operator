@@ -359,7 +359,7 @@ const inputSourceJournalTemplate = `{{- define "inputSourceJournalTemplate" -}}
   @type systemd
   @id systemd-input
   @label @INGRESS
-  path '/run/log/journal'
+  path '/var/log/journal'
   <storage>
     @type local
     persistent true

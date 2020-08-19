@@ -74,7 +74,7 @@ var _ = Describe("generating source", func() {
 				@type systemd
 				@id systemd-input
 				@label @INGRESS
-				path '/run/log/journal'
+				path '/var/log/journal'
 				<storage>
 				@type local
 				persistent true
@@ -167,7 +167,7 @@ var _ = Describe("generating source", func() {
 				@type systemd
 				@id systemd-input
 				@label @INGRESS
-				path '/run/log/journal'
+				path '/var/log/journal'
 				<storage>
 				@type local
 				persistent true

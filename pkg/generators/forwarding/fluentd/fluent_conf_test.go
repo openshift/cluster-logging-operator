@@ -549,7 +549,7 @@ var _ = Describe("Generating fluentd config", func() {
 				@type systemd
 				@id systemd-input
 				@label @INGRESS
-				path '/run/log/journal'
+				path '/var/log/journal'
 				<storage>
 					@type local
 					persistent true

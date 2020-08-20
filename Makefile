@@ -25,7 +25,7 @@ FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 # Do a  `make pre-submit` *before* submitting a PR, it ensurse generated code and tools
 # are up to date, source is formatted and lint-free and unit tests pass.
 pre-submit: tools regenerate check
-	echo "Git status after pre-submt (check for unexpected changes)"
+	@echo "Git status after pre-submit (check for unexpected changes)"
 	git status
 
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
@@ -157,6 +157,8 @@ undeploy:
 redeploy:
 	$(MAKE) undeploy
 	$(MAKE) deploy
+
+undeploy-all: undeploy undeploy-elasticsearch-operator
 
 cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-deploy
 

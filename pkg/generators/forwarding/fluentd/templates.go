@@ -299,24 +299,32 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
   </filter>
 
   # Relabel specific source tags to specific intermediary labels for copy processing
-{{ if .CollectInfraLogs }}
+  # Earlier matchers remove logs so they don't fall through to later ones.
+  # A log source matcher may be null if no pipeline wants that type of log.
   <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+{{- if .CollectInfraLogs }}
     @type relabel
     @label @_INFRASTRUCTURE
-  </match>
+{{- else }}
+    @type null
 {{- end}}
-{{ if .CollectAppLogs}}
+  </match>
   <match kubernetes.**>
+{{- if .CollectAppLogs }}
     @type relabel
     @label @_APPLICATION
-  </match>
+{{- else }}
+    @type null
 {{- end}}
-{{ if .CollectAuditLogs}}
+  </match>
   <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+{{- if .CollectAuditLogs }}
     @type relabel
     @label @_AUDIT
-  </match>
+{{- else }}
+    @type null
 {{- end}}
+  </match>
 
   <match **>
     @type stdout

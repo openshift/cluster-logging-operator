@@ -74,11 +74,13 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
 	if clusterLogging == nil {
+		logger.Debug("No clusterlogging object, cannot reconcile")
 		return nil
 	}
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		logger.Debugf("Unmanaged state, nothing to reconcile")
 		return nil
 	}
 

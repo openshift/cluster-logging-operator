@@ -32,14 +32,17 @@ Quick summary of main targets only, see below and the Makefile itself for more d
 To build, deploy and test the CLO image in your own cluster:
 * `make deploy`: Build CLO image and deploy to cluster with elasticsearch.
 * `make undeploy`: Undo `make deploy`.
+* `make undeploy-all`: Undeploys CLO and Elasticsearch operator.
 
 To run CLO as a local process:
 * `make run`: Run CLO as a local process. Does not require `make deploy`.
 * `make debug`: Run CLO in the `dlv` debugger.
 
-To do a complete deploy, test, cleanup cycle:
+To run the e2e tests:
 * `make test-olm-e2e`: Run e2e tests using locally built images.
 * `make test-olm-e2e`: Run e2e tests using CI latest images.
+
+NOTE: e2e tests require a clean cluster starting point, `make undeploy-all` will provide it.
 
 ## Testing Overview
 

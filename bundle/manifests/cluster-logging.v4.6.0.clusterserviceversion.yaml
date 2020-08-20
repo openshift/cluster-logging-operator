@@ -310,9 +310,7 @@ spec:
                 - cluster-logging-operator
                 env:
                   - name: WATCH_NAMESPACE
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: metadata.annotations['olm.targetNamespaces']
+                    value: ""
                   - name: POD_NAME
                     valueFrom:
                       fieldRef:

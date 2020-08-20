@@ -159,9 +159,9 @@ spec:
   - type: SingleNamespace
     supported: true
   - type: MultiNamespace
-    supported: false
+    supported: true
   - type: AllNamespaces
-    supported: false
+    supported: true
   install:
     strategy: deployment
     spec:
@@ -244,6 +244,16 @@ spec:
       - serviceAccountName: cluster-logging-operator
         rules:
         - apiGroups:
+          - "logging.openshift.io"
+          resources:
+          - clusterlogforwarders
+          - clusterlogforwarders/status
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+        - apiGroups:
           - console.openshift.io
           resources:
           - consoleexternalloglinks
@@ -316,9 +326,7 @@ spec:
                 - cluster-logging-operator
                 env:
                   - name: WATCH_NAMESPACE
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: metadata.annotations['olm.targetNamespaces']
+                    value: ""
                   - name: POD_NAME
                     valueFrom:
                       fieldRef:

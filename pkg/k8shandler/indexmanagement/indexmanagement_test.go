@@ -79,17 +79,7 @@ var _ = Describe("Indexmanagement", func() {
 				Expect(spec).To(BeNil())
 			})
 		})
-		Context("retetion policy is not defined for any log source", func() {
-			BeforeEach(func() {
-				retentionPolicy.App = nil
-				retentionPolicy.Infra = nil
-				retentionPolicy.Audit = nil
-			})
-			It("should not generate index management", func() {
-				spec := NewSpec(retentionPolicy)
-				Expect(spec).To(BeNil())
-			})
-		})
+
 	})
 	Describe("IndexManagement Policy creation success", func() {
 		Context("Policy and Mapping generated", func() {
@@ -138,12 +128,18 @@ var _ = Describe("Indexmanagement", func() {
 				retentionPolicy.Infra = nil
 				retentionPolicy.Audit = nil
 			})
-			It("should generate index management for App log source only", func() {
+			It("should generate index management for App log source and default the others", func() {
 				spec := NewSpec(retentionPolicy)
-				Expect(len(spec.Policies)).To(Equal(1))
+				Expect(len(spec.Policies)).To(Equal(3))
 				Expect(spec.Policies[0].Name).To(Equal(PolicyNameApp))
-				Expect(len(spec.Mappings)).To(Equal(1))
+
+				Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(defaultPolicy.Infra.MaxAge))
+				Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(defaultPolicy.Audit.MaxAge))
+
+				Expect(len(spec.Mappings)).To(Equal(3))
 				Expect(spec.Mappings[0].PolicyRef).To(Equal(PolicyNameApp))
+				Expect(spec.Mappings[1].PolicyRef).To(Equal(PolicyNameInfra))
+				Expect(spec.Mappings[2].PolicyRef).To(Equal(PolicyNameAudit))
 			})
 		})
 	})

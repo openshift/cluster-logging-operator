@@ -388,7 +388,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           # Relabel specific source tags to specific intermediary labels for copy processing
-
+          # Earlier matchers remove logs so they don't fall through to later ones.
+          # A log source matcher may be null if no pipeline wants that type of log.
           <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
             @type relabel
             @label @_INFRASTRUCTURE
@@ -836,6 +837,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           # Relabel specific source tags to specific intermediary labels for copy processing
+					# Earlier matchers remove logs so they don't fall through to later ones.
+					# A log source matcher may be null if no pipeline wants that type of log.
 
           <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
             @type relabel
@@ -1285,7 +1288,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           # Relabel specific source tags to specific intermediary labels for copy processing
-
+          # Earlier matchers remove logs so they don't fall through to later ones.
+          # A log source matcher may be null if no pipeline wants that type of log.
           <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
             @type relabel
             @label @_INFRASTRUCTURE

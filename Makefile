@@ -166,7 +166,9 @@ cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-cata
 
 # builds an operator-registry image containing the cluster-logging operator
 cluster-logging-catalog-build:
-	olm_deploy/scripts/catalog-build.sh
+	@if [ $${SKIP_BUILD:-false} = false ] ; then \
+		olm_deploy/scripts/catalog-build.sh ; \
+	fi
 
 # deploys the operator registry image and creates a catalogsource referencing it
 cluster-logging-catalog-deploy:

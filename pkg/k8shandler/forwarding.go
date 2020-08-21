@@ -268,6 +268,8 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
 		case urlErr != nil:
 			status.Outputs.Set(output.Name, condInvalid("%v", urlErr))
+		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
+			break
 		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
 			break
 		default:
@@ -292,6 +294,23 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			})
 			status.Outputs.Set(name, condReady)
 		}
+	}
+}
+
+func (clusterRequest *ClusterLoggingRequest) verifyOutputURL(output *logging.OutputSpec, conds logging.NamedConditions) bool {
+	switch strings.ToLower(output.Type) {
+	case "fluentdforward", "elasticsearch", "syslog":
+		if strings.TrimSpace(output.URL) == "" {
+			conds.Set(output.Name, condNotReady(logging.ReasonMissingResource, "output %q: URL not set for output type %q",
+				output.Name, output.Type))
+			return false
+		}
+		return true
+	case "kafka":
+		//TODO add kafka brokers verification here
+		return true
+	default:
+		return true
 	}
 }
 

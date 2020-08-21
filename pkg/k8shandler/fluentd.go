@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/daemonsets"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -276,7 +277,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 	return nil
 }
 
-func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {
+func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {
 	collectionSpec := logging.CollectionSpec{}
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
@@ -501,17 +502,16 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 		}
 	}
 
-	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, fluentdTrustBundle, clusterRequest.ForwarderSpec)
+	fluentdPodSpec := newFluentdPodSpec(cluster, proxyConfig, fluentdTrustBundle, clusterRequest.ForwarderSpec)
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
 
-	annotations, err := clusterRequest.getFluentdAnnotations(fluentdDaemonset)
+	trustedCAHashValue, err := clusterRequest.getTrustedCABundleHash()
 	if err != nil {
 		return err
 	}
-
-	fluentdDaemonset.Spec.Template.Annotations = annotations
+	fluentdDaemonset.Spec.Template.Annotations[constants.TrustedCABundleHashName] = trustedCAHashValue
 
 	uid := getServiceAccountLogCollectorUID()
 	if len(uid) == 0 {
@@ -540,7 +540,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 }
 
 func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
-	logger.DebugObject("desired fluent update: %v", desired)
+	logger.DebugObject("checking collector update: %s", desired)
 	current := &apps.DaemonSet{}
 
 	if err = clusterRequest.Get(desired.Name, current); err != nil {
@@ -553,12 +553,14 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	}
 
 	flushBuffer := isBufferFlushRequired(current, desired)
-	desired, different := isFluentdDaemonsetDifferent(current, desired)
-
-	if different {
-		current.Spec = desired.Spec
+	if flushBuffer {
+		current.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUSH_AT_SHUTDOWN", Value: "True"}, current.Spec.Template.Spec.Containers[0].Env)
+	}
+	trustedCABundleHashAreSame := current.Spec.Template.Annotations[constants.TrustedCABundleHashName] == desired.Spec.Template.Annotations[constants.TrustedCABundleHashName]
+	if !daemonsets.AreSame(current, desired) || !trustedCABundleHashAreSame {
+		logger.Debugf("Current and desired collectors are different, updating DaemonSet %q", current.Name)
 		if flushBuffer {
-			current.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUSH_AT_SHUTDOWN", Value: "True"}, current.Spec.Template.Spec.Containers[0].Env)
+			logger.Infof("Updating and restarting collector pods to flush its buffers...")
 			if err = clusterRequest.Update(current); err != nil {
 				logrus.Debugf("Failed to prepare Fluentd daemonset to flush its buffers: %v", err)
 				return err
@@ -569,7 +571,8 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 				return fmt.Errorf("Timed out waiting for Fluentd to be ready")
 			}
 		}
-		logger.DebugObject("updating fluentd to: %v", current)
+		current.Spec = desired.Spec
+		logger.DebugObject("updating fluentd to: %v", desired)
 		if err = clusterRequest.Update(desired); err != nil {
 			return err
 		}
@@ -578,38 +581,30 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) getFluentdAnnotations(daemonset *apps.DaemonSet) (map[string]string, error) {
-
-	if daemonset.Spec.Template.ObjectMeta.Annotations == nil {
-		daemonset.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
-	}
-
-	annotations := daemonset.Spec.Template.ObjectMeta.Annotations
+func (clusterRequest *ClusterLoggingRequest) getTrustedCABundleHash() (string, error) {
 
 	fluentdTrustBundle := &v1.ConfigMap{}
 	fluentdTrustBundleName := types.NamespacedName{Name: constants.FluentdTrustedCAName, Namespace: constants.OpenshiftNS}
 	if err := clusterRequest.Client.Get(context.TODO(), fluentdTrustBundleName, fluentdTrustBundle); err != nil {
 		if !errors.IsNotFound(err) {
-			return annotations, err
+			return "", err
 		}
 	}
 
 	if _, ok := fluentdTrustBundle.Data[constants.TrustedCABundleKey]; !ok {
-		return annotations, fmt.Errorf("%v does not yet contain expected key %v", fluentdTrustBundle.Name, constants.TrustedCABundleKey)
+		return "", fmt.Errorf("%v does not yet contain expected key %v", fluentdTrustBundle.Name, constants.TrustedCABundleKey)
 	}
 
 	trustedCAHashValue, err := calcTrustedCAHashValue(fluentdTrustBundle)
 	if err != nil {
-		return annotations, fmt.Errorf("unable to calculate trusted CA value. E: %s", err.Error())
+		return "", fmt.Errorf("unable to calculate trusted CA value. E: %s", err.Error())
 	}
 
 	if trustedCAHashValue == "" {
-		return annotations, fmt.Errorf("Did not receive hashvalue for trusted CA value")
+		return "", fmt.Errorf("Did not receive hashvalue for trusted CA value")
 	}
 
-	annotations[constants.TrustedCABundleHashName] = trustedCAHashValue
-
-	return annotations, nil
+	return trustedCAHashValue, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) RestartFluentd(proxyConfig *configv1.Proxy) (err error) {
@@ -646,17 +641,4 @@ func updateEnvVar(value v1.EnvVar, values []v1.EnvVar) []v1.EnvVar {
 		values = append(values, value)
 	}
 	return values
-}
-
-func isFluentdDaemonsetDifferent(current, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
-	current, different := isDaemonsetDifferent(current, desired)
-
-	currentHash := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
-	desiredHash := desired.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
-	if currentHash != desiredHash {
-		current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = desiredHash
-		different = true
-	}
-
-	return current, different
 }

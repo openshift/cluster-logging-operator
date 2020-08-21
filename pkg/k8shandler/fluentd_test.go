@@ -17,7 +17,7 @@ import (
 func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -53,7 +53,7 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -95,7 +95,7 @@ func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
 
 	if !reflect.DeepEqual(podSpec.Tolerations, expectedTolerations) {
 		t.Errorf("Exp. the tolerations to be %v but was %v", expectedTolerations, podSpec.Tolerations)
@@ -118,7 +118,7 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
 
 	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, podSpec.NodeSelector)
@@ -150,7 +150,7 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -195,7 +195,7 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -209,7 +209,7 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 	httpproxy := "http://proxy-user@test.example.com/3128/"
 	noproxy := ".cluster.local,localhost"
 	caBundle := fmt.Sprint("-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n")
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name",
+	podSpec := newFluentdPodSpec(cluster,
 		&configv1.Proxy{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Proxy",
@@ -270,7 +270,7 @@ func TestFluentdPodInitContainerWithDefaultForwarding(t *testing.T) {
 		Outputs: []logging.OutputSpec{{Name: "default"}},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, spec)
+	podSpec := newFluentdPodSpec(cluster, nil, nil, spec)
 
 	if len(podSpec.InitContainers) == 0 {
 		t.Error("Expected pod to have defined init container")
@@ -289,7 +289,7 @@ func TestFluentdPodNoInitContainerWithOutDefaultForwarding(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name", nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
 	if len(podSpec.InitContainers) > 0 {
 		t.Error("Expected pod to have no init containers")
 	}

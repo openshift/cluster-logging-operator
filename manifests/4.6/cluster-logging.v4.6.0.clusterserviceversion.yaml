@@ -186,6 +186,7 @@ spec:
           - secrets
           - serviceaccounts
           - serviceaccounts/finalizers
+          - services/finalizers
           verbs:
           - "*"
         - apiGroups:

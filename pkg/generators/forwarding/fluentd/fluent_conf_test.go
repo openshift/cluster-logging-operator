@@ -441,10 +441,21 @@ var _ = Describe("Generating fluentd config", func() {
 
 
 				# Relabel specific source tags to specific intermediary labels for copy processing
+				# Earlier matchers remove logs so they don't fall through to later ones.
+				# A log source matcher may be null if no pipeline wants that type of log.
+				<match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+					@type null
+				</match>
+
 				<match kubernetes.**>
 					@type relabel
 					@label @_APPLICATION
 				</match>
+
+				<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+					@type null
+				</match>
+
 				<match **>
 					@type stdout
 				</match>
@@ -862,6 +873,8 @@ var _ = Describe("Generating fluentd config", func() {
 				</filter>
 
 				# Relabel specific source tags to specific intermediary labels for copy processing
+				# Earlier matchers remove logs so they don't fall through to later ones.
+				# A log source matcher may be null if no pipeline wants that type of log.
 				<match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
 					@type relabel
 					@label @_INFRASTRUCTURE
@@ -1671,13 +1684,20 @@ var _ = Describe("Generating fluentd config", func() {
       </filter>
     
       # Relabel specific source tags to specific intermediary labels for copy processing
-    
+      # Earlier matchers remove logs so they don't fall through to later ones.
+      # A log source matcher may be null if no pipeline wants that type of log.
+      <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+        @type null
+      </match>
     
       <match kubernetes.**>
         @type relabel
         @label @_APPLICATION
       </match>
     
+      <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+        @type null
+      </match>
     
       <match **>
         @type stdout

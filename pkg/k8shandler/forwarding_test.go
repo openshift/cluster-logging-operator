@@ -270,18 +270,6 @@ var _ = Describe("Normalizing forwarder", func() {
 				Expect(status.Outputs["bName"]).To(HaveCondition("Ready", false, "Invalid", ":invalid"))
 			})
 
-			It("should allow outputs that have an empty/missing URL", func() {
-				request.ForwarderSpec.Outputs = []logging.OutputSpec{
-					{
-						Name: "aName",
-						Type: "fluentdForward",
-					},
-				}
-				spec, status := request.NormalizeForwarder()
-				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
-				Expect(spec.Outputs).To(HaveLen(1))
-			})
-
 			It("should drop outputs that have secrets with no names", func() {
 				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs, logging.OutputSpec{
 					Name:   "aName",
@@ -601,3 +589,132 @@ pipelines:
   - foo
 `),
 )
+
+func TestClusterLoggingRequest_verifyOutputURL(t *testing.T) {
+	type fields struct {
+		Client           client.Client
+		Cluster          *logging.ClusterLogging
+		ForwarderRequest *logging.ClusterLogForwarder
+		ForwarderSpec    logging.ClusterLogForwarderSpec
+	}
+	type args struct {
+		output *logging.OutputSpec
+		conds  logging.NamedConditions
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "With fluentdForward without URL",
+			args: args{
+				output: &logging.OutputSpec{
+					Name: "test-output",
+					Type: "fluentdForward",
+					URL:  "",
+				},
+				conds: logging.NamedConditions{},
+			},
+			want: false,
+		},
+		{
+			name: "With fluentdForward with URL",
+			args: args{
+				output: &logging.OutputSpec{
+					Name: "test-output",
+					Type: "fluentdForward",
+					URL:  "http://123.local:9200",
+				},
+				conds: logging.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "With elastic without URL",
+			args: args{
+				output: &logging.OutputSpec{
+					Name: "test-output",
+					Type: "elasticsearch",
+					URL:  "",
+				},
+				conds: logging.NamedConditions{},
+			},
+			want: false,
+		},
+		{
+			name: "With elastic with URL",
+			args: args{
+				output: &logging.OutputSpec{
+					Name: "test-output",
+					Type: "elasticsearch",
+					URL:  "http://123.local:9200",
+				},
+				conds: logging.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "With kafka without url",
+			args: args{
+				output: &logging.OutputSpec{
+					Name: "test-output",
+					Type: "kafka",
+					URL:  "",
+				},
+				conds: logging.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "With kafka",
+			args: args{
+				output: &logging.OutputSpec{
+					Name: "test-output",
+					Type: "kafka",
+					URL:  "https://local.svc",
+				},
+				conds: logging.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "With syslog",
+			args: args{
+				output: &logging.OutputSpec{
+					Name: "test-output",
+					Type: "syslog",
+					URL:  "https://local.svc",
+				},
+				conds: logging.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "With syslog without url",
+			args: args{
+				output: &logging.OutputSpec{
+					Name: "test-output",
+					Type: "syslog",
+					URL:  "",
+				},
+				conds: logging.NamedConditions{},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clusterRequest := &ClusterLoggingRequest{
+				Client:           tt.fields.Client,
+				Cluster:          tt.fields.Cluster,
+				ForwarderRequest: tt.fields.ForwarderRequest,
+				ForwarderSpec:    tt.fields.ForwarderSpec,
+			}
+			if got := clusterRequest.verifyOutputURL(tt.args.output, tt.args.conds); got != tt.want {
+				t.Errorf("verifyOutputURL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

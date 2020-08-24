@@ -16,7 +16,7 @@ var _ = Describe("Generating fluentd config", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		generator, err = NewConfigGenerator(true, true, true)
+		generator, err = NewConfigGenerator(false, false, true)
 		Expect(err).To(BeNil())
 		Expect(generator).ToNot(BeNil())
 		forwarding = &logging.ForwardingSpec{
@@ -446,14 +446,6 @@ var _ = Describe("Generating fluentd config", func() {
 						@type relabel
 						@label @APPS_PIPELINE
 					</store>
-					<store>
-						@type relabel
-						@label @_LEGACY_SECUREFORWARD
-					</store>
-					<store>
-						@type relabel
-						@label @_LEGACY_SYSLOG
-					</store>
 				</match>
 			</label>
 
@@ -494,20 +486,6 @@ var _ = Describe("Generating fluentd config", func() {
 					host es.svc.messaging.cluster.local
 					port 9654
 				</server>
-			</match>
-		</label>
-		<label @_LEGACY_SECUREFORWARD>
-			<match **>
-				@type copy
-				#include legacy secure-forward.conf
-				@include /etc/fluent/configs.d/secure-forward/secure-forward.conf
-			</match>
-		</label>
-		<label @_LEGACY_SYSLOG>
-			<match **>
-				@type copy
-				#include legacy Syslog
-				@include /etc/fluent/configs.d/syslog/syslog.conf
 			</match>
 		</label>
 	`)
@@ -878,7 +856,6 @@ var _ = Describe("Generating fluentd config", func() {
 				<match **>
 					@type stdout
 				</match>
-
 			</label>
 			
 			# Relabel specific sources (e.g. logs.apps) to multiple pipelines
@@ -889,14 +866,6 @@ var _ = Describe("Generating fluentd config", func() {
 						@type relabel
 						@label @APPS_PIPELINE
 					</store>
-					<store>
-						@type relabel
-						@label @_LEGACY_SECUREFORWARD
-					</store>
-					<store>
-						@type relabel
-						@label @_LEGACY_SYSLOG
-					</store>
 				</match>
 			</label>
 			<label @_LOGS_AUDIT>
@@ -906,14 +875,6 @@ var _ = Describe("Generating fluentd config", func() {
 						@type relabel
 						@label @AUDIT_PIPELINE
 					</store>
-					<store>
-						@type relabel
-						@label @_LEGACY_SECUREFORWARD
-					</store>
-					<store>
-						@type relabel
-						@label @_LEGACY_SYSLOG
-					</store>
 				</match>
 			</label>
 			<label @_LOGS_INFRA>
@@ -922,14 +883,6 @@ var _ = Describe("Generating fluentd config", func() {
 					<store>
 						@type relabel
 						@label @INFRA_PIPELINE
-					</store>
-					<store>
-						@type relabel
-						@label @_LEGACY_SECUREFORWARD
-					</store>
-					<store>
-						@type relabel
-						@label @_LEGACY_SYSLOG
 					</store>
 				</match>
 			</label>
@@ -1332,21 +1285,6 @@ var _ = Describe("Generating fluentd config", func() {
 					</store>
 				</match>
 			</label>
-			<label @_LEGACY_SECUREFORWARD>
-				<match **>
-				  @type copy
-					#include legacy secure-forward.conf
-					@include /etc/fluent/configs.d/secure-forward/secure-forward.conf
-				</match>
-			</label>
-			<label @_LEGACY_SYSLOG>
-				<match **>
-					@type copy
-					#include legacy Syslog
-					@include /etc/fluent/configs.d/syslog/syslog.conf
-				</match>
-			</label>
 			`)
 	})
-
 })

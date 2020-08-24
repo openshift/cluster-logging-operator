@@ -307,6 +307,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @label @_LOGS_AUDIT
   </match>
 {{- end}}
+
   <match **>
     @type stdout
   </match>
@@ -318,7 +319,9 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 {{ . }}
 {{- end}}
 
+{{ if .PipelinesToOutputLabels }}
 # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
+{{- end}}
 {{- range .PipelinesToOutputLabels }}
 {{ . }}
 {{- end}}

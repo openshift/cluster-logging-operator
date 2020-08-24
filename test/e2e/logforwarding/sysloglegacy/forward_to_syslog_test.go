@@ -56,7 +56,7 @@ var _ = Describe("LogForwarding", func() {
 						Fail(fmt.Sprintf("Unable to create legacy syslog.conf configmap: %v", err))
 					}
 
-					components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+					components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 					cr := helpers.NewClusterLogging(components...)
 					cr.ObjectMeta.Annotations[k8shandler.ForwardingAnnotation] = "disabled"
 					if err := e2e.CreateClusterLogging(cr); err != nil {

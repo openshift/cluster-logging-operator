@@ -60,7 +60,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		clusterRequest.cluster.Spec.Collection.Logs.Type,
 		clusterRequest.includeLegacyForwardConfig(),
 		clusterRequest.includeLegacySyslogConfig(),
-		clusterRequest.useOldRemoteSyslogPlugin())
+		clusterRequest.useOldRemoteSyslogPlugin(),
+	)
+
 	if err != nil {
 		logger.Warnf("Unable to create collector config generator: %v", err)
 		return "",
@@ -71,7 +73,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 				v1.ConditionTrue,
 			)
 	}
+
 	generatedConfig, err := generator.Generate(&clusterRequest.ForwardingSpec)
+
 	if err != nil {
 		logger.Warnf("Unable to generate log confguraiton: %v", err)
 		return "",

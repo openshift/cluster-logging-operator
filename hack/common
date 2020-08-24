@@ -193,7 +193,6 @@ function push_image() {
 #      -kubeconfig=${KUBECONFIG} \
 #      -globalMan ${global_manifest} \
 #      -namespacedMan ${manifest} \
-#      -v \
 #      -parallel=1 \
 #      -singleNamespace | tee -a $ARTIFACT_DIR/test.log
 #

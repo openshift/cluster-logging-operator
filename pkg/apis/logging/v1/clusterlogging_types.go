@@ -362,7 +362,8 @@ type FluentdBufferSpec struct {
 // ClusterLogging is the Schema for the clusterloggings API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:shortName=cl
+// +kubebuilder:resource:categories=logging,shortName=cl
+// +kubebuilder:printcolumn:name="Management State",JSONPath=".spec.managementState",type=string
 //
 // ClusterLogging is the Schema for the clusterloggings API
 type ClusterLogging struct {

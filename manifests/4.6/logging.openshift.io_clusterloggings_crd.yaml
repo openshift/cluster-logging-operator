@@ -3,8 +3,14 @@ kind: CustomResourceDefinition
 metadata:
   name: clusterloggings.logging.openshift.io
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.managementState
+    name: Management State
+    type: string
   group: logging.openshift.io
   names:
+    categories:
+    - logging
     kind: ClusterLogging
     listKind: ClusterLoggingList
     plural: clusterloggings

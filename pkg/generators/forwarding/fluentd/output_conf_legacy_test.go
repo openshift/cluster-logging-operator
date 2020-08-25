@@ -41,7 +41,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         ## ordered so that syslog always runs last...
         <source>
           @type prometheus
-          bind ''
+          bind "#{ENV['POD_IP']}"
           <ssl>
             enable true
             certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
@@ -490,7 +490,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         ## ordered so that syslog always runs last...
         <source>
           @type prometheus
-          bind ''
+          bind "#{ENV['POD_IP']}"
           <ssl>
             enable true
             certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
@@ -941,7 +941,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         ## ordered so that syslog always runs last...
         <source>
           @type prometheus
-          bind ''
+          bind "#{ENV['POD_IP']}"
           <ssl>
             enable true
             certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"

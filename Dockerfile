@@ -1,4 +1,4 @@
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.14 AS builder
+FROM registry.svc.ci.openshift.org/ocp/builder:rhel-8-golang-openshift-4.6 AS builder
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
 
 # COPY steps are in the reverse order of frequency of change
@@ -19,7 +19,7 @@ RUN make build
 
 FROM registry.svc.ci.openshift.org/ocp/4.6:cli as origincli
 
-FROM centos:centos7
+FROM registry.svc.ci.openshift.org/ocp/4.6:base
 RUN INSTALL_PKGS=" \
       openssl \
       rsync \

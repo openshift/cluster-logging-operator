@@ -78,7 +78,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		routeMap = inputsToPipelines(clfSpec)
 	}
 
-	sourceInputLabels, err = engine.generateSource(inputs, namespaces)
+	sourceInputLabels, err = engine.generateSource(inputs)
 	if err != nil {
 
 		logger.Tracef("Error generating source blocks: %v", err)
@@ -120,6 +120,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		SourceToPipelineLabels     []string
 		PipelinesToOutputLabels    []string
 		OutputLabels               []string
+		AppNamespaces              []string
 	}{
 		engine.includeLegacyForwardConfig,
 		engine.includeLegacySyslogConfig,
@@ -130,6 +131,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		sourceToPipelineLabels,
 		pipelineToOutputLabels,
 		outputLabels,
+		namespaces.List(),
 	}
 	result, err := engine.Execute("fluentConf", data)
 	if err != nil {

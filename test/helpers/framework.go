@@ -98,8 +98,12 @@ func (tc *E2ETestFramework) AddCleanup(fn func() error) {
 }
 
 func (tc *E2ETestFramework) DeployLogGenerator() error {
-	opts := metav1.CreateOptions{}
 	namespace := tc.CreateTestNamespace()
+	return tc.DeployLogGeneratorWithNamespace(namespace)
+}
+
+func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) error {
+	opts := metav1.CreateOptions{}
 	container := corev1.Container{
 		Name:            "log-generator",
 		Image:           "busybox",

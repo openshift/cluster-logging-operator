@@ -309,14 +309,23 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @type null
 {{- end}}
   </match>
-  <match kubernetes.**>
-{{- if .CollectAppLogs }}
+{{- if .CollectAppLogs}}
+	{{- if .AppNamespaces}}
+  <match {{range $ns := .AppNamespaces}}kubernetes.**_{{$ns}}_** {{end}}>
     @type relabel
     @label @_APPLICATION
-{{- else }}
-    @type null
-{{- end}}
   </match>
+	{{- else}}
+  <match kubernetes.**>
+    @type relabel
+    @label @_APPLICATION
+  </match>
+	{{- end}}
+{{- else}}
+  <match kubernetes.**>
+    @type null
+  </match>
+{{- end}}
   <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
 {{- if .CollectAuditLogs }}
     @type relabel
@@ -394,11 +403,7 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
 <source>
   @type tail
   @id container-input
-  {{- if .AppNsPaths}}
-  path {{.AppNsPaths}}
-  {{else}}
   path "/var/log/containers/*.log"
-  {{end -}}
   exclude_path ["/var/log/containers/{{.CollectorPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.LogStorePodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.VisualizationPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log"]
   pos_file "/var/log/es-containers.log.pos"
   refresh_interval 5

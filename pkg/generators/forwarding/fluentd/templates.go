@@ -37,7 +37,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 ## ordered so that syslog always runs last...
 <source>
   @type prometheus
-  bind ''
+  bind "#{ENV['POD_IP']}"
   <ssl>
     enable true
     certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"

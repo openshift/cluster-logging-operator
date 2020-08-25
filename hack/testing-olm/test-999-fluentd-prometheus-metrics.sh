@@ -71,9 +71,6 @@ os::cmd::try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.status
 
 fpod=$(oc -n $LOGGING_NS get pod -l component=fluentd -o jsonpath={.items[0].metadata.name} --ignore-not-found)
 
-os::log::info "Checking metrics using 'localhost'..."
-os::cmd::try_until_success "oc -n $LOGGING_NS exec $fpod -- curl -ks https://localhost:24231/metrics" "$((2 * $minute))"
-
 os::log::info "Checking metrics using fluent service address..."
 os::cmd::try_until_success "oc -n $LOGGING_NS exec $fpod -- curl -ks https://fluentd.openshift-logging.svc:24231/metrics" "$((2 * $minute))"
 

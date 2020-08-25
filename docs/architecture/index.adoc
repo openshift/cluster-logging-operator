@@ -1,0 +1,67 @@
+= Cluster Logging Architecture
+Overview of cluster logging architecture and designs in progress.
+:toc: preamble
+:icons: font
+:rh: icon:lock[]
+// {rh} is marker for links needing an RH account
+
+This site provides:
+
+* High-level overview of the cluster logging architecture.
+* Summary of work in progress on the design of future enhancments.
+* Links to further details.
+
+TIP: This site is evolving, it will be updated as plans and architecture change.
+
+The link:..[source for this site] is versioned with the Cluster Logging
+Operator source code. The goal is to keep it current with the code. 
+These pages can be updated by the same PR process as source code.
+
+== Architecture Overview
+
+=== Key to diagrams
+
+image:legend.svg[align="left"]
+
+=== Operators and APIs
+// FIXME(alanconway) links in diagrams. Need opts=interactive 
+
+image:overview.svg[opts="interactive"]
+
+=== Logging per Node
+
+image:node.svg[opts="interactive"]
+
+==  Work in progress
+
+NOTE: Links marked with {rh} require a Red Hat account for access.
+
+=== Log Selection by Pod Labels
+
+Add an input selector to the ClusterLogForwarder (CLF) to forward application
+logs from pods identified by labels.
+
+*Status*: Enhancment PR submitted for discussion.
+
+* https://github.com/openshift/enhancements/pull/457[Enhancment proposal PR]
+* {rh} https://issues.redhat.com/browse/LOG-883[Epic JIRA]
+
+=== JSON formats
+
+*Status*: Feature epic available, needs enhancment proposal(s)
+
+* {rh} https://issues.redhat.com/browse/LOG-835[Epic JIRA]
+
+== Resources
+
+NOTE: Links marked with {rh} require a Red Hat account for access.
+
+* https://github.com/openshift/enhancements/tree/master/enhancements/cluster-logging[Enhancment proposals] describe planned enhancements
+* {rh} https://bugzilla.redhat.com/buglist.cgi?cmdtype=runnamed&list_id=11292768&namedcmd=All%20Cluster%20Logging%20Bugs[Bug Tracker ]
+* Source code:
+** https://github.com/openshift/cluster-logging-operator[Cluster Logging Operator] 
+** https://github.com/openshift/elasticsearch-operator[Elasticsearch Operator]
+** https://github.com/openshift/origin-aggregated-logging[Other logging dependencies (fluentd, kibana images etc.)]
+
+* {rh} https://issues.redhat.com/projects/LOG/issues/LOG-96?filter=allopenissues[JIRA (project LOG)] for feature tracking and planning.
+

@@ -15,7 +15,7 @@ export GO111MODULE=on
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 
-export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -type d))
+export OCP_VERSION?=$(notdir $(shell ls -d manifests/[0-9]*.[0-9]*))
 export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest

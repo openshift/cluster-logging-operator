@@ -75,7 +75,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		"",
 		corev1.ConditionFalse,
 	)
-
+	logger.Debugf("ClusterLogForwarder generated config:\n----\n%v\n----", generatedConfig)
 	return generatedConfig, err
 }
 
@@ -139,8 +139,6 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 		status.Conditions.SetCondition(condReady)
 		logger.Infof("ClusterLogForwarder is ready")
 	}
-	logger.DebugObject("ClusterLogForwarder normalized spec: %v", spec)
-	logger.DebugObject("ClusterLogForwarder normalized status: %v", status)
 	return spec, status
 }
 
@@ -190,11 +188,11 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 
 	for i, pipeline := range clusterRequest.ForwarderSpec.Pipelines {
 		if pipeline.Name == "" {
-			pipeline.Name = fmt.Sprintf("pipeline[%v]", i)
+			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
 		}
 		if names.Has(pipeline.Name) {
 			original := pipeline.Name
-			pipeline.Name = fmt.Sprintf("pipeline[%v]", i)
+			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
 			status.Pipelines.Set(pipeline.Name, condInvalid("duplicate name %q", original))
 			continue
 		}
@@ -227,7 +225,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 	status.Inputs = logging.NamedConditions{}
 	for i, input := range clusterRequest.ForwarderSpec.Inputs {
 		badName := func(format string, args ...interface{}) {
-			input.Name = fmt.Sprintf("input[%v]", i)
+			input.Name = fmt.Sprintf("input_%v_", i)
 			status.Inputs.Set(input.Name, condInvalid(format, args...))
 		}
 		switch {
@@ -250,7 +248,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 	for i, out := range clusterRequest.ForwarderSpec.Outputs {
 		output := out
 		badName := func(format string, args ...interface{}) {
-			output.Name = fmt.Sprintf("output[%v]", i)
+			output.Name = fmt.Sprintf("output_%v_", i)
 			status.Outputs.Set(output.Name, condInvalid(format, args...))
 		}
 		var urlErr error

@@ -34,10 +34,11 @@ const (
 )
 
 var (
-	defaultRetryInterval      time.Duration
-	defaultTimeout            time.Duration
-	DefaultWaitForLogsTimeout time.Duration
-	err                       error
+	defaultRetryInterval        time.Duration
+	defaultTimeout              time.Duration
+	DefaultWaitForLogsTimeout   time.Duration
+	DefaultWaitForNoLogsTimeout time.Duration
+	err                         error
 )
 
 func init() {
@@ -48,6 +49,11 @@ func init() {
 		panic(err)
 	}
 	if DefaultWaitForLogsTimeout, err = time.ParseDuration("5m"); err != nil {
+		panic(err)
+	}
+	// Shorter timeout for when we are expecting that there will be no logs,
+	// since we will always go to the timeout in that case.a
+	if DefaultWaitForNoLogsTimeout, err = time.ParseDuration("1m"); err != nil {
 		panic(err)
 	}
 }
@@ -198,7 +204,7 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 		return tc.waitForDeployment(OpenshiftLoggingNS, "kibana", defaultRetryInterval, defaultTimeout)
 	case ComponentTypeCollector:
 		logger.Debugf("Waiting for %v", component)
-		return tc.waitForFluentDaemonSet(defaultRetryInterval, time.Minute*5)
+		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
 	}

@@ -128,8 +128,8 @@ var _ = Describe("Normalizing forwarder", func() {
 					})
 				spec, status := request.NormalizeForwarder()
 				Expect(spec.Pipelines).To(HaveLen(1), JSONString(spec))
-				Expect(status.Pipelines).To(HaveKey("pipeline[1]"))
-				Expect(status.Pipelines["pipeline[1]"]).To(HaveCondition(logging.ConditionReady, false, "Invalid", "duplicate"))
+				Expect(status.Pipelines).To(HaveKey("pipeline_1_"))
+				Expect(status.Pipelines["pipeline_1_"]).To(HaveCondition(logging.ConditionReady, false, "Invalid", "duplicate"))
 				Expect(status.Pipelines).To(HaveLen(2))
 			})
 
@@ -142,7 +142,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				spec, _ := request.NormalizeForwarder()
 				Expect(spec.Pipelines).To(HaveLen(2), "Exp. all pipelines to be ok")
 				Expect(spec.Pipelines[0].Name).To(Equal("aPipeline"))
-				Expect(spec.Pipelines[1].Name).To(Equal("pipeline[1]"))
+				Expect(spec.Pipelines[1].Name).To(Equal("pipeline_1_"))
 			})
 
 			It("should drop pipelines that have unrecognized inputRefs", func() {
@@ -204,7 +204,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				spec, status := request.NormalizeForwarder()
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. non-unique outputs to be dropped")
 				Expect(status.Outputs["myOutput"]).To(HaveCondition(logging.ConditionReady, true, "", ""))
-				Expect(status.Outputs["output[2]"]).To(HaveCondition(logging.ConditionReady, false, logging.ReasonInvalid, "duplicate"))
+				Expect(status.Outputs["output_2_"]).To(HaveCondition(logging.ConditionReady, false, logging.ReasonInvalid, "duplicate"))
 			})
 
 			It("should drop outputs that have empty names", func() {
@@ -215,7 +215,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				})
 				spec, status := request.NormalizeForwarder()
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. outputs with an empty name to be dropped")
-				Expect(status.Outputs["output[2]"]).To(HaveCondition("Ready", false, "Invalid", "must have a name"))
+				Expect(status.Outputs["output_2_"]).To(HaveCondition("Ready", false, "Invalid", "must have a name"))
 			})
 
 			It("should drop outputs that conflict with the internally reserved name", func() {
@@ -226,8 +226,8 @@ var _ = Describe("Normalizing forwarder", func() {
 				})
 				spec, status := request.NormalizeForwarder()
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. outputs with an internal name conflict to be dropped")
-				Expect(status.Outputs).To(HaveKey("output[2]"))
-				Expect(status.Outputs["output[2]"]).To(HaveCondition("Ready", false, "Invalid", "reserved"))
+				Expect(status.Outputs).To(HaveKey("output_2_"))
+				Expect(status.Outputs["output_2_"]).To(HaveCondition("Ready", false, "Invalid", "reserved"))
 			})
 
 			It("should drop outputs that have empty types", func() {
@@ -348,12 +348,12 @@ pipelines:
 - inputRefs:
 	- application
 	- infrastructure
-	name: pipeline[0]
+	name: pipeline_0_
 	outputRefs:
 	- default
 `))
 			Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""))
-			Expect(status.Pipelines["pipeline[0]"]).To(HaveCondition("Ready", true, "", ""))
+			Expect(status.Pipelines["pipeline_0_"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Outputs["default"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Inputs[logging.InputNameApplication]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Inputs[logging.InputNameInfrastructure]).To(HaveCondition("Ready", true, "", ""))
@@ -380,7 +380,7 @@ pipelines:
 
 			Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Pipelines).To(HaveLen(1))
-			Expect(status.Pipelines["pipeline[0]"]).To(HaveCondition("Ready", true, "", ""))
+			Expect(status.Pipelines["pipeline_0_"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Outputs["default"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Inputs[logging.InputNameAudit]).To(HaveCondition("Ready", true, "", ""))
 		})
@@ -587,6 +587,18 @@ pipelines:
   name: test-audit
   outputRefs:
   - foo
+`),
+	Entry("Bug 1866531", `
+outputs:
+- name: test
+  type: fluentdForward
+  url: tcp://test.openshift.logging.svc:24224
+pipelines:
+- inputRefs:
+  - application
+  name: test
+  outputRefs:
+  - test
 `),
 )
 

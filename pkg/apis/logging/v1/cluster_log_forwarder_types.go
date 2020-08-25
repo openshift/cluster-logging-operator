@@ -85,17 +85,17 @@ type InputSpec struct {
 	// Application, if present, enables `application` logs.
 	//
 	// +optional
-	Application *Application `json:"application"`
+	Application *Application `json:"application,omitempty"`
 
 	// Infrastructure, if present, enables `infrastructure` logs.
 	//
 	// +optional
-	Infrastructure *Infrastructure `json:"infrastructure"`
+	Infrastructure *Infrastructure `json:"infrastructure,omitempty"`
 
 	// Audit, if present, enables `audit` logs.
 	//
 	// +optional
-	Audit *Audit `json:"audit"`
+	Audit *Audit `json:"audit,omitempty"`
 }
 
 type Application struct {
@@ -141,7 +141,7 @@ type OutputSpec struct {
 	//
 	// +kubebuilder:validation:Pattern:=`^$|[a-zA-z]+:\/\/.*`
 	// +optional
-	URL string `json:"url"`
+	URL string `json:"url,omitempty"`
 
 	OutputTypeSpec `json:",inline"`
 

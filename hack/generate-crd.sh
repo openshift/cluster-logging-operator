@@ -14,16 +14,11 @@ echo "--------------------------------------------------------------"
 $OPERATOR_SDK generate k8s
 
 echo "--------------------------------------------------------------"
-echo "Generate CRDs for apiVersion v1beta1"
-echo "--------------------------------------------------------------"
-$OPERATOR_SDK generate crds --crd-version v1beta1
-mv "deploy/crds/${CLO_CRD_FILE}" "${MANIFESTS_DIR}"
-
-echo "--------------------------------------------------------------"
 echo "Generate CRDs for apiVersion v1"
 echo "--------------------------------------------------------------"
 $OPERATOR_SDK generate crds --crd-version v1
 mv "deploy/crds/${CLF_CRD_FILE}" "${MANIFESTS_DIR}"
+mv "deploy/crds/${CLO_CRD_FILE}" "${MANIFESTS_DIR}"
 
 echo "---------------------------------------------------------------"
 echo "Kustomize: Patch CRDs for singeltons and backward-compatibility"

@@ -47,9 +47,13 @@ check_collector_persistence() {
 }
 
 echo "Gathering data for collection component"
-echo "-- Checking Collector health"
 mkdir -p $collector_folder
 
+echo "-- Retrieving configmaps"
+oc -n $NAMESPACE extract configmap/fluentd --to=$collector_folder ||:
+oc -n $NAMESPACE extract configmap/secure-forward --to=$collector_folder ||:
+
+echo "-- Checking Collector health"
 pods="$(oc -n $NAMESPACE get pods -l logging-infra=fluentd -o jsonpath={.items[*].metadata.name})"
 for pod in $pods
 do
@@ -57,4 +61,6 @@ do
     get_env $pod $collector_folder "$NAMESPACE"
     check_collector_connectivity $pod
     check_collector_persistence $pod
+    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/clo_default_output_es > $collector_folder/$pod.es-buffers.txt||:
+    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/retry_clo_default_output_es > $outdir/$pod.buffers.es-retry.txt||
 done

@@ -21,8 +21,7 @@ cleanup() {
 
   set +e
   mkdir -p $ARTIFACT_DIR/$test_name
-  oc -n $LOGGING_NS get configmap fluentd -o jsonpath={.data} > $ARTIFACT_DIR/$test_name/fluent-configmap.log
-  get_all_logging_pod_logs $ARTIFACT_DIR/$test_name
+  gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $ARTIFACT_DIR/$test_name
 
   if [ "${DO_CLEANUP:-true}" == "true" ] ; then
       ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh

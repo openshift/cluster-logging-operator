@@ -9,3 +9,4 @@ gather_logging_resources "openshift-logging" "$artifact_dir" "$runtime"
 oc -n "$GENERATOR_NS" describe deployment/log-generator  > "$artifact_dir/$runtime/log-generator.describe" ||:
 oc -n "$GENERATOR_NS" logs deployment/log-generator  > "$artifact_dir/$runtime/log-generator.logs" ||:
 oc -n "$GENERATOR_NS" get deployment/log-generator -o yaml > "$artifact_dir/$runtime/log-generator.deployment.yaml" ||:
+oc -n openshift-logging exec $(oc -n openshift-logging get pods -l component=fluent-receiver -o name| sed 's/pod\///') -- cat /tmp/app-logs > "$artifact_dir/$runtime/fluent-receiver-app-logs" ||:

@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
 type fluentReceiverLogStore struct {
@@ -368,6 +369,21 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 			},
 		},
 	)
+
+	tc.AddCleanup(func() error {
+		_, err := oc.Exec().
+			WithNamespace(OpenshiftLoggingNS).
+			WithPodGetter(oc.Get().
+				WithNamespace(OpenshiftLoggingNS).
+				Pod().
+				Selector("component=fluent-receiver").
+				OutputJsonpath("{.items[0].metadata.name}")).
+			Container("fluent-receiver").
+			WithCmd("/bin/sh", "-c", "rm -rf /tmp/app.logs /tmp/app-logs").
+			Run()
+		return err
+	})
+
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		opts := metav1.DeleteOptions{

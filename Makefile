@@ -20,30 +20,43 @@ export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
-.PHONY: all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run
-
-# Do a  `make pre-submit` *before* submitting a PR, it ensurse generated code and tools
-# are up to date, source is formatted and lint-free and unit tests pass.
-pre-submit: tools regenerate check
-	@echo "Git status after pre-submit (check for unexpected changes)"
-	git status
+.PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run
 
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 
-# Update code (generate, format), run unit tests and lint. Make sure e2e tests build.
-check: generate fmt test-unit
+# check health of the code:
+# - Update generated code
+# - Apply standard source format
+# - Run unit tests
+# - Build all code (including e2e tests)
+# - Run lint check
+#
+check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
-	go build $(BUILD_OPTS) -o bin/forwarder-generator ./internal/cmd/forwarder-generator
-	$(MAKE) lint				  # Only lint if code builds.
+	$(MAKE) lint				  # Only lint if all code builds.
 
-bin:
-	mkdir -p bin
+# CI calls ci-check first.
+ci-check: check
+	@echo
+	@git diff-index --name-status --exit-code HEAD || { \
+		echo -e '\nerror: files changed during "make check", not up-to-date\n' ; \
+		exit 1 ; \
+	}
 
-openshift-client: bin
+
+# Note: Go has built-in build caching, so always run `go build`.
+# It will do a better job than using source dependencies to decide if we need to build.
+
+bin/forwarder-generator: force
+	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator
+
+bin/cluster-logging-operator: force
+	go build $(BUILD_OPTS) -o $@ ./cmd/manager
+
+openshift-client:
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
 
-build: bin
-	go build $(BUILD_OPTS) -o bin/cluster-logging-operator ./cmd/manager
+build: bin/cluster-logging-operator
 
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
@@ -72,8 +85,7 @@ clean:
 	@rm -rf bin tmp _output
 	go clean -cache -testcache ./...
 
-# Only build image with lint-free code. CI will fail on lint errors.
-image: lint
+image:
 	@if [ $${SKIP_BUILD:-false} = false ] ; then \
 		podman build -t $(IMAGE_TAG) . ; \
 	fi

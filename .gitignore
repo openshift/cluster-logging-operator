@@ -1,4 +1,5 @@
 **/.kube/*
+Dockerfile.local
 _output/
 pf.log
 **/.kube/**

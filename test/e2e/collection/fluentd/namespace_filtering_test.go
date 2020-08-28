@@ -1,9 +1,11 @@
 package fluentd
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -24,8 +26,8 @@ var _ = Describe("[Collection] Namespace filtering", func() {
 		e2e              = helpers.NewE2ETestFramework()
 		rootDir          string
 	)
-	appNamespace1 := "application1"
-	appNamespace2 := "application2"
+	appNamespace1 := "application-ns1"
+	appNamespace2 := "application-ns2"
 
 	BeforeEach(func() {
 		if _, err = oc.Literal().From(fmt.Sprintf("oc create ns %s", appNamespace1)).Run(); err != nil {
@@ -101,7 +103,12 @@ var _ = Describe("[Collection] Namespace filtering", func() {
 
 		// verify only appNamespace1 logs appear in Application logs
 		for _, log := range logs {
-			Expect(log.Kubernetes.NamespaceName).To(Equal(appNamespace1), fmt.Sprintf("log %#v", log))
+			b, _ := json.MarshalIndent(log, "", "\t")
+			// Need to put this prefix check because there could be some logs collected from previous test cases
+			// and we want to compare logs generated in this test case only
+			if strings.HasPrefix(log.Kubernetes.NamespaceName, "application") {
+				Expect(log.Kubernetes.NamespaceName).To(Equal(appNamespace1), fmt.Sprintf("log %s", b))
+			}
 		}
 	})
 

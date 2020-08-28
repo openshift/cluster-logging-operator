@@ -1,0 +1,248 @@
+= Cluster Logging Architecture
+:icons: font
+ifndef::env-github[]
+:toc: left
+endif::[]
+ifdef::env-github[]
+:toc: preamble
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+:enhancement_process: https://github.com/openshift/enhancements/blob/master/guidelines/README.md
+:clo_enhancements: https://github.com/openshift/enhancements/tree/master/enhancements/cluster-logging
+:jira: https://issues.redhat.com/projects/LOG/issues/LOG-96?filter=allopenissues
+:bugzilla: https://bugzilla.redhat.com/buglist.cgi?cmdtype=runnamed&list_id=11292768&namedcmd=All%20Cluster%20Logging%20Bugs
+:clo_repo: https://github.com/openshift/cluster-logging-operator/
+:elo_repo: https://github.com/openshift/elasticsearch-operator/
+:oal_repo: https://github.com//openshift/origin-aggregated-logging/
+:pretty_html: https://alanconway.github.io/cluster-logging-operator/architecture/
+
+ifdef::env-github[]
+TIP: You are viewing the asciidoc source, there is a  prettier version link:{pretty_html}[*here*]
+endif::[]
+
+== Introduction
+
+The goals of this page are to:
+
+* Remain brief and up-to-date; short enough to read in one sitting, updated and versioned with the code.
+* Provide an overview and a snapshot of status for team members and newcomers.
+* Provide links to navigate to other project <<_resources, resources>>
+
+IMPORTANT: This page does _not_ replace or duplicate information in link:{jira}[JIRA], link:{bugzilla}[Bugzilla], link:{clo_enhancements}[enhancement proposals], or the link:{enhancement_process}[enhancment proposal process]. It provides a compact overview and navigation aid to those  <<_resources, resources>>.
+
+== Architecture Summary
+=== Log categories
+
+We define 3 _logging categories_
+
+[horizontal]
+Application:: Container logs from non-infrastrure containers.
+Infrastructure:: Node logs and container logs from `kube-*` and `openshift-*` namespaces.
+Audit:: Node logs from `/var/log/audit`, security sensitive.
+
+
+=== Components
+
+The logging system breaks down into 4 logical components:
+
+[horizontal]
+collector:: Read container log data from each node.
+forwarder:: Forward log data to configured outputs.
+store:: Store log data for analys This is the default output for the _forwarder_.
+exploration:: UI tools (GUI and command line) to search, query and view stored logs
+
+=== Operators and Custom Resources
+
+
+.Key to diagrams
+image::legend.svg[]
+
+.Operators and APIs
+image::overview.svg[]
+
+The *cluster logging operator (CLO)* implements the following custom resources:
+
+ClusterLogging (CL)::
+  Deploys the _collector_ and _forwarder_ which currently are both implemented by a _daemonset_ running _Fluentd_ on each node.
+ClusterLogForwarder (CLF)::
+  Generate Fluentd configuration to forward logs per user configuration.
+
+The *elasticsearch logging operator (ELO)* implements the following custom resources:
+
+ElasticSearch::
+  Configure and deploy an Elasticsearch instance as the default log store.
+Kibana::
+  Configure and deploy Kibana instance to search, query and view logs.
+
+=== Runtime behavior
+
+.Collection and forwarding
+image::node.svg[]
+
+The _container runtime interface_ (CRI-O) on each node writes container logs to files.
+The file names include the container's UID, namespace, name and other data.
+We also collect per-node logs from the Linux _journald_.
+
+The CLO deploys a Fluentd daemon on each node which acts both as a _collector_ (reading log files) and as a _forwarder_ (sending log data to configured outputs)
+
+=== Log Entries ===
+
+The term _log_ is overloaded so we'll use these terms to clarify:
+
+Log:: A stream of text containing a sequence of _log entries_.
+
+Log Entry::  Usually a single line of text in a log, but see <<_multi_line_entries, multi-line entries>>
+
+Container Log:: Produced by CRI-O, combining stdout/stderr output from process running in a single container.
+
+Node Log:: Produced by journald or other per-node agent from non-containerized processes on the node.
+
+Structured Log::  A log where each entry is a JSON object (map), written as a single line of text.
+
+Kubernetes does not enforce a uniform format for logs. In order to deploy pre-existing applications with diverse log formats, anything a containerized process writes to `stdout` or `stderr` is considered a log.
+
+Traditional log formats write entries as ordered fields, but the order, separation, format and meaning of fields varies.
+Structured JSON logs use a uniform JSON object format, but the field names, types, and meaning of fields still varies.
+
+*TODO*: k8s forthcoming standard.
+
+==== Metadata, Envelopes and Forwarding
+
+_Metadata_ is additional data about a log entry (original host, container-id, namespace etc.) that we add as part of forwarding the logs. We use these terms for clarity:
+
+[horizontal]
+Message:: The original, unmodifed log entry.
+
+Envelope:: Include metadata fields and a `message` field with the original _message_
+
+We usually use JSON notation for the envelope since it's the most widespread convention.
+
+However, we do and will implement other output formats formats; for example a syslog message with its `MSG` and `STRUCTURED-DATA` sections is an different way to encode the equivalent envelope data.
+
+Depending on the output type, we may forward entries as __message_ only, full _envelope_, or the users choice.
+
+*TODO*: document current metadata, example 
+
+*TODO*: mutating the message?
+
+==== Multi-line Entries
+
+Log entries are usually a single line of text, but they can consist of more than one line for several reasons:
+
+CRI-O::
+CRI-O reads chunks of text from applications, not single lines. If a line gets split between chunks, CRI-O writes each part as a separate line in the log file with a "partial" flag so they can be correctly re-assembled.
+
+Stack traces::
+Programs in languages like Java, Ruby or Python often dump multi-line stack traces into the log. The entire stack trace needs to be kept together when forwarded to be useful.
+
+JSON Objects::
+A JSON object _can_ be written on multiple lines, although structured logging libraries typically don't do this.
+
+*TODO*: is multi-line JSON a real concern in practice?
+
+==  Work in progress
+
+=== Improved e2e tests
+
+*Status*: In development, PR coming soon.
+
+Our e2e tests are slow and sometimes flaky, a bottleneck to agility.
+Working on a new version of our e2e test harness to simplify:
+
+* safe re-use of common resources across tests.
+* robust setup - tests establish their own preconditions, don't assume a clean environment.
+* more reliable creation and deletion of unique-named, temporary resources.
+* concurrent creation/deletion of multiple test resources.
+
+Will initially showcase in a new test, then update existing tests.
+
+=== Pod Label Selector
+
+*Status*: Enhancement PR submitted for discussion.
+
+Add an input selector to the ClusterLogForwarder (CLF) to forward application
+logs from pods identified by labels.
+
+* https://github.com/openshift/enhancements/pull/457[Enhancement proposal PR]
+* https://issues.redhat.com/browse/LOG-883[Epic JIRA]
+
+=== JSON Output Formats
+
+*Status*: Needs enhancement proposal(s)
+
+IMPORTANT: Although JSON is the first target, this all applies to other formats (e.g. syslog) that have different ways of encoding envelope and message. The design *must* be expressed in a format neutral way as far as possible.
+
+As a logging administrator, I would like to control the format of forwarded logs.
+In particular I would like some forwarded message envelope to contain the `message` as a JSON object rather than a string.
+
+
+Generic options:
+
+* Forward the complete envelope, or just the message
+* Select a subset of metadata to forward (reduce log bloat)
+
+Options specific to JSON-envelope output:
+
+* Choose JSON object or string encoding for message field, when original text is JSON.
+* Handling non-JSON messages when JSON expected: string  or error envelope? +
+ `{"invalid-json" : "<messsage text>"}`
+
+Links:
+
+* https://issues.redhat.com/browse/LOG-835[LOG-835: Add JSON format type to log forwarding API - Red Hat Issue Tracker]
+* https://issues.redhat.com/browse/RFE-921[RFE-921: Enable JSON log parsing - Red Hat Issue Tracker]
+
+=== Document Metadata
+
+Decide on the supported set of envelope metadata fields and document them.
+
+Some of our format decisions are specifically for elasticsearch (e.g. flattening maps to lists)
+We need to separate the ES-specifics, either:
+
+* Include suffficient output format configuration to cover everything we need for ES (map flattening) OR
+* Move the ES-specific formatting into the elasticsearch output type.
+
+=== Multi-line support
+
+Verify that we we cover all common stack traces: java, ruby, python.
+
+*TODO*: Do we need to consider multi-line JSON?
+
+=== Syslog metadata
+
+Optionally copy metadata copied to syslog https://tools.ietf.org/html/rfc5424#section-6.3[STRUCTURED-DATA]
+
+=== Flow Control/Back-pressure
+
+*TODO*
+
+=== Loki as store
+
+* Benchmarking & stress testing in progress
+* Configuring loki at scale.
+* Test with back ends s3, boltd.
+
+*TODO*: links to cards
+
+=== Observability/Telemetry
+
+*TODO*
+
+== Resources
+link:{enhancement_process}[The Enhancement Proposal Process] is how we document & discuss designs.
+
+link:{enhancement_repo}[Cluster Logging Enhancement Proposals] for CLO and ELO.
+
+https://issues.redhat.com/projects/LOG/issues/LOG-96?filter=allopenissues[JIRA project LOG] tracks feature work.
+
+https://bugzilla.redhat.com/buglist.cgi?cmdtype=runnamed&list_id=11292768&namedcmd=All%20Cluster%20Logging%20Bugs[Bugzilla ] tracks bugs.
+
+.Source code:
+* https://github.com/openshift/cluster-logging-operator[Cluster Logging Operator] 
+* https://github.com/openshift/elasticsearch-operator[Elasticsearch Operator]
+* https://github.com/openshift/origin-aggregated-logging[Other logging dependencies (fluentd, kibana images etc.)]
+

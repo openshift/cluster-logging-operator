@@ -596,16 +596,16 @@ tls_cert_path {{ .SecretPath "ca-bundle.crt"}}
   @type file
   path '{{.BufferPath}}'
   queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
-  {{ if .TotalLimitSize }}
+{{- if .TotalLimitSize }}
   total_limit_size {{.TotalLimitSize}}
-  {{ else }}
+{{- else }}
   total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-  {{end}}
-  {{ if .ChunkLimitSize }}
+{{- end }}
+{{- if .ChunkLimitSize }}
   chunk_limit_size {{.ChunkLimitSize}}
-  {{else}}
+{{- else }}
   chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
-  {{end}}
+{{- end }}
   flush_mode {{.FlushMode}}
   flush_interval {{.FlushInterval}}
   flush_at_shutdown true
@@ -674,16 +674,16 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
     retry_max_interval {{.RetryMaxInterval}}
     retry_forever true
     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    {{ if .TotalLimitSize }}
+{{- if .TotalLimitSize }}
     total_limit_size {{.TotalLimitSize}}
-    {{ else }}
+{{- else }}
     total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-    {{end}}
-    {{ if .ChunkLimitSize }}
+{{- end}}
+{{- if .ChunkLimitSize }}
     chunk_limit_size {{.ChunkLimitSize}}
-    {{else}}
+{{- else }}
     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
-    {{end}}
+{{- end }}
     overflow_action {{.OverflowAction}}
   </buffer>
 </store>
@@ -757,16 +757,16 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
     retry_max_interval {{.RetryMaxInterval}}
     retry_forever true
     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    {{ if .TotalLimitSize }}
+{{- if .TotalLimitSize }}
     total_limit_size {{.TotalLimitSize}}
-    {{ else }}
+{{- else }}
     total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-    {{end}}
-    {{ if .ChunkLimitSize }}
+{{- end }}
+{{- if .ChunkLimitSize }}
     chunk_limit_size {{.ChunkLimitSize}}
-    {{else}}
+{{- else }}
     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
-    {{end}}
+{{- end }}
     overflow_action {{.OverflowAction}}
   </buffer>
 </store>
@@ -799,16 +799,16 @@ ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : use_nil}
   retry_max_interval {{.RetryMaxInterval}}
   retry_forever true
   queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-  {{ if .TotalLimitSize }}
+{{- if .TotalLimitSize }}
   total_limit_size {{.TotalLimitSize}}
-  {{ else }}
+{{- else }}
   total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-  {{end}}
-  {{ if .ChunkLimitSize }}
+{{- end }}
+{{- if .ChunkLimitSize }}
   chunk_limit_size {{.ChunkLimitSize}}
-  {{else}}
+{{- else }}
   chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
-  {{end}}
+{{- end }}
   overflow_action {{.OverflowAction}}
 </buffer>
 {{- end}}

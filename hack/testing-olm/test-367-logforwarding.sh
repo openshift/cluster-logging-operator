@@ -31,10 +31,6 @@ cleanup(){
     ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
   fi
 
-  for n in $(oc get nodes -o name); do
-    oc debug $n -- bash -c 'chroot /host && rm -rf /var/lib/fluentd/** || rm /var/log/*.pos || rm /var/log/journal_pos.json || rm /var/log/openshift-apiserver/audit.log.pos || rm /var/log/kube-apiserver/audit.log.pos'
-  done
-  
   set -e
   exit ${return_code}
 }

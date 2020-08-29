@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/onsi/ginkgo"
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
@@ -392,19 +394,24 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 }
 
 func (tc *E2ETestFramework) Cleanup() {
-	//allow caller to cleanup if unset (e.g script cleanup())
-	logger.Infof("Running Cleanup....")
-	doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
-	if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
-		RunCleanupScript()
-		logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
-		for _, cleanup := range tc.CleanupFns {
-			logger.Debug("Running an e2e cleanup function")
-			if err := cleanup(); err != nil {
-				logger.Debugf("Error during cleanup %v", err)
-			}
+	if ginkgo.CurrentGinkgoTestDescription().Failed {
+		//allow caller to cleanup if unset (e.g script cleanup())
+		logger.Infof("Running Cleanup script ....")
+		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
+		if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
+			RunCleanupScript()
+		}
+	} else {
+		logger.Infof("Not Running Cleanup script")
+	}
+	logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
+	for _, cleanup := range tc.CleanupFns {
+		logger.Debug("Running an e2e cleanup function")
+		if err := cleanup(); err != nil {
+			logger.Debugf("Error during cleanup %v", err)
 		}
 	}
+	tc.CleanFluentDBuffers()
 }
 
 func RunCleanupScript() {
@@ -420,6 +427,91 @@ func RunCleanupScript() {
 		result, err := cmd.CombinedOutput()
 		logger.Infof("RunCleanupScript output: %s", string(result))
 		logger.Infof("RunCleanupScript err: %v", err)
+	}
+}
+
+func (tc *E2ETestFramework) CleanFluentDBuffers() {
+	h := corev1.HostPathDirectory
+	p := true
+	spec := &v1.DaemonSet{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "DaemonSet",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "clean-fluentd-buffers",
+			Namespace: "default",
+		},
+		Spec: v1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"name": "clean-fluentd-buffers",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "clean-fluentd-buffers",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Tolerations: []corev1.Toleration{
+						{
+							Key:    "node-role.kubernetes.io/master",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:  "clean-fluentd-buffers",
+							Image: "centos:centos7",
+							Args:  []string{"sh", "-c", "rm -rf /fluentd-buffers/** "},
+							SecurityContext: &corev1.SecurityContext{
+								Privileged: &p,
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "fluentd-buffers",
+									MountPath: "/fluentd-buffers",
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:  "pause",
+							Image: "centos:centos7",
+							Args:  []string{"sh", "-c", "echo done!!!!"},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "fluentd-buffers",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/var/lib/fluentd",
+									Type: &h,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	ds, err := tc.KubeClient.AppsV1().DaemonSets("default").Create(context.TODO(), spec, metav1.CreateOptions{})
+	if err != nil {
+		logger.Errorf("Could not create DaemonSet for cleaning fluentd buffers. err: %v", err)
+		return
+	} else {
+		logger.Info("DaemonSet to clean fluent buffers created")
+	}
+	time.Sleep(time.Second * 20)
+	err = tc.KubeClient.AppsV1().DaemonSets(ds.GetNamespace()).Delete(context.TODO(), ds.GetName(), metav1.DeleteOptions{})
+	if err != nil {
+		logger.Errorf("Could not delete DaemonSet for cleaning fluentd buffers. err: %v", err)
+	} else {
+		logger.Info("DaemonSet to clean fluent buffers deleted")
 	}
 }
 

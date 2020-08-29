@@ -5,6 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
+
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
@@ -13,6 +17,28 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var _ = Describe("fluentd.go#newFluentdPodSpec", func() {
+	var (
+		cluster   = &logging.ClusterLogging{}
+		podSpec   v1.PodSpec
+		container v1.Container
+	)
+	BeforeEach(func() {
+		podSpec = newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+		container = podSpec.Containers[0]
+	})
+	Describe("when creating of the collector container", func() {
+
+		It("should provide the pod IP as an environment var", func() {
+			Expect(container.Env).To(IncludeEnvVar(v1.EnvVar{Name: "POD_IP",
+				ValueFrom: &v1.EnvVarSource{
+					FieldRef: &v1.ObjectFieldSelector{
+						APIVersion: "v1", FieldPath: "status.podIP"}}}))
+		})
+	})
+
+})
 
 func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 

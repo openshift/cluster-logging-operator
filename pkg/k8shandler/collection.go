@@ -310,61 +310,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	}
 }
 
-func isDaemonsetDifferent(current *apps.DaemonSet, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
-
-	different := false
-
-	if !utils.AreMapsSame(current.Spec.Template.Spec.NodeSelector, desired.Spec.Template.Spec.NodeSelector) {
-		logrus.Infof("Collector nodeSelector change found, updating '%s'", current.Name)
-		current.Spec.Template.Spec.NodeSelector = desired.Spec.Template.Spec.NodeSelector
-		different = true
-	}
-
-	if !utils.AreTolerationsSame(current.Spec.Template.Spec.Tolerations, desired.Spec.Template.Spec.Tolerations) {
-		logrus.Infof("Collector tolerations change found, updating '%s'", current.Name)
-		current.Spec.Template.Spec.Tolerations = desired.Spec.Template.Spec.Tolerations
-		different = true
-	}
-
-	if isDaemonsetImageDifference(current, desired) {
-		logrus.Infof("Collector image change found, updating %q", current.Name)
-		current = updateCurrentDaemonsetImages(current, desired)
-		different = true
-	}
-
-	if utils.AreResourcesDifferent(current, desired) {
-		logrus.Infof("Collector resource(s) change found, updating %q", current.Name)
-		different = true
-	}
-
-	if !utils.EnvValueEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
-		logrus.Infof("Collector container EnvVar change found, updating %q", current.Name)
-		logger.Debugf("Collector envvars - current: %v, desired: %v", current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env)
-		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
-		different = true
-	}
-
-	if !utils.PodVolumeEquivalent(current.Spec.Template.Spec.Volumes, desired.Spec.Template.Spec.Volumes) {
-		logrus.Infof("Collector volumes change found, updating %q", current.Name)
-		current.Spec.Template.Spec.Volumes = desired.Spec.Template.Spec.Volumes
-		different = true
-	}
-
-	if !reflect.DeepEqual(current.Spec.Template.Spec.Containers[0].VolumeMounts, desired.Spec.Template.Spec.Containers[0].VolumeMounts) {
-		logrus.Infof("Collector container volumemounts change found, updating %q", current.Name)
-		current.Spec.Template.Spec.Containers[0].VolumeMounts = desired.Spec.Template.Spec.Containers[0].VolumeMounts
-		different = true
-	}
-
-	if len(current.Spec.Template.Spec.InitContainers) != len(desired.Spec.Template.Spec.InitContainers) {
-		logrus.Infof("Number of init containers found to be different, updating %q", current.Name)
-		current.Spec.Template.Spec.InitContainers = desired.Spec.Template.Spec.InitContainers
-		different = true
-	}
-
-	return current, different
-}
-
 func (clusterRequest *ClusterLoggingRequest) waitForDaemonSetReady(ds *apps.DaemonSet) error {
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
@@ -388,40 +333,6 @@ func (clusterRequest *ClusterLoggingRequest) waitForDaemonSetReady(ds *apps.Daem
 	}
 
 	return nil
-}
-
-func isDaemonsetImageDifference(current *apps.DaemonSet, desired *apps.DaemonSet) bool {
-
-	for _, curr := range current.Spec.Template.Spec.Containers {
-		for _, des := range desired.Spec.Template.Spec.Containers {
-			// Only compare the images of containers with the same name
-			if curr.Name == des.Name {
-				if curr.Image != des.Image {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
-}
-
-func updateCurrentDaemonsetImages(current *apps.DaemonSet, desired *apps.DaemonSet) *apps.DaemonSet {
-
-	containers := current.Spec.Template.Spec.Containers
-
-	for index, curr := range current.Spec.Template.Spec.Containers {
-		for _, des := range desired.Spec.Template.Spec.Containers {
-			// Only compare the images of containers with the same name
-			if curr.Name == des.Name {
-				if curr.Image != des.Image {
-					containers[index].Image = des.Image
-				}
-			}
-		}
-	}
-
-	return current
 }
 
 func isBufferFlushRequired(current *apps.DaemonSet, desired *apps.DaemonSet) bool {

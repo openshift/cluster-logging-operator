@@ -307,6 +307,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 		{Name: "METRICS_CERT", Value: "/etc/fluent/metrics/tls.crt"},
 		{Name: "METRICS_KEY", Value: "/etc/fluent/metrics/tls.key"},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
+		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 	}
 
 	proxyEnv := utils.SetProxyEnvVars(proxyConfig)

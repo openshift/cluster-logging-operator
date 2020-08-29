@@ -21,10 +21,10 @@ var _ = Describe("daemonset#AreSame", func() {
 				Template: v1.PodTemplateSpec{
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
-							v1.Container{},
+							{},
 						},
 						InitContainers: []v1.Container{
-							v1.Container{},
+							{},
 						},
 					},
 				},

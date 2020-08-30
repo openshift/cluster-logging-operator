@@ -3,10 +3,6 @@ kind: CustomResourceDefinition
 metadata:
   name: clusterloggings.logging.openshift.io
 spec:
-  additionalPrinterColumns:
-  - JSONPath: .spec.managementState
-    name: Management State
-    type: string
   group: logging.openshift.io
   names:
     categories:
@@ -19,7 +15,11 @@ spec:
     singular: clusterlogging
   scope: Namespaced
   versions:
-  - name: v1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.managementState
+      name: Management State
+      type: string
+    name: v1
     schema:
       openAPIV3Schema:
         description: "ClusterLogging is the Schema for the clusterloggings API \n

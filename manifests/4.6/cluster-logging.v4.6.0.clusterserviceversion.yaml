@@ -142,7 +142,7 @@ spec:
     email: aos-logging@redhat.com
 
   provider:
-    name: Red Hat, Inc
+    name: Red Hat
 
   links:
   - name: Elastic
@@ -401,6 +401,11 @@ spec:
         path: logStore.elasticsearch.nodeSelector
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:nodeSelector'
+      - description: The storage class name to use for the Elasticsearch Log Storage component
+        displayName: Elasticsearch Storage Class Name
+        path: logStore.elasticsearch.storage.storageClassName
+        x-descriptors:
+        - 'urn:alm:descriptor:io.kubernetes:StorageClass'
       - description: Resource requirements for the Fluentd pods
         displayName: Fluentd Resource Requirements
         path: collection.logs.fluentd.resources

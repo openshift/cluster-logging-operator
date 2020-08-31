@@ -315,6 +315,9 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @type relabel
     @label @_APPLICATION
   </match>
+  <match kubernetes.** >
+    @type null
+  </match>
 	{{- else}}
   <match kubernetes.**>
     @type relabel

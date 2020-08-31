@@ -411,6 +411,9 @@ var _ = Describe("Generating fluentd config", func() {
       @type relabel
       @label @_APPLICATION
     </match>
+    <match kubernetes.** >
+      @type null
+    </match>
     <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
       @type null
     </match>
@@ -2118,6 +2121,9 @@ var _ = Describe("Generating fluentd config", func() {
       <match kubernetes.**_project1_** kubernetes.**_project2_** >
         @type relabel
         @label @_APPLICATION
+      </match>
+      <match kubernetes.** >
+        @type null
       </match>
     
       <match linux-audit.log** k8s-audit.log** openshift-audit.log**>

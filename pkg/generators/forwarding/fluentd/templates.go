@@ -213,7 +213,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
   <filter k8s-audit.log**>
     @type record_transformer
     <record>
-      k8s_audit_level ${record['level']}
+      k8s_audit_level ${level}
     </record>
     remove_keys level
   </filter>

@@ -87,7 +87,9 @@ clean:
 
 image:
 	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		podman build -t $(IMAGE_TAG) . ; \
+		cp Dockerfile Dockerfile.local ; \
+		patch Dockerfile.local Dockerfile.patch ; \
+		podman build -t $(IMAGE_TAG) . -f Dockerfile.local; \
 	fi
 
 lint: $(GOLANGCI_LINT)

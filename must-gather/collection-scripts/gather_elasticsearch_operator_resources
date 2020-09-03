@@ -28,3 +28,11 @@ oc -n $NAMESPACE get deployment elasticsearch-operator -o yaml > $eo_folder/depl
 
 csv_name="$(oc -n $NAMESPACE get csv -o name | grep 'elasticsearch-operator')"
 oc -n $NAMESPACE get "${csv_name}" -o yaml > "${eo_folder}/csv"
+oc -n openshift-logging exec -c elasticsearch \
+    $(oc -n openshift-logging get pods -l component=elasticsearch -o jsonpath={.items[0].metadata.name}) \
+    -- indices > ${eo_folder}/indices.txt||:
+
+oc -n $NAMESPACE get deployment elasticsearch-operator -o wide > ${eo_folder}/eo-deployment.txt 2>&1 || :
+oc -n $NAMESPACE describe deployment elasticsearch-operator > ${eo_folder}/eo-deployment.describe 2>&1 || :
+oc -n $NAMESPACE logs deployment/elasticsearch-operator > ${eo_folder}/elasticsearch-operator.logs 2>&1 || :
+

@@ -138,6 +138,10 @@ undeploy-elasticsearch-operator:
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
+test-functional:
+	@echo "FIXME"
+.PHONY: test-functional
+
 test-unit:
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	LOG_LEVEL=fatal \

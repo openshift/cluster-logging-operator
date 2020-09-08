@@ -315,10 +315,11 @@ var _ = Describe("Generating fluentd config", func() {
   
     <filter k8s-audit.log**>
       @type record_transformer
+      enable_ruby
       <record>
-        k8s_audit_level ${level}
+        k8s_audit_level ${record['level']}
+        level info
       </record>
-      remove_keys level
     </filter>
   
     <filter **>
@@ -783,10 +784,11 @@ var _ = Describe("Generating fluentd config", func() {
 
 				<filter k8s-audit.log**>
 				  @type record_transformer
+				  enable_ruby
 				  <record>
-				    k8s_audit_level ${level}
+				    k8s_audit_level ${record['level']}
+				    level info
 				  </record>
-				  remove_keys level
 				</filter>
 
 				<filter **>
@@ -1216,10 +1218,11 @@ var _ = Describe("Generating fluentd config", func() {
 
 				<filter k8s-audit.log**>
 				  @type record_transformer
+				  enable_ruby
 				  <record>
-				    k8s_audit_level ${level}
+				    k8s_audit_level ${record['level']}
+				    level info
 				  </record>
-				  remove_keys level
 				</filter>
 
 				<filter **>
@@ -2025,10 +2028,11 @@ var _ = Describe("Generating fluentd config", func() {
     
       <filter k8s-audit.log**>
         @type record_transformer
+	enable_ruby
         <record>
-          k8s_audit_level ${level}
+          k8s_audit_level ${record['level']}
+          level info
         </record>
-        remove_keys level
       </filter>
 
       <filter **>

@@ -21,7 +21,7 @@ mv "deploy/crds/${CLF_CRD_FILE}" "${MANIFESTS_DIR}"
 mv "deploy/crds/${CLO_CRD_FILE}" "${MANIFESTS_DIR}"
 
 echo "---------------------------------------------------------------"
-echo "Kustomize: Patch CRDs for singeltons and backward-compatibility"
+echo "Kustomize: Patch CRDs for singeltons"
 echo "---------------------------------------------------------------"
 oc kustomize "${MANIFESTS_DIR}" | \
     awk -v clf="${MANIFESTS_DIR}/${CLF_CRD_FILE}" \

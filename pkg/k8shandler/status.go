@@ -158,9 +158,17 @@ func getPodMap(node elasticsearch.ElasticsearchStatus) map[logging.Elasticsearch
 func translatePodMap(podStateMap elasticsearch.PodStateMap) logging.PodStateMap {
 
 	return logging.PodStateMap{
-		logging.PodStateTypeReady:    podStateMap[elasticsearch.PodStateTypeReady],
-		logging.PodStateTypeNotReady: podStateMap[elasticsearch.PodStateTypeNotReady],
-		logging.PodStateTypeFailed:   podStateMap[elasticsearch.PodStateTypeFailed],
+		logging.PodStateTypeReady:    getPodState(podStateMap, elasticsearch.PodStateTypeReady),
+		logging.PodStateTypeNotReady: getPodState(podStateMap, elasticsearch.PodStateTypeNotReady),
+		logging.PodStateTypeFailed:   getPodState(podStateMap, elasticsearch.PodStateTypeFailed),
+	}
+}
+
+func getPodState(podStateMap elasticsearch.PodStateMap, podStateType elasticsearch.PodStateType) []string {
+	if v, ok := podStateMap[podStateType]; ok {
+		return v
+	} else {
+		return []string{}
 	}
 }
 

@@ -416,7 +416,7 @@ type ElasticsearchStatus struct {
 	// +optional
 	Cluster elasticsearch.ClusterHealth `json:"cluster"`
 	// +optional
-	Pods map[ElasticsearchRoleType]PodStateMap `json:"pods"`
+	Pods map[ElasticsearchRoleType]PodStateMap `json:"pods,omitempty"`
 	// +optional
 	ShardAllocationEnabled elasticsearch.ShardAllocationState `json:"shardAllocationEnabled"`
 	// +optional
@@ -440,11 +440,11 @@ type EventCollectionStatus struct {
 
 type FluentdCollectorStatus struct {
 	// +optional
-	DaemonSet string `json:"daemonSet"`
+	DaemonSet string `json:"daemonSet,omitempty"`
 	// +optional
-	Nodes map[string]string `json:"nodes"`
+	Nodes map[string]string `json:"nodes,omitempty"`
 	// +optional
-	Pods PodStateMap `json:"pods"`
+	Pods PodStateMap `json:"pods,omitempty"`
 	// +optional
 	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
 }
@@ -538,16 +538,16 @@ const (
 )
 
 const (
-	IncorrectCRName     status.ConditionType = "IncorrectCRName"
-	ContainerWaiting    status.ConditionType = "ContainerWaiting"
-	ContainerTerminated status.ConditionType = "ContainerTerminated"
-	Unschedulable       status.ConditionType = "Unschedulable"
-	NodeStorage         status.ConditionType = "NodeStorage"
-	CollectorDeadEnd    status.ConditionType = "CollectorDeadEnd"
+	IncorrectCRName     ConditionType = "IncorrectCRName"
+	ContainerWaiting    ConditionType = "ContainerWaiting"
+	ContainerTerminated ConditionType = "ContainerTerminated"
+	Unschedulable       ConditionType = "Unschedulable"
+	NodeStorage         ConditionType = "NodeStorage"
+	CollectorDeadEnd    ConditionType = "CollectorDeadEnd"
 )
 
 // `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
-type ClusterConditions status.Conditions
+type ClusterConditions []Condition
 type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

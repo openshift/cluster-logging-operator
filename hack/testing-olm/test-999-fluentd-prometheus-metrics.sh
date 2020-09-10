@@ -60,13 +60,13 @@ spec:
       fluentd: {}
 EOL
 fi
-os::cmd::try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.metadata.name} --ignore-not-found" "fluentd" "$((1 * $minute))"
+os::cmd::try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.metadata.name} --ignore-not-found" "fluentd" "$((3 * $minute))"
 expectedcollectors=$( oc get nodes | grep -c " Ready " )
-os::cmd::try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.status.desiredNumberScheduled}" "${expectedcollectors}"  "$((1 * $minute))"
+os::cmd::try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.status.desiredNumberScheduled}" "${expectedcollectors}"  "$((5 * $minute))"
 desired=$(oc -n ${LOGGING_NS} get ds fluentd  -o jsonpath={.status.desiredNumberScheduled})
 
 os::log::info "Waiting for ${desired} fluent pods to be available...."
-os::cmd::try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.status.numberReady}" "$desired" "$((2 * $minute))"
+os::cmd::try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.status.numberReady}" "$desired" "$((5 * $minute))"
 
 fpod=$(oc -n $LOGGING_NS get pod -l component=fluentd -o jsonpath={.items[0].metadata.name} --ignore-not-found)
 

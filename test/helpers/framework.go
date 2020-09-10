@@ -222,7 +222,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 	// daemonset should have non-zero number of instances for maxtimes consecutive retryInterval to detect a CrashLoopBackOff pod
 	maxtimes := 5
 	times := 0
-	return wait.Poll(retryInterval, timeout, func() (bool, error) {
+	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
 		numReady, err := oc.Literal().From("oc -n openshift-logging get daemonset/fluentd -o jsonpath={.status.numberReady}").Run()
 		if err == nil {
 			value, err := strconv.Atoi(strings.TrimSpace(numReady))
@@ -245,7 +245,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 
 func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time.Duration) error {
 	logger.Debugf("Waiting for %v", "elasticsearch")
-	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
 		}
@@ -255,7 +255,7 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 				logger.Debugf("Did not find elasticsearch pods %v", err)
 				return false, nil
 			}
-			logger.Debugf("Error listing elasticsearch pods %v", err)
+			logger.Errorf("Error listing elasticsearch pods %v", err)
 			return false, nil
 		}
 		if len(pods.Items) == 0 {
@@ -276,13 +276,13 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 }
 
 func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInterval, timeout time.Duration) error {
-	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
 		deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			logger.Errorf("Error listing deployments %v", err)
+			logger.Errorf("Error trying to retrieve deployment: %v", err)
 			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)
@@ -307,14 +307,14 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 		LabelSelector: labelSelector,
 	}
 
-	return wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
+	return wait.PollImmediate(defaultRetryInterval, defaultTimeout, func() (bool, error) {
 		pods, err := tc.KubeClient.CoreV1().Pods(namespace).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				logger.Infof("Did not find pods %v", err)
 				return false, nil
 			}
-			logger.Infof("Error listing pods %v", err)
+			logger.Errorf("Error listing pods %v", err)
 			return false, nil
 		}
 		if len(pods.Items) == 0 {
@@ -327,13 +327,13 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 }
 
 func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInterval, timeout time.Duration) error {
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
 		deployment, err := tc.KubeClient.AppsV1().StatefulSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			logger.Errorf("Error getting stateful sets %v", err)
+			logger.Errorf("Error Getting StatfuleSet %v", err)
 			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)

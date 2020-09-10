@@ -127,7 +127,7 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error
 	out := "[" + strings.TrimRight(strings.Replace(stdout, "\n", ",", -1), ",") + "]"
 	logs, err := ParseLogs(out)
 	if err != nil {
-		return nil, fmt.Errorf("Parse error: %s", err)
+		return nil, fmt.Errorf("Parse error '%s' trying to parse: %q", err, out)
 	}
 
 	return logs, nil

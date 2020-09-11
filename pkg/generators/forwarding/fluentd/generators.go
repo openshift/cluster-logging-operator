@@ -38,26 +38,59 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig bo
 func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (string, error) {
 
 	//sanitize here
-	var sourceInputLabels []string
-	var sourceToPipelineLabels []string
-	var pipelineToOutputLabels []string
-	var outputLabels []string
-	var err error
+	var (
+		logTypes               sets.String
+		sourceInputLabels      []string
+		pipelineNames          map[logforward.LogSourceType][]string
+		sourceToPipelineLabels []string
+		pipelineToOutputLabels []string
+		outputLabels           []string
+		err                    error
+	)
 
-	logTypes := gatherLogSourceTypes(forwarding.Pipelines)
+	// Provide logTypes for legacy forwarding protocols w/o a user-provided
+	// LogFowarding instance to enable logTypes for template generation.
+	if engine.includeLegacyForwardConfig || engine.includeLegacySyslogConfig {
+		logTypes = sets.NewString(
+			string(logforward.LogSourceTypeApp),
+			string(logforward.LogSourceTypeAudit),
+			string(logforward.LogSourceTypeInfra),
+		)
+		pipelineNames = map[logforward.LogSourceType][]string{
+			logforward.LogSourceTypeApp:   {},
+			logforward.LogSourceTypeAudit: {},
+			logforward.LogSourceTypeInfra: {},
+		}
+	} else {
+		logTypes = gatherLogSourceTypes(forwarding.Pipelines)
+		pipelineNames = mapSourceTypesToPipelineNames(forwarding.Pipelines)
+	}
 
-	if sourceInputLabels, err = engine.generateSource(logTypes); err != nil {
+	sourceInputLabels, err = engine.generateSource(logTypes)
+	if err != nil {
 		return "", err
 	}
-	if sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(mapSourceTypesToPipelineNames(forwarding.Pipelines)); err != nil {
+
+	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(pipelineNames)
+	if err != nil {
 		return "", err
 	}
 	sort.Strings(sourceToPipelineLabels)
-	if pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(forwarding.Pipelines); err != nil {
-		return "", err
+
+	// Omit generation for missing pipelines, i.e. legacy methods don't provide any
+	if len(forwarding.Pipelines) > 0 {
+		pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(forwarding.Pipelines)
+		if err != nil {
+			return "", err
+		}
 	}
-	if outputLabels, err = engine.generateOutputLabelBlocks(forwarding.Outputs); err != nil {
-		return "", err
+
+	// Omit generation for missing outputs, i.e. legacy methods provide them via configmap
+	if len(forwarding.Outputs) > 0 {
+		outputLabels, err = engine.generateOutputLabelBlocks(forwarding.Outputs)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	data := struct {

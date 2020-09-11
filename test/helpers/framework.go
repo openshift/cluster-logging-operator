@@ -13,6 +13,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -198,7 +199,7 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 		},
 	}
 	_, err := tc.KubeClient.CoreV1().Namespaces().Create(context.TODO(), namespace, opts)
-	if err != nil {
+	if err != nil && !errors.IsAlreadyExists(err) {
 		logger.Error(err)
 	}
 	return name
@@ -255,7 +256,7 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 				return false, nil
 			}
 			logger.Debugf("Error listing elasticsearch pods %v", err)
-			return false, err
+			return false, nil
 		}
 		if len(pods.Items) == 0 {
 			logger.Debugf("No elasticsearch pods found %v", pods)
@@ -281,7 +282,8 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			return false, err
+			logger.Errorf("Error listing deployments %v", err)
+			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)
 		if int(deployment.Status.AvailableReplicas) == replicas {
@@ -313,7 +315,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 				return false, nil
 			}
 			logger.Infof("Error listing pods %v", err)
-			return false, err
+			return false, nil
 		}
 		if len(pods.Items) == 0 {
 			logger.Infof("No pods found for label selection: %s", labels)
@@ -331,7 +333,8 @@ func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInte
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			return false, err
+			logger.Errorf("Error getting stateful sets %v", err)
+			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)
 		if int(deployment.Status.ReadyReplicas) == replicas {

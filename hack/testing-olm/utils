@@ -13,6 +13,6 @@ gather_logging_resources() {
   local runtime=${3:-$(date +%s)}
   outdir=$outdir/$runtime
   mkdir -p $outdir ||:
-  oc adm must-gather --image=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift/origin-cluster-logging-operator:latest} --dest-dir=$outdir -- /usr/bin/gather > must-gather.log 2>&1
+  oc adm must-gather --image=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift/origin-cluster-logging-operator:latest} --dest-dir=$outdir -- /usr/bin/gather > $outdir/must-gather.log 2>&1
   set -e
 }

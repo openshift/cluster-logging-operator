@@ -32,7 +32,8 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameInfrastructure)
 		if err != nil {
-			return false, err
+			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameInfrastructure, err)
+			return false, nil
 		}
 		return logs.ByIndex(InfraIndexPrefix).NonEmpty(), nil
 	})
@@ -43,7 +44,8 @@ func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error)
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 		if err != nil {
-			return false, err
+			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameApplication, err)
+			return false, nil
 		}
 		return logs.ByIndex(ProjectIndexPrefix).NonEmpty(), nil
 	})
@@ -54,7 +56,8 @@ func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameAudit)
 		if err != nil {
-			return false, err
+			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameAudit, err)
+			return false, nil
 		}
 		return logs.ByIndex(AuditIndexPrefix).NonEmpty(), nil
 	})
@@ -114,7 +117,7 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error
 	}
 
 	logger.Debugf("Pod %s", pods.Items[0].Name)
-	cmd := "cat /shared/consumed.logs"
+	cmd := "tail -n 5000 /shared/consumed.logs"
 	stdout, err := tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"bash", "-c", cmd})
 	if err != nil {
 		return nil, err

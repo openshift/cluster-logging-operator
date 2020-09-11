@@ -129,9 +129,15 @@ func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, e
 
 func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+		errorCount := 0
 		indices, err := es.Indices()
 		if err != nil {
-			return false, err
+			logger.Errorf("Error retrieving indices from elasticsearch %v", err)
+			errorCount++
+			if errorCount > 5 {
+				return false, err
+			}
+			return false, nil
 		}
 		return indices.HasAuditLogs(), nil
 	})

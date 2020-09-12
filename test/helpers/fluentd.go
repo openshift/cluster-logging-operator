@@ -112,7 +112,8 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		output, err := fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			return false, err
+			logger.Errorf("Failed to fetch logs from fluent-receiver %v", err)
+			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
 		if err != nil {
@@ -143,7 +144,8 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	result := ""
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		if result, err = fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
-			return false, err
+			logger.Errorf("Failed to fetch logs from fluent-receiver %v", err)
+			return false, nil
 		}
 		return true, nil
 	})

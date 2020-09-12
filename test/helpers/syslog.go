@@ -158,7 +158,8 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, podName, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			return false, err
+			logger.Errorf("failed to fetch logs from syslog-receiver %v", err)
+			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
 		if err != nil {
@@ -193,6 +194,7 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (bool, error) {
 		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
+			logger.Errorf("failed to fetch logs from syslog-receiver %v", err)
 			return false, nil
 		}
 		value = strings.TrimSpace(output)

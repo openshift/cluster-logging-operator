@@ -19,7 +19,7 @@ RUN make build
 
 FROM registry.svc.ci.openshift.org/ocp/4.6:cli as origincli
 
-FROM registry.svc.ci.openshift.org/ocp/4.6:base-8
+FROM registry.svc.ci.openshift.org/ocp/4.6:base
 RUN INSTALL_PKGS=" \
       openssl \
       rsync \

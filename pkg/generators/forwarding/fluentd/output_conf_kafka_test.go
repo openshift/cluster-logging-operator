@@ -3,7 +3,7 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/openshift/cluster-logging-operator/test"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
 	v1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 )

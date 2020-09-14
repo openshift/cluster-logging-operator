@@ -1,6 +1,7 @@
 # Define the target to run if make is called with no arguments.
 default: check
 
+LOG_LEVEL?=fatal
 export KUBECONFIG?=$(HOME)/.kube/config
 
 export GOBIN=$(CURDIR)/bin
@@ -144,7 +145,7 @@ test-functional:
 
 test-unit:
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	LOG_LEVEL=fatal \
+	LOG_LEVEL=$(LOG_LEVEL) \
 	go test -cover -race ./pkg/...
 
 test-cluster:

@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"sort"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
@@ -166,6 +167,7 @@ func translatePodMap(podStateMap elasticsearch.PodStateMap) logging.PodStateMap 
 
 func getPodState(podStateMap elasticsearch.PodStateMap, podStateType elasticsearch.PodStateType) []string {
 	if v, ok := podStateMap[podStateType]; ok {
+		sort.Strings(v)
 		return v
 	} else {
 		return []string{}
@@ -193,7 +195,9 @@ func podStateMap(podList []v1.Pod) logging.PodStateMap {
 			stateMap[logging.PodStateTypeFailed] = append(stateMap[logging.PodStateTypeFailed], pod.Name)
 		}
 	}
-
+	for _, pods := range stateMap {
+		sort.Strings(pods)
+	}
 	return stateMap
 }
 

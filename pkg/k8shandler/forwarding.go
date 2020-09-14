@@ -134,10 +134,8 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 	} else {
 		if len(unready)+len(degraded) > 0 {
 			status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, "degraded pipelines: invalid %v, degraded %v", unready, degraded))
-			logger.Infof("ClusterLogForwarder degraded")
 		}
 		status.Conditions.SetCondition(condReady)
-		logger.Infof("ClusterLogForwarder is ready")
 	}
 	return spec, status
 }

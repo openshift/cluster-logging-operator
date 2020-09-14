@@ -167,6 +167,7 @@ func compareFluentdCollectorStatus(lhs, rhs logging.FluentdCollectorStatus) bool
 
 	if len(lhs.Nodes) > 0 {
 		if !reflect.DeepEqual(lhs.Nodes, rhs.Nodes) {
+
 			return false
 		}
 	}

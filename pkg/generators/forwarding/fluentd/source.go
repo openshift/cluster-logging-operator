@@ -18,7 +18,7 @@ func (engine *ConfigGenerator) generateSource(sources sets.String) (results []st
 	if sources.Has(logging.InputNameInfrastructure) {
 		templates = append(templates, "inputSourceJournalTemplate")
 	}
-	if sources.Has(logging.InputNameApplication) {
+	if sources.Has(logging.InputNameApplication) || sources.Has(logging.InputNameInfrastructure) {
 		templates = append(templates, "inputSourceContainerTemplate")
 	}
 	if sources.Has(logging.InputNameAudit) {

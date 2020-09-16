@@ -64,8 +64,14 @@ var _ = Describe("generating source", func() {
 		BeforeEach(func() {
 			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure))
 			Expect(err).To(BeNil())
-			Expect(len(results) == 1).To(BeTrue())
+			Expect(len(results) == 2).To(BeTrue())
 		})
+
+		/*
+			"infrastructure" logs include
+			 - journal logs
+			 - container logs from **_default_** **_kube-*_** **_openshift-*_** **_openshift_** namespaces
+		*/
 
 		It("should produce a journal config", func() {
 			Expect(results[0]).To(EqualTrimLines(`
@@ -85,6 +91,37 @@ var _ = Describe("generating source", func() {
 				matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
 				tag journal
 				read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
+			</source>
+		  `))
+		})
+		It("should produce a source container config", func() {
+			Expect(results[1]).To(EqualTrimLines(`
+			# container logs
+			<source>
+			  @type tail
+			  @id container-input
+			  path "/var/log/containers/*.log"
+			  exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+			  pos_file "/var/log/es-containers.log.pos"
+			  refresh_interval 5
+			  rotate_wait 5
+			  tag kubernetes.*
+			  read_from_head "true"
+			  @label @CONCAT
+			  <parse>
+				@type multi_format
+				<pattern>
+				  format json
+				  time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
+				  keep_time_key true
+				</pattern>
+				<pattern>
+				  format regexp
+				  expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+				  time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
+				  keep_time_key true
+				</pattern>
+			  </parse>
 			</source>
 		  `))
 		})

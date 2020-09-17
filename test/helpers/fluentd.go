@@ -109,7 +109,7 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	logger.Debugf("Pod %s", pods.Items[0].Name)
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
-	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		output, err := fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
 			logger.Errorf("Error polling fluent-receiver for logs: %v", err)
@@ -142,7 +142,7 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	logger.Debugf("Pod %s", pods.Items[0].Name)
 	cmd := fmt.Sprintf("cat %s | awk -F '\t' '{print $3}'| head -n 1", file)
 	result := ""
-	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		if result, err = fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
 			logger.Errorf("Failed to fetch logs from fluent-receiver %v", err)
 			return false, nil

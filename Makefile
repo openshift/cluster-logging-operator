@@ -32,7 +32,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 # - Build all code (including e2e tests)
 # - Run lint check
 #
-check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator
+check: check-go-version generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
 	$(MAKE) lint				  # Only lint if all code builds.
 
@@ -57,14 +57,15 @@ bin/cluster-logging-operator: force
 openshift-client:
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
 
-build: bin/cluster-logging-operator
+build: check-go-version
+	bin/cluster-logging-operator
 
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run
-run: deploy-elasticsearch-operator test-cleanup
+run: check-go-version deploy-elasticsearch-operator test-cleanup
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	@ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
@@ -82,7 +83,7 @@ run: deploy-elasticsearch-operator test-cleanup
 run-debug:
 	$(MAKE) run RUN_CMD='dlv debug'
 
-clean:
+clean: check-go-version
 	@rm -rf bin tmp _output
 	go clean -cache -testcache ./...
 
@@ -96,7 +97,7 @@ image:
 lint: $(GOLANGCI_LINT)
 	$(GOLANGCI_LINT) run -c golangci.yaml
 
-fmt:
+fmt: check-go-version
 	@echo gofmt		# Show progress, real gofmt line is too long
 	@gofmt -s -l -w $(shell find pkg cmd -name '*.go')
 
@@ -143,12 +144,12 @@ test-functional:
 	@echo "FIXME"
 .PHONY: test-functional
 
-test-unit:
+test-unit: check-go-version
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	LOG_LEVEL=$(LOG_LEVEL) \
 	go test -cover -race ./pkg/...
 
-test-cluster:
+test-cluster: check-go-version
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 generate-bundle: $(OPM)
@@ -204,3 +205,6 @@ cluster-logging-operator-install:
 # uninstalls the cluster-logging operator
 cluster-logging-operator-uninstall:
 	olm_deploy/scripts/operator-uninstall.sh
+
+check-go-version:
+	scripts/check-go-version.sh

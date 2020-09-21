@@ -9,6 +9,8 @@ import (
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators"
+	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/sources"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -19,10 +21,11 @@ type ConfigGenerator struct {
 	includeLegacySyslogConfig     bool
 	useOldRemoteSyslogPlugin      bool
 	storeTemplate, outputTemplate string
+	sourceGenerate                func(inputSources sets.String) (results []string, err error)
 }
 
 //NewConfigGenerator creates an instance of FluentdConfigGenerator
-func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin bool) (*ConfigGenerator, error) {
+func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin bool, topology string) (*ConfigGenerator, error) {
 	engine, err := generators.New("OutputLabelConf",
 		&template.FuncMap{
 			"labelName":           labelName,
@@ -32,13 +35,23 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 	if err != nil {
 		return nil, err
 	}
-	return &ConfigGenerator{
-			Generator:                  engine,
-			includeLegacyForwardConfig: includeLegacyForwardConfig,
-			includeLegacySyslogConfig:  includeLegacySyslogConfig,
-			useOldRemoteSyslogPlugin:   useOldRemoteSyslogPlugin,
-		},
-		nil
+	generator := &ConfigGenerator{
+		Generator:                  engine,
+		includeLegacyForwardConfig: includeLegacyForwardConfig,
+		includeLegacySyslogConfig:  includeLegacySyslogConfig,
+		useOldRemoteSyslogPlugin:   useOldRemoteSyslogPlugin,
+	}
+	switch topology {
+	case logforwardingtopology.LogForwardingEnhancedEdgeNormalizationTopology:
+		generator.sourceGenerate = sources.GenerateLocalFluentForwardSource
+	case logforwardingtopology.LogForwardingCentralNormalizationTopology:
+		generator.sourceGenerate = sources.GenerateFluentForwardSource
+	default:
+		generator.sourceGenerate = func(inputSources sets.String) (results []string, err error) {
+			return GenerateSources(*generator.Generator, inputSources)
+		}
+	}
+	return generator, nil
 }
 
 //Generate the fluent.conf file using the forwarding information
@@ -71,11 +84,11 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 			logging.InputNameAudit:          sets.NewString(),
 		}
 	} else {
-		inputs, namespaces = gatherSources(clfSpec)
+		inputs, namespaces = sources.GatherSources(clfSpec)
 		routeMap = inputsToPipelines(clfSpec)
 	}
 
-	sourceInputLabels, err = engine.generateSource(inputs)
+	sourceInputLabels, err = engine.sourceGenerate(inputs)
 	if err != nil {
 
 		log.V(3).Error(err, "Error generating source blocks")
@@ -137,28 +150,6 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	}
 	log.V(3).Info("Successfully generated fluent.conf", "fluent.conf", result)
 	return result, nil
-}
-
-func gatherSources(forwarder *logging.ClusterLogForwarderSpec) (types sets.String, namespaces sets.String) {
-	types, namespaces = sets.NewString(), sets.NewString()
-	specs := forwarder.InputMap()
-	for inputName := range logging.NewRoutes(forwarder.Pipelines).ByInput {
-		if logging.ReservedInputNames.Has(inputName) {
-			types.Insert(inputName) // Use name as type.
-		} else if spec, ok := specs[inputName]; ok {
-			if app := spec.Application; app != nil {
-				types.Insert(logging.InputNameApplication)
-				namespaces.Insert(app.Namespaces...)
-			}
-			if spec.Infrastructure != nil {
-				types.Insert(logging.InputNameInfrastructure)
-			}
-			if spec.Audit != nil {
-				types.Insert(logging.InputNameAudit)
-			}
-		}
-	}
-	return types, namespaces
 }
 
 func inputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMap {

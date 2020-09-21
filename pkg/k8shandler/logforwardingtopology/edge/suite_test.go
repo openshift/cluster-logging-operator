@@ -1,4 +1,4 @@
-package k8shandler_test
+package edge_test
 
 import (
 	"testing"
@@ -7,8 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestK8sHandler(t *testing.T) {
-
+func TestEdge(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "K8sHandler Suite")
+	RunSpecs(t, "Edge Logforwarding Topology Suite")
 }

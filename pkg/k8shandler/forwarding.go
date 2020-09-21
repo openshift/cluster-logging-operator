@@ -14,18 +14,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
-
+func (clusterRequest *ClusterLoggingRequest) GenerateCollectorConfig(collectorType logging.LogCollectionType, topology string) (string, error) {
+	var err error
 	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
 		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
 		return "", nil
 	}
 
-	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
+	switch collectorType {
 	case logging.LogCollectionTypeFluentd:
+	case logging.LogCollectionTypeFluentbit:
 		break
 	default:
-		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Logs.Type)
+		return "", fmt.Errorf("%s collector does not support pipelines feature", collectorType)
 	}
 
 	if clusterRequest.ForwarderRequest == nil {
@@ -37,10 +38,11 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	clusterRequest.ForwarderRequest.Status = *status
 
 	generator, err := forwarding.NewConfigGenerator(
-		clusterRequest.Cluster.Spec.Collection.Logs.Type,
+		collectorType,
 		clusterRequest.includeLegacyForwardConfig(),
 		clusterRequest.includeLegacySyslogConfig(),
 		clusterRequest.useOldRemoteSyslogPlugin(),
+		topology,
 	)
 
 	if err != nil {

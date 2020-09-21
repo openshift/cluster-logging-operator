@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,10 +37,10 @@ var (
 var serviceAccountLogCollectorUID types.UID
 
 //CreateOrUpdateCollection component of the cluster
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfig *configv1.Proxy) (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfig *configv1.Proxy, topology logforwardingtopology.LogForwarderTopology) (err error) {
 	cluster := clusterRequest.Cluster
-	collectorConfig := ""
 	collectorConfHash := ""
+	var collectorConfig string
 
 	var collectorServiceAccount *core.ServiceAccount
 
@@ -54,20 +55,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
-			return
-		}
-		log.V(3).Info("Generated collector config", "config", collectorConfig)
-		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
-		if err != nil {
-			log.Error(err, "unable to calculate MD5 hash")
-			return
-		}
-		if err = clusterRequest.reconcileFluentdService(); err != nil {
+		if err = clusterRequest.reconcileFluentdService(topology); err != nil {
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdServiceMonitor(); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdServiceMonitor(topology); err != nil {
 			return
 		}
 
@@ -75,15 +67,18 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
+		if collectorConfig, err = clusterRequest.GenerateCollectorConfig(clusterRequest.Cluster.Spec.Collection.Logs.Type, topology.Name()); err != nil {
+			return
+		}
+
+		if collectorConfHash, err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig, topology); err != nil {
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
 			return
 		}
-
-		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash, proxyConfig); err != nil {
+		if err = clusterRequest.reconcileFluentdDaemonset(collectorConfHash, proxyConfig, topology); err != nil {
 			return
 		}
 
@@ -101,19 +96,24 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			}
 		}
 	} else {
-		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
-			return
-		}
-
-		if err = clusterRequest.removeFluentd(); err != nil {
-			return
-		}
+		return clusterRequest.UndeployCollector()
 	}
 
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) UndeployCollector() (err error) {
+	if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
+		return
+	}
+
+	if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
+		return
+	}
+
+	if err = clusterRequest.removeFluentd(); err != nil {
+		return
+	}
 	return nil
 }
 

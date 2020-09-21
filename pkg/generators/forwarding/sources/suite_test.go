@@ -1,4 +1,4 @@
-package k8shandler_test
+package sources_test
 
 import (
 	"testing"
@@ -7,8 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestK8sHandler(t *testing.T) {
-
+func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "K8sHandler Suite")
+	RunSpecs(t, "Generator Sources Suite")
 }

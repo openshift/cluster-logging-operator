@@ -1,35 +1,40 @@
-package fluentd
+package fluentd_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/generators"
+	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentd"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-var _ = Describe("generating source", func() {
+var _ = Describe("sources", func() {
 
 	var (
-		generator *ConfigGenerator
+		generator generators.Generator
 		err       error
 		results   []string
 	)
 
 	BeforeEach(func() {
-		generator, err = NewConfigGenerator(false, false, true)
+		configGenerator, err := fluentd.NewConfigGenerator(false, false, true, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 		Expect(err).To(BeNil())
+		generator = *configGenerator.Generator
 	})
 
-	Context("for only logs.app source", func() {
-		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication))
-			Expect(err).To(BeNil())
-			Expect(len(results) == 1).To(BeTrue())
-		})
+	Context("#GenerateSource", func() {
+		Context("for only application source", func() {
+			BeforeEach(func() {
+				results, err = fluentd.GenerateSources(generator, sets.NewString(logging.InputNameApplication))
+				Expect(err).To(BeNil())
+				Expect(len(results) == 1).To(BeTrue())
+			})
 
-		It("should produce a container config", func() {
-			Expect(results[0]).To(EqualTrimLines(`# container logs
+			It("should produce a container config", func() {
+				Expect(results[0]).To(EqualTrimLines(`# container logs
 		  <source>
 			@type tail
 			@id container-input
@@ -57,24 +62,24 @@ var _ = Describe("generating source", func() {
 			</parse>
 		  </source>
 		  `))
-		})
-	})
-
-	Context("for only logs.infra source", func() {
-		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure))
-			Expect(err).To(BeNil())
-			Expect(len(results) == 2).To(BeTrue())
+			})
 		})
 
-		/*
-			"infrastructure" logs include
-			 - journal logs
-			 - container logs from **_default_** **_kube-*_** **_openshift-*_** **_openshift_** namespaces
-		*/
+		Context("for only infra source", func() {
+			BeforeEach(func() {
+				results, err = fluentd.GenerateSources(generator, sets.NewString(logging.InputNameInfrastructure))
+				Expect(err).To(BeNil())
+				Expect(len(results) == 2).To(BeTrue())
+			})
 
-		It("should produce a journal config", func() {
-			Expect(results[0]).To(EqualTrimLines(`
+			/*
+				"infrastructure" logs include
+				- journal logs
+				- container logs from **_default_** **_kube-*_** **_openshift-*_** **_openshift_** namespaces
+			*/
+
+			It("should produce a journal config", func() {
+				Expect(results[0]).To(EqualTrimLines(`
 			#journal logs to gather node
 			<source>
 				@type systemd
@@ -93,9 +98,9 @@ var _ = Describe("generating source", func() {
 				read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
 			</source>
 		  `))
-		})
-		It("should produce a source container config", func() {
-			Expect(results[1]).To(EqualTrimLines(`
+			})
+			It("should produce a source container config", func() {
+				Expect(results[1]).To(EqualTrimLines(`
 			# container logs
 			<source>
 			  @type tail
@@ -124,18 +129,18 @@ var _ = Describe("generating source", func() {
 			  </parse>
 			</source>
 		  `))
-		})
-	})
-
-	Context("for only logs.audit source", func() {
-		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit))
-			Expect(err).To(BeNil())
-			Expect(len(results)).To(Equal(3))
+			})
 		})
 
-		It("should produce configs for the audit logs", func() {
-			Expect(results[0]).To(EqualTrimLines(`
+		Context("for only audit source", func() {
+			BeforeEach(func() {
+				results, err = fluentd.GenerateSources(generator, sets.NewString(logging.InputNameAudit))
+				Expect(err).To(BeNil())
+				Expect(len(results)).To(Equal(3))
+			})
+
+			It("should produce configs for the audit logs", func() {
+				Expect(results[0]).To(EqualTrimLines(`
             # linux audit logs
             <source>
               @type tail
@@ -149,7 +154,7 @@ var _ = Describe("generating source", func() {
               </parse>
             </source>
 		  `))
-			Expect(results[1]).To(EqualTrimLines(`
+				Expect(results[1]).To(EqualTrimLines(`
             # k8s audit logs
             <source>
               @type tail
@@ -167,7 +172,7 @@ var _ = Describe("generating source", func() {
               </parse>
             </source>
 		  `))
-			Expect(results[2]).To(EqualTrimLines(`
+				Expect(results[2]).To(EqualTrimLines(`
             # Openshift audit logs
             <source>
               @type tail
@@ -185,20 +190,20 @@ var _ = Describe("generating source", func() {
               </parse>
             </source>
 		  `))
+			})
 		})
-	})
 
-	Context("for all log sources", func() {
+		Context("for all log sources", func() {
 
-		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit))
-			Expect(err).To(BeNil())
-			Expect(len(results)).To(Equal(5))
-		})
-		Context("for journal input", func() {
+			BeforeEach(func() {
+				results, err = fluentd.GenerateSources(generator, sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit))
+				Expect(err).To(BeNil())
+				Expect(len(results)).To(Equal(5))
+			})
+			Context("for journal input", func() {
 
-			It("should produce a config with no exclusions", func() {
-				Expect(results[0]).To(EqualTrimLines(`
+				It("should produce a config with no exclusions", func() {
+					Expect(results[0]).To(EqualTrimLines(`
 			#journal logs to gather node
 			<source>
 				@type systemd
@@ -216,13 +221,13 @@ var _ = Describe("generating source", func() {
 				tag journal
 				read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
 			</source>`))
+				})
 			})
-		})
 
-		Context("for container inputs", func() {
+			Context("for container inputs", func() {
 
-			It("should produce a config", func() {
-				Expect(results[1]).To(EqualTrimLines(`# container logs
+				It("should produce a config", func() {
+					Expect(results[1]).To(EqualTrimLines(`# container logs
 			  <source>
 				@type tail
 				@id container-input
@@ -250,13 +255,13 @@ var _ = Describe("generating source", func() {
 				</parse>
 			  </source>
 			  `))
+				})
 			})
-		})
 
-		Context("for audit inputs", func() {
+			Context("for audit inputs", func() {
 
-			It("should produce a config with no exclusions", func() {
-				Expect(results[2]).To(EqualTrimLines(`
+				It("should produce a config with no exclusions", func() {
+					Expect(results[2]).To(EqualTrimLines(`
               # linux audit logs
               <source>
                 @type tail
@@ -270,7 +275,7 @@ var _ = Describe("generating source", func() {
                 </parse>
               </source>
 		    `))
-				Expect(results[3]).To(EqualTrimLines(`
+					Expect(results[3]).To(EqualTrimLines(`
               # k8s audit logs
               <source>
                 @type tail
@@ -288,7 +293,7 @@ var _ = Describe("generating source", func() {
                 </parse>
               </source>
 		    `))
-				Expect(results[4]).To(EqualTrimLines(`
+					Expect(results[4]).To(EqualTrimLines(`
               # Openshift audit logs
               <source>
                 @type tail
@@ -306,8 +311,8 @@ var _ = Describe("generating source", func() {
                 </parse>
               </source>
 		    `))
+				})
 			})
 		})
 	})
-
 })

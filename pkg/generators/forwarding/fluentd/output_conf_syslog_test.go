@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -18,7 +19,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 	Context("based on old syslog plugin", func() {
 
 		BeforeEach(func() {
-			generator, err = NewConfigGenerator(false, false, true)
+			generator, err = NewConfigGenerator(false, false, true, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 		})
 
@@ -121,7 +122,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 
 	Context("based on new syslog plugin", func() {
 		BeforeEach(func() {
-			generator, err = NewConfigGenerator(false, false, false)
+			generator, err = NewConfigGenerator(false, false, false, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 		})
 		tcpConf := `<label @SYSLOG_RECEIVER>

@@ -6,6 +6,7 @@ import (
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -20,7 +21,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
 	Context("based on legacy fluentd forward method", func() {
 		BeforeEach(func() {
 			clfSpec = &loggingv1.ClusterLogForwarderSpec{}
-			generator, err = NewConfigGenerator(true, false, false)
+			generator, err = NewConfigGenerator(true, false, false, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 		})
 
@@ -470,7 +471,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
 	Context("based on legacy syslog method", func() {
 		BeforeEach(func() {
 			clfSpec = &loggingv1.ClusterLogForwarderSpec{}
-			generator, err = NewConfigGenerator(false, true, false)
+			generator, err = NewConfigGenerator(false, true, false, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 		})
 
@@ -922,7 +923,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
 	Context("based on legacy syslog and fluentd forward method", func() {
 		BeforeEach(func() {
 			clfSpec = &loggingv1.ClusterLogForwarderSpec{}
-			generator, err = NewConfigGenerator(true, true, false)
+			generator, err = NewConfigGenerator(true, true, false, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 		})
 

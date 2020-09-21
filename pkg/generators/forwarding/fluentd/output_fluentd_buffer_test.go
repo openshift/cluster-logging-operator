@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
@@ -38,7 +39,7 @@ var _ = Describe("Generating fluentd config", func() {
 	Context("for empty forwarder buffer spec", func() {
 		JustBeforeEach(func() {
 			var err error
-			generator, err = NewConfigGenerator(false, false, true)
+			generator, err = NewConfigGenerator(false, false, true, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 			Expect(generator).ToNot(BeNil())
 
@@ -161,7 +162,7 @@ var _ = Describe("Generating fluentd config", func() {
 	Context("for output elasticsearch", func() {
 		JustBeforeEach(func() {
 			var err error
-			generator, err = NewConfigGenerator(false, false, true)
+			generator, err = NewConfigGenerator(false, false, true, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 			Expect(generator).ToNot(BeNil())
 
@@ -378,7 +379,7 @@ var _ = Describe("Generating fluentd config", func() {
 	Context("for output fluentdForward", func() {
 		JustBeforeEach(func() {
 			var err error
-			generator, err = NewConfigGenerator(false, false, true)
+			generator, err = NewConfigGenerator(false, false, true, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 			Expect(generator).ToNot(BeNil())
 
@@ -475,7 +476,7 @@ var _ = Describe("Generating fluentd config", func() {
 	Context("for output syslog", func() {
 		JustBeforeEach(func() {
 			var err error
-			generator, err = NewConfigGenerator(false, false, false)
+			generator, err = NewConfigGenerator(false, false, false, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 			Expect(generator).ToNot(BeNil())
 
@@ -598,7 +599,7 @@ var _ = Describe("Generating fluentd config", func() {
 	Context("for output kafka", func() {
 		JustBeforeEach(func() {
 			var err error
-			generator, err = NewConfigGenerator(true, true, true)
+			generator, err = NewConfigGenerator(true, true, true, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			Expect(err).To(BeNil())
 			Expect(generator).ToNot(BeNil())
 

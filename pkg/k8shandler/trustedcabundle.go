@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -12,6 +13,7 @@ import (
 //createOrGetTrustedCABundleConfigMap creates or returns an existing Trusted CA Bundle ConfigMap.
 //By setting label "config.openshift.io/inject-trusted-cabundle: true", the cert is automatically filled/updated.
 func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap(name string) (*corev1.ConfigMap, error) {
+
 	configMap := NewConfigMap(
 		name,
 		clusterRequest.Cluster.Namespace,
@@ -21,7 +23,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap
 	)
 	configMap.ObjectMeta.Labels = make(map[string]string)
 	configMap.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
-
 	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(configMap)
@@ -52,6 +53,8 @@ func hasTrustedCABundle(configMap *corev1.ConfigMap) bool {
 }
 
 func calcTrustedCAHashValue(configMap *corev1.ConfigMap) (string, error) {
+	log.V(2).Info("calcTrustedCAHashValue", "configmap", configMap)
+
 	hashValue := ""
 	var err error
 

@@ -26,6 +26,17 @@ const (
 	CollectorSecretName = "fluentd"
 
 	KibanaSessionSecretName = "kibana-session-secret"
+	PodIPEnvVar             = "POD_IP"
+
+	CollectorConfigVolumeName = "config"
+	CollectorName             = "collector"
+	CollectorMetricsPortName  = "cmetrics"
+	CollectorMetricsPort      = 2020
+	FluentBitImage            = "fluentbit"
+	LogVolumeName             = "varlog"
+	VarLibVolumeName          = "varlib"
+	VarLibVolumePath          = "/var/lib"
+	VarLogVolumePath          = "/var/log"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

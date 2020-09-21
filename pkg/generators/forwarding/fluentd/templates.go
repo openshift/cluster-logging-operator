@@ -51,7 +51,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     hostname ${hostname}
   </labels>
 </source>
-
+  
 # excluding prometheus_tail_monitor
 # since it leaks namespace/pod info
 # via file paths

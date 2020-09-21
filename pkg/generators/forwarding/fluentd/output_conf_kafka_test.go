@@ -6,6 +6,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
 	v1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 )
 
 var _ = Describe("Generating external kafka server output store config block", func() {
@@ -16,7 +17,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 		generator     *ConfigGenerator
 	)
 	BeforeEach(func() {
-		generator, err = NewConfigGenerator(false, false, false)
+		generator, err = NewConfigGenerator(false, false, false, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 		Expect(err).To(BeNil())
 	})
 

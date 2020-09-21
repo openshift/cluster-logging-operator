@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	batchv1 "k8s.io/api/batch/v1"
 	batch "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -209,7 +210,7 @@ func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elas
 			},
 		}
 	}
-	curatorContainer := NewContainer("curator", "curator", v1.PullIfNotPresent, *resources)
+	curatorContainer := factory.NewContainer("curator", "curator", v1.PullIfNotPresent, *resources)
 
 	curatorContainer.Env = []v1.EnvVar{
 		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc.cluster.local"},
@@ -229,7 +230,7 @@ func newCuratorCronJob(cluster *logging.ClusterLogging, curatorName string, elas
 		{Name: "config", ReadOnly: true, MountPath: "/etc/curator/settings"},
 	}
 
-	curatorPodSpec := NewPodSpec(
+	curatorPodSpec := factory.NewPodSpec(
 		"curator",
 		[]v1.Container{curatorContainer},
 		[]v1.Volume{

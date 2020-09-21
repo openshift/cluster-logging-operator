@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 )
 
 // HACK - This command is for development use only
@@ -36,6 +38,17 @@ func main() {
 	pflag.Parse()
 
 	log.V(1).Info("Args: %v", os.Args)
+	generator, err := forwarding.NewConfigGenerator(
+		logCollectorType,
+		includeLegacyForward,
+		includeLegacySyslog,
+		useOldRemoteSyslogPlugin,
+		logforwardingtopology.LogForwardingEdgeNormalizationTopology,
+	)
+	if err != nil {
+		log.Error(err, "Unable to create collector config generator")
+		os.Exit(1)
+	}
 
 	if *help || len(os.Args) == 0 {
 		pflag.Usage()

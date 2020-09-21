@@ -97,4 +97,5 @@ if [ -f /var/log/openshift-apiserver/audit.log.pos ] ; then
   mv /var/log/openshift-apiserver/audit.log.pos /var/log/oauth-apiserver.audit.log
 fi
 
+export RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR=0.9
 exec fluentd $fluentdargs

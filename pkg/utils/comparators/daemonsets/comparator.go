@@ -25,13 +25,13 @@ func AreSame(current *apps.DaemonSet, desired *apps.DaemonSet) bool {
 		return false
 	}
 
-	if len(current.Spec.Template.Spec.Containers) != len(desired.Spec.Template.Spec.Containers) {
-		log.V(3).Info("DaemonSet number of containers changed", "DaemonSetName", current.Name)
+	if isDaemonsetImageDifference(current, desired) {
+		log.V(3).Info("DaemonSet image change", "DaemonSetName", current.Name)
 		return false
 	}
 
-	if isDaemonsetImageDifference(current, desired) {
-		log.V(3).Info("DaemonSet image change", "DaemonSetName", current.Name)
+	if len(current.Spec.Template.Spec.Containers) != len(desired.Spec.Template.Spec.Containers) {
+		log.V(3).Info("DaemonSet number of containers changed", "DaemonSetName", current.Name)
 		return false
 	}
 
@@ -40,16 +40,14 @@ func AreSame(current *apps.DaemonSet, desired *apps.DaemonSet) bool {
 		return false
 	}
 
-	if !utils.EnvValueEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
-		log.V(3).Info("Collector container EnvVar change found, updating ", "DaemonSetName", current.Name)
-		log.V(3).Info("Collector envvars -", "current", current.Spec.Template.Spec.Containers[0].Env, "desired", desired.Spec.Template.Spec.Containers[0].Env)
-		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
-		return false
-	}
-
-	if !reflect.DeepEqual(current.Spec.Template.Spec.Containers[0].VolumeMounts, desired.Spec.Template.Spec.Containers[0].VolumeMounts) {
-		log.V(3).Info("Daemonset %q container volumemounts change", "DaemonSetName", current.Name)
-		return false
+	for i, container := range current.Spec.Template.Spec.Containers {
+		desiredContainer := desired.Spec.Template.Spec.Containers[i]
+		if !utils.EnvValueEqual(container.Env, desiredContainer.Env) {
+			return false
+		}
+		if !reflect.DeepEqual(container.VolumeMounts, desiredContainer.VolumeMounts) {
+			return false
+		}
 	}
 
 	if len(current.Spec.Template.Spec.InitContainers) != len(desired.Spec.Template.Spec.InitContainers) {

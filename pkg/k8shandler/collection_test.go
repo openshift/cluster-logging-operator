@@ -122,7 +122,7 @@ var _ = Describe("Reconciling", func() {
 			})
 
 			It("should use the default CA bundle in fluentd", func() {
-				Expect(clusterRequest.CreateOrUpdateCollection(proxy)).Should(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection(proxy, edgeTopology{})).Should(Succeed())
 
 				key := types.NamespacedName{Name: constants.FluentdTrustedCAName, Namespace: cluster.GetNamespace()}
 				fluentdCaBundle := &corev1.ConfigMap{}
@@ -141,7 +141,7 @@ var _ = Describe("Reconciling", func() {
 
 			It("should use the injected custom CA bundle in fluentd", func() {
 				// Reconcile w/o custom CA bundle
-				Expect(clusterRequest.CreateOrUpdateCollection(proxy)).To(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection(proxy, edgeTopology{})).To(Succeed())
 
 				// Inject custom CA bundle into fluentd config map
 				injectedCABundle := fluentdCABundle.DeepCopy()
@@ -149,7 +149,7 @@ var _ = Describe("Reconciling", func() {
 				Expect(client.Update(context.TODO(), injectedCABundle)).Should(Succeed())
 
 				// Reconcile with injected custom CA bundle
-				Expect(clusterRequest.CreateOrUpdateCollection(proxy)).Should(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection(proxy, edgeTopology{})).Should(Succeed())
 
 				key := types.NamespacedName{Name: constants.FluentdName, Namespace: cluster.GetNamespace()}
 				ds := &appsv1.DaemonSet{}

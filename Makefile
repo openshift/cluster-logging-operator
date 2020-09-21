@@ -20,6 +20,8 @@ export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not 
 export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+IMAGE_FLUENTBIT?=quay.io/jcantril/fluent-bit:v1.5.2-rh
+LOG_LEVEL?=fatal
 
 .PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
@@ -64,17 +66,19 @@ build-debug:
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run
-run: 
+run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
+	@ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	$(RUN_CMD) cmd/manager/main.go
+	go run cmd/manager/main.go
 
 run-debug:
 	$(MAKE) run RUN_CMD='dlv debug'

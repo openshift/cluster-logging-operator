@@ -50,7 +50,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
+	if err = clusterLoggingRequest.ReconcileLogForwardingTopology(proxyConfig); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
@@ -84,7 +84,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
 	// Reconcile Collection
-	err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig)
+	err = clusterLoggingRequest.ReconcileLogForwardingTopology(proxyConfig)
 	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
@@ -118,7 +118,7 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
+	if err = clusterLoggingRequest.ReconcileLogForwardingTopology(proxyConfig); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
@@ -149,7 +149,7 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
-	return clusterLoggingRequest.RestartFluentd(proxyConfig)
+	return clusterLoggingRequest.ReconcileLogForwardingTopology(proxyConfig)
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {

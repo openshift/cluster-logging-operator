@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"testing"
 
+	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	core "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -26,7 +27,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 
 	// Create pod with nil selectors, we expect a new selectors map will be created
 	// and it will contain only linux allocation selector.
-	podSpec := NewPodSpec(
+	podSpec := factory.NewPodSpec(
 		"Foo",
 		[]v1.Container{},
 		[]v1.Volume{},
@@ -38,7 +39,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 
 	// Create pod with some "foo" selector, we expect a new linux box selector will be added
 	// while existing selectors will be left intact.
-	podSpec = NewPodSpec(
+	podSpec = factory.NewPodSpec(
 		"Foo",
 		[]v1.Container{},
 		[]v1.Volume{},
@@ -60,7 +61,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 	}
 
 	// Create pod with "linux" selector, we expect it stays unchanged.
-	podSpec = NewPodSpec(
+	podSpec = factory.NewPodSpec(
 		"Foo",
 		[]v1.Container{},
 		[]v1.Volume{},
@@ -79,7 +80,7 @@ func TestNodeAllocationLabelsForPod(t *testing.T) {
 	}
 
 	// Create pod with some "non-linux" selector, we expect it is overridden.
-	podSpec = NewPodSpec(
+	podSpec = factory.NewPodSpec(
 		"Foo",
 		[]v1.Container{},
 		[]v1.Volume{},

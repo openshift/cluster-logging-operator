@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"gopkg.in/yaml.v2"
 )
@@ -17,7 +18,7 @@ var _ = Describe("Generating fluentd config", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		generator, err = NewConfigGenerator(false, false, true)
+		generator, err = NewConfigGenerator(false, false, true, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 		Expect(err).To(BeNil())
 		Expect(generator).ToNot(BeNil())
 		forwarder = &logging.ClusterLogForwarderSpec{
@@ -1787,22 +1788,6 @@ var _ = Describe("Generating fluentd config", func() {
 			`))
 	})
 
-	It("should generate sources for reserved inputs used as names or types", func() {
-		sources, _ := gatherSources(&logging.ClusterLogForwarderSpec{
-			Inputs: []logging.InputSpec{{Name: "in", Application: &logging.Application{}}},
-			Pipelines: []logging.PipelineSpec{
-				{
-					InputRefs:  []string{"in"},
-					OutputRefs: []string{"default"},
-				},
-				{
-					InputRefs:  []string{"audit"},
-					OutputRefs: []string{"default"},
-				},
-			},
-		})
-		Expect(sources.List()).To(ContainElements("application", "audit"))
-	})
 	var _ = DescribeTable("Verify generated fluentd.conf for valid forwarder specs",
 		func(yamlSpec, wantFluentdConf string) {
 			var spec logging.ClusterLogForwarderSpec

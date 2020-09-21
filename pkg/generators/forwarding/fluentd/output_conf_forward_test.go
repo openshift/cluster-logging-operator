@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -17,7 +18,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		generator     *ConfigGenerator
 	)
 	BeforeEach(func() {
-		generator, err = NewConfigGenerator(false, false, true)
+		generator, err = NewConfigGenerator(false, false, true, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 		Expect(err).To(BeNil())
 	})
 

@@ -17,6 +17,7 @@ import (
 	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,9 +31,10 @@ const (
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	"curator": "CURATOR_IMAGE",
-	"fluentd": "FLUENTD_IMAGE",
-	"kibana":  "KIBANA_IMAGE",
+	"curator":   "CURATOR_IMAGE",
+	"fluentd":   "FLUENTD_IMAGE",
+	"kibana":    "KIBANA_IMAGE",
+	"fluentbit": "IMAGE_FLUENTBIT",
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found
@@ -338,6 +340,7 @@ Notes:
 func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
 	var found bool
 	if len(env1) != len(env2) {
+		logger.Trace("EnvValueEqual - lengths are different")
 		return false
 	}
 	for _, elem1 := range env1 {
@@ -345,14 +348,19 @@ func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
 		for _, elem2 := range env2 {
 			if elem1.Name == elem2.Name {
 				if elem1.Value != elem2.Value {
+					logger.Tracef("Fail: EnvValueEqual - Value for %s: %q vs %q", elem1.Name, elem1.Value, elem2.Value)
 					return false
 				}
 				if (elem1.ValueFrom != nil && elem2.ValueFrom == nil) ||
 					(elem1.ValueFrom == nil && elem2.ValueFrom != nil) {
+					logger.Tracef("Fail: EnvValueEqual - ValueFrom nil for %s: [%v] vs [%v]", elem1.Name, elem1.ValueFrom, elem2.ValueFrom)
 					return false
 				}
 				if elem1.ValueFrom != nil {
 					found = EnvVarSourceEqual(*elem1.ValueFrom, *elem2.ValueFrom)
+					if !found {
+						logger.Tracef("Fail: EnvValueEqual - ValueFrom for %s: %v/%v", elem1.Name, elem1.ValueFrom, elem2.ValueFrom)
+					}
 				} else {
 					found = true
 				}

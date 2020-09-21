@@ -5,14 +5,15 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	"github.com/openshift/cluster-logging-operator/pkg/generators"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-// FIXME(alanconway) generateSource scrapes files for all requested namespaces.
+// GenerateSources  scrapes files for all requested namespaces.
+//FIXME(alanconway)
 // We need to also filter them per-user-SourceSpec since different SourceSpecs
 // might request different namespaces.
-
-func (engine *ConfigGenerator) generateSource(sources sets.String) (results []string, err error) {
+func GenerateSources(engine generators.Generator, sources sets.String) (results []string, err error) {
 	// Order of templates matters.
 	var templates []string
 	if sources.Has(logging.InputNameInfrastructure) {

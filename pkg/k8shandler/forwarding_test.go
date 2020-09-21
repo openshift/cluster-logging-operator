@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/onsi/gomega/types"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -425,7 +426,7 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 	tests := []struct {
 		name       string
 		fields     fields
-		wantConfig string
+		wantConfig map[string]string
 		wantErr    bool
 	}{
 		{
@@ -508,13 +509,10 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 
 			clusterRequest.Client = fake.NewFakeClient(tt.fields.cluster, config)
 
-			gotConfig, err := clusterRequest.generateCollectorConfig()
+			_, err := clusterRequest.GenerateCollectorConfig(logging.LogCollectionTypeFluentd, logforwardingtopology.LogForwardingEdgeNormalizationTopology)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("generateCollectorConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if gotConfig != tt.wantConfig {
-				t.Errorf("generateCollectorConfig() gotConfig = %v, want %v", gotConfig, tt.wantConfig)
 			}
 		})
 	}

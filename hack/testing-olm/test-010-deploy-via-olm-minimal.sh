@@ -27,9 +27,11 @@ cleanup(){
   local return_code="$?"
 
   os::test::junit::declare_suite_end
-
+  
   set +e
-  gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
+  if [ "$return_code" != "0" ] ; then 
+    gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
+  fi
 
   if [ "${DO_CLEANUP:-true}" == "true" ] ; then
       ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh

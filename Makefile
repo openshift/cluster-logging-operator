@@ -208,3 +208,4 @@ cluster-logging-operator-uninstall:
 
 check-go-version:
 	scripts/check-go-version.sh
+.PHONY: check-go-version

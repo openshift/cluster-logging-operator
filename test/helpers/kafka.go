@@ -29,7 +29,7 @@ func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (logs, error)
 }
 
 func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameInfrastructure)
 		if err != nil {
 			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameInfrastructure, err)
@@ -41,7 +41,7 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 }
 
 func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 		if err != nil {
 			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameApplication, err)

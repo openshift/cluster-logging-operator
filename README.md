@@ -26,7 +26,7 @@ The CLO (Cluster Logging Operator) *owns* the following APIs:
 
 To install a released version of cluster logging see the [Openshift Documentation](https://docs.openshift.com/)
 
-To experiment or contribute to the development of cluster logging, see [HACKING.md](./docs/HACKING.md)
+To experiment or contribute to the development of cluster logging, see [HACKING.md](./docs/HACKING.md) and [REVIEW.md](./docs/REVIEW.md)
 
 To debug the cluster logging stack, see [README.md](./must-gather/README.md)
 

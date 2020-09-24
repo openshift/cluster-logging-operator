@@ -5,10 +5,10 @@ LABEL operators.operatorframework.io.bundle.manifests.v1=manifests/
 LABEL operators.operatorframework.io.bundle.metadata.v1=metadata/
 LABEL operators.operatorframework.io.bundle.package.v1=cluster-logging-operator
 LABEL operators.operatorframework.io.bundle.channels.v1=4.6
-LABEL operators.operatorframework.io.bundle.channel.default.v1=
+LABEL operators.operatorframework.io.bundle.channel.default.v1=4.6
 
-COPY manifests /manifests/
-COPY metadata /metadata/
+COPY bundle/manifests /manifests/
+COPY bundle/metadata /metadata/
 
 LABEL com.redhat.delivery.operator.bundle=true
 LABEL com.redhat.openshift.versions="v4.6"

@@ -47,13 +47,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 			return fmt.Errorf("Failed to get Elasticsearch status for %q: %v", cluster.Name, err)
 		}
 
-		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			if !compareElasticsearchStatus(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
-				if printUpdateMessage {
-					logrus.Info("Updating status of Elasticsearch")
-					printUpdateMessage = false
-				}
 				cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
 				return clusterRequest.UpdateStatus(cluster)
 			}

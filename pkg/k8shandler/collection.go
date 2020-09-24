@@ -8,7 +8,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -127,13 +126,8 @@ func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 		return fmt.Errorf("Failed to get status of Fluentd: %v", err)
 	}
 
-	printUpdateMessage := true
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		if !compareFluentdCollectorStatus(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
-			if printUpdateMessage {
-				logrus.Info("Updating status of Fluentd")
-				printUpdateMessage = false
-			}
 			cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
 			return clusterRequest.UpdateStatus(cluster)
 		}

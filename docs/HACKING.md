@@ -4,7 +4,7 @@
 
 Clone this repository into `$GOPATH/github.com/openshift/cluster-logging-operator`
 
-Install `podman`. For example on  Fedora:
+Install `podman`. For example on Fedora:
 ```
 sudo dnf install -y podman
 ```
@@ -25,8 +25,6 @@ ln -s $(which docker) /somewhere/early/in/my/PATH/podman`
 
 Quick summary of main targets only, see below and the Makefile itself for more details.
 
-* `pre-submit`: This target must pass before you submit a PR.
-  Does `make check` plus forces code generation and update of tools, to ensure CI doesn't have to do it.
 * `make check`: Generate and format code, run unit tests and linter.
 
 To build, deploy and test the CLO image in your own cluster:
@@ -39,8 +37,8 @@ To run CLO as a local process:
 * `make debug`: Run CLO in the `dlv` debugger.
 
 To run the e2e tests:
-* `make test-olm-e2e`: Run e2e tests using locally built images.
-* `make test-olm-e2e`: Run e2e tests using CI latest images.
+* `make test-e2e-local`: Run e2e tests using locally built images.
+* `make test-e2e-olm`: Run e2e tests using CI latest images.
 
 NOTE: e2e tests require a clean cluster starting point, `make undeploy-all` will provide it.
 
@@ -49,7 +47,7 @@ NOTE: e2e tests require a clean cluster starting point, `make undeploy-all` will
 There are two types of test:
 
 * *Unit tests:* run in seconds, no cluster needed, verify internal behavior - behind the API. New code *should* be reasonably well covered by unit tests but we don't have a formal requirement.
-* *E2E tests:* run in minutes to hour(s), requires a cluster. There are several ways to run these:
+* *E2E tests:* run in minutes to hour(s), require a cluster. There are several ways to run these:
    - *CI tests:* run automatically when you raise a PR in a controlled cluster environment. Can take hour(s) to get results.
    - *Deployed tests:* Build and deploy CLO image to your own cluster, allows you to run tests selectively.
    - *Local process:* requires a cluster with dependencies deployed (elasticsearch), but runs CLO as a *local process*. Faster and easier to debug.
@@ -119,7 +117,7 @@ RUN_CMD=foo make run # Run CLO under imaginary "foo" debugger/profiler.
 
 Note `make run` will not return until you terminate the CLO.
 
-### More about `make test-olm-e2e`
+### More about `make test-e2e-olm`
 
 This test assumes:
 * the cluster-logging-catalog image is available
@@ -157,4 +155,3 @@ will attempt to clone them to a temporary directory.
 
 Bumping the release and manifest versions typically require updating the `elasticsearch-operator` as well.
 * `dep ensure -update github.com/openshift/elasticsearch-operator`
-

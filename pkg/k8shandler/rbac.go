@@ -3,7 +3,6 @@ package k8shandler
 import (
 	"fmt"
 
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -106,8 +105,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateClusterRole(name string, rule
 		},
 		Rules: rules,
 	}
-
-	utils.AddOwnerRefToObject(clusterRole, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(clusterRole)
 	if err != nil && !errors.IsAlreadyExists(err) {

@@ -283,6 +283,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 			currentTrustedCAHash := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
 			desiredTrustedCAHash := kibanaDeployment.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
 			if currentTrustedCAHash != desiredTrustedCAHash {
+				if current.Spec.Template.ObjectMeta.Annotations == nil {
+					current.Spec.Template.ObjectMeta.Annotations = map[string]string{}
+				}
 				current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = desiredTrustedCAHash
 				different = true
 			}
@@ -292,6 +295,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaDeployment(prox
 
 				hashKey := fmt.Sprintf("%s%s", constants.SecretHashPrefix, secretName)
 				if current.Spec.Template.ObjectMeta.Annotations[hashKey] != kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey] {
+					if current.Spec.Template.ObjectMeta.Annotations == nil {
+						current.Spec.Template.ObjectMeta.Annotations = map[string]string{}
+					}
 					current.Spec.Template.ObjectMeta.Annotations[hashKey] = kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey]
 					different = true
 				}

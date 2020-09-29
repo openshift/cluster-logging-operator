@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"sort"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
@@ -158,9 +159,18 @@ func getPodMap(node elasticsearch.ElasticsearchStatus) map[logging.Elasticsearch
 func translatePodMap(podStateMap elasticsearch.PodStateMap) logging.PodStateMap {
 
 	return logging.PodStateMap{
-		logging.PodStateTypeReady:    podStateMap[elasticsearch.PodStateTypeReady],
-		logging.PodStateTypeNotReady: podStateMap[elasticsearch.PodStateTypeNotReady],
-		logging.PodStateTypeFailed:   podStateMap[elasticsearch.PodStateTypeFailed],
+		logging.PodStateTypeReady:    getPodState(podStateMap, elasticsearch.PodStateTypeReady),
+		logging.PodStateTypeNotReady: getPodState(podStateMap, elasticsearch.PodStateTypeNotReady),
+		logging.PodStateTypeFailed:   getPodState(podStateMap, elasticsearch.PodStateTypeFailed),
+	}
+}
+
+func getPodState(podStateMap elasticsearch.PodStateMap, podStateType elasticsearch.PodStateType) []string {
+	if v, ok := podStateMap[podStateType]; ok {
+		sort.Strings(v)
+		return v
+	} else {
+		return []string{}
 	}
 }
 
@@ -185,7 +195,9 @@ func podStateMap(podList []v1.Pod) logging.PodStateMap {
 			stateMap[logging.PodStateTypeFailed] = append(stateMap[logging.PodStateTypeFailed], pod.Name)
 		}
 	}
-
+	for _, pods := range stateMap {
+		sort.Strings(pods)
+	}
 	return stateMap
 }
 

@@ -29,7 +29,7 @@ func NewPrometheusRule(ruleName, namespace string) *monitoringv1.PrometheusRule 
 
 func (clusterRequest *ClusterLoggingRequest) RemovePrometheusRule(ruleName string) error {
 
-	promRule := NewPrometheusRule(ruleName, clusterRequest.cluster.Namespace)
+	promRule := NewPrometheusRule(ruleName, clusterRequest.Cluster.Namespace)
 
 	err := clusterRequest.Delete(promRule)
 	if err != nil && !errors.IsNotFound(err) {

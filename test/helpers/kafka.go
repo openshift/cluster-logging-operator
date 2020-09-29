@@ -1,9 +1,8 @@
 package helpers
 
 import (
+	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"strings"
 	"time"
 
@@ -30,10 +29,11 @@ func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (logs, error)
 }
 
 func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameInfrastructure)
 		if err != nil {
-			return false, err
+			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameInfrastructure, err)
+			return false, nil
 		}
 		return logs.ByIndex(InfraIndexPrefix).NonEmpty(), nil
 	})
@@ -41,10 +41,11 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 }
 
 func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
+	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 		if err != nil {
-			return false, err
+			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameApplication, err)
+			return false, nil
 		}
 		return logs.ByIndex(ProjectIndexPrefix).NonEmpty(), nil
 	})
@@ -55,7 +56,8 @@ func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameAudit)
 		if err != nil {
-			return false, err
+			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameAudit, err)
+			return false, nil
 		}
 		return logs.ByIndex(AuditIndexPrefix).NonEmpty(), nil
 	})
@@ -64,6 +66,10 @@ func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 
 func (kr *kafkaReceiver) GrepLogs(expr string, timeToWait time.Duration) (string, error) {
 	return "Not Found", fmt.Errorf("Not implemented")
+}
+
+func (kr *kafkaReceiver) RetrieveLogs() (map[string]string, error) {
+	return nil, fmt.Errorf("Not implemented")
 }
 
 func (kr *kafkaReceiver) ClusterLocalEndpoint() string {
@@ -102,7 +108,7 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error
 	options := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("component=%s", name),
 	}
-	pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+	pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
 	if err != nil {
 		return nil, err
 	}
@@ -111,17 +117,17 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error
 	}
 
 	logger.Debugf("Pod %s", pods.Items[0].Name)
-	stdout, err := tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"cat", "/shared/consumed.logs"})
+	cmd := "tail -n 5000 /shared/consumed.logs"
+	stdout, err := tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"bash", "-c", cmd})
 	if err != nil {
 		return nil, err
 	}
 
 	// Hack Teach kafka-console-consumer to output a proper json array
 	out := "[" + strings.TrimRight(strings.Replace(stdout, "\n", ",", -1), ",") + "]"
-	_ = ioutil.WriteFile("/tmp/consumed.logs", []byte(out), os.ModePerm)
 	logs, err := ParseLogs(out)
 	if err != nil {
-		return nil, fmt.Errorf("Parse error: %s", err)
+		return nil, fmt.Errorf("Parse error '%s' trying to parse: %q", err, out)
 	}
 
 	return logs, nil
@@ -170,10 +176,14 @@ func (tc *E2ETestFramework) createKafkaConsumers(rcv *kafkaReceiver) error {
 
 		tc.AddCleanup(func() error {
 			var zerograce int64
-			return tc.KubeClient.Apps().Deployments(OpenshiftLoggingNS).Delete(app.GetName(), metav1.NewDeleteOptions(zerograce))
+			opts := metav1.DeleteOptions{
+				GracePeriodSeconds: &zerograce,
+			}
+			return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(context.TODO(), app.GetName(), opts)
 		})
 
-		app, err := tc.KubeClient.Apps().Deployments(OpenshiftLoggingNS).Create(app)
+		opts := metav1.CreateOptions{}
+		app, err := tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Create(context.TODO(), app, opts)
 		if err != nil {
 			return err
 		}
@@ -191,10 +201,14 @@ func (tc *E2ETestFramework) createKafkaBrokerStatefulSet() (*apps.StatefulSet, e
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
-		return tc.KubeClient.Apps().StatefulSets(OpenshiftLoggingNS).Delete(app.GetName(), metav1.NewDeleteOptions(zerograce))
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.AppsV1().StatefulSets(OpenshiftLoggingNS).Delete(context.TODO(), app.GetName(), opts)
 	})
 
-	_, err := tc.KubeClient.Apps().StatefulSets(OpenshiftLoggingNS).Create(app)
+	opts := metav1.CreateOptions{}
+	_, err := tc.KubeClient.AppsV1().StatefulSets(OpenshiftLoggingNS).Create(context.TODO(), app, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -207,10 +221,14 @@ func (tc *E2ETestFramework) createZookeeperStatefulSet() (*apps.StatefulSet, err
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
-		return tc.KubeClient.Apps().StatefulSets(OpenshiftLoggingNS).Delete(app.GetName(), metav1.NewDeleteOptions(zerograce))
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.AppsV1().StatefulSets(OpenshiftLoggingNS).Delete(context.TODO(), app.GetName(), opts)
 	})
 
-	app, err := tc.KubeClient.Apps().StatefulSets(OpenshiftLoggingNS).Create(app)
+	opts := metav1.CreateOptions{}
+	app, err := tc.KubeClient.AppsV1().StatefulSets(OpenshiftLoggingNS).Create(context.TODO(), app, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -223,10 +241,14 @@ func (tc *E2ETestFramework) createKafkaBrokerService() error {
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
-		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(svc.GetName(), metav1.NewDeleteOptions(zerograce))
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(context.TODO(), svc.GetName(), opts)
 	})
 
-	if _, err := tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(svc); err != nil {
+	opts := metav1.CreateOptions{}
+	if _, err := tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(context.TODO(), svc, opts); err != nil {
 		return err
 	}
 
@@ -238,10 +260,14 @@ func (tc *E2ETestFramework) createZookeeperService() error {
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
-		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(svc.GetName(), metav1.NewDeleteOptions(zerograce))
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(context.TODO(), svc.GetName(), opts)
 	})
 
-	if _, err := tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(svc); err != nil {
+	opts := metav1.CreateOptions{}
+	if _, err := tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(context.TODO(), svc, opts); err != nil {
 		return err
 	}
 
@@ -253,19 +279,27 @@ func (tc *E2ETestFramework) createKafkaBrokerRBAC() error {
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
-		return tc.KubeClient.Rbac().ClusterRoles().Delete(cr.GetName(), metav1.NewDeleteOptions(zerograce))
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.RbacV1().ClusterRoles().Delete(context.TODO(), cr.GetName(), opts)
 	})
 
-	if _, err := tc.KubeClient.Rbac().ClusterRoles().Create(cr); err != nil {
+	opts := metav1.CreateOptions{}
+	if _, err := tc.KubeClient.RbacV1().ClusterRoles().Create(context.TODO(), cr, opts); err != nil {
 		return err
 	}
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
-		return tc.KubeClient.Rbac().ClusterRoleBindings().Delete(crb.GetName(), metav1.NewDeleteOptions(zerograce))
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.RbacV1().ClusterRoleBindings().Delete(context.TODO(), crb.GetName(), opts)
 	})
 
-	if _, err := tc.KubeClient.Rbac().ClusterRoleBindings().Create(crb); err != nil {
+	opts = metav1.CreateOptions{}
+	if _, err := tc.KubeClient.RbacV1().ClusterRoleBindings().Create(context.TODO(), crb, opts); err != nil {
 		return err
 	}
 	return nil
@@ -276,10 +310,14 @@ func (tc *E2ETestFramework) createKafkaBrokerConfigMap() error {
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
-		return tc.KubeClient.Core().ConfigMaps(OpenshiftLoggingNS).Delete(cm.GetName(), metav1.NewDeleteOptions(zerograce))
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Delete(context.TODO(), cm.GetName(), opts)
 	})
 
-	if _, err := tc.KubeClient.Core().ConfigMaps(OpenshiftLoggingNS).Create(cm); err != nil {
+	opts := metav1.CreateOptions{}
+	if _, err := tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), cm, opts); err != nil {
 		return err
 	}
 
@@ -291,10 +329,14 @@ func (tc *E2ETestFramework) createZookeeperConfigMap() error {
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
-		return tc.KubeClient.Core().ConfigMaps(OpenshiftLoggingNS).Delete(cm.GetName(), metav1.NewDeleteOptions(zerograce))
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Delete(context.TODO(), cm.GetName(), opts)
 	})
 
-	if _, err := tc.KubeClient.Core().ConfigMaps(OpenshiftLoggingNS).Create(cm); err != nil {
+	opts := metav1.CreateOptions{}
+	if _, err := tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), cm, opts); err != nil {
 		return err
 	}
 

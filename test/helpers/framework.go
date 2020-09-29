@@ -1,16 +1,19 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
-	"testing"
 	"time"
 
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -18,26 +21,27 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/onsi/ginkgo"
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	e2eutil "github.com/openshift/cluster-logging-operator/test/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
 const (
 	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
-	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterlogforwarders"
+	clusterlogforwarderURI = "apis/logging.openshift.io/v1/clusterlogforwarders"
 	DefaultCleanUpTimeout  = 60.0 * 2
 )
 
 var (
-	defaultRetryInterval      time.Duration
-	defaultTimeout            time.Duration
-	DefaultWaitForLogsTimeout time.Duration
-	err                       error
+	defaultRetryInterval        time.Duration
+	defaultTimeout              time.Duration
+	DefaultWaitForLogsTimeout   time.Duration
+	DefaultWaitForNoLogsTimeout time.Duration
+	err                         error
 )
 
 func init() {
@@ -48,6 +52,11 @@ func init() {
 		panic(err)
 	}
 	if DefaultWaitForLogsTimeout, err = time.ParseDuration("5m"); err != nil {
+		panic(err)
+	}
+	// Shorter timeout for when we are expecting that there will be no logs,
+	// since we will always go to the timeout in that case.a
+	if DefaultWaitForNoLogsTimeout, err = time.ParseDuration("1m"); err != nil {
 		panic(err)
 	}
 }
@@ -63,6 +72,8 @@ type LogStore interface {
 	HasAuditLogs(timeToWait time.Duration) (bool, error)
 
 	GrepLogs(expr string, timeToWait time.Duration) (string, error)
+
+	RetrieveLogs() (map[string]string, error)
 
 	ClusterLocalEndpoint() string
 }
@@ -91,6 +102,11 @@ func (tc *E2ETestFramework) AddCleanup(fn func() error) {
 
 func (tc *E2ETestFramework) DeployLogGenerator() error {
 	namespace := tc.CreateTestNamespace()
+	return tc.DeployLogGeneratorWithNamespace(namespace)
+}
+
+func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) error {
+	opts := metav1.CreateOptions{}
 	container := corev1.Container{
 		Name:            "log-generator",
 		Image:           "busybox",
@@ -102,17 +118,77 @@ func (tc *E2ETestFramework) DeployLogGenerator() error {
 	}
 	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
 	logger.Infof("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
-	deployment, err := tc.KubeClient.Apps().Deployments(namespace).Create(deployment)
+	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, opts)
 	if err != nil {
 		return err
 	}
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Apps().Deployments(namespace).Delete(deployment.Name, nil)
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, opts)
 	})
 	return tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
 }
 
+func (tc *E2ETestFramework) DeployJsonLogGenerator(vals map[string]string) (string, string, error) {
+	namespace := tc.CreateTestNamespace()
+	pycode := `
+import time,json,sys,datetime
+%s
+i=0
+while True:
+  i=i+1
+  ts=time.time()
+  data={
+	"timestamp"   :datetime.datetime.fromtimestamp(ts).strftime('%%Y-%%m-%%d %%H:%%M:%%S'),
+	"index"       :i,
+  }
+  set_vals()
+  print json.dumps(data)
+  sys.stdout.flush()
+  time.sleep(1)
+`
+	setVals := `
+def set_vals():
+  pass
+
+`
+	if len(vals) != 0 {
+		setVals = "def set_vals():\n"
+		for k, v := range vals {
+			//...  data["key"]="value"
+			setVals += fmt.Sprintf("  data[\"%s\"]=\"%s\"\n", k, v)
+		}
+		setVals += "\n"
+	}
+	container := corev1.Container{
+		Name:            "log-generator",
+		Image:           "centos:centos7",
+		ImagePullPolicy: corev1.PullIfNotPresent,
+		Args:            []string{"python2", "-c", fmt.Sprintf(pycode, setVals)},
+	}
+	podSpec := corev1.PodSpec{
+		Containers: []corev1.Container{container},
+	}
+	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
+	logger.Infof("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
+	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
+	if err != nil {
+		return "", "", err
+	}
+	tc.AddCleanup(func() error {
+		return tc.KubeClient.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, metav1.DeleteOptions{})
+	})
+	err = tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
+	if err == nil {
+		podName, _ := oc.Get().WithNamespace(namespace).Pod().OutputJsonpath("{.items[0].metadata.name}").Run()
+		return namespace, podName, nil
+
+	}
+	return "", "", err
+}
+
 func (tc *E2ETestFramework) CreateTestNamespace() string {
+	opts := metav1.CreateOptions{}
 	name := fmt.Sprintf("clo-test-%d", rand.Intn(10000))
 	if value, found := os.LookupEnv("GENERATOR_NS"); found {
 		name = value
@@ -122,8 +198,8 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 			Name: name,
 		},
 	}
-	_, err := tc.KubeClient.CoreV1().Namespaces().Create(namespace)
-	if err != nil {
+	_, err := tc.KubeClient.CoreV1().Namespaces().Create(context.TODO(), namespace, opts)
+	if err != nil && !errors.IsAlreadyExists(err) {
 		logger.Error(err)
 	}
 	return name
@@ -135,27 +211,52 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 		return tc.waitForDeployment(OpenshiftLoggingNS, "kibana", defaultRetryInterval, defaultTimeout)
 	case ComponentTypeCollector:
 		logger.Debugf("Waiting for %v", component)
-		return e2eutil.WaitForDaemonSet(&testing.T{}, tc.KubeClient, OpenshiftLoggingNS, "fluentd", defaultRetryInterval, defaultTimeout)
+		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
 	}
 	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
 }
 
+func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.Duration) error {
+	// daemonset should have non-zero number of instances for maxtimes consecutive retryInterval to detect a CrashLoopBackOff pod
+	maxtimes := 5
+	times := 0
+	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
+		numReady, err := oc.Literal().From("oc -n openshift-logging get daemonset/fluentd -o jsonpath={.status.numberReady}").Run()
+		if err == nil {
+			value, err := strconv.Atoi(strings.TrimSpace(numReady))
+			if err != nil {
+				times = 0
+				return false, err
+			}
+			if value > 0 {
+				times++
+			} else {
+				times = 0
+			}
+			if times == maxtimes {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+}
+
 func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time.Duration) error {
 	logger.Debugf("Waiting for %v", "elasticsearch")
-	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
+	return wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
 		}
-		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				logger.Debugf("Did not find elasticsearch pods %v", err)
 				return false, nil
 			}
-			logger.Debugf("Error listing elasticsearch pods %v", err)
-			return false, err
+			logger.Errorf("Error listing elasticsearch pods %v", err)
+			return false, nil
 		}
 		if len(pods.Items) == 0 {
 			logger.Debugf("No elasticsearch pods found %v", pods)
@@ -175,13 +276,14 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 }
 
 func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInterval, timeout time.Duration) error {
-	return wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+	return wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
+		deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			return false, err
+			logger.Errorf("Error trying to retrieve deployment: %v", err)
+			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)
 		if int(deployment.Status.AvailableReplicas) == replicas {
@@ -191,29 +293,29 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 	})
 }
 
-func (tc *E2ETestFramework) WaitForCleanupCompletion(podlabels []string) {
-	if err := tc.waitForClusterLoggingPodsCompletion(podlabels); err != nil {
+func (tc *E2ETestFramework) WaitForCleanupCompletion(namespace string, podlabels []string) {
+	if err := tc.waitForClusterLoggingPodsCompletion(namespace, podlabels); err != nil {
 		logger.Errorf("Cleanup completion error %v", err)
 	}
 }
 
-func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []string) error {
+func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string, podlabels []string) error {
 	labels := strings.Join(podlabels, ",")
-	logger.Infof("waiting for pods to complete with labels: %s", labels)
+	logger.Infof("waiting for pods to complete with labels: %s in namespace: %s", labels, namespace)
 	labelSelector := fmt.Sprintf("component in (%s)", labels)
 	options := metav1.ListOptions{
 		LabelSelector: labelSelector,
 	}
 
-	return wait.Poll(defaultRetryInterval, defaultTimeout, func() (bool, error) {
-		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+	return wait.PollImmediate(defaultRetryInterval, defaultTimeout, func() (bool, error) {
+		pods, err := tc.KubeClient.CoreV1().Pods(namespace).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				logger.Infof("Did not find pods %v", err)
 				return false, nil
 			}
-			logger.Infof("Error listing pods %v", err)
-			return false, err
+			logger.Errorf("Error listing pods %v", err)
+			return false, nil
 		}
 		if len(pods.Items) == 0 {
 			logger.Infof("No pods found for label selection: %s", labels)
@@ -225,13 +327,14 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(podlabels []stri
 }
 
 func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInterval, timeout time.Duration) error {
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		deployment, err := tc.KubeClient.Apps().StatefulSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+	err := wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
+		deployment, err := tc.KubeClient.AppsV1().StatefulSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			return false, err
+			logger.Errorf("Error Getting StatfuleSet %v", err)
+			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)
 		if int(deployment.Status.ReadyReplicas) == replicas {
@@ -263,12 +366,12 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 		RequestURI(clusterLoggingURI).
 		SetHeader("Content-Type", "application/json").
 		Body(body).
-		Do()
+		Do(context.TODO())
 	tc.AddCleanup(func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
 			SetHeader("Content-Type", "application/json").
-			Do().Error()
+			Do(context.TODO()).Error()
 	})
 	return result.Error()
 }
@@ -283,30 +386,35 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 		RequestURI(clusterlogforwarderURI).
 		SetHeader("Content-Type", "application/json").
 		Body(body).
-		Do()
+		Do(context.TODO())
 	tc.AddCleanup(func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterlogforwarderURI)).
 			SetHeader("Content-Type", "application/json").
-			Do().Error()
+			Do(context.TODO()).Error()
 	})
 	return result.Error()
 }
 
 func (tc *E2ETestFramework) Cleanup() {
-	//allow caller to cleanup if unset (e.g script cleanup())
-	logger.Infof("Running Cleanup....")
-	doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
-	if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
-		RunCleanupScript()
-		logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
-		for _, cleanup := range tc.CleanupFns {
-			logger.Debug("Running an e2e cleanup function")
-			if err := cleanup(); err != nil {
-				logger.Debugf("Error during cleanup %v", err)
-			}
+	if ginkgo.CurrentGinkgoTestDescription().Failed {
+		//allow caller to cleanup if unset (e.g script cleanup())
+		logger.Infof("Running Cleanup script ....")
+		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
+		if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
+			RunCleanupScript()
+		}
+	} else {
+		logger.Infof("Not Running Cleanup script")
+	}
+	logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
+	for _, cleanup := range tc.CleanupFns {
+		logger.Debug("Running an e2e cleanup function")
+		if err := cleanup(); err != nil {
+			logger.Debugf("Error during cleanup %v", err)
 		}
 	}
+	tc.CleanFluentDBuffers()
 }
 
 func RunCleanupScript() {
@@ -316,11 +424,97 @@ func RunCleanupScript() {
 			return
 		}
 		args := strings.Split(value, " ")
+		// #nosec G204
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Env = nil
 		result, err := cmd.CombinedOutput()
 		logger.Infof("RunCleanupScript output: %s", string(result))
 		logger.Infof("RunCleanupScript err: %v", err)
+	}
+}
+
+func (tc *E2ETestFramework) CleanFluentDBuffers() {
+	h := corev1.HostPathDirectory
+	p := true
+	spec := &v1.DaemonSet{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "DaemonSet",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "clean-fluentd-buffers",
+			Namespace: "default",
+		},
+		Spec: v1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"name": "clean-fluentd-buffers",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "clean-fluentd-buffers",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Tolerations: []corev1.Toleration{
+						{
+							Key:    "node-role.kubernetes.io/master",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+					},
+					InitContainers: []corev1.Container{
+						{
+							Name:  "clean-fluentd-buffers",
+							Image: "centos:centos7",
+							Args:  []string{"sh", "-c", "rm -rf /fluentd-buffers/** "},
+							SecurityContext: &corev1.SecurityContext{
+								Privileged: &p,
+							},
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      "fluentd-buffers",
+									MountPath: "/fluentd-buffers",
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:  "pause",
+							Image: "centos:centos7",
+							Args:  []string{"sh", "-c", "echo done!!!!"},
+						},
+					},
+					Volumes: []corev1.Volume{
+						{
+							Name: "fluentd-buffers",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/var/lib/fluentd",
+									Type: &h,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	ds, err := tc.KubeClient.AppsV1().DaemonSets("default").Create(context.TODO(), spec, metav1.CreateOptions{})
+	if err != nil {
+		logger.Errorf("Could not create DaemonSet for cleaning fluentd buffers. err: %v", err)
+		return
+	} else {
+		logger.Info("DaemonSet to clean fluent buffers created")
+	}
+	time.Sleep(time.Second * 20)
+	err = tc.KubeClient.AppsV1().DaemonSets(ds.GetNamespace()).Delete(context.TODO(), ds.GetName(), metav1.DeleteOptions{})
+	if err != nil {
+		logger.Errorf("Could not delete DaemonSet for cleaning fluentd buffers. err: %v", err)
+	} else {
+		logger.Info("DaemonSet to clean fluent buffers deleted")
 	}
 }
 
@@ -359,7 +553,8 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
 		return nil, err
 	}
-	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, logStoreName, workingDir); err != nil {
+	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
+	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
 		return nil, err
 	}
 	data := map[string][]byte{
@@ -371,13 +566,15 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 	for key, value := range otherData {
 		data[key] = value
 	}
+
+	sOpts := metav1.CreateOptions{}
 	secret = k8shandler.NewSecret(
 		secretName,
 		OpenshiftLoggingNS,
 		data,
 	)
 	logger.Debugf("Creating secret %s for logStore %s", secret.Name, logStoreName)
-	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
+	if secret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts); err != nil {
 		return nil, err
 	}
 	return secret, nil

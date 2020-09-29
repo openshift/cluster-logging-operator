@@ -9,29 +9,40 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/status"
+	"github.com/openshift/cluster-logging-operator/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
-	switch clusterRequest.cluster.Spec.Collection.Logs.Type {
+
+	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
+		logger.Warnf("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
+		return "", nil
+	}
+
+	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
 	case logging.LogCollectionTypeFluentd:
 		break
 	default:
-		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.cluster.Spec.Collection.Logs.Type)
+		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Logs.Type)
 	}
+
 	if clusterRequest.ForwarderRequest == nil {
 		clusterRequest.ForwarderRequest = &logging.ClusterLogForwarder{}
 	}
-	spec, status := clusterRequest.normalizeForwarder()
+
+	spec, status := clusterRequest.NormalizeForwarder()
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
 
 	generator, err := forwarding.NewConfigGenerator(
-		clusterRequest.cluster.Spec.Collection.Logs.Type,
+		clusterRequest.Cluster.Spec.Collection.Logs.Type,
 		clusterRequest.includeLegacyForwardConfig(),
 		clusterRequest.includeLegacySyslogConfig(),
-		clusterRequest.useOldRemoteSyslogPlugin())
+		clusterRequest.useOldRemoteSyslogPlugin(),
+	)
+
 	if err != nil {
 		logger.Warnf("Unable to create collector config generator: %v", err)
 		return "",
@@ -42,7 +53,11 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 				corev1.ConditionTrue,
 			)
 	}
-	generatedConfig, err := generator.Generate(&clusterRequest.ForwarderSpec)
+
+	clfSpec := &clusterRequest.ForwarderSpec
+	fwSpec := clusterRequest.Cluster.Spec.Forwarder
+	generatedConfig, err := generator.Generate(clfSpec, fwSpec)
+
 	if err != nil {
 		logger.Warnf("Unable to generate log configuration: %v", err)
 		return "",
@@ -60,17 +75,17 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		"",
 		corev1.ConditionFalse,
 	)
-
+	logger.Debugf("ClusterLogForwarder generated config:\n----\n%v\n----", generatedConfig)
 	return generatedConfig, err
 }
 
-// normalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
-func (clusterRequest *ClusterLoggingRequest) normalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
+// NormalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
+func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
 	logger.DebugObject("Normalizing ClusterLogForwarder from request: %v", clusterRequest)
 
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
-		if clusterRequest.cluster.Spec.LogStore != nil && clusterRequest.cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
+		if clusterRequest.Cluster.Spec.LogStore != nil && clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 			logger.Debug("ClusterLogForwarder forwarding to default store")
 			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
 				{
@@ -119,13 +134,9 @@ func (clusterRequest *ClusterLoggingRequest) normalizeForwarder() (*logging.Clus
 	} else {
 		if len(unready)+len(degraded) > 0 {
 			status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, "degraded pipelines: invalid %v, degraded %v", unready, degraded))
-			logger.Infof("ClusterLogForwarder degraded")
 		}
 		status.Conditions.SetCondition(condReady)
-		logger.Infof("ClusterLogForwarder is ready")
 	}
-	logger.DebugObject("ClusterLogForwarder normalized spec: %v", spec)
-	logger.DebugObject("ClusterLogForwarder normalized status: %v", status)
 	return spec, status
 }
 
@@ -175,11 +186,11 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 
 	for i, pipeline := range clusterRequest.ForwarderSpec.Pipelines {
 		if pipeline.Name == "" {
-			pipeline.Name = fmt.Sprintf("pipeline[%v]", i)
+			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
 		}
 		if names.Has(pipeline.Name) {
 			original := pipeline.Name
-			pipeline.Name = fmt.Sprintf("pipeline[%v]", i)
+			pipeline.Name = fmt.Sprintf("pipeline_%v_", i)
 			status.Pipelines.Set(pipeline.Name, condInvalid("duplicate name %q", original))
 			continue
 		}
@@ -198,7 +209,10 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 		}
 		status.Pipelines.Set(pipeline.Name, condReady) // Ready, possibly degraded.
 		spec.Pipelines = append(spec.Pipelines, logging.PipelineSpec{
-			Name: pipeline.Name, InputRefs: goodIn.List(), OutputRefs: goodOut.List(),
+			Name:       pipeline.Name,
+			InputRefs:  goodIn.List(),
+			OutputRefs: goodOut.List(),
+			Labels:     pipeline.Labels,
 		})
 	}
 }
@@ -209,7 +223,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 	status.Inputs = logging.NamedConditions{}
 	for i, input := range clusterRequest.ForwarderSpec.Inputs {
 		badName := func(format string, args ...interface{}) {
-			input.Name = fmt.Sprintf("input[%v]", i)
+			input.Name = fmt.Sprintf("input_%v_", i)
 			status.Inputs.Set(input.Name, condInvalid(format, args...))
 		}
 		switch {
@@ -220,6 +234,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 		case len(status.Inputs[input.Name]) > 0:
 			badName("duplicate name: %q", input.Name)
 		default:
+			spec.Inputs = append(spec.Inputs, input)
 			status.Inputs.Set(input.Name, condReady)
 		}
 	}
@@ -228,10 +243,15 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
 	status.Outputs = logging.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
-	for i, output := range clusterRequest.ForwarderSpec.Outputs {
+	for i, out := range clusterRequest.ForwarderSpec.Outputs {
+		output := out
 		badName := func(format string, args ...interface{}) {
-			output.Name = fmt.Sprintf("output[%v]", i)
+			output.Name = fmt.Sprintf("output_%v_", i)
 			status.Outputs.Set(output.Name, condInvalid(format, args...))
+		}
+		var urlErr error
+		if output.URL != "" { // Allow missing URL
+			_, urlErr = url.ParseAbsolute(output.URL)
 		}
 		switch {
 		case output.Name == "":
@@ -242,8 +262,10 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			badName("duplicate name: %q", output.Name)
 		case !logging.IsOutputTypeName(output.Type):
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
-		case output.URL == "":
-			status.Outputs.Set(output.Name, condInvalid("output %q: missing URL", output.Name))
+		case urlErr != nil:
+			status.Outputs.Set(output.Name, condInvalid("%v", urlErr))
+		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
+			break
 		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
 			break
 		default:
@@ -252,11 +274,12 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		}
 		names.Insert(output.Name)
 	}
+
 	// Add the default output if required and available.
 	routes := logging.NewRoutes(clusterRequest.ForwarderSpec.Pipelines)
 	name := logging.OutputNameDefault
 	if _, ok := routes.ByOutput[name]; ok {
-		if clusterRequest.cluster.Spec.LogStore == nil {
+		if clusterRequest.Cluster.Spec.LogStore == nil {
 			status.Outputs.Set(name, condNotReady(logging.ReasonMissingResource, "no default log store specified"))
 		} else {
 			spec.Outputs = append(spec.Outputs, logging.OutputSpec{
@@ -267,6 +290,23 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			})
 			status.Outputs.Set(name, condReady)
 		}
+	}
+}
+
+func (clusterRequest *ClusterLoggingRequest) verifyOutputURL(output *logging.OutputSpec, conds logging.NamedConditions) bool {
+	switch strings.ToLower(output.Type) {
+	case "fluentdforward", "elasticsearch", "syslog":
+		if strings.TrimSpace(output.URL) == "" {
+			conds.Set(output.Name, condNotReady(logging.ReasonMissingResource, "output %q: URL not set for output type %q",
+				output.Name, output.Type))
+			return false
+		}
+		return true
+	case "kafka":
+		//TODO add kafka brokers verification here
+		return true
+	default:
+		return true
 	}
 }
 

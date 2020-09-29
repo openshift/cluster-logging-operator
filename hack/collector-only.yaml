@@ -1,0 +1,10 @@
+apiVersion: "logging.openshift.io/v1"
+kind: "ClusterLogging"
+metadata:
+  name: "instance"
+spec:
+  managementState: "Managed"
+  collection:
+    logs:
+      type: "fluentd"
+      fluentd: {}

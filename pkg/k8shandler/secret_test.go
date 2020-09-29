@@ -6,7 +6,10 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestClusterLoggingRequest_CreateOrUpdateSecretNoop(t *testing.T) {
@@ -29,8 +32,13 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(initSecret),
-		cluster: &logging.ClusterLogging{},
+		Client: fake.NewFakeClient(),
+		Cluster: &logging.ClusterLogging{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "instance",
+				Namespace: "test-namespace",
+			},
+		},
 	}
 
 	// create
@@ -40,10 +48,13 @@ This is a private key.
 
 	firstSecret, err := clusterLoggingRequest.GetSecret("test-secret")
 	if err != nil {
-		t.Errorf("GetSecret failed 1 [%v]", err)
+		t.Fatalf("GetSecret failed 1 [%v]", err)
 	}
 
 	// update
+	// Notice: This is indented by breaking change:
+	// https://github.com/kubernetes-sigs/controller-runtime/pull/832
+	firstSecret.ObjectMeta.ResourceVersion = ""
 	if err := clusterLoggingRequest.CreateOrUpdateSecret(firstSecret); err != nil {
 		t.Errorf("CreateOrUpdateSecret failed 2 [%v]", err)
 	}
@@ -53,12 +64,13 @@ This is a private key.
 		t.Errorf("GetSecret failed 2 [%v]", err)
 	}
 
-	if reflect.DeepEqual(firstSecret, secondSecret) {
+	diff := cmp.Diff(firstSecret, secondSecret)
+	if diff == "" {
 		t.Logf("Initial secret [%p]\n%v", initSecret, initSecret)
 		t.Logf("First secret [%p]\n%v", firstSecret, firstSecret)
 		t.Logf("Second secret [%p]\n%v", secondSecret, secondSecret)
 	} else {
-		t.Errorf("First secret [%v] != Second secret [%v]", firstSecret, secondSecret)
+		t.Errorf("First secret != Second secret:\n %s", diff)
 	}
 }
 
@@ -82,8 +94,13 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(initSecret),
-		cluster: &logging.ClusterLogging{},
+		Client: fake.NewFakeClient(),
+		Cluster: &logging.ClusterLogging{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "instance",
+				Namespace: "test-namespace",
+			},
+		},
 	}
 
 	// create
@@ -152,8 +169,13 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(initSecret),
-		cluster: &logging.ClusterLogging{},
+		Client: fake.NewFakeClient(),
+		Cluster: &logging.ClusterLogging{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "instance",
+				Namespace: "test-namespace",
+			},
+		},
 	}
 
 	// create
@@ -214,8 +236,13 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(initSecret),
-		cluster: &logging.ClusterLogging{},
+		Client: fake.NewFakeClient(),
+		Cluster: &logging.ClusterLogging{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "instance",
+				Namespace: "test-namespace",
+			},
+		},
 	}
 
 	// create

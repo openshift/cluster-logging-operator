@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/daemonsets"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,9 +25,10 @@ import (
 )
 
 const (
-	fluentdAlertsFile = "fluentd/fluentd_prometheus_alerts.yaml"
-	fluentdName       = "fluentd"
-	syslogName        = "syslog"
+	fluentdAlertsFile        = "fluentd/fluentd_prometheus_alerts.yaml"
+	fluentdName              = "fluentd"
+	syslogName               = "syslog"
+	fluentdRequiredESVersion = "6"
 )
 
 func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
@@ -71,7 +73,7 @@ func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdService() error {
 	service := NewService(
 		fluentdName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		fluentdName,
 		[]v1.ServicePort{
 			{
@@ -86,7 +88,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdService() erro
 		"service.alpha.openshift.io/serving-cert-secret-name": "fluentd-metrics",
 	}
 
-	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(service)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -98,7 +100,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdService() erro
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdServiceMonitor() error {
 
-	cluster := clusterRequest.cluster
+	cluster := clusterRequest.Cluster
 
 	serviceMonitor := NewServiceMonitor(fluentdName, cluster.Namespace)
 
@@ -139,26 +141,42 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdServiceMonitor
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule() error {
+	ctx := context.TODO()
+	cluster := clusterRequest.Cluster
 
-	cluster := clusterRequest.cluster
+	rule := NewPrometheusRule(fluentdName, cluster.Namespace)
 
-	promRule := NewPrometheusRule(fluentdName, cluster.Namespace)
-
-	promRuleSpec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + fluentdAlertsFile)
+	spec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + fluentdAlertsFile)
 	if err != nil {
-		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
+		return fmt.Errorf("failure creating the fluentd PrometheusRule: %w", err)
 	}
 
-	promRule.Spec = *promRuleSpec
+	rule.Spec = *spec
 
-	utils.AddOwnerRefToObject(promRule, utils.AsOwner(cluster))
+	utils.AddOwnerRefToObject(rule, utils.AsOwner(cluster))
 
-	err = clusterRequest.Create(promRule)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating the fluentd PrometheusRule: %v", err)
+	err = clusterRequest.Create(rule)
+	if err == nil {
+		return nil
+	}
+	if !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("failure creating the fluentd PrometheusRule: %w", err)
 	}
 
-	return nil
+	current := &monitoringv1.PrometheusRule{}
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		err = clusterRequest.Client.Get(ctx, types.NamespacedName{Name: rule.Name, Namespace: rule.Namespace}, current)
+		if err != nil {
+			logrus.Debugf("could not get prometheus rule %q: %v", rule.Name, err)
+			return err
+		}
+		current.Spec = rule.Spec
+		if err = clusterRequest.Client.Update(ctx, current); err != nil {
+			return err
+		}
+		logrus.Debug("updated prometheus rules")
+		return nil
+	})
 }
 
 // includeLegacyForwardConfig to address Bug 1782566.
@@ -193,30 +211,27 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
 	return found
 }
 
-// useOldPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
+// useOldRemoteSyslogPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
 func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 	if clusterRequest.ForwarderRequest == nil {
 		return false
 	}
-	if enabled, found := clusterRequest.ForwarderRequest.Annotations[UseOldRemoteSyslogPlugin]; found && enabled == "enabled" {
-		return true
-	}
-	return false
+	enabled, found := clusterRequest.ForwarderRequest.Annotations[UseOldRemoteSyslogPlugin]
+	return found && enabled == "enabled"
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(fluentConf string) error {
 	logrus.Debug("createOrUpdateFluentdConfigMap...")
 	fluentdConfigMap := NewConfigMap(
 		fluentdName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string]string{
-			"fluent.conf":          fluentConf,
-			"throttle-config.yaml": string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/fluentd-throttle-config.yaml")),
-			"run.sh":               string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/run.sh")),
+			"fluent.conf": fluentConf,
+			"run.sh":      string(utils.GetFileContents(utils.GetShareDir() + "/fluentd/run.sh")),
 		},
 	)
 
-	utils.AddOwnerRefToObject(fluentdConfigMap, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(fluentdConfigMap, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(fluentdConfigMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -229,7 +244,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 				logrus.Debugf("Returning nil. The configmap %q was not found even though create previously failed.  Was it culled?", fluentdConfigMap.Name)
 				return nil
 			}
-			return fmt.Errorf("Failed to get %v configmap for %q: %v", fluentdConfigMap.Name, clusterRequest.cluster.Name, err)
+			return fmt.Errorf("Failed to get %v configmap for %q: %v", fluentdConfigMap.Name, clusterRequest.Cluster.Name, err)
 		}
 		if reflect.DeepEqual(fluentdConfigMap.Data, current.Data) {
 			return nil
@@ -245,14 +260,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 
 	fluentdSecret := NewSecret(
 		fluentdName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string][]byte{
 			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
 			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
 			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
 		})
 
-	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.CreateOrUpdateSecret(fluentdSecret)
 	if err != nil {
@@ -262,7 +277,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 	return nil
 }
 
-func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName string, elasticsearchInfraName string, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {
+func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {
 	collectionSpec := logging.CollectionSpec{}
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
@@ -289,25 +304,16 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 
 	fluentdContainer.Env = []v1.EnvVar{
 		{Name: "NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"}}},
-		{Name: "MERGE_JSON_LOG", Value: "false"},
-		{Name: "PRESERVE_JSON_LOG", Value: "true"},
-		{Name: "K8S_HOST_URL", Value: "https://kubernetes.default.svc"},
 		{Name: "METRICS_CERT", Value: "/etc/fluent/metrics/tls.crt"},
 		{Name: "METRICS_KEY", Value: "/etc/fluent/metrics/tls.key"},
-		{Name: "BUFFER_QUEUE_LIMIT", Value: "32"},
-		{Name: "BUFFER_SIZE_LIMIT", Value: "8m"},
-		{Name: "FILE_BUFFER_LIMIT", Value: "256Mi"},
-		{Name: "FLUENTD_CPU_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "fluentd", Resource: "limits.cpu"}}},
-		{Name: "FLUENTD_MEMORY_LIMIT", ValueFrom: &v1.EnvVarSource{ResourceFieldRef: &v1.ResourceFieldSelector{ContainerName: "fluentd", Resource: "limits.memory"}}},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
-		{Name: "CDM_KEEP_EMPTY_FIELDS", Value: "message"}, // by default, keep empty messages
+		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 	}
 
 	proxyEnv := utils.SetProxyEnvVars(proxyConfig)
 	fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
 
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{
-		{Name: "runlogjournal", MountPath: "/run/log/journal"},
 		{Name: "varlog", MountPath: "/var/log"},
 		{Name: "varlibdockercontainers", ReadOnly: true, MountPath: "/var/lib/docker"},
 		{Name: "config", ReadOnly: true, MountPath: "/etc/fluent/configs.d/user"},
@@ -366,7 +372,6 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 		"logcollector",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{
-			{Name: "runlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/run/log/journal"}}},
 			{Name: "varlog", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log"}}},
 			{Name: "varlibdockercontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/docker"}}},
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
@@ -415,12 +420,79 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, elasticsearchAppName str
 	// Shorten the termination grace period from the default 30 sec to 10 sec.
 	fluentdPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
 
+	// FIXME: The following conditional branch is a refactoring candidate
+	// To address here https://issues.redhat.com/browse/LOG-833
+	//
+	// Why do we need this branch at all?
+	//
+	// The ClusterLogging CR supports three additional use cases without providing
+	// a logStore stanza namely:
+	// Case 1: A collection only stanza to use with secure forward
+	// Case 2: A collection only stanza to use with syslog
+	// Case 3: A collection only stanza to use with ClusterLogFowarder API
+	//
+	// Supporting all three cases implies:
+	// 1. We don't want to add the init container if `cluster.Spec.LogStore == nil`.
+	// 2. We don't want to add the init container if `cluster.Spec.LogStore == nil`
+	//    and a ClusterLogFowarder CR and does not provide a default output (only
+	//    relevant for case 3)
+	//
+	// What is the init container bound to a log store stanza?
+	//
+	// The init container implementation is only relevant for the default ES log store.
+	// It checks for the version of an ES cluster being >=6. In upgrade scenarios
+	// an ES cluster can eventually provide nodes with multiple version (5.x and 6.x)
+	// until all nodes are upgraded. The data model used in 6.x is not backward
+	// compatible to 5.x, thus preventing fluentd from starting avoids data model
+	// inconsistencies during ES upgrades from 5.x to 6.x.
+	//
+	// Why does this work w/o a ClusterLogForwarder CR provided?
+	//
+	// ClusterLogging and ClusterLogFowarder CR reconciliation share the same logic
+	// for collection config generation. If first is provided without the latter a
+	// ClusterLogFowarder with default fields is assumed.
+	// (See ClusterLoggingRequest#getLogForwarder)
+	if pipelineSpec.HasDefaultOutput() && cluster.Spec.LogStore != nil {
+		fluentdPodSpec.InitContainers = []v1.Container{
+			newFluentdInitContainer(cluster),
+		}
+	} else {
+		fluentdPodSpec.InitContainers = []v1.Container{}
+	}
+
 	return fluentdPodSpec
+}
+
+func newFluentdInitContainer(cluster *logging.ClusterLogging) v1.Container {
+	collectionSpec := logging.CollectionSpec{}
+	resources := collectionSpec.Logs.FluentdSpec.Resources
+	if resources == nil {
+		resources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{v1.ResourceMemory: defaultFluentdMemory},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultFluentdMemory,
+				v1.ResourceCPU:    defaultFluentdCpuRequest,
+			},
+		}
+	}
+	initContainer := NewContainer("fluentd-init", "fluentd", v1.PullIfNotPresent, *resources)
+
+	initContainer.VolumeMounts = []v1.VolumeMount{
+		{Name: "certs", ReadOnly: true, MountPath: "/etc/fluent/keys"},
+	}
+
+	initContainer.Command = []string{
+		"./wait_for_es_version.sh",
+		fluentdRequiredESVersion,
+		fmt.Sprintf("https://%s.%s.svc:9200", elasticsearchResourceName, cluster.Namespace),
+	}
+
+	return initContainer
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string, proxyConfig *configv1.Proxy) (err error) {
 
-	cluster := clusterRequest.cluster
+	cluster := clusterRequest.Cluster
 
 	fluentdTrustBundle := &v1.ConfigMap{}
 	// Create or update cluster proxy trusted CA bundle.
@@ -431,17 +503,16 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 		}
 	}
 
-	fluentdPodSpec := newFluentdPodSpec(cluster, "elasticsearch", "elasticsearch", proxyConfig, fluentdTrustBundle, clusterRequest.ForwarderSpec)
+	fluentdPodSpec := newFluentdPodSpec(cluster, proxyConfig, fluentdTrustBundle, clusterRequest.ForwarderSpec)
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
 
-	annotations, err := clusterRequest.getFluentdAnnotations(fluentdDaemonset)
+	trustedCAHashValue, err := clusterRequest.getTrustedCABundleHash()
 	if err != nil {
 		return err
 	}
-
-	fluentdDaemonset.Spec.Template.Annotations = annotations
+	fluentdDaemonset.Spec.Template.Annotations[constants.TrustedCABundleHashName] = trustedCAHashValue
 
 	uid := getServiceAccountLogCollectorUID()
 	if len(uid) == 0 {
@@ -470,7 +541,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 }
 
 func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
-	logger.DebugObject("desired fluent update: %v", desired)
+	logger.DebugObject("checking collector update: %s", desired)
 	current := &apps.DaemonSet{}
 
 	if err = clusterRequest.Get(desired.Name, current); err != nil {
@@ -483,12 +554,14 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	}
 
 	flushBuffer := isBufferFlushRequired(current, desired)
-	desired, different := isFluentdDaemonsetDifferent(current, desired)
-
-	if different {
-		current.Spec = desired.Spec
+	if flushBuffer {
+		current.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUSH_AT_SHUTDOWN", Value: "True"}, current.Spec.Template.Spec.Containers[0].Env)
+	}
+	trustedCABundleHashAreSame := current.Spec.Template.Annotations[constants.TrustedCABundleHashName] == desired.Spec.Template.Annotations[constants.TrustedCABundleHashName]
+	if !daemonsets.AreSame(current, desired) || !trustedCABundleHashAreSame {
+		logger.Debugf("Current and desired collectors are different, updating DaemonSet %q", current.Name)
 		if flushBuffer {
-			current.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUSH_AT_SHUTDOWN", Value: "True"}, current.Spec.Template.Spec.Containers[0].Env)
+			logger.Infof("Updating and restarting collector pods to flush its buffers...")
 			if err = clusterRequest.Update(current); err != nil {
 				logrus.Debugf("Failed to prepare Fluentd daemonset to flush its buffers: %v", err)
 				return err
@@ -499,7 +572,8 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 				return fmt.Errorf("Timed out waiting for Fluentd to be ready")
 			}
 		}
-		logger.DebugObject("updating fluentd to: %v", current)
+		current.Spec = desired.Spec
+		logger.DebugObject("updating fluentd to: %v", desired)
 		if err = clusterRequest.Update(desired); err != nil {
 			return err
 		}
@@ -508,38 +582,30 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) getFluentdAnnotations(daemonset *apps.DaemonSet) (map[string]string, error) {
-
-	if daemonset.Spec.Template.ObjectMeta.Annotations == nil {
-		daemonset.Spec.Template.ObjectMeta.Annotations = make(map[string]string)
-	}
-
-	annotations := daemonset.Spec.Template.ObjectMeta.Annotations
+func (clusterRequest *ClusterLoggingRequest) getTrustedCABundleHash() (string, error) {
 
 	fluentdTrustBundle := &v1.ConfigMap{}
 	fluentdTrustBundleName := types.NamespacedName{Name: constants.FluentdTrustedCAName, Namespace: constants.OpenshiftNS}
-	if err := clusterRequest.client.Get(context.TODO(), fluentdTrustBundleName, fluentdTrustBundle); err != nil {
+	if err := clusterRequest.Client.Get(context.TODO(), fluentdTrustBundleName, fluentdTrustBundle); err != nil {
 		if !errors.IsNotFound(err) {
-			return annotations, err
+			return "", err
 		}
 	}
 
 	if _, ok := fluentdTrustBundle.Data[constants.TrustedCABundleKey]; !ok {
-		return annotations, fmt.Errorf("%v does not yet contain expected key %v", fluentdTrustBundle.Name, constants.TrustedCABundleKey)
+		return "", fmt.Errorf("%v does not yet contain expected key %v", fluentdTrustBundle.Name, constants.TrustedCABundleKey)
 	}
 
 	trustedCAHashValue, err := calcTrustedCAHashValue(fluentdTrustBundle)
 	if err != nil {
-		return annotations, fmt.Errorf("unable to calculate trusted CA value. E: %s", err.Error())
+		return "", fmt.Errorf("unable to calculate trusted CA value. E: %s", err.Error())
 	}
 
 	if trustedCAHashValue == "" {
-		return annotations, fmt.Errorf("Did not receive hashvalue for trusted CA value")
+		return "", fmt.Errorf("Did not receive hashvalue for trusted CA value")
 	}
 
-	annotations[constants.TrustedCABundleHashName] = trustedCAHashValue
-
-	return annotations, nil
+	return trustedCAHashValue, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) RestartFluentd(proxyConfig *configv1.Proxy) (err error) {
@@ -576,17 +642,4 @@ func updateEnvVar(value v1.EnvVar, values []v1.EnvVar) []v1.EnvVar {
 		values = append(values, value)
 	}
 	return values
-}
-
-func isFluentdDaemonsetDifferent(current, desired *apps.DaemonSet) (*apps.DaemonSet, bool) {
-	current, different := isDaemonsetDifferent(current, desired)
-
-	currentHash := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
-	desiredHash := desired.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
-	if currentHash != desiredHash {
-		current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = desiredHash
-		different = true
-	}
-
-	return current, different
 }

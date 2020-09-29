@@ -16,7 +16,7 @@ import (
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 
-var _ = Describe("ClusterLogForwarder", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
@@ -26,7 +26,8 @@ var _ = Describe("ClusterLogForwarder", func() {
 		pipelineSecret *corev1.Secret
 		elasticsearch  *elasticsearch.Elasticsearch
 	)
-	Describe("when ClusterLogging is configured with 'forwarder' to an administrator managed Elasticsearch", func() {
+
+	Describe("when the output is a third-party managed elasticsearch", func() {
 
 		BeforeEach(func() {
 			rootDir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
@@ -60,7 +61,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 								Name: pipelineSecret.ObjectMeta.Name,
 							},
 							Type: logging.OutputTypeElasticsearch,
-							URL:  fmt.Sprintf("%s.%s.svc:9200", elasticsearch.Name, elasticsearch.Namespace),
+							URL:  fmt.Sprintf("https://%s.%s.svc:9200", elasticsearch.Name, elasticsearch.Namespace),
 						},
 					},
 					Pipelines: []logging.PipelineSpec{
@@ -96,7 +97,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "elasticsearch"})
 		})
 
 		It("should send logs to the forward.Output logstore", func() {

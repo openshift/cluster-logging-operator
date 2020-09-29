@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	. "github.com/openshift/cluster-logging-operator/test"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -23,7 +23,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs.app source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication), nil)
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication))
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
@@ -62,10 +62,16 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs.infra source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure), nil)
+			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure))
 			Expect(err).To(BeNil())
-			Expect(len(results) == 1).To(BeTrue())
+			Expect(len(results) == 2).To(BeTrue())
 		})
+
+		/*
+			"infrastructure" logs include
+			 - journal logs
+			 - container logs from **_default_** **_kube-*_** **_openshift-*_** **_openshift_** namespaces
+		*/
 
 		It("should produce a journal config", func() {
 			Expect(results[0]).To(EqualTrimLines(`
@@ -74,13 +80,13 @@ var _ = Describe("generating source", func() {
 				@type systemd
 				@id systemd-input
 				@label @INGRESS
-				path "#{if (val = ENV.fetch('JOURNAL_SOURCE','')) && (val.length > 0); val; else '/run/log/journal'; end}"
+				path '/var/log/journal'
 				<storage>
 				@type local
 				persistent true
 				# NOTE: if this does not end in .json, fluentd will think it
 				# is the name of a directory - see fluentd storage_local.rb
-				path "#{ENV['JOURNAL_POS_FILE'] || '/var/log/journal_pos.json'}"
+				path '/var/log/journal_pos.json'
 				</storage>
 				matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
 				tag journal
@@ -88,11 +94,42 @@ var _ = Describe("generating source", func() {
 			</source>
 		  `))
 		})
+		It("should produce a source container config", func() {
+			Expect(results[1]).To(EqualTrimLines(`
+			# container logs
+			<source>
+			  @type tail
+			  @id container-input
+			  path "/var/log/containers/*.log"
+			  exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+			  pos_file "/var/log/es-containers.log.pos"
+			  refresh_interval 5
+			  rotate_wait 5
+			  tag kubernetes.*
+			  read_from_head "true"
+			  @label @CONCAT
+			  <parse>
+				@type multi_format
+				<pattern>
+				  format json
+				  time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
+				  keep_time_key true
+				</pattern>
+				<pattern>
+				  format regexp
+				  expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+				  time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
+				  keep_time_key true
+				</pattern>
+			  </parse>
+			</source>
+		  `))
+		})
 	})
 
 	Context("for only logs.audit source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit), nil)
+			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit))
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(3))
 		})
@@ -136,8 +173,8 @@ var _ = Describe("generating source", func() {
               @type tail
               @id openshift-audit-input
               @label @INGRESS
-              path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
-              pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+              path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+              pos_file /var/log/oauth-apiserver.audit.log
               tag openshift-audit.log
               <parse>
                 @type json
@@ -154,7 +191,7 @@ var _ = Describe("generating source", func() {
 	Context("for all log sources", func() {
 
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit), nil)
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit))
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(5))
 		})
@@ -167,13 +204,13 @@ var _ = Describe("generating source", func() {
 				@type systemd
 				@id systemd-input
 				@label @INGRESS
-				path "#{if (val = ENV.fetch('JOURNAL_SOURCE','')) && (val.length > 0); val; else '/run/log/journal'; end}"
+				path '/var/log/journal'
 				<storage>
 				@type local
 				persistent true
 				# NOTE: if this does not end in .json, fluentd will think it
 				# is the name of a directory - see fluentd storage_local.rb
-				path "#{ENV['JOURNAL_POS_FILE'] || '/var/log/journal_pos.json'}"
+				path '/var/log/journal_pos.json'
 				</storage>
 				matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
 				tag journal
@@ -257,8 +294,8 @@ var _ = Describe("generating source", func() {
                 @type tail
                 @id openshift-audit-input
                 @label @INGRESS
-                path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
-                pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+                path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+                pos_file /var/log/oauth-apiserver.audit.log
                 tag openshift-audit.log
                 <parse>
                   @type json

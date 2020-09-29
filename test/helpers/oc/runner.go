@@ -48,6 +48,7 @@ func (r *runner) Run() (string, error) {
 }
 
 func (r *runner) runCmd() (string, error) {
+	// #nosec G204
 	r.Cmd = osexec.Command(CMD, r.args...)
 	var outbuf bytes.Buffer
 	var errbuf bytes.Buffer
@@ -73,7 +74,11 @@ func (r *runner) runCmd() (string, error) {
 		return "", nil
 	}
 	out := strings.TrimSpace(outbuf.String())
-	logger.Infof("output: %s", out)
+	if len(out) > 500 {
+		logger.Infof("output(truncated 500/%d): %s", len(out), truncateString(out, 500))
+	} else {
+		logger.Infof("output: %s", out)
+	}
 	return out, nil
 }
 
@@ -133,4 +138,15 @@ func (r *runner) setArgs(args []string) {
 
 func (r *runner) setArgsStr(argstr string) {
 	r.args = sanitizeArgs(argstr)
+}
+
+func truncateString(str string, num int) string {
+	trunc := str
+	if len(str) > num {
+		if num > 4 {
+			num -= 4
+		}
+		trunc = str[0:num] + " ..."
+	}
+	return trunc
 }

@@ -1,15 +1,5 @@
 package v1
 
-import (
-	"reflect"
-	"strings"
-)
-
-// Default log store output name.
-const OutputNameDefault = "default"
-
-func IsReservedOutputName(s string) bool { return s == OutputNameDefault }
-
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
 const (
 	OutputTypeElasticsearch  = "elasticsearch"
@@ -18,66 +8,11 @@ const (
 	OutputTypeKafka          = "kafka"
 )
 
-// Output defines a destination for log messages.
-type OutputSpec struct {
-	// Name used to refer to the output from a `pipeline`.
-	//
-	// +required
-	Name string `json:"name"`
-
-	// Type of output plugin, for example 'syslog'
-	//
-	// +required
-	Type string `json:"type"`
-
-	// URL to send log messages to.
-	//
-	// Must be an absolute URL, with a scheme. Valid URL schemes depend on `type`.
-	// Special schemes 'tcp', 'udp' and 'tls' are used for output types that don't
-	// define their own URL scheme.  Example:
-	//
-	//     { type: syslog, url: tls://syslog.example.com:1234 }
-	//
-	// TLS with server authentication is enabled by the URL scheme, for
-	// example 'tls' or 'https'.  See `secret` for TLS client authentication.
-	//
-	// +optional
-	URL string `json:"url"`
-
-	// OutputTypeSpec provides optional extra configuration that is specific to the
-	// output `type`
-	//
-	// +optional
-	OutputTypeSpec `json:",inline"`
-
-	// Secret for secure communication.
-	// Secrets must be stored in the namespace containing the cluster logging operator.
-	//
-	// Client-authenticated TLS is enabled if the secret contains keys `tls.crt`,
-	// `tls.key` and `ca.crt`. Output types with password authentication will use
-	// keys `password` and `username`, not the exposed 'username@password' part of
-	// the `url`.
-	//
-	// +optional
-	Secret *OutputSecretSpec `json:"secret,omitempty"`
-
-	// Insecure must be true for intentionally insecure outputs.
-	// Has no function other than a marker to help avoid configuration mistakes.
-	//
-	// +optional
-	Insecure bool `json:"insecure,omitempty"`
-}
-
-// OutputSecretSpec is a secret reference containing name only, no namespace.
-type OutputSecretSpec struct {
-	// Name of a secret in the namespace configured for log forwarder secrets.
-	//
-	// +required
-	Name string `json:"name"`
-}
+// NOTE: The Enum validation on OutputSpec.Type must be updated if the list of
+// known types changes.
 
 // OutputTypeSpec is a union of optional additional configuration specific to an
-// output type.
+// output type. The fields of this struct define the set of known output types.
 type OutputTypeSpec struct {
 	// +optional
 	Syslog *Syslog `json:"syslog,omitempty"`
@@ -87,13 +22,6 @@ type OutputTypeSpec struct {
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 	// +optional
 	Kafka *Kafka `json:"kafka,omitempty"`
-}
-
-var otsType = reflect.TypeOf(OutputTypeSpec{})
-
-func IsOutputTypeName(s string) bool {
-	_, ok := otsType.FieldByName(strings.Title(s))
-	return ok
 }
 
 // Syslog provides optional extra properties for output type `syslog`
@@ -127,15 +55,49 @@ type Syslog struct {
 	// +optional
 	TrimPrefix string `json:"trimPrefix,omitempty"`
 
-	// TagKey specifies a record field  to  use as tag.
+	// Tag specifies a record field to use as tag.
 	//
 	// +optional
-	TagKey string `json:"tagKey,omitempty"`
+	Tag string `json:"tag,omitempty"`
 
 	// PayloadKey specifies record field to use as payload.
 	//
 	// +optional
 	PayloadKey string `json:"payloadKey,omitempty"`
+
+	// Rfc specifies the rfc to be used for sending syslog
+	//
+	// Rfc values can be one of:
+	//  - RFC3164 (https://tools.ietf.org/html/rfc3164)
+	//  - RFC5424 (https://tools.ietf.org/html/rfc5424)
+	//
+	// If unspecified, RFC5424 will be assumed.
+	//
+	// +kubebuilder:validation:Enum:=RFC3164;RFC5424
+	// +kubebuilder:default:=RFC5424
+	// +optional
+	RFC string `json:"rfc,omitempty"`
+
+	// AppName is APP-NAME part of the syslog-msg header
+	//
+	// AppName needs to be specified if using rfc5424
+	//
+	// +optional
+	AppName string `json:"appName,omitempty"`
+
+	// ProcID is PROCID part of the syslog-msg header
+	//
+	// ProcID needs to be specified if using rfc5424
+	//
+	// +optional
+	ProcID string `json:"procID,omitempty"`
+
+	// MsgID is MSGID part of the syslog-msg header
+	//
+	// MsgID needs to be specified if using rfc5424
+	//
+	// +optional
+	MsgID string `json:"msgID,omitempty"`
 }
 
 // Kafka provides optional extra properties for `type: kafka`

@@ -38,9 +38,10 @@ func (index *Index) AddAlias(name string, isWriteIndex bool) *Index {
 
 type Index struct {
 	//Name  intentionally not serialized
-	Name     string                `json:"-"`
-	Settings IndexSettings         `json:"settings,omitempty"`
-	Aliases  map[string]IndexAlias `json:"aliases,omitempty"`
+	Name     string                 `json:"-"`
+	Settings IndexSettings          `json:"settings,omitempty"`
+	Aliases  map[string]IndexAlias  `json:"aliases,omitempty"`
+	Mappings map[string]interface{} `json:"mappings,omitempty"`
 }
 
 type IndexTemplate struct {
@@ -57,6 +58,100 @@ type IndexAlias struct {
 }
 
 type IndexSettings struct {
-	NumberOfShards   int32 `json:"number_of_shards"`
-	NumberOfReplicas int32 `json:"number_of_replicas"`
+	NumberOfShards   int32             `json:"number_of_shards,omitempty"`
+	NumberOfReplicas int32             `json:"number_of_replicas,omitempty"`
+	Index            *IndexingSettings `json:"index,omitempty"`
+}
+
+type IndexingSettings struct {
+	Format  int32                 `json:"format,omitempty"`
+	Blocks  *IndexBlocksSettings  `json:"blocks,omitempty"`
+	Mapper  *IndexMapperSettings  `json:"mapper,omitempty"`
+	Mapping *IndexMappingSettings `json:"mapping,omitempty"`
+}
+
+type IndexBlocksSettings struct {
+	Write bool `json:"write"`
+}
+
+type IndexMapperSettings struct {
+	Dynamic bool `json:"dynamic"`
+}
+
+type IndexMappingSettings struct {
+	SingleType bool `json:"single_type"`
+}
+
+type ReIndex struct {
+	Source IndexRef      `json:"source"`
+	Dest   IndexRef      `json:"dest"`
+	Script ReIndexScript `json:"script"`
+}
+
+type ReIndexScript struct {
+	Inline string `json:"inline"`
+	Lang   string `json:"lang"`
+}
+
+type IndexRef struct {
+	Index string `json:"index"`
+}
+
+type AliasActions struct {
+	Actions []AliasAction `json:"actions"`
+}
+
+type AliasAction struct {
+	Add         *AddAliasAction    `json:"add,omitempty"`
+	RemoveIndex *RemoveAliasAction `json:"remove_index,omitempty"`
+}
+
+type AddAliasAction struct {
+	Index string `json:"index"`
+	Alias string `json:"alias"`
+}
+
+type RemoveAliasAction struct {
+	Index string `json:"index"`
+}
+
+type CatIndicesResponses []CatIndicesResponse
+
+type CatIndicesResponse struct {
+	Health           string `json:"health,omitempty"`
+	Status           string `json:"status,omitempty"`
+	Index            string `json:"index,omitempty"`
+	UUID             string `json:"uuis,omitempty"`
+	Primaries        string `json:"pri,omitempty"`
+	Replicas         string `json:"rep,omitempty"`
+	DocsCount        string `json:"docs.count,omitempty"`
+	DocsDeleted      string `json:"docs.deleted,omitempty"`
+	StoreSize        string `json:"store.size,omitempty"`
+	PrimaryStoreSize string `json:"pri.store.size,omitempty"`
+}
+
+type MasterNodeAndNodeStateResponse struct {
+	ClusterName string                       `json:"cluster_name,omitempty"`
+	MasterNode  string                       `json:"master_node,omitempty"`
+	Nodes       map[string]NodeStateResponse `json:"nodes,omitempty"`
+}
+
+type NodesStateResponse struct {
+	Nodes map[string]NodeStateResponse `json:"nodes,omitempty"`
+}
+
+type NodeStateResponse struct {
+	Name             string            `json:"name,omitempty"`
+	EphemeralID      string            `json:"ephemeral_id,omitempty"`
+	TransportAddress string            `json:"transport_address,omitempty"`
+	Attributes       map[string]string `json:"attributes,omitempty"`
+}
+
+type StatsNodesResponse struct {
+	Nodes StatsNode `json:"nodes,omitempty"`
+}
+
+type StatsNode struct {
+	Versions []string       `json:"versions,omitempty"`
+	Count    map[string]int `json:"count,omitempty"`
 }

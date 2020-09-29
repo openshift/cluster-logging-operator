@@ -83,7 +83,7 @@ function os::text::clear_string() {
 
 # os::text::internal::is_tty determines if we are outputting to a TTY
 function os::text::internal::is_tty() {
-	[[ -t 1 && -n "${TERM:-}" ]]
+	[[ -t 1 && -n "$TERM" && "$TERM" != "dumb" ]]
 }
 readonly -f os::text::internal::is_tty
 

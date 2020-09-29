@@ -97,21 +97,23 @@ type ClusterHealth struct {
 // ElasticsearchNode struct represents individual node in Elasticsearch cluster
 // GenUUID will be populated by the operator if not provided
 type ElasticsearchNode struct {
-	Roles        []ElasticsearchNodeRole  `json:"roles"`
-	NodeCount    int32                    `json:"nodeCount"`
-	Resources    v1.ResourceRequirements  `json:"resources"`
-	NodeSelector map[string]string        `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration          `json:"tolerations,omitempty"`
-	Storage      ElasticsearchStorageSpec `json:"storage"`
-	GenUUID      *string                  `json:"genUUID,omitempty"`
+	Roles          []ElasticsearchNodeRole  `json:"roles"`
+	NodeCount      int32                    `json:"nodeCount"`
+	Resources      v1.ResourceRequirements  `json:"resources"`
+	NodeSelector   map[string]string        `json:"nodeSelector,omitempty"`
+	Tolerations    []v1.Toleration          `json:"tolerations,omitempty"`
+	Storage        ElasticsearchStorageSpec `json:"storage"`
+	GenUUID        *string                  `json:"genUUID,omitempty"`
+	ProxyResources v1.ResourceRequirements  `json:"proxyResources,omitempty"`
 }
 
 // ElasticsearchNodeSpec represents configuration of an individual Elasticsearch node
 type ElasticsearchNodeSpec struct {
-	Image        string                  `json:"image,omitempty"`
-	Resources    v1.ResourceRequirements `json:"resources"`
-	NodeSelector map[string]string       `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration         `json:"tolerations,omitempty"`
+	Image          string                  `json:"image,omitempty"`
+	Resources      v1.ResourceRequirements `json:"resources"`
+	NodeSelector   map[string]string       `json:"nodeSelector,omitempty"`
+	Tolerations    []v1.Toleration         `json:"tolerations,omitempty"`
+	ProxyResources v1.ResourceRequirements `json:"proxyResources,omitempty"`
 }
 
 type ElasticsearchStorageSpec struct {
@@ -179,9 +181,10 @@ const (
 type ShardAllocationState string
 
 const (
-	ShardAllocationAll     ShardAllocationState = "all"
-	ShardAllocationNone    ShardAllocationState = "none"
-	ShardAllocationUnknown ShardAllocationState = "shard allocation unknown"
+	ShardAllocationAll       ShardAllocationState = "all"
+	ShardAllocationNone      ShardAllocationState = "none"
+	ShardAllocationPrimaries ShardAllocationState = "primaries"
+	ShardAllocationUnknown   ShardAllocationState = "shard allocation unknown"
 )
 
 type PodStateMap map[PodStateType][]string
@@ -197,9 +200,10 @@ const (
 type ElasticsearchUpgradePhase string
 
 const (
-	NodeRestarting    ElasticsearchUpgradePhase = "nodeRestarting"
-	RecoveringData    ElasticsearchUpgradePhase = "recoveringData"
-	ControllerUpdated ElasticsearchUpgradePhase = "controllerUpdated"
+	NodeRestarting      ElasticsearchUpgradePhase = "nodeRestarting"
+	RecoveringData      ElasticsearchUpgradePhase = "recoveringData"
+	ControllerUpdated   ElasticsearchUpgradePhase = "controllerUpdated"
+	PreparationComplete ElasticsearchUpgradePhase = "preparationComplete"
 )
 
 // Managed means that the operator is actively managing its resources and trying to keep the component active.
@@ -220,6 +224,8 @@ const (
 	ScalingUp                ClusterConditionType = "ScalingUp"
 	ScalingDown              ClusterConditionType = "ScalingDown"
 	Restarting               ClusterConditionType = "Restarting"
+	Recovering               ClusterConditionType = "Recovering"
+	UpdatingESSettings       ClusterConditionType = "UpdatingESSettings"
 	InvalidMasters           ClusterConditionType = "InvalidMasters"
 	InvalidData              ClusterConditionType = "InvalidData"
 	InvalidRedundancy        ClusterConditionType = "InvalidRedundancy"
@@ -231,13 +237,4 @@ const (
 	Unschedulable            ClusterConditionType = "Unschedulable"
 	NodeStorage              ClusterConditionType = "NodeStorage"
 	CustomImage              ClusterConditionType = "CustomImageIgnored"
-)
-
-type ClusterEvent string
-
-const (
-	ScaledDown            ClusterEvent = "ScaledDown"
-	ScaledUp              ClusterEvent = "ScaledUp"
-	UpdateClusterSettings ClusterEvent = "UpdateClusterSettings"
-	NoEvent               ClusterEvent = "NoEvent"
 )

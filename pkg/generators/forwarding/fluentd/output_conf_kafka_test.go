@@ -3,16 +3,17 @@ package fluentd
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/openshift/cluster-logging-operator/test"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
 	v1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 )
 
 var _ = Describe("Generating external kafka server output store config block", func() {
 	var (
-		err       error
-		outputs   []v1.OutputSpec
-		generator *ConfigGenerator
+		err           error
+		outputs       []v1.OutputSpec
+		forwarderSpec *v1.ForwarderSpec
+		generator     *ConfigGenerator
 	)
 	BeforeEach(func() {
 		generator, err = NewConfigGenerator(false, false, false)
@@ -25,20 +26,25 @@ var _ = Describe("Generating external kafka server output store config block", f
            @type kafka2
            brokers broker1-kafka.svc.messaging.cluster.local:9092
            default_topic topic
+           use_event_time true
            <format>
                @type json
            </format>
            <buffer topic>
                @type file
                path '/var/lib/fluentd/kafka_receiver'
+               flush_mode interval
                flush_interval 1s
                flush_thread_count 2
-               flush_at_shutdown false
-               retry_max_interval 300
+               flush_at_shutdown true
+               retry_type exponential_backoff
+               retry_wait 1s
+               retry_max_interval 300s
                retry_forever true
                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-               chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-               overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+               total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+               chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+               overflow_action block
            </buffer>
         </match>
         </label>`
@@ -52,7 +58,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs)
+			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -67,7 +73,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs)
+			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -80,23 +86,28 @@ var _ = Describe("Generating external kafka server output store config block", f
            @type kafka2
            brokers broker1-kafka.svc.messaging.cluster.local:9092
            default_topic topic
+           use_event_time true
            ssl_ca_cert '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
-           ssl_client_cert '/var/run/ocp-collector/secrets/some-secret/tls.crt'
-           ssl_client_cert_key '/var/run/ocp-collector/secrets/some-secret/tls.key'
+           ssl_client_cert "#{File.exist?('/var/run/ocp-collector/secrets/some-secret/tls.crt') ? '/var/run/ocp-collector/secrets/some-secret/tls.crt' : use_nil}"
+           ssl_client_cert_key "#{File.exist?('/var/run/ocp-collector/secrets/some-secret/tls.key') ? '/var/run/ocp-collector/secrets/some-secret/tls.key' : use_nil}"
            <format>
                @type json
            </format>
            <buffer topic>
                @type file
                path '/var/lib/fluentd/kafka_receiver'
+               flush_mode interval
                flush_interval 1s
                flush_thread_count 2
-               flush_at_shutdown false
-               retry_max_interval 300
+               flush_at_shutdown true
+               retry_type exponential_backoff
+               retry_wait 1s
+               retry_max_interval 300s
                retry_forever true
                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-               chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-               overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+               total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+               chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+               overflow_action block
            </buffer>
         </match>
         </label>`
@@ -113,7 +124,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs)
+			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -126,20 +137,25 @@ var _ = Describe("Generating external kafka server output store config block", f
 	       @type kafka2
 	       brokers broker1-kafka.svc.messaging.cluster.local:9092,broker2-kafka.svc.messaging.cluster.local:9092
 	       default_topic topic
+         use_event_time true
 	       <format>
 	           @type json
 	       </format>
 	       <buffer topic>
 	           @type file
 	           path '/var/lib/fluentd/kafka_receiver'
+             flush_mode interval
 	           flush_interval 1s
 	           flush_thread_count 2
-	           flush_at_shutdown false
-	           retry_max_interval 300
+	           flush_at_shutdown true
+             retry_type exponential_backoff
+             retry_wait 1s
+	           retry_max_interval 300s
 	           retry_forever true
-	           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-	           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-	           overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+             queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+	           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+	           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+	           overflow_action block
 	       </buffer>
 	    </match>
 	    </label>`
@@ -161,7 +177,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs)
+			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -183,7 +199,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs)
+			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -203,7 +219,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 					},
 				},
 			}
-			_, err := generator.generateOutputLabelBlocks(outputs)
+			_, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).Should(HaveOccurred())
 		})
 
@@ -215,7 +231,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 					URL:  "not-a-valid-URL",
 				},
 			}
-			_, err := generator.generateOutputLabelBlocks(outputs)
+			_, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
 			Expect(err).Should(HaveOccurred())
 		})
 	})

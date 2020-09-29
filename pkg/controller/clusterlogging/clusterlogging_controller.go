@@ -6,6 +6,7 @@ import (
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -87,5 +88,21 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 	}
 
 	err = k8shandler.Reconcile(instance, r.client)
+
+	if result, err := r.updateStatus(instance); err != nil {
+		return result, err
+	}
+
 	return reconcileResult, err
+}
+
+func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (reconcile.Result, error) {
+	logger.DebugObject("clusterlogging-controller updating status of: %#v", instance.Status)
+
+	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+		logger.Errorf("clusterlogging-controller error updating status: %v", err)
+		return reconcileResult, err
+	}
+
+	return reconcile.Result{}, nil
 }

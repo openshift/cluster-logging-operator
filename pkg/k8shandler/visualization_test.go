@@ -19,8 +19,8 @@ import (
 //TODO: Remove this in the next release after removing old kibana code completely
 func TestHasCLORef(t *testing.T) {
 	clr := ClusterLoggingRequest{
-		client: nil,
-		cluster: &logging.ClusterLogging{
+		Client: nil,
+		Cluster: &logging.ClusterLogging{
 			TypeMeta: metav1.TypeMeta{},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:                       "cluster-logging",
@@ -36,7 +36,6 @@ func TestHasCLORef(t *testing.T) {
 				Labels:                     nil,
 				Annotations:                nil,
 				OwnerReferences:            nil,
-				Initializers:               nil,
 				Finalizers:                 nil,
 				ClusterName:                "",
 			},
@@ -44,7 +43,6 @@ func TestHasCLORef(t *testing.T) {
 			Status: logging.ClusterLoggingStatus{},
 		},
 		ForwarderSpec: logging.ClusterLogForwarderSpec{},
-		Collector:     nil,
 	}
 
 	obj := &apps.Deployment{
@@ -63,7 +61,6 @@ func TestHasCLORef(t *testing.T) {
 			Labels:                     nil,
 			Annotations:                nil,
 			OwnerReferences:            nil,
-			Initializers:               nil,
 			Finalizers:                 nil,
 			ClusterName:                "",
 		},
@@ -71,7 +68,7 @@ func TestHasCLORef(t *testing.T) {
 		Status: apps.DeploymentStatus{},
 	}
 
-	utils.AddOwnerRefToObject(obj, utils.AsOwner(clr.cluster))
+	utils.AddOwnerRefToObject(obj, utils.AsOwner(clr.Cluster))
 
 	t.Log("refs:", obj.GetOwnerReferences())
 	if !HasCLORef(obj, &clr) {
@@ -350,14 +347,14 @@ func TestRemoveKibanaCR(t *testing.T) {
 	}
 
 	clr := &ClusterLoggingRequest{
-		cluster: &logging.ClusterLogging{
+		Cluster: &logging.ClusterLogging{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "openshift-logging",
 			},
 		},
 	}
 
-	clr.client = fake.NewFakeClient(kbn)
+	clr.Client = fake.NewFakeClient(kbn)
 
 	if err := clr.removeKibanaCR(); err != nil {
 		t.Error(err)

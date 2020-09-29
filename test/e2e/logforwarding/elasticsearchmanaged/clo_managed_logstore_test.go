@@ -12,14 +12,14 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
-var _ = Describe("CLO Managed ClusterLogForwarder", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
 		e2e = helpers.NewE2ETestFramework()
 	)
 
-	Describe("when ClusterLogging is configured with a collector, LogStore, and no explicit 'forwarder'", func() {
+	Describe("when the output is a CLO managed elasticsearch and no explicit forwarder is configured", func() {
 
 		BeforeEach(func() {
 			if err := e2e.DeployLogGenerator(); err != nil {
@@ -40,7 +40,7 @@ var _ = Describe("CLO Managed ClusterLogForwarder", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "elasticsearch"})
 		}, helpers.DefaultCleanUpTimeout)
 
 		It("should default to forwarding logs to the spec'd logstore", func() {

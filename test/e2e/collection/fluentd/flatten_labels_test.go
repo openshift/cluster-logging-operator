@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
-var _ = Describe("Fluentd message filtering", func() {
+var _ = Describe("[Collection] Fluentd message filtering", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -47,7 +47,7 @@ var _ = Describe("Fluentd message filtering", func() {
 					{
 						Name: fluentDeployment.ObjectMeta.Name,
 						Type: logging.OutputTypeFluentdForward,
-						URL:  fmt.Sprintf("%s.%s.svc:24224", fluentDeployment.ObjectMeta.Name, fluentDeployment.Namespace),
+						URL:  fmt.Sprintf("tcp://%s.%s.svc:24224", fluentDeployment.ObjectMeta.Name, fluentDeployment.Namespace),
 					},
 				},
 				Pipelines: []logging.PipelineSpec{
@@ -77,10 +77,10 @@ var _ = Describe("Fluentd message filtering", func() {
 	}, helpers.DefaultCleanUpTimeout)
 
 	It("should remove 'kubernetes.labels' and create 'kubernetes.flat_labels' with an array of 'kubernetes.labels'", func() {
-		Expect(e2e.LogStores[helpers.FluentdLogStore].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+		Expect(e2e.LogStores[fluentDeployment.GetName()].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 
 		//verify infra namespaces are not stored to their own index
-		logs, err := e2e.LogStores[helpers.FluentdLogStore].ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
+		logs, err := e2e.LogStores[fluentDeployment.GetName()].ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
 		Expect(err).To(BeNil(), fmt.Sprintf("Error fetching logs: %v", err))
 		Expect(len(logs)).To(Not(Equal(0)), "There were no documents returned in the logs")
 

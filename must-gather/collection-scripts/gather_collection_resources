@@ -1,0 +1,66 @@
+#!/bin/bash
+
+source ./common
+
+# Expect base collection path as an argument
+BASE_COLLECTION_PATH=$1
+
+# Use PWD as base path if no argument is passed
+if [ "${BASE_COLLECTION_PATH}" = "" ]; then
+    BASE_COLLECTION_PATH=$(pwd)
+fi
+
+NAMESPACE="openshift-logging"
+
+CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
+collector_folder="$CLO_COLLECTION_PATH/collector"
+
+check_collector_connectivity() {
+  local pod=$1
+  echo "--Connectivity between $pod and elasticsearch" >> $collector_folder/$pod
+
+  es_host=$(oc -n $NAMESPACE  get pod $pod  -o jsonpath='{.spec.containers[0].env[?(@.name=="ES_HOST")].value}')
+  es_port=$(oc -n $NAMESPACE  get pod $pod  -o jsonpath='{.spec.containers[0].env[?(@.name=="ES_PORT")].value}')
+  collector=fluent
+  container=fluentd
+
+  echo "  with ca" >> $collector_folder/$pod
+  oc -n $NAMESPACE exec $pod -c $container -- curl -ILvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert --cacert /etc/$collector/keys/ca -XGET https://$es_host:$es_port &>> $collector_folder/$pod
+
+  echo "  without ca" >> $collector_folder/$pod
+  oc -n $NAMESPACE exec $pod -c $container -- curl -ILkvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert -XGET https://$es_host:$es_port &>> $collector_folder/$pod
+}
+
+check_collector_persistence() {
+  local pod=$1
+  echo "--Persistence stats for pod $pod" >> $collector_folder/$pod
+
+  collector=fluentd
+  fbstoragePath=$(oc -n $NAMESPACE get daemonset $collector -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[?(@.name=="filebufferstorage")].mountPath}')
+
+  if [ -z "$fbstoragePath" ] ; then
+    echo "No filebuffer storage defined" >>  $collector_folder/$pod
+  else
+    oc -n $NAMESPACE exec $pod -c $collector -- df -h $fbstoragePath >> $collector_folder/$pod
+    oc -n $NAMESPACE exec $pod -c $collector -- ls -lr $fbstoragePath >> $collector_folder/$pod
+  fi
+}
+
+echo "Gathering data for collection component"
+mkdir -p $collector_folder
+
+echo "-- Retrieving configmaps"
+oc -n $NAMESPACE extract configmap/fluentd --to=$collector_folder ||:
+oc -n $NAMESPACE extract configmap/secure-forward --to=$collector_folder ||:
+
+echo "-- Checking Collector health"
+pods="$(oc -n $NAMESPACE get pods -l logging-infra=fluentd -o jsonpath={.items[*].metadata.name})"
+for pod in $pods
+do
+    echo "---- Collector pod: $pod"
+    get_env $pod $collector_folder "$NAMESPACE"
+    check_collector_connectivity $pod
+    check_collector_persistence $pod
+    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/clo_default_output_es > $collector_folder/$pod.es-buffers.txt||:
+    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/retry_clo_default_output_es > $outdir/$pod.buffers.es-retry.txt||
+done

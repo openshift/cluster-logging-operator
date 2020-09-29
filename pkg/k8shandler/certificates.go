@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -81,14 +82,14 @@ func (clusterRequest *ClusterLoggingRequest) extractSecretToFile(secretName stri
 func (clusterRequest *ClusterLoggingRequest) writeSecret() (err error) {
 
 	secret := NewSecret(
-		"master-certs",
-		clusterRequest.cluster.Namespace,
+		constants.MasterCASecretName,
+		clusterRequest.Cluster.Namespace,
 		map[string][]byte{
 			"masterca":  utils.GetWorkingDirFileContents("ca.crt"),
 			"masterkey": utils.GetWorkingDirFileContents("ca.key"),
 		})
 
-	utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.Cluster))
 
 	err = clusterRequest.CreateOrUpdateSecret(secret)
 	if err != nil {
@@ -130,7 +131,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	if err = clusterRequest.readSecrets(); err != nil {
 		return
 	}
-	if err = GenerateCertificates(clusterRequest.cluster.Namespace, ".", "elasticsearch", utils.DefaultWorkingDir); err != nil {
+
+	scriptsDir := utils.GetScriptsDir()
+	if err = GenerateCertificates(clusterRequest.Cluster.Namespace, scriptsDir, "elasticsearch", utils.DefaultWorkingDir); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 
@@ -141,8 +144,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	return nil
 }
 
-func GenerateCertificates(namespace, rootDir, logStoreName, workDir string) (err error) {
-	script := fmt.Sprintf("%s/scripts/cert_generation.sh", rootDir)
+func GenerateCertificates(namespace, scriptsDir, logStoreName, workDir string) (err error) {
+	script := fmt.Sprintf("%s/cert_generation.sh", scriptsDir)
 	return RunCertificatesScript(namespace, logStoreName, workDir, script)
 }
 

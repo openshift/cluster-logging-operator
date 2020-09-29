@@ -8,7 +8,8 @@ set -eou pipefail
 source "$(dirname "${BASH_SOURCE[0]}" )/../lib/init.sh"
 source "$(dirname $0)/assertions"
 
-os::test::junit::declare_suite_start "${BASH_SOURCE[0]}"
+mkdir -p /tmp/artifacts/junit
+os::test::junit::declare_suite_start "[ClusterLogging] Deploy via OLM minimal"
 
 ARTIFACT_DIR=${ARTIFACT_DIR:-"$(pwd)/_output"}
 test_artifactdir="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
@@ -24,8 +25,13 @@ version=$(basename $(find $manifest -type d | sort -r | head -n 1))
 
 cleanup(){
   local return_code="$?"
+
+  os::test::junit::declare_suite_end
+  
   set +e
-  gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
+  if [ "$return_code" != "0" ] ; then 
+    gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
+  fi
 
   if [ "${DO_CLEANUP:-true}" == "true" ] ; then
       ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh

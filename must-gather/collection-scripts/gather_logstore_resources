@@ -1,0 +1,120 @@
+#!/bin/bash
+
+source ./common
+
+# Expect base collection path as an argument
+BASE_COLLECTION_PATH=$1
+
+# Use PWD as base path if no argument is passed
+if [ "${BASE_COLLECTION_PATH}" = "" ]; then
+    BASE_COLLECTION_PATH=$(pwd)
+fi
+
+NAMESPACE="openshift-logging"
+
+CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
+es_folder="$CLO_COLLECTION_PATH/es"
+
+get_es_logs() {
+  local pod=$1
+  local logs_folder=$2/logs
+  echo "-- POD $pod Elasticsearch Logs"
+
+  if [ ! -d "$logs_folder" ]
+  then
+    mkdir -p $logs_folder
+  fi
+
+  path=/elasticsearch/persistent/elasticsearch/logs
+  exists=$( oc -n $NAMESPACE exec $pod -c elasticsearch -- ls ${path} 2> /dev/null ) || :
+
+  if [ -z "$exists" ]; then
+    path=/elasticsearch/elasticsearch/logs
+  fi
+
+  exists=$( oc -n $NAMESPACE exec $pod -c elasticsearch -- ls ${path} 2> /dev/null ) || :
+  if [ -z "$exists" ]; then
+    echo "---- Unable to get ES logs from pod $pod"
+  else
+    oc -n $NAMESPACE rsync -c elasticsearch -q $pod:$path $logs_folder 2> /dev/null || echo "---- Unable to get ES logs from pod $pod"
+    mv -f $logs_folder/logs $logs_folder/$pod
+    nice xz $logs_folder/$pod/*
+  fi
+}
+
+list_es_storage() {
+  local pod=$1
+  local mountPath=$(oc -n $NAMESPACE get pod $pod -o jsonpath='{.spec.containers[0].volumeMounts[?(@.name=="elasticsearch-storage")].mountPath}')
+  echo "-- Persistence files" >> $es_folder/$pod
+
+  oc -n $NAMESPACE exec -c elasticsearch $pod -- ls -lR $mountPath >> $es_folder/$pod
+}
+
+get_elasticsearch_status() {
+  local comp=$1
+  local pod=${2:-""}
+
+  if [ -z "$pod" ] ; then
+      echo "Skipping elasticsearch status because no pod was found for $1"
+      return
+  fi
+
+  local cluster_folder=$es_folder/cluster-$comp
+  mkdir -p $cluster_folder
+
+  curl_es='curl -s --max-time 5 --key /etc/elasticsearch/secret/admin-key --cert /etc/elasticsearch/secret/admin-cert --cacert /etc/elasticsearch/secret/admin-ca https://localhost:9200'
+  local cat_items=(health nodes aliases thread_pool)
+  for cat_item in ${cat_items[@]}
+  do
+    oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/$cat_item?v &> $cluster_folder/$cat_item
+  done
+
+  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/indices?v\&bytes=m &> $cluster_folder/indices
+  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_search?sort=@timestamp:desc\&pretty > $cluster_folder/latest_documents.json
+  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_nodes/stats?pretty > $cluster_folder/nodes_stats.json
+
+  local health=$(oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/health?h=status)
+  if [ -z "$health" ]
+  then
+    echo "Unable to get health from $1"
+  elif [ $health != "green" ]
+  then
+    echo "Gathering additional cluster information Cluster status is $health"
+
+    cat_items=(recovery shards pending_tasks)
+    for cat_item in ${cat_items[@]}
+    do
+      oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/$cat_item?v &> $cluster_folder/$cat_item
+    done
+
+    oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/shards?h=index,shard,prirep,state,unassigned.reason,unassigned.description | grep UNASSIGNED &> $cluster_folder/unassigned_shards
+  fi
+}
+
+get_elasticsearch_cr() {
+  oc get -n ${NAMESPACE} elasticsearch elasticsearch -o yaml > $es_folder/cr
+}
+
+echo "Gathering data for logstore component"
+echo "-- Checking Elasticsearch health"
+mkdir -p $es_folder
+
+es_pods=$(oc -n $NAMESPACE get pods -l component=elasticsearch -o jsonpath={.items[*].metadata.name})
+for pod in $es_pods
+do
+    echo "---- Elasticsearch pod: $pod"
+    get_env $pod $es_folder "$NAMESPACE"
+    get_es_logs $pod $es_folder
+    list_es_storage $pod
+done
+
+anypod=""
+for comp in "elasticsearch"
+do
+    echo "-- Getting Elasticsearch cluster info from logging-${comp} pod"
+    anypod=$(oc -n $NAMESPACE get pod --selector="component=${comp}" --no-headers | grep Running | awk '{print$1}' | tail -1 || :)
+    get_elasticsearch_status ${comp} ${anypod}
+done
+
+echo "-- Gather Elasticsearch CR"
+get_elasticsearch_cr

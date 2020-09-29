@@ -3,20 +3,28 @@ package v1
 import (
 	"github.com/openshift/cluster-logging-operator/pkg/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	sets "k8s.io/apimachinery/pkg/util/sets"
 )
 
 const ClusterLogForwarderKind = "ClusterLogForwarder"
 
-// ClusterLogForwarder is the schema for the `clusterlogforwarder` API.
-//
-// A forwarder defines:
-// - `inputs` that select logs to be forwarded `outputs`
-// - `outputs` that identify targets to receive logs.
-// - `pipelines` that forward logs from a set of inputs to a set of outputs.
-//
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=logging,shortName=clf,scope=Cluster
+
+// ClusterLogForwarder is an API to configure forwarding logs.
+//
+// You configure forwarding by specifying a list of `pipelines`,
+// which forward from a set of named inputs to a set of named outputs.
+//
+// There are built-in input names for common log categories, and you can
+// define custom inputs to do additional filtering.
+//
+// There is a built-in output name for the default openshift log store, but
+// you can define your own outputs with a URL and other connection information
+// to forward logs to other stores or processors, inside or outside the cluster.
+//
+// For more details see the documentation on the API fields.
+//
 type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -27,20 +35,25 @@ type ClusterLogForwarder struct {
 
 // ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
 type ClusterLogForwarderSpec struct {
-	// Inputs are named inputs of log messages
+	// Inputs are named filters for log messages to be forwarded.
 	//
-	// +required
+	// There are three built-in inputs named `application`, `infrastructure` and
+	// `audit`. You don't need to define inputs here if those are sufficient for
+	// your needs. See `inputRefs` for more.
+	//
+	// +optional
 	Inputs []InputSpec `json:"inputs,omitempty"`
+
 	// Outputs are named destinations for log messages.
 	//
-	// +required
+	// There is a built-in output named `default` which forwards to the default
+	// openshift log store. You can define outputs to forward to other stores or
+	// log processors, inside or outside the cluster.
+	//
+	// +optional
 	Outputs []OutputSpec `json:"outputs,omitempty"`
 
-	// Pipelines forward messages from a set of inputs to a set of outputs.
-	//
-	// Pipelines refer to inputs and outputs by name. As well as then named inputs
-	// and outputs defined in the ClusterLogForwarder resource, there are some
-	// built-in names, see `inputRefs` and `outputRefs` for more.
+	// Pipelines forward the messages selected by a set of inputs to a set of outputs.
 	//
 	// +required
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
@@ -50,59 +63,135 @@ type ClusterLogForwarderSpec struct {
 type ClusterLogForwarderStatus struct {
 	// Conditions of the log forwarder.
 	Conditions status.Conditions `json:"conditions,omitempty"`
-	// Inputs maps input names to conditions of the input.
+	// Inputs maps input name to condition of the input.
 	Inputs NamedConditions `json:"inputs,omitempty"`
-	// Outputs maps output names to conditions of the output.
+	// Outputs maps output name to condition of the output.
 	Outputs NamedConditions `json:"outputs,omitempty"`
-	// Pipelines maps pipeline names to conditions of the pipeline.
+	// Pipelines maps pipeline name to condition of the pipeline.
 	Pipelines NamedConditions `json:"pipelines,omitempty"`
 }
 
-// IsReady returns true if all of the subordinate conditions are ready.
-func (status ClusterLogForwarderStatus) IsReady() bool {
-	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
-		for _, conds := range nc {
-			if !conds.IsTrueFor(ConditionReady) {
-				return false
-			}
-		}
-	}
-	return true
+// InputSpec defines a selector of log messages.
+type InputSpec struct {
+	// Name used to refer to the input of a `pipeline`.
+	//
+	// +kubebuilder:validation:minLength:=1
+	// +required
+	Name string `json:"name"`
+
+	// NOTE: the following fields in this struct are deliberately _not_ `omitempty`.
+	// An empty field means enable that input type with no filter.
+
+	// Application, if present, enables `application` logs.
+	//
+	// +optional
+	Application *Application `json:"application,omitempty"`
+
+	// Infrastructure, if present, enables `infrastructure` logs.
+	//
+	// +optional
+	Infrastructure *Infrastructure `json:"infrastructure,omitempty"`
+
+	// Audit, if present, enables `audit` logs.
+	//
+	// +optional
+	Audit *Audit `json:"audit,omitempty"`
 }
 
-// IsDegraded returns true if any of the subordinate conditions are degraded.
-func (status ClusterLogForwarderStatus) IsDegraded() bool {
-	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
-		for _, conds := range nc {
-			if conds.IsTrueFor(ConditionDegraded) {
-				return true
-			}
-		}
-	}
-	return false
+type Application struct {
+	// Namespaces is a list of namespaces from which to collect application logs.
+	// If the list is empty, logs are collected from all namespaces.
+	//
+	// +optional
+	Namespaces []string `json:"namespaces"`
+}
+
+// Infrastructure enables infrastructure logs. Filtering may be added in future.
+type Infrastructure struct{}
+
+// Audit enables audit logs. Filtering may be added in future.
+type Audit struct{}
+
+// Output defines a destination for log messages.
+type OutputSpec struct {
+	// Name used to refer to the output from a `pipeline`.
+	//
+	// +kubebuilder:validation:minLength:=1
+	// +required
+	Name string `json:"name"`
+
+	// Type of output plugin.
+	//
+	// +kubebuilder:validation:Enum:=syslog;fluentdForward;elasticsearch;kafka
+	// +required
+	Type string `json:"type"`
+
+	// URL to send log messages to.
+	//
+	// Must be an absolute URL, with a scheme. Valid URL schemes depend on `type`.
+	// Special schemes 'tcp', 'tls', 'udp' and 'udps are used for output types that don't
+	// define their own URL scheme.  Example:
+	//
+	//     { type: syslog, url: udps://syslog.example.com:1234 }
+	//
+	// TLS with server authentication is enabled by the URL scheme, for
+	// example 'tls' or 'https'.  See `secret` for TLS client authentication.
+	//
+	// This field is optional and can be empty if there is an output-type field with alternative connection information.
+	//
+	// +kubebuilder:validation:Pattern:=`^$|[a-zA-z]+:\/\/.*`
+	// +optional
+	URL string `json:"url,omitempty"`
+
+	OutputTypeSpec `json:",inline"`
+
+	// Secret for secure communication.
+	// Secrets must be stored in the namespace containing the cluster logging operator.
+	//
+	// Client-authenticated TLS is enabled if the secret contains keys `tls.crt`,
+	// `tls.key` and `ca.crt`. Output types with password authentication will use
+	// keys `password` and `username`, not the exposed 'username@password' part of
+	// the `url`.
+	//
+	// +optional
+	Secret *OutputSecretSpec `json:"secret,omitempty"`
+}
+
+// OutputSecretSpec is a secret reference containing name only, no namespace.
+type OutputSecretSpec struct {
+	// Name of a secret in the namespace configured for log forwarder secrets.
+	//
+	// +required
+	Name string `json:"name"`
 }
 
 type PipelineSpec struct {
-	// OutputRefs lists the names of outputs from this pipeline.
+	// OutputRefs lists the names (`output.name`) of outputs from this pipeline.
 	//
 	// The following built-in names are always available:
 	//
-	// - 'default' Output to the default log store provided by ClusterLogging.
+	// 'default' Output to the default log store provided by ClusterLogging.
 	//
 	// +required
 	OutputRefs []string `json:"outputRefs"`
 
-	// InputRefs lists the names of inputs to this pipeline.
+	// InputRefs lists the names (`input.name`) of inputs to this pipeline.
 	//
-	// The following built-in names are always available:
+	// The following built-in input names are always available:
 	//
-	// - 'application' Container application logs (excludes infrastructure containers)
-	// - 'infrastructure' Infrastructure container logs and OS system logs.
-	// - 'audit' System audit logs.
+	// `application` selects all logs from application pods.
+	//
+	// `infrastructure` selects logs from openshift and kubernetes pods and some node logs.
+	//
+	// `audit` selects node logs related to security audits.
 	//
 	// +required
 	InputRefs []string `json:"inputRefs"`
 
+	// Labels lists labels applied to this pipeline
+	//
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
 	// Name is optional, but must be unique in the `pipelines` list if provided.
 	//
 	// +optional
@@ -120,53 +209,4 @@ type ClusterLogForwarderList struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterLogForwarder{}, &ClusterLogForwarderList{})
-}
-
-// RouteMap maps input names to connected outputs or vice-versa.
-type RouteMap map[string]sets.String
-
-func (m RouteMap) Insert(k, v string) {
-	if m[k] == nil {
-		m[k] = sets.NewString()
-	}
-	m[k].Insert(v)
-}
-
-// Routes maps connected input and output names.
-type Routes struct {
-	ByInput, ByOutput RouteMap
-}
-
-func NewRoutes(pipelines []PipelineSpec) Routes {
-	r := Routes{
-		ByInput:  map[string]sets.String{},
-		ByOutput: map[string]sets.String{},
-	}
-	for _, p := range pipelines {
-		for _, inRef := range p.InputRefs {
-			for _, outRef := range p.OutputRefs {
-				r.ByInput.Insert(inRef, outRef)
-				r.ByOutput.Insert(outRef, inRef)
-			}
-		}
-	}
-	return r
-}
-
-// OutputMap returns a map of names to outputs.
-func (spec *ClusterLogForwarderSpec) OutputMap() map[string]*OutputSpec {
-	m := map[string]*OutputSpec{}
-	for i := range spec.Outputs {
-		m[spec.Outputs[i].Name] = &spec.Outputs[i]
-	}
-	return m
-}
-
-// InputMap returns a map of names to outputs.
-func (spec *ClusterLogForwarderSpec) InputMap() map[string]*InputSpec {
-	m := map[string]*InputSpec{}
-	for i := range spec.Inputs {
-		m[spec.Inputs[i].Name] = &spec.Inputs[i]
-	}
-	return m
 }

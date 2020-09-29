@@ -2,7 +2,6 @@ package fluentd
 
 import (
 	"fmt"
-	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
@@ -13,20 +12,16 @@ import (
 // We need to also filter them per-user-SourceSpec since different SourceSpecs
 // might request different namespaces.
 
-func (engine *ConfigGenerator) generateSource(sources sets.String, appNs sets.String) (results []string, err error) {
+func (engine *ConfigGenerator) generateSource(sources sets.String) (results []string, err error) {
 	// Order of templates matters.
-	templates := []string{}
-	nsPaths := []string{}
-	if sources.Has(string(logging.InputNameInfrastructure)) {
+	var templates []string
+	if sources.Has(logging.InputNameInfrastructure) {
 		templates = append(templates, "inputSourceJournalTemplate")
 	}
-	if sources.Has(string(logging.InputNameApplication)) {
+	if sources.Has(logging.InputNameApplication) || sources.Has(logging.InputNameInfrastructure) {
 		templates = append(templates, "inputSourceContainerTemplate")
-		for _, ns := range appNs.List() {
-			nsPaths = append(nsPaths, fmt.Sprintf("\"/var/log/containers/*_%s_*.log\"", ns))
-		}
 	}
-	if sources.Has(string(logging.InputNameAudit)) {
+	if sources.Has(logging.InputNameAudit) {
 		templates = append(templates, "inputSourceHostAuditTemplate")
 		templates = append(templates, "inputSourceK8sAuditTemplate")
 		templates = append(templates, "inputSourceOpenShiftAuditTemplate")
@@ -39,13 +34,11 @@ func (engine *ConfigGenerator) generateSource(sources sets.String, appNs sets.St
 		CollectorPodNamePrefix     string
 		LogStorePodNamePrefix      string
 		VisualizationPodNamePrefix string
-		AppNsPaths                 string
 	}{
 		constants.OpenshiftNS,
 		constants.FluentdName,
 		constants.ElasticsearchName,
 		constants.KibanaName,
-		strings.Join(nsPaths, ", "),
 	}
 	for _, template := range templates {
 		result, err := engine.Execute(template, data)

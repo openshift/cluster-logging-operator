@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
-var _ = Describe("ClusterLogForwarder", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -29,14 +29,14 @@ var _ = Describe("ClusterLogForwarder", func() {
 		}
 		testDir = filepath.Dir(filename)
 	})
-	Describe("when ClusterLogging is configured with 'forwarder' to an external syslog server", func() {
+	Describe("when the output in `syslog.conf` configmap is a third-party managed syslog", func() {
 
 		Context("with the legacy syslog plugin", func() {
 
 			Context("and tcp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.Rfc3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `
@@ -55,7 +55,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 						Fail(fmt.Sprintf("Unable to create legacy syslog.conf configmap: %v", err))
 					}
 
-					components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+					components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 					cr := helpers.NewClusterLogging(components...)
 					if err := e2e.CreateClusterLogging(cr); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
@@ -76,7 +76,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 			Context("and udp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false, helpers.Rfc3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false, helpers.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `
@@ -117,7 +117,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluentd", "syslog-receiver", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "syslog-receiver", "elasticsearch"})
 		})
 
 	})

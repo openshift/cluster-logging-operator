@@ -1,6 +1,7 @@
 package fluentlegacy
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -19,7 +20,7 @@ import (
 )
 
 // This test verifies we still support latency secure-forward with no ClusterLogForwarder.
-var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() {
+var _ = Describe("[ClusterLogging] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -34,7 +35,9 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 		}
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})
-	Describe("when ClusterLogging is configured with no ClusterLogForwarder instance and 'forwarder' to an administrator managed fluentd", func() {
+
+	Describe("when the output in `secure-forward.conf` confimap is a third-party managed fluentd", func() {
+
 		Context("and the receiver is secured", func() {
 
 			BeforeEach(func() {
@@ -52,6 +55,7 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 				}
 
 				//create configmap secure-forward/"secure-forward.conf"
+				opts := metav1.CreateOptions{}
 				fluentdConfigMap := k8shandler.NewConfigMap(
 					"secure-forward",
 					fluentDeployment.Namespace,
@@ -59,26 +63,30 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 						"secure-forward.conf": string(utils.GetFileContents(filepath.Join(rootDir, "test/files/secure-forward.conf"))),
 					},
 				)
-				if _, err = e2e.KubeClient.Core().ConfigMaps(fluentDeployment.Namespace).Create(fluentdConfigMap); err != nil {
+				if _, err = e2e.KubeClient.CoreV1().ConfigMaps(fluentDeployment.Namespace).Create(context.TODO(), fluentdConfigMap, opts); err != nil {
 					Fail(fmt.Sprintf("Unable to create legacy fluent.conf configmap: %v", err))
 				}
 				e2e.AddCleanup(func() error {
-					return e2e.KubeClient.Core().ConfigMaps(fluentdConfigMap.ObjectMeta.Namespace).Delete(fluentdConfigMap.ObjectMeta.Name, nil)
+					opts := metav1.DeleteOptions{}
+					return e2e.KubeClient.CoreV1().ConfigMaps(fluentdConfigMap.ObjectMeta.Namespace).Delete(context.TODO(), fluentdConfigMap.ObjectMeta.Name, opts)
 				})
 
 				var secret *v1.Secret
-				if secret, err = e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Get(fluentDeployment.Name, metav1.GetOptions{}); err != nil {
+				if secret, err = e2e.KubeClient.CoreV1().Secrets(fluentDeployment.Namespace).Get(context.TODO(), fluentDeployment.Name, metav1.GetOptions{}); err != nil {
 					Fail(fmt.Sprintf("There was an error fetching the fluent-reciever secrets: %v", err))
 				}
+
+				sOpts := metav1.CreateOptions{}
 				secret = k8shandler.NewSecret("secure-forward", fluentDeployment.Namespace, secret.Data)
-				if _, err = e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Create(secret); err != nil {
+				if _, err = e2e.KubeClient.CoreV1().Secrets(fluentDeployment.Namespace).Create(context.TODO(), secret, sOpts); err != nil {
 					Fail(fmt.Sprintf("Unable to create secure-forward secret: %v", err))
 				}
 				e2e.AddCleanup(func() error {
-					return e2e.KubeClient.Core().Secrets(fluentDeployment.Namespace).Delete(secret.ObjectMeta.Name, nil)
+					opts := metav1.DeleteOptions{}
+					return e2e.KubeClient.CoreV1().Secrets(fluentDeployment.Namespace).Delete(context.TODO(), secret.ObjectMeta.Name, opts)
 				})
 
-				components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+				components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 				cr := helpers.NewClusterLogging(components...)
 				if err := e2e.CreateClusterLogging(cr); err != nil {
 					Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
@@ -99,7 +107,7 @@ var _ = Describe("Backwards compatibility prior to ClusterLogForwarder", func() 
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion([]string{"fluent-receiver", "fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd", "elasticsearch"})
 		})
 	})
 

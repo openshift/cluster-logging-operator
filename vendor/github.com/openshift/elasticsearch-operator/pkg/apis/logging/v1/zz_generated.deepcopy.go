@@ -96,7 +96,7 @@ func (in *Elasticsearch) DeepCopyObject() runtime.Object {
 func (in *ElasticsearchList) DeepCopyInto(out *ElasticsearchList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Elasticsearch, len(*in))
@@ -154,6 +154,7 @@ func (in *ElasticsearchNode) DeepCopyInto(out *ElasticsearchNode) {
 		*out = new(string)
 		**out = **in
 	}
+	in.ProxyResources.DeepCopyInto(&out.ProxyResources)
 	return
 }
 
@@ -185,6 +186,7 @@ func (in *ElasticsearchNodeSpec) DeepCopyInto(out *ElasticsearchNodeSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	in.ProxyResources.DeepCopyInto(&out.ProxyResources)
 	return
 }
 
@@ -668,7 +670,7 @@ func (in *Kibana) DeepCopyObject() runtime.Object {
 func (in *KibanaList) DeepCopyInto(out *KibanaList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Kibana, len(*in))

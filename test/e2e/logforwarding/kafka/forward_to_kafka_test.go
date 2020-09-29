@@ -16,7 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("LogForwarding", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 	var (
@@ -29,7 +29,7 @@ var _ = Describe("LogForwarding", func() {
 			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
 		}
 	})
-	Describe("when ClusterLogging is configured with 'forwarding' to an administrator managed Kafka", func() {
+	Describe("when the output is a third-party managed kafka", func() {
 
 		Context("write app, audit and infra logs on a single topic", func() {
 			BeforeEach(func() {

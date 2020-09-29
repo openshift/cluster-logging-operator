@@ -12,77 +12,108 @@ Notes:
 - reflect.DeepEqual does not return expected results if the to-be-compared value is a pointer.
 - needs to adjust with k8s.io/api/core/v#/types.go when the types are updated.
 **/
-func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
-	var found bool
-	if len(env1) != len(env2) {
+func EnvValueEqual(lhs, rhs []v1.EnvVar) bool {
+
+	if len(lhs) != len(rhs) {
 		return false
 	}
-	for _, elem1 := range env1 {
-		found = false
-		for _, elem2 := range env2 {
-			if elem1.Name == elem2.Name {
-				if elem1.Value != elem2.Value {
-					return false
-				}
-				if (elem1.ValueFrom != nil && elem2.ValueFrom == nil) ||
-					(elem1.ValueFrom == nil && elem2.ValueFrom != nil) {
-					return false
-				}
-				if elem1.ValueFrom != nil {
-					found = EnvVarSourceEqual(*elem1.ValueFrom, *elem2.ValueFrom)
-				} else {
-					found = true
-				}
-				break
+
+	for _, l := range lhs {
+		found := false
+
+		for _, r := range rhs {
+
+			if l.Name != r.Name {
+				continue
+			}
+
+			found = true
+			if !EnvVarEqual(l, r) {
+				return false
 			}
 		}
+
 		if !found {
 			return false
 		}
 	}
+
 	return true
 }
 
-func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
-	if (esource1.FieldRef != nil && esource2.FieldRef == nil) ||
-		(esource1.FieldRef == nil && esource2.FieldRef != nil) ||
-		(esource1.ResourceFieldRef != nil && esource2.ResourceFieldRef == nil) ||
-		(esource1.ResourceFieldRef == nil && esource2.ResourceFieldRef != nil) ||
-		(esource1.ConfigMapKeyRef != nil && esource2.ConfigMapKeyRef == nil) ||
-		(esource1.ConfigMapKeyRef == nil && esource2.ConfigMapKeyRef != nil) ||
-		(esource1.SecretKeyRef != nil && esource2.SecretKeyRef == nil) ||
-		(esource1.SecretKeyRef == nil && esource2.SecretKeyRef != nil) {
+func EnvVarEqual(lhs, rhs v1.EnvVar) bool {
+
+	if lhs.ValueFrom != nil {
+		if rhs.ValueFrom == nil {
+			return false
+		}
+
+		// compare ValueFrom here
+		return EnvVarSourceEqual(*lhs.ValueFrom, *rhs.ValueFrom)
+
+	} else {
+		if rhs.ValueFrom != nil {
+			return false
+		}
+
+		// compare Value here
+		return lhs.Value == rhs.Value
+	}
+}
+
+func EnvVarSourceEqual(lhs, rhs v1.EnvVarSource) bool {
+
+	if lhs.FieldRef != nil && rhs.FieldRef != nil {
+		return EnvFieldRefEqual(*lhs.FieldRef, *rhs.FieldRef)
+	}
+
+	if lhs.ResourceFieldRef != nil && rhs.ResourceFieldRef != nil {
+		return EnvResourceFieldRefEqual(*lhs.ResourceFieldRef, *rhs.ResourceFieldRef)
+	}
+
+	if lhs.ConfigMapKeyRef != nil && rhs.ConfigMapKeyRef != nil {
+		return reflect.DeepEqual(*lhs.ConfigMapKeyRef, *rhs.ConfigMapKeyRef)
+	}
+
+	if lhs.SecretKeyRef != nil && rhs.SecretKeyRef != nil {
+		return reflect.DeepEqual(*lhs.SecretKeyRef, *rhs.SecretKeyRef)
+	}
+
+	return false
+}
+
+func EnvFieldRefEqual(lhs, rhs v1.ObjectFieldSelector) bool {
+
+	// taken from https://godoc.org/k8s.io/api/core/v1#ObjectFieldSelector
+	// this is the default value, so if omitted by us k8s will add this value in
+	defaultAPIVersion := "v1"
+
+	if lhs.APIVersion == "" {
+		lhs.APIVersion = defaultAPIVersion
+	}
+
+	if rhs.APIVersion == "" {
+		rhs.APIVersion = defaultAPIVersion
+	}
+
+	if lhs.APIVersion != rhs.APIVersion {
 		return false
 	}
-	var rval bool
-	if esource1.FieldRef != nil {
-		if rval = reflect.DeepEqual(*esource1.FieldRef, *esource2.FieldRef); !rval {
-			return rval
-		}
-	}
-	if esource1.ResourceFieldRef != nil {
-		if rval = EnvVarResourceFieldSelectorEqual(*esource1.ResourceFieldRef, *esource2.ResourceFieldRef); !rval {
-			return rval
-		}
-	}
-	if esource1.ConfigMapKeyRef != nil {
-		if rval = reflect.DeepEqual(*esource1.ConfigMapKeyRef, *esource2.ConfigMapKeyRef); !rval {
-			return rval
-		}
-	}
-	if esource1.SecretKeyRef != nil {
-		if rval = reflect.DeepEqual(*esource1.SecretKeyRef, *esource2.SecretKeyRef); !rval {
-			return rval
-		}
-	}
-	return true
+
+	return lhs.FieldPath == rhs.FieldPath
 }
 
-func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelector) bool {
-	if (resource1.ContainerName == resource2.ContainerName) &&
-		(resource1.Resource == resource2.Resource) &&
-		(resource1.Divisor.Cmp(resource2.Divisor) == 0) {
-		return true
+func EnvResourceFieldRefEqual(lhs, rhs v1.ResourceFieldSelector) bool {
+
+	// taken from https://godoc.org/k8s.io/api/core/v1#ResourceFieldSelector
+	// divisor's default value is "1"
+	if lhs.Divisor.Cmp(rhs.Divisor) != 0 {
+		return false
 	}
-	return false
+
+	if lhs.ContainerName != rhs.ContainerName {
+		return false
+	}
+
+	return lhs.Resource == rhs.Resource
 }

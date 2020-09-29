@@ -1,6 +1,7 @@
 package utils
 
 import (
+	// #nosec G501
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -22,16 +23,16 @@ import (
 
 const (
 	DefaultWorkingDir = "/tmp/ocp-clo"
+	DefaultScriptsDir = "./scripts"
 	OsNodeLabel       = "kubernetes.io/os"
 	LinuxValue        = "linux"
 )
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	"curator":  "CURATOR_IMAGE",
-	"fluentd":  "FLUENTD_IMAGE",
-	"promtail": "PROMTAIL_IMAGE",
-	"kibana":   "KIBANA_IMAGE",
+	"curator": "CURATOR_IMAGE",
+	"fluentd": "FLUENTD_IMAGE",
+	"kibana":  "KIBANA_IMAGE",
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found
@@ -56,6 +57,7 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 
 //CalculateMD5Hash returns a MD5 hash of the give text
 func CalculateMD5Hash(text string) (string, error) {
+	// #nosec G401
 	hasher := md5.New()
 	_, err := hasher.Write([]byte(text))
 	if err != nil {
@@ -187,6 +189,14 @@ func GetShareDir() string {
 	return shareDir
 }
 
+func GetScriptsDir() string {
+	scriptsDir := os.Getenv("SCRIPTS_DIR")
+	if scriptsDir == "" {
+		return DefaultScriptsDir
+	}
+	return scriptsDir
+}
+
 func GetWorkingDirFileContents(filePath string) []byte {
 	return GetFileContents(GetWorkingDirFilePath(filePath))
 }
@@ -201,7 +211,7 @@ func GetWorkingDirFilePath(toFile string) string {
 
 func WriteToWorkingDirFile(toFile string, value []byte) error {
 
-	if err := ioutil.WriteFile(GetWorkingDirFilePath(toFile), value, 0644); err != nil {
+	if err := ioutil.WriteFile(GetWorkingDirFilePath(toFile), value, 0600); err != nil {
 		return fmt.Errorf("Unable to write to working dir: %v", err)
 	}
 
@@ -390,12 +400,9 @@ func EnvVarSourceEqual(esource1, esource2 v1.EnvVarSource) bool {
 }
 
 func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelector) bool {
-	if (resource1.ContainerName == resource2.ContainerName) &&
-		(resource1.Resource == resource2.Resource) &&
-		(resource1.Divisor.Cmp(resource2.Divisor) == 0) {
-		return true
-	}
-	return false
+	return resource1.ContainerName == resource2.ContainerName &&
+		resource1.Resource == resource2.Resource &&
+		resource1.Divisor.Cmp(resource2.Divisor) == 0
 }
 
 func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {

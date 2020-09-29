@@ -13,6 +13,7 @@ var templateRegistry = []string{
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
 	outputLabelConfNoretryTemplate,
+	outputLabelConfJsonParseNoretryTemplate,
 	storeElasticsearchTemplate,
 	forwardTemplate,
 	storeSyslogTemplateOld,
@@ -26,7 +27,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 # which should normally be supplied in a configmap.
 
 <system>
-  @log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
+  log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
 </system>
 
 # In each section below, pre- and post- includes don't include anything initially;
@@ -36,7 +37,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 ## ordered so that syslog always runs last...
 <source>
   @type prometheus
-  bind ''
+  bind "#{ENV['POD_IP']}"
   <ssl>
     enable true
     certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
@@ -172,32 +173,32 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 
   <filter kubernetes.**>
     @type kubernetes_metadata
-    kubernetes_url "#{ENV['K8S_HOST_URL']}"
-    cache_size "#{ENV['K8S_METADATA_CACHE_SIZE'] || '1000'}"
-    watch "#{ENV['K8S_METADATA_WATCH'] || 'false'}"
-    use_journal "#{ENV['USE_JOURNAL'] || 'nil'}"
-    ssl_partial_chain "#{ENV['SSL_PARTIAL_CHAIN'] || 'true'}"
+    kubernetes_url 'https://kubernetes.default.svc'
+    cache_size '1000'
+    watch 'false'
+    use_journal 'nil'
+    ssl_partial_chain 'true'
   </filter>
 
   <filter kubernetes.journal.**>
     @type parse_json_field
-    merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
-    preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
-    json_fields "#{ENV['JSON_FIELDS'] || 'MESSAGE,log'}"
+    merge_json_log 'false'
+    preserve_json_log 'true'
+    json_fields 'log,MESSAGE'
   </filter>
 
   <filter kubernetes.var.log.containers.**>
     @type parse_json_field
-    merge_json_log "#{ENV['MERGE_JSON_LOG'] || 'false'}"
-    preserve_json_log "#{ENV['PRESERVE_JSON_LOG'] || 'true'}"
-    json_fields "#{ENV['JSON_FIELDS'] || 'log,MESSAGE'}"
+    merge_json_log 'false'
+    preserve_json_log 'true'
+    json_fields 'log,MESSAGE'
   </filter>
 
   <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
-    json_fields "#{ENV['JSON_FIELDS'] || 'log,MESSAGE'}"
+    json_fields 'log,MESSAGE'
   </filter>
 
   <filter **kibana**>
@@ -209,23 +210,32 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     remove_keys req,res,msg,name,level,v,pid,err
   </filter>
 
+  <filter k8s-audit.log**>
+    @type record_transformer
+    enable_ruby
+    <record>
+      k8s_audit_level ${record['level']}
+      level info
+    </record>
+  </filter>
+
   <filter **>
     @type viaq_data_model
     elasticsearch_index_prefix_field 'viaq_index_name'
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
-    extra_keep_fields "#{ENV['CDM_EXTRA_KEEP_FIELDS'] || ''}"
-    keep_empty_fields "#{ENV['CDM_KEEP_EMPTY_FIELDS'] || 'message'}"
-    use_undefined "#{ENV['CDM_USE_UNDEFINED'] || false}"
-    undefined_name "#{ENV['CDM_UNDEFINED_NAME'] || 'undefined'}"
-    rename_time "#{ENV['CDM_RENAME_TIME'] || true}"
-    rename_time_if_missing "#{ENV['CDM_RENAME_TIME_IF_MISSING'] || false}"
-    src_time_name "#{ENV['CDM_SRC_TIME_NAME'] || 'time'}"
-    dest_time_name "#{ENV['CDM_DEST_TIME_NAME'] || '@timestamp'}"
-    pipeline_type "#{ENV['PIPELINE_TYPE'] || 'collector'}"
-    undefined_to_string "#{ENV['CDM_UNDEFINED_TO_STRING'] || 'false'}"
-    undefined_dot_replace_char "#{ENV['CDM_UNDEFINED_DOT_REPLACE_CHAR'] || 'UNUSED'}"
-    undefined_max_num_fields "#{ENV['CDM_UNDEFINED_MAX_NUM_FIELDS'] || '-1'}"
-    process_kubernetes_events "#{ENV['TRANSFORM_EVENTS'] || 'false'}"
+    extra_keep_fields ''
+    keep_empty_fields 'message'
+    use_undefined false
+    undefined_name 'undefined'
+    rename_time true
+    rename_time_if_missing false
+    src_time_name 'time'
+    dest_time_name '@timestamp'
+    pipeline_type 'collector'
+    undefined_to_string 'false'
+    undefined_dot_replace_char 'UNUSED'
+    undefined_max_num_fields '-1'
+    process_kubernetes_events 'false'
     <formatter>
       tag "system.var.log**"
       type sys_var_log
@@ -239,13 +249,13 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     <formatter>
       tag "kubernetes.journal.container**"
       type k8s_journal
-      remove_keys "#{ENV['K8S_FILTER_REMOVE_KEYS'] || 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'}"
+      remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
       tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
-      process_kubernetes_events "#{ENV['TRANSFORM_EVENTS'] || 'true'}"
+      process_kubernetes_events 'true'
     </formatter>
     <formatter>
       tag "kubernetes.var.log.containers**"
@@ -253,19 +263,19 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
     <elasticsearch_index_name>
-      enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
+      enabled 'true'
       tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
     <elasticsearch_index_name>
-      enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
+      enabled 'true'
       tag "linux-audit.log** k8s-audit.log** openshift-audit.log**"
       name_type static
       static_index_name audit-write
     </elasticsearch_index_name>
     <elasticsearch_index_name>
-      enabled "#{ENV['ENABLE_ES_INDEX_NAME'] || 'true'}"
+      enabled 'true'
       tag "**"
       name_type static
       static_index_name app-write
@@ -276,7 +286,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @type elasticsearch_genid_ext
     hash_id_key viaq_msg_id
     alt_key kubernetes.event.metadata.uid
-    alt_tags "#{ENV['GENID_ALT_TAG'] || 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'}"
+    alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
 
   #flatten labels to prevent field explosion in ES
@@ -290,24 +300,45 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
   </filter>
 
   # Relabel specific source tags to specific intermediary labels for copy processing
-{{ if .CollectInfraLogs }}
+  # Earlier matchers remove logs so they don't fall through to later ones.
+  # A log source matcher may be null if no pipeline wants that type of log.
   <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+{{- if .CollectInfraLogs }}
     @type relabel
     @label @_INFRASTRUCTURE
-  </match>
+{{- else }}
+    @type null
 {{- end}}
-{{ if .CollectAppLogs}}
+  </match>
+{{- if .CollectAppLogs}}
+	{{- if .AppNamespaces}}
+  <match {{range $ns := .AppNamespaces}}kubernetes.**_{{$ns}}_** {{end}}>
+    @type relabel
+    @label @_APPLICATION
+  </match>
+  <match kubernetes.** >
+    @type null
+  </match>
+	{{- else}}
   <match kubernetes.**>
     @type relabel
     @label @_APPLICATION
   </match>
-{{- end}}
-{{ if .CollectAuditLogs}}
-  <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
-    @type relabel
-    @label @_AUDIT
+	{{- end}}
+{{- else}}
+  <match kubernetes.**>
+    @type null
   </match>
 {{- end}}
+  <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+{{- if .CollectAuditLogs }}
+    @type relabel
+    @label @_AUDIT
+{{- else }}
+    @type null
+{{- end}}
+  </match>
+
   <match **>
     @type stdout
   </match>
@@ -319,7 +350,9 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 {{ . }}
 {{- end}}
 
+{{ if .PipelinesToOutputLabels }}
 # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
+{{- end}}
 {{- range .PipelinesToOutputLabels }}
 {{ . }}
 {{- end}}
@@ -355,13 +388,13 @@ const inputSourceJournalTemplate = `{{- define "inputSourceJournalTemplate" -}}
   @type systemd
   @id systemd-input
   @label @INGRESS
-  path "#{if (val = ENV.fetch('JOURNAL_SOURCE','')) && (val.length > 0); val; else '/run/log/journal'; end}"
+  path '/var/log/journal'
   <storage>
     @type local
     persistent true
     # NOTE: if this does not end in .json, fluentd will think it
     # is the name of a directory - see fluentd storage_local.rb
-    path "#{ENV['JOURNAL_POS_FILE'] || '/var/log/journal_pos.json'}"
+    path '/var/log/journal_pos.json'
   </storage>
   matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
   tag journal
@@ -374,11 +407,7 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
 <source>
   @type tail
   @id container-input
-  {{- if .AppNsPaths}}
-  path {{.AppNsPaths}}
-  {{else}}
   path "/var/log/containers/*.log"
-  {{end -}}
   exclude_path ["/var/log/containers/{{.CollectorPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.LogStorePodNamePrefix}}-*_{{.LoggingNamespace}}_*.log", "/var/log/containers/{{.VisualizationPodNamePrefix}}-*_{{.LoggingNamespace}}_*.log"]
   pos_file "/var/log/es-containers.log.pos"
   refresh_interval 5
@@ -443,8 +472,8 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
   @type tail
   @id openshift-audit-input
   @label @INGRESS
-  path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
-  pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
+  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+  pos_file /var/log/oauth-apiserver.audit.log
   tag openshift-audit.log
   <parse>
     @type json
@@ -484,6 +513,14 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
 
 const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" -}}
 <label {{labelName .Name}}>
+  {{ if .PipelineLabels -}}
+  <filter **>
+    @type record_transformer
+    <record>
+      openshift { "labels": {{.PipelineLabels}} }
+    </record>
+  </filter>
+  {{ end -}}
   <match **>
     @type copy
 {{ range $index, $target := .Outputs }}
@@ -526,6 +563,21 @@ const outputLabelConfNoretryTemplate = `{{- define "outputLabelConfNoRetry" -}}
 </label>
 {{- end}}`
 
+const outputLabelConfJsonParseNoretryTemplate = `{{- define "outputLabelConfJsonParseNoRetry" -}}
+<label {{.LabelName}}>
+  <filter **>
+	@type parse_json_field
+	json_fields  message
+	merge_json_log false
+	replace_json_log true
+  </filter>
+  <match **>
+    @type copy
+{{include .StoreTemplate . "" | indent 4}}
+  </match>
+</label>
+{{- end}}`
+
 const forwardTemplate = `{{- define "forward" -}}
 # https://docs.fluentd.org/v1.0/articles/in_forward
 @type forward
@@ -547,17 +599,29 @@ tls_cert_path {{ .SecretPath "ca-bundle.crt"}}
 <buffer>
   @type file
   path '{{.BufferPath}}'
-  queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m' }"
-  flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
-  flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-  flush_thread_count "#{ENV['FLUSH_THREAD_COUNT'] || 2}"
-  retry_max_interval "#{ENV['FORWARD_RETRY_WAIT'] || '300'}"
+  queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
+{{- if .TotalLimitSize }}
+  total_limit_size {{.TotalLimitSize}}
+{{- else }}
+  total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+{{- end }}
+{{- if .ChunkLimitSize }}
+  chunk_limit_size {{.ChunkLimitSize}}
+{{- else }}
+  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
+{{- end }}
+  flush_mode {{.FlushMode}}
+  flush_interval {{.FlushInterval}}
+  flush_at_shutdown true
+  flush_thread_count {{.FlushThreadCount}}
+  retry_type {{.RetryType}}
+  retry_wait {{.RetryWait}}
+  retry_max_interval {{.RetryMaxInterval}}
   retry_forever true
   # the systemd journald 0.0.8 input plugin will just throw away records if the buffer
   # queue limit is hit - 'block' will halt further reads and keep retrying to flush the
-  # buffer to the remote - default is 'exception' because in_tail handles that case
-  overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'exception'}"
+  # buffer to the remote - default is 'block' because in_tail handles that case
+  overflow_action {{.OverflowAction}}
 </buffer>
 
 <server>
@@ -594,25 +658,37 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   retry_tag {{.RetryTag}}
 {{- end }}
   write_operation create
-  reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
+  reload_connections 'true'
   # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
-  reload_after "#{ENV['ES_RELOAD_AFTER'] || '200'}"
+  reload_after '200'
   # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-  sniffer_class_name "#{ENV['ES_SNIFFER_CLASS_NAME'] || 'Fluent::Plugin::ElasticsearchSimpleSniffer'}"
+  sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
   reload_on_failure false
   # 2 ^ 31
   request_timeout 2147483648
   <buffer>
     @type file
     path '{{.BufferPath}}'
-    flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+    flush_mode {{.FlushMode}}
+    flush_interval {{.FlushInterval}}
+    flush_thread_count {{.FlushThreadCount}}
+    flush_at_shutdown true
+    retry_type {{.RetryType}}
+    retry_wait {{.RetryWait}}
+    retry_max_interval {{.RetryMaxInterval}}
     retry_forever true
-    queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-    overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+    queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+{{- if .TotalLimitSize }}
+    total_limit_size {{.TotalLimitSize}}
+{{- else }}
+    total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+{{- end}}
+{{- if .ChunkLimitSize }}
+    chunk_limit_size {{.ChunkLimitSize}}
+{{- else }}
+    chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+{{- end }}
+    overflow_action {{.OverflowAction}}
   </buffer>
 </store>
 {{- end}}`
@@ -632,16 +708,27 @@ const storeSyslogTemplateOld = `{{- define "storeSyslogOld" -}}
 //      hostname ${hostname}
 const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 <store>
-  @type remote_syslog
-  @id {{.StoreID}}
-  host {{.Host}}
-  port {{.Port}}
-  rfc {{.Rfc}}
-  facility user
-  severity debug
-  program fluentd
-  protocol {{.Protocol}}
-  packet_size 4096
+	@type remote_syslog
+	@id {{.StoreID}}
+	host {{.Host}}
+	port {{.Port}}
+	rfc {{.Rfc}}
+	facility {{.Facility}}
+    severity {{.Severity}}
+	{{if .Target.Syslog.AppName -}}
+	appname {{.AppName}}
+	{{end -}}
+	{{if .Target.Syslog.MsgID -}}
+	msgid {{.MsgID}}
+	{{end -}}
+	{{if .Target.Syslog.ProcID -}}
+	procid {{.ProcID}}
+	{{end -}}
+	{{if .Target.Syslog.Tag -}}
+	program {{.Tag}}
+	{{end -}}
+	protocol {{.Protocol}}
+	packet_size 4096
 {{ if .Target.Secret -}}
   tls true
   ca_file '{{ .SecretPath "ca-bundle.crt"}}'
@@ -655,17 +742,36 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
   keep_alive_cnt 9
   keep_alive_intvl 7200
 {{ end -}}
-  <buffer>
+
+{{if .PayloadKey -}}
+	<format>
+	  @type single_value
+	  message_key {{.PayloadKey}}
+	</format>
+{{end -}}
+  <buffer {{.ChunkKeys}}>
     @type file
     path '{{.BufferPath}}'
-    flush_interval "#{ENV['ES_FLUSH_INTERVAL'] || '1s'}"
-    flush_thread_count "#{ENV['ES_FLUSH_THREAD_COUNT'] || 2}"
-    flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
-    retry_max_interval "#{ENV['ES_RETRY_WAIT'] || '300'}"
+    flush_mode {{.FlushMode}}
+    flush_interval {{.FlushInterval}}
+    flush_thread_count {{.FlushThreadCount}}
+    flush_at_shutdown true
+    retry_type {{.RetryType}}
+    retry_wait {{.RetryWait}}
+    retry_max_interval {{.RetryMaxInterval}}
     retry_forever true
-    queue_limit_length "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-    chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-    overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+    queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+{{- if .TotalLimitSize }}
+    total_limit_size {{.TotalLimitSize}}
+{{- else }}
+    total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+{{- end }}
+{{- if .ChunkLimitSize }}
+    chunk_limit_size {{.ChunkLimitSize}}
+{{- else }}
+    chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+{{- end }}
+    overflow_action {{.OverflowAction}}
   </buffer>
 </store>
 {{- end}}`
@@ -674,10 +780,13 @@ const storeKafkaTemplate = `{{- define "storeKafka" -}}
 @type kafka2
 brokers {{.Brokers}}
 default_topic {{.Topic}}
+use_event_time true
 {{ if .Target.Secret -}}
+{{ $tlsCert := .SecretPath "tls.crt" }}
+{{ $tlsKey := .SecretPath "tls.key" }}
 ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
-ssl_client_cert '{{ .SecretPath "tls.crt"}}'
-ssl_client_cert_key '{{ .SecretPath "tls.key"}}'
+ssl_client_cert "#{File.exist?('{{ $tlsCert }}') ? '{{ $tlsCert }}' : use_nil}"
+ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : use_nil}"
 {{ end -}}
 <format>
   @type json
@@ -685,14 +794,26 @@ ssl_client_cert_key '{{ .SecretPath "tls.key"}}'
 <buffer {{.Topic}}>
   @type file
   path '{{.BufferPath}}'
-  flush_interval 1s
-  flush_thread_count 2
-  flush_at_shutdown false
-  retry_max_interval 300
+  flush_mode {{.FlushMode}}
+  flush_interval {{.FlushInterval}}
+  flush_thread_count {{.FlushThreadCount}}
+  flush_at_shutdown true
+  retry_type {{.RetryType}}
+  retry_wait {{.RetryWait}}
+  retry_max_interval {{.RetryMaxInterval}}
   retry_forever true
   queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m' }"
-  overflow_action "#{ENV['BUFFER_QUEUE_FULL_ACTION'] || 'block'}"
+{{- if .TotalLimitSize }}
+  total_limit_size {{.TotalLimitSize}}
+{{- else }}
+  total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+{{- end }}
+{{- if .ChunkLimitSize }}
+  chunk_limit_size {{.ChunkLimitSize}}
+{{- else }}
+  chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+{{- end }}
+  overflow_action {{.OverflowAction}}
 </buffer>
 {{- end}}
 `

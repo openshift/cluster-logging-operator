@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -84,20 +85,21 @@ input(type="imudp" port="24224" ruleset="test")
 	ruleSetRfc5424 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc5424"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_DebugFormat")
+    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
 
 	ruleSetRfc3164 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc3164"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_DebugFormat")
+    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
+	// includes both rfc parsers
 	ruleSetRfc3164Rfc5424 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc3164","rsyslog.rfc5424"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_DebugFormat")
+    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
 )
@@ -106,22 +108,22 @@ ruleset(name="test" parser=["rsyslog.rfc3164","rsyslog.rfc5424"]){
 type SyslogRfc int
 
 const (
-	// Rfc3164 rfc3164
-	Rfc3164 SyslogRfc = iota
-	// Rfc5424 rfc5424
-	Rfc5424
-	// Rfc3164Rfc5424 either rfc3164 or rfc5424
-	Rfc3164Rfc5424
+	// RFC3164 rfc3164
+	RFC3164 SyslogRfc = iota
+	// RFC5424 rfc5424
+	RFC5424
+	// RFC3164RFC5424 either rfc3164 or rfc5424
+	RFC3164RFC5424
 )
 
 func (e SyslogRfc) String() string {
 	switch e {
-	case Rfc3164:
-		return "Rfc3164"
-	case Rfc5424:
-		return "Rfc5424"
-	case Rfc3164Rfc5424:
-		return "Rfc3164 or Rfc5424"
+	case RFC3164:
+		return "RFC3164"
+	case RFC5424:
+		return "RFC5424"
+	case RFC3164RFC5424:
+		return "RFC3164 or RFC5424"
 	default:
 		return "Unknown rfc"
 	}
@@ -129,11 +131,11 @@ func (e SyslogRfc) String() string {
 
 func generateRsyslogConf(conf string, rfc SyslogRfc) string {
 	switch rfc {
-	case Rfc5424:
+	case RFC5424:
 		return strings.Join([]string{conf, ruleSetRfc5424}, "\n")
-	case Rfc3164:
+	case RFC3164:
 		return strings.Join([]string{conf, ruleSetRfc3164}, "\n")
-	case Rfc3164Rfc5424:
+	case RFC3164RFC5424:
 		return strings.Join([]string{conf, ruleSetRfc3164Rfc5424}, "\n")
 	}
 	return "Invalid Conf"
@@ -143,20 +145,21 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	options := metav1.ListOptions{
 		LabelSelector: "component=syslog-receiver",
 	}
-	pods, err := syslog.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+	pods, err := syslog.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
 	if err != nil {
 		return false, err
 	}
 	if len(pods.Items) == 0 {
 		return false, errors.New("No pods found for syslog receiver")
 	}
-	logger.Debugf("Pod %s", pods.Items[0].Name)
+	podName := pods.Items[0].Name
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
+		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, podName, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			return false, err
+			logger.Errorf("failed to fetch logs from syslog-receiver %v", err)
+			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
 		if err != nil {
@@ -176,7 +179,7 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	options := metav1.ListOptions{
 		LabelSelector: "component=syslog-receiver",
 	}
-	pods, err := syslog.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(options)
+	pods, err := syslog.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
 	if err != nil {
 		return NotFound, err
 	}
@@ -188,10 +191,11 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	logger.Debugf("running expression %s", cmd)
 	var value string
 
-	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err = wait.Poll(defaultRetryInterval, timeToWait, func() (bool, error) {
 		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			return false, err
+			logger.Errorf("failed to fetch logs from syslog-receiver %v", err)
+			return false, nil
 		}
 		value = strings.TrimSpace(output)
 		return true, nil
@@ -222,22 +226,29 @@ func (syslog *syslogReceiverLogStore) GrepLogs(expr string, timeToWait time.Dura
 	return syslog.grepLogs(expr, "/var/log/infra.log", timeToWait)
 }
 
+func (syslog *syslogReceiverLogStore) RetrieveLogs() (map[string]string, error) {
+	return nil, fmt.Errorf("Not implemented")
+}
+
 func (syslog *syslogReceiverLogStore) ClusterLocalEndpoint() string {
 	panic("Not implemented")
 }
 
 func (tc *E2ETestFramework) createSyslogServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
+	opts := metav1.CreateOptions{}
 	serviceAccount = k8shandler.NewServiceAccount("syslog-receiver", OpenshiftLoggingNS)
-	if serviceAccount, err = tc.KubeClient.Core().ServiceAccounts(OpenshiftLoggingNS).Create(serviceAccount); err != nil {
+	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(OpenshiftLoggingNS).Create(context.TODO(), serviceAccount, opts); err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Core().ServiceAccounts(OpenshiftLoggingNS).Delete(serviceAccount.Name, nil)
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.CoreV1().ServiceAccounts(OpenshiftLoggingNS).Delete(context.TODO(), serviceAccount.Name, opts)
 	})
 	return serviceAccount, nil
 }
 
 func (tc *E2ETestFramework) CreateLegacySyslogConfigMap(namespace, conf string) (err error) {
+	opts := metav1.CreateOptions{}
 	fluentdConfigMap := k8shandler.NewConfigMap(
 		"syslog",
 		namespace,
@@ -246,16 +257,18 @@ func (tc *E2ETestFramework) CreateLegacySyslogConfigMap(namespace, conf string) 
 		},
 	)
 
-	if fluentdConfigMap, err = tc.KubeClient.Core().ConfigMaps(namespace).Create(fluentdConfigMap); err != nil {
+	if fluentdConfigMap, err = tc.KubeClient.CoreV1().ConfigMaps(namespace).Create(context.TODO(), fluentdConfigMap, opts); err != nil {
 		return err
 	}
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Core().ConfigMaps(namespace).Delete(fluentdConfigMap.Name, nil)
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.CoreV1().ConfigMaps(namespace).Delete(context.TODO(), fluentdConfigMap.Name, opts)
 	})
 	return nil
 }
 
 func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
+	opts := metav1.CreateOptions{}
 	saRole := k8shandler.NewRole(
 		name,
 		OpenshiftLoggingNS,
@@ -268,17 +281,24 @@ func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 			),
 		),
 	)
-	if _, err = tc.KubeClient.Rbac().Roles(OpenshiftLoggingNS).Create(saRole); err != nil {
+
+	if _, err = tc.KubeClient.RbacV1().Roles(OpenshiftLoggingNS).Create(context.TODO(), saRole, opts); err != nil {
 		return err
 	}
+
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Rbac().Roles(OpenshiftLoggingNS).Delete(name, nil)
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.RbacV1().Roles(OpenshiftLoggingNS).Delete(context.TODO(), name, opts)
 	})
+
+	rbOpts := metav1.CreateOptions{}
 	subject := k8shandler.NewSubject(
 		"ServiceAccount",
 		name,
 	)
+
 	subject.APIGroup = ""
+
 	roleBinding := k8shandler.NewRoleBinding(
 		name,
 		OpenshiftLoggingNS,
@@ -287,11 +307,13 @@ func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 			subject,
 		),
 	)
-	if _, err = tc.KubeClient.Rbac().RoleBindings(OpenshiftLoggingNS).Create(roleBinding); err != nil {
+
+	if _, err = tc.KubeClient.RbacV1().RoleBindings(OpenshiftLoggingNS).Create(context.TODO(), roleBinding, rbOpts); err != nil {
 		return err
 	}
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Rbac().RoleBindings(OpenshiftLoggingNS).Delete(name, nil)
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.RbacV1().RoleBindings(OpenshiftLoggingNS).Delete(context.TODO(), name, opts)
 	})
 	return nil
 }
@@ -361,7 +383,8 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 			return nil, err
 		}
 		tc.AddCleanup(func() error {
-			return tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Delete(SyslogReceiverName, nil)
+			opts := metav1.DeleteOptions{}
+			return tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Delete(context.TODO(), SyslogReceiverName, opts)
 		})
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 			Name:      "certs",
@@ -380,17 +403,20 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 
 	rsyslogConf = generateRsyslogConf(rsyslogConf, rfc)
 
+	cOpts := metav1.CreateOptions{}
 	config := k8shandler.NewConfigMap(container.Name, OpenshiftLoggingNS, map[string]string{
 		"rsyslog.conf": rsyslogConf,
 	})
-	config, err = tc.KubeClient.Core().ConfigMaps(OpenshiftLoggingNS).Create(config)
+	config, err = tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), config, cOpts)
 	if err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Core().ConfigMaps(OpenshiftLoggingNS).Delete(config.Name, nil)
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Delete(context.TODO(), config.Name, opts)
 	})
 
+	dOpts := metav1.CreateOptions{}
 	syslogDeployment := k8shandler.NewDeployment(
 		container.Name,
 		OpenshiftLoggingNS,
@@ -399,7 +425,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		podSpec,
 	)
 
-	syslogDeployment, err = tc.KubeClient.Apps().Deployments(OpenshiftLoggingNS).Create(syslogDeployment)
+	syslogDeployment, err = tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Create(context.TODO(), syslogDeployment, dOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -419,14 +445,17 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		deleteopts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(syslogDeployment.Name, &deleteopts)
+		return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(context.TODO(), syslogDeployment.Name, deleteopts)
 	})
-	service, err = tc.KubeClient.Core().Services(OpenshiftLoggingNS).Create(service)
+
+	sOpts := metav1.CreateOptions{}
+	service, err = tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(context.TODO(), service, sOpts)
 	if err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
-		return tc.KubeClient.Core().Services(OpenshiftLoggingNS).Delete(service.Name, nil)
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(context.TODO(), service.Name, opts)
 	})
 	logStore.deployment = syslogDeployment
 
@@ -460,13 +489,15 @@ func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, s
 		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca-syslog.crt"),
 		"ca.key":        utils.GetWorkingDirFileContents("ca-syslog.key"),
 	}
+
+	sOpts := metav1.CreateOptions{}
 	secret := k8shandler.NewSecret(
 		secretName,
 		OpenshiftLoggingNS,
 		data,
 	)
 	logger.Debugf("Creating secret %s for logStore %s", secret.Name, logStoreName)
-	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
+	if secret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts); err != nil {
 		return nil, err
 	}
 	return secret, nil

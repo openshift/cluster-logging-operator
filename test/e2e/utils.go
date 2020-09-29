@@ -1,9 +1,11 @@
 package e2e
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -12,13 +14,14 @@ import (
 
 func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, name string, retryInterval, timeout time.Duration) error {
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		_, err = kubeclient.AppsV1().DaemonSets(namespace).Get(name, metav1.GetOptions{IncludeUninitialized: true})
+		_, err = kubeclient.AppsV1().DaemonSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s daemonset\n", name)
 				return false, nil
 			}
-			return false, err
+			logger.Errorf("Error getting Daemonsets %v", err)
+			return false, nil
 		}
 		return true, nil
 	})

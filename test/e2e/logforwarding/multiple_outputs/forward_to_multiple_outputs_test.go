@@ -13,12 +13,13 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/helpers"
 	eologgingv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("LogForwarding", func() {
+var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	logger.Infof("Running %s", filename)
 
@@ -40,7 +41,7 @@ var _ = Describe("LogForwarding", func() {
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})
 
-	Describe("when ClusterLogging is configured with 'forwarding' to multiple outputs", func() {
+	Describe("when multiple outputs are configured", func() {
 
 		Describe("and both are accepting logs", func() {
 
@@ -129,7 +130,7 @@ var _ = Describe("LogForwarding", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(selectors)
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, selectors)
 		})
 	})
 })
@@ -138,20 +139,24 @@ func newClusterLogForwarder(fluentRcv *apps.Deployment, elasticsearch *eologging
 	fluentdOutput := loggingv1.OutputSpec{
 		Name: fluentRcv.GetName(),
 		Type: loggingv1.OutputTypeFluentdForward,
-		URL:  fmt.Sprintf("%s.%s.svc:24224", fluentRcv.GetName(), fluentRcv.GetNamespace()),
+		URL:  fmt.Sprintf("tcp://%s.%s.svc:24224", fluentRcv.GetName(), fluentRcv.GetNamespace()),
 	}
 
 	elasticOutput := loggingv1.OutputSpec{
 		Name: elasticsearch.GetName(),
 		Type: loggingv1.OutputTypeElasticsearch,
-		URL:  fmt.Sprintf("%s.%s.svc:9200", elasticsearch.GetName(), elasticsearch.GetNamespace()),
 	}
 
+	var schema string
 	if pipelineSecret != nil {
+		schema = "https"
 		elasticOutput.Secret = &loggingv1.OutputSecretSpec{
 			Name: pipelineSecret.GetName(),
 		}
+	} else {
+		schema = "http"
 	}
+	elasticOutput.URL = fmt.Sprintf("%s://%s.%s.svc:9200", schema, elasticsearch.GetName(), elasticsearch.GetNamespace())
 
 	return &loggingv1.ClusterLogForwarder{
 		TypeMeta: metav1.TypeMeta{

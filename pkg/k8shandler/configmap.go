@@ -43,7 +43,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateConfigMap(configMap *
 					// recreate it on the next time through if necessary
 					return nil
 				}
-				return fmt.Errorf("Failed to get %v configmap for %q: %v", configMap.Name, clusterRequest.cluster.Name, err)
+				return fmt.Errorf("Failed to get %v configmap for %q: %v", configMap.Name, clusterRequest.Cluster.Name, err)
 			}
 
 			if reflect.DeepEqual(configMap.Data, current.Data) {
@@ -85,7 +85,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveConfigMap(configmapName strin
 
 	configMap := NewConfigMap(
 		configmapName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string]string{},
 	)
 

@@ -296,8 +296,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 		),
 	)
 
-	utils.AddOwnerRefToObject(collectorReaderClusterRoleBinding, utils.AsOwner(cluster))
-
 	err = clusterRequest.Create(collectorReaderClusterRoleBinding)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return nil, fmt.Errorf("Failure creating Log collector %q cluster role binding: %v", collectorReaderClusterRoleBinding.Name, err)

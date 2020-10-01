@@ -1,29 +1,29 @@
 package fluentd
 
 import (
-  . "github.com/onsi/ginkgo"
-  . "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
-  loggingv1alpha1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-  test "github.com/openshift/cluster-logging-operator/test"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	test "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("Generating fluentd legacy output store config blocks", func() {
-  var (
-    err       error
-    lfSpec    *loggingv1alpha1.ForwardingSpec
-    generator *ConfigGenerator
-  )
+	var (
+		err       error
+		lfSpec    *loggingv1alpha1.ForwardingSpec
+		generator *ConfigGenerator
+	)
 
-  Context("based on legacy fluentd forward method", func() {
-    BeforeEach(func() {
-      lfSpec = &loggingv1alpha1.ForwardingSpec{}
-      generator, err = NewConfigGenerator(true, false, false)
-      Expect(err).To(BeNil())
-    })
+	Context("based on legacy fluentd forward method", func() {
+		BeforeEach(func() {
+			lfSpec = &loggingv1alpha1.ForwardingSpec{}
+			generator, err = NewConfigGenerator(true, false, false)
+			Expect(err).To(BeNil())
+		})
 
-    It("should produce well formed legacy output label config", func() {
-      legacyConf := `
+		It("should produce well formed legacy output label config", func() {
+			legacyConf := `
         ## CLO GENERATED CONFIGURATION ###
         # This file is a copy of the fluentd configuration entrypoint
         # which should normally be supplied in a configmap.
@@ -89,7 +89,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           path "/var/log/containers/*.log"
           exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
           pos_file "/var/log/es-containers.log.pos"
-          pos_file_compaction_interval 1800
           refresh_interval 5
           rotate_wait 5
           tag kubernetes.*
@@ -117,7 +116,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
           pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag linux-audit.log
           <parse>
             @type viaq_host_audit
@@ -130,7 +128,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
           pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag k8s-audit.log
           <parse>
             @type json
@@ -148,7 +145,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
           pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag openshift-audit.log
           <parse>
             @type json
@@ -453,21 +449,21 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-      results, err := generator.Generate(lfSpec)
-      Expect(err).Should(Succeed())
-      test.Expect(results).ToEqual(legacyConf)
-    })
-  })
+			results, err := generator.Generate(lfSpec)
+			Expect(err).Should(Succeed())
+			test.Expect(results).ToEqual(legacyConf)
+		})
+	})
 
-  Context("based on legacy syslog method", func() {
-    BeforeEach(func() {
-      lfSpec = &loggingv1alpha1.ForwardingSpec{}
-      generator, err = NewConfigGenerator(false, true, false)
-      Expect(err).To(BeNil())
-    })
+	Context("based on legacy syslog method", func() {
+		BeforeEach(func() {
+			lfSpec = &loggingv1alpha1.ForwardingSpec{}
+			generator, err = NewConfigGenerator(false, true, false)
+			Expect(err).To(BeNil())
+		})
 
-    It("should produce well formed legacy output label config", func() {
-      legacyConf := `
+		It("should produce well formed legacy output label config", func() {
+			legacyConf := `
         ## CLO GENERATED CONFIGURATION ###
         # This file is a copy of the fluentd configuration entrypoint
         # which should normally be supplied in a configmap.
@@ -533,7 +529,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           path "/var/log/containers/*.log"
           exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
           pos_file "/var/log/es-containers.log.pos"
-          pos_file_compaction_interval 1800
           refresh_interval 5
           rotate_wait 5
           tag kubernetes.*
@@ -561,7 +556,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
           pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag linux-audit.log
           <parse>
             @type viaq_host_audit
@@ -574,7 +568,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
           pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag k8s-audit.log
           <parse>
             @type json
@@ -592,7 +585,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
           pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag openshift-audit.log
           <parse>
             @type json
@@ -898,21 +890,21 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-      results, err := generator.Generate(lfSpec)
-      Expect(err).Should(Succeed())
-      test.Expect(results).ToEqual(legacyConf)
-    })
-  })
+			results, err := generator.Generate(lfSpec)
+			Expect(err).Should(Succeed())
+			test.Expect(results).ToEqual(legacyConf)
+		})
+	})
 
-  Context("based on legacy syslog and fluentd forward method", func() {
-    BeforeEach(func() {
-      lfSpec = &loggingv1alpha1.ForwardingSpec{}
-      generator, err = NewConfigGenerator(true, true, false)
-      Expect(err).To(BeNil())
-    })
+	Context("based on legacy syslog and fluentd forward method", func() {
+		BeforeEach(func() {
+			lfSpec = &loggingv1alpha1.ForwardingSpec{}
+			generator, err = NewConfigGenerator(true, true, false)
+			Expect(err).To(BeNil())
+		})
 
-    It("should produce well formed legacy output label config", func() {
-      legacyConf := `
+		It("should produce well formed legacy output label config", func() {
+			legacyConf := `
         ## CLO GENERATED CONFIGURATION ###
         # This file is a copy of the fluentd configuration entrypoint
         # which should normally be supplied in a configmap.
@@ -978,7 +970,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           path "/var/log/containers/*.log"
           exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
           pos_file "/var/log/es-containers.log.pos"
-          pos_file_compaction_interval 1800
           refresh_interval 5
           rotate_wait 5
           tag kubernetes.*
@@ -1006,7 +997,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
           pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag linux-audit.log
           <parse>
             @type viaq_host_audit
@@ -1019,7 +1009,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
           pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag k8s-audit.log
           <parse>
             @type json
@@ -1037,7 +1026,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           @label @INGRESS
           path "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log'}"
           pos_file "#{ENV['OPENSHIFT_AUDIT_FILE'] || '/var/log/openshift-apiserver/audit.log.pos'}"
-          pos_file_compaction_interval 1800
           tag openshift-audit.log
           <parse>
             @type json
@@ -1362,9 +1350,9 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-      results, err := generator.Generate(lfSpec)
-      Expect(err).Should(Succeed())
-      test.Expect(results).ToEqual(legacyConf)
-    })
-  })
+			results, err := generator.Generate(lfSpec)
+			Expect(err).Should(Succeed())
+			test.Expect(results).ToEqual(legacyConf)
+		})
+	})
 })

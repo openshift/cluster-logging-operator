@@ -9,7 +9,7 @@ const ClusterLogForwarderKind = "ClusterLogForwarder"
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:categories=logging,shortName=clf,scope=Cluster
+// +kubebuilder:resource:categories=logging,shortName=clf
 
 // ClusterLogForwarder is an API to configure forwarding logs.
 //

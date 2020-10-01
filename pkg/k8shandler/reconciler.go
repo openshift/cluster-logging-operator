@@ -185,12 +185,12 @@ func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
 }
 
 func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {
-	name := types.NamespacedName{Name: constants.SingletonName} // Cluster scope, no namespace
+	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	forwarder := &logging.ClusterLogForwarder{}
 	logger.Debug("clusterlogforwarder-controller fetching LF instance")
-	if err := clusterRequest.Client.Get(context.TODO(), name, forwarder); err != nil {
+	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
 		if !apierrors.IsNotFound(err) {
-			fmt.Printf("Encountered unexpected error getting %v", name)
+			fmt.Printf("Encountered unexpected error getting %v", nsname)
 		}
 	}
 

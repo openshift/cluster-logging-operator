@@ -39,8 +39,8 @@ To run CLO as a local process:
 * `make debug`: Run CLO in the `dlv` debugger.
 
 To run the e2e tests:
-* `make test-olm-e2e`: Run e2e tests using locally built images.
-* `make test-olm-e2e`: Run e2e tests using CI latest images.
+* `make test-e2e-local`: Run e2e tests using locally built images.
+* `make test-e2e-olm`: Run e2e tests using CI latest images.
 
 NOTE: e2e tests require a clean cluster starting point, `make undeploy-all` will provide it.
 

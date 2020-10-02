@@ -251,6 +251,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		if output.URL != "" { // Allow missing URL
 			_, urlErr = url.ParseAbsolute(output.URL)
 		}
+		log.V(3).Info("Verifying", "outputs", output)
 		switch {
 		case output.Name == "":
 			badName("output must have a name")

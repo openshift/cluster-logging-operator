@@ -25,6 +25,7 @@ import (
 	"github.com/onsi/ginkgo"
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
@@ -87,7 +88,7 @@ type E2ETestFramework struct {
 }
 
 func NewE2ETestFramework() *E2ETestFramework {
-	client, config := newKubeClient()
+	client, config := NewKubeClient()
 	framework := &E2ETestFramework{
 		RestConfig: config,
 		KubeClient: client,
@@ -518,8 +519,8 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	}
 }
 
-//newKubeClient returns a client using the KUBECONFIG env var or incluster settings
-func newKubeClient() (*kubernetes.Clientset, *rest.Config) {
+//NewKubeClient returns a client using the KUBECONFIG env var or incluster settings
+func NewKubeClient() (*kubernetes.Clientset, *rest.Config) {
 
 	var config *rest.Config
 	var err error
@@ -554,7 +555,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		return nil, err
 	}
 	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
-	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
+	if err = certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
 		return nil, err
 	}
 	data := map[string][]byte{

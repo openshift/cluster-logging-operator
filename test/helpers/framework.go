@@ -32,7 +32,7 @@ import (
 
 const (
 	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
-	clusterlogforwarderURI = "apis/logging.openshift.io/v1/clusterlogforwarders"
+	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterlogforwarders"
 	DefaultCleanUpTimeout  = 60.0 * 2
 )
 

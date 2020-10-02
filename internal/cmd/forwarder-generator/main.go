@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 
-	yaml "gopkg.in/yaml.v2"
+	"github.com/spf13/pflag"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -15,56 +17,50 @@ import (
 
 // HACK - This command is for development use only
 func main() {
+
+	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
+	includeDefaultLogStore := flag.Bool("include-default-store", true, "Include the default storage when generating the config")
+	help := flag.Bool("help", false, "This message")
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+
+	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
+		level, err := logrus.ParseLevel(logLevel)
+		if err != nil {
+			logrus.Errorf("Unable to evaluate the LOG_LEVEL: %s %v", logLevel, err)
+			os.Exit(1)
+		}
+		logrus.SetLevel(level)
+	}
+	logger.Debugf("Args: %v", os.Args)
+
+	if *help || len(os.Args) == 0 {
+		pflag.Usage()
+		os.Exit(1)
+	}
+
 	if len(os.Args) < 2 {
-		log.Info("Need to pass the logging forwarding yaml as an arg")
+		logrus.Error("Need to pass the logging forwarding yaml as an arg")
 		os.Exit(1)
 	}
 
-	logCollectorType := logging.LogCollectionTypeFluentd
-	includeLegacyForward := false
-	includeLegacySyslog := false
-	useOldRemoteSyslogPlugin := false
-	includeDefaultLogStore := true
-
-	generator, err := forwarding.NewConfigGenerator(
-		logCollectorType,
-		includeLegacyForward,
-		includeLegacySyslog,
-		useOldRemoteSyslogPlugin)
-	if err != nil {
-		log.Error(err, "Unable to create collector config generator")
-		os.Exit(1)
+	var reader func() ([]byte, error)
+	if *yamlFile != "-" {
+		reader = func() ([]byte, error) { return ioutil.ReadFile(*yamlFile) }
+	} else {
+		reader = func() ([]byte, error) {
+			stdin := bufio.NewReader(os.Stdin)
+			return ioutil.ReadAll(stdin)
+		}
 	}
 
-	file := os.Args[1]
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Error(err, "Error reading file", "file", file)
-		os.Exit(1)
-	}
-	forwarder := &logging.ClusterLogForwarder{}
-	err = yaml.Unmarshal(content, forwarder)
+	content, err := reader()
 	if err != nil {
 		log.Error(err, "Error Unmarshalling file ", "file", file)
 		os.Exit(1)
 	}
 
-	clRequest := &k8shandler.ClusterLoggingRequest{
-		ForwarderRequest: forwarder,
-	}
-	if includeDefaultLogStore {
-		clRequest.Cluster = &logging.ClusterLogging{
-			Spec: logging.ClusterLoggingSpec{
-				LogStore: &logging.LogStoreSpec{
-					Type: logging.LogStoreTypeElasticsearch,
-				},
-			},
-		}
-	}
-	spec, _ := clRequest.NormalizeForwarder()
-	tunings := &logging.ForwarderSpec{}
-
-	generatedConfig, err := generator.Generate(spec, tunings)
+	generatedConfig, err := forwarder.Generate(string(content), *includeDefaultLogStore)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		os.Exit(1)

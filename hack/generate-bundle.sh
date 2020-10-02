@@ -25,5 +25,7 @@ LABEL \\
 EOF
 
 find bundle/manifests/ -type f ! \( -name "cluster-logging*" -o -name "*crd.yaml" \) -delete
+rm bundle/manifests/logforwardings.crd.yaml
 
+echo "validating bundle..."
 $OPERATOR_SDK bundle validate --verbose bundle

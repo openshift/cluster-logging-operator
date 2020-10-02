@@ -785,8 +785,8 @@ use_event_time true
 {{ $tlsCert := .SecretPath "tls.crt" }}
 {{ $tlsKey := .SecretPath "tls.key" }}
 ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
-ssl_client_cert "#{File.exist?('{{ $tlsCert }}') ? '{{ $tlsCert }}' : use_nil}"
-ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : use_nil}"
+ssl_client_cert "#{File.exist?('{{ $tlsCert }}') ? '{{ $tlsCert }}' : nil}"
+ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : nil}"
 {{ end -}}
 <format>
   @type json

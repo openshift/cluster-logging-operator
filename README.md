@@ -24,7 +24,7 @@ The CLO *owns* the following APIs:
 * ClusterLogForwarder: Configure forwarding of logs to external sources
 * Collector: configure global collector resource use.
 
-To install a released version of cluster logging see the [Openshift Documentation](https://docs.openshift.com/)
+To install a released version of cluster logging see the [Openshift Documentation](https://docs.openshift.com/), (e.g., [OCP v4.5](https://docs.openshift.com/container-platform/4.5/logging/cluster-logging-deploying.html))
 
 To experiment or contribute to the development of cluster logging, see [HACKING.md](./docs/HACKING.md) and [REVIEW.md](./docs/REVIEW.md)
 

@@ -8,6 +8,10 @@ DOWNLOAD_URL=$(curl -s -L  https://openshift-release.svc.ci.openshift.org/api/v1
 
 NAME="openshift-client-linux-$VERSION.tar.gz"
 mkdir -p bin
+if [ -f "bin/$NAME" ]; then
+    echo "openshift client binary $FILE exists."
+    exit 0
+fi
 pushd bin/
 echo "Extracting openshift client binary...."
 curl -sSfL "$DOWNLOAD_URL/$NAME" -O > "$NAME"

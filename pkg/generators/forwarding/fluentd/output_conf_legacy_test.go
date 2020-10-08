@@ -291,8 +291,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           <filter **kibana**>
-            @type record_transformer
-            enable_ruby
+            @type record_modifier
+            char_encoding utf-8
             <record>
               log ${record['err'] || record['msg'] || record['MESSAGE'] || record['log']}
             </record>
@@ -300,8 +300,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           <filter k8s-audit.log**>
-            @type record_transformer
-            enable_ruby
+            @type record_modifier
+            char_encoding utf-8
             <record>
               k8s_audit_level ${record['level']}
               level info
@@ -380,8 +380,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
 
           #flatten labels to prevent field explosion in ES
           <filter ** >
-            @type record_transformer
-            enable_ruby true
+            @type record_modifier
+            char_encoding utf-8
             <record>
               kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
             </record>
@@ -741,8 +741,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           <filter **kibana**>
-            @type record_transformer
-            enable_ruby
+            @type record_modifier
+            char_encoding utf-8
             <record>
               log ${record['err'] || record['msg'] || record['MESSAGE'] || record['log']}
             </record>
@@ -750,8 +750,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           <filter k8s-audit.log**>
-            @type record_transformer
-            enable_ruby
+            @type record_modifier
+            char_encoding utf-8
             <record>
               k8s_audit_level ${record['level']}
               level info
@@ -830,8 +830,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
 
           #flatten labels to prevent field explosion in ES
           <filter ** >
-            @type record_transformer
-            enable_ruby true
+            @type record_modifier
+            char_encoding utf-8
             <record>
               kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
             </record>
@@ -1193,8 +1193,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           <filter **kibana**>
-            @type record_transformer
-            enable_ruby
+            @type record_modifier
+            char_encoding utf-8
             <record>
               log ${record['err'] || record['msg'] || record['MESSAGE'] || record['log']}
             </record>
@@ -1202,8 +1202,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </filter>
 
           <filter k8s-audit.log**>
-            @type record_transformer
-            enable_ruby
+            @type record_modifier
+            char_encoding utf-8
             <record>
               k8s_audit_level ${record['level']}
               level info
@@ -1282,8 +1282,8 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
 
           #flatten labels to prevent field explosion in ES
           <filter ** >
-            @type record_transformer
-            enable_ruby true
+            @type record_modifier
+            char_encoding utf-8
             <record>
               kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
             </record>

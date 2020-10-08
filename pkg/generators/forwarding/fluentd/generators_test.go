@@ -71,7 +71,8 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		Expect(err).To(BeNil())
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
   <filter **>
-    @type record_transformer
+    @type record_modifier
+    char_encoding utf-8
     <record>
       openshift { "labels": {"1":"2"} }
     </record>
@@ -100,7 +101,8 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		Expect(err).To(BeNil())
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
   <filter **>
-    @type record_transformer
+    @type record_modifier
+    char_encoding utf-8
     <record>
       openshift { "labels": {"1":"2","3":"4"} }
     </record>
@@ -135,7 +137,8 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		Expect(err).To(BeNil())
 		Expect(got).To(BeEquivalentTo([]string{`<label @PIPELINE_1>
   <filter **>
-    @type record_transformer
+    @type record_modifier
+	char_encoding utf-8
     <record>
       openshift { "labels": {"1":"2","3":"4"} }
     </record>
@@ -150,7 +153,8 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </match>
 </label>`, `<label @PIPELINE_2>
   <filter **>
-    @type record_transformer
+    @type record_modifier
+	char_encoding utf-8
     <record>
       openshift { "labels": {"5":"6","7":"8"} }
     </record>

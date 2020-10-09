@@ -208,6 +208,15 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     remove_keys req,res,msg,name,level,v,pid,err
   </filter>
 
+  <filter k8s-audit.log**>
+    @type record_transformer
+    enable_ruby
+    <record>
+      k8s_audit_level ${record['level']}
+      level info
+    </record>
+  </filter>
+
   <filter **>
     @type viaq_data_model
     elasticsearch_index_prefix_field 'viaq_index_name'

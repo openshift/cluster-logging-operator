@@ -1,29 +1,29 @@
 package fluentd
 
 import (
-  . "github.com/onsi/ginkgo"
-  . "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
-  loggingv1alpha1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-  test "github.com/openshift/cluster-logging-operator/test"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	test "github.com/openshift/cluster-logging-operator/test"
 )
 
 var _ = Describe("Generating fluentd legacy output store config blocks", func() {
-  var (
-    err       error
-    lfSpec    *loggingv1alpha1.ForwardingSpec
-    generator *ConfigGenerator
-  )
+	var (
+		err       error
+		lfSpec    *loggingv1alpha1.ForwardingSpec
+		generator *ConfigGenerator
+	)
 
-  Context("based on legacy fluentd forward method", func() {
-    BeforeEach(func() {
-      lfSpec = &loggingv1alpha1.ForwardingSpec{}
-      generator, err = NewConfigGenerator(true, false, false)
-      Expect(err).To(BeNil())
-    })
+	Context("based on legacy fluentd forward method", func() {
+		BeforeEach(func() {
+			lfSpec = &loggingv1alpha1.ForwardingSpec{}
+			generator, err = NewConfigGenerator(true, false, false)
+			Expect(err).To(BeNil())
+		})
 
-    It("should produce well formed legacy output label config", func() {
-      legacyConf := `
+		It("should produce well formed legacy output label config", func() {
+			legacyConf := `
         ## CLO GENERATED CONFIGURATION ###
         # This file is a copy of the fluentd configuration entrypoint
         # which should normally be supplied in a configmap.
@@ -300,7 +300,14 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             </record>
             remove_keys req,res,msg,name,level,v,pid,err
           </filter>
-
+          <filter k8s-audit.log**>
+            @type record_transformer
+            enable_ruby
+            <record>
+              k8s_audit_level ${record['level']}
+              level info
+            </record>
+          </filter>
           <filter **>
             @type viaq_data_model
             elasticsearch_index_prefix_field 'viaq_index_name'
@@ -453,21 +460,21 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-      results, err := generator.Generate(lfSpec)
-      Expect(err).Should(Succeed())
-      test.Expect(results).ToEqual(legacyConf)
-    })
-  })
+			results, err := generator.Generate(lfSpec)
+			Expect(err).Should(Succeed())
+			test.Expect(results).ToEqual(legacyConf)
+		})
+	})
 
-  Context("based on legacy syslog method", func() {
-    BeforeEach(func() {
-      lfSpec = &loggingv1alpha1.ForwardingSpec{}
-      generator, err = NewConfigGenerator(false, true, false)
-      Expect(err).To(BeNil())
-    })
+	Context("based on legacy syslog method", func() {
+		BeforeEach(func() {
+			lfSpec = &loggingv1alpha1.ForwardingSpec{}
+			generator, err = NewConfigGenerator(false, true, false)
+			Expect(err).To(BeNil())
+		})
 
-    It("should produce well formed legacy output label config", func() {
-      legacyConf := `
+		It("should produce well formed legacy output label config", func() {
+			legacyConf := `
         ## CLO GENERATED CONFIGURATION ###
         # This file is a copy of the fluentd configuration entrypoint
         # which should normally be supplied in a configmap.
@@ -744,7 +751,14 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             </record>
             remove_keys req,res,msg,name,level,v,pid,err
           </filter>
-
+          <filter k8s-audit.log**>
+            @type record_transformer
+            enable_ruby
+            <record>
+              k8s_audit_level ${record['level']}
+              level info
+            </record>
+          </filter>
           <filter **>
             @type viaq_data_model
             elasticsearch_index_prefix_field 'viaq_index_name'
@@ -898,21 +912,21 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-      results, err := generator.Generate(lfSpec)
-      Expect(err).Should(Succeed())
-      test.Expect(results).ToEqual(legacyConf)
-    })
-  })
+			results, err := generator.Generate(lfSpec)
+			Expect(err).Should(Succeed())
+			test.Expect(results).ToEqual(legacyConf)
+		})
+	})
 
-  Context("based on legacy syslog and fluentd forward method", func() {
-    BeforeEach(func() {
-      lfSpec = &loggingv1alpha1.ForwardingSpec{}
-      generator, err = NewConfigGenerator(true, true, false)
-      Expect(err).To(BeNil())
-    })
+	Context("based on legacy syslog and fluentd forward method", func() {
+		BeforeEach(func() {
+			lfSpec = &loggingv1alpha1.ForwardingSpec{}
+			generator, err = NewConfigGenerator(true, true, false)
+			Expect(err).To(BeNil())
+		})
 
-    It("should produce well formed legacy output label config", func() {
-      legacyConf := `
+		It("should produce well formed legacy output label config", func() {
+			legacyConf := `
         ## CLO GENERATED CONFIGURATION ###
         # This file is a copy of the fluentd configuration entrypoint
         # which should normally be supplied in a configmap.
@@ -1189,7 +1203,14 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             </record>
             remove_keys req,res,msg,name,level,v,pid,err
           </filter>
-
+          <filter k8s-audit.log**>
+            @type record_transformer
+            enable_ruby
+            <record>
+              k8s_audit_level ${record['level']}
+              level info
+            </record>
+          </filter>
           <filter **>
             @type viaq_data_model
             elasticsearch_index_prefix_field 'viaq_index_name'
@@ -1362,9 +1383,9 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-      results, err := generator.Generate(lfSpec)
-      Expect(err).Should(Succeed())
-      test.Expect(results).ToEqual(legacyConf)
-    })
-  })
+			results, err := generator.Generate(lfSpec)
+			Expect(err).Should(Succeed())
+			test.Expect(results).ToEqual(legacyConf)
+		})
+	})
 })

@@ -13,7 +13,7 @@ spec:
     shortNames:
     - clf
     singular: clusterlogforwarder
-  scope: Cluster
+  scope: Namespaced
   versions:
   - name: v1
     schema:

@@ -151,7 +151,7 @@ test-unit:
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-MANIFEST_VERSION?="4.6"
+MANIFEST_VERSION?="4.7"
 generate-bundle: regenerate $(OPM)
 	MANIFEST_VERSION=${MANIFEST_VERSION} hack/generate-bundle.sh
 	

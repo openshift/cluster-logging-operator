@@ -4,7 +4,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   # The version value is substituted by the ART pipeline
-  name: clusterlogging.v4.6.0
+  name: clusterlogging.v4.7.0
   namespace: placeholder
   labels:
     "operatorframework.io/arch.amd64": supported
@@ -22,7 +22,7 @@ metadata:
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
     # The version value is substituted by the ART pipeline
-    olm.skipRange: ">=4.4.0-0 <4.6.0"
+    olm.skipRange: ">=4.4.0-0 <4.7.0"
     alm-examples: |-
         [
           {
@@ -105,7 +105,7 @@ metadata:
         ]
 spec:
   # The version value is substituted by the ART pipeline
-  version: 4.6.0
+  version: 4.7.0
   displayName: Cluster Logging
   minKubeVersion: 1.18.3
   description: |
@@ -122,7 +122,7 @@ spec:
     must be explicitly created by a cluster administrator (e.g. `oc create ns openshift-logging`). To enable metrics
     service discovery add namespace label `openshift.io/cluster-monitoring: "true"`.
 
-    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/4.6/logging/cluster-logging-deploying.html)
+    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/4.7/logging/cluster-logging-deploying.html)
     in the OpenShift product documentation.
 
     ### Elasticsearch Operator
@@ -159,9 +159,9 @@ spec:
   - type: SingleNamespace
     supported: true
   - type: MultiNamespace
-    supported: true
+    supported: false
   - type: AllNamespaces
-    supported: true
+    supported: false
   install:
     strategy: deployment
     spec:
@@ -244,16 +244,6 @@ spec:
       clusterPermissions:
       - serviceAccountName: cluster-logging-operator
         rules:
-        - apiGroups:
-          - "logging.openshift.io"
-          resources:
-          - clusterlogforwarders
-          - clusterlogforwarders/status
-          verbs:
-          - get
-          - list
-          - watch
-          - update
         - apiGroups:
           - console.openshift.io
           resources:

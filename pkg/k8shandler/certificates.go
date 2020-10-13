@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
@@ -33,7 +33,7 @@ func (clusterRequest *ClusterLoggingRequest) extractMasterCerts() (extracted boo
 
 	for name, value := range secret.Data {
 		if err = utils.WriteToWorkingDirFile(name, value); err != nil {
-			logger.Errorf("Error extracting cert from master-cert secret %q: %v", name, err)
+			log.Error(err, "Error extracting cert from master-cert secret", "name", name)
 			return false, err
 		}
 	}

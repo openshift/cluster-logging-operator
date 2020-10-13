@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 )
 
 // Runner is for executing the command. It provides implementation for
@@ -60,14 +60,14 @@ func (r *runner) runCmd() (string, error) {
 		r.Cmd.Stderr = &errbuf
 	}
 	r.Cmd.Env = []string{fmt.Sprintf("%s=%s", "KUBECONFIG", os.Getenv("KUBECONFIG"))}
-	logger.Infof("running: %s %s", r, strings.Join(r.args, " "))
+	log.Info("running: ", "command", r, "arguments", strings.Join(r.args, " "))
 	err := r.Cmd.Run()
 	if err != nil {
 		if r.tostdout {
 			return "", err
 		}
 		errout := strings.TrimSpace(errbuf.String())
-		logger.Infof("output: %s, error: %v", errout, err)
+		log.Info("output", errout, "error", err)
 		return errout, err
 	}
 	if r.tostdout {
@@ -75,9 +75,9 @@ func (r *runner) runCmd() (string, error) {
 	}
 	out := strings.TrimSpace(outbuf.String())
 	if len(out) > 500 {
-		logger.Infof("output(truncated 500/%d): %s", len(out), truncateString(out, 500))
+		log.Info("output(truncated 500/length)", "length", len(out), "result", truncateString(out, 500))
 	} else {
-		logger.Infof("output: %s", out)
+		log.Info("output", out)
 	}
 	return out, nil
 }

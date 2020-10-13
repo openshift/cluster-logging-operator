@@ -10,13 +10,13 @@ import (
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger.Infof("Running %s", filename)
+	log.Info("Running ", "filename", filename)
 	var (
 		err              error
 		syslogDeployment *apps.Deployment
@@ -25,7 +25,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	)
 	BeforeEach(func() {
 		if err := e2e.DeployLogGenerator(); err != nil {
-			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
+			log.Error(err, "unable to deploy log generator")
 		}
 		testDir = filepath.Dir(filename)
 	})

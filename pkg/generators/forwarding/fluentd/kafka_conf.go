@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/ViaQ/logerr/log"
 )
 
 const defaultKafkaTopic = "topic"
@@ -20,7 +20,7 @@ func (conf *outputLabelConf) Brokers() string {
 	parseBroker := func(b string) string {
 		url, err := url.Parse(b)
 		if err != nil {
-			log.Errorf("Failed to parse Kafka broker from output spec %q: %s", b, err)
+			log.Error(err, "Failed to parse Kafka broker from output spec", "spec", b)
 			return ""
 		}
 		return url.Host
@@ -61,7 +61,7 @@ func (conf *outputLabelConf) Topic() string {
 
 	url, err := url.Parse(conf.Target.URL)
 	if err != nil {
-		log.Errorf("Failed to extract Kafka topic from output spec url %q: %s", conf.Target.URL, err)
+		log.Error(err, "Failed to extract Kafka topic from output spec url", "url", conf.Target.URL)
 	}
 
 	topic := strings.TrimLeft(url.Path, "/")

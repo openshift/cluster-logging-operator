@@ -2,10 +2,10 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/ViaQ/logerr/log"
 	"reflect"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
@@ -79,7 +79,7 @@ func (clusterRequest *ClusterLoggingRequest) GetRouteURL(routeName string) (stri
 
 	if err := clusterRequest.Get(routeName, foundRoute); err != nil {
 		if !errors.IsNotFound(err) {
-			logrus.Errorf("Failed to check for ClusterLogging object: %v", err)
+			log.Error(err, "Failed to check for ClusterLogging object")
 		}
 		return "", err
 	}

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -63,7 +63,6 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 }
 
 func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client) (err error) {
-	logger.DebugObject("Reconciling ClusterLogForwarder instance: %v", forwarder)
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client: requestClient,
 	}
@@ -74,13 +73,11 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
 	if clusterLogging == nil {
-		logger.Debug("No clusterlogging object, cannot reconcile")
 		return nil
 	}
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
-		logger.Debugf("Unmanaged state, nothing to reconcile")
 		return nil
 	}
 
@@ -89,10 +86,9 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	// Reconcile Collection
 	err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig)
 	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
-	logger.DebugObject("ClusterLogForwarder status after updating collection: %#v", forwarder.Status)
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-		logger.Errorf(msg)
+		log.Error(err, msg)
 		return errors.New(msg)
 	}
 	return nil
@@ -187,7 +183,6 @@ func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
 func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {
 	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	forwarder := &logging.ClusterLogForwarder{}
-	logger.Debug("clusterlogforwarder-controller fetching LF instance")
 	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
 		if !apierrors.IsNotFound(err) {
 			fmt.Printf("Encountered unexpected error getting %v", nsname)

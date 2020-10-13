@@ -6,13 +6,12 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/ViaQ/logerr/log"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/daemonsets"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -167,14 +166,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		err = clusterRequest.Client.Get(ctx, types.NamespacedName{Name: rule.Name, Namespace: rule.Namespace}, current)
 		if err != nil {
-			logrus.Debugf("could not get prometheus rule %q: %v", rule.Name, err)
+			log.V(2).Info("could not get prometheus rule", rule.Name, err)
 			return err
 		}
 		current.Spec = rule.Spec
 		if err = clusterRequest.Client.Update(ctx, current); err != nil {
 			return err
 		}
-		logrus.Debug("updated prometheus rules")
+		log.V(3).Info("updated prometheus rules")
 		return nil
 	})
 }
@@ -189,7 +188,7 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
 		if errors.IsNotFound(err) {
 			return false
 		}
-		logger.Warnf("There was a non-critical error trying to fetch the secure-forward configmap: %v", err)
+		log.Info("There was a non-critical error trying to fetch the secure-forward configmap", "error", err.Error())
 	}
 	_, found := config.Data["secure-forward.conf"]
 	return found
@@ -205,7 +204,7 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
 		if errors.IsNotFound(err) {
 			return false
 		}
-		logger.Warnf("There was a non-critical error trying to fetch the configmap: %v", err)
+		log.Info("There was a non-critical error trying to fetch the configmap", "error", err.Error())
 	}
 	_, found := config.Data["syslog.conf"]
 	return found
@@ -221,7 +220,6 @@ func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(fluentConf string) error {
-	logrus.Debug("createOrUpdateFluentdConfigMap...")
 	fluentdConfigMap := NewConfigMap(
 		fluentdName,
 		clusterRequest.Cluster.Namespace,
@@ -241,7 +239,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 		current := &v1.ConfigMap{}
 		if err = clusterRequest.Get(fluentdConfigMap.Name, current); err != nil {
 			if errors.IsNotFound(err) {
-				logrus.Debugf("Returning nil. The configmap %q was not found even though create previously failed.  Was it culled?", fluentdConfigMap.Name)
+				log.V(2).Info("Returning nil. The configmap was not found even though create previously failed.  Was it culled?", "configmap name", fluentdConfigMap.Name)
 				return nil
 			}
 			return fmt.Errorf("Failed to get %v configmap for %q: %v", fluentdConfigMap.Name, clusterRequest.Cluster.Name, err)
@@ -541,7 +539,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 }
 
 func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(desired *apps.DaemonSet) (err error) {
-	logger.DebugObject("checking collector update: %s", desired)
 	current := &apps.DaemonSet{}
 
 	if err = clusterRequest.Get(desired.Name, current); err != nil {
@@ -559,11 +556,11 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 	}
 	trustedCABundleHashAreSame := current.Spec.Template.Annotations[constants.TrustedCABundleHashName] == desired.Spec.Template.Annotations[constants.TrustedCABundleHashName]
 	if !daemonsets.AreSame(current, desired) || !trustedCABundleHashAreSame {
-		logger.Debugf("Current and desired collectors are different, updating DaemonSet %q", current.Name)
+		log.V(3).Info("Current and desired collectors are different, updating DaemonSet", "DaemonSet", current.Name)
 		if flushBuffer {
-			logger.Infof("Updating and restarting collector pods to flush its buffers...")
+			log.Info("Updating and restarting collector pods to flush its buffers...")
 			if err = clusterRequest.Update(current); err != nil {
-				logrus.Debugf("Failed to prepare Fluentd daemonset to flush its buffers: %v", err)
+				log.V(2).Error(err, "Failed to prepare Fluentd daemonset to flush its buffers")
 				return err
 			}
 
@@ -573,7 +570,6 @@ func (clusterRequest *ClusterLoggingRequest) updateFluentdDaemonsetIfRequired(de
 			}
 		}
 		current.Spec = desired.Spec
-		logger.DebugObject("updating fluentd to: %v", desired)
 		if err = clusterRequest.Update(desired); err != nil {
 			return err
 		}
@@ -615,10 +611,10 @@ func (clusterRequest *ClusterLoggingRequest) RestartFluentd(proxyConfig *configv
 		return err
 	}
 
-	logger.Debugf("Generated collector config: %s", collectorConfig)
+	log.V(3).Info("Generated collector config", "config", collectorConfig)
 	collectorConfHash, err := utils.CalculateMD5Hash(collectorConfig)
 	if err != nil {
-		logger.Errorf("unable to calculate MD5 hash. E: %s", err.Error())
+		log.Error(err, "unable to calculate MD5 hash.")
 		return
 	}
 

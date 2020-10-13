@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/onsi/gomega/format"
-	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 )
 
@@ -18,7 +17,6 @@ func init() {
 
 //Debug is a convenient log mechnism to spit content to STDOUT
 func Debug(value string, object interface{}) {
-	logrus.Debugf("%s\n%v\n", value, object)
 	if os.Getenv("TEST_DEBUG") != "" {
 		fmt.Printf("%s\n%v\n", value, object)
 	}

@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	apps "k8s.io/api/apps/v1"
@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("[Collection] Namespace filtering", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger.Infof("Running %s", filename)
+	log.Info("Running ", "filename", filename)
 	var (
 		err              error
 		fluentDeployment *apps.Deployment

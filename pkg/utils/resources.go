@@ -1,9 +1,9 @@
 package utils
 
 import (
+	"errors"
+	"github.com/ViaQ/logerr/log"
 	"reflect"
-
-	"github.com/sirupsen/logrus"
 
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
@@ -43,7 +43,8 @@ func AreResourcesDifferent(current, desired interface{}) bool {
 	desiredType := reflect.TypeOf(desired)
 
 	if currentType != desiredType {
-		logrus.Warnf("Attempting to compare resources for different types [%v] and [%v]", currentType, desiredType)
+		log.Error(errors.New("Attempting to compare resources for different types"), "",
+			"current", currentType, "desired", desiredType)
 		return false
 	}
 
@@ -61,7 +62,7 @@ func AreResourcesDifferent(current, desired interface{}) bool {
 		desiredContainers = desired.(*batch.CronJob).Spec.JobTemplate.Spec.Template.Spec.Containers
 
 	default:
-		logrus.Warnf("Attempting to check resources for unmatched type [%v]", currentType)
+		log.Info("Attempting to check resources for unmatched type", "current", currentType)
 		return false
 	}
 

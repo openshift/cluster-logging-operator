@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
@@ -22,7 +22,7 @@ import (
 // This test verifies we still support latency secure-forward with no ClusterLogForwarder.
 var _ = Describe("[ClusterLogging] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger.Infof("Running %s", filename)
+	log.Info("Running ", "filename", filename)
 	var (
 		err              error
 		fluentDeployment *apps.Deployment
@@ -31,7 +31,7 @@ var _ = Describe("[ClusterLogging] Forwards logs", func() {
 	)
 	BeforeEach(func() {
 		if err := e2e.DeployLogGenerator(); err != nil {
-			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
+			log.Error(err, "unable to deploy log generator.")
 		}
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})

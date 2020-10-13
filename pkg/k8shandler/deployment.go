@@ -83,11 +83,6 @@ func (clusterRequest *ClusterLoggingRequest) RemoveDeployment(deploymentName str
 		core.PodSpec{},
 	)
 
-	//TODO: Remove this in the next release after removing old kibana code completely
-	if !HasCLORef(deployment, clusterRequest) {
-		return nil
-	}
-
 	err := clusterRequest.Delete(deployment)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v deployment %v", deploymentName, err)

@@ -30,11 +30,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyCo
 		return nil
 	}
 
-	//TODO: Remove this in the next release after removing old kibana code completely
-	if err = clusterRequest.removeOldKibana(); err != nil {
-		return
-	}
-
 	if err = clusterRequest.createOrUpdateKibanaCR(); err != nil {
 		return
 	}
@@ -135,54 +130,6 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 		}
 
 		if err = clusterRequest.RemoveSecret(proxyName); err != nil {
-			return
-		}
-
-	}
-
-	return nil
-}
-
-//TODO: Remove this in the next release after removing old kibana code completely
-// since kibana is now handled by the Elasticsearch Operator
-func (clusterRequest *ClusterLoggingRequest) removeOldKibana() (err error) {
-	if clusterRequest.isManaged() {
-		name := "kibana"
-		proxyName := "kibana-proxy"
-
-		if err = clusterRequest.RemoveDeployment(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveOAuthClient(proxyName); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveRoute(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap("sharing-config"); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap(constants.KibanaTrustedCAName); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveService(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveServiceAccount(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConsoleExternalLogLink(name); err != nil {
 			return
 		}
 
@@ -403,23 +350,4 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
 	}
 
 	return nil
-}
-
-func HasCLORef(object metav1.Object, request *ClusterLoggingRequest) bool {
-	refs := object.GetOwnerReferences()
-	for _, r := range refs {
-		r := r
-		bref := utils.AsOwner(request.Cluster)
-		if AreRefsEqual(&r, &bref) {
-			return true
-		}
-	}
-	return false
-}
-
-func AreRefsEqual(l *metav1.OwnerReference, r *metav1.OwnerReference) bool {
-	return l.Name == r.Name &&
-		l.APIVersion == r.APIVersion &&
-		l.Kind == r.Kind &&
-		*l.Controller == *r.Controller
 }

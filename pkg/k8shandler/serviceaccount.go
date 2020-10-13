@@ -90,11 +90,6 @@ func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccount
 		serviceAccount.ObjectMeta.Finalizers = utils.RemoveString(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 	}
 
-	//TODO: Remove this in the next release after removing old kibana code completely
-	if !HasCLORef(serviceAccount, clusterRequest) {
-		return nil
-	}
-
 	err := clusterRequest.Delete(serviceAccount)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v service account: %v", serviceAccountName, err)

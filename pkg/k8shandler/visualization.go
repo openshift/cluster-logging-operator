@@ -57,13 +57,8 @@ func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 		return
 	}
 
-	printUpdateMessage := true
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		if !compareKibanaStatus(kibanaStatus, clusterRequest.Cluster.Status.Visualization.KibanaStatus) {
-			if printUpdateMessage {
-				logrus.Info("Updating status of Kibana")
-				printUpdateMessage = false
-			}
 			clusterRequest.Cluster.Status.Visualization.KibanaStatus = kibanaStatus
 			return clusterRequest.UpdateStatus(clusterRequest.Cluster)
 		}

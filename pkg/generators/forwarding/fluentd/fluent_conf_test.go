@@ -154,7 +154,7 @@ var _ = Describe("Generating fluentd config", func() {
     rotate_wait 5
     tag kubernetes.*
     read_from_head "true"
-    @label @CONCAT
+    @label @MEASURE
     <parse>
       @type multi_format
       <pattern>
@@ -170,7 +170,56 @@ var _ = Describe("Generating fluentd config", func() {
       </pattern>
     </parse>
   </source>
-  
+  <label @MEASURE>
+	<filter **>
+		@type record_transformer
+		enable_ruby
+		<record>
+		msg_size ${record.to_s.length}
+		</record>
+	</filter>
+	<filter **>
+		@type prometheus
+		<metric>
+		name cluster_logging_collector_input_record_total
+		type counter
+		desc The total number of incoming records
+		<labels>
+			tag ${tag}
+			hostname ${hostname}
+		</labels>
+		</metric>
+	</filter>
+	<filter **>
+		@type prometheus
+		<metric>
+		name cluster_logging_collector_input_record_bytes
+		type counter
+		desc The total bytes of incoming records
+		key msg_size
+		<labels>
+			tag ${tag}
+			hostname ${hostname}
+		</labels>
+		</metric>
+	</filter>
+	<filter **>
+		@type record_transformer
+		remove_keys msg_size
+	</filter>
+	<match journal>
+		@type relabel
+		@label @INGRESS
+	</match>
+	<match *audit.log>
+		@type relabel
+		@label @INGRESS
+	</match>
+	<match kubernetes.**>
+		@type relabel
+		@label @CONCAT
+	</match>
+	</label>  
   <label @CONCAT>
     <filter kubernetes.**>
       @type concat
@@ -636,7 +685,7 @@ var _ = Describe("Generating fluentd config", func() {
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				@label @CONCAT
+				@label @MEASURE
 				<parse>
 				@type multi_format
 				<pattern>
@@ -652,7 +701,56 @@ var _ = Describe("Generating fluentd config", func() {
 				</pattern>
 				</parse>
 			</source>
-
+			<label @MEASURE>
+				<filter **>
+				@type record_transformer
+				enable_ruby
+				<record>
+					msg_size ${record.to_s.length}
+				</record>
+				</filter>
+				<filter **>
+				@type prometheus
+				<metric>
+					name cluster_logging_collector_input_record_total
+					type counter
+					desc The total number of incoming records
+					<labels>
+					tag ${tag}
+					hostname ${hostname}
+					</labels>
+				</metric>
+				</filter>
+				<filter **>
+				@type prometheus
+				<metric>
+					name cluster_logging_collector_input_record_bytes
+					type counter
+					desc The total bytes of incoming records
+					key msg_size
+					<labels>
+					tag ${tag}
+					hostname ${hostname}
+					</labels>
+				</metric>
+				</filter>
+				<filter **>
+				@type record_transformer
+				remove_keys msg_size
+				</filter>
+				<match journal>
+				@type relabel
+				@label @INGRESS
+				</match>
+				<match *audit.log>
+				@type relabel
+				@label @INGRESS
+				</match>
+				<match kubernetes.**>
+				@type relabel
+				@label @CONCAT
+				</match>
+			</label>
 			<label @CONCAT>
 				<filter kubernetes.**>
 				@type concat
@@ -998,7 +1096,7 @@ var _ = Describe("Generating fluentd config", func() {
 			<source>
 				@type systemd
 				@id systemd-input
-				@label @INGRESS
+				@label @MEASURE
 				path '/var/log/journal'
 				<storage>
 					@type local
@@ -1023,7 +1121,7 @@ var _ = Describe("Generating fluentd config", func() {
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				@label @CONCAT
+				@label @MEASURE
 				<parse>
 				@type multi_format
 				<pattern>
@@ -1044,7 +1142,7 @@ var _ = Describe("Generating fluentd config", func() {
             <source>
               @type tail
               @id audit-input
-              @label @INGRESS
+              @label @MEASURE
               path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
               pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
               tag linux-audit.log
@@ -1057,7 +1155,7 @@ var _ = Describe("Generating fluentd config", func() {
             <source>
               @type tail
               @id k8s-audit-input
-              @label @INGRESS
+              @label @MEASURE
               path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
               pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
               tag k8s-audit.log
@@ -1070,23 +1168,72 @@ var _ = Describe("Generating fluentd config", func() {
 			  </parse>
 			</source>
 
-            # Openshift audit logs
-            <source>
-              @type tail
-              @id openshift-audit-input
-              @label @INGRESS
-              path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
-              pos_file /var/log/oauth-apiserver.audit.log
-              tag openshift-audit.log
-              <parse>
-                @type json
-                time_key requestReceivedTimestamp
-                # In case folks want to parse based on the requestReceivedTimestamp key
-                keep_time_key true
-                time_format %Y-%m-%dT%H:%M:%S.%N%z
-              </parse>
-            </source>
-
+			# Openshift audit logs
+			<source>
+				@type tail
+				@id openshift-audit-input
+				@label @MEASURE
+				path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+				pos_file /var/log/oauth-apiserver.audit.log
+				tag openshift-audit.log
+				<parse>
+				@type json
+				time_key requestReceivedTimestamp
+				# In case folks want to parse based on the requestReceivedTimestamp key
+				keep_time_key true
+				time_format %Y-%m-%dT%H:%M:%S.%N%z
+			  </parse>
+			</source>
+			<label @MEASURE>
+				<filter **>
+					@type record_transformer
+					enable_ruby
+					<record>
+					msg_size ${record.to_s.length}
+					</record>
+				</filter>
+				<filter **>
+					@type prometheus
+					<metric>
+					name cluster_logging_collector_input_record_total
+					type counter
+					desc The total number of incoming records
+					<labels>
+						tag ${tag}
+						hostname ${hostname}
+					</labels>
+					</metric>
+				</filter>
+				<filter **>
+					@type prometheus
+					<metric>
+						name cluster_logging_collector_input_record_bytes
+						type counter
+						desc The total bytes of incoming records
+						key msg_size
+						<labels>
+							tag ${tag}
+							hostname ${hostname}
+						</labels>
+				  </metric>
+				</filter>
+				<filter **>
+				  @type record_transformer
+				  remove_keys msg_size
+				</filter>
+				<match journal>
+				  @type relabel
+				  @label @INGRESS
+				</match>
+				<match *audit.log>
+				  @type relabel
+				  @label @INGRESS
+				 </match>
+				<match kubernetes.**>
+				  @type relabel
+				  @label @CONCAT
+				</match>
+			</label>
 			<label @CONCAT>
 				<filter kubernetes.**>
 				@type concat
@@ -1867,7 +2014,7 @@ var _ = Describe("Generating fluentd config", func() {
       rotate_wait 5
       tag kubernetes.*
       read_from_head "true"
-      @label @CONCAT
+      @label @MEASURE
       <parse>
         @type multi_format
         <pattern>
@@ -1883,7 +2030,56 @@ var _ = Describe("Generating fluentd config", func() {
         </pattern>
       </parse>
     </source>
-    
+	<label @MEASURE>
+	<filter **>
+	  @type record_transformer
+	  enable_ruby
+	  <record>
+		msg_size ${record.to_s.length}
+	  </record>
+	</filter>
+	<filter **>
+	  @type prometheus
+	  <metric>
+		name cluster_logging_collector_input_record_total
+		type counter
+		desc The total number of incoming records
+		<labels>
+		  tag ${tag}
+		  hostname ${hostname}
+		</labels>
+	  </metric>
+	</filter>
+	<filter **>
+	  @type prometheus
+	  <metric>
+		name cluster_logging_collector_input_record_bytes
+		type counter
+		desc The total bytes of incoming records
+		key msg_size
+		<labels>
+		  tag ${tag}
+		  hostname ${hostname}
+		</labels>
+	  </metric>
+	</filter>
+	<filter **>
+	  @type record_transformer
+	  remove_keys msg_size
+	</filter>
+	<match journal>
+	  @type relabel
+	  @label @INGRESS
+	</match>
+	<match *audit.log>
+	  @type relabel
+	  @label @INGRESS
+	 </match>
+	<match kubernetes.**>
+	  @type relabel
+	  @label @CONCAT
+	</match>
+  </label>
     <label @CONCAT>
       <filter kubernetes.**>
         @type concat

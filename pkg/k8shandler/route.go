@@ -97,11 +97,6 @@ func (clusterRequest *ClusterLoggingRequest) RemoveRoute(routeName string) error
 		"",
 	)
 
-	//TODO: Remove this in the next release after removing old kibana code completely
-	if !HasCLORef(rt, clusterRequest) {
-		return nil
-	}
-
 	err := clusterRequest.Delete(rt)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("Failure deleting %v route %v", routeName, err)

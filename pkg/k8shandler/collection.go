@@ -63,7 +63,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			log.Error(err, "unable to calculate MD5 hash")
 			return
 		}
-		if err = clusterRequest.createOrUpdateFluentdService(); err != nil {
+		if err = clusterRequest.reconcileFluentdService(); err != nil {
 			return
 		}
 

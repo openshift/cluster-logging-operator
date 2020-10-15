@@ -3,13 +3,13 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"github.com/ViaQ/logerr/log"
 	"reflect"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
@@ -48,7 +48,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyCo
 func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 	kibanaStatus, err := clusterRequest.getKibanaStatus()
 	if err != nil {
-		logrus.Errorf("Failed to get Kibana status for %q: %v", clusterRequest.Cluster.Name, err)
+		log.Error(err, "Failed to get Kibana status for", "clusterName", clusterRequest.Cluster.Name)
 		return
 	}
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -68,9 +68,9 @@ func (clusterRequest *ClusterLoggingRequest) extractSecretToFile(secretName stri
 	// check to see if the map value exists
 	if !ok {
 		if deprecatedKeys.Has(key) {
-			logger.Infof("No secret data %q found. Please be aware but likely not an issue for deprecated keys: %v", key, deprecatedKeys.List())
+			log.Info("No secret data found. Please be aware but likely not an issue for deprecated keys", "key", key, "deprecatedKeys", deprecatedKeys.List())
 		} else {
-			logger.Warnf("No secret data %q found", key)
+			log.Info("No secret data found", key)
 
 		}
 		return nil
@@ -150,12 +150,15 @@ func GenerateCertificates(namespace, scriptsDir, logStoreName, workDir string) (
 }
 
 func RunCertificatesScript(namespace, logStoreName, workDir, script string) (err error) {
-	logger.Debugf("Running script '%s %s %s %s'", script, workDir, namespace, logStoreName)
+	log.V(3).Info("Running script", "script", script, "workDir", workDir, "namespace", namespace, "logStoreName", logStoreName)
 	cmd := exec.Command(script, workDir, namespace, logStoreName)
 	result, err := cmd.Output()
-	if logger.IsDebugEnabled() {
-		logger.Debugf("cert_generation output: %s", string(result))
-		logger.Debugf("err: %v", err)
+
+	if log.V(3).Enabled() {
+		log.V(3).Info("cert_generation output", "output", string(result))
+	}
+	if err != nil {
+		log.V(2).Error(err, "Error")
 	}
 	return err
 }

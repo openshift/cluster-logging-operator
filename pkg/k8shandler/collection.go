@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -57,10 +57,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
 			return
 		}
-		logger.Debugf("Generated collector config: %s", collectorConfig)
+		log.V(3).Info("Generated collector config", "config", collectorConfig)
 		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 		if err != nil {
-			logger.Errorf("unable to calculate MD5 hash. E: %s", err.Error())
+			log.Error(err, "unable to calculate MD5 hash")
 			return
 		}
 		if err = clusterRequest.createOrUpdateFluentdService(); err != nil {
@@ -88,7 +88,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 		}
 
 		if err = clusterRequest.UpdateFluentdStatus(); err != nil {
-			logger.Errorf("unable to update status for fluentd. E: %s\r\n", err.Error())
+			log.Error(err, "unable to update status for fluentd")
 		}
 
 		if collectorServiceAccount != nil {
@@ -96,7 +96,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			// remove our finalizer from the list and update it.
 			collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 			if err = clusterRequest.Update(collectorServiceAccount); err != nil {
-				logger.Warnf("Unable to update the collector serviceaccount %q finalizers: %v", collectorServiceAccount.Name, err)
+				log.Info("Unable to update the collector serviceaccount finalizers", "collectorServiceAccount.Name", collectorServiceAccount.Name)
 				return nil
 			}
 		}

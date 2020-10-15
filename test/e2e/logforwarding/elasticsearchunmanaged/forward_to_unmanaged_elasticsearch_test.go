@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
@@ -19,7 +19,7 @@ import (
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 	_, filename, _, _ := runtime.Caller(0)
-	logger.Infof("Running %s", filename)
+	log.Info("Running ", "filename", filename)
 	var (
 		err            error
 		e2e            = helpers.NewE2ETestFramework()
@@ -31,7 +31,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		BeforeEach(func() {
 			rootDir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
-			logger.Debugf("Repo rootdir: %s", rootDir)
+			log.V(3).Info("Repo ", "rootDir", rootDir)
 			err = e2e.DeployLogGenerator()
 			if err != nil {
 				Fail(fmt.Sprintf("Unable to deploy log generator. E: %s", err.Error()))

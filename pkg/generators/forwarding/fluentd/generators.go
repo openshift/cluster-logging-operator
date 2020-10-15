@@ -3,12 +3,12 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"sort"
 	"text/template"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -43,9 +43,6 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 
 //Generate the fluent.conf file using the forwarding information
 func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec, fwSpec *logging.ForwarderSpec) (string, error) {
-	logger.DebugObject("Generating fluent.conf using %s", clfSpec)
-	logger.DebugObject("Generating fluent.conf using buffer config: %s", fwSpec)
-
 	//sanitize here
 	var (
 		inputs                 sets.String

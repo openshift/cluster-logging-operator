@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	clolog "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -361,7 +362,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	if err != nil {
 		return nil, err
 	}
-	service := k8shandler.NewService(
+	service := factory.NewService(
 		serviceAccount.Name,
 		OpenshiftLoggingNS,
 		serviceAccount.Name,

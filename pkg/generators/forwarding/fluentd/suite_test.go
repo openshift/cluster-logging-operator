@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestFluentd(t *testing.T) {
+func TestFluentdGenerators(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Fluentd Suite")
+	RunSpecs(t, "Fluentd Generator Suite")
 }

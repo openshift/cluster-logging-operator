@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -207,7 +208,7 @@ func NewZookeeperService(namespace string) *v1.Service {
 			Port: zookeeperLeaderElectionPort,
 		},
 	}
-	return k8shandler.NewService(zookeeperDeploymentName, namespace, zookeeperComponent, ports)
+	return factory.NewService(zookeeperDeploymentName, namespace, zookeeperComponent, ports)
 }
 
 func NewZookeeperConfigMap(namespace string) *v1.ConfigMap {

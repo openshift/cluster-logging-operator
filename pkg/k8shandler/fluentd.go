@@ -10,8 +10,11 @@ import (
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	"github.com/openshift/cluster-logging-operator/pkg/factory"
+	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/daemonsets"
+	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/services"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -69,8 +72,8 @@ func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdService() error {
-	service := NewService(
+func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
+	desired := factory.NewService(
 		fluentdName,
 		clusterRequest.Cluster.Namespace,
 		fluentdName,
@@ -83,18 +86,41 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdService() erro
 		},
 	)
 
-	service.Annotations = map[string]string{
+	desired.Annotations = map[string]string{
 		"service.alpha.openshift.io/serving-cert-secret-name": "fluentd-metrics",
 	}
 
-	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.Cluster))
-
-	err := clusterRequest.Create(service)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating the fluentd service: %v", err)
+	utils.AddOwnerRefToObject(desired, utils.AsOwner(clusterRequest.Cluster))
+	logger.DebugObject("Reconciling service to: %q", desired)
+	err := clusterRequest.Create(desired)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating the fluentd service: %v", err)
+		}
+		current := &v1.Service{}
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err = clusterRequest.Get(desired.Name, current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
+			}
+			if services.AreSame(current, desired) {
+				logger.Debug("Services are the same skipping update")
+				return nil
+			}
+			//Explicitly copying because services are immutable
+			current.Labels = desired.Labels
+			current.Spec.Selector = desired.Spec.Selector
+			current.Spec.Ports = desired.Spec.Ports
+			return clusterRequest.Update(current)
+		})
+		logger.Debugf("Reconcile Service retry error: %v", retryErr)
+		return retryErr
 	}
-
-	return nil
+	return err
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdServiceMonitor() error {

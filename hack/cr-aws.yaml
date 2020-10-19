@@ -11,9 +11,11 @@ spec:
       storage: {}
       redundancyPolicy: "ZeroRedundancy"
       resources:
-        limits:
-          cpu: 500m
-          memory: 4Gi
+        requests:
+          cpu: 100m
+      storage:
+        size: 10G
+        storageClassName: gp2
   visualization:
     type: "kibana"
     kibana:
@@ -25,4 +27,7 @@ spec:
   collection:
     logs:
       type: "fluentd"
-      fluentd: {}
+      fluentd:
+        resources:
+          requests:
+            cpu: 100m

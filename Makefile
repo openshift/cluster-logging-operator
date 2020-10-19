@@ -64,7 +64,7 @@ build-debug:
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run
-run: deploy-elasticsearch-operator test-cleanup
+run: deploy-elasticsearch-operator
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	@ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \

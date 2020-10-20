@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	elasticsearchResourceName = "elasticsearch"
+	elasticsearchResourceName       = "elasticsearch"
+	maximumElasticsearchMasterCount = int32(3)
 )
 
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
@@ -167,12 +168,26 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret()
 	return nil
 }
 
-func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName string) *elasticsearch.Elasticsearch {
+func (cr *ClusterLoggingRequest) emptyElasticsearchCR(elasticsearchName string) *elasticsearch.Elasticsearch {
+	return &elasticsearch.Elasticsearch{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      elasticsearchName,
+			Namespace: cr.Cluster.Namespace,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Elasticsearch",
+			APIVersion: elasticsearch.SchemeGroupVersion.String(),
+		},
+		Spec: elasticsearch.ElasticsearchSpec{},
+	}
+}
+
+func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, existing *elasticsearch.Elasticsearch) *elasticsearch.Elasticsearch {
 
 	var esNodes []elasticsearch.ElasticsearchNode
 	logStoreSpec := logging.LogStoreSpec{}
-	if cluster.Spec.LogStore != nil {
-		logStoreSpec = *cluster.Spec.LogStore
+	if cr.Cluster.Spec.LogStore != nil {
+		logStoreSpec = *cr.Cluster.Spec.LogStore
 	}
 	var resources = logStoreSpec.Resources
 	if resources == nil {
@@ -199,34 +214,36 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		}
 	}
 
-	if logStoreSpec.NodeCount > 3 {
+	esNode := elasticsearch.ElasticsearchNode{
+		Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+		NodeCount: logStoreSpec.NodeCount,
+		Storage:   logStoreSpec.ElasticsearchSpec.Storage,
+	}
 
-		masterNode := elasticsearch.ElasticsearchNode{
-			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
-			NodeCount: 3,
-			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
+	// build Nodes
+	esNodes = append(esNodes, esNode)
+
+	// if we had more than 1 es node before, we also want to enter this condition
+	if logStoreSpec.NodeCount > maximumElasticsearchMasterCount || len(existing.Spec.Nodes) > 1 {
+
+		// we need to check this because if we scaled down we can enter this block
+		if logStoreSpec.NodeCount > maximumElasticsearchMasterCount {
+			esNodes[0].NodeCount = maximumElasticsearchMasterCount
 		}
 
-		esNodes = append(esNodes, masterNode)
+		remainder := logStoreSpec.NodeCount - maximumElasticsearchMasterCount
+		if remainder < 0 {
+			remainder = 0
+		}
 
 		dataNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
-			NodeCount: logStoreSpec.NodeCount - 3,
+			NodeCount: remainder,
 			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
 
 		esNodes = append(esNodes, dataNode)
 
-	} else {
-
-		esNode := elasticsearch.ElasticsearchNode{
-			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
-			NodeCount: logStoreSpec.NodeCount,
-			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
-		}
-
-		// build Nodes
-		esNodes = append(esNodes, esNode)
 	}
 
 	redundancyPolicy := logStoreSpec.ElasticsearchSpec.RedundancyPolicy
@@ -236,37 +253,28 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 
 	indexManagementSpec := indexmanagement.NewSpec(logStoreSpec.RetentionPolicy)
 
-	cr := &elasticsearch.Elasticsearch{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      elasticsearchName,
-			Namespace: cluster.Namespace,
+	es := cr.emptyElasticsearchCR(elasticsearchName)
+	es.Spec = elasticsearch.ElasticsearchSpec{
+		Spec: elasticsearch.ElasticsearchNodeSpec{
+			Resources:      *resources,
+			NodeSelector:   logStoreSpec.NodeSelector,
+			Tolerations:    logStoreSpec.Tolerations,
+			ProxyResources: *proxyResources,
 		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Elasticsearch",
-			APIVersion: elasticsearch.SchemeGroupVersion.String(),
-		},
-		Spec: elasticsearch.ElasticsearchSpec{
-			Spec: elasticsearch.ElasticsearchNodeSpec{
-				Resources:      *resources,
-				NodeSelector:   logStoreSpec.NodeSelector,
-				Tolerations:    logStoreSpec.Tolerations,
-				ProxyResources: *proxyResources,
-			},
-			Nodes:            esNodes,
-			ManagementState:  elasticsearch.ManagementStateManaged,
-			RedundancyPolicy: redundancyPolicy,
-			IndexManagement:  indexManagementSpec,
-		},
+		Nodes:            esNodes,
+		ManagementState:  elasticsearch.ManagementStateManaged,
+		RedundancyPolicy: redundancyPolicy,
+		IndexManagement:  indexManagementSpec,
 	}
 
-	utils.AddOwnerRefToObject(cr, utils.AsOwner(cluster))
+	utils.AddOwnerRefToObject(es, utils.AsOwner(cr.Cluster))
 
-	return cr
+	return es
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeElasticsearchCR(elasticsearchName string) error {
 
-	esCr := newElasticsearchCR(clusterRequest.Cluster, elasticsearchName)
+	esCr := clusterRequest.emptyElasticsearchCR(elasticsearchName)
 
 	err := clusterRequest.Delete(esCr)
 	if err != nil && !errors.IsNotFound(err) {
@@ -278,22 +286,34 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearchCR(elasticsearch
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchCR() (err error) {
 
-	esCR := newElasticsearchCR(clusterRequest.Cluster, elasticsearchResourceName)
+	if !clusterRequest.isManaged() {
+		return nil
+	}
+
+	// get existing CR first
+	existingCR := &elasticsearch.Elasticsearch{}
+	if err = clusterRequest.Get(elasticsearchResourceName, existingCR); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return fmt.Errorf("Failed to get Elasticsearch CR: %v", err)
+		}
+	}
+
+	esCR := clusterRequest.newElasticsearchCR(elasticsearchResourceName, existingCR)
 
 	err = clusterRequest.Create(esCR)
-	if err != nil && !errors.IsAlreadyExists(err) {
+	if err == nil {
+		return nil
+	}
+
+	if !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure creating Elasticsearch CR: %v", err)
 	}
 
-	if clusterRequest.isManaged() {
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			return clusterRequest.updateElasticsearchCRIfRequired(esCR)
-		})
-		if retryErr != nil {
-			return retryErr
-		}
-	}
-	return nil
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return clusterRequest.updateElasticsearchCRIfRequired(esCR)
+	})
+
+	return retryErr
 }
 
 func (clusterRequest *ClusterLoggingRequest) updateElasticsearchCRIfRequired(desired *elasticsearch.Elasticsearch) (err error) {

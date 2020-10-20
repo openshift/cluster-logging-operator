@@ -11,7 +11,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/factory"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/daemonsets"
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/services"
@@ -91,7 +90,6 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
 	}
 
 	utils.AddOwnerRefToObject(desired, utils.AsOwner(clusterRequest.Cluster))
-	logger.DebugObject("Reconciling service to: %q", desired)
 	err := clusterRequest.Create(desired)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
@@ -108,7 +106,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
 				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
 			}
 			if services.AreSame(current, desired) {
-				logger.Debug("Services are the same skipping update")
+				log.V(3).Info("Services are the same skipping update")
 				return nil
 			}
 			//Explicitly copying because services are immutable
@@ -117,7 +115,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
 			current.Spec.Ports = desired.Spec.Ports
 			return clusterRequest.Update(current)
 		})
-		logger.Debugf("Reconcile Service retry error: %v", retryErr)
+		log.V(3).Error(retryErr, "Reconcile Service retry error")
 		return retryErr
 	}
 	return err

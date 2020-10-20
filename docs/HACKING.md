@@ -14,13 +14,6 @@ Check out some other required repositories in your $GOPATH:
 go get -d -u github.com/openshift/elasticsearch-operator/... github.com/openshift/origin-aggregated-logging/...
 ```
 
-**Note:** `podman` copies our source tree very slowly. You can use `docker`
-instead, this will not exactly reproduce how images are built for release or by
-CI, but is close enough for many purposes. Put a symlink early in your path:
-```
-ln -s $(which docker) /somewhere/early/in/my/PATH/podman`
-```
-
 ## Makefile tagets
 
 Quick summary of main targets only, see below and the Makefile itself for more details.

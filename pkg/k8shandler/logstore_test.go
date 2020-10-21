@@ -16,7 +16,11 @@ import (
 func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	//check defaults
 	resources := elasticsearchCR.Spec.Spec.Resources
@@ -61,7 +65,11 @@ func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	if !reflect.DeepEqual(elasticsearchCR.Spec.Spec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, elasticsearchCR.Spec.Spec.NodeSelector)
@@ -83,7 +91,11 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	limitMemory := resource.MustParse("120Gi")
 	requestMemory := resource.MustParse("100Gi")
@@ -133,7 +145,11 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
@@ -145,7 +161,10 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
 
 	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -167,7 +186,11 @@ func TestDifferenceFoundWhenProxyResourcesAreChanged(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
@@ -182,7 +205,10 @@ func TestDifferenceFoundWhenProxyResourcesAreChanged(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
 
 	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -201,7 +227,11 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
@@ -213,7 +243,10 @@ func TestDifferenceFoundWhenNodeCountIsChanged(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
 
 	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -230,8 +263,11 @@ func TestDefaultRedundancyUsedWhenOmitted(t *testing.T) {
 			},
 		},
 	}
-
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	if !reflect.DeepEqual(elasticsearchCR.Spec.RedundancyPolicy, elasticsearch.ZeroRedundancy) {
 		t.Errorf("Exp. the redundancyPolicy to be %q but was %q", elasticsearch.ZeroRedundancy, elasticsearchCR.Spec.RedundancyPolicy)
@@ -249,7 +285,11 @@ func TestUseRedundancyWhenSpecified(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	if !reflect.DeepEqual(elasticsearchCR.Spec.RedundancyPolicy, elasticsearch.SingleRedundancy) {
 		t.Errorf("Exp. the redundancyPolicy to be %q but was %q", elasticsearch.SingleRedundancy, elasticsearchCR.Spec.RedundancyPolicy)
@@ -275,7 +315,11 @@ func TestSplitRolesWhenNodeCountIsGt3(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	// verify that we have two nodes
 	if len(elasticsearchCR.Spec.Nodes) != 2 {
@@ -335,7 +379,11 @@ func createAndCheckSingleNodeWithNodeCount(t *testing.T, expectedNodeCount int32
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	// verify that we have two nodes
 	if len(elasticsearchCR.Spec.Nodes) != 1 {
@@ -370,7 +418,11 @@ func TestDifferenceFoundWhenNodeCountExceeds3(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
@@ -382,7 +434,10 @@ func TestDifferenceFoundWhenNodeCountExceeds3(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
 
 	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -401,7 +456,11 @@ func TestDifferenceFoundWhenNodeCountExceeds4(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
@@ -413,7 +472,10 @@ func TestDifferenceFoundWhenNodeCountExceeds4(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
 
 	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -432,8 +494,11 @@ func TestNewESCRNoTolerations(t *testing.T) {
 			},
 		},
 	}
-
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 	tolerations := elasticsearchCR.Spec.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -461,8 +526,11 @@ func TestNewESCRWithTolerations(t *testing.T) {
 			},
 		},
 	}
-
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 	tolerations := elasticsearchCR.Spec.Spec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -481,7 +549,11 @@ func TestGenUUIDPreservedWhenNodeCountExceeds4(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 	dataUUID := esutils.GenerateUUID()
 	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
 
@@ -495,7 +567,10 @@ func TestGenUUIDPreservedWhenNodeCountExceeds4(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
 
 	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -518,7 +593,11 @@ func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
 	dataUUID := esutils.GenerateUUID()
 	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
 
@@ -532,7 +611,10 @@ func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
 
 	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
 	if !different {
@@ -541,6 +623,106 @@ func TestGenUUIDPreservedWhenNodeCountChanges(t *testing.T) {
 
 	if diffCR.Spec.Nodes[0].GenUUID == nil || *diffCR.Spec.Nodes[0].GenUUID != dataUUID {
 		t.Errorf("Expected that original GenUUID would be preserved as %v but was %v", dataUUID, diffCR.Spec.Nodes[0].GenUUID)
+	}
+}
+
+func TestESNodesPreservedWhenCountDecFrom4To2(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 4,
+				},
+			},
+		},
+	}
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
+	dataUUID := esutils.GenerateUUID()
+	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
+
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 2,
+				},
+			},
+		},
+	}
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", elasticsearchCR)
+
+	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to node count change")
+	}
+
+	if len(elasticsearchCR2.Spec.Nodes) < len(elasticsearchCR.Spec.Nodes) {
+		t.Errorf("Expected that the number of es nodes would be preserved as %d but was %d", len(elasticsearchCR.Spec.Nodes), len(elasticsearchCR2.Spec.Nodes))
+	}
+
+	if elasticsearchCR2.Spec.Nodes[0].NodeCount != 2 {
+		t.Errorf("Expected that the es node count would be 2 but was %d", elasticsearchCR2.Spec.Nodes[0].NodeCount)
+	}
+
+	if elasticsearchCR2.Spec.Nodes[1].NodeCount != 0 {
+		t.Errorf("Expected that the es node count would be 0 but was %d", elasticsearchCR2.Spec.Nodes[1].NodeCount)
+	}
+}
+
+func TestESNodesPreservedWhenCountDecFrom3To0(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 3,
+				},
+			},
+		},
+	}
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR := cr.newElasticsearchCR("test-app-name", existing)
+	dataUUID := esutils.GenerateUUID()
+	elasticsearchCR.Spec.Nodes[0].GenUUID = &dataUUID
+
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 0,
+				},
+			},
+		},
+	}
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", elasticsearchCR)
+
+	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to node count change")
+	}
+
+	if len(elasticsearchCR2.Spec.Nodes) < len(elasticsearchCR.Spec.Nodes) {
+		t.Errorf("Expected that the number of es nodes would be preserved as %d but was %d", len(elasticsearchCR.Spec.Nodes), len(elasticsearchCR2.Spec.Nodes))
+	}
+
+	if elasticsearchCR2.Spec.Nodes[0].NodeCount != 0 {
+		t.Errorf("Expected that the es node count would be 0 but was %d", elasticsearchCR2.Spec.Nodes[0].NodeCount)
 	}
 }
 
@@ -557,7 +739,11 @@ func TestIndexManagementChanges(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR1 := newElasticsearchCR(cluster, "test-app-name")
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR1 := cr.newElasticsearchCR("test-app-name", existing)
 	cluster = &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
 			LogStore: &logging.LogStoreSpec{
@@ -570,7 +756,10 @@ func TestIndexManagementChanges(t *testing.T) {
 			},
 		},
 	}
-	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
 	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR1, elasticsearchCR2)
 	if !different {
 		t.Errorf("Expected that difference would be found due to retention policy change")

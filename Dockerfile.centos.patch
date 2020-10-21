@@ -1,0 +1,27 @@
+--- Dockerfile	2020-10-16 10:26:19.124105649 -0400
++++ Dockerfile.centos	2020-10-16 10:28:25.713003840 -0400
+@@ -1,4 +1,4 @@
+-FROM registry.svc.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
++FROM registry.svc.ci.openshift.org/openshift/release:golang-1.14 AS builder
+ WORKDIR /go/src/github.com/openshift/cluster-logging-operator
+ 
+ # COPY steps are in the reverse order of frequency of change
+@@ -17,9 +17,8 @@
+ 
+ RUN make build
+ 
+-FROM registry.svc.ci.openshift.org/ocp/4.7:cli AS origincli
++FROM centos:centos7 AS centos
+ 
+-FROM registry.svc.ci.openshift.org/ocp/4.7:base
+ RUN INSTALL_PKGS=" \
+       openssl \
+       rsync \
+@@ -38,7 +37,6 @@
+ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
+ RUN rm /manifests/art.yaml
+ 
+-COPY --from=origincli /usr/bin/oc /usr/bin/
+ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/
+ 
+ # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`

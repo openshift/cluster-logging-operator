@@ -35,6 +35,13 @@ To run the e2e tests:
 
 NOTE: e2e tests require a clean cluster starting point, `make undeploy-all` will provide it.
 
+NOTE: There is a temporary issue with openshift base images using RHEL8
+repositories that are not accessible to all. This will be fixed, but until it is
+you can build using CentOS as the base instead:
+
+    PATCH=Dockerfile.centos.patch make ...
+
+
 ## Testing Overview
 
 There are two types of test:

@@ -86,10 +86,12 @@ clean:
 	@rm -rf bin tmp _output
 	go clean -cache -testcache ./...
 
-image:
+PATCH?=Dockerfile.patch
+Dockerfile.local: Dockerfile $(PATCH)
+	patch -o Dockerfile.local Dockerfile $(PATCH)
+
+image: Dockerfile.local
 	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		cp Dockerfile Dockerfile.local ; \
-		patch Dockerfile.local Dockerfile.patch ; \
 		podman build -t $(IMAGE_TAG) . -f Dockerfile.local; \
 	fi
 
@@ -154,7 +156,7 @@ test-cluster:
 MANIFEST_VERSION?="4.6"
 generate-bundle: regenerate $(OPM)
 	MANIFEST_VERSION=${MANIFEST_VERSION} hack/generate-bundle.sh
-	
+
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.

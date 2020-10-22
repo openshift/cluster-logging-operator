@@ -30,7 +30,7 @@ cp manifests/patches/${KUSTOMIZATIONS_FILE} ${MANIFESTS_DIR}
 echo "---------------------------------------------------------------"
 echo "Kustomize: Patch CRDs for singeltons"
 echo "---------------------------------------------------------------"
-bin/oc kustomize "${MANIFESTS_DIR}" | \
+oc kustomize "${MANIFESTS_DIR}" | \
     awk -v clf="${MANIFESTS_DIR}/${CLF_CRD_FILE}" \
         -v clo="${MANIFESTS_DIR}/${CLO_CRD_FILE}"\
         'BEGIN{filename = clf} /---/ {getline; filename = clo}{print $0> filename}'

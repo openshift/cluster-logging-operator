@@ -1,7 +1,8 @@
 package helpers
 
+import "github.com/openshift/cluster-logging-operator/test"
+
 const (
-	ClusterLoggingName         = "instance"
-	OpenshiftLoggingNS         = "openshift-logging"
-	OpenshiftOperatorsRedhatNS = "openshift-operators-redhat"
+	ClusterLoggingName = test.InstanceName
+	OpenshiftLoggingNS = test.OpenshiftLoggingNS
 )

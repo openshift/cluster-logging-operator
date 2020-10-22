@@ -1,0 +1,13 @@
+package certificate_test
+
+import (
+	"testing"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+)
+
+func TestCertificate(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Certificate Suite")
+}

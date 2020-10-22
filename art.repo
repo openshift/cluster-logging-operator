@@ -14,7 +14,7 @@ enabled = 1
 gpgcheck = 0
 
 [xyz4]
-baseurl = http://download.lab.bos.redhat.com/rcm-guest/puddles/RHAOS/plashets/4.6-el8/building-embargoed/x86_64/os
+baseurl = http://download.lab.bos.redhat.com/rcm-guest/puddles/RHAOS/plashets/4.7-el8/building-embargoed/x86_64/os
 enabled = 1
 gpgcheck = 0
 

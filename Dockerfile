@@ -17,7 +17,7 @@ COPY pkg ./pkg
 
 RUN make build
 
-FROM registry.svc.ci.openshift.org/ocp/4.7:cli AS origincli
+FROM registry.svc.ci.openshift.org/ocp/4.7:cli as origincli
 
 FROM registry.svc.ci.openshift.org/ocp/4.7:base
 RUN INSTALL_PKGS=" \

@@ -107,6 +107,10 @@ normal way to run an operator, and does not test all aspects of the CLO
 changes to its own custom resources, and creates/updates other resources
 accordingly. This can all be done from outside the cluster.
 
+**Note:** You must run the `make deploy-elasticsearch-operator` as a separate target which will:
+* Deploy the Elasticsearch CRD upon which the CLO depends
+* Define ClusterLogForwarding to the default log store
+
 Examples:
 ```
 make run  # Run the CLO locally

@@ -23,7 +23,7 @@ metadata:
     support: AOS Logging
     # The version value is substituted by the ART pipeline
     olm.skipRange: ">=4.5.0-0 <4.7.0"
-    alm-examples: |-
+    olm-examples: |-
         [
           {
             "apiVersion": "logging.openshift.io/v1",
@@ -33,7 +33,6 @@ metadata:
               "namespace": "openshift-logging"
             },
             "spec": {
-              "managementState": "Managed",
               "logStore": {
                 "type": "elasticsearch",
                 "elasticsearch": {

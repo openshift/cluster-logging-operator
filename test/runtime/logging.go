@@ -1,0 +1,61 @@
+package runtime
+
+import (
+	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/test"
+)
+
+// NewClusterLogForwarder returns a ClusterLogForwarder with default name and namespace.
+func NewClusterLogForwarder() *loggingv1.ClusterLogForwarder {
+	clf := &loggingv1.ClusterLogForwarder{}
+	Initialize(clf, test.OpenshiftLoggingNS, test.InstanceName)
+	return clf
+}
+
+// NewClusterLogging returns a ClusterLogging with default name, namespace and
+// collection configuration. No store, visualization or curation are configured,
+// see ClusterLoggingDefaultXXX to add them.
+func NewClusterLogging() *loggingv1.ClusterLogging {
+	cl := &loggingv1.ClusterLogging{}
+	Initialize(cl, test.OpenshiftLoggingNS, test.InstanceName)
+	test.MustUnmarshal(`
+    collection:
+      logs:
+        fluentd: {}
+        type: fluentd
+    managementState: Managed
+    `, &cl.Spec)
+	return cl
+}
+
+// ClusterLoggingDefaultStore sets default store configuration.
+func ClusterLoggingDefaultStore(cl *loggingv1.ClusterLogging) {
+	test.MustUnmarshal(`
+    type: "elasticsearch"
+    elasticsearch:
+      nodeCount: 1
+      redundancyPolicy: "ZeroRedundancy"
+      resources:
+        limits:
+          cpu: 500m
+          memory: 4Gi
+`, &cl.Spec.LogStore)
+}
+
+// ClusterLoggingDefaultVisualization sets default visualization configuration.
+func ClusterLoggingDefaultVisualization(cl *loggingv1.ClusterLogging) {
+	test.MustUnmarshal(`
+    type: "kibana"
+    kibana:
+      replicas: 1
+`, &cl.Spec.Visualization)
+}
+
+// ClusterLoggingDefaultCuration sets defautl curation configuration.
+func ClusterLoggingDefaultCuration(cl *loggingv1.ClusterLogging) {
+	test.MustUnmarshal(`
+    type: "curator"
+    curator:
+      schedule: "30 3,9,15,21 * * *"
+`, &cl.Spec.Curation)
+}

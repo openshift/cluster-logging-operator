@@ -85,6 +85,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
 			ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 			type_name _doc
+            http_backend typhoeus
 			write_operation create
 			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -133,6 +134,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 			type_name _doc
 			retry_tag retry_oncluster_elasticsearch
+            http_backend typhoeus
 			write_operation create
 			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -195,6 +197,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			password changeme
 
 			type_name _doc
+            http_backend typhoeus
 			write_operation create
 			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -239,6 +242,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 
 			type_name _doc
 			retry_tag retry_other_elasticsearch
+            http_backend typhoeus
 			write_operation create
 			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after

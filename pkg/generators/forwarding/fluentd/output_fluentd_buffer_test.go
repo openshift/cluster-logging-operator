@@ -76,6 +76,7 @@ var _ = Describe("Generating fluentd config", func() {
               password changeme
 
               type_name _doc
+              http_backend typhoeus
               write_operation create
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -120,6 +121,7 @@ var _ = Describe("Generating fluentd config", func() {
 
               type_name _doc
               retry_tag retry_other_elasticsearch
+              http_backend typhoeus
               write_operation create
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -191,6 +193,7 @@ var _ = Describe("Generating fluentd config", func() {
               password changeme
 
               type_name _doc
+              http_backend typhoeus
               write_operation create
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -235,6 +238,7 @@ var _ = Describe("Generating fluentd config", func() {
 
               type_name _doc
               retry_tag retry_other_elasticsearch
+              http_backend typhoeus
               write_operation create
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -289,6 +293,7 @@ var _ = Describe("Generating fluentd config", func() {
               password changeme
 
               type_name _doc
+              http_backend typhoeus
               write_operation create
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -333,6 +338,7 @@ var _ = Describe("Generating fluentd config", func() {
 
               type_name _doc
               retry_tag retry_other_elasticsearch
+              http_backend typhoeus
               write_operation create
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after

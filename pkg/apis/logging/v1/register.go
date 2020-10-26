@@ -11,9 +11,12 @@ import (
 )
 
 var (
-	// SchemeGroupVersion is group version used to register these objects
+	// SchemeGroupVersion for this package.
 	SchemeGroupVersion = schema.GroupVersion{Group: "logging.openshift.io", Version: "v1"}
 
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
+	// SchemeBuilder for this package.
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
+
+	// AddToScheme adds types from this package to a scheme.
+	AddToScheme = SchemeBuilder.AddToScheme
 )

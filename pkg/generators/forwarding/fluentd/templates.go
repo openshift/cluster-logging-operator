@@ -657,6 +657,7 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
 {{- if .Hints.Has "include_retry_tag" }}
   retry_tag {{.RetryTag}}
 {{- end }}
+  http_backend typhoeus
   write_operation create
   reload_connections 'true'
   # https://github.com/uken/fluent-plugin-elasticsearch#reload-after

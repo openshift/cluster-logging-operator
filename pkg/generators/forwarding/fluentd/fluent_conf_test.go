@@ -399,7 +399,7 @@ var _ = Describe("Generating fluentd config", func() {
       <record>
         kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
       </record>
-      remove_keys $.kubernetes.labels
+      remove_keys record[kubernetes][labels]
     </filter>
   
     # Relabel specific source tags to specific intermediary labels for copy processing
@@ -868,7 +868,7 @@ var _ = Describe("Generating fluentd config", func() {
 					<record>
 						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
 					</record>
-					remove_keys $.kubernetes.labels
+					remove_keys record[kubernetes][labels]
 				</filter>
 
 
@@ -1302,7 +1302,7 @@ var _ = Describe("Generating fluentd config", func() {
 					<record>
 						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
 					</record>
-					remove_keys $.kubernetes.labels
+					remove_keys record[kubernetes][labels]
 				</filter>
 
 				# Relabel specific source tags to specific intermediary labels for copy processing
@@ -2122,7 +2122,7 @@ var _ = Describe("Generating fluentd config", func() {
         <record>
           kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
         </record>
-        remove_keys $.kubernetes.labels
+        remove_keys record[kubernetes][labels]
       </filter>
     
       # Relabel specific source tags to specific intermediary labels for copy processing

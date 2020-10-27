@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	_ Error                   = &KVError{}
 	_ zapcore.ObjectMarshaler = &KVError{}
 )
 
@@ -19,16 +18,8 @@ const (
 	keyCause   string = "cause"
 )
 
-// Error is a structured error
-type Error interface {
-	Ctx(Context) *KVError
-	Error() string
-	Message() string
-	Unwrap() error
-}
-
 // New creates a new KVError with keys and values
-func New(msg string, keysAndValues ...interface{}) *KVError {
+func New(msg string, keysAndValues ...interface{}) error {
 	return &KVError{
 		kv: appendMap(map[string]interface{}{
 			keyMessage: msg,
@@ -36,8 +27,13 @@ func New(msg string, keysAndValues ...interface{}) *KVError {
 	}
 }
 
+// NewCtx creates a new error with Context
+func NewCtx(msg string, ctx Context, keysAndValues ...interface{}) error {
+	return New(msg, append(keysAndValues, ctx...)...)
+}
+
 // Wrap wraps an error as a new error with keys and values
-func Wrap(err error, msg string, keysAndValues ...interface{}) *KVError {
+func Wrap(err error, msg string, keysAndValues ...interface{}) error {
 	if err == nil {
 		return nil
 	}
@@ -50,22 +46,31 @@ type KVError struct {
 	kv map[string]interface{}
 }
 
-// KVs returns the key/value pairs associated with this error
-func (e *KVError) KVs() map[string]interface{} {
-	return e.kv
+// KVs returns the key/value pairs associated with this error if it is a *KVError
+func KVs(err error) map[string]interface{} {
+	var kve *KVError
+	if errors.As(err, &kve) {
+		return kve.kv
+	}
+	return nil
 }
 
 // KVSlice returns the key/value pairs associated with this error
 // as a slice
-func (e *KVError) KVSlice() []interface{} {
-	s := make([]interface{}, 0, len(e.kv)*2)
-	for k, v := range e.kv {
+func KVSlice(err error) []interface{} {
+	var kve *KVError
+	if !errors.As(err, &kve) {
+		return nil
+	}
+	s := make([]interface{}, 0, len(kve.kv)*2)
+	for k, v := range kve.kv {
 		s = append(s, k, v)
 	}
 	return s
 }
 
-// Unwrap returns the error that caused this error
+// Unwrap returns the error that caused this error. This is required
+// to work with the standard library errors.Unwrap
 func (e *KVError) Unwrap() error {
 	if cause, ok := e.kv[keyCause]; ok {
 		e, _ := cause.(error)
@@ -75,16 +80,23 @@ func (e *KVError) Unwrap() error {
 	return nil
 }
 
+// Error returns the string formatted error message. This is required
+// to function as a standard library error
 func (e *KVError) Error() string {
 	base := e.Unwrap()
 	if base != nil {
-		return fmt.Sprintf("%s: %s", e.Message(), base.Error())
+		return fmt.Sprintf("%s: %s", Message(e), base.Error())
 	}
-	return e.Message()
+	return Message(e)
 }
 
-func (e *KVError) Message() string {
-	if msg, ok := e.kv[keyMessage]; ok {
+// Message returns the raw error message
+func Message(err error) string {
+	var kve *KVError
+	if !errors.As(err, &kve) {
+		return err.Error()
+	}
+	if msg, ok := kve.kv[keyMessage]; ok {
 		return fmt.Sprint(msg)
 	}
 	return ""
@@ -92,17 +104,23 @@ func (e *KVError) Message() string {
 
 // Add adds key/value pairs to an error and returns the error
 // WARNING: The original error is modified with this operation
-func (e *KVError) Add(keyValuePairs ...interface{}) *KVError {
-	for k, v := range toMap(keyValuePairs...) {
-		e.kv[k] = v
+func Add(err error, keyValuePairs ...interface{}) error {
+	var kve *KVError
+	if !errors.As(err, &kve) {
+		return New(err.Error(), keyValuePairs...)
 	}
-	return e
+	for k, v := range toMap(keyValuePairs...) {
+		kve.kv[k] = v
+	}
+	return kve
 }
 
+// MarshalJSON implements json.Marshaler
 func (e *KVError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.kv)
 }
 
+// MarshalLogObject implements zapcore.ObjectMarshaler so that the error is in a JSONish format when logged
 func (e *KVError) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	for k, v := range e.kv {
 		zap.Any(k, v).AddTo(enc)
@@ -110,21 +128,9 @@ func (e *KVError) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	return nil
 }
 
-// Ctx appends Context to the error
-func (e *KVError) Ctx(ctx Context) *KVError {
-	e.kv = appendMap(e.kv, toMap(ctx...))
-	return e
-}
-
-// Wrap sets err as the cause of this error and appends optional keysAndValues
-func (e *KVError) Wrap(err error, keysAndValues ...interface{}) *KVError {
-	ne := e.deepCopy().Add(keysAndValues...)
-	ne.kv[keyCause] = err
-	return ne
-}
-
-func (e *KVError) deepCopy() *KVError {
-	return New(e.Message(), e.KVSlice()...)
+// AddCtx appends Context to the error
+func AddCtx(err error, ctx Context) error {
+	return Add(err, ctx...)
 }
 
 // Unwrap provides compatibility with the standard errors package
@@ -132,7 +138,7 @@ func Unwrap(err error) error {
 	return errors.Unwrap(err)
 }
 
-// Context creates key/value pairs to be used with errors later in
+// NewContext creates key/value pairs to be used with errors later in
 // the callstack. This provides the ability to create contextual
 // information that will be used with any returned error
 //
@@ -159,6 +165,16 @@ func NewContext(keysAndValues ...interface{}) Context {
 // directly is not necessary
 // See Context for more information
 type Context []interface{}
+
+// New creates a new KVError with this context
+func (c Context) New(msg string, keysAndValues ...interface{}) error {
+	return New(msg, append(keysAndValues, c...)...)
+}
+
+// Wrap wraps an error with this context
+func (c Context) Wrap(err error, msg string, keysAndValues ...interface{}) error {
+	return Wrap(err, msg, append(keysAndValues, c...)...)
+}
 
 // Root unwraps the error until it reaches the root error
 func Root(err error) error {

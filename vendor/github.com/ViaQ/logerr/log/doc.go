@@ -1,2 +1,2 @@
-// package log provides structured logging
+// Package log provides structured logging
 package log

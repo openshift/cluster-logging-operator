@@ -7,10 +7,10 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/ViaQ/logerr/log"
 )
 
 // HACK - This command is for development use only
@@ -32,20 +32,20 @@ func main() {
 		includeLegacySyslog,
 		useOldRemoteSyslogPlugin)
 	if err != nil {
-		log.Error(err,"Unable to create collector config generator")
+		log.Error(err, "Unable to create collector config generator")
 		os.Exit(1)
 	}
 
 	file := os.Args[1]
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
-		log.Error(err,"Error reading file", "file", file)
+		log.Error(err, "Error reading file", "file", file)
 		os.Exit(1)
 	}
 	forwarder := &logging.ClusterLogForwarder{}
 	err = yaml.Unmarshal(content, forwarder)
 	if err != nil {
-		log.Error(err,"Error Unmarshalling file ", "file", file)
+		log.Error(err, "Error Unmarshalling file ", "file", file)
 		os.Exit(1)
 	}
 

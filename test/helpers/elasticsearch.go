@@ -15,9 +15,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	clolog "github.com/ViaQ/logerr/log"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
-	clolog "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
@@ -124,7 +124,7 @@ func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) 
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
-			clolog.Error(err,"Error retrieving indices from elasticsearch")
+			clolog.Error(err, "Error retrieving indices from elasticsearch")
 			return false, nil
 		}
 		return indices.HasAuditLogs(), nil

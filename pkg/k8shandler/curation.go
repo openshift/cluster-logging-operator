@@ -2,9 +2,9 @@ package k8shandler
 
 import (
 	"fmt"
-	"github.com/ViaQ/logerr/log"
 	"reflect"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"

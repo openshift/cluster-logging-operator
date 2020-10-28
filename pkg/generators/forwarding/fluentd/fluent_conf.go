@@ -110,5 +110,5 @@ func (conf *outputLabelConf) RetryTag() string {
 	return "retry_" + strings.ToLower(replacer.Replace(conf.Name))
 }
 func (conf *outputLabelConf) Tags() string {
-	return fmt.Sprintf("%s", strings.Join(conf.fluentTags.List(), " "))
+	return strings.Join(conf.fluentTags.List(), " ")
 }

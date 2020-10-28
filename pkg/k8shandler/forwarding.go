@@ -93,11 +93,9 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 				},
 			}
 			// Continue with normalization to fill out spec and status.
-		} else {
-			if clusterRequest.ForwarderRequest == nil {
-				log.V(3).Info("ClusterLogForwarder disabled")
-				return &logging.ClusterLogForwarderSpec{}, &logging.ClusterLogForwarderStatus{}
-			}
+		} else if clusterRequest.ForwarderRequest == nil {
+			log.V(3).Info("ClusterLogForwarder disabled")
+			return &logging.ClusterLogForwarderSpec{}, &logging.ClusterLogForwarderStatus{}
 		}
 	}
 
@@ -221,6 +219,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 	// Collect input conditions
 	status.Inputs = logging.NamedConditions{}
 	for i, input := range clusterRequest.ForwarderSpec.Inputs {
+		i, input := i, input // Don't bind range variables.
 		badName := func(format string, args ...interface{}) {
 			input.Name = fmt.Sprintf("input_%v_", i)
 			status.Inputs.Set(input.Name, condInvalid(format, args...))
@@ -242,8 +241,8 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
 	status.Outputs = logging.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
-	for i, out := range clusterRequest.ForwarderSpec.Outputs {
-		output := out
+	for i, output := range clusterRequest.ForwarderSpec.Outputs {
+		i, output := i, output // Don't bind range variable.
 		badName := func(format string, args ...interface{}) {
 			output.Name = fmt.Sprintf("output_%v_", i)
 			status.Outputs.Set(output.Name, condInvalid(format, args...))

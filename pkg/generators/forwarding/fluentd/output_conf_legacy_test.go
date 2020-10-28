@@ -384,8 +384,9 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             char_encoding utf-8
             <record>
               kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+			  for_remove ${record['kubernetes'].delete('labels')}
             </record>
-            remove_keys record["kubernetes"]["labels"]
+            remove_keys for_remove
           </filter>
 
           # Relabel specific source tags to specific intermediary labels for copy processing
@@ -834,8 +835,9 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             char_encoding utf-8
             <record>
               kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+              for_remove ${record['kubernetes'].delete('labels')}
             </record>
-            remove_keys record["kubernetes"]["labels"]
+            remove_keys for_remove
           </filter>
 
           # Relabel specific source tags to specific intermediary labels for copy processing
@@ -1286,8 +1288,9 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             char_encoding utf-8
             <record>
               kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+              for_remove ${record['kubernetes'].delete('labels')}
             </record>
-            remove_keys record["kubernetes"]["labels"]
+            remove_keys for_remove
           </filter>
 
           # Relabel specific source tags to specific intermediary labels for copy processing

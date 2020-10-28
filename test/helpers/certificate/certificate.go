@@ -25,7 +25,7 @@ type CertKey struct {
 	DERBytes    []byte
 }
 
-// New creates a new CertKey containg cert and signed by signer, or self-signed if signer is nil.
+// New CertKey based on template and signed by signer, or self-signed if signer is nil.
 func New(template *x509.Certificate, signer *CertKey) *CertKey {
 	ck := &CertKey{Certificate: template}
 	var err error

@@ -13,9 +13,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	clolog "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	clolog "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -113,7 +113,7 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		output, err := fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			clolog.Error(err,"Error polling fluent-receiver for logs")
+			clolog.Error(err, "Error polling fluent-receiver for logs")
 			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
@@ -145,7 +145,7 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	result := ""
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		if result, err = fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
-			clolog.Error(err,"Failed to fetch logs from fluent-receiver ")
+			clolog.Error(err, "Failed to fetch logs from fluent-receiver ")
 			return false, nil
 		}
 		return true, nil

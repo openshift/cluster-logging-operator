@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ViaQ/logerr/log"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"

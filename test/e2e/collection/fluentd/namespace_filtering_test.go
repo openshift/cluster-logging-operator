@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/ViaQ/logerr/log"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	apps "k8s.io/api/apps/v1"

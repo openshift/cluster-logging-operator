@@ -409,11 +409,9 @@ func areNodesDifferent(current, desired []elasticsearch.ElasticsearchNode) ([]el
 				if isDifferent {
 					desired[nodeIndex] = updatedNode
 					different = true
-				} else {
+				} else if desired[nodeIndex].GenUUID == nil {
 					// ensure that we are setting the GenUUID if it existed
-					if desired[nodeIndex].GenUUID == nil {
-						desired[nodeIndex].GenUUID = updatedNode.GenUUID
-					}
+					desired[nodeIndex].GenUUID = updatedNode.GenUUID
 				}
 				foundRoleMatch = true
 			}

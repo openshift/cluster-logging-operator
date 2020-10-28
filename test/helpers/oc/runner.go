@@ -136,10 +136,6 @@ func (r *runner) setArgs(args []string) {
 	r.args = args
 }
 
-func (r *runner) setArgsStr(argstr string) {
-	r.args = sanitizeArgs(argstr)
-}
-
 func truncateString(str string, num int) string {
 	trunc := str
 	if len(str) > num {

@@ -96,7 +96,7 @@ lint: $(GOLANGCI_LINT)
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	@gofmt -s -l -w $(shell find pkg cmd -name '*.go')
+	find pkg cmd test -name '*.go' | xargs -r gofmt -s -l -w
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp

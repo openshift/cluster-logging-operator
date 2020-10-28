@@ -29,7 +29,7 @@ var (
 	AliasesInfra = []string{"infra", "logs.infra"}
 	AliasesAudit = []string{"audit", "logs.audit"}
 
-	agePattern = regexp.MustCompile("^(?P<number>\\d+)(?P<unit>[yMwdhHms])$")
+	agePattern = regexp.MustCompile(`^(?P<number>\d+)(?P<unit>[yMwdhHms])$`)
 )
 
 func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagementSpec {
@@ -39,7 +39,7 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 	if retentionPolicy.App != nil {
 		hotPhaseAgeApp, err := getHotPhaseAge(retentionPolicy.App.MaxAge)
 		if err != nil {
-			log.Error(err, "Error occured while getting hot phase age for App log source")
+			log.Error(err, "Error occurred while getting hot phase age for App log source")
 			return nil
 		}
 		appPolicySpec := newPolicySpec(PolicyNameApp, retentionPolicy.App.MaxAge, hotPhaseAgeApp)
@@ -50,7 +50,7 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 	if retentionPolicy.Infra != nil {
 		hotPhaseAgeInfra, err := getHotPhaseAge(retentionPolicy.Infra.MaxAge)
 		if err != nil {
-			log.Error(err, "Error occured while getting hot phase age for Infra log source.")
+			log.Error(err, "Error occurred while getting hot phase age for Infra log source.")
 			return nil
 		}
 		infraPolicySpec := newPolicySpec(PolicyNameInfra, retentionPolicy.Infra.MaxAge, hotPhaseAgeInfra)
@@ -61,7 +61,7 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 	if retentionPolicy.Audit != nil {
 		hotPhaseAgeAudit, err := getHotPhaseAge(retentionPolicy.Audit.MaxAge)
 		if err != nil {
-			log.Error(err, "Error occured while getting hot phase age for Audit log source.")
+			log.Error(err, "Error occurred while getting hot phase age for Audit log source.")
 			return nil
 		}
 		auditPolicySpec := newPolicySpec(PolicyNameAudit, retentionPolicy.Audit.MaxAge, hotPhaseAgeAudit)

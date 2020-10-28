@@ -1,12 +1,34 @@
-linters:
-  disable:
-    - megacheck
+ linters:
+  disable-all: true
   enable:
-    - gosimple
-    - staticcheck
-    - unused
-    - interfacer
+    - bodyclose
+    - deadcode
+    - depguard
+    - dogsled
     - errcheck
-    - prealloc
+    - gocyclo
+    - gofmt
+    - goprintffuncname
     - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - nakedret
+    - nolintlint
+    - scopelint
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unconvert
+    - varcheck
+    - gocritic
+    - unused
+    - misspell
 
+# Consider enabling these, some cleanup required:
+# gomnd: An analyzer to detect magic numbers. [fast: true, auto-fix: false]
+# stylecheck: Stylecheck is a replacement for golint [fast: true, auto-fix: false]
+# whitespace: Tool for detection of leading and trailing whitespace [fast: true, auto-fix: true]
+# wsl: Whitespace Linter - Forces you to use empty lines! [fast: true, auto-fix: false]
+# dupl: Tool for code clone detection [fast: true, auto-fix: false]
+# goimports: Goimports does everything that gofmt does. Additionally it checks unused imports [fast: true, auto-fix: true]

@@ -21,11 +21,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	clolog "github.com/ViaQ/logerr/log"
 	"github.com/onsi/ginkgo"
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-    clolog "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -255,7 +255,7 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 				clolog.V(2).Error(err, "Did not find elasticsearch pods")
 				return false, nil
 			}
-			clolog.Error(err,"Error listing elasticsearch pods")
+			clolog.Error(err, "Error listing elasticsearch pods")
 			return false, nil
 		}
 		if len(pods.Items) == 0 {
@@ -318,7 +318,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 			return false, nil
 		}
 		if len(pods.Items) == 0 {
-			clolog.Info("No pods found for label selection", "labels",labels)
+			clolog.Info("No pods found for label selection", "labels", labels)
 			return true, nil
 		}
 		clolog.V(3).Info("still running pods:", len(pods.Items))
@@ -504,7 +504,7 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	}
 	ds, err := tc.KubeClient.AppsV1().DaemonSets("default").Create(context.TODO(), spec, metav1.CreateOptions{})
 	if err != nil {
-		clolog.Error(err,"Could not create DaemonSet for cleaning fluentd buffers.")
+		clolog.Error(err, "Could not create DaemonSet for cleaning fluentd buffers.")
 		return
 	} else {
 		clolog.Info("DaemonSet to clean fluent buffers created")
@@ -544,7 +544,7 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 
 func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (secret *corev1.Secret, err error) {
 	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
-	clolog.V(3).Info("Generating Pipeline certificates for Log Store to working dir", "logStoreName",logStoreName, "workingDir", workingDir)
+	clolog.V(3).Info("Generating Pipeline certificates for Log Store to working dir", "logStoreName", logStoreName, "workingDir", workingDir)
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(workingDir, 0766); err != nil {
 			return nil, err

@@ -1,7 +1,6 @@
 package k8shandler
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -234,7 +233,7 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 	cluster := &logging.ClusterLogging{}
 	httpproxy := "http://proxy-user@test.example.com/3128/"
 	noproxy := ".cluster.local,localhost"
-	caBundle := fmt.Sprint("-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n")
+	caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
 	podSpec := newFluentdPodSpec(cluster,
 		&configv1.Proxy{
 			TypeMeta: metav1.TypeMeta{

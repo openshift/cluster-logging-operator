@@ -20,7 +20,7 @@ func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, 
 				t.Logf("Waiting for availability of %s daemonset\n", name)
 				return false, nil
 			}
-			log.Error(err,"Error getting Daemonsets")
+			log.Error(err, "Error getting Daemonsets")
 			return false, nil
 		}
 		return true, nil

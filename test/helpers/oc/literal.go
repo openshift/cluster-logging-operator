@@ -27,9 +27,7 @@ func Literal() ILiteral {
 	l := &literal{
 		runner: &runner{},
 	}
-	l.collectArgsFunc = func() []string {
-		return l.args()
-	}
+	l.collectArgsFunc = l.args
 	return l
 }
 

@@ -16,9 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	clolog "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	clolog "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 )
 
@@ -159,12 +159,12 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, podName, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			clolog.Error(err,"failed to fetch logs from syslog-receiver")
+			clolog.Error(err, "failed to fetch logs from syslog-receiver")
 			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
 		if err != nil {
-			clolog.V(2).Error(err,"Error parsing output","output", output)
+			clolog.V(2).Error(err, "Error parsing output", "output", output)
 			return false, nil
 		}
 		return value > 0, nil
@@ -477,7 +477,7 @@ func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, s
 		return nil, err
 	}
 	script := fmt.Sprintf("%s/syslog_cert_generation.sh", testDir)
-	clolog.Info("Running script '%s %s %s %s'", "script",script, "workingdir",workingDir, "namespace", OpenshiftLoggingNS, "logStore", logStoreName)
+	clolog.Info("Running script '%s %s %s %s'", "script", script, "workingdir", workingDir, "namespace", OpenshiftLoggingNS, "logStore", logStoreName)
 	cmd := exec.Command(script, workingDir, OpenshiftLoggingNS, logStoreName)
 	result, err := cmd.Output()
 

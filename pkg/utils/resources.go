@@ -2,9 +2,9 @@ package utils
 
 import (
 	"errors"
-	"github.com/ViaQ/logerr/log"
 	"reflect"
 
+	"github.com/ViaQ/logerr/log"
 	apps "k8s.io/api/apps/v1"
 	batch "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"

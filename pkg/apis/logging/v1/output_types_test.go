@@ -6,13 +6,6 @@ import (
 	. "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 )
 
-type handler struct{ what interface{} }
-
-func (h *handler) ElasticSearch(o *Elasticsearch) error   { h.what = o; return nil }
-func (h *handler) FluentdForward(o *FluentdForward) error { h.what = o; return nil }
-func (h *handler) Syslog(o *Syslog) error                 { h.what = o; return nil }
-func (h *handler) Kafka(o *Kafka) error                   { h.what = o; return nil }
-
 var _ = Describe("OutputSpec", func() {
 	It("recognizes valid type names", func() {
 		for _, s := range []string{OutputTypeElasticsearch, OutputTypeFluentdForward, OutputTypeSyslog} {

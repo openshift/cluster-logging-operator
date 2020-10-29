@@ -5,8 +5,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	clolog "github.com/ViaQ/logerr/log"
+	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 

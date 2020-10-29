@@ -29,8 +29,8 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(initSecret),
-		cluster: &logging.ClusterLogging{},
+		Client:  fake.NewFakeClient(initSecret),
+		Cluster: &logging.ClusterLogging{},
 	}
 
 	// create
@@ -82,8 +82,8 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(initSecret),
-		cluster: &logging.ClusterLogging{},
+		Client:  fake.NewFakeClient(initSecret),
+		Cluster: &logging.ClusterLogging{},
 	}
 
 	// create
@@ -152,8 +152,8 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(initSecret),
-		cluster: &logging.ClusterLogging{},
+		Client:  fake.NewFakeClient(initSecret),
+		Cluster: &logging.ClusterLogging{},
 	}
 
 	// create
@@ -214,8 +214,8 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		client:  fake.NewFakeClient(initSecret),
-		cluster: &logging.ClusterLogging{},
+		Client:  fake.NewFakeClient(initSecret),
+		Cluster: &logging.ClusterLogging{},
 	}
 
 	// create

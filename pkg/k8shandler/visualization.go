@@ -21,9 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CreateOrUpdateVisualization reconciles visualization component for cluster logging
+// CreateOrUpdateVisualization reconciles visualization component for Cluster logging
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy) (err error) {
-	if clusterRequest.cluster.Spec.Visualization == nil || clusterRequest.cluster.Spec.Visualization.Type == "" {
+	if clusterRequest.Cluster.Spec.Visualization == nil || clusterRequest.Cluster.Spec.Visualization.Type == "" {
 		if err = clusterRequest.removeKibana(); err != nil {
 			return
 		}
@@ -53,19 +53,19 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyCo
 func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 	kibanaStatus, err := clusterRequest.getKibanaStatus()
 	if err != nil {
-		logrus.Errorf("Failed to get Kibana status for %q: %v", clusterRequest.cluster.Name, err)
+		logrus.Errorf("Failed to get Kibana status for %q: %v", clusterRequest.Cluster.Name, err)
 		return
 	}
 
 	printUpdateMessage := true
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if !compareKibanaStatus(kibanaStatus, clusterRequest.cluster.Status.Visualization.KibanaStatus) {
+		if !compareKibanaStatus(kibanaStatus, clusterRequest.Cluster.Status.Visualization.KibanaStatus) {
 			if printUpdateMessage {
 				logrus.Info("Updating status of Kibana")
 				printUpdateMessage = false
 			}
-			clusterRequest.cluster.Status.Visualization.KibanaStatus = kibanaStatus
-			return clusterRequest.UpdateStatus(clusterRequest.cluster)
+			clusterRequest.Cluster.Status.Visualization.KibanaStatus = kibanaStatus
+			return clusterRequest.UpdateStatus(clusterRequest.Cluster)
 		}
 		return nil
 	})
@@ -197,40 +197,41 @@ func (clusterRequest *ClusterLoggingRequest) removeOldKibana() (err error) {
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error {
-
-	kibanaSecret := NewSecret(
-		"kibana",
-		clusterRequest.cluster.Namespace,
-		map[string][]byte{
+	var secrets = map[string][]byte{}
+	_ = Synchronize(func() error {
+		secrets = map[string][]byte{
 			"ca":   utils.GetWorkingDirFileContents("ca.crt"),
 			"key":  utils.GetWorkingDirFileContents("system.logging.kibana.key"),
 			"cert": utils.GetWorkingDirFileContents("system.logging.kibana.crt"),
-		})
+		}
+		return nil
+	})
+	kibanaSecret := NewSecret(
+		"kibana",
+		clusterRequest.Cluster.Namespace,
+		secrets)
 
-	utils.AddOwnerRefToObject(kibanaSecret, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(kibanaSecret, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.CreateOrUpdateSecret(kibanaSecret)
 	if err != nil {
 		return err
 	}
 
-	var sessionSecret []byte
-
-	sessionSecret = utils.GetWorkingDirFileContents("kibana-session-secret")
-	if sessionSecret == nil {
-		sessionSecret = utils.GetRandomWord(32)
-	}
-
-	proxySecret := NewSecret(
-		"kibana-proxy",
-		clusterRequest.cluster.Namespace,
-		map[string][]byte{
-			"session-secret": sessionSecret,
+	_ = Synchronize(func() error {
+		secrets = map[string][]byte{
+			"session-secret": utils.GetWorkingDirFileContents(constants.KibanaSessionSecretName),
 			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
 			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
-		})
+		}
+		return nil
+	})
+	proxySecret := NewSecret(
+		"kibana-proxy",
+		clusterRequest.Cluster.Namespace,
+		secrets)
 
-	utils.AddOwnerRefToObject(proxySecret, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(proxySecret, utils.AsOwner(clusterRequest.Cluster))
 
 	err = clusterRequest.CreateOrUpdateSecret(proxySecret)
 	if err != nil {
@@ -306,9 +307,9 @@ func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
 		},
 	}
 
-	err := clusterRequest.client.Get(context.TODO(),
+	err := clusterRequest.Client.Get(context.TODO(),
 		client.ObjectKey{
-			Namespace: clusterRequest.cluster.Namespace,
+			Namespace: clusterRequest.Cluster.Namespace,
 			Name:      constants.KibanaName,
 		}, kb)
 
@@ -319,7 +320,7 @@ func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaCR() error {
-	cr := newKibanaCustomResource(clusterRequest.cluster, constants.KibanaName)
+	cr := newKibanaCustomResource(clusterRequest.Cluster, constants.KibanaName)
 
 	err := clusterRequest.Create(cr)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -398,7 +399,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
 	cr := &es.Kibana{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      constants.KibanaName,
-			Namespace: clusterRequest.cluster.Namespace,
+			Namespace: clusterRequest.Cluster.Namespace,
 		},
 	}
 
@@ -413,7 +414,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
 func HasCLORef(object metav1.Object, request *ClusterLoggingRequest) bool {
 	refs := object.GetOwnerReferences()
 	for _, r := range refs {
-		bref := utils.AsOwner(request.cluster)
+		bref := utils.AsOwner(request.Cluster)
 		if AreRefsEqual(&r, &bref) {
 			return true
 		}

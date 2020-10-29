@@ -16,8 +16,8 @@ import (
 )
 
 type ClusterLoggingRequest struct {
-	client  client.Client
-	cluster *logging.ClusterLogging
+	Client  client.Client
+	Cluster *logging.ClusterLogging
 
 	//forwardingRequest is a logforwarding instance
 	ForwardingRequest *logforward.LogForwarding
@@ -30,12 +30,12 @@ type ClusterLoggingRequest struct {
 
 // TODO: determine if this is even necessary
 func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
-	return clusterRequest.cluster.Spec.ManagementState == logging.ManagementStateManaged
+	return clusterRequest.Cluster.Spec.ManagementState == logging.ManagementStateManaged
 }
 
 func (clusterRequest *ClusterLoggingRequest) Create(object runtime.Object) error {
 	logrus.Tracef("Creating: %v", object)
-	err := clusterRequest.client.Create(context.TODO(), object)
+	err := clusterRequest.Client.Create(context.TODO(), object)
 	logrus.Tracef("Response: %v", err)
 	return err
 }
@@ -43,7 +43,7 @@ func (clusterRequest *ClusterLoggingRequest) Create(object runtime.Object) error
 //Update the runtime Object or return error
 func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err error) {
 	logrus.Tracef("Updating: %v", object)
-	if err = clusterRequest.client.Update(context.TODO(), object); err != nil {
+	if err = clusterRequest.Client.Update(context.TODO(), object); err != nil {
 		logrus.Errorf("Error updating %v: %v", object.GetObjectKind(), err)
 	}
 	return err
@@ -52,7 +52,7 @@ func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err 
 //Update the runtime Object status or return error
 func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object runtime.Object) (err error) {
 	logrus.Tracef("Updating Status: %v", object)
-	if err = clusterRequest.client.Status().Update(context.TODO(), object); err != nil {
+	if err = clusterRequest.Client.Status().Update(context.TODO(), object); err != nil {
 		// making this debug because we should be throwing the returned error if we are never
 		// able to update the status
 		logrus.Debugf("Error updating status: %v", err)
@@ -61,17 +61,17 @@ func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object runtime.Object)
 }
 
 func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object runtime.Object) error {
-	namespacedName := types.NamespacedName{Name: objectName, Namespace: clusterRequest.cluster.Namespace}
+	namespacedName := types.NamespacedName{Name: objectName, Namespace: clusterRequest.Cluster.Namespace}
 
 	logrus.Debugf("Getting namespacedName: %v, object: %v", namespacedName, object)
 
-	return clusterRequest.client.Get(context.TODO(), namespacedName, object)
+	return clusterRequest.Client.Get(context.TODO(), namespacedName, object)
 }
 
 func (clusterRequest *ClusterLoggingRequest) GetClusterResource(objectName string, object runtime.Object) error {
 	namespacedName := types.NamespacedName{Name: objectName}
 	logrus.Debugf("Getting ClusterResource namespacedName: %v, object: %v", namespacedName, object)
-	err := clusterRequest.client.Get(context.TODO(), namespacedName, object)
+	err := clusterRequest.Client.Get(context.TODO(), namespacedName, object)
 	logrus.Debugf("Response: %v", err)
 	return err
 }
@@ -81,14 +81,14 @@ func (clusterRequest *ClusterLoggingRequest) List(selector map[string]string, ob
 
 	labelSelector := labels.SelectorFromSet(selector)
 
-	return clusterRequest.client.List(
+	return clusterRequest.Client.List(
 		context.TODO(),
-		&client.ListOptions{Namespace: clusterRequest.cluster.Namespace, LabelSelector: labelSelector},
+		&client.ListOptions{Namespace: clusterRequest.Cluster.Namespace, LabelSelector: labelSelector},
 		object,
 	)
 }
 
 func (clusterRequest *ClusterLoggingRequest) Delete(object runtime.Object) error {
 	logrus.Debugf("Deleting: %v", object)
-	return clusterRequest.client.Delete(context.TODO(), object)
+	return clusterRequest.Client.Delete(context.TODO(), object)
 }

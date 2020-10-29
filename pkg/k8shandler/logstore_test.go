@@ -287,11 +287,11 @@ func TestSplitRolesWhenNodeCountIsGt3(t *testing.T) {
 	clientDataFound := false
 
 	for _, val := range elasticsearchCR.Spec.Nodes {
-		// check that one is client + master (size 3)
+		// check that one is Client + master (size 3)
 		if val.NodeCount == 1 {
-			// check that one is client + data (size 4)
+			// check that one is Client + data (size 4)
 			expectedNode := elasticsearch.ElasticsearchNode{
-				Roles: []elasticsearch.ElasticsearchNodeRole{"client", "data"},
+				Roles: []elasticsearch.ElasticsearchNodeRole{"Client", "data"},
 			}
 
 			if !areNodeRolesSame(expectedNode, val) {
@@ -302,7 +302,7 @@ func TestSplitRolesWhenNodeCountIsGt3(t *testing.T) {
 		} else {
 			if val.NodeCount == 3 {
 				expectedNode := elasticsearch.ElasticsearchNode{
-					Roles: []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+					Roles: []elasticsearch.ElasticsearchNodeRole{"Client", "data", "master"},
 				}
 
 				if !areNodeRolesSame(expectedNode, val) {
@@ -317,11 +317,11 @@ func TestSplitRolesWhenNodeCountIsGt3(t *testing.T) {
 	}
 
 	if !clientDataMasterFound {
-		t.Errorf("Exp. client data master node was not found")
+		t.Errorf("Exp. Client data master node was not found")
 	}
 
 	if !clientDataFound {
-		t.Errorf("Exp. client data node was not found")
+		t.Errorf("Exp. Client data node was not found")
 	}
 }
 
@@ -344,11 +344,11 @@ func createAndCheckSingleNodeWithNodeCount(t *testing.T, expectedNodeCount int32
 	}
 
 	for _, val := range elasticsearchCR.Spec.Nodes {
-		// check that one is client + master (size 3)
+		// check that one is Client + master (size 3)
 		if val.NodeCount == expectedNodeCount {
-			// check that one is client + data (size 4)
+			// check that one is Client + data (size 4)
 			expectedNode := elasticsearch.ElasticsearchNode{
-				Roles: []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
+				Roles: []elasticsearch.ElasticsearchNodeRole{"Client", "data", "master"},
 			}
 
 			if !areNodeRolesSame(expectedNode, val) {

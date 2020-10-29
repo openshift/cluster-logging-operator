@@ -74,7 +74,7 @@ func NewRoleBinding(bindingName, namespace, roleName string, subjects []rbac.Sub
 	}
 }
 
-//NewClusterRoleBinding stubs a cluster role binding
+//NewClusterRoleBinding stubs a Cluster role binding
 func NewClusterRoleBinding(bindingName, roleName string, subjects []rbac.Subject) *rbac.ClusterRoleBinding {
 	return &rbac.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
@@ -113,7 +113,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateClusterRole(name string, rule
 	return clusterRole, nil
 }
 
-//RemoveClusterRoleBinding removes a cluster role binding
+//RemoveClusterRoleBinding removes a Cluster role binding
 func (clusterRequest *ClusterLoggingRequest) RemoveClusterRoleBinding(name string) error {
 
 	binding := NewClusterRoleBinding(

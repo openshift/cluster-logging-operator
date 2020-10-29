@@ -8,19 +8,40 @@ CA_PATH=${CA_PATH:-$WORKING_DIR/ca.crt}
 LOG_STORE=$3
 REGENERATE_NEEDED=0
 
+function info() {
+  local msg=$1
+  echo "[INFO] ${msg}" >> ${WORKING_DIR}/action.log
+}
+
 function init_cert_files() {
 
   if [ ! -f ${WORKING_DIR}/ca.db ]; then
+    info "Initializing missing file: ${WORKING_DIR}/ca.db"
     touch ${WORKING_DIR}/ca.db
   fi
 
   if [ ! -f ${WORKING_DIR}/ca.serial.txt ]; then
+    info "Initializing missing file: ${WORKING_DIR}/ca.serial.txt"
     echo 00 > ${WORKING_DIR}/ca.serial.txt
   fi
 }
 
 function generate_signing_ca() {
-  if [ ! -f ${WORKING_DIR}/ca.crt ] || [ ! -f ${WORKING_DIR}/ca.key ] || ! openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/ca.crt; then
+  local regen=false
+  if [ ! -f ${WORKING_DIR}/ca.crt ] || [ "$(file -b ${WORKING_DIR}/ca.crt)" != "PEM certificate" ] ; then
+    info "Missing file or invalid type: ${WORKING_DIR}/ca.crt"
+    regen=true
+  fi
+  if [ ! -f ${WORKING_DIR}/ca.key ] || [ "$(file -b ${WORKING_DIR}/ca.key)" != "ASCII text" ] ; then
+    info "Missing file or invalid type: ${WORKING_DIR}/ca.key"
+    regen=true
+  fi
+  if ! $(openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/ca.crt > /dev/null 2>&1) ; then
+    info "${WORKING_DIR}/ca.crt expired or missing"
+    regen=true
+  fi
+  if [ "${regen}" == "true" ] ; then
+    info "generating signing request"
     openssl req -x509 \
                 -new \
                 -newkey rsa:4096 \
@@ -144,7 +165,7 @@ EOF
 
 function sign_cert() {
   local component=$1
-
+  info "Signing cert for component: $component"
   openssl ca \
           -in ${WORKING_DIR}/${component}.csr  \
           -notext                              \
@@ -158,7 +179,7 @@ function sign_cert() {
 function generate_cert_config() {
   local component=$1
   local extensions=${2:-}
-
+  info "generating cert config for component '$component' with ext: '${extensions}'"
   if [ "$extensions" != "" ]; then
     cat <<EOF > "${WORKING_DIR}/${component}.conf"
 [ req ]
@@ -193,7 +214,7 @@ EOF
 
 function generate_request() {
   local component=$1
-
+  info "signing request for component: $component"
   openssl req -new                                        \
           -out ${WORKING_DIR}/${component}.csr            \
           -newkey rsa:4096                                \
@@ -206,8 +227,21 @@ function generate_request() {
 function generate_certs() {
   local component=$1
   local extensions=${2:-}
-
-  if [ $REGENERATE_NEEDED = 1 ] || [ ! -f ${WORKING_DIR}/${component}.crt ] || ! openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/${component}.crt; then
+  local regen=false
+  if [ $REGENERATE_NEEDED = 1 ] ; then
+    info "REGENERATE_NEEDED=1"
+    regen=true
+  fi
+  if [ ! -f ${WORKING_DIR}/${component}.crt ] || [ "$(file -b ${WORKING_DIR}/${component}.crt)" != "PEM certificate" ] ; then
+    info "Missing file or invalid type: ${WORKING_DIR}/${component}.crt"
+    regen=true
+  fi
+  if ! $(openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/${component}.crt > /dev/null 2>&1); then
+    info "${WORKING_DIR}/${component}.crt is either expired or missing"
+    regen=true
+  fi
+  if [ "${regen}" == "true" ]; then
+    info "Generating certs for ${component} with ext: ${extensions}"
     generate_cert_config $component $extensions
     generate_request $component
     sign_cert $component
@@ -265,3 +299,13 @@ generate_certs 'system.admin'
 generate_certs 'kibana-internal' "$(generate_extensions false false kibana)"
 generate_certs 'elasticsearch' "$(generate_extensions true true $LOG_STORE{,-cluster}{,.${NAMESPACE}.svc}{,.cluster.local})"
 generate_certs 'logging-es' "$(generate_extensions false true $LOG_STORE{,.${NAMESPACE}.svc}{,.cluster.local})"
+
+if [ ! -s "${WORKING_DIR}/kibana-session-secret" ] ; then
+  info "Generating kibana session secret"
+  dd if=/dev/urandom count=1 ibs=16 status=none | hexdump -e '"%02X"' >  "${WORKING_DIR}/kibana-session-secret"
+fi
+
+if [ -f ${WORKING_DIR}/action.log ] ; then
+  cat ${WORKING_DIR}/action.log
+  rm ${WORKING_DIR}/action.log
+fi

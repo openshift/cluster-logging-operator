@@ -80,8 +80,8 @@ var _ = Describe("Normalizing Forwarding", func() {
 			Endpoint: "someotherendpoint",
 		}
 		request = &ClusterLoggingRequest{
-			client: fake.NewFakeClient(),
-			cluster: &cl.ClusterLogging{
+			Client: fake.NewFakeClient(),
+			Cluster: &cl.ClusterLogging{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						ForwardingAnnotation: "enabled",
@@ -90,7 +90,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 			},
 			ForwardingRequest: &loggingv1alpha1.LogForwarding{},
 		}
-		cluster = request.cluster
+		cluster = request.Cluster
 	})
 
 	It("should have sourceType application", func() {
@@ -333,7 +333,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 						"foo": []byte("bar"),
 					},
 				}
-				request.client = fake.NewFakeClient(secret)
+				request.Client = fake.NewFakeClient(secret)
 				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
 					Name:     "aName",
 					Type:     loggingv1alpha1.OutputTypeForward,
@@ -348,7 +348,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 			})
 
 			It("should accept well formed outputs", func() {
-				request.client = fake.NewFakeClient(&core.Secret{
+				request.Client = fake.NewFakeClient(&core.Secret{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Secret",
 						APIVersion: core.SchemeGroupVersion.String(),
@@ -549,8 +549,8 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			clusterRequest := &ClusterLoggingRequest{
-				client:            tt.fields.client,
-				cluster:           tt.fields.cluster,
+				Client:            tt.fields.client,
+				Cluster:           tt.fields.cluster,
 				ForwardingRequest: tt.fields.ForwardingRequest,
 				ForwardingSpec:    tt.fields.ForwardingSpec,
 				Collector:         tt.fields.Collector,
@@ -564,7 +564,7 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 				BinaryData: nil,
 			}
 
-			clusterRequest.client = fake.NewFakeClient(tt.fields.cluster, config)
+			clusterRequest.Client = fake.NewFakeClient(tt.fields.cluster, config)
 
 			gotConfig, err := clusterRequest.generateCollectorConfig()
 			if (err != nil) != tt.wantErr {

@@ -77,7 +77,7 @@ var _ = Describe("Reconciling", func() {
 			clusterRequest *ClusterLoggingRequest
 		)
 
-		Context("when cluster proxy present", func() {
+		Context("when Cluster proxy present", func() {
 			var (
 				customCABundle = `
                   -----BEGIN CERTIFICATE-----
@@ -116,8 +116,8 @@ var _ = Describe("Reconciling", func() {
 					fluentdCABundle,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					client:  client,
-					cluster: cluster,
+					Client:  client,
+					Cluster: cluster,
 				}
 			})
 

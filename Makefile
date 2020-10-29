@@ -114,6 +114,8 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-unit:
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
+	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	go test ./pkg/...
 

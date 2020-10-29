@@ -7,9 +7,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/ViaQ/logerr/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	apps "k8s.io/api/apps/v1"

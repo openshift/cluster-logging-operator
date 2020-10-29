@@ -46,7 +46,7 @@ var _ = Describe("ClusterLogForwarder", func() {
 				},
 			},
 		}
-		// Reset the timestamps so we get a predicatble output
+		// Reset the timestamps so we get a predictable output
 		t := metav1.Date(1999, time.January, 1, 0, 0, 0, 0, time.UTC)
 		forwarder.Status.Conditions[0].LastTransitionTime = t
 		forwarder.Status.Inputs["MyInput"][0].LastTransitionTime = t

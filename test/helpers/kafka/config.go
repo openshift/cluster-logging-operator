@@ -42,7 +42,7 @@ const (
 	serverProperties = `
       ############################# Log Basics #############################
 
-      # A comma seperated list of directories under which to store log files
+      # A comma separated list of directories under which to store log files
       # Overrides log.dir
       log.dirs=/var/lib/kafka/data/topics
 

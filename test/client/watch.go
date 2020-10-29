@@ -14,9 +14,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-var(
+var (
 	ErrWatchClosed = errors.New("watch closed")
-	ErrTimeout = errors.New("timeout")
+	ErrTimeout     = errors.New("timeout")
 )
 
 // watcher wraps a watch.Interface.

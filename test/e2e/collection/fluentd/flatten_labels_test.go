@@ -10,8 +10,8 @@ import (
 	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/ViaQ/logerr/log"
+	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 

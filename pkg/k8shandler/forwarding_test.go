@@ -718,6 +718,7 @@ func TestClusterLoggingRequest_verifyOutputURL(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt // Don't bind range variable.
 		t.Run(tt.name, func(t *testing.T) {
 			clusterRequest := &ClusterLoggingRequest{
 				Client:           tt.fields.Client,

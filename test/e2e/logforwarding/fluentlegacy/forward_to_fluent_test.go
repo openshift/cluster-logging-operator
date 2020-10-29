@@ -13,8 +13,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
@@ -73,7 +73,7 @@ var _ = Describe("[ClusterLogging] Forwards logs", func() {
 
 				var secret *v1.Secret
 				if secret, err = e2e.KubeClient.CoreV1().Secrets(fluentDeployment.Namespace).Get(context.TODO(), fluentDeployment.Name, metav1.GetOptions{}); err != nil {
-					Fail(fmt.Sprintf("There was an error fetching the fluent-reciever secrets: %v", err))
+					Fail(fmt.Sprintf("There was an error fetching the fluent-receiver secrets: %v", err))
 				}
 
 				sOpts := metav1.CreateOptions{}

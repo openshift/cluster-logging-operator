@@ -78,7 +78,7 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 		return err
 	}
 	log.V(2).Info("Generating Certificates")
-	if err = certificates.GenerateCertificates(f.test.NS.Name,
+	if err, _ = certificates.GenerateCertificates(f.test.NS.Name,
 		utils.GetScriptsDir(), "elasticsearch",
 		utils.DefaultWorkingDir); err != nil {
 		return err

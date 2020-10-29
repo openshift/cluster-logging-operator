@@ -30,7 +30,7 @@ func NewServiceAccount(accountName string, namespace string) *core.ServiceAccoun
 //CreateOrUpdateServiceAccount creates or updates a ServiceAccount for logging with the given name
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateServiceAccount(name string, annotations *map[string]string) error {
 
-	serviceAccount := NewServiceAccount(name, clusterRequest.cluster.Namespace)
+	serviceAccount := NewServiceAccount(name, clusterRequest.Cluster.Namespace)
 	if annotations != nil {
 		if serviceAccount.GetObjectMeta().GetAnnotations() == nil {
 			serviceAccount.GetObjectMeta().SetAnnotations(make(map[string]string))
@@ -40,7 +40,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateServiceAccount(name s
 		}
 	}
 
-	utils.AddOwnerRefToObject(serviceAccount, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(serviceAccount, utils.AsOwner(clusterRequest.Cluster))
 
 	logger.DebugObject("Attempting to create serviceacccount %v", serviceAccount)
 	if err := clusterRequest.Create(serviceAccount); err != nil {
@@ -83,7 +83,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateServiceAccount(name s
 //RemoveServiceAccount of given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccountName string) error {
 
-	serviceAccount := NewServiceAccount(serviceAccountName, clusterRequest.cluster.Namespace)
+	serviceAccount := NewServiceAccount(serviceAccountName, clusterRequest.Cluster.Namespace)
 
 	if serviceAccountName == "logcollector" {
 		// remove our finalizer from the list and update it.
@@ -105,7 +105,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccount
 
 func NewLogCollectorServiceAccountRef(uid types.UID) metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "v1", // apiversion for serviceaccounts/finalizers in cluster-logging.<VER>.clusterserviceversion.yaml
+		APIVersion:         "v1", // apiversion for serviceaccounts/finalizers in Cluster-logging.<VER>.clusterserviceversion.yaml
 		Kind:               "ServiceAccount",
 		Name:               "logcollector",
 		UID:                uid,

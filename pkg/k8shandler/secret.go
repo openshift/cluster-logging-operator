@@ -81,7 +81,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveSecret(secretName string) err
 
 	secret := NewSecret(
 		secretName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string][]byte{},
 	)
 

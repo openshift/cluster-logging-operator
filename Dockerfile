@@ -6,6 +6,8 @@ RUN make build
 FROM centos:centos7
 RUN INSTALL_PKGS=" \
       openssl \
+      file \
+      rsync \
       " && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \

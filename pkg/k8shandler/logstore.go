@@ -145,15 +145,20 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearch() (err error) {
 	return nil
 }
 func LoadElasticsearchSecretMap() map[string][]byte {
-	return map[string][]byte{
-		"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
-		"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
-		"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
-		"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
-		"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
-		"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
-		"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
-	}
+	var results = map[string][]byte{}
+	_ = Synchronize(func() error {
+		results = map[string][]byte{
+			"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
+			"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),
+			"logging-es.key":    utils.GetWorkingDirFileContents("logging-es.key"),
+			"logging-es.crt":    utils.GetWorkingDirFileContents("logging-es.crt"),
+			"admin-key":         utils.GetWorkingDirFileContents("system.admin.key"),
+			"admin-cert":        utils.GetWorkingDirFileContents("system.admin.crt"),
+			"admin-ca":          utils.GetWorkingDirFileContents("ca.crt"),
+		}
+		return nil
+	})
+	return results
 }
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret() error {
 

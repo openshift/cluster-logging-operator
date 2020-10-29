@@ -144,6 +144,8 @@ test-functional:
 .PHONY: test-functional
 
 test-unit:
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
+	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	LOG_LEVEL=$(LOG_LEVEL) \
 	go test -cover -race ./pkg/...

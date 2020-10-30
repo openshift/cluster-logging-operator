@@ -47,6 +47,9 @@ func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
 // while the err field should be used to attach the actual error that
 // triggered this log line, if present.
 func (l *Logger) Error(err error, msg string, keysAndValues ...interface{}) {
+	if !l.Enabled() {
+		return
+	}
 	if err == nil {
 		l.base.Error(nil, msg, keysAndValues...)
 		return

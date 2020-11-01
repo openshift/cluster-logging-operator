@@ -32,7 +32,7 @@ type Test struct {
 	group        test.FailGroup // Run cluster operations in parallel
 }
 
-func (t *Test) Reader(name string) *cmd.Reader {
+func (t *Test) ReaderForSource(name string) *cmd.Reader {
 	return t.receiver.Sources[name].TailReader()
 }
 
@@ -59,9 +59,9 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 
 	Context("with app/infra/audit receiver", func() {
 		BeforeEach(func() {
-			t.receiver.AddSource("application", "forward", 24224)
-			t.receiver.AddSource("infrastructure", "forward", 24225)
-			t.receiver.AddSource("audit", "forward", 24226)
+			t.receiver.AddSource(&fluentd.Source{Name: "application", Type: "forward", Port: 24224})
+			t.receiver.AddSource(&fluentd.Source{Name: "infrastructure", Type: "forward", Port: 24225})
+			t.receiver.AddSource(&fluentd.Source{Name: "audit", Type: "forward", Port: 24226})
 			t.group.Go(func() { ExpectOK(t.receiver.Create(t.Client)) })
 		})
 
@@ -73,11 +73,11 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.group.Go(func() {
 				defer cancel() // Cancel goroutines verifying empty when we get our logs.
-				r := t.Reader("application")
+				r := t.ReaderForSource("application")
 				ExpectOK(r.ExpectLines(10, message, `{"viaq_index_name":"(inf|aud)`))
 			})
-			t.group.Go(func() { ExpectOK(t.Reader("infrastructure").ExpectEmpty(ctx)) })
-			t.group.Go(func() { ExpectOK(t.Reader("audit").ExpectEmpty(ctx)) })
+			t.group.Go(func() { ExpectOK(t.ReaderForSource("infrastructure").ExpectEmpty(ctx)) })
+			t.group.Go(func() { ExpectOK(t.ReaderForSource("audit").ExpectEmpty(ctx)) })
 		})
 
 		It("forwards infrastructure logs only", func() {
@@ -88,11 +88,11 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.group.Go(func() {
 				defer cancel()
-				r := t.Reader("infrastructure")
+				r := t.ReaderForSource("infrastructure")
 				ExpectOK(r.ExpectLines(10, "", `{"viaq_index_name":"(app|aud)`))
 			})
-			t.group.Go(func() { ExpectOK(t.Reader("application").ExpectEmpty(ctx)) })
-			t.group.Go(func() { ExpectOK(t.Reader("audit").ExpectEmpty(ctx)) })
+			t.group.Go(func() { ExpectOK(t.ReaderForSource("application").ExpectEmpty(ctx)) })
+			t.group.Go(func() { ExpectOK(t.ReaderForSource("audit").ExpectEmpty(ctx)) })
 		})
 
 		It("forwards audit logs only", func() {
@@ -104,11 +104,11 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.group.Go(func() {
 				defer cancel()
-				r := t.Reader("audit")
+				r := t.ReaderForSource("audit")
 				ExpectOK(r.ExpectLines(10, "", `{"viaq_index_name":"(inf|app)`))
 			})
-			t.group.Go(func() { ExpectOK(t.Reader("application").ExpectEmpty(ctx)) })
-			t.group.Go(func() { ExpectOK(t.Reader("infrastructure").ExpectEmpty(ctx)) })
+			t.group.Go(func() { ExpectOK(t.ReaderForSource("application").ExpectEmpty(ctx)) })
+			t.group.Go(func() { ExpectOK(t.ReaderForSource("infrastructure").ExpectEmpty(ctx)) })
 		})
 
 		It("forwards different types to different outputs with labels", func() {
@@ -131,8 +131,8 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 			t.group.Go(func() { ExpectOK(t.Recreate(clf)) })
 			for _, name := range []string{"application", "infrastructure", "audit"} {
 				name := name // Don't bind to range variable
+				r := t.ReaderForSource(name)
 				t.group.Go(func() {
-					r := t.Reader(name)
 					ExpectOK(r.ExpectLines(3, fmt.Sprintf(`"log-type":%q`, name), `"log-type":`))
 				})
 			}

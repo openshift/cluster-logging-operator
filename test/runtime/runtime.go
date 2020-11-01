@@ -4,7 +4,6 @@ package runtime
 import (
 	"fmt"
 	"os/exec"
-	"strings"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -37,6 +36,7 @@ func Decode(manifest string) runtime.Object {
 }
 
 // Meta interface to get/set object metadata.
+// Panics if o is not a metav1.Object, e.g. if it is a List type.
 func Meta(o runtime.Object) metav1.Object {
 	m, err := meta.Accessor(o)
 	must(err)
@@ -50,10 +50,21 @@ func NamespacedName(o runtime.Object) types.NamespacedName {
 	return nn
 }
 
-// ID returns a human-readable identifier for the object.
+// ID returns a human-readable identifier for the object, for debugging and tests.
 func ID(o runtime.Object) string {
-	m := Meta(o)
-	return fmt.Sprintf("[%v/%v, Namespace=%v]", strings.ToLower(GroupVersionKind(o).Kind), m.GetName(), m.GetNamespace())
+	gvk, err := apiutil.GVKForObject(o, scheme.Scheme)
+	if err != nil {
+		return fmt.Sprintf("%v", o)
+	}
+	m, err := meta.Accessor(o)
+	if err != nil {
+		return gvk.String()
+	}
+	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
+	if m.GetNamespace() != "" {
+		return fmt.Sprintf("%v/%v/namespaces/%v/%v/%v", gvr.Group, gvr.Version, m.GetNamespace(), gvr.Resource, m.GetName())
+	}
+	return fmt.Sprintf("%v/%v/%v/%v", gvr.Group, gvr.Version, gvr.Resource, m.GetName())
 }
 
 // GroupVersionKind deduces the Kind from the Go type.

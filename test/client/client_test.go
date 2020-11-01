@@ -31,6 +31,11 @@ var _ = Describe("Client", func() {
 		Expect(cm2.Labels).To(HaveKeyWithValue(LabelKey, LabelValue))
 	})
 
+	It("re-creates existing namespace", func() {
+		// Namespaces don't delete synchronously, so an important case.
+		ExpectOK(t.Recreate(t.NS))
+	})
+
 	It("re-creates existing object", func() {
 		cm := runtime.NewConfigMap(t.NS.Name, "foo", map[string]string{"a": "b"})
 		ExpectOK(t.Create(cm))

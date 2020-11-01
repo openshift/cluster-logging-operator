@@ -22,8 +22,8 @@ var _ = Describe("Receiver", func() {
 		defer func() { t.Close() }()
 
 		r := fluentd.NewReceiver(t.NS.Name, "receiver")
-		r.AddSource("foo", "forward", 24224)
-		r.AddSource("bar", "http", 24225)
+		r.AddSource(&fluentd.Source{Name: "foo", Type: "forward", Port: 24224})
+		r.AddSource(&fluentd.Source{Name: "bar", Type: "http", Port: 24225})
 		r.Sources["bar"].Cert = certificate.NewCert(nil, r.Host())
 		ExpectOK(r.Create(t.Client))
 

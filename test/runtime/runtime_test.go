@@ -17,6 +17,16 @@ var _ = Describe("Object", func() {
 		clf   = runtime.NewClusterLogForwarder()
 	)
 
+	It("generates ID", func() {
+		var o runtime.Object
+		o = runtime.NewNamespace("foo")
+		Expect(runtime.ID(o)).To(Equal("/v1/namespaces/foo"))
+		o = runtime.NewDaemonSet("foo", "name")
+		Expect(runtime.ID(o)).To(Equal("apps/v1/namespaces/foo/daemonsets/name"))
+		o = &corev1.PodList{}
+		Expect(runtime.ID(o)).To(Equal("/v1, Kind=PodList"))
+	})
+
 	DescribeTable("Decode",
 		func(manifest string, o runtime.Object) {
 			got := runtime.Decode(manifest)

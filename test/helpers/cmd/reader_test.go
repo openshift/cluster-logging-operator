@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
@@ -54,7 +55,7 @@ var _ = Describe("CmdReader", func() {
 		r, err := NewReader(exec.Command("echo", "hello\n"))
 		ExpectOK(err)
 		defer r.Close()
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
 		defer cancel()
 		Expect(r.ExpectEmpty(ctx)).To(MatchError(`expected empty, read line: "hello\n"`))
 	})

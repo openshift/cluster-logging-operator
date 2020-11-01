@@ -10,6 +10,8 @@ import (
 	"regexp"
 
 	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/test/runtime"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -45,7 +47,7 @@ func (r *Reader) Read(b []byte) (int, error) { return r.r.Read(b) }
 
 // ReadLine reads a line of text as a string. Times out after test.DefaultSuccessTimeout.
 func (r *Reader) ReadLine() (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), test.DefaultSuccessTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
 	defer cancel()
 	return r.ReadLineContext(ctx)
 }
@@ -84,7 +86,7 @@ func (r *Reader) Close() error {
 
 // ExpectLines calls ExpectLinesMatchContext with timeout test.DefaultSuccessTimeout.
 func (r *Reader) ExpectLines(n int, good, bad string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), test.DefaultSuccessTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
 	defer cancel()
 	return r.ExpectLinesContext(ctx, n, good, bad)
 }
@@ -123,4 +125,20 @@ func (r *Reader) ExpectEmpty(ctx context.Context) error {
 	default:
 		return err
 	}
+}
+
+// TailReader returns a CmdReader that tails file at path on pod.
+//
+// It uses "tail -F" which will wait for the file to exist if it does not,
+// and will wait for it to be re-created if it is deleted.
+// It will continue to tail until Close() is called.
+func TailReader(pod *corev1.Pod, path string) (*Reader, error) {
+	return NewReader(runtime.Exec(pod, "tail", "-F", path))
+}
+
+// FileReader returns a CmdReader that reads the current contents of path on pod.file
+//
+// It returns io.EOF at the end of the file.
+func FileReader(pod *corev1.Pod, path string) (*Reader, error) {
+	return NewReader(runtime.Exec(pod, "cat", path))
 }

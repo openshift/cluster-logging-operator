@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/format"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -18,6 +20,16 @@ import (
 func init() {
 	if os.Getenv("TEST_UNTRUNCATED_DIFF") != "" || os.Getenv("TEST_FULL_DIFF") != "" {
 		format.TruncatedDiff = false
+	}
+	// Set up logging for tests.
+	level, ok := os.LookupEnv("LOG_LEVEL")
+	if ok {
+		verbosity, err := strconv.Atoi(level)
+		if err != nil {
+			log.Error(err, "Unable to evaluate LOG_LEVEL %q, using default", level)
+		}
+		opt := log.WithVerbosity(uint8(verbosity))
+		log.MustInitWithOptions("test", []log.Option{opt})
 	}
 }
 

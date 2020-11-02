@@ -6,8 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+	testrt "github.com/openshift/cluster-logging-operator/test/runtime"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,6 +18,11 @@ import (
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+)
+
+var (
+	debug = log.V(7) // Log at debug verbosity.
+	trace = log.V(8) // Lower priority, more verbose.
 )
 
 // Client operates on any runtime.Object (core or custom) and has Watch to wait efficiently.
@@ -60,10 +66,39 @@ func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Cl
 	return c, nil
 }
 
+func logKeyId(v interface{}) (key, id string) {
+	switch v := v.(type) {
+	case runtime.Object:
+		return "object", testrt.ID(v)
+	case schema.GroupVersionKind:
+		return "type", v.String()
+	case schema.GroupVersionResource:
+		return "type", v.String()
+	default:
+		return fmt.Sprintf("unexpected-%T", v), fmt.Sprintf("%v", v)
+	}
+}
+
+func logBeginEnd(op string, v interface{}, errp *error, kv ...interface{}) func() {
+	key, id := logKeyId(v)
+	kv = append([]interface{}{key, id}, kv...)
+	trace.Info("Client."+op+" call", kv...)
+	start := time.Now()
+	return func() {
+		kv := append(kv, "delay", time.Since(start))
+		if errp != nil && *errp != nil {
+			debug.Error(*errp, "Client."+op+" error", kv...)
+		} else {
+			debug.Info("Client."+op+" ok", kv...)
+		}
+	}
+}
+
 // Create the cluster resource described by the struct o.
-func (c *Client) Create(o runtime.Object) error {
+func (c *Client) Create(o runtime.Object) (err error) {
+	defer logBeginEnd("Create", o, &err)()
 	for k, v := range c.labels {
-		testruntime.Labels(o)[k] = v
+		testrt.Labels(o)[k] = v
 	}
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
@@ -71,7 +106,13 @@ func (c *Client) Create(o runtime.Object) error {
 }
 
 // Get the resource with the name, namespace and type of o, copy it's state into o.
-func (c *Client) Get(o runtime.Object) error {
+func (c *Client) Get(o runtime.Object) (err error) {
+	defer logBeginEnd("Get", o, &err)()
+	return c.get(o)
+}
+
+// get with no logging, for internal use.
+func (c *Client) get(o runtime.Object) (err error) {
 	nsName, err := crclient.ObjectKeyFromObject(o)
 	if err != nil {
 		return err
@@ -88,21 +129,24 @@ type ListOption = crclient.ListOption
 type InNamespace = crclient.InNamespace
 
 // List resources, return results in o, which must be an xxxList struct.
-func (c *Client) List(o runtime.Object, opts ...ListOption) error {
+func (c *Client) List(o runtime.Object, opts ...ListOption) (err error) {
+	defer logBeginEnd("List", o, &err)()
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
 	return c.c.List(ctx, o, opts...)
 }
 
 // Update the state of resource with name, namespace and type of o using the state in o.
-func (c *Client) Update(o runtime.Object) error {
+func (c *Client) Update(o runtime.Object) (err error) {
+	defer logBeginEnd("Update", o, &err)()
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
 	return c.c.Update(ctx, o)
 }
 
 // Delete the of resource with name, namespace and type of o.
-func (c *Client) Delete(o runtime.Object) error {
+func (c *Client) Delete(o runtime.Object) (err error) {
+	defer logBeginEnd("Delete", o, &err)()
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
 	return c.c.Delete(ctx, o)
@@ -110,6 +154,7 @@ func (c *Client) Delete(o runtime.Object) error {
 
 // Remove is like Delete but ignores NotFound errors.
 func (c *Client) Remove(o runtime.Object) error {
+	// No logBeginEnd, Delete logs for itself.
 	return crclient.IgnoreNotFound(c.Delete(o))
 }
 
@@ -120,22 +165,23 @@ func Deleted(e watch.Event) (bool, error) {
 	return false, nil
 }
 
-// Recreate calls Remove, waits for the object to be gone, then calls Create.
-func (c *Client) Recreate(o runtime.Object) error {
+// Recreate creates o, removing any existing object of the same name and type.
+func (c *Client) Recreate(o runtime.Object) (err error) {
+	defer logBeginEnd("Recreate", o, &err)()
 	if err := c.Remove(o); err != nil {
 		return err
 	}
 	// Clear resource version so we can re-create, even if o was used before.
-	testruntime.Meta(o).SetResourceVersion("")
-	err := c.Create(o)
+	testrt.Meta(o).SetResourceVersion("")
+	err = c.Create(o)
 	switch {
 	case err == nil:
 		return nil
-	case errors.IsAlreadyExists(err):
-		if err := c.WaitFor(o, Deleted); err != nil {
+	case errors.IsAlreadyExists(err): // Delete is incomplete.
+		if err = c.WaitFor(o, Deleted); err != nil {
 			return err
 		}
-		testruntime.Meta(o).SetResourceVersion("")
+		testrt.Meta(o).SetResourceVersion("")
 		return c.Create(o)
 	default:
 		return err
@@ -145,14 +191,14 @@ func (c *Client) Recreate(o runtime.Object) error {
 func (c *Client) rest(gv schema.GroupVersion) (rest.Interface, error) {
 	var err error
 	if c.rests[gv] == nil {
-		c.rests[gv], err = apiutil.RESTClientForGVK(gv.WithKind(""), c.cfg, testruntime.Codecs)
+		c.rests[gv], err = apiutil.RESTClientForGVK(gv.WithKind(""), c.cfg, testrt.Codecs)
 	}
 	return c.rests[gv], err
 }
 
 // GetGroupVersionResource uses the Client's RESTMapping to find the resource name for o.
 func (c *Client) GetGroupVersionResource(o runtime.Object) (schema.GroupVersionResource, error) {
-	m, err := c.mapper.RESTMapping(testruntime.GroupVersionKind(o).GroupKind())
+	m, err := c.mapper.RESTMapping(testrt.GroupVersionKind(o).GroupKind())
 	if err != nil {
 		return schema.GroupVersionResource{}, err
 	}
@@ -175,16 +221,6 @@ func (c *Client) WithTimeout(timeout time.Duration) *Client {
 	return &c2
 }
 
-// ID returns a human-readable identifier for the object.
-func (c *Client) ID(o runtime.Object) string {
-	gvr, err := c.GetGroupVersionResource(o)
-	if err != nil {
-		return testruntime.ID(o)
-	}
-	m := testruntime.Meta(o)
-	return fmt.Sprintf("[%v/%v, Namespace=%v]", gvr.Resource, m.GetName(), m.GetNamespace())
-}
-
 func (c *Client) Timeout() time.Duration { return c.timeout }
 
 var singleton struct {
@@ -198,10 +234,6 @@ const (
 	LabelKey = "test-client"
 	// LabelValue is the create label value for the Get() client.
 	LabelValue = "true"
-	// DefaultSuccessTimeout is the timeout for the Get() client.
-	DefaultSuccessTimeout = test.DefaultSuccessTimeout
-	// DefaultFailureTimeout is a timeout for tests that _expect_ a timeout.
-	DefaultFailureTimeout = test.DefaultFailureTimeout
 )
 
 // Get returns a process-wide singleton client, created on demand.
@@ -209,20 +241,10 @@ const (
 func Get() *Client {
 	s := &singleton
 	s.once.Do(func() {
-		s.c, s.err = New(nil, DefaultSuccessTimeout, map[string]string{LabelKey: LabelValue})
+		s.c, s.err = New(nil, test.SuccessTimeout(), map[string]string{LabelKey: LabelValue})
 	})
 	if s.err != nil {
 		panic(s.err)
 	}
 	return s.c
-}
-
-// All applies f to each object in turn, returns on the first error.
-func All(f func(runtime.Object) error, objs ...runtime.Object) error {
-	for _, o := range objs {
-		if err := f(o); err != nil {
-			return nil
-		}
-	}
-	return nil
 }

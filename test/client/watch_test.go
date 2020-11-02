@@ -66,6 +66,6 @@ var _ = Describe("Watch", func() {
 	})
 
 	It("times out waiting for non-existent pod", func() {
-		Expect(t.WithTimeout(test.DefaultFailureTimeout).WaitFor(runtime.NewPod(t.NS.Name, "no-such-pod"), PodRunning)).To(HaveOccurred())
+		Expect(t.WithTimeout(test.FailureTimeout()).WaitFor(runtime.NewPod(t.NS.Name, "no-such-pod"), PodRunning)).To(HaveOccurred())
 	})
 })

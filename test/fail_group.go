@@ -1,9 +1,8 @@
 package test
 
 import (
-	"sync/atomic"
+	"fmt"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 )
@@ -14,30 +13,29 @@ import (
 //
 // This is essentially errgroup.Group extended to recover ginkgo.Fail() correctly.
 type FailGroup struct {
-	g      errgroup.Group
-	panics int32
+	g errgroup.Group
 }
 
 // Go runs f concurrently and recovers from ginkgo.Fail() panics.
-func (g *FailGroup) Go(f func()) { g.GoErr(func() error { f(); return nil }) }
-
-// GoErr allows f to return an error or call ginkgo.Fail().
-func (g *FailGroup) GoErr(f func() error) {
-	g.g.Go(func() error {
-		defer GinkgoRecover() // Recover panic and report as ginkgo test failure.
-		atomic.AddInt32(&g.panics, 1)
-		err := f()
-		atomic.AddInt32(&g.panics, -1) // We passed f() without panic
-		return err
+func (g *FailGroup) Go(f func()) {
+	g.g.Go(func() (err error) {
+		defer func() {
+			if v := recover(); v != nil {
+				err = panicError{value: v}
+			}
+		}()
+		f()
+		return nil
 	})
 }
 
+type panicError struct{ value interface{} }
+
+func (p panicError) Error() string { return fmt.Sprintf("%v", p.value) }
+
 // Wait waits for all goroutines to exit.
 //
-// It will ginkgo.Fail() if any goroutine returned an error or called ginkgo.Fail().
+// It calls ginkgo.Fail() if any goroutine returned an error or called ginkgo.Fail().
 func (g *FailGroup) Wait() {
 	ExpectWithOffset(1, g.g.Wait()).To(Succeed())
-	if g.panics > 0 {
-		Fail("assertion failed in FailGroup", 1)
-	}
 }

@@ -1,6 +1,9 @@
 package test
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 const (
 	// DefaultSuccessTimeout for operations that are expected to succeed.
@@ -25,3 +28,19 @@ const (
 	OpenshiftLoggingNS         = "openshift-logging"
 	OpenshiftOperatorsRedhatNS = "openshift-operators-redhat"
 )
+
+func SuccessTimeout() time.Duration {
+	d, err := time.ParseDuration(os.Getenv("SUCCESS_TIMEOUT"))
+	if err != nil {
+		return DefaultSuccessTimeout
+	}
+	return d
+}
+
+func FailureTimeout() time.Duration {
+	d, err := time.ParseDuration(os.Getenv("FAILURE_TIMEOUT"))
+	if err != nil {
+		return DefaultFailureTimeout
+	}
+	return d
+}

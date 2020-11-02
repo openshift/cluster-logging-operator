@@ -51,11 +51,11 @@ type Source struct {
 	// SharedKey enables fluentd's shared_key authentication.
 	SharedKey string
 
-	r *Receiver
+	receiver *Receiver
 }
 
 // Host is the host name of the receiver service.
-func (s *Source) Host() string { return s.r.Host() }
+func (s *Source) Host() string { return s.receiver.Host() }
 
 // OutFile is the path of the output file for this source on the fluentd Pod.
 func (s *Source) OutFile() string { return filepath.Join(dataDir, s.Name) }
@@ -65,8 +65,8 @@ func (s *Source) OutFile() string { return filepath.Join(dataDir, s.Name) }
 // It waits for the file to exist, and will tail the output file forever,
 // so it won't normally return io.EOF.
 func (s *Source) TailReader() *cmd.Reader {
-	test.Must(s.r.Wait()) // Make sure r.Pod is running before we exec.
-	r, err := cmd.NewReader(runtime.Exec(s.r.Pod, "tail", "-F", s.OutFile()))
+	test.Must(s.receiver.Wait()) // Make sure r.Pod is running before we exec.
+	r, err := cmd.TailReader(s.receiver.Pod, s.OutFile())
 	test.Must(err)
 	return r
 }
@@ -137,22 +137,21 @@ func NewReceiver(ns, name string) *Receiver {
 	return r
 }
 
-func (r *Receiver) AddSource(name, sourceType string, port int, extra ...string) *Source {
-	s := &Source{Name: name, Type: sourceType, Port: port, r: r}
+func (r *Receiver) AddSource(s *Source) {
+	s.receiver = r
 	r.Sources[s.Name] = s
 	r.service.Spec.Ports = append(r.service.Spec.Ports,
 		corev1.ServicePort{Name: s.Name, Port: int32(s.Port)},
 	)
-	return s
 }
 
 func (s *Source) config() {
 	if s.Cert != nil {
-		s.r.ConfigMap.Data[s.Name+"-cert.pem"] = string(s.Cert.CertificatePEM())
-		s.r.ConfigMap.Data[s.Name+"-key.pem"] = string(s.Cert.PrivateKeyPEM())
+		s.receiver.ConfigMap.Data[s.Name+"-cert.pem"] = string(s.Cert.CertificatePEM())
+		s.receiver.ConfigMap.Data[s.Name+"-key.pem"] = string(s.Cert.PrivateKeyPEM())
 	}
 	if s.CA != nil {
-		s.r.ConfigMap.Data[s.Name+"-ca.pem"] = string(s.CA.CertificatePEM())
+		s.receiver.ConfigMap.Data[s.Name+"-ca.pem"] = string(s.CA.CertificatePEM())
 		if s.Cert == nil {
 			panic("Cannot set Source.CA without setting Source.Cert")
 		}
@@ -160,7 +159,7 @@ func (s *Source) config() {
 	// Note output @type exec rather than file, to send everything to a single file.
 	t := template.Must(template.New("config").Funcs(template.FuncMap{
 		"ToUpper":    strings.ToUpper,
-		"ConfigPath": func(name string) string { return s.r.ConfigPath(name) },
+		"ConfigPath": func(name string) string { return s.receiver.ConfigPath(name) },
 	}).Parse(`
 <source>
   @type {{.Type}}
@@ -197,7 +196,7 @@ func (s *Source) config() {
   </match>
 </label>
 `))
-	test.Must(t.Execute(&s.r.config, s))
+	test.Must(t.Execute(&s.receiver.config, s))
 }
 
 // Create the receiver's resources, wait for pod to be running.

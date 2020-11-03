@@ -10,7 +10,7 @@ if [ "${BASE_COLLECTION_PATH}" = "" ]; then
     BASE_COLLECTION_PATH=$(pwd)
 fi
 
-NAMESPACE="openshift-logging"
+NAMESPACE=openshift-logging
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 collector_folder="$CLO_COLLECTION_PATH/collector"
@@ -50,17 +50,17 @@ echo "Gathering data for collection component"
 mkdir -p $collector_folder
 
 echo "-- Retrieving configmaps"
-oc -n $NAMESPACE extract configmap/fluentd --to=$collector_folder ||:
-oc -n $NAMESPACE extract configmap/secure-forward --to=$collector_folder ||:
+oc -n $NAMESPACE extract configmap/fluentd --to=$collector_folder
+oc -n $NAMESPACE extract configmap/secure-forward --to=$collector_folder
 
 echo "-- Checking Collector health"
-pods="$(oc -n $NAMESPACE get pods -l logging-infra=fluentd -o jsonpath={.items[*].metadata.name})"
+pods="$(oc -n $NAMESPACE get pods -l logging-infra=fluentd -o jsonpath='{.items[*].metadata.name}')"
 for pod in $pods
 do
     echo "---- Collector pod: $pod"
     get_env $pod $collector_folder "$NAMESPACE"
     check_collector_connectivity $pod
     check_collector_persistence $pod
-    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/clo_default_output_es > $collector_folder/$pod.es-buffers.txt||:
-    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/retry_clo_default_output_es > $outdir/$pod.buffers.es-retry.txt||
+    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/clo_default_output_es > $collector_folder/$pod.es-buffers.txt
+    oc -n openshift-logging exec -- ls -l /var/lib/fluentd/retry_clo_default_output_es > $outdir/$pod.buffers.es-retry.txt
 done

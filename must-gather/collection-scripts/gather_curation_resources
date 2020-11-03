@@ -17,24 +17,27 @@ curator_folder="$CLO_COLLECTION_PATH/curator"
 
 check_curator_connectivity() {
   local cron=$1
-  echo "-- Connectivity between $cron and elasticsearch" >> $curator_folder/$pod
-  es_host=$(oc -n $NAMESPACE get cronjob $cron  -o jsonpath='{.spec.containers[0].env[?(@.name=="ES_HOST")].value}')
-  es_port=$(oc -n $NAMESPACE get cronjob $cron  -o jsonpath='{.spec.containers[0].env[?(@.name=="ES_PORT")].value}')
-  echo "  with ca" >> $curator_folder/$pod
-  oc -n $NAMESPACE debug cronjob/$cron -- curl -ILvs --key /etc/curator/keys/key --cert /etc/curator/keys/cert --cacert /etc/curator/keys/ca -XGET https://$es_host:$es_port &>> $curator_folder/$pod
-  echo "  without ca" >> $curator_folder/$pod
-  oc -n $NAMESPACE debug cronjob/$cron -- curl -ILkvs --key /etc/curator/keys/key --cert /etc/curator/keys/cert -XGET https://$es_host:$es_port &>> $curator_folder/$pod
+  echo "-- Connectivity between $cron and elasticsearch" >> $curator_folder/$cron
+  es_host=$(oc -n $NAMESPACE get cronjob $cron  -o jsonpath='{.spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name=="ES_HOST")].value}')
+  es_port=$(oc -n $NAMESPACE get cronjob $cron  -o jsonpath='{.spec.jobTemplate.spec.template.spec.containers[0].env[?(@.name=="ES_PORT")].value}')
+  echo "  with ca" >> $curator_folder/$cron
+  oc -n $NAMESPACE debug cronjob/$cron -- curl -ILvs --key /etc/curator/keys/key --cert /etc/curator/keys/cert --cacert /etc/curator/keys/ca -XGET https://$es_host:$es_port &>> $curator_folder/$cron
+  echo "  without ca" >> $curator_folder/$cron
+  oc -n $NAMESPACE debug cronjob/$cron -- curl -ILkvs --key /etc/curator/keys/key --cert /etc/curator/keys/cert -XGET https://$es_host:$es_port &>> $curator_folder/$cron
 }
-
 
 echo "Gathering data for curation component"
 echo "-- Checking Curator health"
-curator_pods=$(oc -n $NAMESPACE get pods -l logging-infra=curator -o jsonpath={.items[*].metadata.name})
-mkdir -p $curator_folder
-for pod in $curator_pods
-do
-    echo "---- Curator pod: $pod"
-    get_env $pod $curator_folder
-done
-
-check_curator_connectivity curator
+if [ "$(oc -n $NAMESPACE get cronjob/curator -o name 2>/dev/null)" = "cronjob.batch/curator" ]; then
+    echo "-- Curator deployed"
+    curator_pods=$(oc -n $NAMESPACE get pods -l logging-infra=curator -o jsonpath='{.items[*].metadata.name}')
+    mkdir -p $curator_folder
+    for pod in $curator_pods
+    do
+	echo "---- Curator pod: $pod"
+	get_env $pod $curator_folder
+    done
+    check_curator_connectivity curator
+else
+    echo "-- Curator not deployed"
+fi

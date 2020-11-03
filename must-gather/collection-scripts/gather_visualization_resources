@@ -36,7 +36,7 @@ echo "Gathering data for visualization component"
 echo "-- Checking Kibana health"
 mkdir -p $kibana_folder
 
-kibana_pods=$(oc -n $NAMESPACE get pods -l logging-infra=kibana -o jsonpath={.items[*].metadata.name})
+kibana_pods=$(oc -n $NAMESPACE get pods -l logging-infra=kibana -o jsonpath='{.items[*].metadata.name}')
 for pod in $kibana_pods
 do
     echo "---- Kibana pod: $pod"

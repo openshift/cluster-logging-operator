@@ -10,7 +10,7 @@ if [ "${BASE_COLLECTION_PATH}" = "" ]; then
     BASE_COLLECTION_PATH=$(pwd)
 fi
 
-NAMESPACE="openshift-logging"
+NAMESPACE=openshift-logging
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 es_folder="$CLO_COLLECTION_PATH/es"
@@ -26,13 +26,13 @@ get_es_logs() {
   fi
 
   path=/elasticsearch/persistent/elasticsearch/logs
-  exists=$( oc -n $NAMESPACE exec $pod -c elasticsearch -- ls ${path} 2> /dev/null ) || :
+  exists=$(oc -n $NAMESPACE exec $pod -c elasticsearch -- ls ${path} 2> /dev/null)
 
   if [ -z "$exists" ]; then
     path=/elasticsearch/elasticsearch/logs
   fi
 
-  exists=$( oc -n $NAMESPACE exec $pod -c elasticsearch -- ls ${path} 2> /dev/null ) || :
+  exists=$(oc -n $NAMESPACE exec $pod -c elasticsearch -- ls ${path} 2> /dev/null)
   if [ -z "$exists" ]; then
     echo "---- Unable to get ES logs from pod $pod"
   else
@@ -92,14 +92,14 @@ get_elasticsearch_status() {
 }
 
 get_elasticsearch_cr() {
-  oc get -n ${NAMESPACE} elasticsearch elasticsearch -o yaml > $es_folder/cr
+  oc get -n $NAMESPACE elasticsearch elasticsearch -o yaml > $es_folder/cr
 }
 
 echo "Gathering data for logstore component"
 echo "-- Checking Elasticsearch health"
 mkdir -p $es_folder
 
-es_pods=$(oc -n $NAMESPACE get pods -l component=elasticsearch -o jsonpath={.items[*].metadata.name})
+es_pods=$(oc -n $NAMESPACE get pods -l component=elasticsearch -o jsonpath='{.items[*].metadata.name}')
 for pod in $es_pods
 do
     echo "---- Elasticsearch pod: $pod"
@@ -112,7 +112,7 @@ anypod=""
 for comp in "elasticsearch"
 do
     echo "-- Getting Elasticsearch cluster info from logging-${comp} pod"
-    anypod=$(oc -n $NAMESPACE get pod --selector="component=${comp}" --no-headers | grep Running | awk '{print$1}' | tail -1 || :)
+    anypod=$(oc -n $NAMESPACE get pod --selector="component=${comp}" --no-headers | grep Running | awk '{print$1}' | tail -1)
     get_elasticsearch_status ${comp} ${anypod}
 done
 

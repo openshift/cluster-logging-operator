@@ -1,7 +1,7 @@
 # Define the target to run if make is called with no arguments.
 default: check
 
-LOG_LEVEL?=fatal
+export LOG_LEVEL?=fatal
 export KUBECONFIG?=$(HOME)/.kube/config
 
 export GOBIN=$(CURDIR)/bin
@@ -21,7 +21,7 @@ export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 
-.PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run
+.PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 
@@ -138,7 +138,10 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-functional:
-	@echo "FIXME"
+	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	LOGGING_SHARE_DIR=$(CURDIR)/files \
+	SCRIPTS_DIR=$(CURDIR)/scripts \
+	go test -race ./test/functional/...
 .PHONY: test-functional
 
 test-unit:

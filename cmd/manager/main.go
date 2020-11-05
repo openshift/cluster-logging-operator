@@ -49,7 +49,7 @@ func main() {
 	if present {
 		verbosity, err := strconv.Atoi(logLevel)
 		if err != nil {
-			log.Error(err, "Unable to evaluate the LOG_LEVEL: %s", logLevel)
+			log.Error(err, "LOG_LEVEL must be an integer", "value", logLevel)
 			os.Exit(1)
 		}
 		opt := log.WithVerbosity(uint8(verbosity))

@@ -5,6 +5,7 @@ import (
 	"os/exec"
 
 	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -133,7 +134,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	}
 
 	scriptsDir := utils.GetScriptsDir()
-	if err = GenerateCertificates(clusterRequest.Cluster.Namespace, scriptsDir, "elasticsearch", utils.DefaultWorkingDir); err != nil {
+	if err = certificates.GenerateCertificates(clusterRequest.Cluster.Namespace, scriptsDir, "elasticsearch", utils.DefaultWorkingDir); err != nil {
 		return fmt.Errorf("Error running script: %v", err)
 	}
 

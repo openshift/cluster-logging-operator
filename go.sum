@@ -89,8 +89,6 @@ github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d h1:UrqY+r/O
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:HI8ITrYtUY+O+ZhtlqUnD8+KwNPOyugEhfP9fdUIaEQ=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
-github.com/ViaQ/logerr v1.0.3 h1:vtNvkHm0UICS3Bv2MHkGr4PDJnIuDZ1tJIjUl+pfJ4U=
-github.com/ViaQ/logerr v1.0.3/go.mod h1:KCNTKsS4LgOp1oIDXkWxGWs4Fqwu/SdfyfUcIShsjPE=
 github.com/ViaQ/logerr v1.0.4 h1:vWuJQqjxDbCE7hVuyN2lbVa7WmyG+RXQq/agUCXL5u4=
 github.com/ViaQ/logerr v1.0.4/go.mod h1:KCNTKsS4LgOp1oIDXkWxGWs4Fqwu/SdfyfUcIShsjPE=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=

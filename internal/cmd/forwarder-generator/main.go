@@ -6,17 +6,28 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 
+	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	"github.com/spf13/pflag"
 
 	"github.com/ViaQ/logerr/log"
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 )
 
 // HACK - This command is for development use only
 func main() {
+	logLevel, present := os.LookupEnv("LOG_LEVEL")
+	if present {
+		verbosity, err := strconv.Atoi(logLevel)
+		if err != nil {
+			log.Error(err, "LOG_LEVEL must be an integer", "value", logLevel)
+			os.Exit(1)
+		}
+		opt := log.WithVerbosity(uint8(verbosity))
+		log.MustInitWithOptions("cluster-logging-operator", []log.Option{opt})
+	} else {
+		log.MustInit("cluster-logging-operator")
+	}
 
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
 	includeDefaultLogStore := flag.Bool("include-default-store", true, "Include the default storage when generating the config")
@@ -24,15 +35,7 @@ func main() {
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
-	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
-		level, err := logrus.ParseLevel(logLevel)
-		if err != nil {
-			logrus.Errorf("Unable to evaluate the LOG_LEVEL: %s %v", logLevel, err)
-			os.Exit(1)
-		}
-		logrus.SetLevel(level)
-	}
-	logger.Debugf("Args: %v", os.Args)
+	log.V(1).Info("Args: %v", os.Args)
 
 	if *help || len(os.Args) == 0 {
 		pflag.Usage()
@@ -40,7 +43,7 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		logrus.Error("Need to pass the logging forwarding yaml as an arg")
+		log.Info("Need to pass the logging forwarding yaml as an arg")
 		os.Exit(1)
 	}
 
@@ -56,7 +59,7 @@ func main() {
 
 	content, err := reader()
 	if err != nil {
-		log.Error(err, "Error Unmarshalling file ", "file", file)
+		log.Error(err, "Error Unmarshalling file ", "file", yamlFile)
 		os.Exit(1)
 	}
 

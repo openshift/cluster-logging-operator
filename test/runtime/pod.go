@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -34,7 +36,12 @@ func (builder *ContainerBuilder) AddVolumeMount(name, path, subPath string, read
 	})
 	return builder
 }
-
+func (builder *ContainerBuilder) WithCmd(cmdString string) *ContainerBuilder {
+	cmd := strings.Split(cmdString, " ")
+	builder.container.Command = []string{cmd[0]}
+	builder.container.Args = cmd[1:]
+	return builder
+}
 func (builder *ContainerBuilder) AddEnvVar(name, value string) *ContainerBuilder {
 	builder.container.Env = append(builder.container.Env, corev1.EnvVar{
 		Name:  name,

@@ -48,6 +48,14 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 							v1.ResourceCPU:    resource.MustParse("100m"),
 						},
 					},
+					ProxySpec: cl.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: resource.MustParse("512Mi"),
+								v1.ResourceCPU:    resource.MustParse("200m"),
+							},
+						},
+					},
 					NodeCount:        1,
 					RedundancyPolicy: elasticsearch.ZeroRedundancy,
 				},

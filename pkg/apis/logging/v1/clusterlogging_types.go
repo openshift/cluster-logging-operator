@@ -72,6 +72,7 @@ type ElasticsearchSpec struct {
 	Tolerations      []v1.Toleration                        `json:"tolerations,omitempty"`
 	Storage          elasticsearch.ElasticsearchStorageSpec `json:"storage"`
 	RedundancyPolicy elasticsearch.RedundancyPolicyType     `json:"redundancyPolicy"`
+	ProxySpec        `json:"proxy,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection

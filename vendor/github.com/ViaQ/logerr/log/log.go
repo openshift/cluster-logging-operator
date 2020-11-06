@@ -1,36 +1,30 @@
 package log
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"sync"
 
+	"github.com/ViaQ/logerr/kverrors"
 	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-const (
-	// KeyError is the key used to store the error
-	KeyError = "cause"
-)
+// ErrUnknownLoggerType is returned when trying to perform a *Logger only function
+// that is incompatible with logr.Logger interface
+var ErrUnknownLoggerType = kverrors.New("unknown error type")
 
 var (
-	mtx sync.RWMutex
+	defaultOutput  io.Writer = os.Stdout
+	defautLogLevel           = 0
 
-	// empty logger to prevent nil pointer panics before Init is called
-	logger = zapr.NewLogger(zap.NewNop())
+	// logLevel sets the level at which you want logs to be displayed
+	// By default the verbosity is set to 0 and all logs that do not
+	// use V(...) will be printed. To increase logging verbosity
+	logLevel = defautLogLevel
 
-	defaultConfig = &zap.Config{
-		Level:             zap.NewAtomicLevelAt(zap.InfoLevel),
-		Development:       false,
-		Encoding:          "json",
-		EncoderConfig:     zap.NewProductionEncoderConfig(),
-		OutputPaths:       []string{"stdout"},
-		ErrorOutputPaths:  []string{"stderr"},
-		DisableCaller:     true,
-		DisableStacktrace: true,
-	}
+	mtx    sync.RWMutex
+	logger logr.Logger = NewLogger("", os.Stdout, 0, JSONEncoder{})
 )
 
 // Init initializes the logger. This is required to use logging correctly
@@ -54,20 +48,14 @@ func InitWithOptions(component string, opts []Option, keyValuePairs ...interface
 	mtx.Lock()
 	defer mtx.Unlock()
 
-	defaultConfig.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	ll := NewLogger(component, defaultOutput, 0, JSONEncoder{}, keyValuePairs...)
+
 	for _, opt := range opts {
-		opt(defaultConfig)
+		opt(ll)
 	}
 
-	zl, err := defaultConfig.Build(zap.AddCallerSkip(2))
-	if err != nil {
-		return err
-	}
-
-	useLogger(zapr.NewLogger(zl).WithName(component))
-	if len(keyValuePairs) > 0 {
-		useLogger(logger.WithValues(keyValuePairs))
-	}
+	// don't lock because we already have a lock
+	useLogger(ll)
 
 	return nil
 }
@@ -77,6 +65,11 @@ func MustInitWithOptions(component string, opts []Option, keyValuePairs ...inter
 	if err := InitWithOptions(component, opts, keyValuePairs...); err != nil {
 		panic(err)
 	}
+}
+
+// GetLogger returns the root logger used for logging
+func GetLogger() logr.Logger {
+	return logger
 }
 
 // UseLogger bypasses the requirement for Init and sets the logger to l
@@ -89,56 +82,8 @@ func UseLogger(l logr.Logger) {
 // useLogger sets the logger to l without mtx.Lock()
 // To use mtx.Lock see UseLogger
 func useLogger(l logr.Logger) {
-	logger = WrapLogger(l)
+	logger = l
 }
-
-// Option is a configuration option
-type Option func(*zap.Config)
-
-// WithNoTimestamp removes the timestamp from the logged output
-// this is primarily used for testing purposes
-func WithNoTimestamp() Option {
-	return func(c *zap.Config) {
-		c.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("")
-	}
-}
-
-// WithCaller logs the "caller" field
-// Example: {"caller": "pkg/log/log.go:32"}
-func WithCaller() Option {
-	return func(c *zap.Config) {
-		c.DisableCaller = false
-	}
-}
-
-// WithStack logs the "stack" field with the stacktrace
-func WithStack() Option {
-	return func(c *zap.Config) {
-		c.DisableStacktrace = false
-	}
-}
-
-// WithVerbosity configures the verbosity output
-func WithVerbosity(level uint8) Option {
-	l := -1 * int(level)
-	return func(c *zap.Config) {
-		c.Level = zap.NewAtomicLevelAt(zapcore.Level(l))
-	}
-}
-
-// WithOutputs sets OutputPaths to std and ErrOutputPaths to err
-func WithOutputs(std, err []string) Option {
-	return func(c *zap.Config) {
-		c.OutputPaths = std
-		c.ErrorOutputPaths = err
-	}
-}
-
-// WithNoOutputs sets the outs to os.DevNull
-func WithNoOutputs() Option {
-	return WithOutputs([]string{os.DevNull}, []string{os.DevNull})
-}
-
 
 // Info logs a non-error message with the given key/value pairs as context.
 //
@@ -174,6 +119,28 @@ func WithValues(keysAndValues ...interface{}) logr.Logger {
 	return logger.WithValues(keysAndValues...)
 }
 
+// SetLogLevel sets the output verbosity
+func SetLogLevel(v int) {
+	mtx.Lock()
+	defer mtx.Unlock()
+	logLevel = v
+}
+
+// SetOutput sets the logger output to w
+func SetOutput(w io.Writer) {
+	mtx.RLock()
+	defer mtx.RUnlock()
+	switch ll := logger.(type) {
+	case *Logger:
+		ll.SetOutput(w)
+	default:
+		Error(ErrUnknownLoggerType, "unable to set output on unknown logger",
+			"logger_type", fmt.Sprintf("%T", logger),
+			"expected_type", fmt.Sprintf("%T", &Logger{}),
+		)
+	}
+}
+
 // WithName adds a new element to the logger's name.
 // Successive calls with WithName continue to append
 // suffixes to the logger's name.  It's strongly recommended
@@ -189,6 +156,8 @@ func WithName(name string) logr.Logger {
 // this Logger.  In other words, V values are additive.  V higher verbosity
 // level means a log message is less important.
 // V(level uint8) Logger
-func V(level uint8) logr.Logger {
-	return logger.V(int(level))
+func V(level int) logr.Logger {
+	mtx.RLock()
+	defer mtx.RUnlock()
+	return logger.V(level)
 }

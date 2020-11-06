@@ -5,12 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-)
-
-var (
-	_ zapcore.ObjectMarshaler = &KVError{}
+	"github.com/ViaQ/logerr/internal/kv"
 )
 
 const (
@@ -21,9 +16,9 @@ const (
 // New creates a new KVError with keys and values
 func New(msg string, keysAndValues ...interface{}) error {
 	return &KVError{
-		kv: appendMap(map[string]interface{}{
+		kv: kv.AppendMap(map[string]interface{}{
 			keyMessage: msg,
-		}, toMap(keysAndValues...)),
+		}, kv.ToMap(keysAndValues...)),
 	}
 }
 
@@ -109,7 +104,7 @@ func Add(err error, keyValuePairs ...interface{}) error {
 	if !errors.As(err, &kve) {
 		return New(err.Error(), keyValuePairs...)
 	}
-	for k, v := range toMap(keyValuePairs...) {
+	for k, v := range kv.ToMap(keyValuePairs...) {
 		kve.kv[k] = v
 	}
 	return kve
@@ -118,14 +113,6 @@ func Add(err error, keyValuePairs ...interface{}) error {
 // MarshalJSON implements json.Marshaler
 func (e *KVError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.kv)
-}
-
-// MarshalLogObject implements zapcore.ObjectMarshaler so that the error is in a JSONish format when logged
-func (e *KVError) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	for k, v := range e.kv {
-		zap.Any(k, v).AddTo(enc)
-	}
-	return nil
 }
 
 // AddCtx appends Context to the error
@@ -183,26 +170,4 @@ func Root(err error) error {
 		root = next
 	}
 	return root
-}
-
-func toMap(keysAndValues ...interface{}) map[string]interface{} {
-	kve := map[string]interface{}{}
-
-	for i, kv := range keysAndValues {
-		if i%2 == 1 {
-			continue
-		}
-		if len(keysAndValues) <= i+1 {
-			continue
-		}
-		kve[fmt.Sprintf("%s", kv)] = keysAndValues[i+1]
-	}
-	return kve
-}
-
-func appendMap(a, b map[string]interface{}) map[string]interface{} {
-	for k, v := range b {
-		a[k] = v
-	}
-	return a
 }

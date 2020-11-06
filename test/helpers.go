@@ -28,8 +28,8 @@ func init() {
 		if err != nil {
 			log.Error(err, "Unable to evaluate LOG_LEVEL %q, using default", level)
 		}
-		opt := log.WithVerbosity(uint8(verbosity))
-		log.MustInitWithOptions("test", []log.Option{opt})
+		log.MustInit("test")
+		log.SetLogLevel(verbosity)
 	}
 }
 

@@ -61,14 +61,18 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateIndexManagement(
 }
 
 func (elasticsearchRequest *ElasticsearchRequest) cullIndexManagement(mappings []logging.IndexManagementPolicyMappingSpec, policies logging.PolicyMap) {
-	if err := indexmanagement.RemoveCronJobsForMappings(elasticsearchRequest.client, elasticsearchRequest.cluster, mappings, policies); err != nil {
+	cluster := elasticsearchRequest.cluster
+	client := elasticsearchRequest.client
+	esClient := elasticsearchRequest.esClient
+
+	if err := indexmanagement.RemoveCronJobsForMappings(client, cluster, mappings, policies); err != nil {
 		logger.Errorf("Unable to cull cronjobs: %v", err)
 	}
 	mappingNames := sets.NewString()
 	for _, mapping := range mappings {
 		mappingNames.Insert(formatTemplateName(mapping.Name))
 	}
-	existing, err := elasticsearchRequest.ListTemplates()
+	existing, err := esClient.ListTemplates()
 	if err != nil {
 		logger.Warnf("Unable to list existing templates in order to reconcile stale ones: %v", err)
 		return
@@ -77,29 +81,32 @@ func (elasticsearchRequest *ElasticsearchRequest) cullIndexManagement(mappings [
 
 	for _, template := range difference.List() {
 		if strings.HasPrefix(template, ocpTemplatePrefix) {
-			if err := elasticsearchRequest.DeleteIndexTemplate(template); err != nil {
+			if err := esClient.DeleteIndexTemplate(template); err != nil {
 				logger.Warnf("Unable to delete stale template %q in order to reconcile: %v", template, err)
 			}
 		}
 	}
 }
 func (elasticsearchRequest *ElasticsearchRequest) initializeIndexIfNeeded(mapping logging.IndexManagementPolicyMappingSpec) error {
+	cluster := elasticsearchRequest.cluster
+	esClient := elasticsearchRequest.esClient
+
 	pattern := formatWriteAlias(mapping)
-	indices, err := elasticsearchRequest.ListIndicesForAlias(pattern)
+	indices, err := esClient.ListIndicesForAlias(pattern)
 	if err != nil {
 		return err
 	}
 	if len(indices) < 1 {
 		indexName := fmt.Sprintf("%s-000001", mapping.Name)
-		primaryShards := getDataCount(elasticsearchRequest.cluster)
-		replicas := int32(calculateReplicaCount(elasticsearchRequest.cluster))
+		primaryShards := getDataCount(cluster)
+		replicas := int32(calculateReplicaCount(cluster))
 		index := esapi.NewIndex(indexName, primaryShards, replicas)
 		index.AddAlias(mapping.Name, false)
 		index.AddAlias(pattern, true)
 		for _, alias := range mapping.Aliases {
 			index.AddAlias(alias, false)
 		}
-		return elasticsearchRequest.CreateIndex(indexName, index)
+		return esClient.CreateIndex(indexName, index)
 	}
 	return nil
 }
@@ -113,11 +120,15 @@ func formatWriteAlias(mapping logging.IndexManagementPolicyMappingSpec) string {
 }
 
 func (elasticsearchRequest *ElasticsearchRequest) createOrUpdateIndexTemplate(mapping logging.IndexManagementPolicyMappingSpec) error {
+	cluster := elasticsearchRequest.cluster
+	esClient := elasticsearchRequest.esClient
+
 	name := formatTemplateName(mapping.Name)
 	pattern := fmt.Sprintf("%s*", mapping.Name)
-	primaryShards := getDataCount(elasticsearchRequest.cluster)
-	replicas := int32(calculateReplicaCount(elasticsearchRequest.cluster))
+	primaryShards := getDataCount(cluster)
+	replicas := int32(calculateReplicaCount(cluster))
 	aliases := append(mapping.Aliases, mapping.Name)
 	template := esapi.NewIndexTemplate(pattern, aliases, primaryShards, replicas)
-	return elasticsearchRequest.CreateIndexTemplate(name, template)
+
+	return esClient.CreateIndexTemplate(name, template)
 }

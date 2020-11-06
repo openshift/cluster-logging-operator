@@ -1,8 +1,11 @@
 package kibanasecret
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
+	"github.com/openshift/elasticsearch-operator/pkg/k8shandler"
 	"github.com/openshift/elasticsearch-operator/pkg/k8shandler/kibana"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -70,7 +73,13 @@ var (
 // Reconcile reads that state of the cluster for a KibanaSecret object and makes changes based on the state read
 // and what is in the KibanaSecret.Spec
 func (r *ReconcileKibanaSecret) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	if err := kibana.ReconcileKibanaInstance(request, r.client); err != nil {
+	es, err := k8shandler.GetElasticsearchCR(r.client, request.Namespace)
+	if err != nil {
+		return reconcileResult, fmt.Errorf("skipping kibana secret reconciliation in %q: %s", request.Namespace, err)
+	}
+
+	esClient := elasticsearch.NewClient(es.Name, es.Namespace, r.client)
+	if err := kibana.Reconcile(request, r.client, esClient); err != nil {
 		return reconcileResult, err
 	}
 

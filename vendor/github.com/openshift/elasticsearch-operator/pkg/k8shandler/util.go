@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -97,12 +98,22 @@ func mergeSelectors(nodeSelectors, commonSelectors map[string]string) map[string
 }
 
 func areTolerationsSame(lhs, rhs []v1.Toleration) bool {
+
+	// if we are checking this as a part of pod spec comparison during a rollout we can't check this
+	// if we are comparing the deployment specs we can...
 	if len(lhs) != len(rhs) {
 		return false
 	}
 
-	for _, lhsToleration := range lhs {
-		if !containsToleration(lhsToleration, rhs) {
+	return containsSameTolerations(lhs, rhs)
+}
+
+// containsSameTolerations checks that the tolerations in rhs are all contained within lhs
+// this follows our other patterns of "current, desired"
+func containsSameTolerations(lhs, rhs []v1.Toleration) bool {
+
+	for _, rhsToleration := range rhs {
+		if !containsToleration(rhsToleration, lhs) {
 			return false
 		}
 	}
@@ -349,6 +360,48 @@ func DeletePod(podName, namespace string, client client.Client) error {
 
 func GetPodList(namespace string, selector map[string]string, sdkClient client.Client) (*v1.PodList, error) {
 	list := &v1.PodList{}
+
+	labelSelector := labels.SelectorFromSet(selector)
+
+	err := sdkClient.List(
+		context.TODO(),
+		&client.ListOptions{Namespace: namespace, LabelSelector: labelSelector},
+		list,
+	)
+
+	return list, err
+}
+
+func GetDeploymentList(namespace string, selector map[string]string, sdkClient client.Client) (*appsv1.DeploymentList, error) {
+	list := &appsv1.DeploymentList{}
+
+	labelSelector := labels.SelectorFromSet(selector)
+
+	err := sdkClient.List(
+		context.TODO(),
+		&client.ListOptions{Namespace: namespace, LabelSelector: labelSelector},
+		list,
+	)
+
+	return list, err
+}
+
+func GetStatefulSetList(namespace string, selector map[string]string, sdkClient client.Client) (*appsv1.StatefulSetList, error) {
+	list := &appsv1.StatefulSetList{}
+
+	labelSelector := labels.SelectorFromSet(selector)
+
+	err := sdkClient.List(
+		context.TODO(),
+		&client.ListOptions{Namespace: namespace, LabelSelector: labelSelector},
+		list,
+	)
+
+	return list, err
+}
+
+func GetPVCList(namespace string, selector map[string]string, sdkClient client.Client) (*v1.PersistentVolumeClaimList, error) {
+	list := &v1.PersistentVolumeClaimList{}
 
 	labelSelector := labels.SelectorFromSet(selector)
 

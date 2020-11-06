@@ -507,22 +507,22 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 		{
 			name: "Valid collector config",
 			fields: fields{
-				cluster:           &loggingv1.ClusterLogging{
+				cluster: &loggingv1.ClusterLogging{
 					Spec: loggingv1.ClusterLoggingSpec{
-						LogStore:   nil,
+						LogStore: nil,
 						Collection: &loggingv1.CollectionSpec{
 							Logs: loggingv1.LogCollectionSpec{
-								Type:        "fluentd",
+								Type: "fluentd",
 								FluentdSpec: loggingv1.FluentdSpec{
-									Resources:    &core.ResourceRequirements{
-										Limits:   core.ResourceList{
+									Resources: &core.ResourceRequirements{
+										Limits: core.ResourceList{
 											"Memory": defaultFluentdMemory,
 										},
 										Requests: core.ResourceList{
 											"Memory": defaultFluentdMemory,
 										},
 									},
-									NodeSelector: map[string]string{"123":"123"},
+									NodeSelector: map[string]string{"123": "123"},
 								},
 							},
 						},
@@ -535,9 +535,9 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 		{
 			name: "Collection not specified. Shouldn't crash",
 			fields: fields{
-				cluster:           &loggingv1.ClusterLogging{
+				cluster: &loggingv1.ClusterLogging{
 					Spec: loggingv1.ClusterLoggingSpec{
-						LogStore:   nil,
+						LogStore: nil,
 					},
 				},
 				ForwardingRequest: nil,

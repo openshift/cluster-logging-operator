@@ -8,7 +8,6 @@ import (
 
 	consolev1 "github.com/openshift/api/console/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
-	"github.com/openshift/elasticsearch-operator/pkg/constants"
 	"github.com/openshift/elasticsearch-operator/test/utils"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	v1 "k8s.io/api/core/v1"
@@ -22,7 +21,7 @@ const (
 	retryInterval        = time.Second * 1
 	timeout              = time.Second * 300
 	cleanupRetryInterval = time.Second * 1
-	cleanupTimeout       = time.Second * 5
+	cleanupTimeout       = time.Second * 30
 	elasticsearchCRName  = "elasticsearch"
 	kibanaCRName         = "kibana"
 )
@@ -53,8 +52,8 @@ func createElasticsearchCR(t *testing.T, f *framework.Framework, ctx *framework.
 		return nil, fmt.Errorf("Could not get namespace: %v", err)
 	}
 
-	cpuValue, _ := resource.ParseQuantity("100m")
-	memValue, _ := resource.ParseQuantity("2Gi")
+	cpuValue := resource.MustParse("100m")
+	memValue := resource.MustParse("2Gi")
 
 	esDataNode := elasticsearch.ElasticsearchNode{
 		Roles: []elasticsearch.ElasticsearchNodeRole{
@@ -134,7 +133,7 @@ func createElasticsearchSecret(t *testing.T, f *framework.Framework, ctx *framew
 		},
 	)
 
-	t.Logf("Creating %v", elasticsearchSecret)
+	t.Logf("Creating secret %s/%s", elasticsearchSecret.Namespace, elasticsearchSecret.Name)
 	err = f.Client.Create(goctx.TODO(), elasticsearchSecret, &framework.CleanupOptions{TestContext: ctx, Timeout: cleanupTimeout, RetryInterval: cleanupRetryInterval})
 	if err != nil {
 		return err
@@ -182,7 +181,7 @@ func createKibanaCR(namespace string) *elasticsearch.Kibana {
 
 	return &elasticsearch.Kibana{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.KibanaInstanceName,
+			Name:      "kibana",
 			Namespace: namespace,
 		},
 		Spec: elasticsearch.KibanaSpec{

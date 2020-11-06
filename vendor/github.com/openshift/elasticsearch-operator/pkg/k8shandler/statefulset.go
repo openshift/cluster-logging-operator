@@ -6,7 +6,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
 	"github.com/openshift/elasticsearch-operator/pkg/logger"
+	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"github.com/openshift/elasticsearch-operator/pkg/utils/comparators"
 
 	"github.com/sirupsen/logrus"
@@ -34,9 +36,11 @@ type statefulSetNode struct {
 	//priorReplicaCount int32
 
 	client client.Client
+
+	esClient elasticsearch.Client
 }
 
-func (statefulSetNode *statefulSetNode) populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32, client client.Client) {
+func (statefulSetNode *statefulSetNode) populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32, client client.Client, esClient elasticsearch.Client) {
 
 	labels := newLabels(cluster.Name, nodeName, roleMap)
 
@@ -69,12 +73,13 @@ func (statefulSetNode *statefulSetNode) populateReference(nodeName string, node 
 	}
 	statefulSet.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
 
-	addOwnerRefToObject(&statefulSet, getOwnerRef(cluster))
+	cluster.AddOwnerRefTo(&statefulSet)
 
 	statefulSetNode.self = statefulSet
 	statefulSetNode.clusterName = cluster.Name
 
 	statefulSetNode.client = client
+	statefulSetNode.esClient = esClient
 }
 
 func (current *statefulSetNode) updateReference(desired NodeTypeInterface) {
@@ -126,7 +131,7 @@ func (node *statefulSetNode) name() string {
 
 func (node *statefulSetNode) waitForNodeRejoinCluster() (error, bool) {
 	err := wait.Poll(time.Second*1, time.Second*60, func() (done bool, err error) {
-		clusterSize, getErr := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		clusterSize, getErr := node.esClient.GetClusterNodeCount()
 		if err != nil {
 			logrus.Warnf("Unable to get cluster size waiting for %v to rejoin cluster", node.name())
 			return false, getErr
@@ -140,7 +145,7 @@ func (node *statefulSetNode) waitForNodeRejoinCluster() (error, bool) {
 
 func (node *statefulSetNode) waitForNodeLeaveCluster() (error, bool) {
 	err := wait.Poll(time.Second*1, time.Second*60, func() (done bool, err error) {
-		clusterSize, getErr := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		clusterSize, getErr := node.esClient.GetClusterNodeCount()
 		if err != nil {
 			logrus.Warnf("Unable to get cluster size waiting for %v to leave cluster", node.name())
 			return false, getErr
@@ -153,24 +158,30 @@ func (node *statefulSetNode) waitForNodeLeaveCluster() (error, bool) {
 }
 
 func (node *statefulSetNode) setPartition(partitions int32) error {
+
+	nodeCopy := node.self.DeepCopy()
+
 	nretries := -1
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		nretries++
-		if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.self.Name, Namespace: node.self.Namespace}, &node.self); getErr != nil {
+		if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.self.Name, Namespace: node.self.Namespace}, nodeCopy); getErr != nil {
 			logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, getErr)
 			return getErr
 		}
 
-		if *node.self.Spec.UpdateStrategy.RollingUpdate.Partition == partitions {
+		if *nodeCopy.Spec.UpdateStrategy.RollingUpdate.Partition == partitions {
 			return nil
 		}
 
-		node.self.Spec.UpdateStrategy.RollingUpdate.Partition = &partitions
+		nodeCopy.Spec.UpdateStrategy.RollingUpdate.Partition = &partitions
 
 		if updateErr := node.client.Update(context.TODO(), &node.self); updateErr != nil {
 			logrus.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
 			return updateErr
 		}
+
+		node.self.Spec.UpdateStrategy.RollingUpdate.Partition = &partitions
+
 		return nil
 	})
 	if retryErr != nil {
@@ -193,24 +204,30 @@ func (node *statefulSetNode) partition() (int32, error) {
 }
 
 func (node *statefulSetNode) setReplicaCount(replicas int32) error {
+
+	nodeCopy := node.self.DeepCopy()
+
 	nretries := -1
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		nretries++
-		if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.self.Name, Namespace: node.self.Namespace}, &node.self); getErr != nil {
+		if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.self.Name, Namespace: node.self.Namespace}, nodeCopy); getErr != nil {
 			logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, getErr)
 			return getErr
 		}
 
-		if *node.self.Spec.Replicas == replicas {
+		if *nodeCopy.Spec.Replicas == replicas {
 			return nil
 		}
 
-		node.self.Spec.Replicas = &replicas
+		nodeCopy.Spec.Replicas = &replicas
 
 		if updateErr := node.client.Update(context.TODO(), &node.self); updateErr != nil {
 			logrus.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
 			return updateErr
 		}
+
+		node.self.Spec.Replicas = &replicas
+
 		return nil
 	})
 	if retryErr != nil {
@@ -233,9 +250,11 @@ func (node *statefulSetNode) replicaCount() (int32, error) {
 }
 
 func (node *statefulSetNode) isMissing() bool {
-	getNode := &apps.StatefulSet{}
-	if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.name(), Namespace: node.self.Namespace}, getNode); getErr != nil {
-		if errors.IsNotFound(getErr) {
+	obj := &apps.StatefulSet{}
+	key := types.NamespacedName{Name: node.name(), Namespace: node.self.Namespace}
+
+	if err := node.client.Get(context.TODO(), key, obj); err != nil {
+		if errors.IsNotFound(err) {
 			return true
 		}
 	}
@@ -246,12 +265,12 @@ func (node *statefulSetNode) isMissing() bool {
 func (node *statefulSetNode) rollingRestart(upgradeStatus *api.ElasticsearchNodeStatus) {
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
-		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
-			logrus.Infof("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
+		if status, _ := node.esClient.GetClusterHealthStatus(); !utils.Contains(desiredClusterStates, status) {
+			logrus.Infof("Waiting for cluster to be recovered before restarting %s: %s / %v", node.name(), status, desiredClusterStates)
 			return
 		}
 
-		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		size, err := node.esClient.GetClusterNodeCount()
 		if err != nil {
 			logrus.Warnf("Unable to get cluster size prior to restart for %v", node.name())
 			return
@@ -272,8 +291,6 @@ func (node *statefulSetNode) rollingRestart(upgradeStatus *api.ElasticsearchNode
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == "" ||
 		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
-
-		// nothing to do here -- just maintaing a framework structure
 
 		upgradeStatus.UpgradeStatus.UpgradePhase = api.NodeRestarting
 	}
@@ -348,7 +365,7 @@ func (node *statefulSetNode) fullClusterRestart(upgradeStatus *api.Elasticsearch
 			return
 		}
 
-		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		size, err := node.esClient.GetClusterNodeCount()
 		if err != nil {
 			logrus.Warnf("Unable to get cluster size prior to restart for %v", node.name())
 			return
@@ -455,12 +472,12 @@ func (node *statefulSetNode) executeUpdate() error {
 
 func (node *statefulSetNode) update(upgradeStatus *api.ElasticsearchNodeStatus) error {
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
-		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
-			logrus.Infof("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
-			return fmt.Errorf("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
+		if status, _ := node.esClient.GetClusterHealthStatus(); !utils.Contains(desiredClusterStates, status) {
+			logrus.Infof("Waiting for cluster to be recovered before restarting %s: %s / %v", node.name(), status, desiredClusterStates)
+			return fmt.Errorf("Waiting for cluster to be recovered before restarting %s: %s / %v", node.name(), status, desiredClusterStates)
 		}
 
-		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		size, err := node.esClient.GetClusterNodeCount()
 		if err != nil {
 			logrus.Warnf("Unable to get cluster size prior to restart for %v", node.name())
 		}
@@ -651,7 +668,13 @@ func (node *statefulSetNode) isChanged() bool {
 
 		if !comparators.EnvValueEqual(desiredContainer.Env, nodeContainer.Env) {
 			nodeContainer.Env = desiredContainer.Env
-			logger.Debugf("Container EnvVars are different between current and desired for %s", nodeContainer.Name)
+			logger.Debugf("Container EnvVars are different between current and desired for %s",
+				nodeContainer.Name)
+			changed = true
+		}
+		if !reflect.DeepEqual(desiredContainer.Ports, nodeContainer.Ports) {
+			nodeContainer.Ports = desiredContainer.Ports
+			logger.Debugf("Container Ports are different between current and desired for %s", nodeContainer.Name)
 			changed = true
 		}
 
@@ -679,6 +702,62 @@ func (node *statefulSetNode) progressUnshedulableNode(upgradeStatus *api.Elastic
 			return err
 		}
 
+	}
+	return nil
+}
+
+func (node *statefulSetNode) progressNodeChanges(upgradeStatus *api.ElasticsearchNodeStatus) error {
+	if node.isChanged() {
+		replicas, err := node.replicaCount()
+		if err != nil {
+			logrus.Warnf("Unable to get number of replicas prior to restart for %v", node.name())
+			return fmt.Errorf("Unable to get number of replicas prior to restart for %v", node.name())
+		}
+
+		if err := node.setPartition(replicas); err != nil {
+			logrus.Warnf("unable to set partition. E: %s\r\n", err.Error())
+		}
+
+		if err := node.executeUpdate(); err != nil {
+			return err
+		}
+
+		ordinal, err := node.partition()
+		if err != nil {
+			logrus.Infof("Unable to get node ordinal value: %v", err)
+			return err
+		}
+
+		// start partition at replicas and incrementally update it to 0
+		// making sure nodes rejoin between each one
+		for index := ordinal; index > 0; index-- {
+
+			// make sure we have all nodes in the cluster first -- always
+			if err, _ := node.waitForNodeRejoinCluster(); err != nil {
+				logrus.Infof("Timed out waiting for %v to rejoin cluster", node.name())
+				return fmt.Errorf("Timed out waiting for %v to rejoin cluster", node.name())
+			}
+
+			// update partition to cause next pod to be updated
+			if err := node.setPartition(index - 1); err != nil {
+				logrus.Warnf("unable to set partition. E: %s\r\n", err.Error())
+			}
+
+			// wait for the node to leave the cluster
+			if err, _ := node.waitForNodeLeaveCluster(); err != nil {
+				logrus.Infof("Timed out waiting for %v to leave the cluster", node.name())
+				return fmt.Errorf("Timed out waiting for %v to leave the cluster", node.name())
+			}
+		}
+
+		// this is here again because we need to make sure all nodes have rejoined
+		// before we move on and say we're done
+		if err, _ := node.waitForNodeRejoinCluster(); err != nil {
+			logrus.Infof("Timed out waiting for %v to rejoin cluster", node.name())
+			return fmt.Errorf("Timed out waiting for %v to rejoin cluster", node.name())
+		}
+
+		node.refreshHashes()
 	}
 	return nil
 }

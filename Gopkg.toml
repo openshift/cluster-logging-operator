@@ -68,7 +68,7 @@ required = [
 
 [[constraint]]
   name = "github.com/openshift/elasticsearch-operator"
-  branch = "master"
+  branch = "release-4.5"
 
 [[constraint]]
   name = "github.com/onsi/ginkgo"

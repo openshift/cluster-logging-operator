@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
+	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"github.com/openshift/elasticsearch-operator/pkg/utils/comparators"
 
 	"github.com/sirupsen/logrus"
@@ -37,9 +39,11 @@ type deploymentNode struct {
 	clusterSize int32
 
 	client client.Client
+
+	esClient elasticsearch.Client
 }
 
-func (deploymentNode *deploymentNode) populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32, client client.Client) {
+func (deploymentNode *deploymentNode) populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32, client client.Client, esClient elasticsearch.Client) {
 
 	labels := newLabels(cluster.Name, nodeName, roleMap)
 
@@ -70,12 +74,13 @@ func (deploymentNode *deploymentNode) populateReference(nodeName string, node ap
 		Template:                newPodTemplateSpec(nodeName, cluster.Name, cluster.Namespace, node, cluster.Spec.Spec, labels, roleMap, client, logConfig),
 	}
 
-	addOwnerRefToObject(&deployment, getOwnerRef(cluster))
+	cluster.AddOwnerRefTo(&deployment)
 
 	deploymentNode.self = deployment
 	deploymentNode.clusterName = cluster.Name
 
 	deploymentNode.client = client
+	deploymentNode.esClient = esClient
 }
 
 func (current *deploymentNode) updateReference(node NodeTypeInterface) {
@@ -183,18 +188,45 @@ func (node *deploymentNode) nodeRevision() string {
 	return ""
 }
 
-func (node *deploymentNode) waitForNodeRollout(currentRevision string) error {
+func (node *deploymentNode) waitForNodeRollout() error {
+
+	podLabels := map[string]string{
+		"node-name": node.name(),
+	}
+
 	err := wait.Poll(time.Second*1, time.Second*30, func() (done bool, err error) {
-		if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.self.Name, Namespace: node.self.Namespace}, &node.self); getErr != nil {
-			logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, getErr)
-			return false, getErr
-		}
-
-		revision := node.nodeRevision()
-
-		return (revision != currentRevision), nil
+		return node.checkPodSpecMatches(podLabels), nil
 	})
 	return err
+}
+
+func (node *deploymentNode) podSpecMatches() bool {
+	podLabels := map[string]string{
+		"node-name": node.name(),
+	}
+
+	return node.checkPodSpecMatches(podLabels)
+}
+
+func (node *deploymentNode) checkPodSpecMatches(labels map[string]string) bool {
+
+	podList, err := GetPodList(node.self.Namespace, labels, node.client)
+
+	if err != nil {
+		logrus.Warnf("Could not get node %q pods: %v", node.name(), err)
+		return false
+	}
+
+	matches := false
+
+	for _, pod := range podList.Items {
+		// follow pattern used in other places of "current, desired"
+		if !ArePodSpecDifferent(pod.Spec, node.self.Spec.Template.Spec, false) {
+			matches = true
+		}
+	}
+
+	return matches
 }
 
 func (node *deploymentNode) pause() error {
@@ -241,24 +273,30 @@ func (node *deploymentNode) setPaused(paused bool) error {
 }
 
 func (node *deploymentNode) setReplicaCount(replicas int32) error {
+
+	nodeCopy := &apps.Deployment{}
+
 	nretries := -1
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		nretries++
-		if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.self.Name, Namespace: node.self.Namespace}, &node.self); getErr != nil {
+		if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.self.Name, Namespace: node.self.Namespace}, nodeCopy); getErr != nil {
 			logrus.Debugf("Could not get Elasticsearch node resource %v: %v", node.self.Name, getErr)
 			return getErr
 		}
 
-		if *node.self.Spec.Replicas == replicas {
+		if *nodeCopy.Spec.Replicas == replicas {
 			return nil
+		}
+
+		nodeCopy.Spec.Replicas = &replicas
+
+		if updateErr := node.client.Update(context.TODO(), nodeCopy); updateErr != nil {
+			logrus.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
+			return updateErr
 		}
 
 		node.self.Spec.Replicas = &replicas
 
-		if updateErr := node.client.Update(context.TODO(), &node.self); updateErr != nil {
-			logrus.Debugf("Failed to update node resource %v: %v", node.self.Name, updateErr)
-			return updateErr
-		}
 		return nil
 	})
 	if retryErr != nil {
@@ -281,13 +319,7 @@ func (node *deploymentNode) replicaCount() (error, int32) {
 
 func (node *deploymentNode) waitForNodeRejoinCluster() (error, bool) {
 	err := wait.Poll(time.Second*1, time.Second*60, func() (done bool, err error) {
-		clusterSize, getErr := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
-		if err != nil {
-			logrus.Warnf("Unable to get cluster size waiting for %v to rejoin cluster", node.name())
-			return false, getErr
-		}
-
-		return (node.clusterSize <= clusterSize), nil
+		return node.esClient.IsNodeInCluster(node.name())
 	})
 
 	return err, (err == nil)
@@ -295,22 +327,20 @@ func (node *deploymentNode) waitForNodeRejoinCluster() (error, bool) {
 
 func (node *deploymentNode) waitForNodeLeaveCluster() (error, bool) {
 	err := wait.Poll(time.Second*1, time.Second*60, func() (done bool, err error) {
-		clusterSize, getErr := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
-		if err != nil {
-			logrus.Warnf("Unable to get cluster size waiting for %v to leave cluster", node.name())
-			return false, getErr
-		}
+		inCluster, checkErr := node.esClient.IsNodeInCluster(node.name())
 
-		return (node.clusterSize > clusterSize), nil
+		return !inCluster, checkErr
 	})
 
 	return err, (err == nil)
 }
 
 func (node *deploymentNode) isMissing() bool {
-	getNode := &apps.Deployment{}
-	if getErr := node.client.Get(context.TODO(), types.NamespacedName{Name: node.name(), Namespace: node.self.Namespace}, getNode); getErr != nil {
-		if errors.IsNotFound(getErr) {
+	obj := &apps.Deployment{}
+	key := types.NamespacedName{Name: node.name(), Namespace: node.self.Namespace}
+
+	if err := node.client.Get(context.TODO(), key, obj); err != nil {
+		if errors.IsNotFound(err) {
 			return true
 		}
 	}
@@ -321,12 +351,12 @@ func (node *deploymentNode) isMissing() bool {
 func (node *deploymentNode) rollingRestart(upgradeStatus *api.ElasticsearchNodeStatus) {
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
-		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
-			logrus.Infof("Waiting for cluster to be fully recovered before restarting %v: %v / green", node.name(), status)
+		if status, _ := node.esClient.GetClusterHealthStatus(); !utils.Contains(desiredClusterStates, status) {
+			logrus.Infof("Waiting for cluster to be recovered before restarting %s: %s / %v", node.name(), status, desiredClusterStates)
 			return
 		}
 
-		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		size, err := node.esClient.GetClusterNodeCount()
 		if err != nil {
 			logrus.Warnf("Unable to get cluster size prior to restart for %v", node.name())
 			return
@@ -346,12 +376,12 @@ func (node *deploymentNode) rollingRestart(upgradeStatus *api.ElasticsearchNodeS
 		if replicas > 0 {
 
 			// disable shard allocation
-			if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationNone, node.client); !ok {
+			if ok, err := node.esClient.SetShardAllocation(api.ShardAllocationPrimaries); !ok {
 				logrus.Warnf("Unable to disable shard allocation: %v", err)
 				return
 			}
 
-			if ok, err := DoSynchronizedFlush(node.clusterName, node.self.Namespace, node.client); !ok {
+			if ok, err := node.esClient.DoSynchronizedFlush(); !ok {
 				logrus.Warnf("Unable to perform synchronized flush: %v", err)
 			}
 
@@ -394,7 +424,7 @@ func (node *deploymentNode) rollingRestart(upgradeStatus *api.ElasticsearchNodeS
 		node.refreshHashes()
 
 		// reenable shard allocation
-		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationAll, node.client); !ok {
+		if ok, err := node.esClient.SetShardAllocation(api.ShardAllocationAll); !ok {
 			logrus.Warnf("Unable to enable shard allocation: %v", err)
 			return
 		}
@@ -404,8 +434,8 @@ func (node *deploymentNode) rollingRestart(upgradeStatus *api.ElasticsearchNodeS
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
-		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
-			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
+		if status, _ := node.esClient.GetClusterHealthStatus(); !utils.Contains(desiredClusterStates, status) {
+			logrus.Infof("Waiting for cluster to recover: %s / %v", status, desiredClusterStates)
 			return
 		}
 
@@ -418,7 +448,7 @@ func (node *deploymentNode) fullClusterRestart(upgradeStatus *api.ElasticsearchN
 
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
 		upgradeStatus.UpgradeStatus.UnderUpgrade = v1.ConditionTrue
-		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		size, err := node.esClient.GetClusterNodeCount()
 		if err != nil {
 			logrus.Warnf("Unable to get cluster size prior to restart for %v", node.name())
 			return
@@ -475,12 +505,12 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 
 	// set our state to being under upgrade
 	if upgradeStatus.UpgradeStatus.UnderUpgrade != v1.ConditionTrue {
-		if status, _ := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
-			logrus.Infof("Waiting for cluster to be fully recovered before upgrading %v: %v / green", node.name(), status)
-			return fmt.Errorf("Cluster not in green state before beginning upgrade: %v", status)
+		if status, _ := node.esClient.GetClusterHealthStatus(); !utils.Contains(desiredClusterStates, status) {
+			logrus.Infof("Waiting for cluster to be recovered before upgrading %s: %s / %v", node.name(), status, desiredClusterStates)
+			return fmt.Errorf("Cluster not in at least %s state before beginning upgrade: %s", yellowClusterState, status)
 		}
 
-		size, err := GetClusterNodeCount(node.clusterName, node.self.Namespace, node.client)
+		size, err := node.esClient.GetClusterNodeCount()
 		if err != nil {
 			logrus.Warnf("Unable to get cluster size prior to update for %v", node.name())
 		}
@@ -493,12 +523,12 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 		upgradeStatus.UpgradeStatus.UpgradePhase == api.ControllerUpdated {
 
 		// disable shard allocation
-		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationNone, node.client); !ok {
+		if ok, err := node.esClient.SetShardAllocation(api.ShardAllocationPrimaries); !ok {
 			logrus.Warnf("Unable to disable shard allocation: %v", err)
 			return err
 		}
 
-		if ok, err := DoSynchronizedFlush(node.clusterName, node.self.Namespace, node.client); !ok {
+		if ok, err := node.esClient.DoSynchronizedFlush(); !ok {
 			logrus.Warnf("Unable to perform synchronized flush: %v", err)
 		}
 
@@ -518,7 +548,7 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 		}
 
 		// wait for rollout
-		if err := node.waitForNodeRollout(node.currentRevision); err != nil {
+		if err := node.waitForNodeRollout(); err != nil {
 			logrus.Infof("Timed out waiting for node %v to rollout", node.name())
 			return err
 		}
@@ -538,7 +568,7 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 		}
 
 		// reenable shard allocation
-		if ok, err := SetShardAllocation(node.clusterName, node.self.Namespace, api.ShardAllocationAll, node.client); !ok {
+		if ok, err := node.esClient.SetShardAllocation(api.ShardAllocationAll); !ok {
 			logrus.Warnf("Unable to enable shard allocation: %v", err)
 			return err
 		}
@@ -548,8 +578,8 @@ func (node *deploymentNode) update(upgradeStatus *api.ElasticsearchNodeStatus) e
 
 	if upgradeStatus.UpgradeStatus.UpgradePhase == api.RecoveringData {
 
-		if status, err := GetClusterHealthStatus(node.clusterName, node.self.Namespace, node.client); status != "green" {
-			logrus.Infof("Waiting for cluster to complete recovery: %v / green", status)
+		if status, err := node.esClient.GetClusterHealthStatus(); !utils.Contains(desiredClusterStates, status) {
+			logrus.Infof("Waiting for cluster to recover: %s / %v", status, desiredClusterStates)
 			return err
 		}
 
@@ -581,6 +611,33 @@ func (node *deploymentNode) executeUpdate() error {
 	})
 }
 
+func (node *deploymentNode) progressNodeChanges(upgradeStatus *api.ElasticsearchNodeStatus) error {
+	if node.isChanged() {
+		if err := node.executeUpdate(); err != nil {
+			return err
+		}
+
+		node.currentRevision = node.nodeRevision()
+
+		if err := node.unpause(); err != nil {
+			return fmt.Errorf("unable to unpause node %q: %v", node.name(), err)
+		}
+
+		logrus.Debugf("Waiting for node '%s' to rollout...", node.name())
+
+		if err := node.waitForNodeRollout(); err != nil {
+			return fmt.Errorf("Timed out waiting for node %v to rollout", node.name())
+		}
+
+		if err := node.pause(); err != nil {
+			return fmt.Errorf("unable to pause node %q: %v", node.name(), err)
+		}
+
+		node.refreshHashes()
+	}
+	return nil
+}
+
 func (node *deploymentNode) progressUnshedulableNode(upgradeStatus *api.ElasticsearchNodeStatus) error {
 	if node.isChanged() {
 		logrus.Infof("Requested to update node '%s', which is unschedulable. Skipping rolling restart scenario and performing redeploy now", upgradeStatus.DeploymentName)
@@ -601,7 +658,7 @@ func (node *deploymentNode) progressUnshedulableNode(upgradeStatus *api.Elastics
 
 		logrus.Debugf("Waiting for node '%s' to rollout...", node.name())
 
-		if err := node.waitForNodeRollout(node.currentRevision); err != nil {
+		if err := node.waitForNodeRollout(); err != nil {
 			logrus.Infof("Timed out waiting for node %v to rollout", node.name())
 			return err
 		}
@@ -652,7 +709,6 @@ func (node *deploymentNode) isChanged() bool {
 		node.self.Spec.Template.Spec.Tolerations = desired.Spec.Template.Spec.Tolerations
 		changed = true
 	}
-
 	// Only Image and Resources (CPU & memory) differences trigger rolling restart
 	for index := 0; index < len(node.self.Spec.Template.Spec.Containers); index++ {
 		nodeContainer := node.self.Spec.Template.Spec.Containers[index]
@@ -666,12 +722,18 @@ func (node *deploymentNode) isChanged() bool {
 
 		if !comparators.EnvValueEqual(desiredContainer.Env, nodeContainer.Env) {
 			nodeContainer.Env = desiredContainer.Env
-			logger.Debugf("Container EnvVars are different between current and desired for %s", nodeContainer.Name)
+			logger.Debugf("Setting Container %q EnvVars to desired: %v", nodeContainer.Name, nodeContainer.Env)
 			changed = true
 		}
 		if !reflect.DeepEqual(desiredContainer.Args, nodeContainer.Args) {
 			nodeContainer.Args = desiredContainer.Args
-			logger.Debugf("Container Args are different between current and desired for %s", nodeContainer.Name)
+			logger.Debugf("Container Args are different between current and desired for %s",
+				nodeContainer.Name)
+			changed = true
+		}
+		if !reflect.DeepEqual(desiredContainer.Ports, nodeContainer.Ports) {
+			nodeContainer.Ports = desiredContainer.Ports
+			logger.Debugf("Container Ports are different between current and desired for %s", nodeContainer.Name)
 			changed = true
 		}
 		var updatedContainer v1.Container

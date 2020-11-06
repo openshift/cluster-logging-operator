@@ -10,6 +10,8 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	kibana "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	"github.com/openshift/elasticsearch-operator/pkg/constants"
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
+	"github.com/openshift/elasticsearch-operator/pkg/k8shandler/migrations"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	apps "k8s.io/api/apps/v1"
@@ -27,6 +29,8 @@ import (
 const (
 	kibanaServiceAccountName     = "kibana"
 	kibanaOAuthRedirectReference = "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"kibana\"}}"
+	kibana5Index                 = ".kibana"
+	kibana6Index                 = ".kibana-6"
 )
 
 var (
@@ -35,11 +39,46 @@ var (
 	}
 )
 
-func ReconcileKibana(requestCluster *kibana.Kibana, requestClient client.Client, proxyConfig *configv1.Proxy) error {
-	clusterKibanaRequest := KibanaRequest{
-		client:  requestClient,
-		cluster: requestCluster,
+func Reconcile(request reconcile.Request, k8sClient client.Client, esClient elasticsearch.Client) error {
+	kibanaInstance := &kibana.Kibana{}
+	key := types.NamespacedName{
+		Name:      request.Name,
+		Namespace: request.Namespace,
 	}
+
+	err := k8sClient.Get(context.TODO(), key, kibanaInstance)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	if kibanaInstance.Spec.ManagementState == kibana.ManagementStateUnmanaged {
+		return nil
+	}
+
+	proxyCfg, err := getProxyConfig(k8sClient)
+	if err != nil {
+		return err
+	}
+
+	if err := reconcileKibana(kibanaInstance, k8sClient, esClient, proxyCfg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func reconcileKibana(requestCluster *kibana.Kibana, requestClient client.Client, esClient elasticsearch.Client, proxyConfig *configv1.Proxy) error {
+	clusterKibanaRequest := KibanaRequest{
+		client:   requestClient,
+		cluster:  requestCluster,
+		esClient: esClient,
+	}
+
+	migrationRequest := migrations.NewMigrationRequest(requestClient, esClient)
 
 	if clusterKibanaRequest.cluster == nil {
 		return nil
@@ -66,7 +105,15 @@ func ReconcileKibana(requestCluster *kibana.Kibana, requestClient client.Client,
 		return err
 	}
 
-	if err := clusterKibanaRequest.createOrUpdateKibanaConsoleLinks(); err != nil {
+	if err := clusterKibanaRequest.createOrUpdateKibanaConsoleLink(); err != nil {
+		return err
+	}
+
+	if err := clusterKibanaRequest.deleteKibana5Deployment(); err != nil {
+		return err
+	}
+
+	if err := migrationRequest.RunKibanaMigrations(); err != nil {
 		return err
 	}
 
@@ -103,37 +150,6 @@ func ReconcileKibana(requestCluster *kibana.Kibana, requestClient client.Client,
 		return fmt.Errorf("Failed to update Kibana status for %q: %v", cluster.Name, retryErr)
 	}
 	logrus.Infof("Kibana status successfully updated")
-
-	return nil
-}
-
-func ReconcileKibanaInstance(request reconcile.Request, rClient client.Client) error {
-	kibanaInstance := &kibana.Kibana{}
-	key := types.NamespacedName{
-		Namespace: request.Namespace,
-		Name:      constants.KibanaInstanceName,
-	}
-
-	err := rClient.Get(context.TODO(), key, kibanaInstance)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-
-	if kibanaInstance.Spec.ManagementState == kibana.ManagementStateUnmanaged {
-		return nil
-	}
-
-	proxyCfg, err := getProxyConfig(rClient)
-	if err != nil {
-		return err
-	}
-
-	if err := ReconcileKibana(kibanaInstance, rClient, proxyCfg); err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -201,21 +217,49 @@ func compareKibanaStatus(lhs, rhs []kibana.KibanaStatus) bool {
 	return true
 }
 
+func (clusterRequest *KibanaRequest) deleteKibana5Deployment() error {
+	kibana5 := &apps.Deployment{}
+	if err := clusterRequest.Get(clusterRequest.cluster.Name, kibana5); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to get kibana 5 deployment: %s", err)
+	}
+
+	containers := kibana5.Spec.Template.Spec.Containers
+	for _, c := range containers {
+		if c.Image == getImage() {
+			logrus.Debugf("skipping deleting kibana 5 image because kibana 6 installed")
+			return nil
+		}
+	}
+
+	if err := clusterRequest.Delete(kibana5); err != nil {
+		if errors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to delete kibana 5 deployment: %s", err)
+	}
+	return nil
+}
+
 func (clusterRequest *KibanaRequest) createOrUpdateKibanaDeployment(proxyConfig *configv1.Proxy) (err error) {
 	kibanaTrustBundle := &v1.ConfigMap{}
 
 	// Create cluster proxy trusted CA bundle.
 	if proxyConfig != nil {
-		err = clusterRequest.createOrUpdateTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
+		kibanaTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.KibanaTrustedCAName)
 		if err != nil {
 			return
 		}
 	}
 
-	kibanaPodSpec := newKibanaPodSpec(clusterRequest,
+	kibanaPodSpec := newKibanaPodSpec(
+		clusterRequest,
 		fmt.Sprintf("elasticsearch.%s.svc.cluster.local", clusterRequest.cluster.Namespace),
 		proxyConfig,
-		kibanaTrustBundle)
+		kibanaTrustBundle,
+	)
 
 	kibanaDeployment := NewDeployment(
 		"kibana",
@@ -224,6 +268,7 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaDeployment(proxyConfig 
 		"kibana",
 		kibanaPodSpec,
 	)
+
 	kibanaDeployment.Spec.Replicas = &clusterRequest.cluster.Spec.Replicas
 
 	// if we don't have the hash values we shouldn't start/create
@@ -238,7 +283,7 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaDeployment(proxyConfig 
 
 	err = clusterRequest.Create(kibanaDeployment)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Kibana deployment for %q: %v", clusterRequest.cluster.Name, err)
+		return fmt.Errorf("failed creating Kibana deployment for %q: %v", clusterRequest.cluster.Name, err)
 	}
 
 	if clusterRequest.isManaged() {
@@ -252,18 +297,31 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaDeployment(proxyConfig 
 					logrus.Debugf("Returning nil. The deployment %q was not found even though create previously failed.  Was it culled?", kibanaDeployment.Name)
 					return nil
 				}
-				return fmt.Errorf("Failed to get Kibana deployment: %v", err)
+				return fmt.Errorf("failed to get Kibana deployment: %v", err)
 			}
 
 			current, different := isDeploymentDifferent(current, kibanaDeployment)
 
-			if current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] != kibanaDeployment.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] {
+			currentTrustedCAHash := current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
+			desiredTrustedCAHash := kibanaDeployment.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName]
+			if currentTrustedCAHash != desiredTrustedCAHash {
+				if current.Spec.Template.ObjectMeta.Annotations == nil {
+					current.Spec.Template.ObjectMeta.Annotations = map[string]string{}
+				}
+				current.Spec.Template.ObjectMeta.Annotations[constants.TrustedCABundleHashName] = desiredTrustedCAHash
 				different = true
 			}
 
 			for _, secretName := range []string{"kibana", "kibana-proxy"} {
 				hashKey := fmt.Sprintf("%s%s", constants.SecretHashPrefix, secretName)
-				if current.Spec.Template.ObjectMeta.Annotations[hashKey] != kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey] {
+				currentHash := current.Spec.Template.ObjectMeta.Annotations[hashKey]
+				desiredHash := kibanaDeployment.Spec.Template.ObjectMeta.Annotations[hashKey]
+
+				if currentHash != desiredHash {
+					if current.Spec.Template.ObjectMeta.Annotations == nil {
+						current.Spec.Template.ObjectMeta.Annotations = map[string]string{}
+					}
+					current.Spec.Template.ObjectMeta.Annotations[hashKey] = desiredHash
 					different = true
 				}
 			}
@@ -355,6 +413,12 @@ func isDeploymentDifferent(current *apps.Deployment, desired *apps.Deployment) (
 
 	if utils.AreResourcesDifferent(current, desired) {
 		logrus.Debugf("Visualization resource(s) change found, updating %q", current.Name)
+		different = true
+	}
+
+	if *current.Spec.Replicas != *desired.Spec.Replicas {
+		logrus.Infof("Kibana replicas changed. Previous: %d, Current: %d", *current.Spec.Replicas, *desired.Spec.Replicas)
+		*current.Spec.Replicas = *desired.Spec.Replicas
 		different = true
 	}
 
@@ -535,6 +599,8 @@ func newKibanaPodSpec(cluster *KibanaRequest, elasticsearchName string, proxyCon
 		fmt.Sprintf("-client-id=system:serviceaccount:%s:kibana", cluster.cluster.Namespace),
 		"-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token",
 		"-cookie-secret-file=/secret/session-secret",
+		"-cookie-expire=24h",
+		"-skip-provider-button",
 		"-upstream=http://localhost:5601",
 		"-scope=user:info user:check-access user:list-projects",
 		"--tls-cert=/secret/server-cert",
@@ -567,7 +633,8 @@ func newKibanaPodSpec(cluster *KibanaRequest, elasticsearchName string, proxyCon
 
 	addTrustedCAVolume := false
 	// If trusted CA bundle ConfigMap exists and its hash value is non-zero, mount the bundle.
-	if trustedCABundleCM != nil && hasTrustedCABundle(trustedCABundleCM) {
+
+	if hasTrustedCABundle(trustedCABundleCM) {
 		addTrustedCAVolume = true
 		kibanaProxyContainer.VolumeMounts = append(kibanaProxyContainer.VolumeMounts,
 			v1.VolumeMount{

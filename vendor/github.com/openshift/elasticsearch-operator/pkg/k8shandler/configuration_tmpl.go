@@ -4,6 +4,9 @@ const esYmlTmpl = `
 cluster:
   name: ${CLUSTER_NAME}
 
+bootstrap:
+  system_call_filter: {{.SystemCallFilter}}
+
 node:
   name: ${DC_NAME}
   master: ${IS_MASTER}
@@ -28,6 +31,12 @@ gateway:
 path:
   data: /elasticsearch/persistent/${CLUSTER_NAME}/data
   logs: /elasticsearch/persistent/${CLUSTER_NAME}/logs
+
+prometheus:
+  indices: false
+
+# increase the max header size above 8kb default
+http.max_header_size: 128kb
 
 opendistro_security:
   authcz.admin_dn:

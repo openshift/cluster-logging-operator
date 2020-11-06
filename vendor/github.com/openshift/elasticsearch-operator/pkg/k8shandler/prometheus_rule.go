@@ -25,14 +25,13 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdatePrometheusRules(
 	dpl := elasticsearchRequest.cluster
 
 	ruleName := fmt.Sprintf("%s-%s", dpl.Name, "prometheus-rules")
-	owner := getOwnerRef(dpl)
 
 	promRule, err := buildPrometheusRule(ruleName, dpl.Namespace, dpl.Labels)
 	if err != nil {
 		return err
 	}
 
-	addOwnerRefToObject(promRule, owner)
+	dpl.AddOwnerRefTo(promRule)
 
 	err = elasticsearchRequest.client.Create(context.TODO(), promRule)
 	if err != nil && !errors.IsAlreadyExists(err) {

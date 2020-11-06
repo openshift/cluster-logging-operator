@@ -1,6 +1,7 @@
 # Define the target to run if make is called with no arguments.
 default: check
 
+export LOG_LEVEL?=9
 export KUBECONFIG?=$(HOME)/.kube/config
 
 export GOBIN=$(CURDIR)/bin

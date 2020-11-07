@@ -1,7 +1,7 @@
 # Define the target to run if make is called with no arguments.
 default: check
 
-export LOG_LEVEL?=fatal
+export LOG_LEVEL?=9
 export KUBECONFIG?=$(HOME)/.kube/config
 
 export GOBIN=$(CURDIR)/bin
@@ -67,6 +67,7 @@ RUN_CMD?=go run
 run: 
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
@@ -145,6 +146,8 @@ test-functional:
 .PHONY: test-functional
 
 test-unit:
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
+	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	LOG_LEVEL=$(LOG_LEVEL) \
 	go test -cover -race ./pkg/...

@@ -22,6 +22,7 @@ FROM registry.svc.ci.openshift.org/ocp/4.7:cli as origincli
 FROM registry.svc.ci.openshift.org/ocp/4.7:base
 RUN INSTALL_PKGS=" \
       openssl \
+      file \
       rsync \
       xz \
       " && \

@@ -40,7 +40,7 @@ var _ = Describe("generating source", func() {
 			rotate_wait 5
 			tag kubernetes.*
 			read_from_head "true"
-			@label @CONCAT
+			@label @MEASURE
 			<parse>
 			  @type multi_format
 			  <pattern>
@@ -79,7 +79,7 @@ var _ = Describe("generating source", func() {
 			<source>
 				@type systemd
 				@id systemd-input
-				@label @INGRESS
+				@label @MEASURE
 				path '/var/log/journal'
 				<storage>
 				@type local
@@ -107,7 +107,7 @@ var _ = Describe("generating source", func() {
 			  rotate_wait 5
 			  tag kubernetes.*
 			  read_from_head "true"
-			  @label @CONCAT
+			  @label @MEASURE
 			  <parse>
 				@type multi_format
 				<pattern>
@@ -140,7 +140,7 @@ var _ = Describe("generating source", func() {
             <source>
               @type tail
               @id audit-input
-              @label @INGRESS
+              @label @MEASURE
               path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
               pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
               tag linux-audit.log
@@ -154,7 +154,7 @@ var _ = Describe("generating source", func() {
             <source>
               @type tail
               @id k8s-audit-input
-              @label @INGRESS
+              @label @MEASURE
               path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
               pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
               tag k8s-audit.log
@@ -172,7 +172,7 @@ var _ = Describe("generating source", func() {
             <source>
               @type tail
               @id openshift-audit-input
-              @label @INGRESS
+              @label @MEASURE
               path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
               pos_file /var/log/oauth-apiserver.audit.log
               tag openshift-audit.log
@@ -203,7 +203,7 @@ var _ = Describe("generating source", func() {
 			<source>
 				@type systemd
 				@id systemd-input
-				@label @INGRESS
+				@label @MEASURE
 				path '/var/log/journal'
 				<storage>
 				@type local
@@ -233,7 +233,7 @@ var _ = Describe("generating source", func() {
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				@label @CONCAT
+				@label @MEASURE
 				<parse>
 				  @type multi_format
 				  <pattern>
@@ -261,7 +261,7 @@ var _ = Describe("generating source", func() {
               <source>
                 @type tail
                 @id audit-input
-                @label @INGRESS
+                @label @MEASURE
                 path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
                 pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
                 tag linux-audit.log
@@ -275,7 +275,7 @@ var _ = Describe("generating source", func() {
               <source>
                 @type tail
                 @id k8s-audit-input
-                @label @INGRESS
+                @label @MEASURE
                 path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
                 pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
                 tag k8s-audit.log
@@ -293,7 +293,7 @@ var _ = Describe("generating source", func() {
               <source>
                 @type tail
                 @id openshift-audit-input
-                @label @INGRESS
+                @label @MEASURE
                 path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
                 pos_file /var/log/oauth-apiserver.audit.log
                 tag openshift-audit.log

@@ -165,7 +165,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorConfigMap() er
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorSecret() error {
 	var secrets map[string][]byte
-	Syncronize(func() error {
+	_ = Syncronize(func() error {
 		secrets = map[string][]byte{
 			"ca":       utils.GetWorkingDirFileContents("ca.crt"),
 			"key":      utils.GetWorkingDirFileContents("system.logging.curator.key"),

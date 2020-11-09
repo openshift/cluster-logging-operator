@@ -25,6 +25,7 @@ const (
 	MasterCASecretName  = "master-certs"
 	CollectorSecretName = "fluentd"
 
+	/* #nosec - suppressing rule G101 */
 	KibanaSessionSecretName = "kibana-session-secret"
 )
 

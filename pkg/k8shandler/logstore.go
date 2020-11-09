@@ -141,7 +141,7 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearch() (err error) {
 }
 func LoadElasticsearchSecretMap() map[string][]byte {
 	var results = map[string][]byte{}
-	Syncronize(func() error {
+	_ = Syncronize(func() error {
 		results = map[string][]byte{
 			"elasticsearch.key": utils.GetWorkingDirFileContents("elasticsearch.key"),
 			"elasticsearch.crt": utils.GetWorkingDirFileContents("elasticsearch.crt"),

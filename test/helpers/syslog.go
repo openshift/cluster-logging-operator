@@ -467,44 +467,5 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 }
 
 func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, secretName string) (*corev1.Secret, error) {
-	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
-	clolog.V(3).Info("Generating Pipeline certificates for", "rsyslog-receiver", workingDir)
-	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		if err = os.MkdirAll(workingDir, 0766); err != nil {
-			return nil, err
-		}
-	}
-	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
-		return nil, err
-	}
-	script := fmt.Sprintf("%s/syslog_cert_generation.sh", testDir)
-	clolog.Info("Running script '%s %s %s %s'", "script", script, "workingdir", workingDir, "namespace", OpenshiftLoggingNS, "logStore", logStoreName)
-	cmd := exec.Command(script, workingDir, OpenshiftLoggingNS, logStoreName)
-	result, err := cmd.Output()
-
-	if clolog.V(3).Enabled() {
-		clolog.V(3).Info("cert_generation :", "output", string(result))
-	}
-	if err != nil {
-		clolog.V(3).Error(err, "Error:")
-	}
-
-	data := map[string][]byte{
-		"tls.key":       utils.GetWorkingDirFileContents("syslog-server.key"),
-		"tls.crt":       utils.GetWorkingDirFileContents("syslog-server.crt"),
-		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca-syslog.crt"),
-		"ca.key":        utils.GetWorkingDirFileContents("ca-syslog.key"),
-	}
-
-	sOpts := metav1.CreateOptions{}
-	secret := k8shandler.NewSecret(
-		secretName,
-		OpenshiftLoggingNS,
-		data,
-	)
-	clolog.V(3).Info("Creating secret for logStore", "secret", secret.Name, "logStore", logStoreName)
-	if secret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts); err != nil {
-		return nil, err
-	}
-	return secret, nil
+	return nil, nil
 }

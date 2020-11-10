@@ -1,5 +1,5 @@
 diff --git a/Dockerfile b/Dockerfile.local
-index 9212266f..489ce024 100644
+index 596e84be..8772b35b 100644
 --- a/Dockerfile
 +++ b/Dockerfile.local
 @@ -1,4 +1,4 @@
@@ -8,22 +8,22 @@ index 9212266f..489ce024 100644
  WORKDIR /go/src/github.com/openshift/cluster-logging-operator
  
  # COPY steps are in the reverse order of frequency of change
-@@ -17,9 +17,7 @@ COPY pkg ./pkg
+@@ -16,9 +16,7 @@ COPY pkg ./pkg
  
  RUN make build
  
 -FROM registry.svc.ci.openshift.org/ocp/4.7:cli as origincli
 -
 -FROM registry.svc.ci.openshift.org/ocp/4.7:base
-+FROM centos:centos8 AS centos
++FROM centos:centos8 as centos
  RUN INSTALL_PKGS=" \
-       openssl \
-       file \
-@@ -40,7 +38,6 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/
+       rsync \
+       xz \
+@@ -34,7 +32,6 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/
  COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
  RUN rm /manifests/art.yaml
  
 -COPY --from=origincli /usr/bin/oc /usr/bin/
  COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/
  
- # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
+ WORKDIR /usr/bin

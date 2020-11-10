@@ -13,7 +13,6 @@ import (
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
@@ -91,11 +90,7 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 		return err
 	}
 	log.V(2).Info("Generating Certificates")
-	if err, _ = certificates.GenerateCertificates(f.test.NS.Name,
-		utils.GetScriptsDir(), "elasticsearch",
-		utils.DefaultWorkingDir); err != nil {
-		return err
-	}
+	// TODO
 	log.V(2).Info("Creating config configmap")
 	configmap := runtime.NewConfigMap(f.test.NS.Name, f.Name, map[string]string{})
 	runtime.NewConfigMapBuilder(configmap).
@@ -107,13 +102,7 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 
 	log.V(2).Info("Creating certs configmap")
 	certsName := "certs-" + f.Name
-	certs := runtime.NewConfigMap(f.test.NS.Name, certsName, map[string]string{})
-	runtime.NewConfigMapBuilder(certs).
-		Add("tls.key", string(utils.GetWorkingDirFileContents("system.logging.fluentd.key"))).
-		Add("tls.crt", string(utils.GetWorkingDirFileContents("system.logging.fluentd.crt")))
-	if err = f.test.Client.Create(certs); err != nil {
-		return err
-	}
+	// TODO
 
 	log.V(2).Info("Creating service")
 	service := runtime.NewService(f.test.NS.Name, f.Name)

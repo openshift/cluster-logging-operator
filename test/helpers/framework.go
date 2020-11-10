@@ -571,39 +571,6 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 }
 
 func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (secret *corev1.Secret, err error) {
-	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
-	clolog.V(3).Info("Generating Pipeline certificates for Log Store to working dir", "logStoreName", logStoreName, "workingDir", workingDir)
-	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		if err = os.MkdirAll(workingDir, 0766); err != nil {
-			return nil, err
-		}
-	}
-	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
-		return nil, err
-	}
-	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
-	if err, _ = certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
-		return nil, err
-	}
-	data := map[string][]byte{
-		"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-		"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
-		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-		"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
-	}
-	for key, value := range otherData {
-		data[key] = value
-	}
-
-	sOpts := metav1.CreateOptions{}
-	secret = k8shandler.NewSecret(
-		secretName,
-		OpenshiftLoggingNS,
-		data,
-	)
-	clolog.V(3).Info("Creating secret  for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
-	if secret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts); err != nil {
-		return nil, err
-	}
-	return secret, nil
+	// TODO
+	return nil, nil
 }

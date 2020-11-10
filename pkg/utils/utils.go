@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -24,8 +23,6 @@ import (
 )
 
 const (
-	DefaultWorkingDir = "/tmp/ocp-clo"
-	DefaultScriptsDir = "./scripts"
 	OsNodeLabel       = "kubernetes.io/os"
 	LinuxValue        = "linux"
 )
@@ -198,37 +195,6 @@ func GetShareDir() string {
 		return filepath.Join(wd[0:i+len(repoRoot)] + "files")
 	}
 	return defaultShareDir
-}
-
-func GetScriptsDir() string {
-	scriptsDir := os.Getenv("SCRIPTS_DIR")
-	if scriptsDir == "" {
-		return DefaultScriptsDir
-	}
-	return scriptsDir
-}
-
-func GetWorkingDirFileContents(filePath string) []byte {
-	return GetFileContents(GetWorkingDirFilePath(filePath))
-}
-func GetWorkingDir() string {
-	workingDir := os.Getenv("WORKING_DIR")
-	if workingDir == "" {
-		workingDir = DefaultWorkingDir
-	}
-	return workingDir
-}
-func GetWorkingDirFilePath(toFile string) string {
-	return path.Join(GetWorkingDir(), toFile)
-}
-
-func WriteToWorkingDirFile(toFile string, value []byte) error {
-
-	if err := ioutil.WriteFile(GetWorkingDirFilePath(toFile), value, 0600); err != nil {
-		return fmt.Errorf("Unable to write to working dir: %v", err)
-	}
-
-	return nil
 }
 
 func init() {

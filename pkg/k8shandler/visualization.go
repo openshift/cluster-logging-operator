@@ -135,47 +135,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error {
-	var secrets = map[string][]byte{}
-	_ = Syncronize(func() error {
-		secrets = map[string][]byte{
-			"ca":   utils.GetWorkingDirFileContents("ca.crt"),
-			"key":  utils.GetWorkingDirFileContents("system.logging.kibana.key"),
-			"cert": utils.GetWorkingDirFileContents("system.logging.kibana.crt"),
-		}
-		return nil
-	})
-	kibanaSecret := NewSecret(
-		"kibana",
-		clusterRequest.Cluster.Namespace,
-		secrets)
-
-	utils.AddOwnerRefToObject(kibanaSecret, utils.AsOwner(clusterRequest.Cluster))
-
-	err := clusterRequest.CreateOrUpdateSecret(kibanaSecret)
-	if err != nil {
-		return err
-	}
-
-	_ = Syncronize(func() error {
-		secrets = map[string][]byte{
-			"session-secret": utils.GetWorkingDirFileContents(constants.KibanaSessionSecretName),
-			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
-			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
-		}
-		return nil
-	})
-	proxySecret := NewSecret(
-		"kibana-proxy",
-		clusterRequest.Cluster.Namespace,
-		secrets)
-
-	utils.AddOwnerRefToObject(proxySecret, utils.AsOwner(clusterRequest.Cluster))
-
-	err = clusterRequest.CreateOrUpdateSecret(proxySecret)
-	if err != nil {
-		return err
-	}
-
+	// TODO
 	return nil
 }
 

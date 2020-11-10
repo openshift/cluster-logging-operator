@@ -29,12 +29,8 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
-	if clusterLoggingRequest.IncludesManagedStorage() {
-		// Reconcile certs
-		if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
-			return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-		}
 
+	if clusterLoggingRequest.IncludesManagedStorage() {
 		// Reconcile Log Store
 		if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
 			return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)

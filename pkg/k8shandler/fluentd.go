@@ -304,27 +304,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error {
-	var secrets = map[string][]byte{}
-	_ = Syncronize(func() error {
-		secrets = map[string][]byte{
-			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
-		}
-		return nil
-	})
-	fluentdSecret := NewSecret(
-		fluentdName,
-		clusterRequest.Cluster.Namespace,
-		secrets)
-
-	utils.AddOwnerRefToObject(fluentdSecret, utils.AsOwner(clusterRequest.Cluster))
-
-	err := clusterRequest.CreateOrUpdateSecret(fluentdSecret)
-	if err != nil {
-		return err
-	}
-
+	// TODO
 	return nil
 }
 

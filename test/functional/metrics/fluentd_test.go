@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 )
 
@@ -32,8 +33,7 @@ var _ = Describe("[Metrics] Function testing of fluentd metrics", func() {
 
 	Context("when using a service address", func() {
 		It("should return successfully", func() {
-			cmd := fmt.Sprintf("curl -ksv https://%s.%s:24231/metrics", framework.Name, framework.Namespace)
-			metrics, _ := framework.RunCommand(cmd)
+			metrics, _ := framework.RunCommand(constants.FluentdName, "curl", "-ksv", fmt.Sprintf("https://%s.%s:24231/metrics", framework.Name, framework.Namespace))
 			Expect(metrics).To(ContainSubstring(sampleMetric))
 		})
 	})

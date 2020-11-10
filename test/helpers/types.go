@@ -3,6 +3,8 @@ package helpers
 import (
 	"encoding/json"
 	"strings"
+
+	logger "github.com/ViaQ/logerr/log"
 )
 
 type logs []log
@@ -46,10 +48,15 @@ type log struct {
 	Timestamp        string            `json:"@timestamp"`
 	IndexName        string            `json:"viaq_index_name"`
 	MessageID        string            `json:"viaq_msg_id"`
-	OpenshiftLabels  string            `json:"openshift"`
+	OpenshiftLabels  openshiftMeta     `json:"openshift"`
+}
+
+type openshiftMeta struct {
+	Labels map[string]string `json:"labels"`
 }
 
 func ParseLogs(in string) (logs, error) {
+	logger.V(3).Info("ParseLogs", "content", in)
 	logs := []log{}
 	if in == "" {
 		return logs, nil
@@ -67,19 +74,6 @@ func (l logs) ByIndex(prefix string) logs {
 	filtered := []log{}
 	for _, entry := range l {
 		if strings.HasPrefix(entry.IndexName, prefix) {
-			filtered = append(filtered, entry)
-		}
-	}
-	return filtered
-}
-
-func (l logs) ByOpenshiftLabel(label string) logs {
-	filtered := []log{}
-	for _, entry := range l {
-		if len(entry.OpenshiftLabels) == 0 {
-			continue
-		}
-		if strings.Contains(entry.OpenshiftLabels, label) {
 			filtered = append(filtered, entry)
 		}
 	}

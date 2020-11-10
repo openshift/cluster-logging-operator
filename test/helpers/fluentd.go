@@ -65,9 +65,9 @@ const (
 	@type stdout
 </match>
 	`
-	unsecureFluentConf = `
+	UnsecureFluentConf = `
 <system>
-	log_level warn
+	log_level trace
 </system>
 <source>
   @type forward
@@ -302,7 +302,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		ServiceAccountName: serviceAccount.Name,
 	}
 
-	fluentConf := unsecureFluentConf
+	fluentConf := UnsecureFluentConf
 	if secure {
 		fluentConf = secureFluentConfTemplate
 		otherConf := map[string][]byte{

@@ -1,23 +1,25 @@
---- Dockerfile	2020-10-16 10:26:19.124105649 -0400
-+++ Dockerfile.centos	2020-10-16 10:28:25.713003840 -0400
+diff --git a/Dockerfile b/Dockerfile.local
+index 9212266f..489ce024 100644
+--- a/Dockerfile
++++ b/Dockerfile.local
 @@ -1,4 +1,4 @@
 -FROM registry.svc.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
-+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.14 AS builder
++FROM registry.svc.ci.openshift.org/openshift/release:golang-1.15 as builder
  WORKDIR /go/src/github.com/openshift/cluster-logging-operator
  
  # COPY steps are in the reverse order of frequency of change
-@@ -17,9 +17,8 @@
+@@ -17,9 +17,7 @@ COPY pkg ./pkg
  
  RUN make build
  
--FROM registry.svc.ci.openshift.org/ocp/4.7:cli AS origincli
-+FROM centos:centos7 AS centos
- 
+-FROM registry.svc.ci.openshift.org/ocp/4.7:cli as origincli
+-
 -FROM registry.svc.ci.openshift.org/ocp/4.7:base
++FROM centos:centos8 AS centos
  RUN INSTALL_PKGS=" \
        openssl \
-       rsync \
-@@ -38,7 +37,6 @@
+       file \
+@@ -40,7 +38,6 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/
  COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
  RUN rm /manifests/art.yaml
  

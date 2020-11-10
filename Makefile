@@ -19,6 +19,7 @@ export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not 
 export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+REPLICAS?=0
 
 .PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
@@ -76,6 +77,14 @@ run:
 
 run-debug:
 	$(MAKE) run RUN_CMD='dlv debug'
+
+scale-cvo:
+	@oc -n openshift-cluster-version scale deployment/cluster-version-operator --replicas=$(REPLICAS)
+.PHONY: scale-cvo
+
+scale-olm:
+	@oc -n openshift-operator-lifecycle-manager scale deployment/olm-operator --replicas=$(REPLICAS)
+.PHONY: scale-olm
 
 clean:
 	@rm -rf bin tmp _output

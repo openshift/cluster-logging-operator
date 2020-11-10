@@ -11,13 +11,13 @@
 package edge
 
 import (
+	"github.com/ViaQ/logerr/log"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentbit"
 	topologyapi "github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +39,7 @@ func (topology EdgeTopologyEnhanced) Reconcile(proxyConfig *configv1.Proxy) (err
 
 //ProcessPodSpec allows reuse of exising functions of the original deployment
 func (topology EdgeTopologyEnhanced) ProcessPodSpec(podSpec *corev1.PodSpec) *corev1.PodSpec {
-	logger.Debugf("EdgeTopologyEnhanced Processing PodSpec..")
+	log.V(2).Info("EdgeTopologyEnhanced Processing PodSpec..")
 	resourceRequirements := corev1.ResourceRequirements{}
 	container := factory.NewContainer(constants.CollectorName, constants.FluentBitImage, corev1.PullIfNotPresent, resourceRequirements)
 	container.SecurityContext = &corev1.SecurityContext{
@@ -64,10 +64,10 @@ func (topology EdgeTopologyEnhanced) ProcessPodSpec(podSpec *corev1.PodSpec) *co
 }
 
 func (topology EdgeTopologyEnhanced) ProcessConfigMap(cm *corev1.ConfigMap) *corev1.ConfigMap {
-	logger.Debugf("EdgeTopologyEnhanced Processing ConfigMap..")
+	log.V(2).Info("EdgeTopologyEnhanced Processing ConfigMap..")
 	conf, err := topology.GenerateCollectorConfig()
 	if err != nil {
-		logger.Warnf("Error while generating fluentbit conf: %v", err)
+		log.V(0).Error(err, "Error while generating fluentbit conf")
 	}
 	cm.Data["fluent-bit.conf"] = conf
 	cm.Data["concat-crio.lua"] = fluentbit.ConcatCrioFilter
@@ -76,7 +76,7 @@ func (topology EdgeTopologyEnhanced) ProcessConfigMap(cm *corev1.ConfigMap) *cor
 }
 
 func (topology EdgeTopologyEnhanced) ProcessService(service *corev1.Service) *corev1.Service {
-	logger.Debugf("EdgeTopologyEnhanced Processing Service..")
+	log.V(2).Info("EdgeTopologyEnhanced Processing Service..")
 	service.Spec.Ports = append(service.Spec.Ports, corev1.ServicePort{
 		Name:       constants.CollectorMetricsPortName,
 		Port:       constants.CollectorMetricsPort,
@@ -85,7 +85,7 @@ func (topology EdgeTopologyEnhanced) ProcessService(service *corev1.Service) *co
 	return service
 }
 func (topology EdgeTopologyEnhanced) ProcessServiceMonitor(sm *monitoringv1.ServiceMonitor) *monitoringv1.ServiceMonitor {
-	logger.Debugf("EdgeTopologyEnhanced Processing ServiceMonitor..")
+	log.V(2).Info("EdgeTopologyEnhanced Processing ServiceMonitor..")
 	sm.Spec.Endpoints = append(sm.Spec.Endpoints, monitoringv1.Endpoint{
 		Port:   constants.CollectorMetricsPortName,
 		Path:   "/api/v1/metrics/prometheus",

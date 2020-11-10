@@ -8,8 +8,10 @@ spec:
     type: "elasticsearch"
     elasticsearch:
       nodeCount: 1
-      storage: {}
       redundancyPolicy: "ZeroRedundancy"
+      resources:
+        requests:
+          memory: 3Gi
   visualization:
     type: "kibana"
     kibana:

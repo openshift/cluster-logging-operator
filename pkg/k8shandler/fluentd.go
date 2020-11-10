@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/daemonsets"
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/services"
@@ -265,7 +264,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(conf
 	fluentdConfigMap = topology.ProcessConfigMap(fluentdConfigMap)
 	cmHash, err := calculateValueHashes(fluentdConfigMap.Data)
 	if err != nil {
-		logger.Warnf("Unable to calculate configmap hash value: %v", err)
+		log.V(1).Info("Unable to calculate configmap hash value: %v", err)
 	}
 
 	err = clusterRequest.Create(fluentdConfigMap)
@@ -292,7 +291,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(conf
 }
 
 func calculateValueHashes(configs map[string]string) (string, error) {
-	logger.Trace("calculateValueHashes: start...")
+	log.V(3).Info("calculateValueHashes: start...")
 	keys := []string{}
 	for key := range configs {
 		keys = append(keys, key)
@@ -302,15 +301,15 @@ func calculateValueHashes(configs map[string]string) (string, error) {
 	for _, key := range keys {
 		config := configs[key]
 		b.WriteString(config)
-		logger.Tracef("calculateValueHashes key:%s len:%d", key, len(config))
+		log.V(3).Info("calculateValueHashes", "key", key, "len", len(config))
 	}
 	final := b.String()
-	logger.Tracef("calculateValueHashes buffer len:%d", len(final))
+	log.V(3).Info("calculateValueHashes buffer", "len", len(final))
 	hash, err := utils.CalculateMD5Hash(final)
 	if err != nil {
 		return "", fmt.Errorf("unable to calculate MD5 hash for collector configs: %w", err)
 	}
-	logger.Tracef("calculateValueHashes hash:%s", hash)
+	log.V(3).Info("calculateValueHashes", "hash", hash)
 	return hash, nil
 }
 

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"text/template"
 
+	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/sources"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -31,8 +31,8 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 }
 
 func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec, fwSpec *logging.ForwarderSpec) (string, error) {
-	logger.DebugObject("Generating fluent-bit.conf using %s", clfSpec)
-	logger.DebugObject("Ignoring buffer config: %s", fwSpec)
+	log.V(2).Info("Generating fluent-bit.conf", "clf", clfSpec)
+	log.V(2).Info("Ignoring buffer config", "spec", fwSpec)
 
 	//sanitize here
 	var (
@@ -46,7 +46,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	sourcesConf, err = engine.generateSource(inputs)
 	if err != nil {
 
-		logger.Tracef("Error generating source blocks: %v", err)
+		log.V(3).Error(err, "Error generating source blocks")
 		return "", err
 	}
 	data := struct {
@@ -56,10 +56,10 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	}
 	result, err := engine.Execute("fluentbitConfTemplate", data)
 	if err != nil {
-		logger.Tracef("Error generating fluentBitConf")
+		log.V(3).Info("Error generating fluentBitConf")
 		return "", fmt.Errorf("Error processing fluentBitConf template: %v", err)
 	}
-	logger.Tracef("Successfully generated fluent-bit.conf: %v", result)
+	log.V(3).Info("Successfully generated fluent-bit.conf", "config", result)
 	return result, nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/ViaQ/logerr/log"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
@@ -11,7 +12,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentbit"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	topologyapi "github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/services"
 	apps "k8s.io/api/apps/v1"
@@ -69,7 +69,7 @@ func (topology CentralNormalizerTopology) Reconcile(proxyConfig *configv1.Proxy)
 		// remove our finalizer from the list and update it.
 		serviceAccount.ObjectMeta.Finalizers = utils.RemoveString(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 		if err = topology.APIClient.Update(serviceAccount); err != nil {
-			logger.Warnf("Unable to update the collector serviceaccount %q finalizers: %v", serviceAccount.Name, err)
+			log.Error(err, "Unable to update the collector serviceaccount", "sa", serviceAccount.Name)
 			return nil
 		}
 	}
@@ -101,30 +101,30 @@ func (topology CentralNormalizerTopology) Reconcile(proxyConfig *configv1.Proxy)
 
 func (topology CentralNormalizerTopology) Undeploy() (err error) {
 	if err = topology.APIClient.Delete(NewCollector()); err != nil {
-		logger.Warnf("Unable to remove collector: %v", err)
+		log.Error(err, "Unable to remove collector")
 	}
 	if err = topology.APIClient.Delete(NewNormalizer()); err != nil {
-		logger.Warnf("Unable to remove normalizer: %v", err)
+		log.Error(err, "Unable to remove normalizer")
 	}
 	if err = topology.RemoveSecrets(); err != nil {
-		logger.Warnf("Unable to remove secrets: %v", err)
+		log.Error(err, "Unable to remove secrets")
 	}
 	config := factory.NewConfigMap(collectorConfigName, constants.OpenshiftNS, map[string]string{})
 	if err = topology.APIClient.Delete(config); err != nil {
-		logger.Warnf("Unable to remove configmap: %v", err)
+		log.Error(err, "Unable to remove configmap")
 	}
 	config = factory.NewConfigMap(normalizerConfigName, constants.OpenshiftNS, map[string]string{})
 	if err = topology.APIClient.Delete(config); err != nil {
-		logger.Warnf("Unable to remove configmap: %v", err)
+		log.Error(err, "Unable to remove configmap")
 	}
 	if err = topology.APIClient.Delete(NewService()); err != nil {
-		logger.Warnf("Unable to remove normalizer service: %v", err)
+		log.Error(err, "Unable to remove normalizer service")
 	}
 	if err = topology.RemoveServiceAccount(); err != nil {
-		logger.Warnf("Unable to remove serviceaccount: %v", err)
+		log.Error(err, "Unable to remove serviceaccount")
 	}
 	if err = topology.RemovePriorityClass(); err != nil {
-		logger.Warnf("Unable to remove priorityclass: %v", err)
+		log.Error(err, "Unable to remove priorityclass")
 	}
 	return nil
 }

@@ -3,13 +3,13 @@ package k8shandler
 import (
 	"strings"
 
+	"github.com/ViaQ/logerr/log"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	topologyapi "github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology"
 	normalizertopology "github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology/central"
 	edgetopologyapi "github.com/openshift/cluster-logging-operator/pkg/k8shandler/logforwardingtopology/edge"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 )
@@ -32,13 +32,13 @@ func (clusterRequest *ClusterLoggingRequest) ReconcileLogForwardingTopology(prox
 	if deployedTopology != desired.Name() {
 		deployed := newLogForwarderTopology(deployedTopology, clusterRequest)
 		if err = deployed.Undeploy(); err != nil {
-			logger.Errorf("There was an error trying to undeploy the the logforwarding topology: %v", err)
+			log.Error(err, "There was an error trying to undeploy the the logforwarding topology")
 		}
 	}
 	topologyCondition := topologyapi.NewLogForwardingTopologyCondition(desiredTopology)
 	clusterRequest.Cluster.Status.Conditions.SetCondition(topologyCondition)
 	if err = clusterRequest.UpdateStatus(clusterRequest.Cluster); err != nil {
-		logger.Warnf("Unable to update the logforwarding status: %v", err)
+		log.V(1).Error(err, "Unable to update the logforwarding status")
 	}
 	return desired.Reconcile(proxyConfig)
 }

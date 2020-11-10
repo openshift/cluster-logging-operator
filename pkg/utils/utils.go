@@ -18,6 +18,7 @@ import (
 	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -31,9 +32,9 @@ const (
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	"curator": "CURATOR_IMAGE",
-	"fluentd": "FLUENTD_IMAGE",
-	"kibana":  "KIBANA_IMAGE",
+	"curator":             "CURATOR_IMAGE",
+	constants.FluentdName: "FLUENTD_IMAGE",
+	"kibana":              "KIBANA_IMAGE",
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found

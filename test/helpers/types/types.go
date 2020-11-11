@@ -1,23 +1,27 @@
-package helpers
+package types
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	logger "github.com/ViaQ/logerr/log"
 	"strings"
 	"time"
 )
 
 var ErrParse = errors.New("logs could not be parsed")
 
+type Logs []AllLog
+
 // ContainerLog
 type ContainerLog struct {
+	Timestamp        time.Time        `json:"@timestamp"`
 	Docker           Docker           `json:"docker"`
 	Kubernetes       Kubernetes       `json:"kubernetes"`
 	Message          string           `json:"message"`
 	Level            string           `json:"level"`
 	Hostname         string           `json:"hostname"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
-	Timestamp        time.Time        `json:"@timestamp"`
 	ViaqIndexName    string           `json:"viaq_index_name"`
 	ViaqMsgID        string           `json:"viaq_msg_id"`
 	OpenshiftLabels  OpenshiftMeta    `json:"openshift"`
@@ -28,17 +32,18 @@ type Docker struct {
 }
 
 type Kubernetes struct {
-	ContainerName    string            `json:"container_name"`
-	NamespaceName    string            `json:"namespace_name"`
-	PodName          string            `json:"pod_name"`
-	ContainerImage   string            `json:"container_image"`
-	ContainerImageID string            `json:"container_image_id"`
-	PodID            string            `json:"pod_id"`
-	Host             string            `json:"host"`
-	MasterURL        string            `json:"master_url"`
-	NamespaceID      string            `json:"namespace_id"`
-	FlatLabels       []string          `json:"flat_labels"`
-	Labels           map[string]string `json:"labels"`
+	ContainerName     string            `json:"container_name"`
+	NamespaceName     string            `json:"namespace_name"`
+	PodName           string            `json:"pod_name"`
+	ContainerImage    string            `json:"container_image"`
+	ContainerImageID  string            `json:"container_image_id"`
+	PodID             string            `json:"pod_id"`
+	Host              string            `json:"host"`
+	MasterURL         string            `json:"master_url"`
+	NamespaceID       string            `json:"namespace_id"`
+	FlatLabels        []string          `json:"flat_labels"`
+	Labels            map[string]string `json:"labels"`
+	OrphanedNamespace string            `json:"orphaned_namespace"`
 }
 
 type Collector struct {
@@ -272,11 +277,26 @@ type AllLog struct {
 	Annotations              Annotations      `json:"annotations"`
 	K8SAuditLevel            string           `json:"k8s_audit_level"`
 	OpenshiftAuditLevel      string           `json:"openshift_audit_level"`
+	OpenshiftLabels          OpenshiftMeta    `json:"openshift"`
 }
-type logs []AllLog
 
-func ParseLogs(in string) (logs, error) {
-	logs := logs{}
+func StrictlyParseLogs(in string, logs interface{}) error {
+	logger.V(3).Info("ParseLogs", "content", in)
+	if in == "" {
+		return nil
+	}
+	dec := json.NewDecoder(bytes.NewBufferString(in))
+	dec.DisallowUnknownFields()
+	err := dec.Decode(&logs)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ParseLogs(in string) (Logs, error) {
+	logs := Logs{}
 	if in == "" {
 		return logs, nil
 	}
@@ -289,8 +309,8 @@ func ParseLogs(in string) (logs, error) {
 	return logs, nil
 }
 
-func (l logs) ByIndex(prefix string) logs {
-	filtered := logs{}
+func (l Logs) ByIndex(prefix string) Logs {
+	filtered := Logs{}
 	for _, entry := range l {
 		if strings.HasPrefix(entry.ViaqIndexName, prefix) {
 			filtered = append(filtered, entry)
@@ -299,8 +319,8 @@ func (l logs) ByIndex(prefix string) logs {
 	return filtered
 }
 
-func (l logs) ByPod(name string) logs {
-	filtered := logs{}
+func (l Logs) ByPod(name string) Logs {
+	filtered := Logs{}
 	for _, entry := range l {
 		if entry.Kubernetes.PodName == name {
 			filtered = append(filtered, entry)
@@ -309,7 +329,7 @@ func (l logs) ByPod(name string) logs {
 	return filtered
 }
 
-func (l logs) NonEmpty() bool {
+func (l Logs) NonEmpty() bool {
 	if l == nil {
 		return false
 	}

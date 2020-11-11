@@ -114,23 +114,6 @@ func ExecOc(o runtime.Object, container, cmd string, args ...string) (string, er
 	return oc.Exec().WithNamespace(m.GetNamespace()).Pod(m.GetName()).Container(container).WithCmd(cmd, args...).Run()
 }
 
-// ExecContainer returns an `oc exec` Cmd to run cmd on o.
-func ExecContainer(o runtime.Object, container, cmd string, args ...string) *exec.Cmd {
-	m := Meta(o)
-	ocCmd := append([]string{
-		"exec",
-		"-c",
-		container,
-		"-i",
-		"-n", m.GetNamespace(),
-		GroupVersionKind(o).Kind + "/" + m.GetName(),
-		"--",
-		cmd,
-	}, args...)
-
-	return exec.Command("oc", ocCmd...)
-}
-
 // ServiceDomainName returns "name.namespace.svc".
 func ServiceDomainName(o runtime.Object) string {
 	m := Meta(o)

@@ -91,11 +91,9 @@ clean:
 	go clean -cache -testcache ./...
 
 PATCH?=Dockerfile.patch
-Dockerfile.local: Dockerfile $(PATCH)
-	patch -o Dockerfile.local Dockerfile $(PATCH)
-
-image: Dockerfile.local
+image:
 	@if [ $${SKIP_BUILD:-false} = false ] ; then \
+		patch -o Dockerfile.local Dockerfile $(PATCH) && \
 		podman build -t $(IMAGE_TAG) . -f Dockerfile.local; \
 	fi
 

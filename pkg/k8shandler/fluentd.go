@@ -280,7 +280,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error {
 	var secrets = map[string][]byte{}
-	Syncronize(func() error {
+	_ = Syncronize(func() error {
 		secrets = map[string][]byte{
 			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
 			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),

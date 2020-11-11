@@ -139,7 +139,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error {
 	var secrets = map[string][]byte{}
-	Syncronize(func() error {
+	_ = Syncronize(func() error {
 		secrets = map[string][]byte{
 			"ca":   utils.GetWorkingDirFileContents("ca.crt"),
 			"key":  utils.GetWorkingDirFileContents("system.logging.kibana.key"),
@@ -159,7 +159,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 		return err
 	}
 
-	Syncronize(func() error {
+	_ = Syncronize(func() error {
 		secrets = map[string][]byte{
 			"session-secret": utils.GetWorkingDirFileContents(constants.KibanaSessionSecretName),
 			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),

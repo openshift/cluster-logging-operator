@@ -1,11 +1,14 @@
 package trustedcabundle
 
 import (
+	"fmt"
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/elasticsearch-operator/pkg/constants"
-	kibanahandler "github.com/openshift/elasticsearch-operator/pkg/k8shandler/kibana"
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
+	"github.com/openshift/elasticsearch-operator/pkg/k8shandler"
+	"github.com/openshift/elasticsearch-operator/pkg/k8shandler/kibana"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,7 +67,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileTrustedCABundle{}
 
-// ReconcileProxyConfig reconciles a ClusterLogging object
+//ReconcileTrustedCABundle reconciles the kibana resource on
+//creates or update events of the trusted CA bundle config map.
 type ReconcileTrustedCABundle struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
@@ -72,15 +76,18 @@ type ReconcileTrustedCABundle struct {
 	scheme *runtime.Scheme
 }
 
-// Reconcile reads that state of the trusted CA bundle configmap objects for the
-// collector and the visualization resources.
+// Reconcile reads that state of the trusted CA bundle configmap objects for Kibana resource.
 // When the user configured and/or system certs are updated, the pods are triggered to restart.
 func (r *ReconcileTrustedCABundle) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	if request.Name == constants.KibanaTrustedCAName {
-		if err := kibanahandler.ReconcileKibanaInstance(request, r.client); err != nil {
-			// Failed to reconcile - requeuing.
-			return reconcileResult, err
-		}
+	es, err := k8shandler.GetElasticsearchCR(r.client, request.Namespace)
+	if err != nil {
+		return reconcileResult, fmt.Errorf("skipping trusted CA bundle reconciliation in %q: %s", request.Namespace, err)
+	}
+
+	esClient := elasticsearch.NewClient(es.Name, es.Namespace, r.client)
+	if err := kibana.Reconcile(request, r.client, esClient); err != nil {
+		// Failed to reconcile - requeuing.
+		return reconcileResult, err
 	}
 
 	return reconcile.Result{}, nil

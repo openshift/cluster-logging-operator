@@ -151,6 +151,29 @@ spec:
                       - "MultipleRedundancy"
                       - "SingleRedundancy"
                       - "ZeroRedundancy"
+                    proxy:
+                      description: Specification of the Elasticsearch Proxy component
+                      properties:
+                        resources:
+                          description: ResourceRequirements describes the compute
+                            resource requirements.
+                          nullable: true
+                          properties:
+                            limits:
+                              description: 'Limits describes the maximum amount of
+                                compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              type: object
+                            requests:
+                              description: 'Requests describes the minimum amount
+                                of compute resources required. If Requests is omitted
+                                for a container, it defaults to Limits if that is
+                                explicitly specified, otherwise to an implementation-defined
+                                value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              type: object
+                          type: object
+                      required:
+                      - resources
+                      type: object
                   required:
                   - nodeCount
                 retentionPolicy:

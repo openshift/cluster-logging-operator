@@ -21,8 +21,6 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateRBAC() error {
 
 	dpl := elasticsearchRequest.cluster
 
-	owner := getOwnerRef(dpl)
-
 	// elasticsearch RBAC
 	elasticsearchRole := newClusterRole(
 		"elasticsearch-metrics",
@@ -44,8 +42,6 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateRBAC() error {
 		),
 	)
 
-	addOwnerRefToObject(elasticsearchRole, owner)
-
 	if err := createOrUpdateClusterRole(elasticsearchRole, elasticsearchRequest.client); err != nil {
 		return err
 	}
@@ -64,8 +60,6 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateRBAC() error {
 			subject,
 		),
 	)
-
-	addOwnerRefToObject(elasticsearchRoleBinding, owner)
 
 	if err := createOrUpdateClusterRoleBinding(elasticsearchRoleBinding, elasticsearchRequest.client); err != nil {
 		return err
@@ -91,8 +85,6 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateRBAC() error {
 			),
 		),
 	)
-
-	addOwnerRefToObject(proxyRole, owner)
 
 	if err := createOrUpdateClusterRole(proxyRole, elasticsearchRequest.client); err != nil {
 		return err
@@ -122,12 +114,10 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateRBAC() error {
 		subjects,
 	)
 
-	addOwnerRefToObject(proxyRoleBinding, owner)
-
 	if err := createOrUpdateClusterRoleBinding(proxyRoleBinding, elasticsearchRequest.client); err != nil {
 		return err
 	}
-	return reconcileIndexManagmentRbac(dpl, owner, elasticsearchRequest.client)
+	return reconcileIndexManagmentRbac(dpl, elasticsearchRequest.client)
 }
 
 func createOrUpdateClusterRole(role *rbac.ClusterRole, client client.Client) error {
@@ -152,7 +142,7 @@ func createOrUpdateClusterRole(role *rbac.ClusterRole, client client.Client) err
 	return nil
 }
 
-func reconcileIndexManagmentRbac(cluster *v1.Elasticsearch, owner metav1.OwnerReference, client client.Client) error {
+func reconcileIndexManagmentRbac(cluster *v1.Elasticsearch, client client.Client) error {
 	role := k8s.NewRole(
 		"elasticsearch-index-management",
 		cluster.Namespace,
@@ -166,7 +156,9 @@ func reconcileIndexManagmentRbac(cluster *v1.Elasticsearch, owner metav1.OwnerRe
 			),
 		),
 	)
-	addOwnerRefToObject(role, owner)
+
+	cluster.AddOwnerRefTo(role)
+
 	if err := reconcileRole(role, client); err != nil {
 		return err
 	}
@@ -183,7 +175,9 @@ func reconcileIndexManagmentRbac(cluster *v1.Elasticsearch, owner metav1.OwnerRe
 		role.Name,
 		newSubjects(subject),
 	)
-	addOwnerRefToObject(rolebinding, owner)
+
+	cluster.AddOwnerRefTo(rolebinding)
+
 	return reconcileRoleBinding(rolebinding, client)
 }
 

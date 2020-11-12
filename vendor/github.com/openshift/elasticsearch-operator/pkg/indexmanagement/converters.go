@@ -5,12 +5,13 @@ import (
 	"strconv"
 
 	apis "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/openshift/elasticsearch-operator/pkg/constants"
 	"github.com/openshift/elasticsearch-operator/pkg/logger"
 )
 
 func calculateConditions(policy apis.IndexManagementPolicySpec, primaryShards int32) rolloverConditions {
-	// 40GB = 40960 1M messages
-	maxDoc := 40960 * primaryShards
+	// 40GB = 40960 1K messages
+	maxDoc := constants.TheoreticalShardMaxSizeInMB * 1000 * primaryShards
 	maxSize := defaultShardSize * primaryShards
 	maxAge := ""
 	if policy.Phases.Hot != nil && policy.Phases.Hot.Actions.Rollover != nil {

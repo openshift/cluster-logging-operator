@@ -15,10 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	AppLogsConsoleLinkName   = "kibana-app-public-url"
-	InfraLogsConsoleLinkName = "kibana-infra-public-url"
-)
+const KibanaConsoleLinkName = "kibana-public-url"
 
 //NewRoute stubs an instance of a Route
 func NewRoute(routeName, namespace, serviceName, cafilePath string) *route.Route {
@@ -133,7 +130,7 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaRoute() error {
 	return nil
 }
 
-func (clusterRequest *KibanaRequest) createOrUpdateKibanaConsoleLinks() error {
+func (clusterRequest *KibanaRequest) createOrUpdateKibanaConsoleLink() error {
 	cluster := clusterRequest.cluster
 
 	kibanaURL, err := clusterRequest.GetRouteURL("kibana")
@@ -141,18 +138,11 @@ func (clusterRequest *KibanaRequest) createOrUpdateKibanaConsoleLinks() error {
 		return err
 	}
 
-	consoleAppLogsLink := NewConsoleLink(AppLogsConsoleLinkName, kibanaURL)
-	utils.AddOwnerRefToObject(consoleAppLogsLink, getOwnerRef(cluster))
+	cl := NewConsoleLink(KibanaConsoleLinkName, kibanaURL)
+	utils.AddOwnerRefToObject(cl, getOwnerRef(cluster))
 
-	if err := clusterRequest.createOrUpdateConsoleLink(consoleAppLogsLink); err != nil {
-		return fmt.Errorf("Failure creating or updating console app logs link for kibana CR %q: %v", cluster.Name, err)
-	}
-
-	consoleInfraLogsLink := NewConsoleLink(InfraLogsConsoleLinkName, kibanaURL)
-	utils.AddOwnerRefToObject(consoleInfraLogsLink, getOwnerRef(cluster))
-
-	if err := clusterRequest.createOrUpdateConsoleLink(consoleInfraLogsLink); err != nil {
-		return fmt.Errorf("Failure creating or updating console infra logs link for kibana CR %q: %v", cluster.Name, err)
+	if err := clusterRequest.createOrUpdateConsoleLink(cl); err != nil {
+		return fmt.Errorf("Failure creating or updating kibana console link CR for %q: %v", cluster.Name, err)
 	}
 
 	return nil

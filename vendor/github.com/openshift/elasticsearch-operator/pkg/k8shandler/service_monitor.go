@@ -19,13 +19,14 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServiceMonitors(
 
 	dpl := elasticsearchRequest.cluster
 	serviceMonitorName := fmt.Sprintf("monitor-%s-%s", dpl.Name, "cluster")
-	owner := getOwnerRef(dpl)
 
 	labelsWithDefault := appendDefaultLabel(dpl.Name, dpl.Labels)
 	labelsWithDefault["scrape-metrics"] = "enabled"
 
 	elasticsearchScMonitor := createServiceMonitor(serviceMonitorName, dpl.Name, dpl.Namespace, labelsWithDefault)
-	addOwnerRefToObject(elasticsearchScMonitor, owner)
+
+	dpl.AddOwnerRefTo(elasticsearchScMonitor)
+
 	err := elasticsearchRequest.client.Create(context.TODO(), elasticsearchScMonitor)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return fmt.Errorf("Failure constructing Elasticsearch ServiceMonitor: %v", err)

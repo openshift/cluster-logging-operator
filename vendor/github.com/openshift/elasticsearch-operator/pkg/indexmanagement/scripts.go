@@ -1,11 +1,10 @@
 package indexmanagement
 
 const rolloverScript = `
-set -euox pipefail
+set -euo pipefail
 decoded=$(echo $PAYLOAD | base64 -d)
-code=$(curl "$ES_SERVICE/${POLICY_MAPPING}-write/_rollover?pretty" \
+code=$(curl -s "$ES_SERVICE/${POLICY_MAPPING}-write/_rollover?pretty" \
   -w "%{response_code}" \
-  -sv \
   --cacert /etc/indexmanagement/keys/admin-ca \
   -HContent-Type:application/json \
   -XPOST \
@@ -19,23 +18,39 @@ cat /tmp/response.txt
 exit 1
 `
 const deleteScript = `
-set -euox pipefail
+set -uo pipefail
+ERRORS=/tmp/errors.txt
+echo "" > $ERRORS
 
 writeIndices=$(curl -s $ES_SERVICE/${POLICY_MAPPING}-*/_alias/${POLICY_MAPPING}-write \
   --cacert /etc/indexmanagement/keys/admin-ca \
   -H"Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
   -HContent-Type:application/json)
 
+if echo "$writeIndices" | grep "\"error\"" ; then
+  echo "Error while attemping to determine the active write alias: $writeIndices"
+  exit 1
+fi
+
 CMD=$(cat <<END
 import json,sys
 r=json.load(sys.stdin)
 alias="${POLICY_MAPPING}-write"
-indices = [index for index in r if r[index]['aliases'][alias]['is_write_index']]
-if len(indices) > 0:
-  print indices[0] 
+try:
+  indices = [index for index in r if r[index]['aliases'][alias].get('is_write_index')]
+  if len(indices) > 0:
+    print(indices[0])
+except:
+  e = sys.exc_info()[0]
+  sys.stderr.write("Error trying to determine the 'write' index from '%r': %r" % (r,e))
+  sys.exit(1)
 END
 )
-writeIndex=$(echo "${writeIndices}" | python -c "$CMD")
+writeIndex=$(echo "${writeIndices}" | python -c "$CMD" 2>>$ERRORS)
+if [ "$?" != "0" ] ; then
+  cat $ERRORS
+  exit 1
+fi
 
 
 indices=$(curl -s $ES_SERVICE/${POLICY_MAPPING}/_settings/index.creation_date \
@@ -43,19 +58,45 @@ indices=$(curl -s $ES_SERVICE/${POLICY_MAPPING}/_settings/index.creation_date \
   -H"Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
   -HContent-Type:application/json)
 
+# Delete in batches of 25 for cases where there are a large number of indices to remove
 nowInMillis=$(date +%s%3N)
 minAgeFromEpoc=$(($nowInMillis - $MIN_AGE))
 CMD=$(cat <<END
 import json,sys
 r=json.load(sys.stdin)
-indices = [index for index in r if int(r[index]['settings']['index']['creation_date']) < $minAgeFromEpoc ]
+indices = []
+for index in r:
+  try:
+    if 'settings' in r[index]:
+      settings = r[index]['settings']
+      if 'index' in settings:
+        meta = settings['index']
+        if 'creation_date' in meta:
+          creation_date = meta['creation_date']
+          if int(creation_date) < $minAgeFromEpoc:
+            indices.append(index)
+        else:
+          sys.stderr.write("'creation_date' missing from index settings: %r" % (meta))
+      else:
+        sys.stderr.write("'index' missing from setting: %r" % (settings))
+    else:
+      sys.stderr.write("'settings' missing for %r" % (index))
+  except:
+    e = sys.exc_info()[0]
+    sys.stderr.write("Error trying to evaluate index from '%r': %r" % (r,e))
 if "$writeIndex" in indices:
   indices.remove("$writeIndex")
-indices.sort()
-print ','.join(indices)
+for i in range(0, len(indices), 25):
+  print ','.join(indices[i:i+25])
 END
 )
-indices=$(echo "${indices}"  | python -c "$CMD")
+indices=$(echo "${indices}"  | python -c "$CMD" 2>>$ERRORS)
+if [ "$?" != "0" ] ; then
+  cat $ERRORS
+  exit 1
+fi
+# Dump any findings to stdout but don't error
+cat $ERRORS
   
 if [ "${indices}" == "" ] ; then
     echo No indices to delete
@@ -64,7 +105,8 @@ else
     echo deleting indices: "${indices}"
 fi
 
-code=$(curl -sv $ES_SERVICE/${indices}?pretty \
+for sets in ${indices}; do
+code=$(curl -s $ES_SERVICE/${sets}?pretty \
   -w "%{response_code}" \
   --cacert /etc/indexmanagement/keys/admin-ca \
   -HContent-Type:application/json \
@@ -72,11 +114,11 @@ code=$(curl -sv $ES_SERVICE/${indices}?pretty \
   -o /tmp/response.txt \
   -XDELETE )
 
-if [ "$code" == "200" ] ; then
-  exit 0
+if [ $code -ne 200 ] ; then
+  cat /tmp/response.txt
+  exit 1
 fi
-cat /tmp/response.txt
-exit 1
+done
 `
 
 var scriptMap = map[string]string{

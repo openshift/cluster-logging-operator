@@ -468,24 +468,21 @@
   revision = "8ce0047d664fc92a53ded23caef9ede2dc4468c6"
 
 [[projects]]
-  branch = "master"
-  digest = "1:d5d841944b2d4f7cc3141e26e02df95067712049d617c0ba3e046e4a433773d0"
+  branch = "release-4.5"
+  digest = "1:8a2e43ead8489ab6839bb57f26740038bef031733b43afef96fd4ed77376e735"
   name = "github.com/openshift/elasticsearch-operator"
   packages = [
     "pkg/apis",
     "pkg/apis/logging/v1",
-    "pkg/constants",
-    "pkg/indexmanagement",
-    "pkg/k8shandler",
+    "pkg/elasticsearch",
     "pkg/logger",
     "pkg/types/elasticsearch",
-    "pkg/types/k8s",
     "pkg/utils",
     "pkg/utils/comparators",
     "test/utils",
   ]
   pruneopts = "NT"
-  revision = "dc477ed5cf1f8b7e4295f82d73d2b15190e3f6e1"
+  revision = "20078d41d2c707546894f54e7b0e65fda217d25a"
 
 [[projects]]
   digest = "1:0087f38751ec1995bafa67afd0ded9519a46297ecf571165c695fb9ba943688d"
@@ -1187,7 +1184,6 @@
     "github.com/onsi/ginkgo/extensions/table",
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/format",
-    "github.com/onsi/gomega/types",
     "github.com/openshift/api/config/v1",
     "github.com/openshift/api/console/v1",
     "github.com/openshift/api/oauth/v1",

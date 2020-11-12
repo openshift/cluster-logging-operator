@@ -4,6 +4,7 @@ import (
 	"context"
 
 	kibana "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,8 +13,9 @@ import (
 )
 
 type KibanaRequest struct {
-	client  client.Client
-	cluster *kibana.Kibana
+	client   client.Client
+	cluster  *kibana.Kibana
+	esClient elasticsearch.Client
 }
 
 // TODO: determine if this is even necessary

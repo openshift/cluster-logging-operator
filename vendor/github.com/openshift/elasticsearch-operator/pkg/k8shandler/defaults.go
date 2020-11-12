@@ -10,10 +10,15 @@ const (
 	modeUnique    = "unique"
 	modeSharedOps = "shared_ops"
 
-	defaultMode          = modeSharedOps
-	defaultCPURequest    = "100m"
-	defaultMemoryLimit   = "4Gi"
-	defaultMemoryRequest = "1Gi"
+	defaultMode = modeSharedOps
+	// ES
+	defaultESCpuRequest    = "100m"
+	defaultESMemoryLimit   = "4Gi"
+	defaultESMemoryRequest = "1Gi"
+	// ESProxy
+	defaultESProxyCpuRequest    = "100m"
+	defaultESProxyMemoryLimit   = "64Mi"
+	defaultESProxyMemoryRequest = "64Mi"
 
 	maxMasterCount = 3
 
@@ -22,7 +27,12 @@ const (
 	heapDumpLocation        = "/elasticsearch/persistent/heapdump.hprof"
 
 	k8sTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+	yellowClusterState = "yellow"
+	greenClusterState  = "green"
 )
+
+var desiredClusterStates = []string{yellowClusterState, greenClusterState}
 
 func kibanaIndexMode(mode string) (string, error) {
 	if mode == "" {

@@ -3,9 +3,12 @@ package proxyconfig
 import (
 	"time"
 
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
+	"github.com/openshift/elasticsearch-operator/pkg/k8shandler"
 	"github.com/openshift/elasticsearch-operator/pkg/k8shandler/kibana"
 
 	configv1 "github.com/openshift/api/config/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -63,7 +66,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileProxyConfig{}
 
-// ReconcileProxyConfig reconciles a ClusterLogging object
+//ReconcileProxyConfig reconciles the kibana resource
+//create or update events of the cluster proxy.
 type ReconcileProxyConfig struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
@@ -76,7 +80,17 @@ type ReconcileProxyConfig struct {
 // When the user configured and/or system certs are updated, the change is propagated to the
 // configmap objects and this reconciler triggers to restart those pods.
 func (r *ReconcileProxyConfig) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	if err := kibana.ReconcileKibanaInstance(request, r.client); err != nil {
+	es, err := k8shandler.GetElasticsearchCR(r.client, request.Namespace)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, nil
+		}
+
+		return reconcileResult, err
+	}
+
+	esClient := elasticsearch.NewClient(es.Name, es.Namespace, r.client)
+	if err := kibana.Reconcile(request, r.client, esClient); err != nil {
 		return reconcileResult, err
 	}
 

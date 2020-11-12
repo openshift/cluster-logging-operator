@@ -80,7 +80,7 @@ $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go')
 	@echo generating code
 	@$(MAKE) operator-sdk
 	@operator-sdk generate k8s
-	@operator-sdk generate crds
+	@operator-sdk generate crds  --crd-version v1beta1
 	@$(MAKE) fmt
 	@touch $@
 

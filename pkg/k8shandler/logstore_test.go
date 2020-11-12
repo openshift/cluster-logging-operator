@@ -32,6 +32,19 @@ func TestNewElasticsearchCRWhenResourcesAreUndefined(t *testing.T) {
 	if resources.Requests[v1.ResourceCPU] != defaultEsCpuRequest {
 		t.Errorf("Exp. the default CPU request to be %v", defaultEsCpuRequest)
 	}
+	proxyResources := elasticsearchCR.Spec.Spec.ProxyResources
+	if proxyResources.Limits[v1.ResourceMemory] != defaultEsProxyMemory {
+		t.Errorf("Exp. the default proxy memory limit to be %v", defaultEsProxyMemory)
+	}
+	if cpu, isPresent := proxyResources.Limits[v1.ResourceCPU]; isPresent {
+		t.Errorf("Exp. no default proxy CPU limit, but got %v", cpu.String())
+	}
+	if proxyResources.Requests[v1.ResourceMemory] != defaultEsProxyMemory {
+		t.Errorf("Exp. the default proxy memory request to be %v", defaultEsProxyMemory)
+	}
+	if proxyResources.Requests[v1.ResourceCPU] != defaultEsProxyCpuRequest {
+		t.Errorf("Exp. the default proxy CPU request to be %v", defaultEsProxyCpuRequest)
+	}
 }
 
 func TestNewElasticsearchCRWhenNodeSelectorIsDefined(t *testing.T) {
@@ -62,17 +75,20 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
-					Resources: newResourceRequirements("100Gi", "", "120Gi", "500m"),
+					Resources: newResourceRequirements("120Gi", "", "100Gi", "500m"),
+					ProxySpec: logging.ProxySpec{
+						Resources: newResourceRequirements("512Mi", "", "256Mi", "200m"),
+					},
 				},
 			},
 		},
 	}
 	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
 
-	limitMemory := resource.MustParse("100Gi")
-	requestMemory := resource.MustParse("120Gi")
+	limitMemory := resource.MustParse("120Gi")
+	requestMemory := resource.MustParse("100Gi")
 	requestCPU := resource.MustParse("500m")
-	//check defaults
+	//check defaults for elasticsearch
 	resources := elasticsearchCR.Spec.Spec.Resources
 	if resources.Limits[v1.ResourceMemory] != limitMemory {
 		t.Errorf("Exp. the default memory limit to be %v", limitMemory)
@@ -85,6 +101,23 @@ func TestNewElasticsearchCRWhenResourcesAreDefined(t *testing.T) {
 	}
 	if resources.Requests[v1.ResourceCPU] != requestCPU {
 		t.Errorf("Exp. the default CPU request to be %v", requestCPU)
+	}
+	//check defaults for proxy
+	limitMemory = resource.MustParse("512Mi")
+	requestMemory = resource.MustParse("256Mi")
+	requestCPU = resource.MustParse("200m")
+	proxyResources := elasticsearchCR.Spec.Spec.ProxyResources
+	if proxyResources.Limits[v1.ResourceMemory] != limitMemory {
+		t.Errorf("Exp. the default proxy memory limit to be %v", limitMemory)
+	}
+	if proxyResources.Requests[v1.ResourceCPU] == defaultEsCpuRequest {
+		t.Errorf("Exp. the default proxy CPU limit to not be %v", defaultEsProxyCpuRequest)
+	}
+	if proxyResources.Requests[v1.ResourceMemory] != requestMemory {
+		t.Errorf("Exp. the default proxy memory request to be %v", requestMemory)
+	}
+	if proxyResources.Requests[v1.ResourceCPU] != requestCPU {
+		t.Errorf("Exp. the default proxy CPU request to be %v", requestCPU)
 	}
 }
 
@@ -108,6 +141,44 @@ func TestDifferenceFoundWhenResourcesAreChanged(t *testing.T) {
 				Type: "elasticsearch",
 				ElasticsearchSpec: logging.ElasticsearchSpec{
 					Resources: newResourceRequirements("10Gi", "", "12Gi", "500m"),
+				},
+			},
+		},
+	}
+	elasticsearchCR2 := newElasticsearchCR(cluster, "test-app-name")
+
+	_, different := isElasticsearchCRDifferent(elasticsearchCR, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to resource change")
+	}
+}
+
+func TestDifferenceFoundWhenProxyResourcesAreChanged(t *testing.T) {
+
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					Resources: newResourceRequirements("10Gi", "", "12Gi", "500m"),
+					ProxySpec: logging.ProxySpec{
+						Resources: newResourceRequirements("256Mi", "", "256Mi", "100m"),
+					},
+				},
+			},
+		},
+	}
+	elasticsearchCR := newElasticsearchCR(cluster, "test-app-name")
+
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					Resources: newResourceRequirements("10Gi", "", "12Gi", "500m"),
+					ProxySpec: logging.ProxySpec{
+						Resources: newResourceRequirements("512Mi", "", "256Mi", "100m"),
+					},
 				},
 			},
 		},

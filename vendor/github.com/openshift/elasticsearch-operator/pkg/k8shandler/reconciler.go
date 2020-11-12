@@ -3,22 +3,25 @@ package k8shandler
 import (
 	"fmt"
 
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	elasticsearchv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ElasticsearchRequest struct {
-	client          client.Client
-	cluster         *elasticsearch.Elasticsearch
-	FnCurlEsService func(clusterName, namespace string, payload *esCurlStruct, client client.Client)
+	client   client.Client
+	cluster  *elasticsearchv1.Elasticsearch
+	esClient elasticsearch.Client
 }
 
-func Reconcile(requestCluster *elasticsearch.Elasticsearch, requestClient client.Client) error {
+func Reconcile(requestCluster *elasticsearchv1.Elasticsearch, requestClient client.Client) error {
+
+	esClient := elasticsearch.NewClient(requestCluster.Name, requestCluster.Namespace, requestClient)
 
 	elasticsearchRequest := ElasticsearchRequest{
-		client:          requestClient,
-		cluster:         requestCluster,
-		FnCurlEsService: curlESService,
+		client:   requestClient,
+		cluster:  requestCluster,
+		esClient: esClient,
 	}
 
 	// Ensure existence of servicesaccount
@@ -41,7 +44,7 @@ func Reconcile(requestCluster *elasticsearch.Elasticsearch, requestClient client
 	}
 
 	// Ensure Elasticsearch cluster itself is up to spec
-	//if err = k8shandler.CreateOrUpdateElasticsearchCluster(cluster, "elasticsearch", "elasticsearch"); err != nil {
+	//if err = elasticsearch.CreateOrUpdateElasticsearchCluster(cluster, "elasticsearch", "elasticsearch"); err != nil {
 	if err := elasticsearchRequest.CreateOrUpdateElasticsearchCluster(); err != nil {
 		return fmt.Errorf("Failed to reconcile Elasticsearch deployment spec: %v", err)
 	}

@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/openshift/elasticsearch-operator/pkg/k8shandler"
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
 	"github.com/openshift/elasticsearch-operator/pkg/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -175,10 +175,11 @@ func GenerateUUID() string {
 func WaitForIndexTemplateReplicas(t *testing.T, kubeclient kubernetes.Interface, namespace, clusterName string, replicas int32, retryInterval, timeout time.Duration) error {
 	// mock out Secret response from client
 	mockClient := fake.NewFakeClient(getMockedSecret(clusterName, namespace))
+	esClient := elasticsearch.NewClient(clusterName, namespace, mockClient)
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		// get all index replica count
-		indexTemplates, err := k8shandler.GetIndexTemplates(clusterName, namespace, mockClient)
+		indexTemplates, err := esClient.GetIndexTemplates()
 		if err != nil {
 			t.Logf("Received error: %v", err)
 			return false, nil
@@ -215,11 +216,12 @@ func WaitForIndexTemplateReplicas(t *testing.T, kubeclient kubernetes.Interface,
 func WaitForIndexReplicas(t *testing.T, kubeclient kubernetes.Interface, namespace, clusterName string, replicas int32, retryInterval, timeout time.Duration) error {
 	// mock out Secret response from client
 	mockClient := fake.NewFakeClient(getMockedSecret(clusterName, namespace))
+	esClient := elasticsearch.NewClient(clusterName, namespace, mockClient)
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 
 		// get all index replica count
-		indexHealth, err := k8shandler.GetIndexReplicaCounts(clusterName, namespace, mockClient)
+		indexHealth, err := esClient.GetIndexReplicaCounts()
 		if err != nil {
 			return false, nil
 		}

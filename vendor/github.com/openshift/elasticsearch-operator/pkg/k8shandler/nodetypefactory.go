@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	"github.com/openshift/elasticsearch-operator/pkg/elasticsearch"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NodeTypeInterface interace represents individual Elasticsearch node
 type NodeTypeInterface interface {
-	populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32, client client.Client)
+	populateReference(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, replicas int32, client client.Client, esClient elasticsearch.Client)
 	state() api.ElasticsearchNodeStatus                      // this will get the current -- used for status
 	create() error                                           // this will create the node in the case where it is new
 	update(upgradeStatus *api.ElasticsearchNodeStatus) error // this will handle updates
@@ -21,6 +22,8 @@ type NodeTypeInterface interface {
 	updateReference(node NodeTypeInterface)
 	delete() error
 	isMissing() bool
+	progressNodeChanges(upgradeStatus *api.ElasticsearchNodeStatus) error // this function is used to tell the node to push out its changes
+	waitForNodeRejoinCluster() (error, bool)                              // this function is used to determine if a node has rejoined the cluster
 }
 
 // NodeTypeFactory is a factory to construct either statefulset or deployment
@@ -34,6 +37,8 @@ func (elasticsearchRequest *ElasticsearchRequest) GetNodeTypeInterface(uuid stri
 	roleMap := getNodeRoleMap(node)
 
 	cluster := elasticsearchRequest.cluster
+	client := elasticsearchRequest.client
+	esClient := elasticsearchRequest.esClient
 
 	// common spec => cluster.Spec.Spec
 	nodeName := fmt.Sprintf("%s-%s", cluster.Name, getNodeSuffix(uuid, roleMap))
@@ -44,11 +49,11 @@ func (elasticsearchRequest *ElasticsearchRequest) GetNodeTypeInterface(uuid stri
 		//   it is 1 instead of 0 because of legacy code
 		for replicaIndex := int32(1); replicaIndex <= node.NodeCount; replicaIndex++ {
 			dataNodeName := addDataNodeSuffix(nodeName, replicaIndex)
-			node := newDeploymentNode(dataNodeName, node, cluster, roleMap, elasticsearchRequest.client)
+			node := newDeploymentNode(dataNodeName, node, cluster, roleMap, client, esClient)
 			nodes = append(nodes, node)
 		}
 	} else {
-		node := newStatefulSetNode(nodeName, node, cluster, roleMap, elasticsearchRequest.client)
+		node := newStatefulSetNode(nodeName, node, cluster, roleMap, client, esClient)
 		nodes = append(nodes, node)
 	}
 
@@ -78,19 +83,19 @@ func addDataNodeSuffix(nodeName string, replicaNumber int32) string {
 }
 
 // newDeploymentNode constructs deploymentNode struct for data nodes
-func newDeploymentNode(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) NodeTypeInterface {
+func newDeploymentNode(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client, esClient elasticsearch.Client) NodeTypeInterface {
 	deploymentNode := deploymentNode{}
 
-	deploymentNode.populateReference(nodeName, node, cluster, roleMap, int32(1), client)
+	deploymentNode.populateReference(nodeName, node, cluster, roleMap, int32(1), client, esClient)
 
 	return &deploymentNode
 }
 
 // newStatefulSetNode constructs statefulSetNode struct for non-data nodes
-func newStatefulSetNode(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client) NodeTypeInterface {
+func newStatefulSetNode(nodeName string, node api.ElasticsearchNode, cluster *api.Elasticsearch, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client, esClient elasticsearch.Client) NodeTypeInterface {
 	statefulSetNode := statefulSetNode{}
 
-	statefulSetNode.populateReference(nodeName, node, cluster, roleMap, node.NodeCount, client)
+	statefulSetNode.populateReference(nodeName, node, cluster, roleMap, node.NodeCount, client, esClient)
 
 	return &statefulSetNode
 }

@@ -1,12 +1,14 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -15,6 +17,32 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	api "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+
+	networking "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+)
+
+var (
+	defaultResources = map[string]v1.ResourceRequirements{
+		"proxy": {
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse(defaultESProxyMemoryLimit),
+			},
+			Requests: v1.ResourceList{
+				v1.ResourceCPU:    resource.MustParse(defaultESProxyCpuRequest),
+				v1.ResourceMemory: resource.MustParse(defaultESProxyMemoryRequest),
+			},
+		},
+		"elasticsearch": {
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse(defaultESMemoryLimit),
+			},
+			Requests: v1.ResourceList{
+				v1.ResourceCPU:    resource.MustParse(defaultESCpuRequest),
+				v1.ResourceMemory: resource.MustParse(defaultESMemoryRequest),
+			},
+		},
+	}
 )
 
 // addOwnerRefToObject appends the desired OwnerReference to the object
@@ -25,8 +53,12 @@ func addOwnerRefToObject(o metav1.Object, r metav1.OwnerReference) {
 	}
 }
 
-func getImage() string {
+func getESImage() string {
 	return utils.LookupEnvWithDefault("ELASTICSEARCH_IMAGE", constants.ElasticsearchDefaultImage)
+}
+
+func getESProxyImage() string {
+	return utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", constants.ProxyDefaultImage)
 }
 
 func getNodeRoleMap(node api.ElasticsearchNode) map[api.ElasticsearchNodeRole]bool {
@@ -176,16 +208,7 @@ func newElasticsearchContainer(imageName string, envVars []v1.EnvVar, resourceRe
 	}
 }
 
-func newProxyContainer(imageName, clusterName, namespace string, logConfig LogConfig) (v1.Container, error) {
-	cpuLimit, err := resource.ParseQuantity("100m")
-	if err != nil {
-		return v1.Container{}, err
-	}
-
-	memoryLimit, err := resource.ParseQuantity("64Mi")
-	if err != nil {
-		return v1.Container{}, err
-	}
+func newProxyContainer(imageName, clusterName, namespace string, logConfig LogConfig, resourceRequirements v1.ResourceRequirements) v1.Container {
 
 	container := v1.Container{
 		Name:            "proxy",
@@ -195,6 +218,11 @@ func newProxyContainer(imageName, clusterName, namespace string, logConfig LogCo
 			{
 				Name:          "restapi",
 				ContainerPort: 60000,
+				Protocol:      v1.ProtocolTCP,
+			},
+			{
+				Name:          "metrics",
+				ContainerPort: 60001,
 				Protocol:      v1.ProtocolTCP,
 			},
 		},
@@ -233,18 +261,12 @@ func newProxyContainer(imageName, clusterName, namespace string, logConfig LogCo
 			`--auth-backend-role=jaeger={"verb": "get", "resource": "/jaeger", "resourceAPIGroup": "elasticsearch.jaegertracing.io"}`,
 			`--auth-backend-role=elasticsearch-operator={"namespace": "*", "verb": "*", "resource": "*", "resourceAPIGroup": "logging.openshift.io"}`,
 			fmt.Sprintf("--auth-backend-role=index-management={\"namespace\":\"%s\", \"verb\": \"*\", \"resource\": \"indices\", \"resourceAPIGroup\": \"elasticsearch.openshift.io\"}", namespace),
+			"--auth-admin-role=admin_reader",
+			"--auth-default-role=project_user",
 		},
-		Resources: v1.ResourceRequirements{
-			Limits: v1.ResourceList{
-				"memory": memoryLimit,
-			},
-			Requests: v1.ResourceList{
-				"cpu":    cpuLimit,
-				"memory": memoryLimit,
-			},
-		},
+		Resources: resourceRequirements,
 	}
-	return container, nil
+	return container
 }
 
 func newEnvVars(nodeName, clusterName, instanceRam string, roleMap map[api.ElasticsearchNodeRole]bool) []v1.EnvVar {
@@ -344,9 +366,8 @@ func newLabelSelector(clusterName, nodeName string, roleMap map[api.Elasticsearc
 
 func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.ElasticsearchNode, commonSpec api.ElasticsearchNodeSpec, labels map[string]string, roleMap map[api.ElasticsearchNodeRole]bool, client client.Client, logConfig LogConfig) v1.PodTemplateSpec {
 
-	resourceRequirements := newResourceRequirements(node.Resources, commonSpec.Resources)
-	proxyImage := utils.LookupEnvWithDefault("ELASTICSEARCH_PROXY", "quay.io/openshift/origin-elasticsearch-proxy:latest")
-	proxyContainer, _ := newProxyContainer(proxyImage, clusterName, namespace, logConfig)
+	resourceRequirements := newESResourceRequirements(node.Resources, commonSpec.Resources)
+	proxyResourceRequirements := newESProxyResourceRequirements(node.ProxyResources, commonSpec.ProxyResources)
 
 	selectors := mergeSelectors(node.NodeSelector, commonSpec.NodeSelector)
 	// We want to make sure the pod ends up allocated on linux node. Thus we make sure the
@@ -370,11 +391,16 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 			Affinity: newAffinity(roleMap),
 			Containers: []v1.Container{
 				newElasticsearchContainer(
-					getImage(),
+					getESImage(),
 					newEnvVars(nodeName, clusterName, resourceRequirements.Limits.Memory().String(), roleMap),
 					resourceRequirements,
 				),
-				proxyContainer,
+				newProxyContainer(
+					getESProxyImage(),
+					clusterName,
+					namespace,
+					logConfig,
+					proxyResourceRequirements),
 			},
 			NodeSelector:       selectors,
 			ServiceAccountName: clusterName,
@@ -384,7 +410,15 @@ func newPodTemplateSpec(nodeName, clusterName, namespace string, node api.Elasti
 	}
 }
 
-func newResourceRequirements(nodeResRequirements, commonResRequirements v1.ResourceRequirements) v1.ResourceRequirements {
+func newESResourceRequirements(nodeResRequirements, commonResRequirements v1.ResourceRequirements) v1.ResourceRequirements {
+	return newResourceRequirements(nodeResRequirements, commonResRequirements, defaultResources["elasticsearch"])
+}
+
+func newESProxyResourceRequirements(nodeResRequirements, commonResRequirements v1.ResourceRequirements) v1.ResourceRequirements {
+	return newResourceRequirements(nodeResRequirements, commonResRequirements, defaultResources["proxy"])
+}
+
+func newResourceRequirements(nodeResRequirements, commonResRequirements, defaultRequirements v1.ResourceRequirements) v1.ResourceRequirements {
 	// if only one resource (cpu or memory) is specified as a limit/request use it for the other value as well instead of
 	//  using the defaults.
 
@@ -404,10 +438,10 @@ func newResourceRequirements(nodeResRequirements, commonResRequirements v1.Resou
 		// no common memory settings
 		if nodeRequestMem.IsZero() && nodeLimitMem.IsZero() {
 			// no node settings, use defaults
-			lMem, _ := resource.ParseQuantity(defaultMemoryLimit)
+			lMem := defaultRequirements.Limits[v1.ResourceMemory]
 			limitMem = &lMem
 
-			rMem, _ := resource.ParseQuantity(defaultMemoryRequest)
+			rMem, _ := defaultRequirements.Requests[v1.ResourceMemory]
 			requestMem = &rMem
 		} else {
 			// either one is not zero or both aren't zero but common is empty
@@ -464,7 +498,7 @@ func newResourceRequirements(nodeResRequirements, commonResRequirements v1.Resou
 		// no common memory settings
 		if nodeRequestCPU.IsZero() && nodeLimitCPU.IsZero() {
 			// no node settings, use defaults
-			rCPU, _ := resource.ParseQuantity(defaultCPURequest)
+			rCPU, _ := defaultRequirements.Requests[v1.ResourceCPU]
 			requestCPU = &rCPU
 		} else {
 			// either one is not zero or both aren't zero but common is empty
@@ -591,7 +625,7 @@ func newVolumeSource(clusterName, nodeName, namespace string, node api.Elasticse
 			StorageClassName: specVol.StorageClassName,
 		}
 
-		err := createOrUpdatePersistentVolumeClaim(volSpec, claimName, namespace, client)
+		err := createOrUpdatePersistentVolumeClaim(volSpec, claimName, namespace, clusterName, client)
 		if err != nil {
 			logrus.Errorf("Unable to create PersistentVolumeClaim: %v", err)
 		}
@@ -617,4 +651,131 @@ func sortDataHashKeys(dataHash map[string][32]byte) []string {
 	sort.Strings(keys)
 
 	return keys
+}
+
+/*
+kind: NetworkPolicy
+apiVersion: extensions/v1beta1
+metadata:
+  name: restricted-es-access
+spec:
+  podSelector:
+    matchLabels:
+      component: elasticsearch
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          name: elasticsearch-operator
+    ports:
+    - protocol: TCP
+      port: 9200
+*/
+func newNetworkPolicy(namespace string) networking.NetworkPolicy {
+
+	protocol := v1.ProtocolTCP
+	port := intstr.FromInt(9200)
+	internalPort := intstr.FromInt(9300)
+
+	return networking.NetworkPolicy{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "NetworkPolicy",
+			APIVersion: networking.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "restricted-es-policy",
+			Namespace: namespace,
+		},
+		Spec: networking.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"component": "elasticsearch",
+				},
+			},
+			Ingress: []networking.NetworkPolicyIngressRule{
+				{
+					From: []networking.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"name": "elasticsearch-operator",
+								},
+							},
+							// This needs to be present but empty so it will select all namespaces
+							// since we do not have a label for our operator namespace
+							NamespaceSelector: &metav1.LabelSelector{},
+						},
+					},
+					Ports: []networking.NetworkPolicyPort{
+						{
+							Protocol: &protocol,
+							Port:     &port,
+						},
+					},
+				},
+				{
+					From: []networking.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"component": "elasticsearch",
+								},
+							},
+						},
+					},
+					Ports: []networking.NetworkPolicyPort{
+						{
+							Protocol: &protocol,
+							Port:     &port,
+						},
+					},
+				},
+				{
+					From: []networking.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"component": "elasticsearch",
+								},
+							},
+						},
+					},
+					Ports: []networking.NetworkPolicyPort{
+						{
+							Protocol: &protocol,
+							Port:     &internalPort,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func EnforceNetworkPolicy(namespace string, client client.Client, ownerRef []metav1.OwnerReference) error {
+
+	policy := newNetworkPolicy(namespace)
+	policy.ObjectMeta.OwnerReferences = ownerRef
+
+	err := client.Create(context.TODO(), &policy)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Could not create network policy: %v", err)
+		}
+	}
+
+	return nil
+}
+
+func RelaxNetworkPolicy(namespace string, client client.Client) error {
+
+	policy := newNetworkPolicy(namespace)
+	err := client.Delete(context.TODO(), &policy)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return fmt.Errorf("Could not delete network policy: %v", err)
+		}
+	}
+
+	return nil
 }

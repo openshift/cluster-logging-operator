@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	loggingv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,7 +17,7 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServiceAccount()
 
 	dpl := elasticsearchRequest.cluster
 
-	err = createOrUpdateServiceAccount(dpl.Name, dpl.Namespace, getOwnerRef(dpl), elasticsearchRequest.client)
+	err = createOrUpdateServiceAccount(dpl.Name, dpl.Namespace, dpl, elasticsearchRequest.client)
 	if err != nil {
 		return fmt.Errorf("Failure creating ServiceAccount %v", err)
 	}
@@ -24,9 +25,10 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServiceAccount()
 	return nil
 }
 
-func createOrUpdateServiceAccount(serviceAccountName, namespace string, ownerRef metav1.OwnerReference, client client.Client) error {
+func createOrUpdateServiceAccount(serviceAccountName, namespace string, cluster *loggingv1.Elasticsearch, client client.Client) error {
 	serviceAccount := newServiceAccount(serviceAccountName, namespace)
-	addOwnerRefToObject(serviceAccount, ownerRef)
+
+	cluster.AddOwnerRefTo(serviceAccount)
 
 	err := client.Create(context.TODO(), serviceAccount)
 	if err != nil {

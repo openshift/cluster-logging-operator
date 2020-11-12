@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,11 +17,9 @@ import (
 func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServices() error {
 
 	dpl := elasticsearchRequest.cluster
-
-	ownerRef := getOwnerRef(dpl)
 	annotations := make(map[string]string)
 
-	err := createOrUpdateService(
+	err := elasticsearchRequest.createOrUpdateService(
 		fmt.Sprintf("%s-%s", dpl.Name, "cluster"),
 		dpl.Namespace,
 		dpl.Name,
@@ -31,15 +28,13 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServices() error
 		selectorForES("es-node-master", dpl.Name),
 		annotations,
 		true,
-		ownerRef,
 		map[string]string{},
-		elasticsearchRequest.client,
 	)
 	if err != nil {
 		return fmt.Errorf("Failure creating service %v", err)
 	}
 
-	err = createOrUpdateService(
+	err = elasticsearchRequest.createOrUpdateService(
 		dpl.Name,
 		dpl.Namespace,
 		dpl.Name,
@@ -48,9 +43,7 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServices() error
 		selectorForES("es-node-client", dpl.Name),
 		annotations,
 		false,
-		ownerRef,
 		map[string]string{},
-		elasticsearchRequest.client,
 	)
 	if err != nil {
 		return fmt.Errorf("Failure creating service %v", err)
@@ -58,20 +51,18 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServices() error
 
 	//legacy metrics service that likely can be rolled into the single service that goes through the proxy
 	annotations["service.alpha.openshift.io/serving-cert-secret-name"] = fmt.Sprintf("%s-%s", dpl.Name, "metrics")
-	err = createOrUpdateService(
+	err = elasticsearchRequest.createOrUpdateService(
 		fmt.Sprintf("%s-%s", dpl.Name, "metrics"),
 		dpl.Namespace,
 		dpl.Name,
-		"restapi",
+		"metrics",
 		60001,
 		selectorForES("es-node-client", dpl.Name),
 		annotations,
 		false,
-		ownerRef,
 		map[string]string{
 			"scrape-metrics": "enabled",
 		},
-		elasticsearchRequest.client,
 	)
 	if err != nil {
 		return fmt.Errorf("Failure creating service %v", err)
@@ -79,7 +70,10 @@ func (elasticsearchRequest *ElasticsearchRequest) CreateOrUpdateServices() error
 	return nil
 }
 
-func createOrUpdateService(serviceName, namespace, clusterName, targetPortName string, port int32, selector, annotations map[string]string, publishNotReady bool, owner metav1.OwnerReference, labels map[string]string, client client.Client) error {
+func (er *ElasticsearchRequest) createOrUpdateService(serviceName, namespace, clusterName, targetPortName string, port int32, selector, annotations map[string]string, publishNotReady bool, labels map[string]string) error {
+
+	client := er.client
+	cluster := er.cluster
 
 	labels = appendDefaultLabel(clusterName, labels)
 
@@ -94,7 +88,8 @@ func createOrUpdateService(serviceName, namespace, clusterName, targetPortName s
 		labels,
 		publishNotReady,
 	)
-	addOwnerRefToObject(service, owner)
+
+	cluster.AddOwnerRefTo(service)
 
 	err := client.Create(context.TODO(), service)
 	if err != nil {

@@ -192,6 +192,18 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 			},
 		}
 	}
+	var proxyResources = logStoreSpec.ProxySpec.Resources
+	if proxyResources == nil {
+		proxyResources = &v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: defaultEsProxyMemory,
+			},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: defaultEsProxyMemory,
+				v1.ResourceCPU:    defaultEsProxyCpuRequest,
+			},
+		}
+	}
 
 	if logStoreSpec.NodeCount > 3 {
 
@@ -241,9 +253,10 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		},
 		Spec: elasticsearch.ElasticsearchSpec{
 			Spec: elasticsearch.ElasticsearchNodeSpec{
-				Resources:    *resources,
-				NodeSelector: logStoreSpec.NodeSelector,
-				Tolerations:  logStoreSpec.Tolerations,
+				Resources:      *resources,
+				NodeSelector:   logStoreSpec.NodeSelector,
+				Tolerations:    logStoreSpec.Tolerations,
+				ProxyResources: *proxyResources,
 			},
 			Nodes:            esNodes,
 			ManagementState:  elasticsearch.ManagementStateManaged,
@@ -341,6 +354,12 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 	if !reflect.DeepEqual(current.Spec.Spec.Resources, desired.Spec.Spec.Resources) {
 		logrus.Infof("Elasticsearch resources change found, updating %v", current.Name)
 		current.Spec.Spec.Resources = desired.Spec.Spec.Resources
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.Spec.Spec.ProxyResources, desired.Spec.Spec.ProxyResources) {
+		logrus.Infof("Elasticsearch Proxy resources change found, updating %v", current.Name)
+		current.Spec.Spec.ProxyResources = desired.Spec.Spec.ProxyResources
 		different = true
 	}
 

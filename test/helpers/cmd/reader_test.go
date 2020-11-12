@@ -1,15 +1,16 @@
-package cmd_test
+package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test"
-	. "github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -33,6 +34,23 @@ var _ = Describe("CmdReader", func() {
 		defer cancel()
 		_, err = r.ReadLineContext(ctx)
 		Expect(err).To(HaveOccurred())
+	})
+
+	It("includes stderr in err.Error()", func() {
+		r, err := NewReader(exec.Command("bash", "-c", "echo this is bad 1>&2; false"))
+		ExpectOK(err)
+		_, err = r.ReadLine()
+		Expect(err).To(MatchError("EOF: exit status 1: this is bad"))
+	})
+
+	It("truncates long stderr", func() {
+		long := strings.Repeat("X", 4096)
+		cmd := fmt.Sprintf("echo %v 1>&2; false", long)
+		r, err := NewReader(exec.Command("bash", "-c", cmd))
+		ExpectOK(err)
+		_, err = r.ReadLine()
+		short := strings.Repeat("X", stderrLimit)
+		Expect(err).To(MatchError("EOF: exit status 1: " + short))
 	})
 
 	It("ExpectEmpty passes on EOF", func() {

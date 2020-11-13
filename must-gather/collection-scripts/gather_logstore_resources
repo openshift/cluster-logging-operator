@@ -92,7 +92,7 @@ get_elasticsearch_status() {
 }
 
 get_elasticsearch_cr() {
-  oc get -n $NAMESPACE elasticsearch elasticsearch -o yaml > $es_folder/cr
+  oc get -n $NAMESPACE elasticsearch.logging.openshift.io elasticsearch -o yaml > $es_folder/cr
 }
 
 echo "Gathering data for logstore component"

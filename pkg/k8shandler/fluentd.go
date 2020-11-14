@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/servicemonitor"
 	"reflect"
 	"time"
 
@@ -121,11 +122,11 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
 	return err
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdServiceMonitor() error {
+func (clusterRequest *ClusterLoggingRequest) reconcileFluentdServiceMonitor() error {
 
 	cluster := clusterRequest.Cluster
 
-	serviceMonitor := NewServiceMonitor(fluentdName, cluster.Namespace)
+	desired := NewServiceMonitor(fluentdName, cluster.Namespace)
 
 	endpoint := monitoringv1.Endpoint{
 		Port:   metricsPortName,
@@ -144,7 +145,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdServiceMonitor
 		},
 	}
 
-	serviceMonitor.Spec = monitoringv1.ServiceMonitorSpec{
+	desired.Spec = monitoringv1.ServiceMonitorSpec{
 		JobLabel:  "monitor-fluentd",
 		Endpoints: []monitoringv1.Endpoint{endpoint},
 		Selector:  labelSelector,
@@ -153,14 +154,37 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdServiceMonitor
 		},
 	}
 
-	utils.AddOwnerRefToObject(serviceMonitor, utils.AsOwner(cluster))
+	utils.AddOwnerRefToObject(desired, utils.AsOwner(cluster))
 
-	err := clusterRequest.Create(serviceMonitor)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating the fluentd ServiceMonitor: %v", err)
+	err := clusterRequest.Create(desired)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating the fluentd ServiceMonitor: %v", err)
+		}
+		current := &monitoringv1.ServiceMonitor{}
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err = clusterRequest.Get(desired.Name, current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
+			}
+			if servicemonitor.AreSame(current, desired) {
+				log.V(3).Info("ServiceMonitor are the same skipping update")
+				return nil
+			}
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
+			current.Annotations = desired.Annotations
+
+			return clusterRequest.Update(current)
+		})
+		log.V(3).Error(retryErr, "Reconcile ServiceMonitor retry error")
+		return retryErr
 	}
-
-	return nil
+	return err
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule() error {

@@ -67,7 +67,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdServiceMonitor(); err != nil {
+		if err = clusterRequest.reconcileFluentdServiceMonitor(); err != nil {
 			return
 		}
 

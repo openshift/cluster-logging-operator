@@ -253,7 +253,7 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 
 func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []logging.PipelineSpec) ([]string, error) {
 	configs := []string{}
-	sort.Slice(pipelines, func(i,j int) bool{
+	sort.Slice(pipelines, func(i, j int) bool {
 		return pipelines[i].Name < pipelines[j].Name
 	})
 	for _, pipeline := range pipelines {

@@ -13,10 +13,6 @@ import (
 
 var _ = Describe("[Normalization] Fluentd normalization", func() {
 
-	const (
-		sampleMetric = "# HELP fluentd_output_status_buffer_total_bytes"
-	)
-
 	var (
 		framework *functional.FluentdFunctionalFramework
 	)

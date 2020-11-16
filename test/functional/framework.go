@@ -181,8 +181,7 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, outputs []logging.OutputSpec) error {
 	log.V(2).Info("Adding outputs", "outputs", outputs)
 	for _, output := range outputs {
-		switch output.Type {
-		case logging.OutputTypeFluentdForward:
+		if output.Type == logging.OutputTypeFluentdForward {
 			if err := f.addForwardOutput(b, output); err != nil {
 				return err
 			}

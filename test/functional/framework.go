@@ -154,6 +154,21 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 	if err = f.test.Client.Get(f.pod); err != nil {
 		return err
 	}
+	log.V(2).Info("waiting for service endpoints to be ready")
+	err = wait.PollImmediate(time.Second*2, time.Second*10, func() (bool, error) {
+		ips, err := oc.Get().WithNamespace(f.test.NS.Name).Resource("endpoints", f.Name).OutputJsonpath("{.subsets[*].addresses[*].ip}").Run()
+		if err != nil {
+			return false, nil
+		}
+		// if there are IPs in the service endpoint, the service is available
+		if strings.TrimSpace(ips) != "" {
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return fmt.Errorf("service could not be started")
+	}
 	for _, cs := range f.pod.Status.ContainerStatuses {
 		if cs.Name == constants.FluentdName {
 			f.fluentContainerId = strings.TrimPrefix(cs.ContainerID, "cri-o://")

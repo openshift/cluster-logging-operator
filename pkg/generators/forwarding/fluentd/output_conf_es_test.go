@@ -78,8 +78,6 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
 			remove_keys viaq_index_name
-			user fluentd
-			password changeme
 
 			client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 			client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
@@ -126,8 +124,6 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
 			remove_keys viaq_index_name
-			user fluentd
-			password changeme
 
 			client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 			client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
@@ -193,8 +189,6 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
 			remove_keys viaq_index_name
-			user fluentd
-			password changeme
 
 			type_name _doc
             http_backend typhoeus
@@ -237,8 +231,6 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
 			remove_keys viaq_index_name
-			user fluentd
-			password changeme
 
 			type_name _doc
 			retry_tag retry_other_elasticsearch

@@ -72,8 +72,6 @@ var _ = Describe("Generating fluentd config", func() {
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-              user fluentd
-              password changeme
 
               type_name _doc
               write_operation create
@@ -115,8 +113,6 @@ var _ = Describe("Generating fluentd config", func() {
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-              user fluentd
-              password changeme
 
               type_name _doc
               retry_tag retry_other_elasticsearch
@@ -187,8 +183,6 @@ var _ = Describe("Generating fluentd config", func() {
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-              user fluentd
-              password changeme
 
               type_name _doc
               write_operation create
@@ -230,8 +224,6 @@ var _ = Describe("Generating fluentd config", func() {
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-              user fluentd
-              password changeme
 
               type_name _doc
               retry_tag retry_other_elasticsearch
@@ -285,8 +277,6 @@ var _ = Describe("Generating fluentd config", func() {
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-              user fluentd
-              password changeme
 
               type_name _doc
               write_operation create
@@ -328,8 +318,6 @@ var _ = Describe("Generating fluentd config", func() {
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-              user fluentd
-              password changeme
 
               type_name _doc
               retry_tag retry_other_elasticsearch

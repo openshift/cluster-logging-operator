@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
@@ -21,8 +23,9 @@ var (
 
 // Reader reads from a running exec.Cmd.
 type Reader struct {
-	cmd *exec.Cmd
-	r   *bufio.Reader
+	cmd    *exec.Cmd
+	r      *bufio.Reader
+	stderr stderrBuffer
 }
 
 // NewReader starts an exec.Cmd and returns a CmdReader for its stdout.
@@ -31,21 +34,24 @@ func NewReader(cmd *exec.Cmd) (*Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = cmd.Start()
-	if err != nil {
-		return nil, err
+	r := &Reader{cmd: cmd, r: bufio.NewReader(p)}
+	if cmd.Stderr == nil {
+		cmd.Stderr = &r.stderr // Capture stderr for error messages.
 	}
-	r := &Reader{
-		cmd: cmd,
-		r:   bufio.NewReader(p),
+	if err := cmd.Start(); err != nil {
+		return nil, err
 	}
 	return r, nil
 }
 
 // Read is the usual io.Reader, no timeout.
-func (r *Reader) Read(b []byte) (int, error) { return r.r.Read(b) }
+func (r *Reader) Read(b []byte) (int, error) {
+	n, err := r.r.Read(b)
+	return n, r.readErr(err)
+}
 
-// ReadLine reads a line of text as a string. Times out after test.DefaultSuccessTimeout.
+// ReadLine reads a line of text (with newline) as a string.
+// Times out after test.DefaultSuccessTimeout.
 func (r *Reader) ReadLine() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
 	defer cancel()
@@ -63,13 +69,7 @@ func (r *Reader) ReadLineContext(ctx context.Context) (string, error) {
 	go func() { line, err = r.r.ReadString('\n'); close(read) }()
 	select {
 	case <-read:
-		if err != nil {
-			if err2 := r.Close(); err2 != nil { // Extra info from process error.
-				return "", fmt.Errorf("%w: %v", err, err2)
-			}
-			return "", err
-		}
-		return line, nil
+		return line, r.readErr(err)
 	case <-ctx.Done():
 		r.Close()
 		return "", ctx.Err()
@@ -81,7 +81,11 @@ func (r *Reader) ReadLineContext(ctx context.Context) (string, error) {
 // Returns the error returned by the sub-process.
 func (r *Reader) Close() error {
 	_ = r.cmd.Process.Kill()
-	return r.cmd.Wait()
+	err := r.cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(r.stderr.b.String()))
+	}
+	return nil
 }
 
 // ExpectLines calls ExpectLinesMatchContext with timeout test.DefaultSuccessTimeout.
@@ -141,4 +145,29 @@ func TailReader(pod *corev1.Pod, path string) (*Reader, error) {
 // It returns io.EOF at the end of the file.
 func FileReader(pod *corev1.Pod, path string) (*Reader, error) {
 	return NewReader(runtime.Exec(pod, "cat", path))
+}
+
+// readErr if err != nil close and return a combined read+exit error.
+func (r *Reader) readErr(err error) error {
+	if err != nil {
+		if err2 := r.Close(); err2 != nil {
+			return fmt.Errorf("%v: %w", err, err2)
+		}
+	}
+	return err
+}
+
+const stderrLimit = 1024
+
+type stderrBuffer struct{ b bytes.Buffer }
+
+func (b *stderrBuffer) Write(data []byte) (int, error) {
+	max := stderrLimit - b.b.Len()
+	if max < 0 {
+		max = 0
+	}
+	if len(data) > max {
+		data = data[:max]
+	}
+	return b.b.Write(data)
 }

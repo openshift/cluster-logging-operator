@@ -18,7 +18,7 @@ const (
 	// Retry buffer to output defaults
 	defaultRetryWait        = "1s"
 	defaultRetryType        = "exponential_backoff"
-	defaultRetryMaxInterval = "300s"
+	defaultRetryMaxInterval = "60s"
 
 	// Output fluentdForward default
 	fluentdForwardOverflowAction = "block"

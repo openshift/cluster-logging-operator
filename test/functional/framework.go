@@ -47,15 +47,15 @@ func init() {
 }
 
 func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
-	verbosity := uint8(9)
+	verbosity := 9
 	if level, found := os.LookupEnv("LOG_LEVEL"); found {
 		if i, err := strconv.Atoi(level); err == nil {
-			verbosity = uint8(i)
+			verbosity = int(i)
 		}
 	}
 
-	opt := log.WithVerbosity(verbosity)
-	log.MustInitWithOptions("fluent-ftf", []log.Option{opt})
+	log.MustInit("fluent-ftf")
+ 	log.SetLogLevel(verbosity)
 	t := client.NewTest()
 	testName := fmt.Sprintf("test-fluent-%d", rand.Intn(1000))
 	framework := &FluentdFunctionalFramework{

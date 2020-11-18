@@ -100,7 +100,7 @@ normal way to run an operator, and does not test all aspects of the CLO
 
 * Fast edit/run/test cycle - runs from source code, skips some slow build/deploy steps.
 * Directly access the CLO logs on stdout/stderr
-* Control logging levels and other environment variables, e.g. `export LOG_LEVEL=debug`
+* Control logging levels and other environment variables, e.g. `export LOG_LEVEL=5`
 * Run CLO in a debugger, profiler or other development tools.
 
 *How it works*: An operator is actually a cluster *client*. It watches for
@@ -115,7 +115,7 @@ Examples:
 ```
 make run  # Run the CLO locally
 make run-debug  # Run CLO under the dlv debugger
-LOG_LEVEL=debug make run  # Run CLO with debug logging
+LOG_LEVEL=4 make run  # Run CLO with greater log verbosity
 RUN_CMD=foo make run # Run CLO under imaginary "foo" debugger/profiler.
 ```
 

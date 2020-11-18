@@ -52,8 +52,8 @@ func main() {
 			log.Error(err, "LOG_LEVEL must be an integer", "value", logLevel)
 			os.Exit(1)
 		}
-		opt := log.WithVerbosity(uint8(verbosity))
-		log.MustInitWithOptions("cluster-logging-operator", []log.Option{opt})
+		log.MustInit("cluster-logging-operator")
+		log.SetLogLevel(verbosity)
 	} else {
 		log.MustInit("cluster-logging-operator")
 	}

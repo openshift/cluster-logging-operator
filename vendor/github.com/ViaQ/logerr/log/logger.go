@@ -1,31 +1,99 @@
 package log
 
 import (
+	"fmt"
+	"io"
+	"sync"
+	"time"
+
+	"github.com/ViaQ/logerr/internal/kv"
 	"github.com/ViaQ/logerr/kverrors"
 	"github.com/go-logr/logr"
 )
 
-// WrapLogger wraps the logger with the internal Logger
-func WrapLogger(l logr.Logger) *Logger {
-	if lg, ok := l.(*Logger); ok {
-		return lg
-	}
-	return &Logger{l}
+const (
+	ErrorKey     = "cause"
+	MessageKey   = "message"
+	TimeStampKey = "ts"
+	ComponentKey = "component"
+	VerbosityKey = "v"
+)
+
+// Verbosity is a level of verbosity to log between 0 and math.MaxInt32
+// However it is recommended to keep the numbers between 0 and 3
+type Verbosity int
+
+// TimestampFunc returns a string formatted version of the current time.
+// This should probably only be used with tests or if you want to change
+// the default time formatting of the output logs.
+var TimestampFunc = func() string {
+	return time.Now().UTC().Format(time.RFC3339Nano)
 }
 
-// Logger wraps zapr.Logger and fixes the Error method to log errors
-// as structured. zaprs Logger enforces zap.Error(err) which will break
-// our structured errors that implement zapcore.MarshalLogObject.
-// Ref: https://github.com/go-logr/zapr/blob/49ca6b4dc551f8fdf9fe385fbd7a60ee3b846a21/zapr.go#L133
+// Logger writes logs to a specified output
 type Logger struct {
-	base logr.Logger
+	mtx       sync.RWMutex
+	verbosity Verbosity
+	output    io.Writer
+	context   map[string]interface{}
+	encoder   Encoder
+	name      string
+}
+
+func NewLogger(name string, w io.Writer, v Verbosity, e Encoder, keysAndValues ...interface{}) *Logger {
+	return &Logger{
+		name:      name,
+		verbosity: v,
+		output:    w,
+		context:   kv.ToMap(keysAndValues...),
+		encoder:   e,
+	}
+}
+
+// withValues clones the logger and appends keysAndValues
+// but returns a struct instead of the logr.Logger interface
+func (l *Logger) withValues(keysAndValues ...interface{}) *Logger {
+	ll := NewLogger(l.name, l.output, l.verbosity, l.encoder)
+	ll.context = kv.AppendMap(kv.ToMap(keysAndValues...), l.context)
+	return ll
+}
+
+// WithValues clones the logger and appends keysAndValues
+func (l *Logger) WithValues(keysAndValues ...interface{}) logr.Logger {
+	return l.withValues(keysAndValues...)
+}
+
+// SetOutput sets the writer that JSON is written to
+func (l *Logger) SetOutput(w io.Writer) {
+	l.mtx.Lock()
+	defer l.mtx.Unlock()
+	l.output = w
 }
 
 // Enabled tests whether this Logger is enabled.  For example, commandline
 // flags might be used to set the logging verbosity and disable some info
 // logs.
 func (l *Logger) Enabled() bool {
-	return l.base.Enabled()
+	l.mtx.RLock()
+	defer l.mtx.RUnlock()
+	return l.verbosity <= Verbosity(logLevel)
+}
+
+// log will log the message. It DOES NOT check Enabled() first so that should
+// be checked by it's callers
+func (l *Logger) log(msg string, context map[string]interface{}) {
+	m := kv.AppendMap(context, map[string]interface{}{
+		MessageKey:   msg,
+		TimeStampKey: TimestampFunc(),
+		ComponentKey: l.name,
+		// VerbosityKey: l.verbosity,
+	})
+	err := l.encoder.Encode(l.output, m)
+	if err != nil {
+		// expand first so we can quote later
+		orig := fmt.Sprintf("%#v", context)
+		_, _ = fmt.Fprintf(l.output, `{"message","failed to encode message", "encoder":"%T","log":%q,"cause":%q}`, l.encoder, orig, err)
+	}
 }
 
 // Info logs a non-error message with the given key/value pairs as context.
@@ -35,7 +103,10 @@ func (l *Logger) Enabled() bool {
 // variable information.  The key/value pairs should alternate string
 // keys and arbitrary values.
 func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
-	l.base.Info(msg, keysAndValues...)
+	if !l.Enabled() {
+		return
+	}
+	l.log(msg, kv.AppendMap(l.context, kv.ToMap(keysAndValues...)))
 }
 
 // Error logs an error, with the given message and key/value pairs as context.
@@ -50,34 +121,28 @@ func (l *Logger) Error(err error, msg string, keysAndValues ...interface{}) {
 	if !l.Enabled() {
 		return
 	}
+
 	if err == nil {
-		l.base.Error(nil, msg, keysAndValues...)
+		l.Info(msg, keysAndValues)
 		return
 	}
-	e := err
-	if _, ok := err.(*kverrors.KVError); !ok {
-		// If err is not structured then convert to a KVError so that it is structured for consistency
-		e = kverrors.New(err.Error())
+
+	switch err.(type) {
+	case *kverrors.KVError:
+		// nothing to be done
+	default:
+		err = kverrors.New(err.Error())
 	}
-	// this uses a nil err because the base zapr.Logger.Error implementation enforces zap.Error(err)
-	// which converts the provided err to a standard string. Since we are using a complex err
-	// which could be a pkg/errors.KVError we want to pass err as a complex object which zap
-	// can then serialize according to KVError.MarshalLogObject()
-	l.base.Error(nil, msg, append(keysAndValues, []interface{}{KeyError, e}...)...)
+
+	l.Info(msg, append(keysAndValues, ErrorKey, err)...)
 }
 
 // V returns an Logger value for a specific verbosity level, relative to
 // this Logger.  In other words, V values are additive.  V higher verbosity
 // level means a log message is less important.  It's illegal to pass a log
 // level less than zero.
-func (l *Logger) V(level int) logr.Logger {
-	return WrapLogger(l.base.V(level))
-}
-
-// WithValues adds some key-value pairs of context to a logger.
-// See Info for documentation on how key/value pairs work.
-func (l *Logger) WithValues(keysAndValues ...interface{}) logr.Logger {
-	return WrapLogger(l.base.WithValues(keysAndValues...))
+func (l *Logger) V(v int) logr.Logger {
+	return NewLogger(l.name, l.output, Verbosity(v)+l.verbosity, l.encoder, l.context)
 }
 
 // WithName adds a new element to the logger's name.
@@ -86,5 +151,22 @@ func (l *Logger) WithValues(keysAndValues ...interface{}) logr.Logger {
 // that name segments contain only letters, digits, and hyphens
 // (see the package documentation for more information).
 func (l *Logger) WithName(name string) logr.Logger {
-	return WrapLogger(l.base.WithName(name))
+	newname := name
+
+	if l.name != "" {
+		newname = fmt.Sprintf("%s_%s", l.name, name)
+	}
+
+	return NewLogger(
+		newname,
+		l.output,
+		l.verbosity,
+		l.encoder,
+		l.context,
+	)
+}
+
+// KeysAndValues returns the keysAndValues assigned to this logger
+func (l *Logger) KeysAndValues() map[string]interface{} {
+	return l.context
 }

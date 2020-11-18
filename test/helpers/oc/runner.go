@@ -67,7 +67,7 @@ func (r *runner) runCmd() (string, error) {
 			return "", err
 		}
 		errout := strings.TrimSpace(errbuf.String())
-		log.Info("output", errout, "error", err)
+		log.Info("command result", "output", errout, "error", err)
 		return errout, err
 	}
 	if r.tostdout {

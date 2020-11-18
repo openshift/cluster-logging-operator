@@ -250,7 +250,7 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.OutputSpec, outputConf *logging.ForwarderSpec) ([]string, error) {
 	configs := []string{}
 	if log.V(3).Enabled() {
-		log.V(3).Info("Evaluating forwarder logging...", len(outputs))
+		log.V(3).Info("Evaluating forwarder logging...", "output length", len(outputs))
 	}
 	for _, output := range outputs {
 		log.V(3).Info("Generate output type", "type", output.Type)

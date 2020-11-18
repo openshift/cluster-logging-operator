@@ -11,7 +11,7 @@ import (
 func TestNormalization(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	tc := "ClusterLogging Functional Normalization Sute"
+	tc := "ClusterLogging Functional Normalization Suite"
 	jr := reporters.NewJUnitReporter("/tmp/artifacts/junit/junit-normalization.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, tc, []Reporter{jr})
 }

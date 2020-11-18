@@ -64,7 +64,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 	     flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
 	     flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 	     flush_thread_count "#{ENV['FLUSH_THREAD_COUNT'] || 2}"
-	     retry_max_interval "#{ENV['FORWARD_RETRY_WAIT'] || '300'}"
+	     retry_max_interval "#{ENV['FORWARD_RETRY_WAIT'] || 60}"
 	     retry_forever true
 	     # the systemd journald 0.0.8 input plugin will just throw away records if the buffer
 	     # queue limit is hit - 'block' will halt further reads and keep retrying to flush the
@@ -109,7 +109,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 				flush_interval "#{ENV['FORWARD_FLUSH_INTERVAL'] || '5s'}"
 				flush_at_shutdown "#{ENV['FLUSH_AT_SHUTDOWN'] || 'false'}"
 				flush_thread_count "#{ENV['FLUSH_THREAD_COUNT'] || 2}"
-				retry_max_interval "#{ENV['FORWARD_RETRY_WAIT'] || '300'}"
+				retry_max_interval "#{ENV['FORWARD_RETRY_WAIT'] || 60}"
 				retry_forever true
 				# the systemd journald 0.0.8 input plugin will just throw away records if the buffer
 				# queue limit is hit - 'block' will halt further reads and keep retrying to flush the

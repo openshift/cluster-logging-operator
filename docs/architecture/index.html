@@ -5,6 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.10">
+<meta name="author" content="Alan Conway">
 <title>Cluster Logging Architecture</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -440,55 +441,44 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <body class="article toc2 toc-left">
 <div id="header">
 <h1>Cluster Logging Architecture</h1>
+<div class="details">
+<span id="author" class="author">Alan Conway</span><br>
+<span id="email" class="email"><a href="mailto:aconway@redhat.com">aconway@redhat.com</a></span><br>
+<span id="revdate">updated 12:12:24 -0500</span>
+</div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_introduction">Introduction</a></li>
-<li><a href="#_architecture_summary">Architecture Summary</a>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#architecture-summary">Architecture Summary</a>
 <ul class="sectlevel2">
-<li><a href="#_log_categories">Log categories</a></li>
-<li><a href="#_components">Components</a></li>
-<li><a href="#_operators_and_custom_resources">Operators and Custom Resources</a></li>
-<li><a href="#_runtime_behavior">Runtime behavior</a></li>
-<li><a href="#_log_entries">Log Entries</a></li>
+<li><a href="#log-categories">Log categories</a></li>
+<li><a href="#components">Components</a></li>
+<li><a href="#operators-and-custom-resources">Operators and Custom Resources</a></li>
+<li><a href="#runtime-behavior">Runtime behavior</a></li>
+<li><a href="#log-entries">Log Entries</a></li>
 </ul>
 </li>
-<li><a href="#_work_in_progress">Work in progress</a>
+<li><a href="#work-in-progress">Work in progress</a>
 <ul class="sectlevel2">
-<li><a href="#_improved_e2e_tests">Improved e2e tests</a></li>
-<li><a href="#_pod_label_selector">Pod Label Selector</a></li>
-<li><a href="#_json_output_formats">JSON Output Formats</a></li>
-<li><a href="#_document_metadata">Document Metadata</a></li>
-<li><a href="#_multi_line_support">Multi-line support</a></li>
-<li><a href="#_syslog_metadata">Syslog metadata</a></li>
-<li><a href="#_flow_controlback_pressure">Flow Control/Back-pressure</a></li>
-<li><a href="#_loki_as_store">Loki as store</a></li>
-<li><a href="#_observabilitytelemetry">Observability/Telemetry</a></li>
+<li><a href="#proposals-under-review">Proposals under review</a></li>
+<li><a href="#flow-controlback-pressure">Flow Control/Back-pressure</a></li>
+<li><a href="#error-reporting">Error Reporting</a></li>
+<li><a href="#document-metadata">Document Metadata</a></li>
+<li><a href="#multi-line-support">Multi-line support</a></li>
+<li><a href="#syslog-metadata">Syslog metadata</a></li>
+<li><a href="#loki-as-store">Loki as store</a></li>
+<li><a href="#observabilitytelemetry">Observability/Telemetry</a></li>
 </ul>
 </li>
-<li><a href="#_resources">Resources</a></li>
+<li><a href="#updating-this-page">Updating this page</a></li>
+<li><a href="#resources">Resources</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
-<div id="preamble">
-<div class="sectionbody">
-<div class="admonitionblock tip">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-tip" title="Tip"></i>
-</td>
-<td class="content">
-This is a HTML rendering of the <a href="https://github.com/alanconway/cluster-logging-operator/blob/architecture-pages/docs/architecture/index.adoc">asciidoc page source</a> on GitHub.
-</td>
-</tr>
-</table>
-</div>
-</div>
-</div>
 <div class="sect1">
-<h2 id="_introduction">Introduction</h2>
+<h2 id="introduction">Introduction</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>The goals of this page are to:</p>
@@ -502,7 +492,7 @@ This is a HTML rendering of the <a href="https://github.com/alanconway/cluster-l
 <p>Provide an overview and a snapshot of status for team members and newcomers.</p>
 </li>
 <li>
-<p>Provide links to navigate to other project <a href="#_resources">resources</a></p>
+<p>Provide links to navigate to other project <a href="#resources">Resources</a></p>
 </li>
 </ul>
 </div>
@@ -513,7 +503,7 @@ This is a HTML rendering of the <a href="https://github.com/alanconway/cluster-l
 <i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-This page does <em>not</em> replace or duplicate information in <a href="https://issues.redhat.com/projects/LOG/issues/LOG-96?filter=allopenissues">JIRA</a>, <a href="https://bugzilla.redhat.com/buglist.cgi?cmdtype=runnamed&amp;list_id=11292768&amp;namedcmd=All%20Cluster%20Logging%20Bugs">Bugzilla</a>, <a href="https://github.com/openshift/enhancements/tree/master/enhancements/cluster-logging">enhancement proposals</a>, or the <a href="https://github.com/openshift/enhancements/blob/master/guidelines/README.md">enhancment proposal process</a>. It provides a compact overview and navigation aid to those  <a href="#_resources">resources</a>.
+This page does <em>not</em> replace or duplicate information in <a href="https://issues.redhat.com/projects/LOG/issues/LOG-96?filter=allopenissues">JIRA</a>, <a href="https://bugzilla.redhat.com/buglist.cgi?cmdtype=runnamed&amp;list_id=11292768&amp;namedcmd=All%20Cluster%20Logging%20Bugs">Bugzilla</a>, <a href="https://github.com/openshift/enhancements/tree/master/enhancements/cluster-logging">enhancement proposals</a>, or the <a href="https://github.com/openshift/enhancements/blob/master/guidelines/README.md">enhancment proposal process</a>.
 </td>
 </tr>
 </table>
@@ -521,10 +511,10 @@ This page does <em>not</em> replace or duplicate information in <a href="https:/
 </div>
 </div>
 <div class="sect1">
-<h2 id="_architecture_summary">Architecture Summary</h2>
+<h2 id="architecture-summary">Architecture Summary</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_log_categories">Log categories</h3>
+<h3 id="log-categories">Log categories</h3>
 <div class="paragraph">
 <p>We define 3 <em>logging categories</em></p>
 </div>
@@ -558,7 +548,7 @@ Audit
 </div>
 </div>
 <div class="sect2">
-<h3 id="_components">Components</h3>
+<h3 id="components">Components</h3>
 <div class="paragraph">
 <p>The logging system breaks down into 4 logical components:</p>
 </div>
@@ -600,7 +590,7 @@ exploration
 </div>
 </div>
 <div class="sect2">
-<h3 id="_operators_and_custom_resources">Operators and Custom Resources</h3>
+<h3 id="operators-and-custom-resources">Operators and Custom Resources</h3>
 <div class="imageblock">
 <div class="content">
 <img src="legend.svg" alt="legend">
@@ -645,7 +635,7 @@ exploration
 </div>
 </div>
 <div class="sect2">
-<h3 id="_runtime_behavior">Runtime behavior</h3>
+<h3 id="runtime-behavior">Runtime behavior</h3>
 <div class="imageblock">
 <div class="content">
 <img src="node.svg" alt="node">
@@ -662,7 +652,7 @@ We also collect per-node logs from the Linux <em>journald</em>.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_log_entries">Log Entries</h3>
+<h3 id="log-entries">Log Entries</h3>
 <div class="paragraph">
 <p>The term <em>log</em> is overloaded so we&#8217;ll use these terms to clarify:</p>
 </div>
@@ -674,7 +664,7 @@ We also collect per-node logs from the Linux <em>journald</em>.</p>
 </dd>
 <dt class="hdlist1">Log Entry</dt>
 <dd>
-<p>Usually a single line of text in a log, but see <a href="#_multi_line_entries">multi-line entries</a></p>
+<p>Usually a single line of text in a log, but see <a href="#multi-line-entries">Multi-line Entries</a></p>
 </dd>
 <dt class="hdlist1">Container Log</dt>
 <dd>
@@ -691,17 +681,22 @@ We also collect per-node logs from the Linux <em>journald</em>.</p>
 </dl>
 </div>
 <div class="paragraph">
-<p>Kubernetes does not enforce a uniform format for logs. In order to deploy pre-existing applications with diverse log formats, anything a containerized process writes to <code>stdout</code> or <code>stderr</code> is considered a log.</p>
+<p>Kubernetes does not enforce a uniform format for logs.
+Anything that a containerized process writes to <code>stdout</code> or <code>stderr</code> is considered a log.
+This "lowest common denominator" approach allows pre-existing applications to run on the cluster.</p>
 </div>
 <div class="paragraph">
-<p>Traditional log formats write entries as ordered fields, but the order, separation, format and meaning of fields varies.
-Structured JSON logs use a uniform JSON object format, but the field names, types, and meaning of fields still varies.</p>
+<p>Traditional log formats write entries as ordered fields, but the order, field separator, format and meaning of fields varies.</p>
 </div>
 <div class="paragraph">
-<p><strong>TODO</strong>: k8s forthcoming standard.</p>
+<p><em>Structured logs</em> write log entries as JSON objects on a single line.
+However names, types, and meaning of fields in the JSON object varies between applications.</p>
+</div>
+<div class="paragraph">
+<p>The <a href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-instrumentation/1602-structured-logging">Kubernetes Structured Logging proposal</a> will standardize the log format for <em>some</em> k8s components, but there will still be diverse log formats from non-k8s applications running on the cluster.</p>
 </div>
 <div class="sect3">
-<h4 id="_metadata_envelopes_and_forwarding">Metadata, Envelopes and Forwarding</h4>
+<h4 id="metadata-envelopes-and-forwarding">Metadata, Envelopes and Forwarding</h4>
 <div class="paragraph">
 <p><em>Metadata</em> is additional data about a log entry (original host, container-id, namespace etc.) that we add as part of forwarding the logs. We use these terms for clarity:</p>
 </div>
@@ -735,14 +730,25 @@ Envelope
 <p>Depending on the output type, we may forward entries as <em>_message</em> only, full <em>envelope</em>, or the users choice.</p>
 </div>
 <div class="paragraph">
-<p><strong>TODO</strong>: document current metadata, example</p>
+<p>The current metadata model is <a href="https://github.com/openshift/origin-aggregated-logging/blob/master/docs/com.redhat.viaq-openshift-project.asciidoc:">documented here</a>.
+Model documentation is generated from a <a href="https://github.com/ViaQ/elasticsearch-templates/tree/master/templates::">formal model</a>.</p>
 </div>
-<div class="paragraph">
-<p><strong>TODO</strong>: mutating the message?</p>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+Not all of the documented model is in active use. Review is needed.
+The <code>labels</code> field is "flattened" before forwarding to Elasticsearch.
+</td>
+</tr>
+</table>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_multi_line_entries">Multi-line Entries</h4>
+<h4 id="multi-line-entries">Multi-line Entries</h4>
 <div class="paragraph">
 <p>Log entries are usually a single line of text, but they can consist of more than one line for several reasons:</p>
 </div>
@@ -762,69 +768,89 @@ Envelope
 </dd>
 </dl>
 </div>
-<div class="paragraph">
-<p><strong>TODO</strong>: is multi-line JSON a real concern in practice?</p>
-</div>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_work_in_progress">Work in progress</h2>
+<h2 id="work-in-progress">Work in progress</h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_improved_e2e_tests">Improved e2e tests</h3>
-<div class="paragraph">
-<p><strong>Status</strong>: In development, PR coming soon.</p>
-</div>
-<div class="paragraph">
-<p>Our e2e tests are slow and sometimes flaky, a bottleneck to agility.
-Working on a new version of our e2e test harness to simplify:</p>
-</div>
+<h3 id="proposals-under-review">Proposals under review</h3>
 <div class="ulist">
 <ul>
 <li>
-<p>safe re-use of common resources across tests.</p>
+<p><a href="https://github.com/openshift/enhancements/pull/518::">JSON and Message Formats</a></p>
 </li>
 <li>
-<p>robust setup - tests establish their own preconditions, don&#8217;t assume a clean environment.</p>
-</li>
-<li>
-<p>more reliable creation and deletion of unique-named, temporary resources.</p>
-</li>
-<li>
-<p>concurrent creation/deletion of multiple test resources.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Will initially showcase in a new test, then update existing tests.</p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_pod_label_selector">Pod Label Selector</h3>
-<div class="paragraph">
-<p><strong>Status</strong>: Enhancement PR submitted for discussion.</p>
-</div>
-<div class="paragraph">
-<p>Add an input selector to the ClusterLogForwarder (CLF) to forward application
-logs from pods identified by labels.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://github.com/openshift/enhancements/pull/457">Enhancement proposal PR</a></p>
-</li>
-<li>
-<p><a href="https://issues.redhat.com/browse/LOG-883">Epic JIRA</a></p>
+<p><a href="https://github.com/openshift/enhancements/pull/457::">Pod Label Selector</a></p>
 </li>
 </ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_json_output_formats">JSON Output Formats</h3>
+<h3 id="flow-controlback-pressure">Flow Control/Back-pressure</h3>
 <div class="paragraph">
-<p><strong>Status</strong>: Needs enhancement proposal(s)</p>
+<p><strong>Status</strong>: Needs write-up as <a href="https://github.com/openshift/enhancements/blob/master/guidelines/README.md">enhancment proposal(s)</a></p>
+</div>
+<div class="paragraph">
+<p><strong>TODO</strong>: Updated diagram - CRIO to fluentd end-to-end.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Epic <a href="https://issues.redhat.com/browse/LOG-884::">Implement proper flow control mechanisms to support more reliable log collection</a></p>
+</li>
+<li>
+<p><a href="https://issues.redhat.com/browse/LOG-575:">Prototype code showing backpressure on conmon</a></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Goal:
+1) Sustain a predictable average load without log loss up to retention limits.
+2) Handle <strong>temporary</strong> load spikes predictably: drop or back-pressure.
+3) Handle <strong>long-term</strong> overload with alerts and predictable log loss at source.</p>
+</div>
+<div class="paragraph">
+<p>Problems now:
+- Uncontrolled (file-at-a-time) log loss from slow collection + node log rotation.
+- Large back-up in file buffers under load: very high latencies, slow recovery.</p>
+</div>
+<div class="paragraph">
+<p>Propose 2 qualities of service:
+- <em>fast</em>: priority is low latency, high throughput, no effect on apps. <em>May drop data</em>.
+n- <em>reliable</em>: Priority is to avoid data loss, but may allow loss outside of defined limits. <em>May slow application progress</em>.</p>
+</div>
+<div class="paragraph">
+<p>In traditional terminology:
+- <em>fast</em>: at-most-once
+- <em>reliable</em>: at-least-once <em>with limits</em>. Even users who want reliable logging may have a breaking point where they&#8217;d rather let the application progress and lose logs. We may need configurable limits on how hard we try to be reliable.</p>
+</div>
+<div class="paragraph">
+<p>Architecture:
+- conmon writes container log files on node, log rotation (retention)
+- fluentd on node: file vs. memory buffers
+- forwarder target: throughput
+- store target: retention
+- Future: separate normalizer/forwarder, fluentbit/fluentd</p>
+</div>
+<div class="paragraph">
+<p>Must consider data loss by forwarding protocol also:
+- store (elasticsearch) review options.
+- fluent-forward need to enable at-least-once acks (we don&#8217;t)
+- others need to review case by case if its possible.</p>
+</div>
+<div class="paragraph">
+<p>Throughput and latency:
+- evaluate throughput of each stage: node log to store/target.
+- end-to-end latency, expected/acceptable variation.</p>
+</div>
+<div class="paragraph">
+<p>Buffer sizes
+- all components must maintain bounded buffers.
+- without end-to-end back-pressure we cannot guarantee no data loss.
+- we should be able to give better sizing/capacity guidelines.</p>
 </div>
 <div class="admonitionblock important">
 <table>
@@ -833,58 +859,43 @@ logs from pods identified by labels.</p>
 <i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-Although JSON is the first target, this all applies to other formats (e.g. syslog) that have different ways of encoding envelope and message. The design <strong>must</strong> be expressed in a format neutral way as far as possible.
+Need well-designed (accurate, no floods, no noise) alerts for log loss and back-pressure situations
 </td>
 </tr>
 </table>
 </div>
 <div class="paragraph">
-<p>As a logging administrator, I would like to control the format of forwarded logs.
-In particular I would like some forwarded message envelope to contain the <code>message</code> as a JSON object rather than a string.</p>
-</div>
-<div class="paragraph">
-<p>Generic options:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Forward the complete envelope, or just the message</p>
-</li>
-<li>
-<p>Select a subset of metadata to forward (reduce log bloat)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Options specific to JSON-envelope output:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Choose JSON object or string encoding for message field, when original text is JSON.</p>
-</li>
-<li>
-<p>Handling non-JSON messages when JSON expected: string  or error envelope?<br>
-<code>{"invalid-json" : "&lt;messsage text&gt;"}</code></p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Links:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p><a href="https://issues.redhat.com/browse/LOG-835">LOG-835: Add JSON format type to log forwarding API - Red Hat Issue Tracker</a></p>
-</li>
-<li>
-<p><a href="https://issues.redhat.com/browse/RFE-921">RFE-921: Enable JSON log parsing - Red Hat Issue Tracker</a></p>
-</li>
-</ul>
+<p>Configuration:
+- Enable backpressure by pod label and/or namespace.
+  - Can&#8217;t impose backpressure everywhere?
+- Enable rate limiting in low-latency mode (back-pressure always limits rate)</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_document_metadata">Document Metadata</h3>
+<h3 id="error-reporting">Error Reporting</h3>
+<div class="paragraph">
+<p>The logging system itself can encounter errors that need to be diagnosed, examples:
+* Invalid JSON received where structured logs are reuqired.
+* Hard (no retry possible) errors from store or other target causing unavoidable log loss.</p>
+</div>
+<div class="paragraph">
+<p><em>Alerts</em> are a key component, but alerts must be <em>actionable</em>, they can&#8217;t be
+used to record ongoing activity that might or might not be reviewed later.
+For that we need logs.</p>
+</div>
+<div class="paragraph">
+<p>The CLO and fluentd collector logs can be captured just like any other infrastructure log.
+However, if the logging system itself is in trouble, users need a simple, direct path to diagnose the issue.
+This path might have a simpler implementation that is more likely to survive if logging is in trouble.</p>
+</div>
+<div class="paragraph">
+<p>Proposal: add a 4th logging category [application, infrastructure, audit, <em>logging</em>]
+This category collects logs related to errors in the logging system, including fluentd
+error messages and errors logged by the CLO.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="document-metadata">Document Metadata</h3>
 <div class="paragraph">
 <p>Decide on the supported set of envelope metadata fields and document them.</p>
 </div>
@@ -904,28 +915,26 @@ We need to separate the ES-specifics, either:</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_multi_line_support">Multi-line support</h3>
-<div class="paragraph">
-<p>Verify that we we cover all common stack traces: java, ruby, python.</p>
-</div>
-<div class="paragraph">
-<p><strong>TODO</strong>: Do we need to consider multi-line JSON?</p>
+<h3 id="multi-line-support">Multi-line support</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Cover common stack trace types: Java, Ruby, Python, Go.</p>
+</li>
+<li>
+<p>Review need for multi-line JSON.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_syslog_metadata">Syslog metadata</h3>
+<h3 id="syslog-metadata">Syslog metadata</h3>
 <div class="paragraph">
 <p>Optionally copy metadata copied to syslog <a href="https://tools.ietf.org/html/rfc5424#section-6.3">STRUCTURED-DATA</a></p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_flow_controlback_pressure">Flow Control/Back-pressure</h3>
-<div class="paragraph">
-<p><strong>TODO</strong></p>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_loki_as_store">Loki as store</h3>
+<h3 id="loki-as-store">Loki as store</h3>
 <div class="ulist">
 <ul>
 <li>
@@ -939,12 +948,9 @@ We need to separate the ES-specifics, either:</p>
 </li>
 </ul>
 </div>
-<div class="paragraph">
-<p><strong>TODO</strong>: links to cards</p>
-</div>
 </div>
 <div class="sect2">
-<h3 id="_observabilitytelemetry">Observability/Telemetry</h3>
+<h3 id="observabilitytelemetry">Observability/Telemetry</h3>
 <div class="paragraph">
 <p><strong>TODO</strong></p>
 </div>
@@ -952,22 +958,39 @@ We need to separate the ES-specifics, either:</p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_resources">Resources</h2>
+<h2 id="updating-this-page">Updating this page</h2>
 <div class="sectionbody">
 <div class="paragraph">
+<p>The <a href="https://github.com/openshift/cluster-logging-operator/blob/master/docs/architecture/index.adoc">asciidoc source for this document</a> is on GitHub.
+Create a GitHub Pull Request to request changes.</p>
+</div>
+<div class="paragraph">
+<p>The <a href="https://htmlpreview.github.io/?https://github.com/openshift/cluster-logging-operator/blob/master/docs/architecture/index.html">pretty HTML rendering</a> uses <code><a href="https://htmlpreview.github.io" class="bare">https://htmlpreview.github.io</a></code></p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="resources">Resources</h2>
+<div class="sectionbody">
+<div class="ulist">
+<div class="title">Planning and tracking</div>
+<ul>
+<li>
 <p><a href="https://github.com/openshift/enhancements/blob/master/guidelines/README.md">The Enhancement Proposal Process</a> is how we document &amp; discuss designs.</p>
-</div>
-<div class="paragraph">
+</li>
+<li>
 <p><a href="{enhancement_repo}">Cluster Logging Enhancement Proposals</a> for CLO and ELO.</p>
-</div>
-<div class="paragraph">
+</li>
+<li>
 <p><a href="https://issues.redhat.com/projects/LOG/issues/LOG-96?filter=allopenissues">JIRA project LOG</a> tracks feature work.</p>
-</div>
-<div class="paragraph">
+</li>
+<li>
 <p><a href="https://bugzilla.redhat.com/buglist.cgi?cmdtype=runnamed&amp;list_id=11292768&amp;namedcmd=All%20Cluster%20Logging%20Bugs">Bugzilla </a> tracks bugs.</p>
+</li>
+</ul>
 </div>
 <div class="ulist">
-<div class="title">Source code:</div>
+<div class="title">Source code</div>
 <ul>
 <li>
 <p><a href="https://github.com/openshift/cluster-logging-operator">Cluster Logging Operator</a></p>
@@ -980,12 +1003,23 @@ We need to separate the ES-specifics, either:</p>
 </li>
 </ul>
 </div>
+<div class="ulist">
+<div class="title">Data model</div>
+<ul>
+<li>
+<p><a href="https://github.com/openshift/origin-aggregated-logging/blob/master/docs/com.redhat.viaq-openshift-project.asciidoc:">Generated data model documentation</a></p>
+</li>
+<li>
+<p><a href="https://github.com/ViaQ/elasticsearch-templates/tree/master/templates::">Formal Model</a> and documentation/code generators</p>
+</li>
+</ul>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2020-09-22 09:36:18 -0400
+Last updated 2020-11-19 12:12:24 -0500
 </div>
 </div>
 </body>

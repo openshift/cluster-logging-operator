@@ -17,7 +17,7 @@ cleanup(){
   
   set +e
   if [ "$return_code" != "0" -a $get_setup_artifacts ] ; then 
-    oc get all -n openshift-operators-redhat > $testartifactdir/openshift-operators-redhat_all.txt
+    oc get all -n openshift-operators-redhat > $test_artifactdir/openshift-operators-redhat_all.txt
     gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
   fi
 

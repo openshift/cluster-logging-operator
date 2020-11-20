@@ -952,6 +952,7 @@ var _ = Describe("Generating fluentd config", func() {
 						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt'
 						type_name _doc
+                        http_backend typhoeus
 						write_operation create
 						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -997,6 +998,7 @@ var _ = Describe("Generating fluentd config", func() {
 						ca_file '/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_infra_es
+                        http_backend typhoeus
 						write_operation create
 						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1043,6 +1045,7 @@ var _ = Describe("Generating fluentd config", func() {
 						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 						type_name _doc
+                        http_backend typhoeus
 						write_operation create
 						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1088,6 +1091,7 @@ var _ = Describe("Generating fluentd config", func() {
 						ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_apps_es_1
+                        http_backend typhoeus
 						write_operation create
 						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1134,6 +1138,7 @@ var _ = Describe("Generating fluentd config", func() {
 						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
 						type_name _doc
+                        http_backend typhoeus
 						write_operation create
 						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1179,6 +1184,7 @@ var _ = Describe("Generating fluentd config", func() {
 						ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_apps_es_2
+                        http_backend typhoeus
 						write_operation create
 						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1225,6 +1231,7 @@ var _ = Describe("Generating fluentd config", func() {
 						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
 						type_name _doc
+                        http_backend typhoeus
 						write_operation create
 						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1270,6 +1277,7 @@ var _ = Describe("Generating fluentd config", func() {
 						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_audit_es
+                        http_backend typhoeus
 						write_operation create
 						reload_connections "#{ENV['ES_RELOAD_CONNECTIONS'] || 'true'}"
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after

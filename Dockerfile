@@ -39,6 +39,7 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/
 
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
 RUN rm /manifests/art.yaml
+RUN rm -rf /manifests/5.0
 
 COPY --from=origincli /usr/bin/oc /usr/bin/
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/

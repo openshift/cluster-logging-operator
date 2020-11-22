@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/pkg/addon"
 	"github.com/openshift/cluster-logging-operator/pkg/apis"
 	"github.com/openshift/cluster-logging-operator/pkg/controller"
 	"github.com/openshift/cluster-logging-operator/version"
@@ -147,6 +148,10 @@ func main() {
 
 	log.Info("Starting the Cmd.")
 
+	// Process configuration if an operator is installed as addon
+	addon.ProcessAddonConfiguration(namespace)
+
+	log.Info("processed addon config")
 	// Start the Cmd
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		log.Error(err, "Manager exited non-zero")

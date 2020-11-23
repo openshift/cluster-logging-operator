@@ -68,7 +68,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 	     flush_thread_count 2
        retry_type exponential_backoff
        retry_wait 1s
-	     retry_max_interval 300s
+	     retry_max_interval 60s
 	     retry_forever true
 	     # the systemd journald 0.0.8 input plugin will just throw away records if the buffer
 	     # queue limit is hit - 'block' will halt further reads and keep retrying to flush the
@@ -116,7 +116,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 				flush_thread_count 2
         retry_type exponential_backoff
         retry_wait 1s
-				retry_max_interval 300s
+				retry_max_interval 60s
 				retry_forever true
 				# the systemd journald 0.0.8 input plugin will just throw away records if the buffer
 				# queue limit is hit - 'block' will halt further reads and keep retrying to flush the

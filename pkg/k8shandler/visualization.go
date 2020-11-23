@@ -24,9 +24,6 @@ import (
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy) (err error) {
 	if clusterRequest.Cluster.Spec.Visualization == nil || clusterRequest.Cluster.Spec.Visualization.Type == "" {
-		if err = clusterRequest.removeKibana(); err != nil {
-			return
-		}
 		return nil
 	}
 

@@ -29,24 +29,28 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
-	// Reconcile certs
-	if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
-		return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-	}
+	if clusterLoggingRequest.IncludesManagedStorage() {
+		// Reconcile certs
+		if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
+			return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
 
-	// Reconcile Log Store
-	if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
-		return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-	}
+		// Reconcile Log Store
+		if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
+			return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
 
-	// Reconcile Visualization
-	if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-	}
+		// Reconcile Visualization
+		if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig); err != nil {
+			return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
 
-	// Reconcile Curation
-	if err = clusterLoggingRequest.CreateOrUpdateCuration(); err != nil {
-		return fmt.Errorf("Unable to create or update curation for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		// Reconcile Curation
+		if err = clusterLoggingRequest.CreateOrUpdateCuration(); err != nil {
+			return fmt.Errorf("Unable to create or update curation for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
+	} else {
+		removeManagedStorage(clusterLoggingRequest)
 	}
 
 	// Reconcile Collection
@@ -60,6 +64,15 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	}
 
 	return nil
+}
+
+func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
+	logger.Debug("Removing managed store components...")
+	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeCurator} {
+		if err := remove(); err != nil {
+			logger.Debug(err, "Error removing component")
+		}
+	}
 }
 
 func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client) (err error) {

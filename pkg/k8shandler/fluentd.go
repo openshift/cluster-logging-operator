@@ -304,8 +304,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error {
-	// TODO
-	return nil
+	return clusterRequest.ReconcileCertSecret(fluentdName)
 }
 
 func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {

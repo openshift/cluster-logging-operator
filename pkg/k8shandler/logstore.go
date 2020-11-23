@@ -138,8 +138,7 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearch() (err error) {
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret() error {
-	// TODO
-	return nil
+	return clusterRequest.ReconcileCertSecret(elasticsearchResourceName)
 }
 
 func (cr *ClusterLoggingRequest) emptyElasticsearchCR(elasticsearchName string) *elasticsearch.Elasticsearch {

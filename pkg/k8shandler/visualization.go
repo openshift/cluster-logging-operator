@@ -135,7 +135,11 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error {
-	// TODO
+	for _, secret := range []string{"kibana", "kibana-proxy"} {
+		if err := clusterRequest.ReconcileCertSecret(secret); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

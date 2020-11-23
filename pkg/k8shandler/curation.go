@@ -161,8 +161,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorConfigMap() er
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorSecret() error {
-	// TODO
-	return nil
+	return clusterRequest.ReconcileCertSecret("curator")
 }
 
 //TODO: refactor elasticsearchHost to get from cluster

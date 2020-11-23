@@ -12,6 +12,8 @@ include .bingo/Variables.mk
 export GOROOT=$(shell go env GOROOT)
 export GOFLAGS=-mod=vendor
 export GO111MODULE=on
+# Needed to process legacy certificates, see https://golang.org/doc/go1.15#commonname
+export GODEBUG=x509ignoreCN=0
 
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest

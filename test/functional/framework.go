@@ -50,12 +50,12 @@ func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
 	verbosity := 9
 	if level, found := os.LookupEnv("LOG_LEVEL"); found {
 		if i, err := strconv.Atoi(level); err == nil {
-			verbosity = int(i)
+			verbosity = i
 		}
 	}
 
 	log.MustInit("fluent-ftf")
- 	log.SetLogLevel(verbosity)
+	log.SetLogLevel(verbosity)
 	t := client.NewTest()
 	testName := fmt.Sprintf("test-fluent-%d", rand.Intn(1000))
 	framework := &FluentdFunctionalFramework{

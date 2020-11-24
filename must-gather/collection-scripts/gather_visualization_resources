@@ -29,7 +29,7 @@ check_kibana_connectivity() {
 }
 
 get_kibana_cr() {
-  oc get -n ${NAMESPACE} kibana kibana -o yaml > $kibana_folder/cr
+  oc get -n ${NAMESPACE} kibana.logging.openshift.io kibana -o yaml > $kibana_folder/cr
 }
 
 echo "Gathering data for visualization component"

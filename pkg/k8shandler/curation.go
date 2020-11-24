@@ -26,9 +26,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 
 	cluster := clusterRequest.Cluster
 	if cluster.Spec.Curation == nil || cluster.Spec.Curation.Type == "" {
-		if err = clusterRequest.removeCurator(); err != nil {
-			return
-		}
 		return nil
 	}
 	if cluster.Spec.Curation.Type == logging.CurationTypeCurator {

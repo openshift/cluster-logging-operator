@@ -38,8 +38,8 @@ var serviceAccountLogCollectorUID types.UID
 //CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfig *configv1.Proxy) (err error) {
 	cluster := clusterRequest.Cluster
-	collectorConfig := ""
-	collectorConfHash := ""
+	var collectorConfig string
+	var collectorConfHash string
 
 	var collectorServiceAccount *core.ServiceAccount
 
@@ -54,36 +54,33 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
-			return
-		}
-		log.V(3).Info("Generated collector config", "config", collectorConfig)
-		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
-		if err != nil {
-			log.Error(err, "unable to calculate MD5 hash")
-			return
-		}
 		if err = clusterRequest.reconcileFluentdService(); err != nil {
-			return
 		}
 
 		if err = clusterRequest.reconcileFluentdServiceMonitor(); err != nil {
-			return
+			log.V(3).Error(err, "Error reconciling fluentd servicemonitor")
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdPrometheusRule(); err != nil {
-			return
+			log.V(3).Error(err, "Error reconciling fluentd prometheusrules")
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
+		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
+			log.V(3).Error(err, "Error generating collector config")
+			return
+		}
+		if collectorConfHash, err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
+			log.V(3).Error(err, "Error reconciling fluentd configmap")
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
+			log.V(3).Error(err, "Error reconciling fluentd secrets")
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash, proxyConfig); err != nil {
+			log.V(3).Error(err, "Error reconciling fluentd daemonset")
 			return
 		}
 

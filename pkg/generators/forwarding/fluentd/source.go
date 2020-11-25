@@ -8,11 +8,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+// GenerateSources  scrapes files for all requested namespaces.
 // FIXME(alanconway) generateSource scrapes files for all requested namespaces.
 // We need to also filter them per-user-SourceSpec since different SourceSpecs
 // might request different namespaces.
-
-func (engine *ConfigGenerator) generateSource(sources sets.String) (results []string, err error) {
+func (engine *ConfigGenerator) GenerateSources(sources sets.String) (results []string, err error) {
 	// Order of templates matters.
 	var templates []string
 	if sources.Has(logging.InputNameInfrastructure) {

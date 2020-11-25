@@ -1933,22 +1933,6 @@ var _ = Describe("Generating fluentd config", func() {
 			`))
 	})
 
-	It("should generate sources for reserved inputs used as names or types", func() {
-		sources, _ := gatherSources(&logging.ClusterLogForwarderSpec{
-			Inputs: []logging.InputSpec{{Name: "in", Application: &logging.Application{}}},
-			Pipelines: []logging.PipelineSpec{
-				{
-					InputRefs:  []string{"in"},
-					OutputRefs: []string{"default"},
-				},
-				{
-					InputRefs:  []string{"audit"},
-					OutputRefs: []string{"default"},
-				},
-			},
-		})
-		Expect(sources.List()).To(ContainElements("application", "audit"))
-	})
 	var _ = DescribeTable("Verify generated fluentd.conf for valid forwarder specs",
 		func(yamlSpec, wantFluentdConf string) {
 			var spec logging.ClusterLogForwarderSpec

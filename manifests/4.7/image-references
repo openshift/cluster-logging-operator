@@ -14,3 +14,7 @@ spec:
     from:
       kind: DockerImage
       name: quay.io/openshift/origin-logging-fluentd:latest
+  - name: logging-fluentbit
+    from:
+      kind: DockerImage
+      name: quay.io/jcantril/fluent-bit:v1.5.2-rh

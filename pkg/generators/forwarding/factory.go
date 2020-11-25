@@ -5,6 +5,7 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentd"
+	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/sources"
 )
 
 //NewConfigGenerator create a config generator for a given collector type
@@ -12,6 +13,8 @@ func NewConfigGenerator(collector logging.LogCollectionType, includeLegacyForwar
 	switch collector {
 	case logging.LogCollectionTypeFluentd:
 		return fluentd.NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin)
+	case logging.LogCollectionTypeFluentbit:
+		return fluentd.NewConfigGeneratorWithSourceGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin, sources.GenerateLocalFluentForwardSource)
 	default:
 		return nil, fmt.Errorf("Config generation not supported for collectors of type %s", collector)
 	}

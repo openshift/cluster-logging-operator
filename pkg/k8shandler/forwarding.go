@@ -37,7 +37,8 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	clusterRequest.ForwarderRequest.Status = *status
 
 	generator, err := forwarding.NewConfigGenerator(
-		clusterRequest.Cluster.Spec.Collection.Logs.Type,
+		//explicitly collect using fluentbit
+		logging.LogCollectionTypeFluentbit,
 		clusterRequest.includeLegacyForwardConfig(),
 		clusterRequest.includeLegacySyslogConfig(),
 		clusterRequest.useOldRemoteSyslogPlugin(),

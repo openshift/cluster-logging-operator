@@ -40,7 +40,7 @@ func (clusterRequest *ClusterLoggingRequest) Create(object runtime.Object) error
 //Update the runtime Object or return error
 func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err error) {
 	if err = clusterRequest.Client.Update(context.TODO(), object); err != nil {
-		log.Error(err, "Error updating ", object.GetObjectKind())
+		log.Error(err, "Error updating", "kind", object.GetObjectKind())
 	}
 	return err
 }

@@ -23,6 +23,7 @@ func Syncronize(action func() error) error {
 }
 
 func (clusterRequest *ClusterLoggingRequest) extractMasterCerts() (extracted bool, err error) {
+	log.V(3).Info("Extracting master certs...")
 	secret, err := clusterRequest.GetSecret(constants.MasterCASecretName)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -32,6 +33,7 @@ func (clusterRequest *ClusterLoggingRequest) extractMasterCerts() (extracted boo
 	}
 	workDir := utils.GetWorkingDir()
 	for name, value := range secret.Data {
+		log.V(3).Info("Extracting secret", "name", name)
 		if err != utils.WriteToWorkingDirFile(path.Join(workDir, name), value) {
 			return false, err
 		}
@@ -41,7 +43,7 @@ func (clusterRequest *ClusterLoggingRequest) extractMasterCerts() (extracted boo
 }
 
 func (clusterRequest *ClusterLoggingRequest) writeSecret() (err error) {
-
+	log.V(3).Info("Writing master certs.  Loading from working dir...")
 	secrets, err := loadFilesFromWorkingDir()
 	if err != nil {
 		return err

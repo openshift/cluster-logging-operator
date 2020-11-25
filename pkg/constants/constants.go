@@ -27,6 +27,17 @@ const (
 
 	/* #nosec - suppressing rule G101 */
 	KibanaSessionSecretName = "kibana-session-secret"
+	PodIPEnvVar             = "POD_IP"
+
+	CollectorConfigVolumeName = "config"
+	CollectorName             = "collector"
+	CollectorMetricsPortName  = "cmetrics"
+	CollectorMetricsPort      = 2020
+	FluentBitName             = "fluentbit"
+	LogVolumeName             = "varlog"
+	VarLibVolumeName          = "varlib"
+	VarLibVolumePath          = "/var/lib"
+	VarLogVolumePath          = "/var/log"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

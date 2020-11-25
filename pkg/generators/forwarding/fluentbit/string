@@ -1,0 +1,394 @@
+Script started on 2020-12-11 14:00:32-05:00 [TERM="xterm-256color" TTY="/dev/pts/2" COLUMNS="229" LINES="25"]
+	filterName string
+	Inputs     []Input
+	Results    []Result
+}
+
+//Input is set of parameters given to a filter
+type Input struct {
+	Tag       string
+	Timestamp float64
+	Record    Record
+}
+
+//Result are the items returned by a filter
+type Result struct {
+	Code      int
+	Timestamp float64
+	Record    *Record
+}
+
+func newResult(luaValue *lua.LTable) Result {
+	option := gluamapper.Option{NameFunc: func(name string) string { return name }}
+	result := Result{}
+	luaValue.ForEach(func(key, value lua.LValue) {
+		if key.Type() == lua.LTString {
+			if value == nil {
+				return
+			}
+			v := gluamapper.ToGoValue(value, option)
+			entryKey := gluamapper.ToGoValue(key, option).(string)
+			switch entryKey {
+			case "code":
+				result.Code = int(v.(float64))
+			case "timestamp":
+				result.Timestamp = v.(float64)
+			case "record":
+				if reflect.TypeOf(v).Kind() == reflect.Map {
+					resultRecord := map[string]interface{}{}
+					record := v.(map[interface{}]interface{})
+					for k, recordValue := range record {
+						resultRecord[k.(string)] = recordValue
+					}
+					result.Record ]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ filterName string
+bash: filterName: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ Inputs     []Input
+bash: Inputs: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ Results    []Result
+bash: Results: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ }
+bash: syntax error near unexpected token `}'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ 
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ //Input is set of parameters given to a filter
+bash: //Input: No such file or directory
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ type Input struct {
+bash: type: Input: not found
+bash: type: struct: not found
+{ is a shell keyword
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ Tag       string
+bash: Tag: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ Timestamp float64
+bash: Timestamp: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ Record    Record
+bash: Record: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ }
+bash: syntax error near unexpected token `}'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ 
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ //Result are the items returned by a filter
+bash: //Result: No such file or directory
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ type Result struct {
+bash: type: Result: not found
+bash: type: struct: not found
+{ is a shell keyword
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ Code      int
+bash: Code: command not found...
+Similar command is: 'code'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ Timestamp float64
+bash: Timestamp: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ Record    *Record
+bash: Record: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ }
+bash: syntax error near unexpected token `}'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ 
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ func newResult(luaValue *lua.LTable) Result {
+bash: syntax error near unexpected token `('
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ option := gluamapper.Option{NameFunc: func(name string) string { return name }}
+bash: syntax error near unexpected token `('
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ result := Result{}
+bash: result: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ luaValue.ForEach(func(key, value lua.LValue) {
+bash: syntax error near unexpected token `func'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ if key.Type() == lua.LTString {
+bash: syntax error near unexpected token `=='
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ if value == nil {
+> 
+Display all 3217 possibilities? (y or n)
+> 
+> 
+Display all 3217 possibilities? (y or n)
+!                                             function                                      mokutil                                       sdptool
+./                                            funzip                                        monitor-sensor                                secon
+:                                             fuse2fs                                       more                                          secret-tool
+[                                             fuse-overlayfs                                mount                                         secure-forward-ca-generate
+[[                                            fuser                                         mount.cifs                                    sed
+]]                                            fusermount                                    mount.fuse                                    sedismod
+{                                             fusermount3                                   mount.fuse3                                   sedispol
+}                                             fusermount-glusterfs                          mount.glusterfs                               sefcontext_compile
+2to3                                          fwupdagent                                    mount.lowntfs-3g                              selabel_digest
+ab                                            fwupdate                                      mount.nfs                                     selabel_lookup
+abrt                                          fwupdmgr                                      mount.nfs4                                    selabel_lookup_best_match
+abrt-action-analyze-backtrace                 fwupdtool                                     mount.ntfs                                    selabel_partial_match
+abrt-action-analyze-c                         fwupdtpmevlog                                 mount.ntfs-3g                                 select
+abrt-action-analyze-ccpp-local                g++                                           mount.ntfs-fuse                               selinux_check_access
+abrt-action-analyze-core                      g13                                           mountpoint                                    selinuxconlist
+abrt-action-analyze-java                      g13-syshelp                                   mountstats                                    selinuxdefcon
+abrt-action-analyze-oops                      gamemoded                                     mount.zfs                                     selinuxenabled
+abrt-action-analyze-python                    gamemoderun                                   mousetweaks                                   selinuxexeccon
+abrt-action-analyze-vmcore                    gapplication                                  mp3rtp                                        semanage
+abrt-action-analyze-vulnerability             gatttool                                      mp3x                                          semodule
+abrt-action-analyze-xorg                      gawk                                          mpage                                         semodule_expand
+abrt-action-check-oops-for-alt-component      gawklibpath_append                            mpartition                                    semodule_link
+abrt-action-check-oops-for-hw-error           gawklibpath_default                           mpathconf                                     semodule_package
+abrt-action-find-bodhi-update                 gawklibpath_prepend                           mpathpersist                                  semodule_unpackage
+--More--[Kabrt-action-generate-backtrace                gawkpath_append                               mppcheck                                      sendiso
+abrt-action-generate-core-backtrace           gawkpath_default                              mpplu                                         seq
+abrt-action-install-debuginfo                 gawkpath_prepend                              mppprof                                       serdi
+abrt-action-list-dsos                         gc                                            mpris-proxy                                   serialver
+abrt-action-notify                            gcalccmd                                      mrd                                           servertool
+abrt-action-perform-ccpp-analysis             gcc                                           mren                                          _service
+abrt-action-save-package-data                 gcc-ar                                        msgattrib                                     service
+abrt-action-trim-files                        gcc-nm                                        msgcat                                        _services
+abrt-applet                                   gcc-ranlib                                    msgcmp                                        sessreg
+abrt-auto-reporting                           gcm-calibrate                                 msgcomm                                       sestatus
+abrt-bodhi                                    gcm-import                                    msgconv                                       set
+abrt-cli                                      gcm-inspect                                   msgen                                         setarch
+abrtd                                         gcm-picker                                    msgexec                                       setcap
+abrt-dbus                                     gcm-viewer                                    msgfilter                                     setcifsacl
+abrt-dump-journal-core                        gconf-merge-tree                              msgfmt                                        setenforce
+abrt-dump-journal-oops                        gconftool-2                                   msgfmt3.7.py                                  setfacl
+abrt-dump-journal-xorg                        gcore                                         msgfmt3.py                                    setfattr
+abrt-dump-oops                                gcov                                          msgfmt.py                                     setfiles
+abrt-dump-xorg                                gcov-dump                                     msggrep                                       setfont
+abrt-handle-upload                            gcov-tool                                     msginit                                       setkeycodes
+abrt-harvest-pstoreoops                       gcr-viewer                                    msgmerge                                      setleds
+abrt-harvest-vmcore                           gdb                                           msgunfmt                                      setmetamode
+abrt-merge-pstoreoops                         gdb-add-index                                 msguniq                                       setpci
+abrt-retrace-client                           gdbm_dump                                     mshortname                                    setpriv
+--More--[Kabrt-server                                   gdbm_load                                     mshowfat                                      setquota
+abrt-watch-log                                gdbmtool                                      mtools                                        setregdomain
+ac                                            gdbus                                         mtoolstest                                    setsebool
+accept                                        gdiffmk                                       mtr                                           setsid
+accessdb                                      gdisk                                         mtr-packet                                    setterm
+accton                                        gdk-pixbuf-query-loaders-64                   mtype                                         setup-nsssysinit
+aclocal                                       gdk-pixbuf-thumbnailer                        multipath                                     setup-nsssysinit.sh
+aclocal-1.16                                  gdm                                           multipathd                                    setvtrgb
+aconnect                                      gdmflexiserver                                mutter                                        setxkbmap
+activate-global-python-argcomplete            gdm-screenshot                                mv                                            sfdisk
+acyclic                                       gedit                                         mvxattr                                       sfdp
+adcli                                         gem                                           mxtar                                         sftp
+addftinfo                                     gencat                                        mzip                                          sfv-hash
+addgnupghome                                  gendiff                                       named-checkzone                               sg
+add.modules                                   genhomedircon                                 named-compilezone                             sgdisk
+addpart                                       genhostid                                     named-nzd2nzf                                 sgpio
+addr2line                                     genisoimage                                   namei                                         sh
+adduser                                       genl                                          nameif                                        sha1hmac
+adsl-start                                    genl-ctrl-list                                native2ascii                                  sha1sum
+adsl-stop                                     genrandom                                     nautilus                                      sha224hmac
+afs5log                                       geoiplookup                                   nautilus-autorun-software                     sha224sum
+agetty                                        geoiplookup6                                  nautilus-sendto                               sha256hmac
+alias                                         geqn                                          nc                                            sha256sum
+_allowed_groups                               getcap                                        ncat                                          sha384hmac
+--More--[K> )
+bash: syntax error near unexpected token `)'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ entryKey := gluamapper.ToGoValue(key, option).(string)
+bash: syntax error near unexpected token `('
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ switch entryKey {
+bash: switch: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ case "code":
+> 
+Display all 3217 possibilities? (y or n)
+!                                             function                                      mokutil                                       sdptool
+./                                            funzip                                        monitor-sensor                                secon
+:                                             fuse2fs                                       more                                          secret-tool
+[                                             fuse-overlayfs                                mount                                         secure-forward-ca-generate
+[[                                            fuser                                         mount.cifs                                    sed
+]]                                            fusermount                                    mount.fuse                                    sedismod
+{                                             fusermount3                                   mount.fuse3                                   sedispol
+}                                             fusermount-glusterfs                          mount.glusterfs                               sefcontext_compile
+2to3                                          fwupdagent                                    mount.lowntfs-3g                              selabel_digest
+ab                                            fwupdate                                      mount.nfs                                     selabel_lookup
+abrt                                          fwupdmgr                                      mount.nfs4                                    selabel_lookup_best_match
+abrt-action-analyze-backtrace                 fwupdtool                                     mount.ntfs                                    selabel_partial_match
+abrt-action-analyze-c                         fwupdtpmevlog                                 mount.ntfs-3g                                 select
+abrt-action-analyze-ccpp-local                g++                                           mount.ntfs-fuse                               selinux_check_access
+abrt-action-analyze-core                      g13                                           mountpoint                                    selinuxconlist
+abrt-action-analyze-java                      g13-syshelp                                   mountstats                                    selinuxdefcon
+abrt-action-analyze-oops                      gamemoded                                     mount.zfs                                     selinuxenabled
+abrt-action-analyze-python                    gamemoderun                                   mousetweaks                                   selinuxexeccon
+abrt-action-analyze-vmcore                    gapplication                                  mp3rtp                                        semanage
+abrt-action-analyze-vulnerability             gatttool                                      mp3x                                          semodule
+abrt-action-analyze-xorg                      gawk                                          mpage                                         semodule_expand
+abrt-action-check-oops-for-alt-component      gawklibpath_append                            mpartition                                    semodule_link
+abrt-action-check-oops-for-hw-error           gawklibpath_default                           mpathconf                                     semodule_package
+abrt-action-find-bodhi-update                 gawklibpath_prepend                           mpathpersist                                  semodule_unpackage
+--More--[Kabrt-action-generate-backtrace                gawkpath_append                               mppcheck                                      sendiso
+abrt-action-generate-core-backtrace           gawkpath_default                              mpplu                                         seq
+abrt-action-install-debuginfo                 gawkpath_prepend                              mppprof                                       serdi
+abrt-action-list-dsos                         gc                                            mpris-proxy                                   serialver
+abrt-action-notify                            gcalccmd                                      mrd                                           servertool
+abrt-action-perform-ccpp-analysis             gcc                                           mren                                          _service
+abrt-action-save-package-data                 gcc-ar                                        msgattrib                                     service
+abrt-action-trim-files                        gcc-nm                                        msgcat                                        _services
+abrt-applet                                   gcc-ranlib                                    msgcmp                                        sessreg
+abrt-auto-reporting                           gcm-calibrate                                 msgcomm                                       sestatus
+abrt-bodhi                                    gcm-import                                    msgconv                                       set
+abrt-cli                                      gcm-inspect                                   msgen                                         setarch
+abrtd                                         gcm-picker                                    msgexec                                       setcap
+abrt-dbus                                     gcm-viewer                                    msgfilter                                     setcifsacl
+abrt-dump-journal-core                        gconf-merge-tree                              msgfmt                                        setenforce
+abrt-dump-journal-oops                        gconftool-2                                   msgfmt3.7.py                                  setfacl
+abrt-dump-journal-xorg                        gcore                                         msgfmt3.py                                    setfattr
+abrt-dump-oops                                gcov                                          msgfmt.py                                     setfiles
+abrt-dump-xorg                                gcov-dump                                     msggrep                                       setfont
+abrt-handle-upload                            gcov-tool                                     msginit                                       setkeycodes
+abrt-harvest-pstoreoops                       gcr-viewer                                    msgmerge                                      setleds
+abrt-harvest-vmcore                           gdb                                           msgunfmt                                      setmetamode
+abrt-merge-pstoreoops                         gdb-add-index                                 msguniq                                       setpci
+abrt-retrace-client                           gdbm_dump                                     mshortname                                    setpriv
+--More--[K> t(v.(float64))
+bash: syntax error near unexpected token `t'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ case "timestamp":
+> 
+Display all 3217 possibilities? (y or n)
+!                                             function                                      mokutil                                       sdptool
+./                                            funzip                                        monitor-sensor                                secon
+:                                             fuse2fs                                       more                                          secret-tool
+[                                             fuse-overlayfs                                mount                                         secure-forward-ca-generate
+[[                                            fuser                                         mount.cifs                                    sed
+]]                                            fusermount                                    mount.fuse                                    sedismod
+{                                             fusermount3                                   mount.fuse3                                   sedispol
+}                                             fusermount-glusterfs                          mount.glusterfs                               sefcontext_compile
+2to3                                          fwupdagent                                    mount.lowntfs-3g                              selabel_digest
+ab                                            fwupdate                                      mount.nfs                                     selabel_lookup
+abrt                                          fwupdmgr                                      mount.nfs4                                    selabel_lookup_best_match
+abrt-action-analyze-backtrace                 fwupdtool                                     mount.ntfs                                    selabel_partial_match
+abrt-action-analyze-c                         fwupdtpmevlog                                 mount.ntfs-3g                                 select
+abrt-action-analyze-ccpp-local                g++                                           mount.ntfs-fuse                               selinux_check_access
+abrt-action-analyze-core                      g13                                           mountpoint                                    selinuxconlist
+abrt-action-analyze-java                      g13-syshelp                                   mountstats                                    selinuxdefcon
+abrt-action-analyze-oops                      gamemoded                                     mount.zfs                                     selinuxenabled
+abrt-action-analyze-python                    gamemoderun                                   mousetweaks                                   selinuxexeccon
+abrt-action-analyze-vmcore                    gapplication                                  mp3rtp                                        semanage
+abrt-action-analyze-vulnerability             gatttool                                      mp3x                                          semodule
+abrt-action-analyze-xorg                      gawk                                          mpage                                         semodule_expand
+abrt-action-check-oops-for-alt-component      gawklibpath_append                            mpartition                                    semodule_link
+abrt-action-check-oops-for-hw-error           gawklibpath_default                           mpathconf                                     semodule_package
+abrt-action-find-bodhi-update                 gawklibpath_prepend                           mpathpersist                                  semodule_unpackage
+--More--[Kabrt-action-generate-backtrace                gawkpath_append                               mppcheck                                      sendiso
+abrt-action-generate-core-backtrace           gawkpath_default                              mpplu                                         seq
+abrt-action-install-debuginfo                 gawkpath_prepend                              mppprof                                       serdi
+abrt-action-list-dsos                         gc                                            mpris-proxy                                   serialver
+abrt-action-notify                            gcalccmd                                      mrd                                           servertool
+abrt-action-perform-ccpp-analysis             gcc                                           mren                                          _service
+abrt-action-save-package-data                 gcc-ar                                        msgattrib                                     service
+abrt-action-trim-files                        gcc-nm                                        msgcat                                        _services
+abrt-applet                                   gcc-ranlib                                    msgcmp                                        sessreg
+abrt-auto-reporting                           gcm-calibrate                                 msgcomm                                       sestatus
+abrt-bodhi                                    gcm-import                                    msgconv                                       set
+abrt-cli                                      gcm-inspect                                   msgen                                         setarch
+abrtd                                         gcm-picker                                    msgexec                                       setcap
+abrt-dbus                                     gcm-viewer                                    msgfilter                                     setcifsacl
+abrt-dump-journal-core                        gconf-merge-tree                              msgfmt                                        setenforce
+abrt-dump-journal-oops                        gconftool-2                                   msgfmt3.7.py                                  setfacl
+abrt-dump-journal-xorg                        gcore                                         msgfmt3.py                                    setfattr
+abrt-dump-oops                                gcov                                          msgfmt.py                                     setfiles
+abrt-dump-xorg                                gcov-dump                                     msggrep                                       setfont
+abrt-handle-upload                            gcov-tool                                     msginit                                       setkeycodes
+abrt-harvest-pstoreoops                       gcr-viewer                                    msgmerge                                      setleds
+abrt-harvest-vmcore                           gdb                                           msgunfmt                                      setmetamode
+abrt-merge-pstoreoops                         gdb-add-index                                 msguniq                                       setpci
+abrt-retrace-client                           gdbm_dump                                     mshortname                                    setpriv
+--More--[Kabrt-server                                   gdbm_load                                     mshowfat                                      setquota
+--More--[Kabrt-watch-log                                gdbmtool                                      mtools                                        setregdomain
+ac                                            gdbus                                         mtoolstest                                    setsebool
+accept                                        gdiffmk                                       mtr                                           setsid
+accessdb                                      gdisk                                         mtr-packet                                    setterm
+accton                                        gdk-pixbuf-query-loaders-64                   mtype                                         setup-nsssysinit
+aclocal                                       gdk-pixbuf-thumbnailer                        multipath                                     setup-nsssysinit.sh
+aclocal-1.16                                  gdm                                           multipathd                                    setvtrgb
+aconnect                                      gdmflexiserver                                mutter                                        setxkbmap
+activate-global-python-argcomplete            gdm-screenshot                                mv                                            sfdisk
+acyclic                                       gedit                                         mvxattr                                       sfdp
+adcli                                         gem                                           mxtar                                         sftp
+addftinfo                                     gencat                                        mzip                                          sfv-hash
+addgnupghome                                  gendiff                                       named-checkzone                               sg
+add.modules                                   genhomedircon                                 named-compilezone                             sgdisk
+addpart                                       genhostid                                     named-nzd2nzf                                 sgpio
+addr2line                                     genisoimage                                   namei                                         sh
+adduser                                       genl                                          nameif                                        sha1hmac
+adsl-start                                    genl-ctrl-list                                native2ascii                                  sha1sum
+adsl-stop                                     genrandom                                     nautilus                                      sha224hmac
+afs5log                                       geoiplookup                                   nautilus-autorun-software                     sha224sum
+agetty                                        geoiplookup6                                  nautilus-sendto                               sha256hmac
+alias                                         geqn                                          nc                                            sha256sum
+_allowed_groups                               getcap                                        ncat                                          sha384hmac
+_allowed_users                                getcifsacl                                    _ncpus                                        sha384sum
+--More--[Kalsactl                                       _get_comp_words_by_ref                        ncurses6-config                               sha512hmac
+--More--[Kalsa-info.sh                                  getconf                                       ncursesw6-config                              sha512sum
+alsaloop                                      _get_cword                                    ndctl                                         sharesec
+alsamixer                                     __get_cword_at_cursor_by_ref                  ndptool                                       sheep
+alsatplg                                      getenforce                                    neato                                         sheepfs
+alsaunmute                                    getent                                        needs-restarting                              _shells
+alternatives                                  getfacl                                       neqn                                          shepherd
+amidi                                         getfattr                                      net-snmp-config                               shift
+amixer                                        _get_first_arg                                net-snmp-config-x86_64                        shopt
+amuFormat.sh                                  gethostip                                     netstat                                       showconsolefont
+anaconda                                      getkeycodes                                   networkctl                                    showkey
+anaconda-cleanup                              getopt                                        NetworkManager                                showmount
+anaconda-disable-nm-ibft-plugin               getopts                                       newgidmap                                     showrgb
+anacron                                       getpcaps                                      newgrp                                        shred
+analog                                        _get_pword                                    newuidmap                                     shuf
+apachectl                                     getsebool                                     newusers                                      shutdown
+aplay                                         gettext                                       nf-ct-add                                     _signals
+aplaymidi                                     gettext.sh                                    nf-ct-events                                  simple-scan
+appletviewer                                  ghostscript                                   nf-ct-list                                    simpprof
+applycal                                      _gids                                         nf-exp-add                                    size
+applydeltarpm                                 gindxbib                                      nf-exp-delete                                 __SIZE
+applygnupgdefaults                            gio                                           nf-exp-list                                   skdump
+appstream-compose                             gio-launch-desktop                            nf-log                                        skill
+appstream-util                                gio-querymodules-64                           nf-monitor                                    skivi
+apropos                                       git                                           nf-queue                                      sktest
+--More--[Kapropos.man-db                                gitk                                          nfsconf                                       slabtop
+ar                                            git-receive-pack                              nfsconvert                                    slattach
+arch                                          git-shell                                     nfsdcld                                       __SLAVEURL
+arecord                                       git-upload-archive                            nfsdclddb                                     sleep
+arecordmidi                                   git-upload-pack                               nfsdclnts                                     slirp4netns
+arp                                           gjs                                           nfsdcltrack                                   smbcacls
+arpaname                                      gjs-console                                   nfsidmap                                      smbclient
+arpd                                          gkbd-keyboard-display                         nfsiostat                                     smbcquotas
+arping                                        glib-compile-schemas                          nfsref                                        smbget
+as                                            glookbib                                      nfsstat                                       smbinfo
+aseqdump                                      gluster                                       nft                                           smbspool
+aseqnet                                       _gluster_completion                           ngettext                                      smbtar
+aserver                                       _gluster_does_match                           nice                                          smbtree
+asn1Coding                                    _gluster_form_list                            nisdomainname                                 sm-notify
+asn1Decoding                                  glusterfs                                     nl                                            sndfile-resample
+asn1Parser                                    glusterfsd                                    nl-addr-add                                   snice
+at                                            _gluster_goto_child                           nl-addr-delete                                soelim
+atd                                           _gluster_goto_end                             nl-addr-list                                  soelim.groff
+atq                                           _gluster_handle_list                          nl-class-add                                  soffice
+atrm                                          _gluster_parse                                nl-class-delete                               sordi
+atrun                                         _gluster_pop                                  nl-classid-lookup                             sord_validate
+attr                                          _gluster_push                                 nl-class-list                                 sort
+audit2allow                                   _gluster_throw                                nl-cls-add                                    sosreport
+audit2why                                     glxgears                                      nl-cls-delete                                 sotruss
+--More--[K> d() == reflect.Map {
+bash: syntax error near unexpected token `d'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ resultRecord := map[string]interface{}{}
+bash: resultRecord: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ record := v.(map[interface{}]interface{})
+bash: syntax error near unexpected token `('
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ for k, recordValue := range record {
+bash: syntax error near unexpected token `recordValue'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ resultRecord[k.(string)] = recordValue
+bash: resultRecord[k.(string)]: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ }
+bash: syntax error near unexpected token `}'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ result.Record }[K
+bash: syntax error near unexpected token `}'
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ ^C
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ reset make[K[K[K[K&& mak[K[K[Kgo test
+c]104[!p[?3;4l[4l>[?69l# github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentbit/luaunittest
+luaunittest/lua_unittest_framework.go:93:22: invalid indirect of Record(resultRecord) (type Record)
+FAIL	github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentbit [build failed]
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ reset && go test
+c]104[!p[?3;4l[4l>[?69lRunning Suite: Fluentbit Generator Suite
+========================================
+Random Seed: [1m1607713284[0m
+Will run [1m12[0m of [1m12[0m specs
+
+[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m[32m•[0m
+[1m[32mRan 12 of 12 Specs in 0.002 seconds[0m
+[1m[32mSUCCESS![0m -- [32m[1m12 Passed[0m | [91m[1m0 Failed[0m | [33m[1m0 Pending[0m | [36m[1m0 Skipped[0m
+PASS
+ok  	github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentbit	0.023s
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ ^C[K[Kgo [K[K[Kreset && mak[K[K[Kgo test 
+
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbitbash: eset: command not found...
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ 
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ 
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ 
+]0;jeff.cantrill@decker:~/git/cluster-logging-operator/pkg/generators/forwarding/fluentbit[jeff.cantrill@decker fluentbit]$ exit
+exit
+
+Script done on 2020-12-11 14:02:26-05:00 [COMMAND_EXIT_CODE="127"]

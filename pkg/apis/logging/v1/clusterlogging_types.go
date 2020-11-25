@@ -520,7 +520,8 @@ const (
 type LogCollectionType string
 
 const (
-	LogCollectionTypeFluentd LogCollectionType = "fluentd"
+	LogCollectionTypeFluentd   LogCollectionType = "fluentd"
+	LogCollectionTypeFluentbit LogCollectionType = "fluentbit"
 )
 
 type EventCollectionType string

@@ -25,6 +25,8 @@ require (
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rogpeppe/go-internal v1.5.2 // indirect
 	github.com/spf13/pflag v1.0.5
+	github.com/yuin/gluamapper v0.0.0-20150323120927-d836955830e7
+	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da
 	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/crypto v0.0.0-20200602180216-279210d13fed // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208

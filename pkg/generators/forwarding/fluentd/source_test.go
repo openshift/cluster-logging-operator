@@ -12,8 +12,9 @@ var _ = Describe("generating source", func() {
 
 	var (
 		generator *ConfigGenerator
-		err       error
-		results   []string
+
+		err     error
+		results []string
 	)
 
 	BeforeEach(func() {
@@ -21,15 +22,16 @@ var _ = Describe("generating source", func() {
 		Expect(err).To(BeNil())
 	})
 
-	Context("for only logs.app source", func() {
-		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication))
-			Expect(err).To(BeNil())
-			Expect(len(results) == 1).To(BeTrue())
-		})
+	Context("#GenerateSource", func() {
+		Context("for only application source", func() {
+			BeforeEach(func() {
+				results, err = generator.GenerateSources(sets.NewString(logging.InputNameApplication))
+				Expect(err).To(BeNil())
+				Expect(len(results) == 1).To(BeTrue())
+			})
 
-		It("should produce a container config", func() {
-			Expect(results[0]).To(EqualTrimLines(`# container logs
+			It("should produce a container config", func() {
+				Expect(results[0]).To(EqualTrimLines(`# container logs
 		  <source>
 			@type tail
 			@id container-input
@@ -57,12 +59,13 @@ var _ = Describe("generating source", func() {
 			</parse>
 		  </source>
 		  `))
+			})
 		})
 	})
 
-	Context("for only logs.infra source", func() {
+	Context("for only infra source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure))
+			results, err = generator.GenerateSources(sets.NewString(logging.InputNameInfrastructure))
 			Expect(err).To(BeNil())
 			Expect(len(results) == 2).To(BeTrue())
 		})
@@ -94,42 +97,43 @@ var _ = Describe("generating source", func() {
 			</source>
 		  `))
 		})
-		It("should produce a source container config", func() {
+
+		It("should produce an infra container config", func() {
 			Expect(results[1]).To(EqualTrimLines(`
 			# container logs
 			<source>
-			  @type tail
-			  @id container-input
-			  path "/var/log/containers/*.log"
-			  exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
-			  pos_file "/var/log/es-containers.log.pos"
-			  refresh_interval 5
-			  rotate_wait 5
-			  tag kubernetes.*
-			  read_from_head "true"
-			  @label @MEASURE
-			  <parse>
-				@type multi_format
-				<pattern>
-				  format json
+			@type tail
+			@id container-input
+			path "/var/log/containers/*.log"
+			exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+			pos_file "/var/log/es-containers.log.pos"
+			refresh_interval 5
+			rotate_wait 5
+			tag kubernetes.*
+			read_from_head "true"
+			@label @MEASURE
+			<parse>
+			@type multi_format
+			<pattern>
+			format json
 				  time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
 				  keep_time_key true
-				</pattern>
-				<pattern>
+				  </pattern>
+				  <pattern>
 				  format regexp
 				  expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
 				  time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
 				  keep_time_key true
-				</pattern>
-			  </parse>
-			</source>
-		  `))
+				  </pattern>
+				  </parse>
+				  </source>
+				  `))
 		})
 	})
 
-	Context("for only logs.audit source", func() {
+	Context("for only audit source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit))
+			results, err = generator.GenerateSources(sets.NewString(logging.InputNameAudit))
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(3))
 		})
@@ -191,7 +195,7 @@ var _ = Describe("generating source", func() {
 	Context("for all log sources", func() {
 
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit))
+			results, err = generator.GenerateSources(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit))
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(5))
 		})

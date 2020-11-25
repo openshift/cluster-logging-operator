@@ -21,6 +21,7 @@ export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not 
 export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+IMAGE_FLUENTBIT?=quay.io/jcantril/fluent-bit:v1.5.2-rh
 REPLICAS?=0
 
 .PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
@@ -71,6 +72,7 @@ run:
 	@mkdir -p $(CURDIR)/tmp
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	IMAGE_FLUENTBIT=$(IMAGE_FLUENTBIT) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \

@@ -169,18 +169,23 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorConfigMap() er
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorSecret() error {
-
-	curatorSecret := NewSecret(
-		"curator",
-		clusterRequest.Cluster.Namespace,
-		map[string][]byte{
+	var secrets map[string][]byte
+	_ = Synchronize(func() error {
+		secrets = map[string][]byte{
 			"ca":       utils.GetWorkingDirFileContents("ca.crt"),
 			"key":      utils.GetWorkingDirFileContents("system.logging.curator.key"),
 			"cert":     utils.GetWorkingDirFileContents("system.logging.curator.crt"),
 			"ops-ca":   utils.GetWorkingDirFileContents("ca.crt"),
 			"ops-key":  utils.GetWorkingDirFileContents("system.logging.curator.key"),
 			"ops-cert": utils.GetWorkingDirFileContents("system.logging.curator.crt"),
-		})
+		}
+		return nil
+	})
+	curatorSecret := NewSecret(
+		"curator",
+		clusterRequest.Cluster.Namespace,
+		secrets,
+	)
 
 	utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(clusterRequest.Cluster))
 

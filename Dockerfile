@@ -22,6 +22,7 @@ FROM registry.svc.ci.openshift.org/ocp/4.6:cli as origincli
 FROM registry.svc.ci.openshift.org/ocp/4.6:base
 RUN INSTALL_PKGS=" \
       openssl \
+      file \
       rsync \
       " && \
     yum install -y $INSTALL_PKGS && \

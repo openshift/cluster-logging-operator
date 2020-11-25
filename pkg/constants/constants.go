@@ -24,6 +24,9 @@ const (
 	LogStoreURL         = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
 	MasterCASecretName  = "master-certs"
 	CollectorSecretName = "fluentd"
+
+	/* #nosec - suppressing rule G101 */
+	KibanaSessionSecretName = "kibana-session-secret"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

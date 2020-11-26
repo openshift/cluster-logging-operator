@@ -50,14 +50,19 @@ echo "Gathering data for collection component"
 mkdir -p $collector_folder
 
 echo "-- Retrieving configmaps"
-oc -n $NAMESPACE extract configmap/fluentd --to=$collector_folder
-oc -n $NAMESPACE extract configmap/secure-forward --to=$collector_folder
+mkdir -p $collector_folder/cm/fluentd
+oc -n $NAMESPACE extract configmap/fluentd --to=$collector_folder/cm/fluentd
+mkdir -p $collector_folder/cm/secure-forward
+oc -n $NAMESPACE extract configmap/secure-forward --to=$collector_folder/cm/secure-forward
+mkdir -p $collector_folder/cm/syslog
+oc -n $NAMESPACE extract configmap/syslog --to=$collector_folder/cm/syslog
 
 echo "-- Checking Collector health"
 pods="$(oc -n $NAMESPACE get pods -l logging-infra=fluentd -o jsonpath='{.items[*].metadata.name}')"
 for pod in $pods
 do
     echo "---- Collector pod: $pod"
+    oc -n $NAMESPACE describe pod/$pod > $collector_folder/$pod.describe 2>&1
     get_env $pod $collector_folder "$NAMESPACE"
     check_collector_connectivity $pod
     check_collector_persistence $pod

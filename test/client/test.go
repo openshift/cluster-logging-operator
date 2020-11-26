@@ -31,5 +31,10 @@ func NewTest() *Test {
 func (t *Test) Close() {
 	if !ginkgo.CurrentGinkgoTestDescription().Failed {
 		_ = t.Remove(t.NS)
+	} else {
+		fmt.Printf("\n\n============\n")
+		fmt.Printf("Not removing functional test namespace since test failed. Run \"oc delete ns %s\" to delete namespace manually\n", t.NS.Name)
+		fmt.Printf("To delete all lingering functional test namespaces, run \"oc delete ns -ltest-client=true\"\n")
+		fmt.Printf("============\n\n")
 	}
 }

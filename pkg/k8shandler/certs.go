@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	
+
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 )
@@ -95,6 +95,14 @@ var secrets = map[string]*certSecret{
 	},
 }
 
+func (lhs *certificate) equals(rhs *certificate) bool {
+	return bytes.Compare(lhs.cert, rhs.cert) == 0 && bytes.Compare(lhs.key, rhs.key) == 0
+}
+
+func (lhs *certCA) equals(rhs *certCA) bool {
+	return lhs.certificate.equals(&rhs.certificate) && lhs.serial.Cmp(&rhs.serial) == 0
+}
+
 func pemEncodePrivateKey(privKey *rsa.PrivateKey) ([]byte, error) {
 	pemBuffer := &bytes.Buffer{}
 	if err := pem.Encode(pemBuffer, &pem.Block{
@@ -134,8 +142,42 @@ func certHasExpired(cert *x509.Certificate) bool {
 	return time.Now().After(cert.NotAfter)
 }
 
-func genCA() {
-
+func genCA() ([]byte, []byte, []byte, error) {
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, rsaKeyLength)
+	if err != nil {
+		return nil, nil,nil, err
+	}
+	caPubKeySHA1 := sha1.Sum(x509.MarshalPKCS1PublicKey(&caPrivKey.PublicKey))
+	serial := big.NewInt(0)
+	ca := &x509.Certificate{
+		SerialNumber:          serial,
+		SignatureAlgorithm:    x509.SHA512WithRSA,
+		Subject:               pkix.Name{CommonName: caCN},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(caNotAfterYears, 0, 0),
+		IsCA:                  true,
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+		SubjectKeyId:          caPubKeySHA1[:],
+		AuthorityKeyId:        caPubKeySHA1[:],
+	}
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	if err != nil {
+		return nil, nil,nil, err
+	}
+	caPEMBytes, err := pemEncodeCert(caBytes)
+	if err != nil {
+		return nil, nil,nil, err
+	}
+	keyPEMBytes, err := pemEncodePrivateKey(caPrivKey)
+	if err != nil {
+		return nil, nil,nil, err
+	}
+	serialBytes, err := serial.MarshalText()
+	if err != nil {
+		return nil, nil,nil, err
+	}
+	return caPEMBytes, keyPEMBytes, serialBytes, nil
 }
 
 func validateCA(x509Cert *x509.Certificate, rsaPrivKey *rsa.PrivateKey) error {
@@ -161,13 +203,135 @@ func validateCA(x509Cert *x509.Certificate, rsaPrivKey *rsa.PrivateKey) error {
 	return nil
 }
 
+func validateCASecret(secret *core.Secret) (*certCA, error) {
+	var x509Cert *x509.Certificate
+	var err error
+	certBytes, cert_ok := secret.Data[caCertName]
+	if cert_ok {
+		if x509Cert, err = pemDecodeCert(certBytes); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf(`Missing ` + caCertName + ` key from secret ` + caSecretName)
+	}
+	var rsaKey *rsa.PrivateKey
+	keyBytes, key_ok := secret.Data[caKeyName]
+	if key_ok {
+		if rsaKey, err = pemDecodePrivateKey(keyBytes); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf(`Missing ` + caKeyName + ` key from secret ` + caSecretName)
+	}
+	var serial big.Int
+	serialBytes, serial_ok := secret.Data[caSerialName]
+	if serial_ok {
+		if err = serial.UnmarshalText(serialBytes); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf(`Missing ` + caSerialName + ` key from secret ` + caSecretName)
+	}
+	if err = validateCA(x509Cert, rsaKey); err != nil {
+		return nil, err
+	}
+	return &certCA{
+		certificate{
+			certBytes,
+			keyBytes,
+			x509Cert,
+			rsaKey,
+		},
+		serial,
+	}, nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) newCertSecret(name string) *core.Secret {
+	secret := NewSecret(
+		name,
+		clusterRequest.Cluster.Namespace,
+		map[string][]byte{},
+	)
+	utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.Cluster))
+	return secret
+}
+
 func (clusterRequest *ClusterLoggingRequest) populateCA() error {
+	secret, err := clusterRequest.GetSecret(caSecretName)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			secret = clusterRequest.newCertSecret(caSecretName)
+			var certBytes, keyBytes, serialBytes []byte
+			if ca != nil {
+				certBytes = ca.cert
+				keyBytes = ca.key
+				serialBytes, err := ca.serial.MarshalText()
+				if err != nil {
+					return err
+				}
+			} else {
+				certBytes, keyBytes, serialBytes, err = genCA()
+				if err != nil {
+					return err
+				}
+				
+			}
+			secret.Data[caCertName] = certBytes
+			secret.Data[caKeyName] = keyBytes
+			secret.Data[caSerialName] = serialBytes
+			if err = clusterRequest.Update(secret); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	} else {
+		if ca != nil {
+			tempCA, err := validateCASecret(secret)
+			if err != nil {
+				secret = clusterRequest.newCertSecret(caSecretName)
+				secret.Data[caCertName] = ca.cert
+				secret.Data[caKeyName] = ca.key
+				secret.Data[caSerialName] = ca.serial.MarshalText()
+				if err = clusterRequest.Update(secret); err != nil {
+					return err
+				}
+			} else {
+				if !ca.equals(tempCA) {
+					secret = clusterRequest.newCertSecret(caSecretName)
+					secret.Data[caCertName] = ca.cert
+					secret.Data[caKeyName] = ca.key
+					secret.Data[caSerialName] = ca.serial.MarshalText()
+					if err = clusterRequest.Update(secret); err != nil {
+						return err
+					}	
+				}
+			}
+		} else {
+			ca, err := validateCASecret(secret)
+			if err != nil {
+				caPEMBytes, keyPEMBytes, serialBytes, err := genCA()
+				if err != nil {
+					return err
+				}
+				secret.Data[caCertName] = caPEMBytes
+				secret.Data[caKeyName] = keyPEMBytes
+				secret.Data[caSerialName] = serialBytes
+				if err = clusterRequest.Update(secret); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+
+/*
 	if ca != nil {
 		return nil
 	}
 	secret, err := clusterRequest.GetSecret(caSecretName)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if errors.IsNotFound(err) {			
 			secret = NewSecret(
 				caSecretName,
 				clusterRequest.Cluster.Namespace,
@@ -252,6 +416,7 @@ func (clusterRequest *ClusterLoggingRequest) populateCA() error {
 		serial,
 	}
 	return nil
+*/
 }
 
 func (clusterRequest *ClusterLoggingRequest) checkCA(caCert []byte) ([]byte, error) {
@@ -309,27 +474,24 @@ func handleSessionSecret(secret *core.Secret, sessionSecretName string) (dirty b
 	// TODO syedriko: when does this need to be regen'd?
 	const lenChars = 32
 	const lenBytes = lenChars / 2
-	sessionSecretBytes := make([]byte, lenBytes)
-	_, err = rand.Read(sessionSecretBytes)
+	var sessionSecretBytes [lenBytes]byte
+	sessionSecretBytesSlice := sessionSecretBytes[:]
+	_, err = rand.Read(sessionSecretBytesSlice)
 	if err != nil {
 		return
 	}
-	sessionSecretChars := make([]byte, lenChars)
-	hex.Encode(sessionSecretChars, sessionSecretBytes)
-	secret.Data[sessionSecretName] = sessionSecretChars
+	var sessionSecretChars [lenChars]byte
+	sessionSecretCharsSlice := sessionSecretChars[:]
+	hex.Encode(sessionSecretCharsSlice, sessionSecretBytesSlice)
+	secret.Data[sessionSecretName] = sessionSecretCharsSlice
 	return true, nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) ReconcileCertSecret(secretName string) (err error) {
+func (clusterRequest *ClusterLoggingRequest) ReconcileCertSecret(secretName string) error {
 	secret, err := clusterRequest.GetSecret(secretName)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			secret = NewSecret(
-				secretName,
-				clusterRequest.Cluster.Namespace,
-				map[string][]byte{},
-			)
-			utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.Cluster))
+		if errors.IsNotFound(err) {			
+			secret = clusterRequest.newCertSecret(secretName)
 		} else {
 			return err
 		}

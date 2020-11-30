@@ -22,22 +22,22 @@ func Synchronize(action func() error) error {
 	return action()
 }
 
-func (clusterRequest *ClusterLoggingRequest) extractMasterCerts() (err error) {
+func (clusterRequest *ClusterLoggingRequest) extractMasterCerts() (extracted bool, err error) {
 	secret, err := clusterRequest.GetSecret(constants.MasterCASecretName)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			return nil
+			return false, nil
 		}
-		return fmt.Errorf("Unable to get secret %s: %v", constants.MasterCASecretName, err)
+		return false, fmt.Errorf("Unable to get secret %s: %v", constants.MasterCASecretName, err)
 	}
 	workDir := utils.GetWorkingDir()
 	for name, value := range secret.Data {
 		if err != utils.WriteToWorkingDirFile(path.Join(workDir, name), value) {
-			return err
+			return false, err
 		}
 	}
 
-	return nil
+	return true, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) writeSecret() (err error) {
@@ -76,8 +76,9 @@ func loadFilesFromWorkingDir() (map[string][]byte, error) {
 
 //CreateOrUpdateCertificates for a cluster logging instance
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err error) {
-	return Synchronize(func() error {
-		if err = clusterRequest.extractMasterCerts(); err != nil {
+	return Syncronize(func() error {
+		var extracted bool
+		if extracted, err = clusterRequest.extractMasterCerts(); err != nil {
 			fmt.Printf("Error %v", err)
 			return err
 		}
@@ -88,7 +89,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 			return fmt.Errorf("Error running script: %v", err)
 		}
 		logger.Tracef("Writing secret updated: %v", updated)
-		if updated {
+		if !extracted || updated {
 			if err = clusterRequest.writeSecret(); err != nil {
 				return err
 			}

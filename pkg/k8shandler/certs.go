@@ -40,7 +40,7 @@ type certificate struct {
 
 type certCA struct {
 	certificate
-	serial big.Int
+	serial *big.Int
 }
 
 const rsaKeyLength = 4096
@@ -51,7 +51,7 @@ const caSerialName = `serial`
 const caCN = `openshift-cluster-logging-signer`
 const caNotAfterYears = 5
 
-var ca *certCA
+var cloCA *certCA
 var sessionSecret = `session-secret`
 var certs map[string]certificate
 var secrets = map[string]*certSecret{
@@ -100,7 +100,7 @@ func (lhs *certificate) equals(rhs *certificate) bool {
 }
 
 func (lhs *certCA) equals(rhs *certCA) bool {
-	return lhs.certificate.equals(&rhs.certificate) && lhs.serial.Cmp(&rhs.serial) == 0
+	return lhs.certificate.equals(&rhs.certificate) && lhs.serial.Cmp(rhs.serial) == 0
 }
 
 func pemEncodePrivateKey(privKey *rsa.PrivateKey) ([]byte, error) {
@@ -142,10 +142,10 @@ func certHasExpired(cert *x509.Certificate) bool {
 	return time.Now().After(cert.NotAfter)
 }
 
-func genCA() ([]byte, []byte, []byte, error) {
+func genCA() (*certCA, error) {
 	caPrivKey, err := rsa.GenerateKey(rand.Reader, rsaKeyLength)
 	if err != nil {
-		return nil, nil,nil, err
+		return nil, err
 	}
 	caPubKeySHA1 := sha1.Sum(x509.MarshalPKCS1PublicKey(&caPrivKey.PublicKey))
 	serial := big.NewInt(0)
@@ -163,21 +163,25 @@ func genCA() ([]byte, []byte, []byte, error) {
 	}
 	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
 	if err != nil {
-		return nil, nil,nil, err
+		return nil, err
 	}
 	caPEMBytes, err := pemEncodeCert(caBytes)
 	if err != nil {
-		return nil, nil,nil, err
+		return nil, err
 	}
 	keyPEMBytes, err := pemEncodePrivateKey(caPrivKey)
 	if err != nil {
-		return nil, nil,nil, err
+		return nil, err
 	}
-	serialBytes, err := serial.MarshalText()
-	if err != nil {
-		return nil, nil,nil, err
-	}
-	return caPEMBytes, keyPEMBytes, serialBytes, nil
+	return &certCA{
+		certificate{
+			caPEMBytes,
+			keyPEMBytes,
+			ca,
+			caPrivKey,
+		},
+		serial,
+	}, nil
 }
 
 func validateCA(x509Cert *x509.Certificate, rsaPrivKey *rsa.PrivateKey) error {
@@ -223,7 +227,7 @@ func validateCASecret(secret *core.Secret) (*certCA, error) {
 	} else {
 		return nil, fmt.Errorf(`Missing ` + caKeyName + ` key from secret ` + caSecretName)
 	}
-	var serial big.Int
+	var serial *big.Int
 	serialBytes, serial_ok := secret.Data[caSerialName]
 	if serial_ok {
 		if err = serial.UnmarshalText(serialBytes); err != nil {
@@ -256,177 +260,86 @@ func (clusterRequest *ClusterLoggingRequest) newCertSecret(name string) *core.Se
 	return secret
 }
 
+func (clusterRequest *ClusterLoggingRequest) populateCASecret(secret *core.Secret) (err error) {
+	secret.Data[caCertName] = cloCA.cert
+	secret.Data[caKeyName] = cloCA.key
+	if secret.Data[caSerialName], err = cloCA.serial.MarshalText(); err != nil {
+		return err
+	}
+	if err = clusterRequest.Update(secret); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (clusterRequest *ClusterLoggingRequest) populateCA() error {
 	secret, err := clusterRequest.GetSecret(caSecretName)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			// the CA secret is not there
 			secret = clusterRequest.newCertSecret(caSecretName)
-			var certBytes, keyBytes, serialBytes []byte
-			if ca != nil {
-				certBytes = ca.cert
-				keyBytes = ca.key
-				serialBytes, err := ca.serial.MarshalText()
-				if err != nil {
+			if cloCA == nil {
+				// no CLO CA, generate it
+				if cloCA, err = genCA(); err != nil {
 					return err
 				}
-			} else {
-				certBytes, keyBytes, serialBytes, err = genCA()
-				if err != nil {
-					return err
-				}
-				
 			}
-			secret.Data[caCertName] = certBytes
-			secret.Data[caKeyName] = keyBytes
-			secret.Data[caSerialName] = serialBytes
-			if err = clusterRequest.Update(secret); err != nil {
+			// populate the CA secret with the CLO CA
+			if err = clusterRequest.populateCASecret(secret); err != nil {
 				return err
 			}
 		} else {
+			// unable to get CA secret for reasons other than NotFound
 			return err
 		}
 	} else {
-		if ca != nil {
+		// found CA secret
+		if cloCA != nil {
+			// CLO has CA
 			tempCA, err := validateCASecret(secret)
 			if err != nil {
+				// invalid CA secret, populate CA secret from CLO CA
 				secret = clusterRequest.newCertSecret(caSecretName)
-				secret.Data[caCertName] = ca.cert
-				secret.Data[caKeyName] = ca.key
-				secret.Data[caSerialName] = ca.serial.MarshalText()
-				if err = clusterRequest.Update(secret); err != nil {
+				if err = clusterRequest.populateCASecret(secret); err != nil {
 					return err
 				}
 			} else {
-				if !ca.equals(tempCA) {
+				// valid CA secret, check if it's the same as CLO CA
+				if !cloCA.equals(tempCA) {
+					// it's not, populate the secret from CLO CA
 					secret = clusterRequest.newCertSecret(caSecretName)
-					secret.Data[caCertName] = ca.cert
-					secret.Data[caKeyName] = ca.key
-					secret.Data[caSerialName] = ca.serial.MarshalText()
-					if err = clusterRequest.Update(secret); err != nil {
+					if err = clusterRequest.populateCASecret(secret); err != nil {
 						return err
-					}	
+					}
+				} else {
+					// CLO CA is the same as what's in the CA secret, do nothing
 				}
 			}
 		} else {
-			ca, err := validateCASecret(secret)
+			// no CLO CA, populate CLO CA from the CA secret if it is valid
+			cloCA, err = validateCASecret(secret)
 			if err != nil {
-				caPEMBytes, keyPEMBytes, serialBytes, err := genCA()
-				if err != nil {
+				// generate new CLO CA and populate the CA secret with it
+				if cloCA, err = genCA(); err != nil {
 					return err
 				}
-				secret.Data[caCertName] = caPEMBytes
-				secret.Data[caKeyName] = keyPEMBytes
-				secret.Data[caSerialName] = serialBytes
-				if err = clusterRequest.Update(secret); err != nil {
+				if err = clusterRequest.populateCASecret(secret); err != nil {
 					return err
 				}
 			}
 		}
 	}
 	return nil
-
-/*
-	if ca != nil {
-		return nil
-	}
-	secret, err := clusterRequest.GetSecret(caSecretName)
-	if err != nil {
-		if errors.IsNotFound(err) {			
-			secret = NewSecret(
-				caSecretName,
-				clusterRequest.Cluster.Namespace,
-				map[string][]byte{},
-			)
-			utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.Cluster))
-			caPrivKey, err := rsa.GenerateKey(rand.Reader, rsaKeyLength)
-			if err != nil {
-				return err
-			}
-			caPubKeySHA1 := sha1.Sum(x509.MarshalPKCS1PublicKey(&caPrivKey.PublicKey))
-			serial := big.NewInt(0)
-			ca := &x509.Certificate{
-				SerialNumber:          serial,
-				SignatureAlgorithm:    x509.SHA512WithRSA,
-				Subject:               pkix.Name{CommonName: caCN},
-				NotBefore:             time.Now(),
-				NotAfter:              time.Now().AddDate(caNotAfterYears, 0, 0),
-				IsCA:                  true,
-				KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-				BasicConstraintsValid: true,
-				SubjectKeyId:          caPubKeySHA1[:],
-				AuthorityKeyId:        caPubKeySHA1[:],
-			}
-			caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
-			if err != nil {
-				return err
-			}
-			caPEMBytes, err := pemEncodeCert(caBytes)
-			if err != nil {
-				return err
-			}
-			keyPEMBytes, err := pemEncodePrivateKey(caPrivKey)
-			if err != nil {
-				return err
-			}
-			serialBytes, err := serial.MarshalText()
-			if err != nil {
-				return err
-			}
-			secret.Data[caCertName] = caPEMBytes
-			secret.Data[caKeyName] = keyPEMBytes
-			secret.Data[caSerialName] = serialBytes
-			if err = clusterRequest.Update(secret); err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	}
-	var x509Cert *x509.Certificate
-	certBytes, cert_ok := secret.Data[caCertName]
-	if cert_ok {
-		if x509Cert, err = pemDecodeCert(certBytes); err != nil {
-			return err
-		}
-	}
-	keyBytes, key_ok := secret.Data[caKeyName]
-	var rsaKey *rsa.PrivateKey
-	if key_ok {
-		if rsaKey, err = pemDecodePrivateKey(keyBytes); err != nil {
-			return err
-		}
-	}
-	var serial big.Int
-	serialBytes, serial_ok := secret.Data[caSerialName]
-	if serial_ok {
-		if err = serial.UnmarshalText(serialBytes); err != nil {
-			return err
-		}
-	}
-	if err = validateCA(x509Cert, rsaKey); err != nil {
-		return err
-	}
-	ca = &certCA{
-		certificate{
-			certBytes,
-			keyBytes,
-			x509Cert,
-			rsaKey,
-		},
-		serial,
-	}
-	return nil
-*/
 }
 
 func (clusterRequest *ClusterLoggingRequest) checkCA(caCert []byte) ([]byte, error) {
 	if err := clusterRequest.populateCA(); err != nil {
 		return nil, err
 	}
-	if bytes.Compare(caCert, ca.cert) == 0 {
+	if bytes.Compare(caCert, cloCA.cert) == 0 {
 		return nil, nil
 	}
-	return ca.cert, nil
+	return cloCA.cert, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) checkCertAndKey(cert []byte, key []byte, componentName string) ([]byte, []byte, error) {
@@ -442,8 +355,7 @@ func (clusterRequest *ClusterLoggingRequest) checkCertAndKey(cert []byte, key []
 func (clusterRequest *ClusterLoggingRequest) handleCAs(secret *core.Secret, keyNames []string) (dirty bool, err error) {
 	for _, keyName := range keyNames {
 		var newCACert []byte
-		newCACert, err = clusterRequest.checkCA(secret.Data[keyName])
-		if err != nil {
+		if newCACert, err = clusterRequest.checkCA(secret.Data[keyName]); err != nil {
 			return
 		}
 		if newCACert != nil {
@@ -490,28 +402,25 @@ func handleSessionSecret(secret *core.Secret, sessionSecretName string) (dirty b
 func (clusterRequest *ClusterLoggingRequest) ReconcileCertSecret(secretName string) error {
 	secret, err := clusterRequest.GetSecret(secretName)
 	if err != nil {
-		if errors.IsNotFound(err) {			
+		if errors.IsNotFound(err) {
 			secret = clusterRequest.newCertSecret(secretName)
 		} else {
 			return err
 		}
 	}
 	var dirtySecret bool
-	secretDef, ok := secrets[secretName]
-	if !ok {
+	secretDef, found := secrets[secretName]
+	if !found {
 		return fmt.Errorf("Unknown certificate secret definition: " + secretName)
 	}
-	dirtySecret, err = clusterRequest.handleCAs(secret, secretDef.caNames)
-	if err != nil {
+	if dirtySecret, err = clusterRequest.handleCAs(secret, secretDef.caNames); err != nil {
 		return err
 	}
-	dirtySecret, err = clusterRequest.handleCerts(secret, secretDef.certs)
-	if err != nil {
+	if dirtySecret, err = clusterRequest.handleCerts(secret, secretDef.certs); err != nil {
 		return err
 	}
 	if secretDef.sessionSecretName != nil {
-		dirtySecret, err = handleSessionSecret(secret, *secretDef.sessionSecretName)
-		if err != nil {
+		if dirtySecret, err = handleSessionSecret(secret, *secretDef.sessionSecretName); err != nil {
 			return err
 		}
 	}

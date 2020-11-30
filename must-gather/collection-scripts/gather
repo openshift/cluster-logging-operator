@@ -13,6 +13,13 @@ resources+=(ns/openshift-operators-redhat)
 
 # cluster-scoped resources
 resources+=(nodes)
+resources+=(pods)
+resources+=(roles)
+resources+=(rolebindings)
+resources+=(clusterroles)
+resources+=(clusterrolebindings)
+resources+=(configmaps)
+resources+=(serviceaccounts)
 resources+=(events)
 resources+=(persistentvolumes)
 

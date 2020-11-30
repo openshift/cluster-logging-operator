@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -106,6 +107,11 @@ func Exec(o runtime.Object, cmd string, args ...string) *exec.Cmd {
 	}, args...)
 
 	return exec.Command("oc", ocCmd...)
+}
+
+func ExecOc(o runtime.Object, container, cmd string, args ...string) (string, error) {
+	m := Meta(o)
+	return oc.Exec().WithNamespace(m.GetNamespace()).Pod(m.GetName()).Container(container).WithCmd(cmd, args...).Run()
 }
 
 // ExecContainer returns an `oc exec` Cmd to run cmd on o.

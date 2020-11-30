@@ -60,14 +60,14 @@ func (r *runner) runCmd() (string, error) {
 		r.Cmd.Stderr = &errbuf
 	}
 	r.Cmd.Env = []string{fmt.Sprintf("%s=%s", "KUBECONFIG", os.Getenv("KUBECONFIG"))}
-	log.Info("running: ", "command", r, "arguments", strings.Join(r.args, " "))
+	cmdargs := strings.Join(r.args, " ")
 	err := r.Cmd.Run()
 	if err != nil {
 		if r.tostdout {
 			return "", err
 		}
 		errout := strings.TrimSpace(errbuf.String())
-		log.Info("command result", "output", errout, "error", err)
+		log.Info("command result", "arguments", cmdargs, "output", errout, "error", err)
 		return errout, err
 	}
 	if r.tostdout {
@@ -75,9 +75,9 @@ func (r *runner) runCmd() (string, error) {
 	}
 	out := strings.TrimSpace(outbuf.String())
 	if len(out) > 500 {
-		log.Info("output(truncated 500/length)", "length", len(out), "result", truncateString(out, 500))
+		log.Info("output(truncated 500/length)", "arguments", cmdargs, "length", len(out), "result", truncateString(out, 500))
 	} else {
-		log.Info("output", out)
+		log.Info("command output", "arguments", cmdargs, "output", out)
 	}
 	return out, nil
 }

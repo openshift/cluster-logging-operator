@@ -469,7 +469,7 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 						{
 							Name:  "clean-fluentd-buffers",
 							Image: "centos:centos7",
-							Args:  []string{"sh", "-c", "rm -rf /fluentd-buffers/** "},
+							Args:  []string{"sh", "-c", "rm -rf /fluentd-buffers/** || rm /logs/audit/audit.log.pos || rm /logs/kube-apiserver/audit.log.pos || rm /logs/es-containers.log.pos"},
 							SecurityContext: &corev1.SecurityContext{
 								Privileged: &p,
 							},
@@ -477,6 +477,10 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 								{
 									Name:      "fluentd-buffers",
 									MountPath: "/fluentd-buffers",
+								},
+								{
+									Name:      "logs",
+									MountPath: "/logs",
 								},
 							},
 						},
@@ -498,6 +502,15 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 								},
 							},
 						},
+						{
+							Name: "logs",
+							VolumeSource: corev1.VolumeSource{
+								HostPath: &corev1.HostPathVolumeSource{
+									Path: "/var/log",
+									Type: &h,
+								},
+							},
+						},
 					},
 				},
 			},
@@ -510,7 +523,20 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	} else {
 		clolog.Info("DaemonSet to clean fluent buffers created")
 	}
-	time.Sleep(time.Second * 20)
+	_ = wait.PollImmediate(time.Second*10, time.Minute*5, func() (bool, error) {
+		desired, err2 := oc.Get().Resource("daemonset", "clean-fluentd-buffers").WithNamespace("default").OutputJsonpath("{.status.desiredNumberScheduled}").Run()
+		if err2 != nil {
+			return false, nil
+		}
+		current, err2 := oc.Get().Resource("daemonset", "clean-fluentd-buffers").WithNamespace("default").OutputJsonpath("{.status.currentNumberScheduled}").Run()
+		if err2 != nil {
+			return false, nil
+		}
+		if current == desired {
+			return true, nil
+		}
+		return false, nil
+	})
 	err = tc.KubeClient.AppsV1().DaemonSets(ds.GetNamespace()).Delete(context.TODO(), ds.GetName(), metav1.DeleteOptions{})
 	if err != nil {
 		clolog.Error(err, "Could not delete DaemonSet for cleaning fluentd buffers.")

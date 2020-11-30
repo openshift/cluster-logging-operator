@@ -13,4 +13,7 @@ oc -n "$GENERATOR_NS" get pods -o yaml > "$artifact_dir/$runtime/log-generator.p
 
 oc -n openshift-logging exec $(oc -n openshift-logging get pods -l component=syslog-receiver -o name| sed 's/pod\///') -- tail -n 20000 /var/log/infra.log > "$artifact_dir/$runtime/syslog-receiver.log" ||:
 oc -n openshift-logging exec $(oc -n openshift-logging get pods -l component=syslog-receiver -o name| sed 's/pod\///') -- cat /rsyslog/etc/rsyslog.conf > "$artifact_dir/$runtime/syslog-receiver.conf" ||:
-oc -n openshift-logging exec $(oc -n openshift-logging get pods -l component=kafka-consumer-clo-topic -o name| sed 's/pod\///') -- tail -n 5000 /shared/consumed.logs > "$artifact_dir/$runtime/kafka-consumer-clo-topic.log" ||:
+for pod in $(oc -n openshift-logging get pods -llogging-infra=kafka -oname| sed 's/pod\///')
+do
+    oc -n openshift-logging exec $pod -- tail -n 5000 /shared/consumed.logs > "$artifact_dir/$runtime/$pod.logs" ||:
+done

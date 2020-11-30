@@ -50,12 +50,12 @@ func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
 	verbosity := 9
 	if level, found := os.LookupEnv("LOG_LEVEL"); found {
 		if i, err := strconv.Atoi(level); err == nil {
-			verbosity = int(i)
+			verbosity = i
 		}
 	}
 
 	log.MustInit("fluent-ftf")
- 	log.SetLogLevel(verbosity)
+	log.SetLogLevel(verbosity)
 	t := client.NewTest()
 	testName := fmt.Sprintf("test-fluent-%d", rand.Intn(1000))
 	framework := &FluentdFunctionalFramework{
@@ -78,7 +78,8 @@ func (f *FluentdFunctionalFramework) Cleanup() {
 
 func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string) (string, error) {
 	log.V(2).Info("Running", "container", container, "cmd", cmd)
-	out, err := runtime.ExecContainer(f.pod, container, cmd[0], cmd[1:]...).CombinedOutput()
+	//out, err := runtime.ExecContainer(f.pod, container, cmd[0], cmd[1:]...).Output()
+	out, err := runtime.ExecOc(f.pod, container, cmd[0], cmd[1:]...)
 	log.V(2).Info("Exec'd", "out", string(out), "err", err)
 	return string(out), err
 }
@@ -148,7 +149,7 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 	}
 
 	log.V(2).Info("waiting for pod to be ready")
-	if err = oc.Literal().From(fmt.Sprintf("oc wait -n %s pod/%s --timeout=60s --for=condition=Ready", f.test.NS.Name, f.Name)).Output(); err != nil {
+	if err = oc.Literal().From(fmt.Sprintf("oc wait -n %s pod/%s --timeout=120s --for=condition=Ready", f.test.NS.Name, f.Name)).Output(); err != nil {
 		return err
 	}
 	if err = f.test.Client.Get(f.pod); err != nil {

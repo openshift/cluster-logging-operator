@@ -362,15 +362,21 @@ var _ = Describe("Generating fluentd config", func() {
       remove_keys req,res,msg,name,level,v,pid,err
     </filter>
   
-    <filter k8s-audit.log**>
-      @type record_transformer
-      enable_ruby
-      <record>
-        k8s_audit_level ${record['level']}
-        level info
-      </record>
-    </filter>
-  
+	<filter k8s-audit.log**>
+	  @type record_modifier
+	  <record>
+		k8s_audit_level ${record['level']}
+		level info
+	  </record>
+	</filter>
+	<filter openshift-audit.log**>
+	  @type record_modifier
+	  <record>
+		openshift_audit_level ${record['level']}
+		level info
+	  </record>
+	</filter>
+
     <filter **>
       @type viaq_data_model
       elasticsearch_index_prefix_field 'viaq_index_name'
@@ -879,11 +885,17 @@ var _ = Describe("Generating fluentd config", func() {
 				</filter>
 
 				<filter k8s-audit.log**>
-				  @type record_transformer
-				  enable_ruby
+				  @type record_modifier
 				  <record>
-				    k8s_audit_level ${record['level']}
-				    level info
+					k8s_audit_level ${record['level']}
+					level info
+				  </record>
+				</filter>
+				<filter openshift-audit.log**>
+				  @type record_modifier
+				  <record>
+					openshift_audit_level ${record['level']}
+					level info
 				  </record>
 				</filter>
 
@@ -1362,11 +1374,17 @@ var _ = Describe("Generating fluentd config", func() {
 				</filter>
 
 				<filter k8s-audit.log**>
-				  @type record_transformer
-				  enable_ruby
+				  @type record_modifier
 				  <record>
-				    k8s_audit_level ${record['level']}
-				    level info
+					k8s_audit_level ${record['level']}
+					level info
+				  </record>
+				</filter>
+				<filter openshift-audit.log**>
+				  @type record_modifier
+				  <record>
+					openshift_audit_level ${record['level']}
+					level info
 				  </record>
 				</filter>
 
@@ -2202,7 +2220,7 @@ var _ = Describe("Generating fluentd config", func() {
         preserve_json_log true
         json_fields 'log,MESSAGE'
       </filter>
-    
+
       <filter **kibana**>
         @type record_transformer
         enable_ruby
@@ -2211,15 +2229,21 @@ var _ = Describe("Generating fluentd config", func() {
         </record>
         remove_keys req,res,msg,name,level,v,pid,err
       </filter>
-    
-      <filter k8s-audit.log**>
-        @type record_transformer
-	enable_ruby
-        <record>
-          k8s_audit_level ${record['level']}
-          level info
-        </record>
-      </filter>
+
+	  <filter k8s-audit.log**>
+		@type record_modifier
+		<record>
+		  k8s_audit_level ${record['level']}
+		  level info
+		</record>
+	  </filter>
+	  <filter openshift-audit.log**>
+		@type record_modifier
+		<record>
+		  openshift_audit_level ${record['level']}
+		  level info
+		</record>
+	  </filter>
 
       <filter **>
         @type viaq_data_model

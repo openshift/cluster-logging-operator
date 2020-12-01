@@ -32,19 +32,17 @@ var (
 // Typically this is your application name.
 //
 // keyValuePairs are key/value pairs to be used with all logs in the future
-func Init(component string, keyValuePairs ...interface{}) error {
-	return InitWithOptions(component, nil, keyValuePairs...)
+func Init(component string, keyValuePairs ...interface{}) {
+	InitWithOptions(component, nil, keyValuePairs...)
 }
 
 // MustInit calls Init and panics if it returns an error
 func MustInit(component string, keyValuePairs ...interface{}) {
-	if err := Init(component, keyValuePairs...); err != nil {
-		panic(err)
-	}
+	Init(component, keyValuePairs...)
 }
 
 // InitWithOptions inits the logger with the provided opts
-func InitWithOptions(component string, opts []Option, keyValuePairs ...interface{}) error {
+func InitWithOptions(component string, opts []Option, keyValuePairs ...interface{}) {
 	mtx.Lock()
 	defer mtx.Unlock()
 
@@ -56,15 +54,11 @@ func InitWithOptions(component string, opts []Option, keyValuePairs ...interface
 
 	// don't lock because we already have a lock
 	useLogger(ll)
-
-	return nil
 }
 
 // MustInitWithOptions calls InitWithOptions and panics if an error is returned
 func MustInitWithOptions(component string, opts []Option, keyValuePairs ...interface{}) {
-	if err := InitWithOptions(component, opts, keyValuePairs...); err != nil {
-		panic(err)
-	}
+	InitWithOptions(component, opts, keyValuePairs...)
 }
 
 // GetLogger returns the root logger used for logging
@@ -126,19 +120,21 @@ func SetLogLevel(v int) {
 	logLevel = v
 }
 
-// SetOutput sets the logger output to w
-func SetOutput(w io.Writer) {
+// SetOutput sets the logger output to w if the root logger is *log.Logger
+// otherwise it returns ErrUnknownLoggerType
+func SetOutput(w io.Writer) error {
 	mtx.RLock()
 	defer mtx.RUnlock()
 	switch ll := logger.(type) {
 	case *Logger:
 		ll.SetOutput(w)
 	default:
-		Error(ErrUnknownLoggerType, "unable to set output on unknown logger",
+		return kverrors.Add(ErrUnknownLoggerType,
 			"logger_type", fmt.Sprintf("%T", logger),
 			"expected_type", fmt.Sprintf("%T", &Logger{}),
 		)
 	}
+	return nil
 }
 
 // WithName adds a new element to the logger's name.

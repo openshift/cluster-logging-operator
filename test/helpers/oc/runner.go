@@ -44,10 +44,11 @@ func (r *runner) Run() (string, error) {
 		return "composed command failed", r.err
 	}
 	r.setArgs(r.collectArgsFunc())
-	return r.runCmd()
+	// never write to this channel
+	return r.runCmd(make(chan time.Time, 1))
 }
 
-func (r *runner) runCmd() (string, error) {
+func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	// #nosec G204
 	r.Cmd = osexec.Command(CMD, r.args...)
 	var outbuf bytes.Buffer
@@ -61,7 +62,26 @@ func (r *runner) runCmd() (string, error) {
 	}
 	r.Cmd.Env = []string{fmt.Sprintf("%s=%s", "KUBECONFIG", os.Getenv("KUBECONFIG"))}
 	cmdargs := strings.Join(r.args, " ")
-	err := r.Cmd.Run()
+	err := r.Cmd.Start()
+	if err != nil {
+		log.Error(err, "could not start oc command", "arguments", cmdargs)
+		return "", err
+	}
+	// Wait for the process to finish or kill it after a timeout (whichever happens first):
+	done := make(chan error, 1)
+	go func() {
+		done <- r.Cmd.Wait()
+	}()
+	select {
+	case <-timeoutCh:
+		if err = r.Cmd.Process.Kill(); err != nil {
+			log.Error(err, "failed to kill process: ")
+		}
+	case err = <-done:
+		if err != nil {
+			log.Error(err, "oc finished with error = %v")
+		}
+	}
 	if err != nil {
 		if r.tostdout {
 			return "", err
@@ -83,10 +103,11 @@ func (r *runner) runCmd() (string, error) {
 }
 
 func (r *runner) RunFor(d time.Duration) (string, error) {
-	time.AfterFunc(d, func() {
-		_ = r.Kill()
-	})
-	return r.Run()
+	if r.err != nil {
+		return "composed command failed", r.err
+	}
+	r.setArgs(r.collectArgsFunc())
+	return r.runCmd(time.After(d))
 }
 
 func (r *runner) Kill() error {

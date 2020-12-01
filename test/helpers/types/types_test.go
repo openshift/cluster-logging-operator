@@ -1,9 +1,8 @@
-package helpers
+package types
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strings"
 	"testing"
 )
@@ -274,7 +273,7 @@ func join(log ...string) string {
 }
 
 func TestDecodeApplicationLogs(t *testing.T) {
-	var logs []types.ApplicationLog
+	var logs []ApplicationLog
 	in := join(ApplicationContainerLogStr)
 	dec := json.NewDecoder(strings.NewReader(in))
 	dec.DisallowUnknownFields()
@@ -286,7 +285,7 @@ func TestDecodeApplicationLogs(t *testing.T) {
 }
 
 func TestDecodeInfraContainerLogs(t *testing.T) {
-	var logs []types.InfraContainerLog
+	var logs []InfraContainerLog
 	in := join(InfraContainerLogStr)
 	dec := json.NewDecoder(strings.NewReader(in))
 	dec.DisallowUnknownFields()
@@ -298,7 +297,7 @@ func TestDecodeInfraContainerLogs(t *testing.T) {
 }
 
 func TestDecodeJournalLogs(t *testing.T) {
-	var logs []types.JournalLog
+	var logs []JournalLog
 	in := join(JournalLogStr)
 	dec := json.NewDecoder(strings.NewReader(in))
 	dec.DisallowUnknownFields()
@@ -311,7 +310,7 @@ func TestDecodeJournalLogs(t *testing.T) {
 
 // decode Infra Container and Journal logs together
 func TestDecodeInfraLogs(t *testing.T) {
-	var logs []types.InfraLog
+	var logs []InfraLog
 	in := join(InfraContainerLogStr, JournalLogStr)
 	dec := json.NewDecoder(strings.NewReader(in))
 	dec.DisallowUnknownFields()
@@ -326,7 +325,7 @@ func TestDecodeInfraLogs(t *testing.T) {
 }
 
 func TestDecodeLinuxAuditLogs(t *testing.T) {
-	var logs []types.LinuxAuditLog
+	var logs []LinuxAuditLog
 	in := join(LinuxAuditLogStr)
 	dec := json.NewDecoder(strings.NewReader(in))
 	dec.DisallowUnknownFields()
@@ -338,7 +337,7 @@ func TestDecodeLinuxAuditLogs(t *testing.T) {
 }
 
 func TestDecodeK8sAuditLogs(t *testing.T) {
-	var logs []types.K8sAuditLog
+	var logs []K8sAuditLog
 	in := join(K8sAuditLogStr)
 	dec := json.NewDecoder(strings.NewReader(in))
 	dec.DisallowUnknownFields()
@@ -350,7 +349,7 @@ func TestDecodeK8sAuditLogs(t *testing.T) {
 }
 
 func TestDecodeOpenshiftAuditLogs(t *testing.T) {
-	var logs []types.OpenshiftAuditLog
+	var logs []OpenshiftAuditLog
 	in := join(OpenshiftAuditLogStr)
 	dec := json.NewDecoder(strings.NewReader(in))
 	dec.DisallowUnknownFields()
@@ -363,7 +362,7 @@ func TestDecodeOpenshiftAuditLogs(t *testing.T) {
 
 // decode Linux, K8s, Openshift Audit logs together
 func TestDecodeAuditLogs(t *testing.T) {
-	var logs []types.AuditLog
+	var logs []AuditLog
 	in := join(
 		LinuxAuditLogStr,
 		K8sAuditLogStr,
@@ -381,7 +380,7 @@ func TestDecodeAuditLogs(t *testing.T) {
 }
 
 func TestDecodeAllLogs(t *testing.T) {
-	var logs []types.AllLog
+	var logs []AllLog
 	in := join(
 		ApplicationContainerLogStr,
 		JournalLogStr,

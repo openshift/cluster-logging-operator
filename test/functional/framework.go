@@ -80,8 +80,8 @@ func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string)
 	log.V(2).Info("Running", "container", container, "cmd", cmd)
 	//out, err := runtime.ExecContainer(f.pod, container, cmd[0], cmd[1:]...).Output()
 	out, err := runtime.ExecOc(f.pod, container, cmd[0], cmd[1:]...)
-	log.V(2).Info("Exec'd", "out", string(out), "err", err)
-	return string(out), err
+	log.V(2).Info("Exec'd", "out", out, "err", err)
+	return out, err
 }
 
 //Deploy the objects needed to functional test

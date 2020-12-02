@@ -31,11 +31,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 		cluster := clusterRequest.Cluster
 
 		if err = clusterRequest.createOrUpdateElasticsearchSecret(); err != nil {
-			return nil
+			return err
 		}
 
 		if err = clusterRequest.createOrUpdateElasticsearchCR(); err != nil {
-			return nil
+			return err
 		}
 
 		elasticsearchStatus, err := clusterRequest.getElasticsearchStatus()

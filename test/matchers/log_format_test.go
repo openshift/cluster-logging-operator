@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"time"
 )
 
 var _ = Describe("Log Format matcher tests", func() {
@@ -40,4 +41,25 @@ var _ = Describe("Log Format matcher tests", func() {
 	It("do not match wrong regex", func() {
 		Expect(types.AllLog{Message: "text"}).NotTo(FitLogFormatTemplate(types.AllLog{Message: "regex:^[0-9]*$"}))
 	})
+
+	It("match same time value", func() {
+		timestamp := "2013-03-28T14:36:03.243000+00:00"
+		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
+		Expect(types.AllLog{Timestamp: nanoTime}).To(FitLogFormatTemplate(types.AllLog{Timestamp: nanoTime}))
+	})
+
+	It("match empty time value", func() {
+		timestamp := "2013-03-28T14:36:03.243000+00:00"
+		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
+		Expect(types.AllLog{Timestamp: nanoTime}).To(FitLogFormatTemplate(types.AllLog{}))
+	})
+
+	It("do not match wrong time value", func() {
+		timestamp1 := "2013-03-28T14:36:03.243000+00:00"
+		nanoTime1, _ := time.Parse(time.RFC3339Nano, timestamp1)
+		timestamp2 := "2014-04-28T14:36:03.243000+00:00"
+		nanoTime2, _ := time.Parse(time.RFC3339Nano, timestamp2)
+		Expect(types.AllLog{Timestamp: nanoTime1}).NotTo(FitLogFormatTemplate(types.AllLog{Timestamp: nanoTime2}))
+	})
+
 })

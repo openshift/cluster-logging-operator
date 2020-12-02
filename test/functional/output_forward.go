@@ -11,13 +11,20 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
-const unsecureFluentConf = `
+const (
+	unsecureFluentConf = `
 <system>
 	log_level trace
 </system>
 <source>
 	@type forward
 </source>
+
+<filter **>
+	@type stdout
+	include_time_key true 
+</filter>
+
 <match kubernetes.**>
 	@type file
 	append true
@@ -27,10 +34,31 @@ const unsecureFluentConf = `
 		@type json
 	</format>
 </match>
-<match **>
-	@type stdout
+
+<filter linux-audit.log**>
+  @type parser
+  key_name @timestamp
+  reserve_data true
+  <parse>
+	@type regexp
+	expression (?<time>[^\]]*)
+    time_type string
+	time_key time
+    time_format %Y-%m-%dT%H:%M:%S.%N%z
+  </parse>
+</filter>
+
+<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+	@type file
+	path /tmp/audit.logs
+	append true
+	symlink_path /tmp/audit-logs
+	<format>
+		@type json
+	</format>
 </match>
 	`
+)
 
 func (f *FluentdFunctionalFramework) addForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
 	log.V(2).Info("Adding forward output", "name", output.Name)

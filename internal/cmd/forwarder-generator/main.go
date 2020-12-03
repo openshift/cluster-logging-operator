@@ -31,26 +31,23 @@ func main() {
 
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
 	includeDefaultLogStore := flag.Bool("include-default-store", true, "Include the default storage when generating the config")
+	includeLegacyForward := flag.Bool("include-legacy-forward", false, "Include the legacy forward when generating the config")
 	help := flag.Bool("help", false, "This message")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
-
-	log.V(1).Info("Args: %v", os.Args)
-
-	if *help || len(os.Args) == 0 {
+	if *help {
 		pflag.Usage()
 		os.Exit(1)
 	}
-
-	if len(os.Args) < 2 {
-		log.Info("Need to pass the logging forwarding yaml as an arg")
-		os.Exit(1)
-	}
+	log.V(1).Info("Args: %v", os.Args)
 
 	var reader func() ([]byte, error)
-	if *yamlFile != "-" {
+	switch *yamlFile {
+	case "-":
 		reader = func() ([]byte, error) { return ioutil.ReadFile(*yamlFile) }
-	} else {
+	case "":
+		reader = func() ([]byte, error) { return []byte{}, nil }
+	default:
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
 			return ioutil.ReadAll(stdin)
@@ -63,7 +60,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	generatedConfig, err := forwarder.Generate(string(content), *includeDefaultLogStore)
+	generatedConfig, err := forwarder.Generate(string(content), *includeDefaultLogStore, *includeLegacyForward)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		os.Exit(1)

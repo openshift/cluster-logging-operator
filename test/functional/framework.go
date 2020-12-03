@@ -87,7 +87,7 @@ func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string)
 func (f *FluentdFunctionalFramework) Deploy() (err error) {
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
-	if f.Conf, err = forwarder.Generate(string(clfYaml), false); err != nil {
+	if f.Conf, err = forwarder.Generate(string(clfYaml), false, false); err != nil {
 		return err
 	}
 	log.V(2).Info("Generating Certificates")

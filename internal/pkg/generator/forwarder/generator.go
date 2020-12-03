@@ -14,12 +14,11 @@ import (
 const (
 	//these are fixed at the moment
 	logCollectorType         = logging.LogCollectionTypeFluentd
-	includeLegacyForward     = false
 	includeLegacySyslog      = false
 	useOldRemoteSyslogPlugin = false
 )
 
-func Generate(clfYaml string, includeDefaultLogStore bool) (string, error) {
+func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool) (string, error) {
 
 	generator, err := forwarding.NewConfigGenerator(
 		logCollectorType,
@@ -31,9 +30,11 @@ func Generate(clfYaml string, includeDefaultLogStore bool) (string, error) {
 	}
 
 	forwarder := &logging.ClusterLogForwarder{}
-	err = yaml.Unmarshal([]byte(clfYaml), forwarder)
-	if err != nil {
-		return "", fmt.Errorf("Error Unmarshalling %q: %v", clfYaml, err)
+	if clfYaml != "" {
+		err = yaml.Unmarshal([]byte(clfYaml), forwarder)
+		if err != nil {
+			return "", fmt.Errorf("Error Unmarshalling %q: %v", clfYaml, err)
+		}
 	}
 	log.V(2).Info("Unmarshalled", "forwarder", forwarder)
 	clRequest := &k8shandler.ClusterLoggingRequest{

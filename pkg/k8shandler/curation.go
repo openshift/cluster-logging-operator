@@ -55,14 +55,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 			return fmt.Errorf("Failed to get status for Curator: %v", err)
 		}
 
-		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 
 			if !compareCuratorStatus(curatorStatus, cluster.Status.Curation.CuratorStatus) {
-				if printUpdateMessage {
-					logrus.Info("Updating status of Curator")
-					printUpdateMessage = false
-				}
 				cluster.Status.Curation.CuratorStatus = curatorStatus
 				return clusterRequest.UpdateStatus(cluster)
 			}

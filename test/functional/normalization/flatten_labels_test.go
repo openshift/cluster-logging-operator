@@ -2,13 +2,13 @@ package normalization
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
 var _ = Describe("[Normalization] Fluentd normalization", func() {
@@ -32,7 +32,7 @@ var _ = Describe("[Normalization] Fluentd normalization", func() {
 	It("should remove 'kubernetes.labels' and create 'kubernetes.flat_labels' with an array of 'kubernetes.labels'", func() {
 		raw, err := framework.ReadApplicationLogsFrom("fluentforward")
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		logs, err := helpers.ParseLogs(raw)
+		logs, err := types.ParseLogs(raw)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		//verify the new key exists
 		Expect(logs[0].Kubernetes.FlatLabels).To(Not(BeNil()), fmt.Sprintf("Expected to find the kubernetes.flat_labels key in %#v", logs[0]))

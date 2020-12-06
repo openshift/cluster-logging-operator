@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strconv"
 	"strings"
 	"time"
@@ -89,7 +90,7 @@ type ElasticLogStore struct {
 	Framework *E2ETestFramework
 }
 
-func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
+func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
 	panic("Method not implemented")
 }
 

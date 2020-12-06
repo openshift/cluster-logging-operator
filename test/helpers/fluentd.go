@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strconv"
 	"strings"
 	"time"
@@ -156,13 +157,13 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	return result, nil
 }
 
-func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
+func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
 	fl, err := fluent.logs("/tmp/app-logs", timeToWait)
 	if err != nil {
 		return nil, err
 	}
 	out := "[" + strings.TrimRight(strings.Replace(fl, "\n", ",", -1), ",") + "]"
-	return ParseLogs(out)
+	return types.ParseLogs(out)
 }
 
 func (fluent fluentReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {

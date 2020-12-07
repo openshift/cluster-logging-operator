@@ -7,10 +7,14 @@ import (
 	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -19,15 +23,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
-type certKeyPair struct {
+type compCertDef struct {
 	certName      string
 	keyName       string
 	componentName string
 }
 
-type certSecret struct {
+type certSecretDef struct {
 	caNames           []string
-	certs             []certKeyPair
+	compCertDefs      []compCertDef
 	sessionSecretName *string
 }
 
@@ -40,7 +44,14 @@ type certificate struct {
 
 type certCA struct {
 	certificate
-	serial *big.Int
+	serial     *big.Int
+	pubKeySHA1 []byte
+}
+
+type x509v3Ext struct {
+	dns []string
+	ips []net.IP
+	oid bool
 }
 
 const rsaKeyLength = 4096
@@ -50,53 +61,107 @@ const caKeyName = `ca.key`
 const caSerialName = `serial`
 const caCN = `openshift-cluster-logging-signer`
 const caNotAfterYears = 5
+const compNotAfterYears = 2
+const nsPlaceholder = `${NAMESPACE}`
 
+var bigOne = big.NewInt(1)
 var cloCA *certCA
 var sessionSecret = `session-secret`
 var certs map[string]certificate
-var secrets = map[string]*certSecret{
-	`fluentd`: &certSecret{
+var certSecretDefs = map[string]*certSecretDef{
+	`fluentd`: &certSecretDef{
 		[]string{`ca-bundle.crt`},
-		[]certKeyPair{
-			certKeyPair{`tls.crt`, `tls.key`, `system.logging.fluentd`},
+		[]compCertDef{
+			compCertDef{`tls.crt`, `tls.key`, `system.logging.fluentd`},
 		},
 		nil,
 	},
-	`elasticsearch`: &certSecret{
+	`elasticsearch`: &certSecretDef{
 		[]string{`admin-ca`},
-		[]certKeyPair{
-			certKeyPair{`admin-cert`, `admin-key`, `system.admin`},
-			certKeyPair{`logging-es.crt`, `logging-es.key`, `logging-es`},
-			certKeyPair{`elasticsearch.crt`, `elasticsearch.key`, `elasticsearch`},
+		[]compCertDef{
+			compCertDef{`admin-cert`, `admin-key`, `system.admin`},
+			compCertDef{`logging-es.crt`, `logging-es.key`, `logging-es`},
+			compCertDef{`elasticsearch.crt`, `elasticsearch.key`, `elasticsearch`},
 		},
 		nil,
 	},
-	`curator`: &certSecret{
+	`curator`: &certSecretDef{
 		[]string{`ca`, `ops-ca`},
-		[]certKeyPair{
-			certKeyPair{`cert`, `key`, `system.logging.curator`},
-			certKeyPair{`ops-cert`, `ops-key`, `system.logging.curator`},
+		[]compCertDef{
+			compCertDef{`cert`, `key`, `system.logging.curator`},
+			compCertDef{`ops-cert`, `ops-key`, `system.logging.curator`},
 		},
 		nil,
 	},
-	`kibana`: &certSecret{
+	`kibana`: &certSecretDef{
 		[]string{`ca`},
-		[]certKeyPair{
-			certKeyPair{`cert`, `key`, `system.logging.kibana`},
+		[]compCertDef{
+			compCertDef{`cert`, `key`, `system.logging.kibana`},
 		},
 		nil,
 	},
-	`kibana-proxy`: &certSecret{
+	`kibana-proxy`: &certSecretDef{
 		[]string{},
-		[]certKeyPair{
-			certKeyPair{`cert`, `key`, `kibana-internal`},
+		[]compCertDef{
+			compCertDef{`cert`, `key`, `kibana-internal`},
 		},
 		&sessionSecret,
 	},
 }
 
+var extensions = map[string]x509v3Ext{
+	`kibana-internal`: x509v3Ext{
+		[]string{`kibana`},
+		[]net.IP{},
+		false,
+	},
+	`elasticsearch`: x509v3Ext{
+		[]string{`localhost`,
+			`elasticsearch`,
+			`elasticsearch.cluster.local`,
+			`elasticsearch.` + nsPlaceholder + `.svc`,
+			`elasticsearch.` + nsPlaceholder + `.svc.cluster.local`,
+			`elasticsearch-cluster`,
+			`elasticsearch-cluster.cluster.local`,
+			`elasticsearch-cluster.` + nsPlaceholder + `.svc`,
+			`elasticsearch-cluster.` + nsPlaceholder + `.svc.cluster.local`,
+		},
+		[]net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
+		true,
+	},
+	`logging-es`: x509v3Ext{
+		[]string{`localhost`,
+			`elasticsearch`,
+			`elasticsearch.cluster.local`,
+			`elasticsearch.` + nsPlaceholder + `.svc`,
+			`elasticsearch.` + nsPlaceholder + `.svc.cluster.local`,
+		},
+		[]net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback},
+		false,
+	},
+}
+
+var extInit sync.Once
+var oidExt pkix.Extension = pkix.Extension{
+	Id: asn1.ObjectIdentifier{2, 5, 29, 17},
+	Value: func() []byte {
+		oidExtASN1Bytes, _ := asn1.Marshal([]asn1.RawValue{
+			{FullBytes: []byte{0x88, 0x05, 0x2A, 0x03, 0x04, 0x05, 0x05}},
+		})
+		return oidExtASN1Bytes
+	}(),
+}
+
+func initExtensions(ns string) {
+	for _, v := range extensions {
+		for i := range v.dns {
+			strings.ReplaceAll(v.dns[i], nsPlaceholder, ns)
+		}
+	}
+}
+
 func (lhs *certificate) equals(rhs *certificate) bool {
-	return bytes.Compare(lhs.cert, rhs.cert) == 0 && bytes.Compare(lhs.key, rhs.key) == 0
+	return bytes.Equal(lhs.cert, rhs.cert) && bytes.Equal(lhs.key, rhs.key)
 }
 
 func (lhs *certCA) equals(rhs *certCA) bool {
@@ -181,6 +246,7 @@ func genCA() (*certCA, error) {
 			caPrivKey,
 		},
 		serial,
+		caPubKeySHA1[:],
 	}, nil
 }
 
@@ -227,6 +293,7 @@ func validateCASecret(secret *core.Secret) (*certCA, error) {
 	} else {
 		return nil, fmt.Errorf(`Missing ` + caKeyName + ` key from secret ` + caSecretName)
 	}
+	pubKeySHA1 := sha1.Sum(x509.MarshalPKCS1PublicKey(&rsaKey.PublicKey))
 	var serial *big.Int
 	serialBytes, serial_ok := secret.Data[caSerialName]
 	if serial_ok {
@@ -247,6 +314,7 @@ func validateCASecret(secret *core.Secret) (*certCA, error) {
 			rsaKey,
 		},
 		serial,
+		pubKeySHA1[:],
 	}, nil
 }
 
@@ -263,9 +331,7 @@ func (clusterRequest *ClusterLoggingRequest) newCertSecret(name string) *core.Se
 func (clusterRequest *ClusterLoggingRequest) populateCASecret(secret *core.Secret) (err error) {
 	secret.Data[caCertName] = cloCA.cert
 	secret.Data[caKeyName] = cloCA.key
-	if secret.Data[caSerialName], err = cloCA.serial.MarshalText(); err != nil {
-		return err
-	}
+	secret.Data[caSerialName] = []byte(cloCA.serial.Text(10))
 	if err = clusterRequest.Update(secret); err != nil {
 		return err
 	}
@@ -336,23 +402,91 @@ func (clusterRequest *ClusterLoggingRequest) checkCA(caCert []byte) ([]byte, err
 	if err := clusterRequest.populateCA(); err != nil {
 		return nil, err
 	}
-	if bytes.Compare(caCert, cloCA.cert) == 0 {
+	if bytes.Equal(caCert, cloCA.cert) {
 		return nil, nil
 	}
 	return cloCA.cert, nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) checkCertAndKey(cert []byte, key []byte, componentName string) ([]byte, []byte, error) {
-	compCert, ok := certs[componentName]
-	if ok {
-		if bytes.Compare(cert, compCert.cert) == 0 && bytes.Compare(key, compCert.key) == 0 {
-			return nil, nil, nil
+func genCert(componentName string) (ret certificate, err error) {
+	if ret.privKey, err = rsa.GenerateKey(rand.Reader, rsaKeyLength); err != nil {
+		return
+	}
+	pubKeySHA1 := sha1.Sum(x509.MarshalPKCS1PublicKey(&ret.privKey.PublicKey))
+	ret.x509Cert = &x509.Certificate{
+		SerialNumber:       cloCA.serial.Add(cloCA.serial, bigOne),
+		SignatureAlgorithm: x509.SHA512WithRSA,
+		Subject: pkix.Name{
+			Organization:       []string{`Logging`},
+			OrganizationalUnit: []string{`OpenShift`},
+			CommonName:         componentName,
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(compNotAfterYears, 0, 0),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		BasicConstraintsValid: true,
+		SubjectKeyId:          pubKeySHA1[:],
+		AuthorityKeyId:        cloCA.pubKeySHA1[:],
+	}
+
+	ext := extensions[componentName]
+	if ext.dns != nil {
+		ret.x509Cert.DNSNames = ext.dns
+	}
+	if ext.ips != nil {
+		ret.x509Cert.IPAddresses = ext.ips
+	}
+	var certBytes []byte
+	certBytes, err = x509.CreateCertificate(rand.Reader, ret.x509Cert, cloCA.x509Cert, &ret.privKey.PublicKey, cloCA.privKey)
+	if err != nil {
+		return
+	}
+	if ext.oid {
+		ret.x509Cert, err = x509.ParseCertificate(certBytes)
+		if err != nil {
+			return
+		}
+		ret.x509Cert.ExtraExtensions = ret.x509Cert.Extensions
+		ret.x509Cert.ExtraExtensions = append(
+			ret.x509Cert.ExtraExtensions,
+			oidExt,
+		)
+		certBytes, err = x509.CreateCertificate(rand.Reader, ret.x509Cert, cloCA.x509Cert, &ret.privKey.PublicKey, cloCA.privKey)
+		if err != nil {
+			return
 		}
 	}
-	return nil, nil, nil
+	ret.cert, err = pemEncodeCert(certBytes)
+	if err != nil {
+		return
+	}
+	ret.key, err = pemEncodePrivateKey(ret.privKey)
+	if err != nil {
+		return
+	}
+	return
 }
 
-func (clusterRequest *ClusterLoggingRequest) handleCAs(secret *core.Secret, keyNames []string) (dirty bool, err error) {
+func (clusterRequest *ClusterLoggingRequest) checkCertAndKey(cert []byte, key []byte, componentName string) ([]byte, []byte, error) {
+	var compCert certificate
+	compCert, ok := certs[componentName]
+	if ok {
+		if bytes.Equal(cert, compCert.cert) && bytes.Equal(key, compCert.key) {
+			return nil, nil, nil
+		} else {
+			return compCert.cert, compCert.key, nil
+		}
+	} else {
+		compCert, err := genCert(componentName)
+		if err != nil {
+			return nil, nil, err
+		}
+		certs[componentName] = compCert
+		return compCert.cert, compCert.key, nil
+	}
+}
+
+func (clusterRequest *ClusterLoggingRequest) reconcileCAs(secret *core.Secret, keyNames []string) (dirty bool, err error) {
 	for _, keyName := range keyNames {
 		var newCACert []byte
 		if newCACert, err = clusterRequest.checkCA(secret.Data[keyName]); err != nil {
@@ -366,30 +500,29 @@ func (clusterRequest *ClusterLoggingRequest) handleCAs(secret *core.Secret, keyN
 	return
 }
 
-func (clusterRequest *ClusterLoggingRequest) handleCerts(secret *core.Secret, certs []certKeyPair) (dirty bool, err error) {
-	for _, cert := range certs {
+func (clusterRequest *ClusterLoggingRequest) reconcileCerts(secret *core.Secret, compCertDefs []compCertDef) (dirty bool, err error) {
+	for _, certDef := range compCertDefs {
 		newCert, newKey, err := clusterRequest.checkCertAndKey(
-			secret.Data[cert.certName], secret.Data[cert.keyName], cert.componentName)
+			secret.Data[certDef.certName], secret.Data[certDef.keyName], certDef.componentName)
 		if err != nil {
 			return false, err
 		}
 		if newCert != nil {
-			secret.Data[cert.certName] = newCert
-			secret.Data[cert.keyName] = newKey
+			secret.Data[certDef.certName] = newCert
+			secret.Data[certDef.keyName] = newKey
 			dirty = true
 		}
 	}
 	return
 }
 
-func handleSessionSecret(secret *core.Secret, sessionSecretName string) (dirty bool, err error) {
+func reconcileSessionSecret(secret *core.Secret, sessionSecretName string) (dirty bool, err error) {
 	// TODO syedriko: when does this need to be regen'd?
 	const lenChars = 32
 	const lenBytes = lenChars / 2
 	var sessionSecretBytes [lenBytes]byte
 	sessionSecretBytesSlice := sessionSecretBytes[:]
-	_, err = rand.Read(sessionSecretBytesSlice)
-	if err != nil {
+	if _, err = rand.Read(sessionSecretBytesSlice); err != nil {
 		return
 	}
 	var sessionSecretChars [lenChars]byte
@@ -400,6 +533,8 @@ func handleSessionSecret(secret *core.Secret, sessionSecretName string) (dirty b
 }
 
 func (clusterRequest *ClusterLoggingRequest) ReconcileCertSecret(secretName string) error {
+	extInit.Do(func() { initExtensions(clusterRequest.Cluster.Namespace) })
+
 	secret, err := clusterRequest.GetSecret(secretName)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -409,18 +544,18 @@ func (clusterRequest *ClusterLoggingRequest) ReconcileCertSecret(secretName stri
 		}
 	}
 	var dirtySecret bool
-	secretDef, found := secrets[secretName]
-	if !found {
-		return fmt.Errorf("Unknown certificate secret definition: " + secretName)
+	secretDef, defined := certSecretDefs[secretName]
+	if !defined {
+		return fmt.Errorf("Undefined certificate secret: " + secretName)
 	}
-	if dirtySecret, err = clusterRequest.handleCAs(secret, secretDef.caNames); err != nil {
+	if dirtySecret, err = clusterRequest.reconcileCAs(secret, secretDef.caNames); err != nil {
 		return err
 	}
-	if dirtySecret, err = clusterRequest.handleCerts(secret, secretDef.certs); err != nil {
+	if dirtySecret, err = clusterRequest.reconcileCerts(secret, secretDef.compCertDefs); err != nil {
 		return err
 	}
 	if secretDef.sessionSecretName != nil {
-		if dirtySecret, err = handleSessionSecret(secret, *secretDef.sessionSecretName); err != nil {
+		if dirtySecret, err = reconcileSessionSecret(secret, *secretDef.sessionSecretName); err != nil {
 			return err
 		}
 	}

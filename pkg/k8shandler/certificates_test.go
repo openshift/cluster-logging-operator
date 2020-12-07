@@ -125,6 +125,20 @@ var _ = Describe("Reconciling", func() {
 			Expect(secret).Should(ContainKeys("ca.key", "ca.crt", "ca.db", "ca.serial.txt"))
 			Expect(secret).Should(SucceedVerifyX509("ca.crt", "ca.crt", "openshift-cluster-logging-signer", nil, nil, nil))
 		})
+		It("should recreate the master-cert secret when its missing", func() {
+			//remove secret and validate
+			Expect(client.Delete(context.TODO(), masterCASecret)).Should(Succeed())
+			secret := &corev1.Secret{}
+			key := types.NamespacedName{Name: constants.MasterCASecretName, Namespace: constants.OpenshiftNS}
+			Expect(client.Get(context.TODO(), key, secret)).ShouldNot(Succeed())
+
+			//reconcile again
+			Expect(clusterRequest.CreateOrUpdateCertificates()).Should(Succeed())
+			Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
+
+			Expect(secret).Should(ContainKeys("ca.key", "ca.crt", "ca.db", "ca.serial.txt"))
+			Expect(secret).Should(SucceedVerifyX509("ca.crt", "ca.crt", "openshift-cluster-logging-signer", nil, nil, nil))
+		})
 
 		Context("for log store", func() {
 			It("should provide a X509 cert for `CN=elasticsearch`", func() {

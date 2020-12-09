@@ -69,6 +69,7 @@ var cloCA *certCA
 var cloCAMutex sync.Mutex
 var sessionSecret = `session-secret`
 var certs map[string]certificate
+var certsMutex sync.Mutex
 var certSecretDefs = map[string]*certSecretDef{
 	`fluentd`: &certSecretDef{
 		[]string{`ca-bundle.crt`},
@@ -352,7 +353,7 @@ func (clusterRequest *ClusterLoggingRequest) populateCA() error {
 			// the CA secret is not there
 			secret = clusterRequest.newCertSecret(caSecretName)
 			var cert, key, serial []byte
-			if cert, key, serial, err = func()([]byte, []byte, []byte, error) {
+			if cert, key, serial, err = func() ([]byte, []byte, []byte, error) {
 				cloCAMutex.Lock()
 				defer cloCAMutex.Unlock()
 				if cloCA == nil {
@@ -376,7 +377,7 @@ func (clusterRequest *ClusterLoggingRequest) populateCA() error {
 	} else {
 		// found CA secret
 		var cert, key, serial []byte
-		if cert, key, serial, err = func()([]byte, []byte, []byte, error) {
+		if cert, key, serial, err = func() ([]byte, []byte, []byte, error) {
 			cloCAMutex.Lock()
 			defer cloCAMutex.Unlock()
 			if cloCA != nil {
@@ -405,7 +406,7 @@ func (clusterRequest *ClusterLoggingRequest) populateCA() error {
 						return nil, nil, nil, err
 					}
 					return cloneByteSlice(cloCA.cert), cloneByteSlice(cloCA.key), []byte(cloCA.serial.Text(10)), nil
-				}	
+				}
 			}
 			return nil, nil, nil, nil
 		}(); err != nil {
@@ -483,21 +484,33 @@ func genCert(componentName string) (ret certificate, err error) {
 }
 
 func (clusterRequest *ClusterLoggingRequest) checkCertAndKey(cert []byte, key []byte, componentName string) ([]byte, []byte, error) {
+	certsMutex.Lock()
+	defer certsMutex.Unlock()
 	var compCert certificate
-	compCert, ok := certs[componentName]
-	if ok {
+	compCert, found := certs[componentName]
+	if found {
 		if bytes.Equal(cert, compCert.cert) && bytes.Equal(key, compCert.key) {
 			return nil, nil, nil
 		} else {
-			return compCert.cert, compCert.key, nil
+			return cloneByteSlice(compCert.cert), cloneByteSlice(compCert.key), nil
 		}
 	} else {
-		compCert, err := genCert(componentName)
-		if err != nil {
+		if err := func() (err error) {
+			certsMutex.Unlock()
+			defer certsMutex.Lock()
+			compCert, err = genCert(componentName)
+			return err
+		}(); err != nil {
 			return nil, nil, err
 		}
-		certs[componentName] = compCert
-		return compCert.cert, compCert.key, nil
+		compCertInMap, found := certs[componentName]
+		if found {
+			// another goroutine beat us to it, should be unlikely
+			return cloneByteSlice(compCertInMap.cert), cloneByteSlice(compCertInMap.key), nil
+		} else {
+			certs[componentName] = compCert
+			return cloneByteSlice(compCert.cert), cloneByteSlice(compCert.key), nil
+		}
 	}
 }
 

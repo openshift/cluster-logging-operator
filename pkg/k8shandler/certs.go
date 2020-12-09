@@ -66,6 +66,7 @@ const nsPlaceholder = `${NAMESPACE}`
 
 var bigOne = big.NewInt(1)
 var cloCA *certCA
+var cloCAMutex sync.Mutex
 var sessionSecret = `session-secret`
 var certs map[string]certificate
 var certSecretDefs = map[string]*certSecretDef{
@@ -158,6 +159,12 @@ func initExtensions(ns string) {
 			strings.ReplaceAll(v.dns[i], nsPlaceholder, ns)
 		}
 	}
+}
+
+func cloneByteSlice(s []byte) []byte {
+	r := make([]byte, len(s))
+	copy(r, s)
+	return r
 }
 
 func (lhs *certificate) equals(rhs *certificate) bool {
@@ -328,10 +335,10 @@ func (clusterRequest *ClusterLoggingRequest) newCertSecret(name string) *core.Se
 	return secret
 }
 
-func (clusterRequest *ClusterLoggingRequest) populateCASecret(secret *core.Secret) (err error) {
-	secret.Data[caCertName] = cloCA.cert
-	secret.Data[caKeyName] = cloCA.key
-	secret.Data[caSerialName] = []byte(cloCA.serial.Text(10))
+func (clusterRequest *ClusterLoggingRequest) populateCASecret(secret *core.Secret, cert []byte, key []byte, serial []byte) (err error) {
+	secret.Data[caCertName] = cert
+	secret.Data[caKeyName] = key
+	secret.Data[caSerialName] = serial
 	if err = clusterRequest.Update(secret); err != nil {
 		return err
 	}
@@ -344,68 +351,74 @@ func (clusterRequest *ClusterLoggingRequest) populateCA() error {
 		if errors.IsNotFound(err) {
 			// the CA secret is not there
 			secret = clusterRequest.newCertSecret(caSecretName)
-			if cloCA == nil {
-				// no CLO CA, generate it
-				if cloCA, err = genCA(); err != nil {
-					return err
+			var cert, key, serial []byte
+			if cert, key, serial, err = func()([]byte, []byte, []byte, error) {
+				cloCAMutex.Lock()
+				defer cloCAMutex.Unlock()
+				if cloCA == nil {
+					// no CLO CA, generate it
+					if cloCA, err = genCA(); err != nil {
+						return nil, nil, nil, err
+					}
 				}
+				return cloneByteSlice(cloCA.cert), cloneByteSlice(cloCA.key), []byte(cloCA.serial.Text(10)), nil
+			}(); err != nil {
+				return err
 			}
 			// populate the CA secret with the CLO CA
-			if err = clusterRequest.populateCASecret(secret); err != nil {
+			if err = clusterRequest.populateCASecret(secret, cert, key, serial); err != nil {
 				return err
 			}
 		} else {
-			// unable to get CA secret for reasons other than NotFound
+			// unable to get CA secret for reason other than NotFound
 			return err
 		}
 	} else {
 		// found CA secret
-		if cloCA != nil {
-			// CLO has CA
-			tempCA, err := validateCASecret(secret)
-			if err != nil {
-				// invalid CA secret, populate CA secret from CLO CA
-				secret = clusterRequest.newCertSecret(caSecretName)
-				if err = clusterRequest.populateCASecret(secret); err != nil {
-					return err
+		var cert, key, serial []byte
+		if cert, key, serial, err = func()([]byte, []byte, []byte, error) {
+			cloCAMutex.Lock()
+			defer cloCAMutex.Unlock()
+			if cloCA != nil {
+				// CLO has CA
+				tempCA, err := validateCASecret(secret)
+				if err != nil {
+					// invalid CA secret, populate CA secret from CLO CA
+					secret = clusterRequest.newCertSecret(caSecretName)
+					return cloneByteSlice(cloCA.cert), cloneByteSlice(cloCA.key), []byte(cloCA.serial.Text(10)), nil
+				} else {
+					// valid CA secret, check if it's the same as CLO CA
+					if !cloCA.equals(tempCA) {
+						// it's not, populate the secret from CLO CA
+						secret = clusterRequest.newCertSecret(caSecretName)
+						return cloneByteSlice(cloCA.cert), cloneByteSlice(cloCA.key), []byte(cloCA.serial.Text(10)), nil
+					} else {
+						// CLO CA is the same as what's in the CA secret, do nothing
+					}
 				}
 			} else {
-				// valid CA secret, check if it's the same as CLO CA
-				if !cloCA.equals(tempCA) {
-					// it's not, populate the secret from CLO CA
-					secret = clusterRequest.newCertSecret(caSecretName)
-					if err = clusterRequest.populateCASecret(secret); err != nil {
-						return err
+				// no CLO CA, populate CLO CA from the CA secret if it is valid
+				cloCA, err = validateCASecret(secret)
+				if err != nil {
+					// generate new CLO CA and populate the CA secret with it
+					if cloCA, err = genCA(); err != nil {
+						return nil, nil, nil, err
 					}
-				} else {
-					// CLO CA is the same as what's in the CA secret, do nothing
-				}
+					return cloneByteSlice(cloCA.cert), cloneByteSlice(cloCA.key), []byte(cloCA.serial.Text(10)), nil
+				}	
 			}
-		} else {
-			// no CLO CA, populate CLO CA from the CA secret if it is valid
-			cloCA, err = validateCASecret(secret)
-			if err != nil {
-				// generate new CLO CA and populate the CA secret with it
-				if cloCA, err = genCA(); err != nil {
-					return err
-				}
-				if err = clusterRequest.populateCASecret(secret); err != nil {
-					return err
-				}
+			return nil, nil, nil, nil
+		}(); err != nil {
+			return err
+		}
+		if cert != nil {
+			// populate the CA secret with the CLO CA
+			if err = clusterRequest.populateCASecret(secret, cert, key, serial); err != nil {
+				return err
 			}
 		}
 	}
 	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) checkCA(caCert []byte) ([]byte, error) {
-	if err := clusterRequest.populateCA(); err != nil {
-		return nil, err
-	}
-	if bytes.Equal(caCert, cloCA.cert) {
-		return nil, nil
-	}
-	return cloCA.cert, nil
 }
 
 func genCert(componentName string) (ret certificate, err error) {
@@ -413,6 +426,8 @@ func genCert(componentName string) (ret certificate, err error) {
 		return
 	}
 	pubKeySHA1 := sha1.Sum(x509.MarshalPKCS1PublicKey(&ret.privKey.PublicKey))
+	cloCAMutex.Lock()
+	defer cloCAMutex.Unlock()
 	ret.x509Cert = &x509.Certificate{
 		SerialNumber:       cloCA.serial.Add(cloCA.serial, bigOne),
 		SignatureAlgorithm: x509.SHA512WithRSA,
@@ -487,13 +502,11 @@ func (clusterRequest *ClusterLoggingRequest) checkCertAndKey(cert []byte, key []
 }
 
 func (clusterRequest *ClusterLoggingRequest) reconcileCAs(secret *core.Secret, keyNames []string) (dirty bool, err error) {
+	cloCAMutex.Lock()
+	defer cloCAMutex.Unlock()
 	for _, keyName := range keyNames {
-		var newCACert []byte
-		if newCACert, err = clusterRequest.checkCA(secret.Data[keyName]); err != nil {
-			return
-		}
-		if newCACert != nil {
-			secret.Data[keyName] = newCACert
+		if !bytes.Equal(secret.Data[keyName], cloCA.cert) {
+			secret.Data[keyName] = cloneByteSlice(cloCA.cert)
 			dirty = true
 		}
 	}
@@ -534,7 +547,9 @@ func reconcileSessionSecret(secret *core.Secret, sessionSecretName string) (dirt
 
 func (clusterRequest *ClusterLoggingRequest) ReconcileCertSecret(secretName string) error {
 	extInit.Do(func() { initExtensions(clusterRequest.Cluster.Namespace) })
-
+	if err := clusterRequest.populateCA(); err != nil {
+		return err
+	}
 	secret, err := clusterRequest.GetSecret(secretName)
 	if err != nil {
 		if errors.IsNotFound(err) {

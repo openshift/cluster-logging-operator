@@ -144,6 +144,10 @@ var extensions = map[string]x509v3Ext{
 }
 
 var extInit sync.Once
+
+// The RID.1:1.2.3.4.5.5 x509v3 extension.
+// In ASN.1, "2 5 29 17" is the OID for subjectAltName (SAN)
+// The FullBytes are ASN.1-encoded 1.2.3.4.5.5
 var oidExt pkix.Extension = pkix.Extension{
 	Id: asn1.ObjectIdentifier{2, 5, 29, 17},
 	Value: func() []byte {
@@ -422,15 +426,40 @@ func (clusterRequest *ClusterLoggingRequest) populateCA() error {
 	return nil
 }
 
-func genCert(componentName string) (ret certificate, err error) {
+func (clusterRequest *ClusterLoggingRequest) incCertSerial() (*big.Int, error) {
+	secret, err := clusterRequest.GetSecret(caSecretName)
+	if err != nil {
+		return nil, err
+	}
+	cert, key, serialBytes, serial :=
+		func() ([]byte, []byte, []byte, *big.Int) {
+			cloCAMutex.Lock()
+			defer cloCAMutex.Unlock()
+			cloCA.serial.Add(cloCA.serial, bigOne)
+			serialCopy := big.NewInt(0)
+			serialCopy.Set(cloCA.serial)
+			return cloneByteSlice(cloCA.cert), cloneByteSlice(cloCA.key),
+				[]byte(cloCA.serial.Text(10)), serialCopy
+		}()
+	if err := clusterRequest.populateCASecret(secret, cert, key, serialBytes); err != nil {
+		return nil, err
+	}
+	return serial, nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) genCert(componentName string) (ret certificate, err error) {
 	if ret.privKey, err = rsa.GenerateKey(rand.Reader, rsaKeyLength); err != nil {
 		return
 	}
 	pubKeySHA1 := sha1.Sum(x509.MarshalPKCS1PublicKey(&ret.privKey.PublicKey))
+	var serial *big.Int
+	if serial, err = clusterRequest.incCertSerial(); err != nil {
+		return
+	}
 	cloCAMutex.Lock()
 	defer cloCAMutex.Unlock()
 	ret.x509Cert = &x509.Certificate{
-		SerialNumber:       cloCA.serial.Add(cloCA.serial, bigOne),
+		SerialNumber:       serial,
 		SignatureAlgorithm: x509.SHA512WithRSA,
 		Subject: pkix.Name{
 			Organization:       []string{`Logging`},
@@ -498,7 +527,7 @@ func (clusterRequest *ClusterLoggingRequest) checkCertAndKey(cert []byte, key []
 		if err := func() (err error) {
 			certsMutex.Unlock()
 			defer certsMutex.Lock()
-			compCert, err = genCert(componentName)
+			compCert, err = clusterRequest.genCert(componentName)
 			return err
 		}(); err != nil {
 			return nil, nil, err

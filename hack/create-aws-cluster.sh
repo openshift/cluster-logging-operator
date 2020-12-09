@@ -6,11 +6,16 @@
 
 set -ueo pipefail
 
+# colors
+RED='\033[0;31m'
+NC='\033[0m'
+
 ME=$(basename "$0")
 KERBEROS_USERNAME=${KERBEROS_USERNAME:-$(whoami)}
 CLUSTER_DIR=${CLUSTER_DIR:-${HOME}/.openshift/cluster}
 QUIET=${QUIET:-0}
 FORCE=${FORCE:-0}
+REGION=us-west-2
 SSH_KEY=
 
 usage() {
@@ -25,6 +30,7 @@ usage() {
 	  -d, --dir string         Assets directory (default "${CLUSTER_DIR}")
 	  -f, --force              Force deletion of any existing clusters if necessary
 	  -h, --help               Help for ${ME}
+	  -r, --region             Specify AWS region (default "${REGION}")
 	  -q, --quiet              Don't send notifications
 	      --ssh-key-file       SSH key file to deploy to nodes (default NONE)
 	  -u, --user               Your Kerberos username (default from env KERBEROS_USERNAME or \$(whoami))
@@ -36,36 +42,47 @@ main() {
 	while [[ $# -gt 0 ]]; do
 		key="$1"
 		case $key in
-		    --cleanup)
-		    CLEANUP_ONLY=1
-		    shift # past argument
-		    ;;
-		    -d|--dir)
-		    CLUSTER_DIR="$2"
-		    shift # past argument
-		    shift # past value
-		    ;;
-		    -f|--force)
-		    FORCE=1
-		    shift # past argument
-		    ;;
-		    -h|--help)
-		    usage && exit 0
-		    ;;
-		    -q|--quiet)
-		    QUIET=1
-		    shift # past argument
-		    ;;
-		    --ssh-key-file)
-		    SSH_KEY=$(cat "$2")
-		    shift # past argument
-		    shift # past value
-		    ;;
-		    -u|--user)
-		    KERBEROS_USERNAME="$2"
-		    shift # past argument
-		    shift # past value
-		    ;;
+			--cleanup)
+				CLEANUP_ONLY=1
+				shift # past argument
+				;;
+			-d|--dir)
+				CLUSTER_DIR="$2"
+				shift # past argument
+				shift # past value
+				;;
+			-f|--force)
+				FORCE=1
+				shift # past argument
+				;;
+			-h|--help)
+				usage && exit 0
+				;;
+			-q|--quiet)
+				QUIET=1
+				shift # past argument
+				;;
+			-r|--region)
+				REGION="$2"
+				shift # past argument
+				shift # past value
+				;;
+			--ssh-key-file)
+				SSH_KEY=$(cat "$2")
+				shift # past argument
+				shift # past value
+				;;
+			-u|--user)
+				KERBEROS_USERNAME="$2"
+				shift # past argument
+				shift # past value
+				;;
+			*)
+				echo -e "${RED}Unknown flag $1${NC}" >/dev/stderr
+				echo
+				usage
+				exit 1
+				;;
 		esac
 	done
 
@@ -126,7 +143,7 @@ make_config() {
 	fips: false
 	platform:
 	  aws:
-	    region: us-west-2
+	    region: ${REGION}
 	publish: External
 	pullSecret: |-
 	  $(tr -d '[:space:]' < ~/.docker/config.json )
@@ -170,7 +187,7 @@ _notify_send() {
 # abort with an error message
 abort() {
 	read -r line func file <<< "$(caller 0)"
-	echo "ERROR in $file:$func:$line: $1" > /dev/stderr
+	echo -e "${RED}ERROR in $file:$func:$line: $1{NC}" > /dev/stderr
 	exit 1
 }
 

@@ -18,6 +18,8 @@ type PipelineBuilder struct {
 	inputName string
 }
 
+type OutputSpecVisiter func(spec *logging.OutputSpec)
+
 func NewClusterLogForwarderBuilder(clf *logging.ClusterLogForwarder) *ClusterLogForwarderBuilder {
 	return &ClusterLogForwarderBuilder{
 		Forwarder: clf,
@@ -33,6 +35,10 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 }
 
 func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
+	return p.ToFluentForwardOutputWithVisitor(func(output *logging.OutputSpec) {})
+}
+
+func (p *PipelineBuilder) ToFluentForwardOutputWithVisitor(visit OutputSpecVisiter) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
 	var output *logging.OutputSpec
@@ -43,6 +49,7 @@ func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
 			Type: logging.OutputTypeFluentdForward,
 			URL:  "tcp://0.0.0.0:24224",
 		}
+		visit(output)
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}
 	added := false

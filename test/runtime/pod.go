@@ -10,6 +10,10 @@ type PodBuilder struct {
 	Pod *corev1.Pod
 }
 
+//PodBuilderVisitor provides the ability to manipulate the PodBuilder with
+//custom logic
+type PodBuilderVisitor func(builder *PodBuilder) error
+
 func NewPodBuilder(pod *corev1.Pod) *PodBuilder {
 
 	return &PodBuilder{

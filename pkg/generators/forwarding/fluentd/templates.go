@@ -638,6 +638,7 @@ const outputLabelConfJsonParseNoretryTemplate = `{{- define "outputLabelConfJson
 const forwardTemplate = `{{- define "forward" -}}
 # https://docs.fluentd.org/v1.0/articles/in_forward
 @type forward
+heartbeat_type none
 {{ if .Target.Secret }}
 <security>
   self_hostname "#{ENV['NODE_NAME']}"

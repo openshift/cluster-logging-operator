@@ -85,6 +85,14 @@ func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string)
 
 //Deploy the objects needed to functional test
 func (f *FluentdFunctionalFramework) Deploy() (err error) {
+	visiter := func(b *runtime.PodBuilder) error {
+		return f.addOutputContainers(b, f.Forwarder.Spec.Outputs)
+	}
+	return f.DeployWithVisitor(visiter)
+}
+
+//Deploy the objects needed to functional test
+func (f *FluentdFunctionalFramework) DeployWithVisitor(visit runtime.PodBuilderVisitor) (err error) {
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	if f.Conf, err = forwarder.Generate(string(clfYaml), false); err != nil {
@@ -139,7 +147,7 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
 		AddVolumeMount("certs", "/etc/fluent/metrics", "", true).
 		End()
-	if err = f.addOutputContainers(b, f.Forwarder.Spec.Outputs); err != nil {
+	if err = visit(b); err != nil {
 		return err
 	}
 	log.V(2).Info("Creating pod", "pod", f.pod)
@@ -204,6 +212,10 @@ func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, 
 		}
 	}
 	return nil
+}
+
+func (f *FluentdFunctionalFramework) WaitForPodToBeReady() error {
+	return oc.Literal().From(fmt.Sprintf("oc wait -n %s pod/%s --timeout=60s --for=condition=Ready", f.test.NS.Name, f.Name)).Output()
 }
 
 func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs int) error {

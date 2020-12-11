@@ -31,7 +31,6 @@ const (
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	"curator":             "CURATOR_IMAGE",
 	constants.FluentdName: "FLUENTD_IMAGE",
 	"kibana":              "KIBANA_IMAGE",
 }

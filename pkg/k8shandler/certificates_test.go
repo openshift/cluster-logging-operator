@@ -80,13 +80,6 @@ var _ = Describe("Reconciling", func() {
 				Namespace: constants.OpenshiftNS,
 			},
 		}
-
-		curatorSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.CuratorName,
-				Namespace: constants.OpenshiftNS,
-			},
-		}
 	)
 
 	Describe("Certificates", func() {
@@ -103,7 +96,6 @@ var _ = Describe("Reconciling", func() {
 				elasticsearchSecret,
 				kibanaSecret,
 				kibanaProxySecret,
-				curatorSecret,
 			)
 			clusterRequest = &ClusterLoggingRequest{
 				Client:  client,
@@ -242,18 +234,6 @@ var _ = Describe("Reconciling", func() {
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
 				Expect(secret).Should(ContainKeys("session-secret", "server-key", "server-cert"))
-			})
-		})
-
-		Context("for curator", func() {
-			It("should provide a X509 cert for `CN=system.logging.curator`", func() {
-				Expect(clusterRequest.createOrUpdateCuratorSecret()).Should(Succeed())
-				secret := &corev1.Secret{}
-				key := types.NamespacedName{Name: constants.CuratorName, Namespace: constants.OpenshiftNS}
-				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
-
-				Expect(secret).Should(ContainKeys("ca", "key", "cert", "ops-ca", "ops-key", "ops-cert"))
-				Expect(secret).Should(SucceedVerifyCert("ca", "cert", "system.logging.curator", nil))
 			})
 		})
 	})

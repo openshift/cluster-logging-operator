@@ -11,38 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func (clusterRequest *ClusterLoggingRequest) getCuratorStatus() ([]logging.CuratorStatus, error) {
-
-	status := []logging.CuratorStatus{}
-
-	curatorCronJobList, err := clusterRequest.GetCronJobList(
-		map[string]string{
-			"logging-infra": "curator",
-		},
-	)
-	if err != nil {
-		return status, err
-	}
-
-	for _, cronjob := range curatorCronJobList.Items {
-
-		curatorStatus := logging.CuratorStatus{
-			CronJob:   cronjob.Name,
-			Schedule:  cronjob.Spec.Schedule,
-			Suspended: *cronjob.Spec.Suspend,
-		}
-
-		curatorStatus.Conditions, err = clusterRequest.getPodConditions("curator")
-		if err != nil {
-			return nil, fmt.Errorf("unable to get pod conditions. E: %s", err.Error())
-		}
-
-		status = append(status, curatorStatus)
-	}
-
-	return status, nil
-}
-
 func (clusterRequest *ClusterLoggingRequest) getFluentdCollectorStatus() (logging.FluentdCollectorStatus, error) {
 
 	fluentdStatus := logging.FluentdCollectorStatus{}

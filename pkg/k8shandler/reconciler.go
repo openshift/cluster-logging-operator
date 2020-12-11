@@ -8,6 +8,8 @@ import (
 	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/status"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -47,13 +49,20 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 			return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
-		// Reconcile Curation
-		if err = clusterLoggingRequest.CreateOrUpdateCuration(); err != nil {
-			return fmt.Errorf("Unable to create or update curation for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-		}
 	} else {
 		removeManagedStorage(clusterLoggingRequest)
 	}
+
+	// Remove Curator
+	if err := clusterLoggingRequest.removeCurator(); err != nil {
+		log.V(1).Error(err, "Error removing curator component")
+	}
+	clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(status.Condition{
+		Type:    "CuratorRemoved",
+		Status:  corev1.ConditionTrue,
+		Reason:  "ResourceDeprecated",
+		Message: "curator is deprecated in favor of defining retention policy",
+	})
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
@@ -70,7 +79,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	log.V(1).Info("Removing managed store components...")
-	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeCurator} {
+	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana} {
 		if err := remove(); err != nil {
 			log.V(1).Error(err, "Error removing component")
 		}

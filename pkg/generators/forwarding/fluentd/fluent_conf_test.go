@@ -1184,10 +1184,11 @@ var _ = Describe("Generating fluentd config", func() {
 			# Ship logs to specific outputs
 			<label @SECUREFORWARD_RECEIVER>
 				<match **>
-					# https://docs.fluentd.org/v1.0/articles/in_forward
+				# https://docs.fluentd.org/v1.0/articles/in_forward
 				@type forward
 				heartbeat_type none
-
+				keepalive true
+				
 				<buffer>
 					@type file
 					path '/var/lib/fluentd/secureforward_receiver'

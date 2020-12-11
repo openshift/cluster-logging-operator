@@ -386,6 +386,7 @@ var _ = Describe("Generating fluentd config", func() {
             # https://docs.fluentd.org/v1.0/articles/in_forward
             @type forward
             heartbeat_type none
+            keepalive true
 
             <buffer>
             @type file
@@ -427,6 +428,7 @@ var _ = Describe("Generating fluentd config", func() {
           # https://docs.fluentd.org/v1.0/articles/in_forward
           @type forward
           heartbeat_type none
+          keepalive true
 
           <buffer>
           @type file

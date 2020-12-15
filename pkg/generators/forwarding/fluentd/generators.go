@@ -256,6 +256,8 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		log.V(3).Info("Generate output type", "type", output.Type)
 		engine.outputTemplate = "outputLabelConf" // Default
 		switch output.Type {
+		case logging.OutputTypeCloudwatch:
+			engine.outputTemplate = "outputLabelConfCloudwatch"
 		case logging.OutputTypeElasticsearch:
 			engine.storeTemplate = "storeElasticsearch"
 		case logging.OutputTypeFluentdForward:
@@ -271,7 +273,7 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 			engine.storeTemplate = "storeKafka"
 			engine.outputTemplate = "outputLabelConfNoCopy"
 		default:
-			return nil, fmt.Errorf("Unknown outpt type: %v", output.Type)
+			return nil, fmt.Errorf("Unknown output type: %v", output.Type)
 		}
 		conf, err := newOutputLabelConf(engine.Template, engine.storeTemplate, output, outputConf)
 		if err != nil {

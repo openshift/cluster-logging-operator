@@ -171,7 +171,7 @@ func (f *FluentdFunctionalFramework) Deploy() (err error) {
 	}
 	log.V(2).Info("waiting for fluentd to be ready")
 	err = wait.PollImmediate(time.Second*2, time.Second*30, func() (bool, error) {
-		output, err := oc.Literal().From(fmt.Sprintf("oc logs -n %s pod/%s %s", f.test.NS.Name, f.Name, constants.FluentdName )).Run()
+		output, err := oc.Literal().From(fmt.Sprintf("oc logs -n %s pod/%s %s", f.test.NS.Name, f.Name, constants.FluentdName)).Run()
 		if err != nil {
 			return false, nil
 		}

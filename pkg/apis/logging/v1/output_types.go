@@ -2,6 +2,7 @@ package v1
 
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
 const (
+	OutputTypeCloudwatch     = "cloudwatch"
 	OutputTypeElasticsearch  = "elasticsearch"
 	OutputTypeFluentdForward = "fluentdForward"
 	OutputTypeSyslog         = "syslog"
@@ -22,6 +23,44 @@ type OutputTypeSpec struct {
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 	// +optional
 	Kafka *Kafka `json:"kafka,omitempty"`
+	// +optional
+	Cloudwatch *Cloudwatch `json:"cloudwatch,omitempty"`
+}
+
+// Cloudwatch provides configuration for the output type `cloudwatch`
+type Cloudwatch struct {
+
+	//LogStreamStrategy defines how logstreams are created and configured
+	//
+	// +required
+	LogStreamStrategy CloudwatchLogStreamStrategy `json:"logStreamStrategy,omitempty"`
+}
+
+// LogStreamStrategyType defines a fixed strategy type
+type LogStreamStrategyType string
+
+const (
+	// LogStreamStrategyTypeUnique is the strategy to use the log tag (e.g. name, ns, podname)
+	LogStreamStrategyTypeUnique LogStreamStrategyType = "unique"
+)
+
+// CloudwatchLogStreamStrategy defines a logstream strategy for cloudwatch
+type CloudwatchLogStreamStrategy struct {
+	// Name used to refer to the naming strategy
+	//
+	// +kubebuilder:validation:minLength:=1
+	// +required
+	Name LogStreamStrategyType `json:"name"`
+
+	CloudwatchLogStreamStrategyTypeSpec `json:",inline"`
+}
+
+// CloudwatchLogStreamStrategyTypeSpec is spec for a given logstream strategy
+type CloudwatchLogStreamStrategyTypeSpec struct {
+	// RetentionInDays the default number of days retention for a logstream
+	//
+	// +required
+	RetentionInDays int `json:"retentionInDays"`
 }
 
 // Syslog provides optional extra properties for output type `syslog`

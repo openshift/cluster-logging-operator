@@ -10,6 +10,7 @@ var templateRegistry = []string{
 	fluentConfTemplate,
 	pipelineToOutputCopyTemplate,
 	sourceToPipelineCopyTemplate,
+	outputLabelConfCloudwatch,
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
 	outputLabelConfNoretryTemplate,
@@ -590,6 +591,41 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
 </label>
 {{- end}}`
 
+const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
+<label {{.LabelName}}>
+  <filter **>
+    @type record_transformer
+    <record>
+      cw_stream_name ${tag}
+      cw_retention_days {{ .Target.Cloudwatch.LogStreamStrategy.RetentionInDays }} 
+    </record>
+  </filter>
+  <match **>
+    @type cloudwatch_logs
+    auto_create_stream true
+    log_group_name openshiftlogging
+    log_stream_name_key cw_stream_name
+    remove_log_stream_name_key true
+    auto_create_stream true
+    concurrency 2
+    aws_key_id {{ .SecretPath "aws_access_key_id"}}
+    aws_sec_key {{ .SecretPath "aws_secret_access_key"}}
+    retention_in_days_key cw_retention_days
+    #max_message_length 32768
+    #use_tag_as_group false
+    #use_tag_as_stream false
+    include_time_key true
+    #localtime true
+    #log_group_name_key group_name_key
+    #remove_log_group_name_key true
+    #put_log_events_retry_wait 1s
+    #put_log_events_retry_limit 17
+    #put_log_events_disable_retry_limit false
+    log_rejected_request true
+  </match>
+</label>
+{{- end}}`
+
 const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
 <label {{.LabelName}}>
   <match {{.RetryTag}}>
@@ -638,6 +674,7 @@ const outputLabelConfJsonParseNoretryTemplate = `{{- define "outputLabelConfJson
 const forwardTemplate = `{{- define "forward" -}}
 # https://docs.fluentd.org/v1.0/articles/in_forward
 @type forward
+heartbeat_type none
 {{ if .Target.Secret }}
 <security>
   self_hostname "#{ENV['NODE_NAME']}"

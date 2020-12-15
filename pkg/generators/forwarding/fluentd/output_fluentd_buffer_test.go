@@ -385,6 +385,7 @@ var _ = Describe("Generating fluentd config", func() {
           <match **>
             # https://docs.fluentd.org/v1.0/articles/in_forward
             @type forward
+            heartbeat_type none
 
             <buffer>
             @type file
@@ -421,37 +422,38 @@ var _ = Describe("Generating fluentd config", func() {
 
 		It("should override buffer configuration for given tuning parameters", func() {
 			fluentdForwardConf := `
-        <label @SECUREFORWARD_RECEIVER>
-          <match **>
-            # https://docs.fluentd.org/v1.0/articles/in_forward
-            @type forward
+      <label @SECUREFORWARD_RECEIVER>
+        <match **>
+          # https://docs.fluentd.org/v1.0/articles/in_forward
+          @type forward
+          heartbeat_type none
 
-            <buffer>
-            @type file
-            path '/var/lib/fluentd/secureforward_receiver'
-            queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
-            total_limit_size 512m
-            chunk_limit_size 256m
-            flush_mode immediate
-            flush_interval 2s
-            flush_at_shutdown true
-            flush_thread_count 4
-            retry_type periodic
-            retry_wait 2s
-            retry_max_interval 600s
-            retry_forever true
-            # the systemd journald 0.0.8 input plugin will just throw away records if the buffer
-            # queue limit is hit - 'block' will halt further reads and keep retrying to flush the
-            # buffer to the remote - default is 'block' because in_tail handles that case
-            overflow_action drop_oldest_chunk
-            </buffer>
+          <buffer>
+          @type file
+          path '/var/lib/fluentd/secureforward_receiver'
+          queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
+          total_limit_size 512m
+          chunk_limit_size 256m
+          flush_mode immediate
+          flush_interval 2s
+          flush_at_shutdown true
+          flush_thread_count 4
+          retry_type periodic
+          retry_wait 2s
+          retry_max_interval 600s
+          retry_forever true
+          # the systemd journald 0.0.8 input plugin will just throw away records if the buffer
+          # queue limit is hit - 'block' will halt further reads and keep retrying to flush the
+          # buffer to the remote - default is 'block' because in_tail handles that case
+          overflow_action drop_oldest_chunk
+          </buffer>
 
-            <server>
-            host es.svc.messaging.cluster.local
-            port 9654
-            </server>
-           </match>
-         </label>`
+          <server>
+          host es.svc.messaging.cluster.local
+          port 9654
+          </server>
+        </match>
+      </label>`
 
 			results, err := generator.generateOutputLabelBlocks(outputs, customForwarderSpec)
 			Expect(err).To(BeNil())

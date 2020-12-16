@@ -61,9 +61,15 @@ func DeepFields(iface interface{}, namePrefix string) ([]reflect.Value, []string
 		}
 		switch v.Kind() {
 		case reflect.Struct:
-			moreFields, moreNames := DeepFields(v.Interface(), n+"_")
-			fields = append(fields, moreFields...)
-			names = append(names, moreNames...)
+			typename := v.Type().Name()
+			if  typename != "Time" {
+				moreFields, moreNames := DeepFields(v.Interface(), n+"_")
+				fields = append(fields, moreFields...)
+				names = append(names, moreNames...)
+			} else {
+				fields = append(fields, v)
+				names = append(names, n)
+			}
 		case reflect.Ptr:
 			if !isNil(v.Interface()) {
 				elm := v.Elem()
@@ -81,23 +87,32 @@ func DeepFields(iface interface{}, namePrefix string) ([]reflect.Value, []string
 }
 
 func compareLogLogic(name string, templateValue interface{}, value interface{}) bool {
-	if templateValue == value { // Same value is ok
-		logger.V(3).Info("CompareLogLogic: Same value for", "name", name, "value", value)
+	templateValueString := fmt.Sprintf("%v", templateValue)
+	valueString := fmt.Sprintf("%v", value)
+
+	if templateValueString == valueString { // Same value is ok
+		logger.V(3).Info("CompareLogLogic: Same value for", "name", name, "value", valueString)
 		return true
 	}
-	if templateValue == "*" && !isNil(value) { // Any value, not Nil is ok if template value is "*"
-		logger.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", value)
+	if templateValueString == "*" && valueString != "" { // Any value, not Nil is ok if template value is "*"
+		logger.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
 		return true
 	}
-	if strings.HasPrefix(templateValue.(string), "regex:") { // Using regex if starts with "/"
-		match, _ := regexp.MatchString(templateValue.(string)[6:], value.(string))
+
+	if templateValueString == "0001-01-01 00:00:00 +0000 UTC" && valueString != "" { // Any time value not Nil is ok if template value is empty time
+		logger.V(3).Info("CompareLogLogic: Any value for 'empty time' ", "name", name, "value", valueString)
+		return true
+	}
+
+	if strings.HasPrefix(templateValueString, "regex:") { // Using regex if starts with "/"
+		match, _ := regexp.MatchString(templateValueString[6:], valueString)
 		if match {
-			logger.V(3).Info("CompareLogLogic: Fit regex ", "name", name, "value", value)
+			logger.V(3).Info("CompareLogLogic: Fit regex ", "name", name, "value", valueString)
 			return true
 		}
 	}
 
-	logger.V(3).Info("CompareLogLogic: Mismatch", "name", "templateValue", templateValue, "value", value)
+	logger.V(3).Info("CompareLogLogic: Mismatch !!!",  "name", name,"templateValue", templateValueString, "value", valueString)
 	return false
 }
 

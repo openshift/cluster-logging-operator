@@ -211,8 +211,12 @@ func (r *Receiver) Create(c *client.Client) error {
 	g := errgroup.Group{}
 	g.Go(func() error { return c.Create(r.ConfigMap) })
 	g.Go(func() error { return c.Create(r.service) })
-	g.Go(func() error { return c.Create(r.Pod) })
-	g.Go(func() error { return c.WaitFor(r.Pod, client.PodRunning) })
+	g.Go(func() error {
+		if err := c.Create(r.Pod); err != nil {
+			return err
+		}
+		return c.WaitFor(r.Pod, client.PodRunning)
+	})
 	return g.Wait()
 }
 

@@ -48,6 +48,6 @@ var _ = Describe("Reader", func() {
 		ExpectOK(err)
 		_, err = r.ReadLine()
 		short := strings.Repeat("X", stderrLimit)
-		Expect(err).To(MatchError("EOF: exit status 1: " + short))
+		Expect(err.Error()).To(MatchRegexp(fmt.Sprintf(" %v$", short)))
 	})
 })

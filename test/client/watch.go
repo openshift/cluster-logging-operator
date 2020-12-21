@@ -91,7 +91,7 @@ func (c *Client) waitFor(o runtime.Object, condition Condition, w watch.Interfac
 		select {
 		case e, ok := <-w.ResultChan():
 			if !ok {
-				return ErrWatchClosed
+				return fmt.Errorf("%w: %v: %v", ErrWatchClosed, msg, runtime.ID(o))
 			}
 			log.V(3).Info("event: "+msg,
 				"object", runtime.ID(e.Object),

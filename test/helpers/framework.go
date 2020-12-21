@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -38,30 +39,14 @@ const (
 	DefaultCleanUpTimeout  = 60.0 * 2
 )
 
-var (
-	defaultRetryInterval        time.Duration
-	defaultTimeout              time.Duration
-	DefaultWaitForLogsTimeout   time.Duration
-	DefaultWaitForNoLogsTimeout time.Duration
-	err                         error
-)
-
-func init() {
-	if defaultRetryInterval, err = time.ParseDuration("1s"); err != nil {
-		panic(err)
-	}
-	if defaultTimeout, err = time.ParseDuration("5m"); err != nil {
-		panic(err)
-	}
-	if DefaultWaitForLogsTimeout, err = time.ParseDuration("5m"); err != nil {
-		panic(err)
-	}
-	// Shorter timeout for when we are expecting that there will be no logs,
+const (
+	defaultRetryInterval      = 1 * time.Second
+	defaultTimeout            = 10 * time.Minute
+	DefaultWaitForLogsTimeout = 10 * time.Minute
+	// Shorter timeout for when we are expecting that there will be no logs
 	// since we will always go to the timeout in that case.a
-	if DefaultWaitForNoLogsTimeout, err = time.ParseDuration("1m"); err != nil {
-		panic(err)
-	}
-}
+	DefaultWaitForNoLogsTimeout = 1 * time.Minute
+)
 
 type LogStore interface {
 	//ApplicationLogs returns app logs for a given log store
@@ -587,11 +572,11 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 			return nil, err
 		}
 	}
-	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
+	if err := os.Setenv("WORKING_DIR", workingDir); err != nil {
 		return nil, err
 	}
 	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
-	if err, _ = certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
+	if err, _ := certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
 		return nil, err
 	}
 	data := map[string][]byte{

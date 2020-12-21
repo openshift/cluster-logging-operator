@@ -6,9 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/test"
@@ -36,7 +34,8 @@ func NewReader(cmd *exec.Cmd) (*Reader, error) {
 	}
 	r := &Reader{cmd: cmd, r: bufio.NewReader(p)}
 	if cmd.Stderr == nil {
-		cmd.Stderr = &r.stderr // Capture stderr for error messages.
+		// Capture stderr because exec.Start() doesn't fill in exec.ExitError.Stderr.
+		cmd.Stderr = &r.stderr
 	}
 	if err := cmd.Start(); err != nil {
 		return nil, err
@@ -86,49 +85,6 @@ func (r *Reader) Close() error {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(r.stderr.b.String()))
 	}
 	return nil
-}
-
-// ExpectLines calls ExpectLinesMatchContext with timeout test.DefaultSuccessTimeout.
-func (r *Reader) ExpectLines(n int, good, bad string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
-	defer cancel()
-	return r.ExpectLinesContext(ctx, n, good, bad)
-}
-
-// ExpectLinesContext reads `n` lines that match regexp `good`.
-// Returns error if `bad` is  not empty and a line is read that matches regexp `bad`.
-// Ignores lines that do not match `good` or `bad`.
-// Panics if good or bad are not valid regexps.
-func (r *Reader) ExpectLinesContext(ctx context.Context, n int, good, bad string) error {
-	goodx, badx := regexp.MustCompile(good), regexp.MustCompile(bad)
-	for {
-		line, err := r.ReadLineContext(ctx)
-		switch {
-		case err != nil:
-			return err
-		case goodx.MatchString(line):
-			n--
-			if n == 0 {
-				return nil
-			}
-		case badx.String() != "" && badx.MatchString(line):
-			return fmt.Errorf("bad line: %q", line)
-		}
-	}
-}
-
-// ExpectEmpty succeeds if nothing is read until the reader returns io.EOF or the
-// context is cancelled or times out. Otherwise it returns an error.
-func (r *Reader) ExpectEmpty(ctx context.Context) error {
-	line, err := r.ReadLineContext(ctx)
-	switch {
-	case err == nil:
-		return fmt.Errorf("expected empty, read line: %q", line)
-	case errors.Is(err, io.EOF) || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled):
-		return nil
-	default:
-		return err
-	}
 }
 
 // TailReader returns a CmdReader that tails file at path on pod.

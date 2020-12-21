@@ -27,6 +27,8 @@ var _ = Describe("Receiver", func() {
 		r.Sources["bar"].Cert = certificate.NewCert(nil, r.Host())
 		ExpectOK(r.Create(t.Client))
 
+		Expect(r.Sources["foo"].HasOutput()).To(BeFalse())
+
 		var g test.FailGroup
 		defer g.Wait()
 		msg := `{"hello":"world"}`
@@ -51,12 +53,13 @@ var _ = Describe("Receiver", func() {
 
 		By("checking for data")
 		for _, s := range r.Sources {
-			r := s.TailReader()
+			tr := s.TailReader()
 			g.Go(func() {
-				defer r.Close()
-				line, err := r.ReadLine()
+				defer tr.Close()
+				line, err := tr.ReadLine()
 				ExpectOK(err)
 				Expect(strings.TrimSpace(line)).To(Equal(msg))
+				Expect(r.Sources["foo"].HasOutput()).To(BeTrue())
 			})
 		}
 	})

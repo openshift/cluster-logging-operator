@@ -39,12 +39,12 @@ type lineMatcher struct {
 }
 
 func (m *lineMatcher) Match(actual interface{}) (success bool, err error) {
-	m.diff = cmp.Diff(m.normalize(m.expected.(string)), m.normalize(actual.(string)))
+	m.diff = cmp.Diff(m.normalize(actual.(string)), m.normalize(m.expected.(string)))
 	return m.diff == "", nil
 }
 
 func (m *lineMatcher) FailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected:\n%s\nTo Equal:\n%s\n\nDiff:\n%s", m.expected, actual, m.diff)
+	return fmt.Sprintf("Expected\n%s\nto equal\n%s\nDiff\n%s", actual, m.expected, m.diff)
 }
 
 func (m *lineMatcher) NegatedFailureMessage(actual interface{}) (message string) {

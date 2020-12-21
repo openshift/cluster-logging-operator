@@ -99,20 +99,20 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 		}
-		results, err := generator.Generate(forwarder, forwarderSpec)
+		results, err := generator.Generate(forwarder, nil, forwarderSpec)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(`
   ## CLO GENERATED CONFIGURATION ###
   # This file is a copy of the fluentd configuration entrypoint
   # which should normally be supplied in a configmap.
-  
+
   <system>
     log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
   </system>
-  
+
   # In each section below, pre- and post- includes don't include anything initially;
   # they exist to enable future additions to openshift conf as needed.
-  
+
   ## sources
   ## ordered so that syslog always runs last...
   <source>
@@ -124,18 +124,18 @@ var _ = Describe("Generating fluentd config", func() {
       private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
     </ssl>
   </source>
-  
+
   <source>
     @type prometheus_monitor
     <labels>
       hostname ${hostname}
     </labels>
   </source>
-  
+
   # excluding prometheus_tail_monitor
   # since it leaks namespace/pod info
   # via file paths
-  
+
   # This is considered experimental by the repo
   <source>
     @type prometheus_output_monitor
@@ -219,7 +219,7 @@ var _ = Describe("Generating fluentd config", func() {
 		@type relabel
 		@label @CONCAT
 	</match>
-	</label>  
+	</label>
   <label @CONCAT>
     <filter kubernetes.**>
       @type concat
@@ -233,17 +233,17 @@ var _ = Describe("Generating fluentd config", func() {
       @label @INGRESS
     </match>
   </label>
-  
+
   #syslog input config here
-  
+
   <label @INGRESS>
-  
+
     ## filters
     <filter **>
       @type record_modifier
       char_encoding utf-8
     </filter>
-  
+
     <filter journal>
       @type grep
       <exclude>
@@ -251,12 +251,12 @@ var _ = Describe("Generating fluentd config", func() {
         pattern ^7$
       </exclude>
     </filter>
-  
+
     <match journal>
       @type rewrite_tag_filter
       # skip to @INGRESS label section
       @label @INGRESS
-  
+
       # see if this is a kibana container for special log handling
       # looks like this:
       # k8s_kibana.a67f366_logging-kibana-1-d90e3_logging_26c51a61-2835-11e6-ad29-fa163e4944d5_f0db49a2
@@ -266,55 +266,55 @@ var _ = Describe("Generating fluentd config", func() {
         pattern ^k8s_kibana\.
         tag kubernetes.journal.container.kibana
       </rule>
-  
+
       <rule>
         key CONTAINER_NAME
         pattern ^k8s_[^_]+_logging-eventrouter-[^_]+_
         tag kubernetes.journal.container._default_.kubernetes-event
       </rule>
-  
+
       # mark logs from default namespace for processing as k8s logs but stored as system logs
       <rule>
         key CONTAINER_NAME
         pattern ^k8s_[^_]+_[^_]+_default_
         tag kubernetes.journal.container._default_
       </rule>
-  
+
       # mark logs from kube-* namespaces for processing as k8s logs but stored as system logs
       <rule>
         key CONTAINER_NAME
         pattern ^k8s_[^_]+_[^_]+_kube-(.+)_
         tag kubernetes.journal.container._kube-$1_
       </rule>
-  
+
       # mark logs from openshift-* namespaces for processing as k8s logs but stored as system logs
       <rule>
         key CONTAINER_NAME
         pattern ^k8s_[^_]+_[^_]+_openshift-(.+)_
         tag kubernetes.journal.container._openshift-$1_
       </rule>
-  
+
       # mark logs from openshift namespace for processing as k8s logs but stored as system logs
       <rule>
         key CONTAINER_NAME
         pattern ^k8s_[^_]+_[^_]+_openshift_
         tag kubernetes.journal.container._openshift_
       </rule>
-  
+
       # mark fluentd container logs
       <rule>
         key CONTAINER_NAME
         pattern ^k8s_.*fluentd
         tag kubernetes.journal.container.fluentd
       </rule>
-  
+
       # this is a kubernetes container
       <rule>
         key CONTAINER_NAME
         pattern ^k8s_
         tag kubernetes.journal.container
       </rule>
-  
+
       # not kubernetes - assume a system log or system container log
       <rule>
         key _TRANSPORT
@@ -322,7 +322,7 @@ var _ = Describe("Generating fluentd config", func() {
         tag journal.system
       </rule>
     </match>
-  
+
     <filter kubernetes.**>
       @type kubernetes_metadata
       kubernetes_url 'https://kubernetes.default.svc'
@@ -331,28 +331,28 @@ var _ = Describe("Generating fluentd config", func() {
       use_journal 'nil'
       ssl_partial_chain 'true'
     </filter>
-  
+
     <filter kubernetes.journal.**>
       @type parse_json_field
       merge_json_log 'false'
       preserve_json_log 'true'
       json_fields 'log,MESSAGE'
     </filter>
-  
+
     <filter kubernetes.var.log.containers.**>
       @type parse_json_field
       merge_json_log 'false'
       preserve_json_log 'true'
       json_fields 'log,MESSAGE'
     </filter>
-  
+
     <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
       @type parse_json_field
       merge_json_log true
       preserve_json_log true
       json_fields 'log,MESSAGE'
     </filter>
-  
+
     <filter **kibana**>
       @type record_transformer
       enable_ruby
@@ -361,7 +361,7 @@ var _ = Describe("Generating fluentd config", func() {
       </record>
       remove_keys req,res,msg,name,level,v,pid,err
     </filter>
-  
+
 	<filter k8s-audit.log**>
 	  @type record_modifier
 	  <record>
@@ -439,14 +439,14 @@ var _ = Describe("Generating fluentd config", func() {
         static_index_name app-write
       </elasticsearch_index_name>
     </filter>
-  
+
     <filter **>
       @type elasticsearch_genid_ext
       hash_id_key viaq_msg_id
       alt_key kubernetes.event.metadata.uid
       alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
     </filter>
-  
+
     #flatten labels to prevent field explosion in ES
     <filter ** >
       @type record_transformer
@@ -456,7 +456,7 @@ var _ = Describe("Generating fluentd config", func() {
       </record>
       remove_keys $.kubernetes.labels
     </filter>
-  
+
     # Relabel specific source tags to specific intermediary labels for copy processing
     # Earlier matchers remove logs so they don't fall through to later ones.
     # A log source matcher may be null if no pipeline wants that type of log.
@@ -473,33 +473,33 @@ var _ = Describe("Generating fluentd config", func() {
     <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
       @type null
     </match>
-  
+
     <match **>
       @type stdout
     </match>
-  
+
   </label>
-  
+
   # Relabel specific sources (e.g. logs.apps) to multiple pipelines
   <label @_APPLICATION>
     <match **>
       @type copy
-  
+
       <store>
         @type relabel
         @label @APPS_PIPELINE
       </store>
-  
-  
+
+
     </match>
   </label>
-  
-  
+
+
   # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
   <label @APPS_PIPELINE>
     <match **>
       @type copy
-  
+
       <store>
         @type relabel
         @label @APPS_ES_1
@@ -510,7 +510,7 @@ var _ = Describe("Generating fluentd config", func() {
       </store>
     </match>
   </label>
-  
+
   # Ship logs to specific outputs
   <label @APPS_ES_1>
     <match retry_apps_es_1>
@@ -552,12 +552,12 @@ var _ = Describe("Generating fluentd config", func() {
           retry_max_interval 60s
           retry_forever true
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-          
+
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-          
-          
+
+
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
-          
+
           overflow_action block
         </buffer>
       </store>
@@ -602,12 +602,12 @@ var _ = Describe("Generating fluentd config", func() {
           retry_max_interval 60s
           retry_forever true
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-          
+
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-          
-          
+
+
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
-          
+
           overflow_action block
         </buffer>
       </store>
@@ -633,10 +633,10 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 		}
-		results, err := generator.Generate(forwarder, forwarderSpec)
+		results, err := generator.Generate(forwarder, nil, forwarderSpec)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(`
-			## CLO GENERATED CONFIGURATION ### 
+			## CLO GENERATED CONFIGURATION ###
 			# This file is a copy of the fluentd configuration entrypoint
 			# which should normally be supplied in a configmap.
 
@@ -1058,10 +1058,10 @@ var _ = Describe("Generating fluentd config", func() {
 	})
 
 	It("should produce well formed fluent.conf", func() {
-		results, err := generator.Generate(forwarder, forwarderSpec)
+		results, err := generator.Generate(forwarder, nil, forwarderSpec)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(`
-			## CLO GENERATED CONFIGURATION ### 
+			## CLO GENERATED CONFIGURATION ###
 			# This file is a copy of the fluentd configuration entrypoint
 			# which should normally be supplied in a configmap.
 
@@ -1575,7 +1575,7 @@ var _ = Describe("Generating fluentd config", func() {
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 						reload_after '200'
 						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-					        sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'	
+					        sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 						reload_on_failure false
 						# 2 ^ 31
 						request_timeout 2147483648
@@ -1622,7 +1622,7 @@ var _ = Describe("Generating fluentd config", func() {
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 						reload_after '200'
 						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-               					sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'	
+               					sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 						reload_on_failure false
 						# 2 ^ 31
 						request_timeout 2147483648
@@ -1670,7 +1670,7 @@ var _ = Describe("Generating fluentd config", func() {
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 						reload_after '200'
 						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'						
+						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 						reload_on_failure false
 						# 2 ^ 31
 						request_timeout 2147483648
@@ -1717,7 +1717,7 @@ var _ = Describe("Generating fluentd config", func() {
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 						reload_after '200'
 						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'						
+						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 						reload_on_failure false
 						# 2 ^ 31
 						request_timeout 2147483648
@@ -1765,7 +1765,7 @@ var _ = Describe("Generating fluentd config", func() {
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 						reload_after '200'
 						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'						
+						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 						reload_on_failure false
 						# 2 ^ 31
 						request_timeout 2147483648
@@ -1812,7 +1812,7 @@ var _ = Describe("Generating fluentd config", func() {
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 						reload_after '200'
 						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'						
+						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 						reload_on_failure false
 						# 2 ^ 31
 						request_timeout 2147483648
@@ -1860,7 +1860,7 @@ var _ = Describe("Generating fluentd config", func() {
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 						reload_after '200'
 						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'						
+						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 						reload_on_failure false
 						# 2 ^ 31
 						request_timeout 2147483648
@@ -1907,7 +1907,7 @@ var _ = Describe("Generating fluentd config", func() {
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 						reload_after '200'
 						# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'						
+						sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 						reload_on_failure false
 						# 2 ^ 31
 						request_timeout 2147483648
@@ -1953,7 +1953,7 @@ var _ = Describe("Generating fluentd config", func() {
 		func(yamlSpec, wantFluentdConf string) {
 			var spec logging.ClusterLogForwarderSpec
 			Expect(yaml.Unmarshal([]byte(yamlSpec), &spec)).To(Succeed())
-			gotFluentdConf, err := generator.Generate(&spec, nil)
+			gotFluentdConf, err := generator.Generate(&spec, nil, nil)
 			Expect(err).To(Succeed())
 			Expect(wantFluentdConf).To(EqualTrimLines(gotFluentdConf))
 		},
@@ -1974,14 +1974,14 @@ var _ = Describe("Generating fluentd config", func() {
     ## CLO GENERATED CONFIGURATION ###
     # This file is a copy of the fluentd configuration entrypoint
     # which should normally be supplied in a configmap.
-    
+
     <system>
       log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
     </system>
-    
+
     # In each section below, pre- and post- includes don't include anything initially;
     # they exist to enable future additions to openshift conf as needed.
-    
+
     ## sources
     ## ordered so that syslog always runs last...
     <source>
@@ -1993,18 +1993,18 @@ var _ = Describe("Generating fluentd config", func() {
         private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
       </ssl>
     </source>
-    
+
     <source>
       @type prometheus_monitor
       <labels>
         hostname ${hostname}
       </labels>
     </source>
-    
+
     # excluding prometheus_tail_monitor
     # since it leaks namespace/pod info
     # via file paths
-    
+
     # This is considered experimental by the repo
     <source>
       @type prometheus_output_monitor
@@ -2102,17 +2102,17 @@ var _ = Describe("Generating fluentd config", func() {
         @label @INGRESS
       </match>
     </label>
-    
+
     #syslog input config here
-    
+
     <label @INGRESS>
-    
+
       ## filters
       <filter **>
         @type record_modifier
         char_encoding utf-8
       </filter>
-    
+
       <filter journal>
         @type grep
         <exclude>
@@ -2120,12 +2120,12 @@ var _ = Describe("Generating fluentd config", func() {
           pattern ^7$
         </exclude>
       </filter>
-    
+
       <match journal>
         @type rewrite_tag_filter
         # skip to @INGRESS label section
         @label @INGRESS
-    
+
         # see if this is a kibana container for special log handling
         # looks like this:
         # k8s_kibana.a67f366_logging-kibana-1-d90e3_logging_26c51a61-2835-11e6-ad29-fa163e4944d5_f0db49a2
@@ -2135,55 +2135,55 @@ var _ = Describe("Generating fluentd config", func() {
           pattern ^k8s_kibana\.
           tag kubernetes.journal.container.kibana
         </rule>
-    
+
         <rule>
           key CONTAINER_NAME
           pattern ^k8s_[^_]+_logging-eventrouter-[^_]+_
           tag kubernetes.journal.container._default_.kubernetes-event
         </rule>
-    
+
         # mark logs from default namespace for processing as k8s logs but stored as system logs
         <rule>
           key CONTAINER_NAME
           pattern ^k8s_[^_]+_[^_]+_default_
           tag kubernetes.journal.container._default_
         </rule>
-    
+
         # mark logs from kube-* namespaces for processing as k8s logs but stored as system logs
         <rule>
           key CONTAINER_NAME
           pattern ^k8s_[^_]+_[^_]+_kube-(.+)_
           tag kubernetes.journal.container._kube-$1_
         </rule>
-    
+
         # mark logs from openshift-* namespaces for processing as k8s logs but stored as system logs
         <rule>
           key CONTAINER_NAME
           pattern ^k8s_[^_]+_[^_]+_openshift-(.+)_
           tag kubernetes.journal.container._openshift-$1_
         </rule>
-    
+
         # mark logs from openshift namespace for processing as k8s logs but stored as system logs
         <rule>
           key CONTAINER_NAME
           pattern ^k8s_[^_]+_[^_]+_openshift_
           tag kubernetes.journal.container._openshift_
         </rule>
-    
+
         # mark fluentd container logs
         <rule>
           key CONTAINER_NAME
           pattern ^k8s_.*fluentd
           tag kubernetes.journal.container.fluentd
         </rule>
-    
+
         # this is a kubernetes container
         <rule>
           key CONTAINER_NAME
           pattern ^k8s_
           tag kubernetes.journal.container
         </rule>
-    
+
         # not kubernetes - assume a system log or system container log
         <rule>
           key _TRANSPORT
@@ -2191,7 +2191,7 @@ var _ = Describe("Generating fluentd config", func() {
           tag journal.system
         </rule>
       </match>
-    
+
       <filter kubernetes.**>
         @type kubernetes_metadata
         kubernetes_url 'https://kubernetes.default.svc'
@@ -2200,21 +2200,21 @@ var _ = Describe("Generating fluentd config", func() {
         use_journal 'nil'
         ssl_partial_chain 'true'
       </filter>
-    
+
       <filter kubernetes.journal.**>
         @type parse_json_field
         merge_json_log 'false'
         preserve_json_log 'true'
         json_fields 'log,MESSAGE'
       </filter>
-    
+
       <filter kubernetes.var.log.containers.**>
         @type parse_json_field
         merge_json_log 'false'
         preserve_json_log 'true'
         json_fields 'log,MESSAGE'
       </filter>
-    
+
       <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
         @type parse_json_field
         merge_json_log true
@@ -2308,14 +2308,14 @@ var _ = Describe("Generating fluentd config", func() {
           static_index_name app-write
         </elasticsearch_index_name>
       </filter>
-    
+
       <filter **>
         @type elasticsearch_genid_ext
         hash_id_key viaq_msg_id
         alt_key kubernetes.event.metadata.uid
         alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
       </filter>
-    
+
       #flatten labels to prevent field explosion in ES
       <filter ** >
         @type record_transformer
@@ -2325,14 +2325,14 @@ var _ = Describe("Generating fluentd config", func() {
         </record>
         remove_keys $.kubernetes.labels
       </filter>
-    
+
       # Relabel specific source tags to specific intermediary labels for copy processing
       # Earlier matchers remove logs so they don't fall through to later ones.
       # A log source matcher may be null if no pipeline wants that type of log.
       <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
         @type null
       </match>
-    
+
       <match kubernetes.**_project1_** kubernetes.**_project2_** >
         @type relabel
         @label @_APPLICATION
@@ -2340,44 +2340,44 @@ var _ = Describe("Generating fluentd config", func() {
       <match kubernetes.** >
         @type null
       </match>
-    
+
       <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
         @type null
       </match>
-    
+
       <match **>
         @type stdout
       </match>
-    
+
     </label>
-    
+
     # Relabel specific sources (e.g. logs.apps) to multiple pipelines
     <label @_APPLICATION>
       <match **>
         @type copy
-    
+
         <store>
           @type relabel
           @label @TEST_APP
         </store>
-    
-    
+
+
       </match>
     </label>
-    
-    
+
+
     # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
     <label @TEST_APP>
       <match **>
         @type copy
-    
+
         <store>
           @type relabel
           @label @DEFAULT
         </store>
       </match>
     </label>
-    
+
     # Ship logs to specific outputs
 `))
 })

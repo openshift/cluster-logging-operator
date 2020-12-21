@@ -6,6 +6,8 @@ const (
 	// global proxy / trusted ca bundle consts
 	ProxyName                  = "cluster"
 	TrustedCABundleKey         = "ca-bundle.crt"
+	ClientCertKey              = "tls.crt"
+	ClientPrivateKey           = "tls.key"
 	InjectTrustedCABundleLabel = "config.openshift.io/inject-trusted-cabundle"
 	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
@@ -25,8 +27,9 @@ const (
 	MasterCASecretName  = "master-certs"
 	CollectorSecretName = "fluentd"
 
-	/* #nosec - suppressing rule G101 */
-	KibanaSessionSecretName = "kibana-session-secret"
+	// Disable gosec linter, complains "possible hard-coded secret"
+	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
+	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

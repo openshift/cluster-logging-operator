@@ -62,7 +62,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 		})
 
 		It("should produce well formed output label config", func() {
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @ONCLUSTER_ELASTICSEARCH>
 	<match retry_oncluster_elasticsearch>
@@ -89,7 +89,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 			reload_after '200'
 			# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-			sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'	
+			sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 			reload_on_failure false
 			# 2 ^ 31
 			request_timeout 2147483648
@@ -174,7 +174,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			}
 		})
 		It("should produce well formed output label config", func() {
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @OTHER_ELASTICSEARCH>
 	<match retry_other_elasticsearch>
@@ -197,7 +197,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 			reload_after '200'
 			# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-		        sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'	
+		        sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 			reload_on_failure false
 			# 2 ^ 31
 			request_timeout 2147483648
@@ -240,7 +240,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 			reload_after '200'
 			# https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-		        sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'	
+		        sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
 			reload_on_failure false
 			# 2 ^ 31
 			request_timeout 2147483648

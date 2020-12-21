@@ -516,7 +516,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-			results, err := generator.Generate(clfSpec, fwSpec)
+			results, err := generator.Generate(clfSpec, nil, fwSpec)
 			Expect(err).Should(Succeed())
 			Expect(results).To(EqualTrimLines(legacyConf))
 		})
@@ -1022,7 +1022,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-			results, err := generator.Generate(clfSpec, fwSpec)
+			results, err := generator.Generate(clfSpec, nil, fwSpec)
 			Expect(err).Should(Succeed())
 			Expect(results).To(EqualTrimLines(legacyConf))
 		})
@@ -1547,7 +1547,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         </label>
       `
 
-			results, err := generator.Generate(clfSpec, fwSpec)
+			results, err := generator.Generate(clfSpec, nil, fwSpec)
 			Expect(err).Should(Succeed())
 			Expect(results).To(EqualTrimLines(legacyConf))
 		})

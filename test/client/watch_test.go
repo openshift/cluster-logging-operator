@@ -17,7 +17,7 @@ var _ = Describe("Watch", func() {
 	BeforeEach(func() { t = NewTest() })
 	AfterEach(func() { t.Close() })
 
-	It("ForObject watches resources", func() {
+	It("WatchObject watches resources", func() {
 		o := runtime.NewConfigMap(t.NS.Name, "test", map[string]string{"a": "b"})
 		w, err := t.WatchObject(o)
 		ExpectOK(err)

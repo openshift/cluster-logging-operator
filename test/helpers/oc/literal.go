@@ -12,8 +12,8 @@ import (
 type ILiteral interface {
 	Command
 
-	// an os command string
-	From(string) ILiteral
+	// an oc command string
+	From(string, ...interface{}) ILiteral
 }
 
 type literal struct {
@@ -36,8 +36,8 @@ func (l *literal) WithConfig(cfg string) ILiteral {
 	return l
 }
 
-func (l *literal) From(cmd string) ILiteral {
-	l.cmdstr = strings.TrimSpace(cmd)
+func (l *literal) From(cmd string, args ...interface{}) ILiteral {
+	l.cmdstr = fmt.Sprintf(strings.TrimSpace(cmd), args...)
 	return l
 }
 

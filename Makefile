@@ -36,6 +36,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 #
 check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
+	go test ./test/helpers/... -exec true > /dev/null # Build but don't run test helpers tests.
 	$(MAKE) lint				  # Only lint if all code builds.
 
 # CI calls ci-check first.
@@ -150,13 +151,13 @@ test-functional:
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
 	go test -race ./test/functional/...
+	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
 test-unit:
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	go test -cover -race ./pkg/...
-	go test -cover -race ./test/helpers/
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)

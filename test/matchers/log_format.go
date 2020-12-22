@@ -62,7 +62,7 @@ func DeepFields(iface interface{}, namePrefix string) ([]reflect.Value, []string
 		switch v.Kind() {
 		case reflect.Struct:
 			typename := v.Type().Name()
-			if  typename != "Time" {
+			if typename != "Time" {
 				moreFields, moreNames := DeepFields(v.Interface(), n+"_")
 				fields = append(fields, moreFields...)
 				names = append(names, moreNames...)
@@ -112,7 +112,7 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		}
 	}
 
-	logger.V(3).Info("CompareLogLogic: Mismatch !!!",  "name", name,"templateValue", templateValueString, "value", valueString)
+	logger.V(3).Info("CompareLogLogic: Mismatch !!!", "name", name, "templateValue", templateValueString, "value", valueString)
 	return false
 }
 

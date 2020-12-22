@@ -175,7 +175,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitor(visit runtime.PodBuilderV
 	}
 
 	log.V(2).Info("waiting for pod to be ready")
-	if err = oc.Literal().From(fmt.Sprintf("oc wait -n %s pod/%s --timeout=120s --for=condition=Ready", f.test.NS.Name, f.Name)).Output(); err != nil {
+	if err = oc.Literal().From("oc wait -n %s pod/%s --timeout=120s --for=condition=Ready", f.test.NS.Name, f.Name).Output(); err != nil {
 		return err
 	}
 	if err = f.test.Client.Get(f.pod); err != nil {
@@ -198,7 +198,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitor(visit runtime.PodBuilderV
 	}
 	log.V(2).Info("waiting for fluentd to be ready")
 	err = wait.PollImmediate(time.Second*2, time.Second*30, func() (bool, error) {
-		output, err := oc.Literal().From(fmt.Sprintf("oc logs -n %s pod/%s %s", f.test.NS.Name, f.Name, constants.FluentdName)).Run()
+		output, err := oc.Literal().From("oc logs -n %s pod/%s %s", f.test.NS.Name, f.Name, constants.FluentdName).Run()
 		if err != nil {
 			return false, nil
 		}

@@ -12,21 +12,21 @@ import (
 )
 
 var templateForAnyCollector = types.PipelineMetadata{Collector: types.Collector{
-		Ipaddr4:    "*",
-		Inputname:  "*",
-		Name:       "*",
-   	    Version:    "*",
-		ReceivedAt: time.Time{},
-		},
-	}
+	Ipaddr4:    "*",
+	Inputname:  "*",
+	Name:       "*",
+	Version:    "*",
+	ReceivedAt: time.Time{},
+},
+}
 
-var templateForAnyKubernetes =  types.Kubernetes{
+var templateForAnyKubernetes = types.Kubernetes{
 	ContainerName:     "*",
 	PodName:           "*",
 	NamespaceName:     "*",
 	NamespaceID:       "*",
 	OrphanedNamespace: "*",
-	}
+}
 
 var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 

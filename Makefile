@@ -48,8 +48,6 @@ ci-check: check
 
 
 # Note: Go has built-in build caching, so always run `go build`.
-# It will do a better job than using source dependencies to decide if we need to build.
-
 bin/forwarder-generator: force
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator
 
@@ -125,6 +123,13 @@ deploy-image: image
 	hack/deploy-image.sh
 
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
+
+# This will deploy latest from the CI registry and is a dependency
+# of the origin-aggregated-logging-repo
+deploy-no-build:
+	$(MAKE) deploy-elasticsearch-operator
+	$(MAKE) cluster-logging-catalog-deploy
+	$(MAKE) cluster-logging-operator-install
 
 install:
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \

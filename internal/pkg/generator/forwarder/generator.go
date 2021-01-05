@@ -3,7 +3,7 @@ package forwarder
 import (
 	"fmt"
 
-	"sigs.k8s.io/yaml"
+	yaml "sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -50,8 +50,10 @@ func Generate(clfYaml string, includeDefaultLogStore bool) (string, error) {
 			Type: logging.LogStoreTypeElasticsearch,
 		}
 	}
+
 	spec, status := clRequest.NormalizeForwarder()
 	log.V(2).Info("Normalization", "status", status)
+
 	tunings := &logging.ForwarderSpec{}
 
 	generatedConfig, err := generator.Generate(spec, tunings)

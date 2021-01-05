@@ -29,6 +29,7 @@ var _ = Describe("Generating fluentd config", func() {
 					Name: "my-cloudwatch",
 					OutputTypeSpec: loggingv1.OutputTypeSpec{
 						Cloudwatch: &loggingv1.Cloudwatch{
+							Region: "anumber1",
 							LogStreamStrategy: loggingv1.CloudwatchLogStreamStrategy{
 								Name: loggingv1.LogStreamStrategyTypeUnique,
 								CloudwatchLogStreamStrategyTypeSpec: loggingv1.CloudwatchLogStreamStrategyTypeSpec{
@@ -57,6 +58,7 @@ var _ = Describe("Generating fluentd config", func() {
 				<match **>
 					@type cloudwatch_logs
 					auto_create_stream true
+					region anumber1
 					log_group_name openshiftlogging
 					log_stream_name_key cw_stream_name
 					remove_log_stream_name_key true

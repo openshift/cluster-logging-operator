@@ -34,6 +34,9 @@ type Cloudwatch struct {
 	//
 	// +required
 	LogStreamStrategy CloudwatchLogStreamStrategy `json:"logStreamStrategy,omitempty"`
+
+	// +required
+	Region string `json:"region,omitempty"`
 }
 
 // LogStreamStrategyType defines a fixed strategy type

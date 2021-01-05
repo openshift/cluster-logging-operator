@@ -109,6 +109,8 @@ spec:
                           - name
                           - retentionInDays
                           type: object
+                        region:
+                          type: string
                       type: object
                     elasticsearch:
                       type: object

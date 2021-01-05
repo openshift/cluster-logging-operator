@@ -603,6 +603,7 @@ const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
   <match **>
     @type cloudwatch_logs
     auto_create_stream true
+    region {{ .Target.Cloudwatch.Region }}
     log_group_name openshiftlogging
     log_stream_name_key cw_stream_name
     remove_log_stream_name_key true

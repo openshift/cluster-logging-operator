@@ -21,6 +21,14 @@ type ClusterLoggingRequest struct {
 
 	// ForwarderSpec is the normalized and sanitized logforwarder spec
 	ForwarderSpec logging.ClusterLogForwarderSpec
+
+	//CLFVerifier is a collection of functions to control verification
+	//of ClusterLogForwarding
+	CLFVerifier ClusterLogForwarderVerifier
+}
+
+type ClusterLogForwarderVerifier struct {
+	VerifyOutputSecret func(output *logging.OutputSpec, conds logging.NamedConditions) bool
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {

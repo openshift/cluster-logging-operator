@@ -3,7 +3,7 @@ package forwarder
 import (
 	"fmt"
 
-	yaml "gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -40,6 +40,9 @@ func Generate(clfYaml string, includeDefaultLogStore bool) (string, error) {
 		ForwarderSpec: forwarder.Spec,
 		Cluster: &logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{},
+		},
+		CLFVerifier: k8shandler.ClusterLogForwarderVerifier{
+			VerifyOutputSecret: func(output *logging.OutputSpec, conds logging.NamedConditions) bool { return true },
 		},
 	}
 	if includeDefaultLogStore {

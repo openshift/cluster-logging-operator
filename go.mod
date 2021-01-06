@@ -5,7 +5,7 @@ go 1.14
 // Pinned to kubernetes-1.18.3
 require (
 	cloud.google.com/go v0.54.0 // indirect
-	github.com/ViaQ/logerr v1.0.9
+	github.com/ViaQ/logerr v1.0.10-0.20201221223143-2916c7f40dfc
 	github.com/coreos/prometheus-operator v0.38.1-0.20200424145508-7e176fda06cc
 	github.com/emicklei/go-restful v2.12.0+incompatible // indirect
 	github.com/go-logr/zapr v0.2.0 // indirect

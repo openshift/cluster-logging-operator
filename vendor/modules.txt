@@ -18,7 +18,7 @@ github.com/Azure/go-autorest/tracing
 github.com/PuerkitoBio/purell
 # github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578
 github.com/PuerkitoBio/urlesc
-# github.com/ViaQ/logerr v1.0.9
+# github.com/ViaQ/logerr v1.0.10-0.20201221223143-2916c7f40dfc
 ## explicit
 github.com/ViaQ/logerr/internal/kv
 github.com/ViaQ/logerr/kverrors

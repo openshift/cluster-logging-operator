@@ -213,7 +213,7 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 	if logStoreSpec.NodeCount > 3 {
 
 		masterNode := elasticsearch.ElasticsearchNode{
-			Roles:     []elasticsearch.ElasticsearchNodeRole{"Client", "data", "master"},
+			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
 			NodeCount: 3,
 			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
@@ -221,7 +221,7 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 		esNodes = append(esNodes, masterNode)
 
 		dataNode := elasticsearch.ElasticsearchNode{
-			Roles:     []elasticsearch.ElasticsearchNodeRole{"Client", "data"},
+			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
 			NodeCount: logStoreSpec.NodeCount - 3,
 			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}
@@ -231,7 +231,7 @@ func newElasticsearchCR(cluster *logging.ClusterLogging, elasticsearchName strin
 	} else {
 
 		esNode := elasticsearch.ElasticsearchNode{
-			Roles:     []elasticsearch.ElasticsearchNodeRole{"Client", "data", "master"},
+			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
 			NodeCount: logStoreSpec.NodeCount,
 			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
 		}

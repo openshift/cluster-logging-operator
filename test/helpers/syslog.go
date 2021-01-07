@@ -437,7 +437,7 @@ func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, s
 			return nil, err
 		}
 	}
-	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
+	if err := os.Setenv("WORKING_DIR", workingDir); err != nil {
 		return nil, err
 	}
 	script := fmt.Sprintf("%s/syslog_cert_generation.sh", testDir)

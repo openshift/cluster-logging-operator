@@ -20,7 +20,6 @@ import (
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
@@ -33,26 +32,13 @@ const (
 	clusterLoggingURI     = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
 	logforwardingURI      = "apis/logging.openshift.io/v1alpha1/namespaces/openshift-logging/logforwardings"
 	DefaultCleanUpTimeout = 60.0 * 2
+	defaultRetryInterval      = 1 * time.Second
+	defaultTimeout            = 10 * time.Minute
+	DefaultWaitForLogsTimeout = 10 * time.Minute
+	// Shorter timeout for when we are expecting that there will be no logs
+	// since we will always go to the timeout in that case.a
+	DefaultWaitForNoLogsTimeout = 1 * time.Minute
 )
-
-var (
-	defaultRetryInterval      time.Duration
-	defaultTimeout            time.Duration
-	DefaultWaitForLogsTimeout time.Duration
-	err                       error
-)
-
-func init() {
-	if defaultRetryInterval, err = time.ParseDuration("1s"); err != nil {
-		panic(err)
-	}
-	if defaultTimeout, err = time.ParseDuration("5m"); err != nil {
-		panic(err)
-	}
-	if DefaultWaitForLogsTimeout, err = time.ParseDuration("5m"); err != nil {
-		panic(err)
-	}
-}
 
 type LogStore interface {
 	//ApplicationLogs returns app logs for a given log store

@@ -26,7 +26,7 @@ func TestHasCLORef(t *testing.T) {
 		Cluster: &logging.ClusterLogging{
 			TypeMeta: metav1.TypeMeta{},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:                       "Cluster-logging",
+				Name:                       "cluster-logging",
 				GenerateName:               "",
 				Namespace:                  "",
 				SelfLink:                   "",

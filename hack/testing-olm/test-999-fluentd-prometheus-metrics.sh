@@ -20,6 +20,7 @@ cleanup() {
   if [ "${DO_CLEANUP:-true}" == "true" ] ; then
       ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
       ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
+      oc delete ns openshift-operators-redhat
   fi
 
   set -e
@@ -28,6 +29,8 @@ cleanup() {
 trap "cleanup" EXIT
 
 if [ "${DO_SETUP:-true}" == "true" ] ; then
+  log::info "Deploying elasticsearch-operator"
+  make deploy-elasticsearch-operator
 	log::info "Deploying cluster-logging-operator"
   ${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
   ${repo_dir}/olm_deploy/scripts/operator-install.sh
@@ -54,13 +57,14 @@ spec:
       fluentd: {}
 EOL
 fi
+try_until_text "oc -n ${LOGGING_NS} get pod -l component=elasticsearch -o jsonpath={.items[0].status.phase}" "Running" "$((3 * $minute))"
 try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.metadata.name} --ignore-not-found" "fluentd" "$((1 * $minute))"
 expectedcollectors=$( oc get nodes | grep -c " Ready " )
 try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.status.desiredNumberScheduled}" "${expectedcollectors}"  "$((1 * $minute))"
 desired=$(oc -n ${LOGGING_NS} get ds fluentd  -o jsonpath={.status.desiredNumberScheduled})
 
 log::info "Waiting for ${desired} fluent pods to be available...."
-try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.status.numberReady}" "$desired" "$((2 * $minute))"
+try_until_text "oc -n ${LOGGING_NS} get ds fluentd -o jsonpath={.status.numberReady}" "$desired" "$((5 * $minute))"
 
 fpod=$(oc -n $LOGGING_NS get pod -l component=fluentd -o jsonpath={.items[0].metadata.name} --ignore-not-found)
 

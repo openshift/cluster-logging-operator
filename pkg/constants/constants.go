@@ -21,7 +21,7 @@ const (
 	KibanaName          = "kibana"
 	KibanaProxyName     = "kibana-proxy"
 	CuratorName         = "curator"
-	LogStoreService   = ElasticsearchFQDN + ":" + ElasticsearchPort
+	LogStoreService     = ElasticsearchFQDN + ":" + ElasticsearchPort
 	LogStoreURL         = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
 	MasterCASecretName  = "master-certs"
 	CollectorSecretName = "fluentd"

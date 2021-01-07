@@ -105,7 +105,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccount
 
 func NewLogCollectorServiceAccountRef(uid types.UID) metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "v1", // apiversion for serviceaccounts/finalizers in Cluster-logging.<VER>.clusterserviceversion.yaml
+		APIVersion:         "v1", // apiversion for serviceaccounts/finalizers in cluster-logging.<VER>.clusterserviceversion.yaml
 		Kind:               "ServiceAccount",
 		Name:               "logcollector",
 		UID:                uid,

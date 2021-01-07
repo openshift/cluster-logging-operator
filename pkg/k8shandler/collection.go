@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	clusterLoggingPriorityClassName = "Cluster-logging"
+	clusterLoggingPriorityClassName = "cluster-logging"
 	metricsPort                     = int32(24231)
 	metricsPortName                 = "metrics"
 	metricsVolumeName               = "collector-metrics"
@@ -289,7 +289,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	subject.APIGroup = ""
 
 	collectorReaderClusterRoleBinding := NewClusterRoleBinding(
-		"Cluster-logging-metadata-reader",
+		"cluster-logging-metadata-reader",
 		clusterRole.Name,
 		NewSubjects(
 			subject,

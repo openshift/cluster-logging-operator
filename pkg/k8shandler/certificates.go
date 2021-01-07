@@ -30,9 +30,10 @@ func (clusterRequest *ClusterLoggingRequest) extractMasterCerts() (extracted boo
 		}
 		return false, fmt.Errorf("Unable to get secret %s: %v", constants.MasterCASecretName, err)
 	}
-	workDir := utils.GetWorkingDir()
+
 	for name, value := range secret.Data {
-		if err != utils.WriteToWorkingDirFile(path.Join(workDir, name), value) {
+		if err = utils.WriteToWorkingDirFile(name, value); err != nil {
+			logger.Errorf("Error extracting cert from master-cert secret %q: %v", name, err)
 			return false, err
 		}
 	}
@@ -76,10 +77,10 @@ func loadFilesFromWorkingDir() (map[string][]byte, error) {
 
 //CreateOrUpdateCertificates for a cluster logging instance
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err error) {
-	return Syncronize(func() error {
+	return Synchronize(func() error {
 		var extracted bool
 		if extracted, err = clusterRequest.extractMasterCerts(); err != nil {
-			fmt.Printf("Error %v", err)
+			logger.Errorf("Error extracting master-cert: %v", err)
 			return err
 		}
 

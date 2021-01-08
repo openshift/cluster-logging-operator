@@ -10,34 +10,58 @@ REGENERATE_NEEDED=0
 
 function info() {
   local msg=$1
-  echo "[INFO] ${msg}" >> ${WORKING_DIR}/action.log
+  local type=${2:-}
+  local reason=${3:-}
+  local out="\"msg\":\"$msg\""
+  if [ -n "$type" ] ; then
+    out="$out, \"type\":\"$type\""
+  fi
+  if [ -n "$reason" ] ; then
+    out="$out, \"reason\":\"$reason\""
+  fi
+  if [ -f ${WORKING_DIR}/action.log ] && [ "$(stat -c%s ${WORKING_DIR}/action.log)" != "0" ] ; then
+    echo "," >> ${WORKING_DIR}/action.log
+  fi
+  echo "{$out}" >> ${WORKING_DIR}/action.log
 }
 
 function init_cert_files() {
 
   if [ ! -f ${WORKING_DIR}/ca.db ]; then
-    info "Initializing missing file: ${WORKING_DIR}/ca.db"
+    info "${WORKING_DIR}/ca.db" "File intialization" "Missing"
     touch ${WORKING_DIR}/ca.db
   fi
 
   if [ ! -f ${WORKING_DIR}/ca.serial.txt ]; then
-    info "Initializing missing file: ${WORKING_DIR}/ca.serial.txt"
+    info "${WORKING_DIR}/ca.serial.txt" "File intialization" "Missing"
     echo 00 > ${WORKING_DIR}/ca.serial.txt
   fi
 }
 
 function generate_signing_ca() {
   local regen=false
-  if [ ! -f ${WORKING_DIR}/ca.crt ] || [ "$(file -b ${WORKING_DIR}/ca.crt)" != "PEM certificate" ] ; then
-    info "Missing file or invalid type: ${WORKING_DIR}/ca.crt"
+  local fileExists=$(test -f ${WORKING_DIR}/ca.crt;echo $?)
+  if [ "$fileExists" == "1" ] ; then
+    info "${WORKING_DIR}/ca.crt" "Regenerate" "FileMissing"
     regen=true
   fi
-  if [ ! -f ${WORKING_DIR}/ca.key ] || [ "$(file -b ${WORKING_DIR}/ca.key)" != "ASCII text" ] ; then
-    info "Missing file or invalid type: ${WORKING_DIR}/ca.key"
+  local filetype=$(file -b ${WORKING_DIR}/ca.crt)
+  if [ "$fileExists" == "0" ] && [ "$filetype" != "PEM certificate" ] ; then
+    info "${WORKING_DIR}/ca.crt '$filetype' != 'PEM certificate'" "Regenerate" "InvalidFileType"
+    regen=true
+  fi
+  fileExists=$(test -f ${WORKING_DIR}/ca.key;echo $?)
+  if [ "$fileExists" == "1" ] ; then
+    info "${WORKING_DIR}/ca.key" "Regenerate" "FileMissing"
+    regen=true
+  fi
+  filetype=$(file -b ${WORKING_DIR}/ca.key)
+  if [ "$fileExists" == "0" ] && [ "$filetype" != "ASCII text" ] ; then
+    info "${WORKING_DIR}/ca.key '$filetype' != 'ASCII text'" "Regenerate" "InvalidFileType"
     regen=true
   fi
   if ! $(openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/ca.crt > /dev/null 2>&1) ; then
-    info "${WORKING_DIR}/ca.crt expired or missing"
+    info "${WORKING_DIR}/ca.crt" "Regenerate" "ExpiredOrMissing"
     regen=true
   fi
   if [ "${regen}" == "true" ] ; then
@@ -232,12 +256,18 @@ function generate_certs() {
     info "REGENERATE_NEEDED=1"
     regen=true
   fi
-  if [ ! -f ${WORKING_DIR}/${component}.crt ] || [ "$(file -b ${WORKING_DIR}/${component}.crt)" != "PEM certificate" ] ; then
-    info "Missing file or invalid type: ${WORKING_DIR}/${component}.crt"
+  local fileExists=$(test -f ${WORKING_DIR}/${component}.crt;echo $?)
+  if [ "$fileExists" == "1" ] ; then
+    info "${WORKING_DIR}/${component}.crt" "Regenerate" "FileMissing"
+    regen=true
+  fi
+  local filetype=$(file -b ${WORKING_DIR}/${component}.crt)
+  if [ "$fileExists" == "0" ] && [ "$filetype" != "PEM certificate" ] ; then
+    info "${WORKING_DIR}/${component}.crt '$filetype' != 'PEM certificate'" "Regenerate" "InvalidFileType"
     regen=true
   fi
   if ! $(openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/${component}.crt > /dev/null 2>&1); then
-    info "${WORKING_DIR}/${component}.crt is either expired or missing"
+    info "${WORKING_DIR}/${component}.crt" "Regenerate" "ExpiredOrMissing"
     regen=true
   fi
   if [ "${regen}" == "true" ]; then
@@ -306,6 +336,8 @@ if [ ! -s "${WORKING_DIR}/kibana-session-secret" ] ; then
 fi
 
 if [ -f ${WORKING_DIR}/action.log ] ; then
-  cat ${WORKING_DIR}/action.log
+  # remove newlines from log to have condensed JSON array
+  sed -i ':a;N;$!ba;s/\n//g' ${WORKING_DIR}/action.log
+  echo "[$(cat ${WORKING_DIR}/action.log)]"
   rm ${WORKING_DIR}/action.log
 fi

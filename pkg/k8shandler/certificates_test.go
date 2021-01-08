@@ -112,7 +112,6 @@ var _ = Describe("Reconciling", func() {
 			if err := os.RemoveAll(utils.GetWorkingDir()); err != nil {
 				Fail(fmt.Sprintf("%v", err))
 			}
-			os.Setenv("WORKING_DIR", utils.GetWorkingDir())
 			os.Setenv("SCRIPTS_DIR", scriptsDir)
 			_ = clusterRequest.CreateOrUpdateCertificates()
 		})
@@ -125,6 +124,20 @@ var _ = Describe("Reconciling", func() {
 			Expect(secret).Should(ContainKeys("ca.key", "ca.crt", "ca.db", "ca.serial.txt"))
 			Expect(secret).Should(SucceedVerifyX509("ca.crt", "ca.crt", "openshift-cluster-logging-signer", nil, nil, nil))
 		})
+
+		It("skip re-generating secrets during restart", func() {
+			secret := &corev1.Secret{}
+			key := types.NamespacedName{Name: constants.MasterCASecretName, Namespace: constants.OpenshiftNS}
+			Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
+
+			Expect(os.RemoveAll(utils.GetWorkingDir())).To(Succeed())
+			clusterRequest.CreateOrUpdateCertificates()
+
+			updatedsecret := &corev1.Secret{}
+			Expect(client.Get(context.TODO(), key, updatedsecret)).Should(Succeed())
+			Expect(updatedsecret.Data["ca.key"]).Should(BeEquivalentTo(secret.Data["ca.key"]))
+		})
+
 		It("should recreate the master-cert secret when its missing", func() {
 			//remove secret and validate
 			Expect(client.Delete(context.TODO(), masterCASecret)).Should(Succeed())

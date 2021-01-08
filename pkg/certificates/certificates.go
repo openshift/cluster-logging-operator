@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os/exec"
 
+	"sigs.k8s.io/yaml"
+
 	"github.com/ViaQ/logerr/log"
 )
 
@@ -21,8 +23,25 @@ func RunCertificatesScript(namespace, logStoreName, workDir, script string) (err
 	log.V(3).Info("Cert generation", "out", result, "err", err)
 	if result != "" {
 		updated = true
-		log.Info("cert_generation output", "output", result)
+		dumpLogs(result)
 	}
 	log.V(3).Info("Returning", "err", err, "updated", updated)
 	return err, updated
+}
+
+func dumpLogs(raw string) {
+	genLogs := []map[string]string{}
+	err := yaml.Unmarshal([]byte(raw), &genLogs)
+	if err == nil {
+		for _, eventlog := range genLogs {
+			keyvalues := []interface{}{}
+			for k, v := range eventlog {
+				keyvalues = append(keyvalues, k, v)
+			}
+			log.Info("cert_generation output", keyvalues...)
+		}
+		return
+	}
+	log.Error(err, "Unable to unmarshal cert_generation to structured output")
+	log.Info("cert_generation output", "output", raw)
 }

@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	logger "github.com/ViaQ/logerr/log"
 	"strings"
 	"time"
+
+	logger "github.com/ViaQ/logerr/log"
 )
 
 var ErrParse = errors.New("logs could not be parsed")

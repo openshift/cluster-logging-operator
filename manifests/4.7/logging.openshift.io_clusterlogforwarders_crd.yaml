@@ -94,8 +94,8 @@ spec:
                       description: Cloudwatch provides configuration for the output
                         type `cloudwatch`
                       properties:
-                        logStreamStrategy:
-                          description: LogStreamStrategy defines how logstreams are
+                        logGroupStrategy:
+                          description: LogGroupStrategy defines how logstreams are
                             created and configured
                           properties:
                             name:

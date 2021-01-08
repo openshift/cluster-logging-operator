@@ -2,6 +2,7 @@ package fluentd
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -79,9 +80,29 @@ func (conf *outputLabelConf) Protocol() string {
 	}
 }
 
+func (conf *outputLabelConf) LogRetentionDays() string {
+	if conf.Target.Type == logging.OutputTypeCloudwatch {
+		return strconv.Itoa(conf.Target.Cloudwatch.LogGroupStrategy.RetentionInDays)
+	}
+	return ""
+}
+func (conf *outputLabelConf) LogGroupName() string {
+	if conf.Target.Type == logging.OutputTypeCloudwatch {
+		switch conf.Target.Cloudwatch.LogGroupStrategy.Name {
+		case logging.LogGroupStrategyTypeNamespace:
+			return `${record["kubernetes"]["namespace_name"]}`
+		default:
+			return ""
+		}
+		return fmt.Sprintf("/var/lib/fluentd/%s", conf.StoreID())
+	}
+	return ""
+}
+
 func (conf *outputLabelConf) BufferPath() string {
 	return fmt.Sprintf("/var/lib/fluentd/%s", conf.StoreID())
 }
+
 func (conf *outputLabelConf) SecretPath(file string) string {
 	return fmt.Sprintf("/var/run/ocp-collector/secrets/%s/%s", conf.Target.Secret.Name, file)
 }

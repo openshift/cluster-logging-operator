@@ -32,7 +32,7 @@ var _ = Describe("Generating fluentd config", func() {
 							Region: "anumber1",
 							LogGroupStrategy: loggingv1.CloudwatchLogGroupStrategy{
 								Name: loggingv1.LogGroupStrategyTypeNamespace,
-								CloudwatchLogStreamStrategyTypeSpec: loggingv1.CloudwatchLogGroupStrategyTypeSpec{
+								CloudwatchLogGroupStrategyTypeSpec: loggingv1.CloudwatchLogGroupStrategyTypeSpec{
 									RetentionInDays: 7,
 								},
 							},
@@ -45,8 +45,10 @@ var _ = Describe("Generating fluentd config", func() {
 			}
 		})
 
-		It("should provide a valid configuration", func() {
-			expConf := `
+		Context("using namespace log group strategy", func() {
+
+			It("should provide a valid configuration", func() {
+				expConf := `
 			<label @MY_CLOUDWATCH>
 				<filter **>
 					@type record_transformer
@@ -82,10 +84,11 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
-			Expect(err).To(BeNil())
-			Expect(len(results)).To(Equal(1))
-			Expect(results[0]).To(EqualTrimLines(expConf))
+				results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+				Expect(err).To(BeNil())
+				Expect(len(results)).To(Equal(1))
+				Expect(results[0]).To(EqualTrimLines(expConf))
+			})
 		})
 	})
 })

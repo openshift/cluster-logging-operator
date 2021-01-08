@@ -596,21 +596,23 @@ const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
   <filter **>
     @type record_transformer
     <record>
+      cw_group_name {{.LogGroupName }}
       cw_stream_name ${tag}
-      cw_retention_days {{ .Target.Cloudwatch.LogStreamStrategy.RetentionInDays }} 
+      cw_retention_days {{ .LogRetentionDays }} 
     </record>
   </filter>
   <match **>
     @type cloudwatch_logs
     auto_create_stream true
     region {{ .Target.Cloudwatch.Region }}
-    log_group_name openshiftlogging
+    log_group_name cw_group_name
     log_stream_name_key cw_stream_name
     remove_log_stream_name_key true
+    remove_log_group_name_key true
     auto_create_stream true
     concurrency 2
-    aws_key_id {{ .SecretPath "aws_access_key_id"}}
-    aws_sec_key {{ .SecretPath "aws_secret_access_key"}}
+    aws_key_id "#{open('{{ .SecretPath "aws_access_key_id"}}','r' do |f| f.read end}"
+    aws_sec_key "#{open('{{ .SecretPath "aws_secret_access_key"}}','r' do |f| f.read end}"
     retention_in_days_key cw_retention_days
     #max_message_length 32768
     #use_tag_as_group false
@@ -618,7 +620,6 @@ const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
     include_time_key true
     #localtime true
     #log_group_name_key group_name_key
-    #remove_log_group_name_key true
     #put_log_events_retry_wait 1s
     #put_log_events_retry_limit 17
     #put_log_events_disable_retry_limit false

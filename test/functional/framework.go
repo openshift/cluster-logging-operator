@@ -1,8 +1,8 @@
 package functional
 
 import (
+	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -15,19 +15,25 @@ import (
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/certificates"
+	"github.com/openshift/cluster-logging-operator/pkg/components/fluentd"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
+	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
-	applicationLog = "application"
-	auditLog       = "audit"
-	k8sAuditLog    = "k8s"
+	applicationLog     = "application"
+	auditLog           = "audit"
+	k8sAuditLog        = "k8s"
+	ApplicationLogFile = "/tmp/app-logs"
 )
 
 var fluentdLogPath = map[string]string{
@@ -37,7 +43,7 @@ var fluentdLogPath = map[string]string{
 }
 
 var outputLogFile = map[string]string{
-	applicationLog: "/tmp/app-logs",
+	applicationLog: ApplicationLogFile,
 	auditLog:       "/tmp/audit-logs",
 	k8sAuditLog:    "/tmp/audit-logs",
 }
@@ -61,6 +67,7 @@ type FluentdFunctionalFramework struct {
 	pod               *corev1.Pod
 	fluentContainerId string
 	receiverBuilders  []receiverBuilder
+	closeClient       func()
 }
 
 func init() {
@@ -69,17 +76,20 @@ func init() {
 }
 
 func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
-	verbosity := 9
+	test := client.NewTest()
+	return NewFluentdFunctionalFrameworkUsing(client.NewTest(), test.Close, 0)
+}
+
+func NewFluentdFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosity int) *FluentdFunctionalFramework {
 	if level, found := os.LookupEnv("LOG_LEVEL"); found {
 		if i, err := strconv.Atoi(level); err == nil {
 			verbosity = i
 		}
 	}
 
-	log.MustInit("fluent-ftf")
+	log.MustInit("functional-framework")
 	log.SetLogLevel(verbosity)
-	t := client.NewTest()
-	testName := fmt.Sprintf("test-fluent-%d", rand.Intn(1000))
+	testName := "functional"
 	framework := &FluentdFunctionalFramework{
 		Name:      testName,
 		Namespace: t.NS.Name,
@@ -91,6 +101,7 @@ func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
 		Test:             t,
 		Forwarder:        runtime.NewClusterLogForwarder(),
 		receiverBuilders: []receiverBuilder{},
+		closeClient: fnClose,
 	}
 	return framework
 }
@@ -147,7 +158,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	configmap := runtime.NewConfigMap(f.Test.NS.Name, f.Name, map[string]string{})
 	runtime.NewConfigMapBuilder(configmap).
 		Add("fluent.conf", f.Conf).
-		Add("run.sh", string(utils.GetFileContents(utils.GetShareDir()+"/fluentd/run.sh")))
+		Add("run.sh", fluentd.RunScript)
 	if err = f.Test.Client.Create(configmap); err != nil {
 		return err
 	}
@@ -168,6 +179,31 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 		AddServicePort(24231, 24231).
 		WithSelector(f.labels)
 	if err = f.Test.Client.Create(service); err != nil {
+		return err
+	}
+
+	role := runtime.NewRole(f.test.NS.Name, f.Name,
+		v1.PolicyRule{
+			Verbs:     []string{"list", "get"},
+			Resources: []string{"pods", "namespaces"},
+			APIGroups: []string{""},
+		},
+	)
+	if err = f.test.Client.Create(role); err != nil {
+		return err
+	}
+	rolebinding := runtime.NewRoleBinding(f.test.NS.Name, f.Name,
+		v1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     role.Name,
+		},
+		v1.Subject{
+			Kind: "ServiceAccount",
+			Name: "default",
+		},
+	)
+	if err = f.test.Client.Create(rolebinding); err != nil {
 		return err
 	}
 
@@ -279,6 +315,25 @@ func (f *FluentdFunctionalFramework) WriteMessagesTok8sAuditLog(msg string, numO
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
+func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs uint64) error {
+	return f.WritesNApplicationLogsOfSize(numOfLogs, uint64(100))
+}
+
+func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size uint64) error {
+	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
+	//podname_ns_containername-containerid.log
+	//functional_testhack-16511862744968_fluentd-90a0f0a7578d254eec640f08dd155cc2184178e793d0289dff4e7772757bb4f8.log
+	filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", f.pod.Name, f.pod.Namespace, constants.FluentdName, f.fluentContainerId)
+	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p /var/log/containers;echo > %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", filepath, size, numOfLogs, msg, filepath))
+	log.V(3).Info("FluentdFunctionalFramework.WritesNApplicationLogsOfSize", "result", result, "err", err)
+	return err
+}
+
+func (f *FluentdFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
+	filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", f.pod.Name, f.pod.Namespace, constants.FluentdName, f.fluentContainerId)
+	return f.WriteMessagesToLog(msg, numOfLogs, filepath)
+}
+
 func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs int, filename string) error {
 	logPath := filepath.Dir(filename)
 	cmd := fmt.Sprintf("bash -c 'mkdir -p %s;for n in {1..%d};do echo \"%s\" >> %s;done'", logPath, numOfLogs, msg, filename)
@@ -317,4 +372,28 @@ func (f *FluentdFunctionalFramework) ReadLogsFrom(outputName string, outputLogTy
 	}
 	log.V(4).Info("Returning", "logs", result)
 	return result, err
+}
+
+func (f *FluentdFunctionalFramework) ReadNApplicationLogsFrom(n uint64, outputName string) ([]string, error) {
+	lines := []string{}
+	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
+	defer cancel()
+	reader, err := cmd.TailReaderForContainer(f.pod, outputName, ApplicationLogFile)
+	if err != nil {
+		log.V(3).Error(err, "Error creating tail reader")
+		return nil, err
+	}
+	for {
+		line, err := reader.ReadLineContext(ctx)
+		if err != nil {
+			log.V(3).Error(err, "Error readlinecontext")
+			return nil, err
+		}
+		lines = append(lines, line)
+		n--
+		if n == 0 {
+			break
+		}
+	}
+	return lines, err
 }

@@ -4,6 +4,7 @@ package runtime
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
@@ -112,6 +113,23 @@ func Exec(o runtime.Object, cmd string, args ...string) *exec.Cmd {
 func ExecOc(o runtime.Object, container, cmd string, args ...string) (string, error) {
 	m := Meta(o)
 	return oc.Exec().WithNamespace(m.GetNamespace()).Pod(m.GetName()).Container(container).WithCmd(cmd, args...).Run()
+}
+
+// ExecContainer returns an `oc exec` Cmd to run cmd on o.
+func ExecContainer(o runtime.Object, container, cmd string, args ...string) *exec.Cmd {
+	m := Meta(o)
+	ocCmd := append([]string{
+		"exec",
+		"-c",
+		strings.ToLower(container),
+		"-i",
+		"-n", m.GetNamespace(),
+		GroupVersionKind(o).Kind + "/" + m.GetName(),
+		"--",
+		cmd,
+	}, args...)
+
+	return exec.Command("oc", ocCmd...)
 }
 
 // ServiceDomainName returns "name.namespace.svc".

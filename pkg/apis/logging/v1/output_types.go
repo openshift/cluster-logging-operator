@@ -30,36 +30,36 @@ type OutputTypeSpec struct {
 // Cloudwatch provides configuration for the output type `cloudwatch`
 type Cloudwatch struct {
 
-	//LogStreamStrategy defines how logstreams are created and configured
+	//LogGroupStrategy defines how logstreams are created and configured
 	//
 	// +required
-	LogStreamStrategy CloudwatchLogStreamStrategy `json:"logStreamStrategy,omitempty"`
+	LogGroupStrategy CloudwatchLogGroupStrategy `json:"logGroupStrategy,omitempty"`
 
 	// +required
 	Region string `json:"region,omitempty"`
 }
 
-// LogStreamStrategyType defines a fixed strategy type
-type LogStreamStrategyType string
+// LogGroupStrategyType defines a fixed strategy type
+type LogGroupStrategyType string
 
 const (
-	// LogStreamStrategyTypeUnique is the strategy to use the log tag (e.g. name, ns, podname)
-	LogStreamStrategyTypeUnique LogStreamStrategyType = "unique"
+	// LogGroupStrategyTypeNamespace is the strategy to use for grouping logs (e.g. ns, source)
+	LogGroupStrategyTypeNamespace LogGroupStrategyType = "namespace"
 )
 
-// CloudwatchLogStreamStrategy defines a logstream strategy for cloudwatch
-type CloudwatchLogStreamStrategy struct {
+// CloudwatchLogGroupStrategy defines a logstream strategy for cloudwatch
+type CloudwatchLogGroupStrategy struct {
 	// Name used to refer to the naming strategy
 	//
 	// +kubebuilder:validation:minLength:=1
 	// +required
-	Name LogStreamStrategyType `json:"name"`
+	Name LogGroupStrategyType `json:"name"`
 
-	CloudwatchLogStreamStrategyTypeSpec `json:",inline"`
+	CloudwatchLogGroupStrategyTypeSpec `json:",inline"`
 }
 
-// CloudwatchLogStreamStrategyTypeSpec is spec for a given logstream strategy
-type CloudwatchLogStreamStrategyTypeSpec struct {
+// CloudwatchLogGroupStrategyTypeSpec is spec for a given logstream strategy
+type CloudwatchLogGroupStrategyTypeSpec struct {
 	// RetentionInDays the default number of days retention for a logstream
 	//
 	// +required

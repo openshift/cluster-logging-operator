@@ -30,9 +30,9 @@ var _ = Describe("Generating fluentd config", func() {
 					OutputTypeSpec: loggingv1.OutputTypeSpec{
 						Cloudwatch: &loggingv1.Cloudwatch{
 							Region: "anumber1",
-							LogStreamStrategy: loggingv1.CloudwatchLogStreamStrategy{
-								Name: loggingv1.LogStreamStrategyTypeUnique,
-								CloudwatchLogStreamStrategyTypeSpec: loggingv1.CloudwatchLogStreamStrategyTypeSpec{
+							LogGroupStrategy: loggingv1.CloudwatchLogGroupStrategy{
+								Name: loggingv1.LogGroupStrategyTypeNamespace,
+								CloudwatchLogStreamStrategyTypeSpec: loggingv1.CloudwatchLogGroupStrategyTypeSpec{
 									RetentionInDays: 7,
 								},
 							},
@@ -51,6 +51,7 @@ var _ = Describe("Generating fluentd config", func() {
 				<filter **>
 					@type record_transformer
 					<record>
+						cw_group_name ${record["kubernetes"]["namespace_name"]}
 						cw_stream_name ${tag}
 						cw_retention_days 7
 					</record>
@@ -59,13 +60,14 @@ var _ = Describe("Generating fluentd config", func() {
 					@type cloudwatch_logs
 					auto_create_stream true
 					region anumber1
-					log_group_name openshiftlogging
+					log_group_name cw_group_name
 					log_stream_name_key cw_stream_name
 					remove_log_stream_name_key true
+					remove_log_group_name_key true
 					auto_create_stream true
 					concurrency 2
-					aws_key_id /var/run/ocp-collector/secrets/my-secret/aws_access_key_id
-					aws_sec_key /var/run/ocp-collector/secrets/my-secret/aws_secret_access_key
+					aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r' do |f| f.read end}"
+					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r' do |f| f.read end}"
 					retention_in_days_key cw_retention_days
 					#max_message_length 32768
 					#use_tag_as_group false
@@ -73,7 +75,6 @@ var _ = Describe("Generating fluentd config", func() {
 					include_time_key true
 					#localtime true
 					#log_group_name_key group_name_key
-					#remove_log_group_name_key true
 					#put_log_events_retry_wait 1s
 					#put_log_events_retry_limit 17
 					#put_log_events_disable_retry_limit false

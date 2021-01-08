@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
@@ -79,7 +79,7 @@ func (clusterRequest *ClusterLoggingRequest) GetRouteURL(routeName string) (stri
 
 	if err := clusterRequest.Get(routeName, foundRoute); err != nil {
 		if !errors.IsNotFound(err) {
-			logrus.Errorf("Failed to check for ClusterLogging object: %v", err)
+			log.Error(err, "Failed to check for ClusterLogging object")
 		}
 		return "", err
 	}
@@ -96,11 +96,6 @@ func (clusterRequest *ClusterLoggingRequest) RemoveRoute(routeName string) error
 		routeName,
 		"",
 	)
-
-	//TODO: Remove this in the next release after removing old kibana code completely
-	if !HasCLORef(rt, clusterRequest) {
-		return nil
-	}
 
 	err := clusterRequest.Delete(rt)
 	if err != nil && !errors.IsNotFound(err) {

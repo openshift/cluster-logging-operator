@@ -1,4 +1,4 @@
-FROM registry.svc.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.6 AS builder
+FROM registry.svc.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
 
 # COPY steps are in the reverse order of frequency of change
@@ -17,12 +17,14 @@ COPY pkg ./pkg
 
 RUN make build
 
-FROM registry.svc.ci.openshift.org/ocp/4.6:cli as origincli
+FROM registry.svc.ci.openshift.org/ocp/4.7:cli as origincli
 
-FROM registry.svc.ci.openshift.org/ocp/4.6:base
+FROM registry.svc.ci.openshift.org/ocp/4.7:base
 RUN INSTALL_PKGS=" \
       openssl \
+      file \
       rsync \
+      xz \
       " && \
     yum install -y $INSTALL_PKGS && \
     rpm -V $INSTALL_PKGS && \
@@ -37,6 +39,7 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/
 
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
 RUN rm /manifests/art.yaml
+RUN rm -rf /manifests/5.0
 
 COPY --from=origincli /usr/bin/oc /usr/bin/
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 )
 
 // Runner is for executing the command. It provides implementation for
@@ -44,10 +44,11 @@ func (r *runner) Run() (string, error) {
 		return "composed command failed", r.err
 	}
 	r.setArgs(r.collectArgsFunc())
-	return r.runCmd()
+	// never write to this channel
+	return r.runCmd(make(chan time.Time, 1))
 }
 
-func (r *runner) runCmd() (string, error) {
+func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	// #nosec G204
 	r.Cmd = osexec.Command(CMD, r.args...)
 	var outbuf bytes.Buffer
@@ -60,14 +61,33 @@ func (r *runner) runCmd() (string, error) {
 		r.Cmd.Stderr = &errbuf
 	}
 	r.Cmd.Env = []string{fmt.Sprintf("%s=%s", "KUBECONFIG", os.Getenv("KUBECONFIG"))}
-	logger.Infof("running: %s %s", r, strings.Join(r.args, " "))
-	err := r.Cmd.Run()
+	cmdargs := strings.Join(r.args, " ")
+	err := r.Cmd.Start()
+	if err != nil {
+		log.Error(err, "could not start oc command", "arguments", cmdargs)
+		return "", err
+	}
+	// Wait for the process to finish or kill it after a timeout (whichever happens first):
+	done := make(chan error, 1)
+	go func() {
+		done <- r.Cmd.Wait()
+	}()
+	select {
+	case <-timeoutCh:
+		if err = r.Cmd.Process.Kill(); err != nil {
+			log.Error(err, "failed to kill process: ")
+		}
+	case err = <-done:
+		if err != nil {
+			log.Error(err, "oc finished with error = %v")
+		}
+	}
 	if err != nil {
 		if r.tostdout {
 			return "", err
 		}
 		errout := strings.TrimSpace(errbuf.String())
-		logger.Infof("output: %s, error: %v", errout, err)
+		log.Info("command result", "arguments", cmdargs, "output", errout, "error", err)
 		return errout, err
 	}
 	if r.tostdout {
@@ -75,18 +95,19 @@ func (r *runner) runCmd() (string, error) {
 	}
 	out := strings.TrimSpace(outbuf.String())
 	if len(out) > 500 {
-		logger.Infof("output(truncated 500/%d): %s", len(out), truncateString(out, 500))
+		log.Info("output(truncated 500/length)", "arguments", cmdargs, "length", len(out), "result", truncateString(out, 500))
 	} else {
-		logger.Infof("output: %s", out)
+		log.Info("command output", "arguments", cmdargs, "output", out)
 	}
 	return out, nil
 }
 
 func (r *runner) RunFor(d time.Duration) (string, error) {
-	time.AfterFunc(d, func() {
-		_ = r.Kill()
-	})
-	return r.Run()
+	if r.err != nil {
+		return "composed command failed", r.err
+	}
+	r.setArgs(r.collectArgsFunc())
+	return r.runCmd(time.After(d))
 }
 
 func (r *runner) Kill() error {
@@ -134,10 +155,6 @@ func sanitizeArgs(argstr string) []string {
 
 func (r *runner) setArgs(args []string) {
 	r.args = args
-}
-
-func (r *runner) setArgsStr(argstr string) {
-	r.args = sanitizeArgs(argstr)
 }
 
 func truncateString(str string, num int) string {

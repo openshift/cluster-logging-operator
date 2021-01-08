@@ -5,14 +5,21 @@ mkdir -p "${BASE_COLLECTION_PATH}"
 # resource list
 resources=()
 
-# cluser logging operator namespace
+# cluster logging operator namespace
 resources+=(ns/openshift-logging)
 
-# elatiscsearch operator namespace
+# elasticsearch operator namespace
 resources+=(ns/openshift-operators-redhat)
 
 # cluster-scoped resources
 resources+=(nodes)
+resources+=(pods)
+resources+=(roles)
+resources+=(rolebindings)
+resources+=(clusterroles)
+resources+=(clusterrolebindings)
+resources+=(configmaps)
+resources+=(serviceaccounts)
 resources+=(events)
 resources+=(persistentvolumes)
 

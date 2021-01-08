@@ -154,7 +154,7 @@ var _ = Describe("Generating fluentd config", func() {
     rotate_wait 5
     tag kubernetes.*
     read_from_head "true"
-    @label @CONCAT
+    @label @MEASURE
     <parse>
       @type multi_format
       <pattern>
@@ -170,7 +170,56 @@ var _ = Describe("Generating fluentd config", func() {
       </pattern>
     </parse>
   </source>
-  
+  <label @MEASURE>
+	<filter **>
+		@type record_transformer
+		enable_ruby
+		<record>
+		msg_size ${record.to_s.length}
+		</record>
+	</filter>
+	<filter **>
+		@type prometheus
+		<metric>
+		name cluster_logging_collector_input_record_total
+		type counter
+		desc The total number of incoming records
+		<labels>
+			tag ${tag}
+			hostname ${hostname}
+		</labels>
+		</metric>
+	</filter>
+	<filter **>
+		@type prometheus
+		<metric>
+		name cluster_logging_collector_input_record_bytes
+		type counter
+		desc The total bytes of incoming records
+		key msg_size
+		<labels>
+			tag ${tag}
+			hostname ${hostname}
+		</labels>
+		</metric>
+	</filter>
+	<filter **>
+		@type record_transformer
+		remove_keys msg_size
+	</filter>
+	<match journal>
+		@type relabel
+		@label @INGRESS
+	</match>
+	<match *audit.log>
+		@type relabel
+		@label @INGRESS
+	</match>
+	<match kubernetes.**>
+		@type relabel
+		@label @CONCAT
+	</match>
+	</label>  
   <label @CONCAT>
     <filter kubernetes.**>
       @type concat
@@ -313,15 +362,21 @@ var _ = Describe("Generating fluentd config", func() {
       remove_keys req,res,msg,name,level,v,pid,err
     </filter>
   
-    <filter k8s-audit.log**>
-      @type record_transformer
-      enable_ruby
-      <record>
-        k8s_audit_level ${record['level']}
-        level info
-      </record>
-    </filter>
-  
+	<filter k8s-audit.log**>
+	  @type record_modifier
+	  <record>
+		k8s_audit_level ${record['level']}
+		level info
+	  </record>
+	</filter>
+	<filter openshift-audit.log**>
+	  @type record_modifier
+	  <record>
+		openshift_audit_level ${record['level']}
+		level info
+	  </record>
+	</filter>
+
     <filter **>
       @type viaq_data_model
       elasticsearch_index_prefix_field 'viaq_index_name'
@@ -471,12 +526,11 @@ var _ = Describe("Generating fluentd config", func() {
         target_index_key viaq_index_name
         id_key viaq_msg_id
         remove_keys viaq_index_name
-        user fluentd
-        password changeme
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
         type_name _doc
+        http_backend typhoeus
         write_operation create
         reload_connections 'true'
         # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -495,7 +549,7 @@ var _ = Describe("Generating fluentd config", func() {
           flush_at_shutdown true
           retry_type exponential_backoff
           retry_wait 1s
-          retry_max_interval 300s
+          retry_max_interval 60s
           retry_forever true
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           
@@ -521,13 +575,12 @@ var _ = Describe("Generating fluentd config", func() {
         target_index_key viaq_index_name
         id_key viaq_msg_id
         remove_keys viaq_index_name
-        user fluentd
-        password changeme
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
         type_name _doc
         retry_tag retry_apps_es_1
+        http_backend typhoeus
         write_operation create
         reload_connections 'true'
         # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -546,7 +599,7 @@ var _ = Describe("Generating fluentd config", func() {
           flush_at_shutdown true
           retry_type exponential_backoff
           retry_wait 1s
-          retry_max_interval 300s
+          retry_max_interval 60s
           retry_forever true
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           
@@ -636,7 +689,7 @@ var _ = Describe("Generating fluentd config", func() {
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				@label @CONCAT
+				@label @MEASURE
 				<parse>
 				@type multi_format
 				<pattern>
@@ -652,7 +705,56 @@ var _ = Describe("Generating fluentd config", func() {
 				</pattern>
 				</parse>
 			</source>
-
+			<label @MEASURE>
+				<filter **>
+				@type record_transformer
+				enable_ruby
+				<record>
+					msg_size ${record.to_s.length}
+				</record>
+				</filter>
+				<filter **>
+				@type prometheus
+				<metric>
+					name cluster_logging_collector_input_record_total
+					type counter
+					desc The total number of incoming records
+					<labels>
+					tag ${tag}
+					hostname ${hostname}
+					</labels>
+				</metric>
+				</filter>
+				<filter **>
+				@type prometheus
+				<metric>
+					name cluster_logging_collector_input_record_bytes
+					type counter
+					desc The total bytes of incoming records
+					key msg_size
+					<labels>
+					tag ${tag}
+					hostname ${hostname}
+					</labels>
+				</metric>
+				</filter>
+				<filter **>
+				@type record_transformer
+				remove_keys msg_size
+				</filter>
+				<match journal>
+				@type relabel
+				@label @INGRESS
+				</match>
+				<match *audit.log>
+				@type relabel
+				@label @INGRESS
+				</match>
+				<match kubernetes.**>
+				@type relabel
+				@label @CONCAT
+				</match>
+			</label>
 			<label @CONCAT>
 				<filter kubernetes.**>
 				@type concat
@@ -783,11 +885,17 @@ var _ = Describe("Generating fluentd config", func() {
 				</filter>
 
 				<filter k8s-audit.log**>
-				  @type record_transformer
-				  enable_ruby
+				  @type record_modifier
 				  <record>
-				    k8s_audit_level ${record['level']}
-				    level info
+					k8s_audit_level ${record['level']}
+					level info
+				  </record>
+				</filter>
+				<filter openshift-audit.log**>
+				  @type record_modifier
+				  <record>
+					openshift_audit_level ${record['level']}
+					level info
 				  </record>
 				</filter>
 
@@ -918,20 +1026,21 @@ var _ = Describe("Generating fluentd config", func() {
 				<match **>
 					# https://docs.fluentd.org/v1.0/articles/in_forward
 				@type forward
+				heartbeat_type none
 
 				<buffer>
 					@type file
 					path '/var/lib/fluentd/secureforward_receiver'
 					queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '1024' }"
-          total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-          chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
-          flush_mode interval
+					total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+					chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
+					flush_mode interval
 					flush_interval 5s
 					flush_at_shutdown true
 					flush_thread_count 2
-          retry_type exponential_backoff
-          retry_wait 1s
-          retry_max_interval 300s
+					retry_type exponential_backoff
+					retry_wait 1s
+					retry_max_interval 60s
 					retry_forever true
 					# the systemd journald 0.0.8 input plugin will just throw away records if the buffer
 					# queue limit is hit - 'block' will halt further reads and keep retrying to flush the
@@ -998,7 +1107,7 @@ var _ = Describe("Generating fluentd config", func() {
 			<source>
 				@type systemd
 				@id systemd-input
-				@label @INGRESS
+				@label @MEASURE
 				path '/var/log/journal'
 				<storage>
 					@type local
@@ -1023,7 +1132,7 @@ var _ = Describe("Generating fluentd config", func() {
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
-				@label @CONCAT
+				@label @MEASURE
 				<parse>
 				@type multi_format
 				<pattern>
@@ -1044,7 +1153,7 @@ var _ = Describe("Generating fluentd config", func() {
             <source>
               @type tail
               @id audit-input
-              @label @INGRESS
+              @label @MEASURE
               path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
               pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
               tag linux-audit.log
@@ -1057,7 +1166,7 @@ var _ = Describe("Generating fluentd config", func() {
             <source>
               @type tail
               @id k8s-audit-input
-              @label @INGRESS
+              @label @MEASURE
               path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
               pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
               tag k8s-audit.log
@@ -1070,23 +1179,72 @@ var _ = Describe("Generating fluentd config", func() {
 			  </parse>
 			</source>
 
-            # Openshift audit logs
-            <source>
-              @type tail
-              @id openshift-audit-input
-              @label @INGRESS
-              path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
-              pos_file /var/log/oauth-apiserver.audit.log
-              tag openshift-audit.log
-              <parse>
-                @type json
-                time_key requestReceivedTimestamp
-                # In case folks want to parse based on the requestReceivedTimestamp key
-                keep_time_key true
-                time_format %Y-%m-%dT%H:%M:%S.%N%z
-              </parse>
-            </source>
-
+			# Openshift audit logs
+			<source>
+				@type tail
+				@id openshift-audit-input
+				@label @MEASURE
+				path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+				pos_file /var/log/oauth-apiserver.audit.log
+				tag openshift-audit.log
+				<parse>
+				@type json
+				time_key requestReceivedTimestamp
+				# In case folks want to parse based on the requestReceivedTimestamp key
+				keep_time_key true
+				time_format %Y-%m-%dT%H:%M:%S.%N%z
+			  </parse>
+			</source>
+			<label @MEASURE>
+				<filter **>
+					@type record_transformer
+					enable_ruby
+					<record>
+					msg_size ${record.to_s.length}
+					</record>
+				</filter>
+				<filter **>
+					@type prometheus
+					<metric>
+					name cluster_logging_collector_input_record_total
+					type counter
+					desc The total number of incoming records
+					<labels>
+						tag ${tag}
+						hostname ${hostname}
+					</labels>
+					</metric>
+				</filter>
+				<filter **>
+					@type prometheus
+					<metric>
+						name cluster_logging_collector_input_record_bytes
+						type counter
+						desc The total bytes of incoming records
+						key msg_size
+						<labels>
+							tag ${tag}
+							hostname ${hostname}
+						</labels>
+				  </metric>
+				</filter>
+				<filter **>
+				  @type record_transformer
+				  remove_keys msg_size
+				</filter>
+				<match journal>
+				  @type relabel
+				  @label @INGRESS
+				</match>
+				<match *audit.log>
+				  @type relabel
+				  @label @INGRESS
+				 </match>
+				<match kubernetes.**>
+				  @type relabel
+				  @label @CONCAT
+				</match>
+			</label>
 			<label @CONCAT>
 				<filter kubernetes.**>
 				@type concat
@@ -1217,11 +1375,17 @@ var _ = Describe("Generating fluentd config", func() {
 				</filter>
 
 				<filter k8s-audit.log**>
-				  @type record_transformer
-				  enable_ruby
+				  @type record_modifier
 				  <record>
-				    k8s_audit_level ${record['level']}
-				    level info
+					k8s_audit_level ${record['level']}
+					level info
+				  </record>
+				</filter>
+				<filter openshift-audit.log**>
+				  @type record_modifier
+				  <record>
+					openshift_audit_level ${record['level']}
+					level info
 				  </record>
 				</filter>
 
@@ -1400,13 +1564,12 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt'
 						type_name _doc
+                        http_backend typhoeus
 						write_operation create
 						reload_connections 'true'
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1425,7 +1588,7 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown true
               retry_type exponential_backoff
               retry_wait 1s
-              retry_max_interval 300s
+              retry_max_interval 60s
 							retry_forever true
               queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 						  total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1447,14 +1610,13 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_infra_es
+                        http_backend typhoeus
 						write_operation create
 						reload_connections 'true'
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1473,7 +1635,7 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown true
               retry_type exponential_backoff
               retry_wait 1s
- 							retry_max_interval 300s
+ 							retry_max_interval 60s
 							retry_forever true
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1497,13 +1659,12 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 						type_name _doc
+                        http_backend typhoeus
 						write_operation create
 						reload_connections 'true'
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1522,7 +1683,7 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown true
               retry_type exponential_backoff
               retry_wait 1s
-              retry_max_interval 300s
+              retry_max_interval 60s
 							retry_forever true
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1544,14 +1705,13 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_apps_es_1
+                        http_backend typhoeus
 						write_operation create
 						reload_connections 'true'
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1570,7 +1730,7 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown true
               retry_type exponential_backoff
               retry_wait 1s
-              retry_max_interval 300s
+              retry_max_interval 60s
 							retry_forever true
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1594,13 +1754,12 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
 						type_name _doc
+                        http_backend typhoeus
 						write_operation create
 						reload_connections 'true'
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1619,7 +1778,7 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown true
               retry_type exponential_backoff
               retry_wait 1s
-              retry_max_interval 300s
+              retry_max_interval 60s
 							retry_forever true
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1641,14 +1800,13 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_apps_es_2
+                        http_backend typhoeus
 						write_operation create
 						reload_connections 'true'
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1667,7 +1825,7 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown true
               retry_type exponential_backoff
               retry_wait 1s
-              retry_max_interval 300s
+              retry_max_interval 60s
 							retry_forever true
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1691,13 +1849,12 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
 						type_name _doc
+                        http_backend typhoeus
 						write_operation create
 						reload_connections 'true'
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1716,7 +1873,7 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown true
               retry_type exponential_backoff
               retry_wait 1s
-              retry_max_interval 300s
+              retry_max_interval 60s
 							retry_forever true
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1738,14 +1895,13 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
 						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_audit_es
+                        http_backend typhoeus
 						write_operation create
 						reload_connections 'true'
 						# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -1764,7 +1920,7 @@ var _ = Describe("Generating fluentd config", func() {
 							flush_at_shutdown true
               retry_type exponential_backoff
               retry_wait 1s
-              retry_max_interval 300s
+              retry_max_interval 60s
 							retry_forever true
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1867,7 +2023,7 @@ var _ = Describe("Generating fluentd config", func() {
       rotate_wait 5
       tag kubernetes.*
       read_from_head "true"
-      @label @CONCAT
+      @label @MEASURE
       <parse>
         @type multi_format
         <pattern>
@@ -1883,7 +2039,56 @@ var _ = Describe("Generating fluentd config", func() {
         </pattern>
       </parse>
     </source>
-    
+	<label @MEASURE>
+	<filter **>
+	  @type record_transformer
+	  enable_ruby
+	  <record>
+		msg_size ${record.to_s.length}
+	  </record>
+	</filter>
+	<filter **>
+	  @type prometheus
+	  <metric>
+		name cluster_logging_collector_input_record_total
+		type counter
+		desc The total number of incoming records
+		<labels>
+		  tag ${tag}
+		  hostname ${hostname}
+		</labels>
+	  </metric>
+	</filter>
+	<filter **>
+	  @type prometheus
+	  <metric>
+		name cluster_logging_collector_input_record_bytes
+		type counter
+		desc The total bytes of incoming records
+		key msg_size
+		<labels>
+		  tag ${tag}
+		  hostname ${hostname}
+		</labels>
+	  </metric>
+	</filter>
+	<filter **>
+	  @type record_transformer
+	  remove_keys msg_size
+	</filter>
+	<match journal>
+	  @type relabel
+	  @label @INGRESS
+	</match>
+	<match *audit.log>
+	  @type relabel
+	  @label @INGRESS
+	 </match>
+	<match kubernetes.**>
+	  @type relabel
+	  @label @CONCAT
+	</match>
+  </label>
     <label @CONCAT>
       <filter kubernetes.**>
         @type concat
@@ -2016,7 +2221,7 @@ var _ = Describe("Generating fluentd config", func() {
         preserve_json_log true
         json_fields 'log,MESSAGE'
       </filter>
-    
+
       <filter **kibana**>
         @type record_transformer
         enable_ruby
@@ -2025,15 +2230,21 @@ var _ = Describe("Generating fluentd config", func() {
         </record>
         remove_keys req,res,msg,name,level,v,pid,err
       </filter>
-    
-      <filter k8s-audit.log**>
-        @type record_transformer
-	enable_ruby
-        <record>
-          k8s_audit_level ${record['level']}
-          level info
-        </record>
-      </filter>
+
+	  <filter k8s-audit.log**>
+		@type record_modifier
+		<record>
+		  k8s_audit_level ${record['level']}
+		  level info
+		</record>
+	  </filter>
+	  <filter openshift-audit.log**>
+		@type record_modifier
+		<record>
+		  openshift_audit_level ${record['level']}
+		  level info
+		</record>
+	  </filter>
 
       <filter **>
         @type viaq_data_model

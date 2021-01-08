@@ -1,7 +1,7 @@
 # Define the target to run if make is called with no arguments.
 default: check
 
-LOG_LEVEL?=fatal
+export LOG_LEVEL?=9
 export KUBECONFIG?=$(HOME)/.kube/config
 
 export GOBIN=$(CURDIR)/bin
@@ -12,6 +12,7 @@ include .bingo/Variables.mk
 export GOROOT=$(shell go env GOROOT)
 export GOFLAGS=-mod=vendor
 export GO111MODULE=on
+export GODEBUG=x509ignoreCN=0
 
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
@@ -20,8 +21,9 @@ export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not 
 export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+REPLICAS?=0
 
-.PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-unit test-e2e test-sec undeploy run
+.PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 
@@ -34,6 +36,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 #
 check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
+	go test ./test/helpers/... -exec true > /dev/null # Build but don't run test helpers tests.
 	$(MAKE) lint				  # Only lint if all code builds.
 
 # CI calls ci-check first.
@@ -64,32 +67,36 @@ build-debug:
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run
-run: deploy-elasticsearch-operator test-cleanup
+run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
-	@ELASTICSEARCH_IMAGE=quay.io/openshift/origin-logging-elasticsearch6:latest \
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
-	KIBANA_IMAGE=quay.io/openshift/origin-logging-kibana6:latest \
-	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator6:latest \
-	OAUTH_PROXY_IMAGE=quay.io/openshift/origin-oauth-proxy:latest \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
-	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	$(RUN_CMD) cmd/manager/main.go
 
 run-debug:
 	$(MAKE) run RUN_CMD='dlv debug'
 
+scale-cvo:
+	@oc -n openshift-cluster-version scale deployment/cluster-version-operator --replicas=$(REPLICAS)
+.PHONY: scale-cvo
+
+scale-olm:
+	@oc -n openshift-operator-lifecycle-manager scale deployment/olm-operator --replicas=$(REPLICAS)
+.PHONY: scale-olm
+
 clean:
 	@rm -rf bin tmp _output
 	go clean -cache -testcache ./...
 
+PATCH?=Dockerfile.patch
 image:
 	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		cp Dockerfile Dockerfile.local ; \
-		patch Dockerfile.local Dockerfile.patch ; \
+		patch -o Dockerfile.local Dockerfile $(PATCH) && \
 		podman build -t $(IMAGE_TAG) . -f Dockerfile.local; \
 	fi
 
@@ -98,7 +105,7 @@ lint: $(GOLANGCI_LINT)
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	@gofmt -s -l -w $(shell find pkg cmd -name '*.go')
+	find pkg cmd test -name '*.go' | xargs gofmt -s -l -w
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
@@ -140,21 +147,25 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-functional:
-	@echo "FIXME"
+	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	LOGGING_SHARE_DIR=$(CURDIR)/files \
+	SCRIPTS_DIR=$(CURDIR)/scripts \
+	go test -race ./test/functional/...
+	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
 test-unit:
-	LOGGING_SHARE_DIR=$(CURDIR)/files \
-	LOG_LEVEL=$(LOG_LEVEL) \
+	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
+	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	go test -cover -race ./pkg/...
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-MANIFEST_VERSION?="4.6"
+MANIFEST_VERSION?="4.7"
 generate-bundle: regenerate $(OPM)
 	MANIFEST_VERSION=${MANIFEST_VERSION} hack/generate-bundle.sh
-	
+
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.

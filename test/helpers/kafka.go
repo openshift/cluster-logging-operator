@@ -3,11 +3,12 @@ package helpers
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strings"
 	"time"
 
+	clolog "github.com/ViaQ/logerr/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +21,7 @@ type kafkaReceiver struct {
 	topics []string
 }
 
-func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (logs, error) {
+func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
 	logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read consumed application logs: %s", err)
@@ -32,10 +33,21 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameInfrastructure)
 		if err != nil {
-			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameInfrastructure, err)
+			if err == types.ErrParse {
+				clolog.Error(err, "error occurred while parsing fetched infra logs from kafka topic. Please check the collected test artifact.")
+				// return error here else loop will keep on parsing
+				return false, err
+			}
+			clolog.Error(err, "error occurred while fetching infra logs")
 			return false, nil
 		}
-		return logs.ByIndex(InfraIndexPrefix).NonEmpty(), nil
+		l := logs.ByIndex(InfraIndexPrefix)
+		if l.NonEmpty() {
+			clolog.Info("found infra logs")
+		} else {
+			clolog.Info("could not find infra logs")
+		}
+		return l.NonEmpty(), nil
 	})
 	return true, err
 }
@@ -44,10 +56,21 @@ func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error)
 	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 		if err != nil {
-			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameApplication, err)
+			if err == types.ErrParse {
+				clolog.Error(err, "error occurred while parsing fetched application logs from kafka topic. Please check the collected test artifact.")
+				// return error here else loop will keep on parsing
+				return false, err
+			}
+			clolog.Error(err, "error occurred while fetching application logs")
 			return false, nil
 		}
-		return logs.ByIndex(ProjectIndexPrefix).NonEmpty(), nil
+		l := logs.ByIndex(ProjectIndexPrefix)
+		if l.NonEmpty() {
+			clolog.Info("found app logs")
+		} else {
+			clolog.Info("could not find app logs")
+		}
+		return l.NonEmpty(), nil
 	})
 	return true, err
 }
@@ -56,10 +79,21 @@ func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameAudit)
 		if err != nil {
-			logger.Errorf("Error occured while fetching %s logs %v", loggingv1.InputNameAudit, err)
+			if err == types.ErrParse {
+				clolog.Error(err, "error occurred while parsing fetched audit logs from kafka topic. Please check the collected test artifact.")
+				// return error here else loop will keep on parsing
+				return false, err
+			}
+			clolog.Error(err, "error occurred while fetching audit logs")
 			return false, nil
 		}
-		return logs.ByIndex(AuditIndexPrefix).NonEmpty(), nil
+		l := logs.ByIndex(AuditIndexPrefix)
+		if l.NonEmpty() {
+			clolog.Info("found audit logs")
+		} else {
+			clolog.Info("could not find audit logs")
+		}
+		return l.NonEmpty(), nil
 	})
 	return true, err
 }
@@ -100,7 +134,7 @@ func (tc *E2ETestFramework) DeployKafkaReceiver(topics []string) (*apps.Stateful
 	return app, nil
 }
 
-func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error) {
+func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (types.Logs, error) {
 	rcv := tc.LogStores[rcvName].(*kafkaReceiver)
 	topic := kafka.TopicForInputName(rcv.topics, inputName)
 	name := kafka.ConsumerNameForTopic(topic)
@@ -116,7 +150,6 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error
 		return nil, fmt.Errorf("No pods found for %s", name)
 	}
 
-	logger.Debugf("Pod %s", pods.Items[0].Name)
 	cmd := "tail -n 5000 /shared/consumed.logs"
 	stdout, err := tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"bash", "-c", cmd})
 	if err != nil {
@@ -125,9 +158,9 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (logs, error
 
 	// Hack Teach kafka-console-consumer to output a proper json array
 	out := "[" + strings.TrimRight(strings.Replace(stdout, "\n", ",", -1), ",") + "]"
-	logs, err := ParseLogs(out)
+	logs, err := types.ParseLogs(out)
 	if err != nil {
-		return nil, fmt.Errorf("Parse error '%s' trying to parse: %q", err, out)
+		return nil, types.ErrParse
 	}
 
 	return logs, nil

@@ -6,9 +6,9 @@ import (
 	"sort"
 	"text/template"
 
+	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -43,9 +43,6 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 
 //Generate the fluent.conf file using the forwarding information
 func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec, fwSpec *logging.ForwarderSpec) (string, error) {
-	logger.DebugObject("Generating fluent.conf using %s", clfSpec)
-	logger.DebugObject("Generating fluent.conf using buffer config: %s", fwSpec)
-
 	//sanitize here
 	var (
 		inputs                 sets.String
@@ -81,13 +78,13 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	sourceInputLabels, err = engine.generateSource(inputs)
 	if err != nil {
 
-		logger.Tracef("Error generating source blocks: %v", err)
+		log.V(3).Error(err, "Error generating source blocks")
 		return "", err
 	}
 
 	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(routeMap)
 	if err != nil {
-		logger.Tracef("Error generating source to pipeline blocks: %v", err)
+		log.V(3).Error(err, "Error generating source to pipeline blocks")
 		return "", err
 	}
 	sort.Strings(sourceToPipelineLabels)
@@ -96,7 +93,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	if len(clfSpec.Pipelines) > 0 {
 		pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(clfSpec.Pipelines)
 		if err != nil {
-			logger.Tracef("Error generating pipeline to output labels blocks: %v", err)
+			log.V(3).Error(err, "Error generating pipeline to output labels blocks")
 			return "", err
 		}
 	}
@@ -105,7 +102,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	if len(clfSpec.Outputs) > 0 {
 		outputLabels, err = engine.generateOutputLabelBlocks(clfSpec.Outputs, fwSpec)
 		if err != nil {
-			logger.Tracef("Error generating to output label blocks: %v", err)
+			log.V(3).Error(err, "Error generating to output label blocks")
 			return "", err
 		}
 	}
@@ -135,10 +132,10 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	}
 	result, err := engine.Execute("fluentConf", data)
 	if err != nil {
-		logger.Tracef("Error generating fluentConf")
+		log.V(3).Info("Error generating fluentConf")
 		return "", fmt.Errorf("Error processing fluentConf template: %v", err)
 	}
-	logger.Tracef("Successfully generated fluent.conf: %v", result)
+	log.V(3).Info("Successfully generated fluent.conf", "fluent.conf", result)
 	return result, nil
 }
 
@@ -252,9 +249,11 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 // </label>
 func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.OutputSpec, outputConf *logging.ForwarderSpec) ([]string, error) {
 	configs := []string{}
-	logger.Debugf("Evaluating %v forwarder logging...", len(outputs))
+	if log.V(3).Enabled() {
+		log.V(3).Info("Evaluating forwarder logging...", "output length", len(outputs))
+	}
 	for _, output := range outputs {
-		logger.Debugf("Generate output type %v", output.Type)
+		log.V(3).Info("Generate output type", "type", output.Type)
 		engine.outputTemplate = "outputLabelConf" // Default
 		switch output.Type {
 		case logging.OutputTypeElasticsearch:
@@ -284,6 +283,6 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		}
 		configs = append(configs, result)
 	}
-	logger.Debugf("Generated output configurations: %v", configs)
+	log.V(3).Info("Generated output configurations", "configurations", configs)
 	return configs, nil
 }

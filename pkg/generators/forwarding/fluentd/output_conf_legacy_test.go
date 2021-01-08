@@ -71,7 +71,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type systemd
           @id systemd-input
-          @label @INGRESS
+          @label @MEASURE
           path '/var/log/journal'
           <storage>
             @type local
@@ -95,7 +95,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
-          @label @CONCAT
+          @label @MEASURE
           <parse>
             @type multi_format
             <pattern>
@@ -115,7 +115,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id audit-input
-          @label @INGRESS
+          @label @MEASURE
           path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
           pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
           tag linux-audit.log
@@ -127,7 +127,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id k8s-audit-input
-          @label @INGRESS
+          @label @MEASURE
           path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
           pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
           tag k8s-audit.log
@@ -144,7 +144,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id openshift-audit-input
-          @label @INGRESS
+          @label @MEASURE
           path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
           pos_file /var/log/oauth-apiserver.audit.log
           tag openshift-audit.log
@@ -156,7 +156,56 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
-
+        <label @MEASURE>
+        <filter **>
+          @type record_transformer
+          enable_ruby
+          <record>
+            msg_size ${record.to_s.length}
+          </record>
+        </filter>
+        <filter **>
+          @type prometheus
+          <metric>
+            name cluster_logging_collector_input_record_total
+            type counter
+            desc The total number of incoming records
+            <labels>
+              tag ${tag}
+              hostname ${hostname}
+            </labels>
+          </metric>
+        </filter>
+        <filter **>
+          @type prometheus
+          <metric>
+            name cluster_logging_collector_input_record_bytes
+            type counter
+            desc The total bytes of incoming records
+            key msg_size
+            <labels>
+              tag ${tag}
+              hostname ${hostname}
+            </labels>
+          </metric>
+        </filter>
+        <filter **>
+          @type record_transformer
+          remove_keys msg_size
+        </filter>
+        <match journal>
+          @type relabel
+          @label @INGRESS
+        </match>
+        <match *audit.log>
+          @type relabel
+          @label @INGRESS
+         </match>
+        <match kubernetes.**>
+          @type relabel
+          @label @CONCAT
+        </match>
+      </label>
         <label @CONCAT>
           <filter kubernetes.**>
             @type concat
@@ -299,14 +348,20 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             remove_keys req,res,msg,name,level,v,pid,err
           </filter>
 
-          <filter k8s-audit.log**>
-            @type record_transformer
-            enable_ruby
-            <record>
-              k8s_audit_level ${record['level']}
-              level info
-            </record>
-          </filter>
+		  <filter k8s-audit.log**>
+			@type record_modifier
+			<record>
+			  k8s_audit_level ${record['level']}
+			  level info
+			</record>
+		  </filter>
+		  <filter openshift-audit.log**>
+			@type record_modifier
+			<record>
+			  openshift_audit_level ${record['level']}
+			  level info
+			</record>
+		  </filter>
 
           <filter **>
             @type viaq_data_model
@@ -521,7 +576,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type systemd
           @id systemd-input
-          @label @INGRESS
+          @label @MEASURE
           path '/var/log/journal'
           <storage>
             @type local
@@ -545,7 +600,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
-          @label @CONCAT
+          @label @MEASURE
           <parse>
             @type multi_format
             <pattern>
@@ -565,7 +620,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id audit-input
-          @label @INGRESS
+          @label @MEASURE
           path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
           pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
           tag linux-audit.log
@@ -577,7 +632,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id k8s-audit-input
-          @label @INGRESS
+          @label @MEASURE
           path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
           pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
           tag k8s-audit.log
@@ -594,7 +649,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id openshift-audit-input
-          @label @INGRESS
+          @label @MEASURE
           path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
           pos_file /var/log/oauth-apiserver.audit.log
           tag openshift-audit.log
@@ -606,7 +661,56 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
-
+        <label @MEASURE>
+        <filter **>
+          @type record_transformer
+          enable_ruby
+          <record>
+            msg_size ${record.to_s.length}
+          </record>
+        </filter>
+        <filter **>
+          @type prometheus
+          <metric>
+            name cluster_logging_collector_input_record_total
+            type counter
+            desc The total number of incoming records
+            <labels>
+              tag ${tag}
+              hostname ${hostname}
+            </labels>
+          </metric>
+        </filter>
+        <filter **>
+          @type prometheus
+          <metric>
+            name cluster_logging_collector_input_record_bytes
+            type counter
+            desc The total bytes of incoming records
+            key msg_size
+            <labels>
+              tag ${tag}
+              hostname ${hostname}
+            </labels>
+          </metric>
+        </filter>
+        <filter **>
+          @type record_transformer
+          remove_keys msg_size
+        </filter>
+        <match journal>
+          @type relabel
+          @label @INGRESS
+        </match>
+        <match *audit.log>
+          @type relabel
+          @label @INGRESS
+         </match>
+        <match kubernetes.**>
+          @type relabel
+          @label @CONCAT
+        </match>
+      </label>
         <label @CONCAT>
           <filter kubernetes.**>
             @type concat
@@ -749,15 +853,20 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             remove_keys req,res,msg,name,level,v,pid,err
           </filter>
 
-          <filter k8s-audit.log**>
-            @type record_transformer
-            enable_ruby
-            <record>
-              k8s_audit_level ${record['level']}
-              level info
-            </record>
-          </filter>
-
+		  <filter k8s-audit.log**>
+			@type record_modifier
+			<record>
+			  k8s_audit_level ${record['level']}
+			  level info
+			</record>
+		  </filter>
+		  <filter openshift-audit.log**>
+			@type record_modifier
+			<record>
+			  openshift_audit_level ${record['level']}
+			  level info
+			</record>
+		  </filter>
           <filter **>
             @type viaq_data_model
             elasticsearch_index_prefix_field 'viaq_index_name'
@@ -973,7 +1082,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type systemd
           @id systemd-input
-          @label @INGRESS
+          @label @MEASURE
           path '/var/log/journal'
           <storage>
             @type local
@@ -997,7 +1106,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
-          @label @CONCAT
+          @label @MEASURE
           <parse>
             @type multi_format
             <pattern>
@@ -1017,7 +1126,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id audit-input
-          @label @INGRESS
+          @label @MEASURE
           path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
           pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
           tag linux-audit.log
@@ -1029,7 +1138,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id k8s-audit-input
-          @label @INGRESS
+          @label @MEASURE
           path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
           pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
           tag k8s-audit.log
@@ -1046,7 +1155,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <source>
           @type tail
           @id openshift-audit-input
-          @label @INGRESS
+          @label @MEASURE
           path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
           pos_file /var/log/oauth-apiserver.audit.log
           tag openshift-audit.log
@@ -1058,7 +1167,56 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
-
+        <label @MEASURE>
+        <filter **>
+          @type record_transformer
+          enable_ruby
+          <record>
+            msg_size ${record.to_s.length}
+          </record>
+        </filter>
+        <filter **>
+          @type prometheus
+          <metric>
+            name cluster_logging_collector_input_record_total
+            type counter
+            desc The total number of incoming records
+            <labels>
+              tag ${tag}
+              hostname ${hostname}
+            </labels>
+          </metric>
+        </filter>
+        <filter **>
+          @type prometheus
+          <metric>
+            name cluster_logging_collector_input_record_bytes
+            type counter
+            desc The total bytes of incoming records
+            key msg_size
+            <labels>
+              tag ${tag}
+              hostname ${hostname}
+            </labels>
+          </metric>
+        </filter>
+        <filter **>
+          @type record_transformer
+          remove_keys msg_size
+        </filter>
+        <match journal>
+          @type relabel
+          @label @INGRESS
+        </match>
+        <match *audit.log>
+          @type relabel
+          @label @INGRESS
+         </match>
+        <match kubernetes.**>
+          @type relabel
+          @label @CONCAT
+        </match>
+      </label>
         <label @CONCAT>
           <filter kubernetes.**>
             @type concat
@@ -1201,14 +1359,20 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
             remove_keys req,res,msg,name,level,v,pid,err
           </filter>
 
-          <filter k8s-audit.log**>
-            @type record_transformer
-            enable_ruby
-            <record>
-              k8s_audit_level ${record['level']}
-              level info
-            </record>
-          </filter>
+		  <filter k8s-audit.log**>
+			@type record_modifier
+			<record>
+			  k8s_audit_level ${record['level']}
+			  level info
+			</record>
+		  </filter>
+		  <filter openshift-audit.log**>
+			@type record_modifier
+			<record>
+			  openshift_audit_level ${record['level']}
+			  level info
+			</record>
+		  </filter>
 
           <filter **>
             @type viaq_data_model

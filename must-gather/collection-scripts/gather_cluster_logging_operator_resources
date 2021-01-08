@@ -10,7 +10,7 @@ if [ "${BASE_COLLECTION_PATH}" = "" ]; then
     BASE_COLLECTION_PATH=$(pwd)
 fi
 
-NAMESPACE="openshift-logging"
+NAMESPACE=openshift-logging
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 clo_folder="$CLO_COLLECTION_PATH/clo"
@@ -18,7 +18,7 @@ clo_folder="$CLO_COLLECTION_PATH/clo"
 echo "Gathering data for cluster-logging-operator"
 mkdir -p "$clo_folder"
 
-pods=$(oc -n $NAMESPACE get pods -l name=cluster-logging-operator -o jsonpath={.items[*].metadata.name})
+pods=$(oc -n $NAMESPACE get pods -l name=cluster-logging-operator -o jsonpath='{.items[*].metadata.name}')
 for pod in $pods
 do
     get_env $pod $clo_folder $NAMESPACE "Dockerfile-*operator*"
@@ -29,16 +29,16 @@ oc -n $NAMESPACE get deployment cluster-logging-operator -o yaml > $clo_folder/d
 csv_name="$(oc -n $NAMESPACE get csv -o name | grep 'cluster-logging-operator')"
 oc -n $NAMESPACE get "${csv_name}" -o yaml > "${clo_folder}/csv"
 oc -n $NAMESPACE get clusterlogging instance -o yaml > "${clo_folder}/cr"
-oc -n $NAMESPACE get logforwarding instance -o yaml > "${clo_folder}/logforwarding_cr" ||:
-oc -n $NAMESPACE get clusterlogforwarder instance -o yaml > "${clo_folder}/clusterlogforwarder_cr" ||:
+oc -n $NAMESPACE get logforwarding instance -o yaml > "${clo_folder}/logforwarding_cr"
+oc -n $NAMESPACE get clusterlogforwarder instance -o yaml > "${clo_folder}/clusterlogforwarder_cr"
 
-oc -n ${NAMESPACE} get configmaps -o yaml > ${clo_folder}/configmaps.yaml 2>&1 || :
-oc -n ${NAMESPACE} get secrets -o yaml > ${clo_folder}/secrets.yaml 2>&1 || :
-oc -n ${NAMESPACE} get cronjobs -o yaml > ${clo_folder}/cronjobs.yaml 2>&1 || :
-oc -n ${NAMESPACE} get deployments -o wide > ${clo_folder}/deployments.txt 2>&1 ||    :
-oc -n ${NAMESPACE} get ds -o wide > ${clo_folder}/daemonsets.txt 2>&1 ||    :
-oc -n ${NAMESPACE} get pods -o wide > ${clo_folder}/pods.txt 2>&1 || :
-oc -n ${NAMESPACE} extract secret/elasticsearch --to=${clo_folder} ||:
-oc -n ${NAMESPACE} extract configmap/fluentd --to=${clo_folder} ||:
-oc -n ${NAMESPACE} extract configmap/secure-forward --to=${clo_folder} ||:
-oc -n ${NAMESPACE} extract secret/secure-forward --to=${clo_folder} ||:
+oc -n $NAMESPACE get configmaps -o yaml > ${clo_folder}/configmaps.yaml 2>&1
+oc -n $NAMESPACE get secrets -o yaml > ${clo_folder}/secrets.yaml 2>&1
+oc -n $NAMESPACE get cronjobs -o yaml > ${clo_folder}/cronjobs.yaml 2>&1
+oc -n $NAMESPACE get deployments -o wide > ${clo_folder}/deployments.txt 2>&1
+oc -n $NAMESPACE get ds -o wide > ${clo_folder}/daemonsets.txt 2>&1
+oc -n $NAMESPACE get pods -o wide > ${clo_folder}/pods.txt 2>&1
+oc -n $NAMESPACE extract secret/elasticsearch --to=${clo_folder}
+oc -n $NAMESPACE extract configmap/fluentd --to=${clo_folder}
+oc -n $NAMESPACE extract configmap/secure-forward --to=${clo_folder}
+oc -n $NAMESPACE extract secret/secure-forward --to=${clo_folder}

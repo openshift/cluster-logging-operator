@@ -4,10 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/ViaQ/logerr/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
-	"github.com/sirupsen/logrus"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -67,7 +66,7 @@ var (
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	logrus.Debugf("Clusterlogging reconcile request.Name: '%s'", request.Name)
+	log.V(3).Info("Clusterlogging reconcile request.", "name", request.Name)
 
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
@@ -87,7 +86,9 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	err = k8shandler.Reconcile(instance, r.client)
+	if err = k8shandler.Reconcile(instance, r.client); err != nil {
+		log.Error(err, "Error reconciling clusterlogging instance")
+	}
 
 	if result, err := r.updateStatus(instance); err != nil {
 		return result, err
@@ -97,10 +98,8 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 }
 
 func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (reconcile.Result, error) {
-	logger.DebugObject("clusterlogging-controller updating status of: %#v", instance.Status)
-
 	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
-		logger.Errorf("clusterlogging-controller error updating status: %v", err)
+		log.Error(err, "clusterlogging-controller error updating status")
 		return reconcileResult, err
 	}
 

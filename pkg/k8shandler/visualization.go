@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -24,15 +23,7 @@ import (
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy) (err error) {
 	if clusterRequest.Cluster.Spec.Visualization == nil || clusterRequest.Cluster.Spec.Visualization.Type == "" {
-		if err = clusterRequest.removeKibana(); err != nil {
-			return
-		}
 		return nil
-	}
-
-	//TODO: Remove this in the next release after removing old kibana code completely
-	if err = clusterRequest.removeOldKibana(); err != nil {
-		return
 	}
 
 	if err = clusterRequest.createOrUpdateKibanaCR(); err != nil {
@@ -53,17 +44,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyCo
 func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 	kibanaStatus, err := clusterRequest.getKibanaStatus()
 	if err != nil {
-		logrus.Errorf("Failed to get Kibana status for %q: %v", clusterRequest.Cluster.Name, err)
+		log.Error(err, "Failed to get Kibana status for", "clusterName", clusterRequest.Cluster.Name)
 		return
 	}
 
-	printUpdateMessage := true
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		if !compareKibanaStatus(kibanaStatus, clusterRequest.Cluster.Status.Visualization.KibanaStatus) {
-			if printUpdateMessage {
-				logrus.Info("Updating status of Kibana")
-				printUpdateMessage = false
-			}
 			clusterRequest.Cluster.Status.Visualization.KibanaStatus = kibanaStatus
 			return clusterRequest.UpdateStatus(clusterRequest.Cluster)
 		}
@@ -148,64 +134,20 @@ func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	return nil
 }
 
-//TODO: Remove this in the next release after removing old kibana code completely
-// since kibana is now handled by the Elasticsearch Operator
-func (clusterRequest *ClusterLoggingRequest) removeOldKibana() (err error) {
-	if clusterRequest.isManaged() {
-		name := "kibana"
-		proxyName := "kibana-proxy"
-
-		if err = clusterRequest.RemoveDeployment(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveOAuthClient(proxyName); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveRoute(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap("sharing-config"); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConfigMap(constants.KibanaTrustedCAName); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveService(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveServiceAccount(name); err != nil {
-			return
-		}
-
-		if err = clusterRequest.RemoveConsoleExternalLogLink(name); err != nil {
-			return
-		}
-
-	}
-
-	return nil
-}
-
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error {
-
-	kibanaSecret := NewSecret(
-		"kibana",
-		clusterRequest.Cluster.Namespace,
-		map[string][]byte{
+	var secrets = map[string][]byte{}
+	_ = Syncronize(func() error {
+		secrets = map[string][]byte{
 			"ca":   utils.GetWorkingDirFileContents("ca.crt"),
 			"key":  utils.GetWorkingDirFileContents("system.logging.kibana.key"),
 			"cert": utils.GetWorkingDirFileContents("system.logging.kibana.crt"),
-		})
+		}
+		return nil
+	})
+	kibanaSecret := NewSecret(
+		"kibana",
+		clusterRequest.Cluster.Namespace,
+		secrets)
 
 	utils.AddOwnerRefToObject(kibanaSecret, utils.AsOwner(clusterRequest.Cluster))
 
@@ -214,21 +156,18 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error 
 		return err
 	}
 
-	var sessionSecret []byte
-
-	sessionSecret = utils.GetWorkingDirFileContents("kibana-session-secret")
-	if sessionSecret == nil {
-		sessionSecret = utils.GetRandomWord(32)
-	}
-
+	_ = Syncronize(func() error {
+		secrets = map[string][]byte{
+			"session-secret": utils.GetWorkingDirFileContents(constants.KibanaSessionSecretName),
+			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
+			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
+		}
+		return nil
+	})
 	proxySecret := NewSecret(
 		"kibana-proxy",
 		clusterRequest.Cluster.Namespace,
-		map[string][]byte{
-			"session-secret": sessionSecret,
-			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
-			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
-		})
+		secrets)
 
 	utils.AddOwnerRefToObject(proxySecret, utils.AsOwner(clusterRequest.Cluster))
 
@@ -257,7 +196,7 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 	}
 
 	replicas := visSpec.Replicas
-	if replicas == 0 {
+	if replicas == 0 && (cluster.Spec.LogStore != nil && cluster.Spec.LogStore.ElasticsearchSpec.NodeCount > 0) {
 		replicas = 1
 	}
 
@@ -408,23 +347,4 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
 	}
 
 	return nil
-}
-
-func HasCLORef(object metav1.Object, request *ClusterLoggingRequest) bool {
-	refs := object.GetOwnerReferences()
-	for _, r := range refs {
-		r := r
-		bref := utils.AsOwner(request.Cluster)
-		if AreRefsEqual(&r, &bref) {
-			return true
-		}
-	}
-	return false
-}
-
-func AreRefsEqual(l *metav1.OwnerReference, r *metav1.OwnerReference) bool {
-	return l.Name == r.Name &&
-		l.APIVersion == r.APIVersion &&
-		l.Kind == r.Kind &&
-		*l.Controller == *r.Controller
 }

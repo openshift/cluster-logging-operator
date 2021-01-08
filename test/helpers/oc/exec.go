@@ -48,9 +48,7 @@ func Exec() Execer {
 	e := &exec{
 		runner: &runner{},
 	}
-	e.collectArgsFunc = func() []string {
-		return e.args()
-	}
+	e.collectArgsFunc = e.args
 	return e
 }
 

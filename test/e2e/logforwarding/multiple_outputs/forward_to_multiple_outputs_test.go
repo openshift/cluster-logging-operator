@@ -10,9 +10,9 @@ import (
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/ViaQ/logerr/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/helpers"
 	eologgingv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
@@ -21,7 +21,7 @@ import (
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger.Infof("Running %s", filename)
+	log.Info("Running ", "filename", filename)
 
 	e2e := NewE2ETestFramework()
 
@@ -36,7 +36,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 	BeforeEach(func() {
 		if err := e2e.DeployLogGenerator(); err != nil {
-			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
+			log.Error(err, "unable to deploy log generator")
 		}
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})

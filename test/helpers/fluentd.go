@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strconv"
 	"strings"
 	"time"
@@ -13,8 +14,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	clolog "github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -64,9 +66,9 @@ const (
 	@type stdout
 </match>
 	`
-	unsecureFluentConf = `
+	UnsecureFluentConf = `
 <system>
-	log_level warn
+	log_level trace
 </system>
 <source>
   @type forward
@@ -106,18 +108,18 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	if len(pods.Items) == 0 {
 		return false, errors.New("No pods found for fluent receiver")
 	}
-	logger.Debugf("Pod %s", pods.Items[0].Name)
+	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		output, err := fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			logger.Errorf("Error polling fluent-receiver for logs: %v", err)
+			clolog.Error(err, "Error polling fluent-receiver for logs")
 			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
 		if err != nil {
-			logger.Debugf("Error parsing output: %s", output)
+			clolog.V(3).Info("Error parsing output: ", "output", output)
 			return false, nil
 		}
 		return value > 0, nil
@@ -139,12 +141,12 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	if len(pods.Items) == 0 {
 		return "", errors.New("No pods found for fluent receiver")
 	}
-	logger.Debugf("Pod %s", pods.Items[0].Name)
+	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf("cat %s | awk -F '\t' '{print $3}'| head -n 1", file)
 	result := ""
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		if result, err = fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
-			logger.Errorf("Failed to fetch logs from fluent-receiver %v", err)
+			clolog.Error(err, "Failed to fetch logs from fluent-receiver ")
 			return false, nil
 		}
 		return true, nil
@@ -155,13 +157,13 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	return result, nil
 }
 
-func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
+func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
 	fl, err := fluent.logs("/tmp/app-logs", timeToWait)
 	if err != nil {
 		return nil, err
 	}
 	out := "[" + strings.TrimRight(strings.Replace(fl, "\n", ",", -1), ",") + "]"
-	return ParseLogs(out)
+	return types.ParseLogs(out)
 }
 
 func (fluent fluentReceiverLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
@@ -301,7 +303,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		ServiceAccountName: serviceAccount.Name,
 	}
 
-	fluentConf := unsecureFluentConf
+	fluentConf := UnsecureFluentConf
 	if secure {
 		fluentConf = secureFluentConfTemplate
 		otherConf := map[string][]byte{
@@ -361,7 +363,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	if err != nil {
 		return nil, err
 	}
-	service := k8shandler.NewService(
+	service := factory.NewService(
 		serviceAccount.Name,
 		OpenshiftLoggingNS,
 		serviceAccount.Name,

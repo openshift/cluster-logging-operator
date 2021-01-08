@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -20,7 +20,7 @@ func WaitForDaemonSet(t *testing.T, kubeclient kubernetes.Interface, namespace, 
 				t.Logf("Waiting for availability of %s daemonset\n", name)
 				return false, nil
 			}
-			logger.Errorf("Error getting Daemonsets %v", err)
+			log.Error(err, "Error getting Daemonsets")
 			return false, nil
 		}
 		return true, nil

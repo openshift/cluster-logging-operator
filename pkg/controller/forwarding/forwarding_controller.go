@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/status"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -82,14 +82,12 @@ func condInvalid(format string, args ...interface{}) status.Condition {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Result, error) {
-	logger.DebugObject("clusterlogforwarder-controller Reconciling: %#v", request)
-
-	logger.Debug("clusterlogforwarder-controller fetching LF instance")
+	log.V(3).Info("clusterlogforwarder-controller fetching LF instance")
 
 	// Fetch the ClusterLogForwarder instance
 	instance := &logging.ClusterLogForwarder{}
 	if err := r.client.Get(context.TODO(), request.NamespacedName, instance); err != nil {
-		logger.Debugf("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound': %v", err)
+		log.V(2).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err)
 		if !errors.IsNotFound(err) {
 			// Error reading - requeue the request.
 			return reconcileResult, err
@@ -98,16 +96,12 @@ func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, nil
 	}
 
-	logger.DebugObject("clusterlogforwarder-controller fetched LF instance: %#v", instance)
-
-	logger.Debug("clusterlogforwarder-controller run reconciler...")
+	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
 
 	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.client)
 	if reconcileErr != nil {
-		logger.Debugf("clusterlogforwarder-controller returning, error: %v", reconcileErr)
+		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
 	}
-
-	logger.DebugObject("clusterlogforwarder-controller instance in status: %#v", instance.Status)
 
 	//check for instancename and then update status
 	if instance.Name != constants.SingletonName {
@@ -131,10 +125,8 @@ func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Res
 }
 
 func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (reconcile.Result, error) {
-	logger.DebugObject("clusterlogforwarder-controller updating status of: %#v", instance.Status)
-
 	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
-		logger.Errorf("clusterlogforwarder-controller error updating status: %v", err)
+		log.Error(err, "clusterlogforwarder-controller error updating status")
 		return reconcileResult, err
 	}
 

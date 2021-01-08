@@ -14,9 +14,9 @@ import (
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -28,7 +28,7 @@ const (
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger.Infof("Running %s", filename)
+	log.Info("Running ", "filename", filename)
 	var (
 		err              error
 		syslogDeployment *apps.Deployment
@@ -51,9 +51,9 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	})
 	JustBeforeEach(func() {
 		if logGenNS, logGenPod, err = e2e.DeployJsonLogGenerator(generatorPayload); err != nil {
-			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
+			log.Error(err, "unable to deploy log generator.")
 		}
-		logger.Infof("log generator pod: %s", logGenPod)
+		log.Info("log generator pod: ", "podname", logGenPod)
 		testDir = filepath.Dir(filename)
 		// wait for current log-generator's logs to appear in syslog
 		waitlogs = fmt.Sprintf(`[ $(grep %s %%s |grep pod_name| wc -l) -gt 0 ]`, logGenPod)

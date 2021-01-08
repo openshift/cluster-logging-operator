@@ -3,7 +3,6 @@ package k8shandler
 import (
 	"fmt"
 
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -42,7 +41,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateServiceAccount(name s
 
 	utils.AddOwnerRefToObject(serviceAccount, utils.AsOwner(clusterRequest.Cluster))
 
-	logger.DebugObject("Attempting to create serviceacccount %v", serviceAccount)
 	if err := clusterRequest.Create(serviceAccount); err != nil {
 		if !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("Failure creating %v serviceaccount: %v", serviceAccount.Name, err)
@@ -66,7 +64,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateServiceAccount(name s
 					current.GetObjectMeta().GetAnnotations()[key] = value
 				}
 			}
-			logger.DebugObject("Attempting to update serviceacccount %v", current)
 			if err = clusterRequest.Update(current); err != nil {
 				return err
 			}
@@ -88,11 +85,6 @@ func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccount
 	if serviceAccountName == "logcollector" {
 		// remove our finalizer from the list and update it.
 		serviceAccount.ObjectMeta.Finalizers = utils.RemoveString(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
-	}
-
-	//TODO: Remove this in the next release after removing old kibana code completely
-	if !HasCLORef(serviceAccount, clusterRequest) {
-		return nil
 	}
 
 	err := clusterRequest.Delete(serviceAccount)

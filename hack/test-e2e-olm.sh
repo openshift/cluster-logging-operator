@@ -3,6 +3,28 @@
 current_dir=$(dirname "${BASH_SOURCE[0]}" )
 source "${current_dir}/lib/init.sh"
 source "${current_dir}/lib/util/logs.sh"
+source "${current_dir}/testing-olm/utils"
+
+get_setup_artifacts=true
+CLUSTER_LOGGING_OPERATOR_NAMESPACE=${CLUSTER_LOGGING_OPERATOR_NAMESPACE:-openshift-logging}
+ARTIFACT_DIR=${ARTIFACT_DIR:-"$(pwd)/_output"}
+test_artifactdir="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
+if [ ! -d $test_artifactdir ] ; then
+  mkdir -p $test_artifactdir
+fi
+cleanup(){
+  local return_code="$?"
+  
+  set +e
+  if [ "$return_code" != "0" -a $get_setup_artifacts ] ; then 
+    oc get all -n openshift-operators-redhat > $test_artifactdir/openshift-operators-redhat_all.txt
+    gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
+  fi
+
+  set -e
+  exit ${return_code}
+}
+trap cleanup exit
 
 pushd ../elasticsearch-operator
 # install the catalog containing the elasticsearch operator csv
@@ -11,8 +33,8 @@ ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/c
 ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
 popd
 
+get_setup_artifacts=false
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
-
 for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
 	os::log::info "==============================================================="
 	os::log::info "running e2e $test "

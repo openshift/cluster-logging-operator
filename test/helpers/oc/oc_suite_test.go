@@ -7,14 +7,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const podSpec = `
+const podSpecTemplate = `
 apiVersion: v1
 kind: Pod
 metadata:
   name: log-generator
   labels:
     component: test
-  namespace: test-log-gen
+  namespace: %s
 spec:
   containers:
     - name: log-generator

@@ -48,9 +48,7 @@ func Get() Getter {
 	g := &get{
 		runner: &runner{},
 	}
-	g.collectArgsFunc = func() []string {
-		return g.args()
-	}
+	g.collectArgsFunc = g.args
 	return g
 }
 

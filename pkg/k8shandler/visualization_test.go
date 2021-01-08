@@ -5,96 +5,14 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
-
-//TODO: Remove this in the next release after removing old kibana code completely
-func TestHasCLORef(t *testing.T) {
-	clr := ClusterLoggingRequest{
-		Client: nil,
-		Cluster: &logging.ClusterLogging{
-			TypeMeta: metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:                       "cluster-logging",
-				GenerateName:               "",
-				Namespace:                  "",
-				SelfLink:                   "",
-				UID:                        "123",
-				ResourceVersion:            "",
-				Generation:                 0,
-				CreationTimestamp:          metav1.Time{},
-				DeletionTimestamp:          nil,
-				DeletionGracePeriodSeconds: nil,
-				Labels:                     nil,
-				Annotations:                nil,
-				OwnerReferences:            nil,
-				Finalizers:                 nil,
-				ClusterName:                "",
-			},
-			Spec:   logging.ClusterLoggingSpec{},
-			Status: logging.ClusterLoggingStatus{},
-		},
-		ForwarderSpec: logging.ClusterLogForwarderSpec{},
-	}
-
-	obj := &apps.Deployment{
-		TypeMeta: metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:                       "test-deployment",
-			GenerateName:               "",
-			Namespace:                  "",
-			SelfLink:                   "",
-			UID:                        "",
-			ResourceVersion:            "",
-			Generation:                 0,
-			CreationTimestamp:          metav1.Time{},
-			DeletionTimestamp:          nil,
-			DeletionGracePeriodSeconds: nil,
-			Labels:                     nil,
-			Annotations:                nil,
-			OwnerReferences:            nil,
-			Finalizers:                 nil,
-			ClusterName:                "",
-		},
-		Spec:   apps.DeploymentSpec{},
-		Status: apps.DeploymentStatus{},
-	}
-
-	utils.AddOwnerRefToObject(obj, utils.AsOwner(clr.Cluster))
-
-	t.Log("refs:", obj.GetOwnerReferences())
-	if !HasCLORef(obj, &clr) {
-		t.Error("no owner reference found but it should be found")
-	}
-}
-
-func TestAreRefsEqual(t *testing.T) {
-	r1 := metav1.OwnerReference{
-		APIVersion: logging.SchemeGroupVersion.String(),
-		Kind:       "ClusterLogging",
-		Name:       "testRef",
-		Controller: func() *bool { t := true; return &t }(),
-	}
-
-	r2 := metav1.OwnerReference{
-		APIVersion: logging.SchemeGroupVersion.String(),
-		Kind:       "ClusterLogging",
-		Name:       "testRef",
-		Controller: func() *bool { t := true; return &t }(),
-	}
-
-	if !AreRefsEqual(&r1, &r2) {
-		t.Error("refs are not equal but they should be")
-	}
-}
 
 func TestNewKibanaCR(t *testing.T) {
 	tests := []struct {
@@ -112,6 +30,11 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: logging.ClusterLoggingSpec{
 					Visualization: &logging.VisualizationSpec{
 						KibanaSpec: logging.KibanaSpec{},
+					},
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
+						},
 					},
 				},
 			},
@@ -140,6 +63,43 @@ func TestNewKibanaCR(t *testing.T) {
 			},
 		},
 		{
+			desc: "no kibana replica",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{},
+					},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        0,
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+				},
+			},
+		},
+		{
 			desc: "custom resources",
 			cl: &logging.ClusterLogging{
 				ObjectMeta: metav1.ObjectMeta{
@@ -147,6 +107,11 @@ func TestNewKibanaCR(t *testing.T) {
 					Namespace: "openshift-logging",
 				},
 				Spec: logging.ClusterLoggingSpec{
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
+						},
+					},
 					Visualization: &logging.VisualizationSpec{
 						KibanaSpec: logging.KibanaSpec{
 							Resources: &v1.ResourceRequirements{
@@ -216,6 +181,11 @@ func TestNewKibanaCR(t *testing.T) {
 					Namespace: "openshift-logging",
 				},
 				Spec: logging.ClusterLoggingSpec{
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
+						},
+					},
 					Visualization: &logging.VisualizationSpec{
 						KibanaSpec: logging.KibanaSpec{
 							NodeSelector: map[string]string{
@@ -260,6 +230,11 @@ func TestNewKibanaCR(t *testing.T) {
 					Namespace: "openshift-logging",
 				},
 				Spec: logging.ClusterLoggingSpec{
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
+						},
+					},
 					Visualization: &logging.VisualizationSpec{
 						KibanaSpec: logging.KibanaSpec{
 							Tolerations: []v1.Toleration{
@@ -314,7 +289,7 @@ func TestNewKibanaCR(t *testing.T) {
 			}
 
 			if got.Spec.Replicas != test.want.Spec.Replicas {
-				t.Errorf("Replicas: got %d, want %d", got.Spec.Replicas, test.want.Spec.Replicas)
+				t.Errorf("%s, Replicas: got %d, want %d", test.desc, got.Spec.Replicas, test.want.Spec.Replicas)
 			}
 
 			if !reflect.DeepEqual(got.Spec.Resources, test.want.Spec.Resources) {
@@ -492,7 +467,7 @@ func TestIsKibanaCRDDifferent(t *testing.T) {
 				t.Errorf("kibana crd not marked different, got %t", got)
 			}
 			if !reflect.DeepEqual(test.current.Spec, test.desired.Spec) {
-				t.Errorf("kibana CR current spec not matching desired, got %v, want %v", test.current.Spec, test.desired.Spec)
+				t.Errorf("kibana CR current spec not matching desired for %s, got %v, want %v", test.desc, test.current.Spec, test.desired.Spec)
 			}
 		})
 	}

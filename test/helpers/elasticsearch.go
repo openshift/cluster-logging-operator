@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strconv"
 	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	clolog "github.com/ViaQ/logerr/log"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
@@ -89,7 +91,7 @@ type ElasticLogStore struct {
 	Framework *E2ETestFramework
 }
 
-func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
+func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
 	panic("Method not implemented")
 }
 
@@ -98,7 +100,7 @@ func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
-			logger.Warnf("Error retrieving indices from elasticsearch %v", err)
+			clolog.V(2).Info("Error retrieving indices from elasticsearch")
 			return false, nil
 		}
 		return indices.HasInfraStructureLogs(), nil
@@ -111,7 +113,7 @@ func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, e
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
-			logger.Warnf("Error retrieving indices from elasticsearch %v", err)
+			clolog.Error(err, "Error retrieving indices from elasticsearch")
 			return false, nil
 		}
 		return indices.HasApplicationLogs(), nil
@@ -124,7 +126,7 @@ func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) 
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
-			logger.Warnf("Error retrieving indices from elasticsearch %v", err)
+			clolog.Error(err, "Error retrieving indices from elasticsearch")
 			return false, nil
 		}
 		return indices.HasAuditLogs(), nil
@@ -157,7 +159,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	if len(pods.Items) == 0 {
 		return nil, errors.New("No pods found for elasticsearch")
 	}
-	logger.Debugf("Pod %s", pods.Items[0].Name)
+	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	indices := []Index{}
 	stdout, err := es.Framework.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
 	if err != nil {
@@ -171,7 +173,6 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 }
 
 func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
-	logger.Debug("DeployAnElasticsearchCluster")
 	logStoreName := "test-elastic-cluster"
 	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
 		return nil, nil, err
@@ -183,9 +184,18 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		OpenshiftLoggingNS,
 		k8shandler.LoadElasticsearchSecretMap(),
 	)
-	logger.Debugf("Creating secret for an elasticsearch cluster: %s", esSecret.Name)
-	if esSecret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), esSecret, opts); err != nil {
-		return nil, nil, err
+	clolog.V(3).Info("Creating secret for an elasticsearch cluster: ", "secret", esSecret.Name)
+	_ , err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), esSecret, opts)
+	if err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			sOpts := metav1.UpdateOptions{}
+			_, err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Update(context.TODO(), esSecret, sOpts)
+			if err != nil {
+				return nil, nil, nil
+			}
+		} else {
+			return nil, nil, nil
+		}
 	}
 	pvcSize := resource.MustParse("200G")
 	node := elasticsearch.ElasticsearchNode{
@@ -241,7 +251,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		return nil
 	})
 
-	logger.Debugf("Creating an elasticsearch cluster %v:", cr)
+	clolog.V(3).Info("Creating an elasticsearch cluster ", "cluster", cr)
 	var body []byte
 	if body, err = json.Marshal(cr); err != nil {
 		return nil, nil, err

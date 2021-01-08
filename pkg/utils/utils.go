@@ -4,6 +4,7 @@ import (
 	// #nosec G501
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -11,12 +12,13 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
+	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,9 +32,9 @@ const (
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	"curator": "CURATOR_IMAGE",
-	"fluentd": "FLUENTD_IMAGE",
-	"kibana":  "KIBANA_IMAGE",
+	"curator":             "CURATOR_IMAGE",
+	constants.FluentdName: "FLUENTD_IMAGE",
+	"kibana":              "KIBANA_IMAGE",
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found
@@ -82,7 +84,7 @@ func EnsureLinuxNodeSelector(selectors map[string]string) map[string]string {
 			return selectors
 		}
 		// Selector is provided but is not "linux"
-		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, osType, LinuxValue)
+		log.Info("Overriding node selector value", "OsNodeLabel", OsNodeLabel, "osType", osType, "LinuxValue", LinuxValue)
 	}
 	selectors[OsNodeLabel] = LinuxValue
 	return selectors
@@ -154,39 +156,48 @@ func GetComponentImage(component string) string {
 
 	envVarName, ok := COMPONENT_IMAGES[component]
 	if !ok {
-		logrus.Errorf("Environment variable name mapping missing for component: %s", component)
+		log.Error(errors.New("Can't get component image"), "Environment variable name mapping missing for component", "component", component)
 		return ""
 	}
 	imageTag := os.Getenv(envVarName)
 	if imageTag == "" {
-		logrus.Errorf("No image tag defined for component '%s' by environment variable '%s'", component, envVarName)
+		log.Error(errors.New("Can't get component image"), "No image tag defined for component by environment variable", "component", component, "envVarName", envVarName)
 	}
-	logrus.Debugf("Setting component image for '%s' to: '%s'", component, imageTag)
+	log.V(3).Info("Setting component image for to", "component", component, "imageTag", imageTag)
 	return imageTag
 }
 
 func GetFileContents(filePath string) []byte {
 
 	if filePath == "" {
-		logrus.Debug("Empty file path provided for retrieving file contents")
+		log.V(2).Info("Empty file path provided for retrieving file contents")
 		return nil
 	}
 
 	contents, err := ioutil.ReadFile(filepath.Clean(filePath))
 	if err != nil {
-		logrus.Errorf("Operator unable to read local file to get contents: %v", err)
+		log.Error(err, "Operator unable to read local file to get contents")
 		return nil
 	}
 
 	return contents
 }
 
+const defaultShareDir = "/usr/share/logging"
+
 func GetShareDir() string {
-	shareDir := os.Getenv("LOGGING_SHARE_DIR")
-	if shareDir == "" {
-		return "/usr/share/logging"
+	// shareDir is <repo-root>/files - try to find from working dir.
+	const sep = string(os.PathSeparator)
+	const repoRoot = sep + "cluster-logging-operator" + sep
+	wd, err := os.Getwd()
+	if err != nil {
+		return defaultShareDir
 	}
-	return shareDir
+	i := strings.LastIndex(wd, repoRoot)
+	if i >= 0 {
+		return filepath.Join(wd[0:i+len(repoRoot)] + "files")
+	}
+	return defaultShareDir
 }
 
 func GetScriptsDir() string {
@@ -200,13 +211,15 @@ func GetScriptsDir() string {
 func GetWorkingDirFileContents(filePath string) []byte {
 	return GetFileContents(GetWorkingDirFilePath(filePath))
 }
-
-func GetWorkingDirFilePath(toFile string) string {
+func GetWorkingDir() string {
 	workingDir := os.Getenv("WORKING_DIR")
 	if workingDir == "" {
 		workingDir = DefaultWorkingDir
 	}
-	return path.Join(workingDir, toFile)
+	return workingDir
+}
+func GetWorkingDirFilePath(toFile string) string {
+	return path.Join(GetWorkingDir(), toFile)
 }
 
 func WriteToWorkingDirFile(toFile string, value []byte) error {

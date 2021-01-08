@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
@@ -26,9 +26,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 
 	cluster := clusterRequest.Cluster
 	if cluster.Spec.Curation == nil || cluster.Spec.Curation.Type == "" {
-		if err = clusterRequest.removeCurator(); err != nil {
-			return
-		}
 		return nil
 	}
 	if cluster.Spec.Curation.Type == logging.CurationTypeCurator {
@@ -55,14 +52,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCuration() (err error
 			return fmt.Errorf("Failed to get status for Curator: %v", err)
 		}
 
-		printUpdateMessage := true
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 
 			if !compareCuratorStatus(curatorStatus, cluster.Status.Curation.CuratorStatus) {
-				if printUpdateMessage {
-					logrus.Info("Updating status of Curator")
-					printUpdateMessage = false
-				}
 				cluster.Status.Curation.CuratorStatus = curatorStatus
 				return clusterRequest.UpdateStatus(cluster)
 			}
@@ -169,18 +161,23 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorConfigMap() er
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCuratorSecret() error {
-
-	curatorSecret := NewSecret(
-		"curator",
-		clusterRequest.Cluster.Namespace,
-		map[string][]byte{
+	var secrets map[string][]byte
+	_ = Syncronize(func() error {
+		secrets = map[string][]byte{
 			"ca":       utils.GetWorkingDirFileContents("ca.crt"),
 			"key":      utils.GetWorkingDirFileContents("system.logging.curator.key"),
 			"cert":     utils.GetWorkingDirFileContents("system.logging.curator.crt"),
 			"ops-ca":   utils.GetWorkingDirFileContents("ca.crt"),
 			"ops-key":  utils.GetWorkingDirFileContents("system.logging.curator.key"),
 			"ops-cert": utils.GetWorkingDirFileContents("system.logging.curator.crt"),
-		})
+		}
+		return nil
+	})
+	curatorSecret := NewSecret(
+		"curator",
+		clusterRequest.Cluster.Namespace,
+		secrets,
+	)
 
 	utils.AddOwnerRefToObject(curatorSecret, utils.AsOwner(clusterRequest.Cluster))
 
@@ -332,39 +329,39 @@ func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.
 	different := false
 
 	if !utils.AreMapsSame(current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector) {
-		logrus.Infof("Invalid Curator nodeSelector change found, updating '%s'", current.Name)
+		log.Info("Invalid Curator nodeSelector change found, updating", "current", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector = desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
 		different = true
 	}
 
 	if !utils.AreTolerationsSame(current.Spec.JobTemplate.Spec.Template.Spec.Tolerations, desired.Spec.JobTemplate.Spec.Template.Spec.Tolerations) {
-		logrus.Infof("Curator tolerations change found, updating '%s'", current.Name)
+		log.Info("Curator tolerations change found, updating ", "current", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.Tolerations = desired.Spec.JobTemplate.Spec.Template.Spec.Tolerations
 		different = true
 	}
 
 	// Check schedule
 	if current.Spec.Schedule != desired.Spec.Schedule {
-		logrus.Infof("Invalid Curator schedule found, updating %q", current.Name)
+		log.Info("Invalid Curator schedule found, updating", "current", current.Name)
 		current.Spec.Schedule = desired.Spec.Schedule
 		different = true
 	}
 
 	// Check suspended
 	if current.Spec.Suspend != nil && desired.Spec.Suspend != nil && *current.Spec.Suspend != *desired.Spec.Suspend {
-		logrus.Infof("Invalid Curator suspend value found, updating %q", current.Name)
+		log.Info("Invalid Curator suspend value found, updating ", "current", current.Name)
 		current.Spec.Suspend = desired.Spec.Suspend
 		different = true
 	}
 
 	if current.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image != desired.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image {
-		logrus.Infof("Curator image change found, updating %q", current.Name)
+		log.Info("Curator image change found, updating ", "current", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image = desired.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image
 		different = true
 	}
 
 	if utils.AreResourcesDifferent(current, desired) {
-		logrus.Infof("Curator resources change found, updating %q", current.Name)
+		log.Info("Curator resources change found, updating ", "current", current.Name)
 		different = true
 	}
 

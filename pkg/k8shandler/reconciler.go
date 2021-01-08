@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -29,24 +29,28 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 
 	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
-	// Reconcile certs
-	if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
-		return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-	}
+	if clusterLoggingRequest.IncludesManagedStorage() {
+		// Reconcile certs
+		if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
+			return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
 
-	// Reconcile Log Store
-	if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
-		return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-	}
+		// Reconcile Log Store
+		if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
+			return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
 
-	// Reconcile Visualization
-	if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-	}
+		// Reconcile Visualization
+		if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig); err != nil {
+			return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
 
-	// Reconcile Curation
-	if err = clusterLoggingRequest.CreateOrUpdateCuration(); err != nil {
-		return fmt.Errorf("Unable to create or update curation for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		// Reconcile Curation
+		if err = clusterLoggingRequest.CreateOrUpdateCuration(); err != nil {
+			return fmt.Errorf("Unable to create or update curation for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
+	} else {
+		removeManagedStorage(clusterLoggingRequest)
 	}
 
 	// Reconcile Collection
@@ -62,8 +66,16 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	return nil
 }
 
+func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
+	log.V(1).Info("Removing managed store components...")
+	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeCurator} {
+		if err := remove(); err != nil {
+			log.V(1).Error(err, "Error removing component")
+		}
+	}
+}
+
 func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client) (err error) {
-	logger.DebugObject("Reconciling ClusterLogForwarder instance: %v", forwarder)
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client: requestClient,
 	}
@@ -74,13 +86,11 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
 	if clusterLogging == nil {
-		logger.Debug("No clusterlogging object, cannot reconcile")
 		return nil
 	}
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
-		logger.Debugf("Unmanaged state, nothing to reconcile")
 		return nil
 	}
 
@@ -89,10 +99,9 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	// Reconcile Collection
 	err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig)
 	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
-	logger.DebugObject("ClusterLogForwarder status after updating collection: %#v", forwarder.Status)
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-		logger.Errorf(msg)
+		log.Error(err, msg)
 		return errors.New(msg)
 	}
 	return nil
@@ -187,7 +196,6 @@ func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
 func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {
 	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	forwarder := &logging.ClusterLogForwarder{}
-	logger.Debug("clusterlogforwarder-controller fetching LF instance")
 	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
 		if !apierrors.IsNotFound(err) {
 			fmt.Printf("Encountered unexpected error getting %v", nsname)

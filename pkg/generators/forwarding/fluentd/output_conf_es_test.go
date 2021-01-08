@@ -78,13 +78,12 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
 			remove_keys viaq_index_name
-			user fluentd
-			password changeme
 
 			client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 			client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
 			ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 			type_name _doc
+            http_backend typhoeus
 			write_operation create
 			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -103,7 +102,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
-				retry_max_interval 300s
+				retry_max_interval 60s
 				retry_forever true
 				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 				total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -125,14 +124,13 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
 			remove_keys viaq_index_name
-			user fluentd
-			password changeme
 
 			client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 			client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
 			ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 			type_name _doc
 			retry_tag retry_oncluster_elasticsearch
+            http_backend typhoeus
 			write_operation create
 			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -151,7 +149,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
-				retry_max_interval 300s
+				retry_max_interval 60s
 				retry_forever true
 				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 				total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -191,10 +189,9 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
 			remove_keys viaq_index_name
-			user fluentd
-			password changeme
 
 			type_name _doc
+            http_backend typhoeus
 			write_operation create
 			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -213,7 +210,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
-				retry_max_interval 300s
+				retry_max_interval 60s
 				retry_forever true
 				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 				total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -234,11 +231,10 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			target_index_key viaq_index_name
 			id_key viaq_msg_id
 			remove_keys viaq_index_name
-			user fluentd
-			password changeme
 
 			type_name _doc
 			retry_tag retry_other_elasticsearch
+            http_backend typhoeus
 			write_operation create
 			reload_connections 'true'
 			# https://github.com/uken/fluent-plugin-elasticsearch#reload-after
@@ -257,7 +253,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
-				retry_max_interval 300s
+				retry_max_interval 60s
 				retry_forever true
 				queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 				total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G

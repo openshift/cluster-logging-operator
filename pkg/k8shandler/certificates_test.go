@@ -15,6 +15,7 @@ import (
 	gomegatypes "github.com/onsi/gomega/types"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -94,7 +95,7 @@ var _ = Describe("Reconciling", func() {
 			clusterRequest *ClusterLoggingRequest
 		)
 
-		BeforeEach(func() {
+		BeforeSuite(func() {
 			client = fake.NewFakeClient(
 				cluster,
 				masterCASecret,
@@ -108,7 +109,10 @@ var _ = Describe("Reconciling", func() {
 				Client:  client,
 				Cluster: cluster,
 			}
-
+			if err := os.RemoveAll(utils.GetWorkingDir()); err != nil {
+				Fail(fmt.Sprintf("%v", err))
+			}
+			os.Setenv("WORKING_DIR", utils.GetWorkingDir())
 			os.Setenv("SCRIPTS_DIR", scriptsDir)
 			_ = clusterRequest.CreateOrUpdateCertificates()
 		})
@@ -118,8 +122,22 @@ var _ = Describe("Reconciling", func() {
 			key := types.NamespacedName{Name: constants.MasterCASecretName, Namespace: constants.OpenshiftNS}
 			Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
-			Expect(secret).Should(SucceedParse(constants.MasterCASecretName))
-			Expect(secret).Should(SucceedVerifyX509("masterca", "masterca", "openshift-cluster-logging-signer", nil, nil, nil))
+			Expect(secret).Should(ContainKeys("ca.key", "ca.crt", "ca.db", "ca.serial.txt"))
+			Expect(secret).Should(SucceedVerifyX509("ca.crt", "ca.crt", "openshift-cluster-logging-signer", nil, nil, nil))
+		})
+		It("should recreate the master-cert secret when its missing", func() {
+			//remove secret and validate
+			Expect(client.Delete(context.TODO(), masterCASecret)).Should(Succeed())
+			secret := &corev1.Secret{}
+			key := types.NamespacedName{Name: constants.MasterCASecretName, Namespace: constants.OpenshiftNS}
+			Expect(client.Get(context.TODO(), key, secret)).ShouldNot(Succeed())
+
+			//reconcile again
+			Expect(clusterRequest.CreateOrUpdateCertificates()).Should(Succeed())
+			Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
+
+			Expect(secret).Should(ContainKeys("ca.key", "ca.crt", "ca.db", "ca.serial.txt"))
+			Expect(secret).Should(SucceedVerifyX509("ca.crt", "ca.crt", "openshift-cluster-logging-signer", nil, nil, nil))
 		})
 
 		Context("for log store", func() {
@@ -134,7 +152,13 @@ var _ = Describe("Reconciling", func() {
 					"elasticsearch.openshift-logging.svc",
 					"elasticsearch.cluster.local",
 				}
-				Expect(secret).Should(SucceedParse(constants.ElasticsearchName))
+				Expect(secret).Should(ContainKeys("elasticsearch.key",
+					"elasticsearch.crt",
+					"logging-es.key",
+					"logging-es.crt",
+					"admin-key",
+					"admin-cert",
+					"admin-ca"))
 				Expect(secret).Should(SucceedVerifyCert("admin-ca", "elasticsearch.crt", "elasticsearch", san))
 			})
 
@@ -148,7 +172,13 @@ var _ = Describe("Reconciling", func() {
 					"elasticsearch.openshift-logging.svc",
 					"elasticsearch.cluster.local",
 				}
-				Expect(secret).Should(SucceedParse(constants.ElasticsearchName))
+				Expect(secret).Should(ContainKeys("elasticsearch.key",
+					"elasticsearch.crt",
+					"logging-es.key",
+					"logging-es.crt",
+					"admin-key",
+					"admin-cert",
+					"admin-ca"))
 				Expect(secret).Should(SucceedVerifyCert("admin-ca", "logging-es.crt", "elasticsearch", san))
 			})
 
@@ -158,7 +188,13 @@ var _ = Describe("Reconciling", func() {
 				key := types.NamespacedName{Name: constants.ElasticsearchName, Namespace: constants.OpenshiftNS}
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
-				Expect(secret).Should(SucceedParse(constants.ElasticsearchName))
+				Expect(secret).Should(ContainKeys("elasticsearch.key",
+					"elasticsearch.crt",
+					"logging-es.key",
+					"logging-es.crt",
+					"admin-key",
+					"admin-cert",
+					"admin-ca"))
 				Expect(secret).Should(SucceedVerifyCert("admin-ca", "admin-cert", "system.admin", nil))
 			})
 		})
@@ -170,7 +206,7 @@ var _ = Describe("Reconciling", func() {
 				key := types.NamespacedName{Name: constants.FluentdName, Namespace: constants.OpenshiftNS}
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
-				Expect(secret).Should(SucceedParse(constants.FluentdName))
+				Expect(secret).Should(ContainKeys("ca-bundle.crt", "tls.crt", "tls.key"))
 				Expect(secret).Should(SucceedVerifyCert("ca-bundle.crt", "tls.crt", "system.logging.fluentd", nil))
 			})
 		})
@@ -182,7 +218,7 @@ var _ = Describe("Reconciling", func() {
 				key := types.NamespacedName{Name: constants.KibanaName, Namespace: constants.OpenshiftNS}
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
-				Expect(secret).Should(SucceedParse(constants.KibanaName))
+				Expect(secret).Should(ContainKeys("ca", "key", "cert"))
 				Expect(secret).Should(SucceedVerifyCert("ca", "cert", "system.logging.kibana", nil))
 			})
 
@@ -192,7 +228,7 @@ var _ = Describe("Reconciling", func() {
 				key := types.NamespacedName{Name: constants.KibanaProxyName, Namespace: constants.OpenshiftNS}
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
-				Expect(secret).Should(SucceedParse(constants.KibanaProxyName))
+				Expect(secret).Should(ContainKeys("session-secret", "server-key", "server-cert"))
 			})
 		})
 
@@ -203,39 +239,34 @@ var _ = Describe("Reconciling", func() {
 				key := types.NamespacedName{Name: constants.CuratorName, Namespace: constants.OpenshiftNS}
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
-				Expect(secret).Should(SucceedParse(constants.CuratorName))
+				Expect(secret).Should(ContainKeys("ca", "key", "cert", "ops-ca", "ops-key", "ops-cert"))
 				Expect(secret).Should(SucceedVerifyCert("ca", "cert", "system.logging.curator", nil))
 			})
 		})
 	})
 })
 
-func SucceedParse(secretName string) gomegatypes.GomegaMatcher {
-	return &succeedParseMatcher{secretName: secretName}
+func ContainKeys(secretKeys ...string) gomegatypes.GomegaMatcher {
+	return &secretKeysMatcher{keys: secretKeys}
 }
 
-type succeedParseMatcher struct {
-	secretName string
+type secretKeysMatcher struct {
+	keys []string
 }
 
-func (matcher *succeedParseMatcher) Match(actual interface{}) (bool, error) {
+func (matcher *secretKeysMatcher) Match(actual interface{}) (bool, error) {
 	secret, ok := actual.(*corev1.Secret)
 	if !ok || secret == nil {
-		return false, fmt.Errorf("SuceedParse expects a non-nil *corev1.Secret")
+		return false, fmt.Errorf("ContainKeys expects a non-nil *corev1.Secret")
 	}
 
 	if secret.Data == nil || len(secret.Data) == 0 {
-		return false, fmt.Errorf("failed to read data from secret %q", matcher.secretName)
+		return false, fmt.Errorf("failed to read data from secret %q", secret.Name)
 	}
 
-	secretRef, ok := secretCertificates[matcher.secretName]
-	if !ok {
-		return false, fmt.Errorf("failed to load certificate reference for: %s", matcher.secretName)
-	}
-
-	for want := range secret.Data {
+	for _, want := range matcher.keys {
 		found := false
-		for k := range secretRef {
+		for k := range secret.Data {
 			if k == want {
 				found = true
 				break
@@ -243,18 +274,18 @@ func (matcher *succeedParseMatcher) Match(actual interface{}) (bool, error) {
 		}
 
 		if !found {
-			return false, fmt.Errorf("failed to find key %q for secret %q", want, matcher.secretName)
+			return false, fmt.Errorf("failed to find key %q in secret %q", want, secret.Name)
 		}
 	}
 
 	return true, nil
 }
 
-func (matcher *succeedParseMatcher) FailureMessage(actual interface{}) (message string) {
+func (matcher *secretKeysMatcher) FailureMessage(actual interface{}) (message string) {
 	return ""
 }
 
-func (matcher *succeedParseMatcher) NegatedFailureMessage(actual interface{}) (message string) {
+func (matcher *secretKeysMatcher) NegatedFailureMessage(actual interface{}) (message string) {
 	return ""
 }
 
@@ -293,7 +324,6 @@ func (matcher *succeedVerifyX509Matcher) Match(actual interface{}) (bool, error)
 	if secret.Data == nil || len(secret.Data) == 0 {
 		return false, fmt.Errorf("failed to read data from secret")
 	}
-
 	roots, cert, err := loadX509Cert(secret.Data[matcher.caKey], secret.Data[matcher.certKey])
 	if err != nil {
 		return false, fmt.Errorf("Failed to parse X509 certificate: %s", err.Error())

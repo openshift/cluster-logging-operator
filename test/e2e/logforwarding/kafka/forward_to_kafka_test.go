@@ -3,22 +3,24 @@ package kafka
 import (
 	"fmt"
 	"runtime"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/ViaQ/logerr/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	v1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger.Infof("Running %s", filename)
+	log.Info("Running ", "filename", filename)
 	var (
 		app *apps.StatefulSet
 		err error
@@ -26,7 +28,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	)
 	BeforeEach(func() {
 		if err := e2e.DeployLogGenerator(); err != nil {
-			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
+			log.Error(err, "unable to deploy log generator.")
 		}
 	})
 	Describe("when the output is a third-party managed kafka", func() {
@@ -95,10 +97,27 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			})
 
 			It("should send logs to the forward.Output logstore", func() {
-				Expect(e2e.LogStores[app.Name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(),
-					"Expected to find stored infrastructure logs")
-				Expect(e2e.LogStores[app.Name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
-				Expect(e2e.LogStores[app.Name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+				hasAppLogs := false
+				hasInfraLogs := false
+				hasAuditLogs := false
+				_ = wait.PollImmediate(time.Second*2, time.Minute*5, func() (bool, error) {
+					hasAppLogs, err = e2e.LogStores[app.Name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)
+					if err != nil {
+						return false, nil
+					}
+					hasInfraLogs, err = e2e.LogStores[app.Name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)
+					if err != nil {
+						return false, nil
+					}
+					hasAuditLogs, err = e2e.LogStores[app.Name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)
+					if err != nil {
+						return false, nil
+					}
+					return hasAppLogs && hasInfraLogs && hasAuditLogs, nil
+				})
+				Expect(hasAppLogs).To(BeTrue(), "Expected to find stored application logs")
+				Expect(hasInfraLogs).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(hasAuditLogs).To(BeTrue(), "Expected to find stored audit logs")
 			})
 
 			AfterEach(func() {

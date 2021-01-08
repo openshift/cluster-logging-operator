@@ -503,7 +503,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 	// for collection config generation. If first is provided without the latter a
 	// ClusterLogFowarder with default fields is assumed.
 	// (See ClusterLoggingRequest#getLogForwarder)
-	if pipelineSpec.HasDefaultOutput() && cluster.Spec.LogStore != nil {
+	if pipelineSpec.HasDefaultOutput() && cluster.Spec.LogStore != nil && cluster.Spec.LogStore.ElasticsearchSpec.NodeCount > 0 {
 		fluentdPodSpec.InitContainers = []v1.Container{
 			newFluentdInitContainer(cluster),
 		}

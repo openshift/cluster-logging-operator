@@ -287,6 +287,9 @@ func TestFluentdPodInitContainerWithDefaultForwarding(t *testing.T) {
 			},
 			LogStore: &logging.LogStoreSpec{
 				Type: "elasticsearch",
+				ElasticsearchSpec: logging.ElasticsearchSpec{
+					NodeCount: 1,
+				},
 			},
 		},
 	}
@@ -299,6 +302,32 @@ func TestFluentdPodInitContainerWithDefaultForwarding(t *testing.T) {
 
 	if len(podSpec.InitContainers) == 0 {
 		t.Error("Expected pod to have defined init container")
+	}
+}
+
+func TestFluentdPodInitContainerWithZeroESCount(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
+					Type:        "fluentd",
+					FluentdSpec: logging.FluentdSpec{},
+				},
+			},
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+			},
+		},
+	}
+
+	spec := logging.ClusterLogForwarderSpec{
+		Outputs: []logging.OutputSpec{{Name: "default"}},
+	}
+
+	podSpec := newFluentdPodSpec(cluster, nil, nil, spec)
+
+	if len(podSpec.InitContainers) > 0 {
+		t.Error("Expected pod not define init container")
 	}
 }
 

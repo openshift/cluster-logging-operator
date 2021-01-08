@@ -2,11 +2,13 @@ package matchers
 
 import (
 	"fmt"
-	logger "github.com/ViaQ/logerr/log"
-	"github.com/onsi/gomega/types"
 	"reflect"
 	"regexp"
 	"strings"
+
+	logger "github.com/ViaQ/logerr/log"
+	"github.com/onsi/gomega/types"
+	"github.com/openshift/cluster-logging-operator/test"
 )
 
 type LogMatcher struct {
@@ -28,11 +30,11 @@ func (m *LogMatcher) Match(actual interface{}) (success bool, err error) {
 }
 
 func (m *LogMatcher) FailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected\n\t%#v\nto fit \n\t%#v", actual, m.expected)
+	return fmt.Sprintf("Expected\n\t%s\nto fit \n\t%s", test.JSONString(actual), test.JSONString(m.expected))
 }
 
 func (m *LogMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected\n\t%#v\nto not fit \n\t%#v", actual, m.expected)
+	return fmt.Sprintf("Expected\n\t%s\nto not fit \n\t%s", test.JSONString(actual), test.JSONString(m.expected))
 }
 
 func isNil(i interface{}) bool {
@@ -47,7 +49,7 @@ func isNil(i interface{}) bool {
 }
 
 func DeepFields(iface interface{}, namePrefix string) ([]reflect.Value, []string) {
-	fields := make([]reflect.Value, 0)
+	values := make([]reflect.Value, 0)
 	names := make([]string, 0)
 
 	ifv := reflect.ValueOf(iface)
@@ -60,30 +62,36 @@ func DeepFields(iface interface{}, namePrefix string) ([]reflect.Value, []string
 			continue
 		}
 		switch v.Kind() {
+		case reflect.Array:
+			values = append(values, v)
+			names = append(names, n)
 		case reflect.Struct:
 			typename := v.Type().Name()
+			if typename == "Timing" {
+				break
+			}
 			if typename != "Time" {
 				moreFields, moreNames := DeepFields(v.Interface(), n+"_")
-				fields = append(fields, moreFields...)
+				values = append(values, moreFields...)
 				names = append(names, moreNames...)
 			} else {
-				fields = append(fields, v)
+				values = append(values, v)
 				names = append(names, n)
 			}
 		case reflect.Ptr:
 			if !isNil(v.Interface()) {
 				elm := v.Elem()
 				moreFields, moreNames := DeepFields(elm.Interface(), n+"_")
-				fields = append(fields, moreFields...)
+				values = append(values, moreFields...)
 				names = append(names, moreNames...)
 			}
 		default:
-			fields = append(fields, v)
+			values = append(values, v)
 			names = append(names, n)
 		}
 	}
 
-	return fields, names
+	return values, names
 }
 
 func compareLogLogic(name string, templateValue interface{}, value interface{}) bool {
@@ -95,7 +103,16 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		return true
 	}
 	if templateValueString == "*" && valueString != "" { // Any value, not Nil is ok if template value is "*"
-		logger.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
+		logger.V(3).Info("CompareLogLogic: Any value for * ", "fieldname", name, "value", value)
+		return true
+	}
+	if templateValueString == "[*]" && valueString != "" { // Any array
+		logger.V(3).Info("CompareLogLogic: Any value for array[*] ", "fieldname", name, "value", value)
+		return true
+	}
+
+	if templateValueString == "map[*:*]" && valueString != "" { // Any map
+		logger.V(3).Info("CompareLogLogic: Any value for map[*] ", "fieldname", name, "value", value)
 		return true
 	}
 
@@ -107,25 +124,32 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 	if strings.HasPrefix(templateValueString, "regex:") { // Using regex if starts with "/"
 		match, _ := regexp.MatchString(templateValueString[6:], valueString)
 		if match {
-			logger.V(3).Info("CompareLogLogic: Fit regex ", "name", name, "value", valueString)
+			logger.V(3).Info("CompareLogLogic: Fit regex ", "fieldname", name, "value", value)
 			return true
 		}
 	}
 
-	logger.V(3).Info("CompareLogLogic: Mismatch !!!", "name", name, "templateValue", templateValueString, "value", valueString)
+	logger.V(3).Info("CompareLogLogic: Mismatch !!!", "fieldname", name, "templateValue", templateValueString, "value", valueString)
 	return false
 }
 
 func CompareLog(template interface{}, log interface{}) (bool, error) {
-	templateFieldValues, templateFieldNames := DeepFields(template, "")
 	logFieldValues, logFieldNames := DeepFields(log, "")
-	for i := range logFieldNames {
-		logFieldValue := logFieldValues[i].Interface()
-		logFieldName := logFieldNames[i]
+
+	// templateString := test.JSONLine(template)
+	// logger.V(3).Info("Marshalled", "template", templateString)
+	// allLog := &logtypes.AllLog{}
+	// test.MustUnmarshal(templateString, allLog)
+	// logger.V(3).Info("Unmarshled", "template", template)
+	templateFieldValues, templateFieldNames := DeepFields(template, "")
+	logger.V(3).Info("Template", "names", templateFieldNames)
+	for i := range templateFieldNames {
+		templateFieldValue := templateFieldValues[i].Interface()
+		templateFieldName := templateFieldNames[i]
 		foundMatchFields := false
-		for j := range templateFieldValues {
-			templateFieldValue := templateFieldValues[j].Interface()
-			templateFieldName := templateFieldNames[j]
+		for j := range logFieldValues {
+			logFieldValue := logFieldValues[j].Interface()
+			logFieldName := logFieldNames[j]
 			if templateFieldName == logFieldName {
 				foundMatchFields = true
 				logger.V(3).Info("CompareLog: comparing", "name", templateFieldName)
@@ -145,7 +169,7 @@ func CompareLog(template interface{}, log interface{}) (bool, error) {
 			}
 		}
 		if !foundMatchFields {
-			logger.V(3).Info("CompareLog: skipping field, not found in template field", "name", logFieldName)
+			logger.V(3).Info("CompareLog: skipping field, not found in log", "name", templateFieldName)
 		}
 	}
 

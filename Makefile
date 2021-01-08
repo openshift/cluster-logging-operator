@@ -34,7 +34,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 # - Build all code (including e2e tests)
 # - Run lint check
 #
-check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator
+check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator bin/functional-benchmarker
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
 	go test ./test/helpers/... -exec true > /dev/null # Build but don't run test helpers tests.
 	$(MAKE) lint				  # Only lint if all code builds.
@@ -50,6 +50,8 @@ ci-check: check
 
 # Note: Go has built-in build caching, so always run `go build`.
 # It will do a better job than using source dependencies to decide if we need to build.
+bin/functional-benchmarker: force
+	go build $(BUILD_OPTS) -o $@ ./internal/cmd/functional-benchmarker
 
 bin/forwarder-generator: force
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator

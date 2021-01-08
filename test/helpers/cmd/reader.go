@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
@@ -138,6 +139,16 @@ func (r *Reader) ExpectEmpty(ctx context.Context) error {
 // It will continue to tail until Close() is called.
 func TailReader(pod *corev1.Pod, path string) (*Reader, error) {
 	return NewReader(runtime.Exec(pod, "tail", "-F", path))
+}
+
+// TailReaderForContainer returns a CmdReader that tails file at path on pod.
+//
+// It uses "tail -F" which will wait for the file to exist if it does not,
+// and will wait for it to be re-created if it is deleted.
+// It will continue to tail until Close() is called.
+func TailReaderForContainer(pod *corev1.Pod, containerName, path string) (*Reader, error) {
+	log.V(3).Info("Creating tail reader", "pod", pod.Name, "container", containerName, "file", path)
+	return NewReader(runtime.ExecContainer(pod, containerName, "tail", "-F", path))
 }
 
 // FileReader returns a CmdReader that reads the current contents of path on pod.file

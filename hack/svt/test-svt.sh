@@ -108,10 +108,6 @@ spec:
     type: "kibana"
     kibana:
       replicas: 1
-  curation:
-    type: "curator"
-    curator:
-      schedule: "30 3,9,15,21 * * *"
   collection:
     logs:
       type: "fluentd"

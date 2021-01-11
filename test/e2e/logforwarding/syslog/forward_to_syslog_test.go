@@ -101,6 +101,10 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 								Name:       "test-app",
 								OutputRefs: []string{"syslogout"},
 								InputRefs:  []string{"application"},
+								Labels: map[string]string{
+									"syslog": "east",
+									"secure": "true",
+								},
 							},
 						},
 					},
@@ -139,6 +143,17 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 				expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
 				Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+				grepMsgContent := fmt.Sprintf(`grep %s %%s| grep pod_name | tail -n 1 | sed -n -e 's/^.*openshift://p'`, logGenPod)
+				str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+				Expect(err).To(BeNil())
+				str = strings.ReplaceAll(str, "=>", ":")
+				msg := map[string]map[string]string{}
+				err = json.Unmarshal([]byte(str), &msg)
+				Expect(err).To(BeNil())
+				expectedLabelSecure := forwarder.Spec.Pipelines[0].Labels["secure"]
+				Expect(msg["labels"]["secure"]).To(Equal(expectedLabelSecure), "Expected: "+expectedLabelSecure)
+				expectedLabelSyslog := forwarder.Spec.Pipelines[0].Labels["syslog"]
+				Expect(msg["labels"]["syslog"]).To(Equal(expectedLabelSyslog), "Expected: "+expectedLabelSyslog)
 			},
 				Entry("with TLS disabled, with TCP", false, corev1.ProtocolTCP),
 				Entry("with TLS disabled, with UDP", false, corev1.ProtocolUDP),
@@ -382,6 +397,10 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 								Name:       "test-app",
 								OutputRefs: []string{"syslogout"},
 								InputRefs:  []string{"application"},
+								Labels: map[string]string{
+									"syslog": "east",
+									"secure": "true",
+								},
 							},
 						},
 					},
@@ -423,6 +442,17 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					expectedAppName := forwarder.Spec.Outputs[0].Syslog.Tag
 					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
 				}
+				grepMsgContent := fmt.Sprintf(`grep %s %%s| grep pod_name | tail -n 1 | sed -n -e 's/^.*openshift://p'`, logGenPod)
+				str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+				Expect(err).To(BeNil())
+				str = strings.ReplaceAll(str, "=>", ":")
+				msg := map[string]map[string]string{}
+				err = json.Unmarshal([]byte(str), &msg)
+				Expect(err).To(BeNil())
+				expectedLabelSecure := forwarder.Spec.Pipelines[0].Labels["secure"]
+				Expect(msg["labels"]["secure"]).To(Equal(expectedLabelSecure), "Expected: "+expectedLabelSecure)
+				expectedLabelSyslog := forwarder.Spec.Pipelines[0].Labels["syslog"]
+				Expect(msg["labels"]["syslog"]).To(Equal(expectedLabelSyslog), "Expected: "+expectedLabelSyslog)
 			},
 				// old syslog plugin does not support TLS, so set false for tls
 				Entry("with old syslog plugin, with TCP", true, false, corev1.ProtocolTCP),

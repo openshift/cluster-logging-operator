@@ -598,7 +598,7 @@ const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
     <record>
       cw_group_name {{.LogGroupName }}
       cw_stream_name ${tag}
-      cw_retention_days "#{ {{ .Target.Cloudwatch.LogStreamStrategy.RetentionInDays }}.to_i }"
+      cw_retention_days {{ .LogRetentionDays }}
     </record>
   </filter>
   <match **>

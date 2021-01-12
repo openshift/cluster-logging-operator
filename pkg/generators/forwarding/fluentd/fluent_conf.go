@@ -2,7 +2,6 @@ package fluentd
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"text/template"
 
@@ -80,11 +79,11 @@ func (conf *outputLabelConf) Protocol() string {
 	}
 }
 
-func (conf *outputLabelConf) LogRetentionDays() string {
+func (conf *outputLabelConf) LogRetentionDays() int {
 	if conf.Target.Type == logging.OutputTypeCloudwatch {
-		return strconv.Itoa(conf.Target.Cloudwatch.LogGroupStrategy.RetentionInDays)
+		return conf.Target.Cloudwatch.LogGroupStrategy.RetentionInDays
 	}
-	return ""
+	return 0
 }
 func (conf *outputLabelConf) LogGroupName() string {
 	if conf.Target.Type == logging.OutputTypeCloudwatch {

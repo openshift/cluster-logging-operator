@@ -269,7 +269,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			status.Outputs.Set(output.Name, condInvalid("%v", urlErr))
 		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
 			break
-		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
+		case !clusterRequest.CLFVerifier.VerifyOutputSecret(&output, status.Outputs):
 			break
 		default:
 			status.Outputs.Set(output.Name, condReady)

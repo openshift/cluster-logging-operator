@@ -23,7 +23,8 @@ import (
 
 const (
 	// grep "pod_name"=>"<generator-pod-name>" <syslog-log-filename>
-	rsyslogFormatStr = `grep %s %%s| grep pod_name | tail -n 1 | awk -F' ' '{print %s}'`
+	rsyslogFormatStr       = `grep %s %%s| grep pod_name | tail -n 1 | awk -F' ' '{print %s}'`
+	rsyslogLabelsFormatStr = `grep %s %%s| grep pod_name | tail -n 1 | sed -n -e 's/^.*openshift://p'`
 )
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
@@ -41,6 +42,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		grepprocid       string
 		grepmsgid        string
 		greptag          string
+		grepLabels       string
 		logGenPod        string
 		logGenNS         string
 	)
@@ -61,6 +63,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		greptag = fmt.Sprintf(rsyslogFormatStr, logGenPod, "$4")
 		grepprocid = fmt.Sprintf(rsyslogFormatStr, logGenPod, "$5")
 		grepmsgid = fmt.Sprintf(rsyslogFormatStr, logGenPod, "$6")
+		grepLabels = fmt.Sprintf(rsyslogLabelsFormatStr, logGenPod)
 	})
 	Describe("when the output is a third-party managed syslog", func() {
 		BeforeEach(func() {
@@ -143,8 +146,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 				expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
 				Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
-				grepMsgContent := fmt.Sprintf(`grep %s %%s| grep pod_name | tail -n 1 | sed -n -e 's/^.*openshift://p'`, logGenPod)
-				str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+				str, err := logStore.GrepLogs(grepLabels, helpers.DefaultWaitForLogsTimeout)
 				Expect(err).To(BeNil())
 				str = strings.ReplaceAll(str, "=>", ":")
 				msg := map[string]map[string]string{}
@@ -441,8 +443,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
 					expectedAppName := forwarder.Spec.Outputs[0].Syslog.Tag
 					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
-					grepMsgContent := fmt.Sprintf(`grep %s %%s| grep pod_name | tail -n 1 | sed -n -e 's/^.*openshift://p'`, logGenPod)
-					str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+					str, err := logStore.GrepLogs(grepLabels, helpers.DefaultWaitForLogsTimeout)
 					Expect(err).To(BeNil())
 					str = strings.ReplaceAll(str, "=>", ":")
 					msg := map[string]map[string]string{}

@@ -365,10 +365,10 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 	if cluster.Spec.Forwarder != nil {
 		forwarderSpec = *cluster.Spec.Forwarder
 		if forwarderSpec.Fluentd.Buffer != nil {
-			switch {
-			case forwarderSpec.Fluentd.Buffer.ChunkLimitSize != "":
+			if forwarderSpec.Fluentd.Buffer.ChunkLimitSize != "" {
 				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: string(forwarderSpec.Fluentd.Buffer.ChunkLimitSize)})
-			case forwarderSpec.Fluentd.Buffer.TotalLimitSize != "":
+			}
+			if forwarderSpec.Fluentd.Buffer.TotalLimitSize != "" {
 				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE", Value: string(forwarderSpec.Fluentd.Buffer.TotalLimitSize)})
 			}
 		}

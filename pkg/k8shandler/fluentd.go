@@ -361,6 +361,19 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 	}
 
+	forwarderSpec := logging.ForwarderSpec{}
+	if cluster.Spec.Forwarder != nil {
+		forwarderSpec = *cluster.Spec.Forwarder
+		if forwarderSpec.Fluentd.Buffer != nil {
+			switch {
+			case forwarderSpec.Fluentd.Buffer.ChunkLimitSize != "":
+				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: string(forwarderSpec.Fluentd.Buffer.ChunkLimitSize)})
+			case forwarderSpec.Fluentd.Buffer.TotalLimitSize != "":
+				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE", Value: string(forwarderSpec.Fluentd.Buffer.TotalLimitSize)})
+			}
+		}
+	}
+
 	proxyEnv := utils.SetProxyEnvVars(proxyConfig)
 	fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
 

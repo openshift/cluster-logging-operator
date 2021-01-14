@@ -185,7 +185,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		k8shandler.LoadElasticsearchSecretMap(),
 	)
 	clolog.V(3).Info("Creating secret for an elasticsearch cluster: ", "secret", esSecret.Name)
-	_ , err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), esSecret, opts)
+	_, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), esSecret, opts)
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			sOpts := metav1.UpdateOptions{}

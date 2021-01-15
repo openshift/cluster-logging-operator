@@ -77,7 +77,13 @@ export TOTAL_LIMIT_SIZE
 # Calculate the max number of queued chunks given the size of each chunk
 # and the max allowed space per buffer
 ##
-BUFFER_SIZE_LIMIT=$(echo ${BUFFER_SIZE_LIMIT:-8m} |  sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc)
+BUFFER_SIZE_RE='^[0-9]+[kKmMgG]?$'
+BUFFER_SIZE_LIMIT_VALUE=$(cat $FLUENT_CONF | grep chunk_limit_size | tail -1 | sed -n -e 's/^.*chunk_limit_size //p')
+if [[ $BUFFER_SIZE_LIMIT_VALUE =~ $BUFFER_SIZE_RE ]] ; then
+    BUFFER_SIZE_LIMIT=$(echo $BUFFER_SIZE_LIMIT_VALUE | sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc)
+else
+    BUFFER_SIZE_LIMIT=$(echo ${BUFFER_SIZE_LIMIT:-8m} | sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc)
+fi
 BUFFER_QUEUE_LIMIT=$(expr $TOTAL_LIMIT_SIZE / $BUFFER_SIZE_LIMIT)
 echo "Setting queued_chunks_limit_size for each buffer to $BUFFER_QUEUE_LIMIT"
 export BUFFER_QUEUE_LIMIT

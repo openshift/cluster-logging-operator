@@ -24,6 +24,10 @@ type ClusterLoggingRequest struct {
 	ForwarderSpec logging.ClusterLogForwarderSpec
 }
 
+func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {
+	return clusterRequest.Cluster != nil && clusterRequest.Cluster.Spec.LogStore != nil
+}
+
 // TODO: determine if this is even necessary
 func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
 	return clusterRequest.Cluster.Spec.ManagementState == logging.ManagementStateManaged

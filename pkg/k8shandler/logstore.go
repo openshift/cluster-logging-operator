@@ -25,9 +25,6 @@ const (
 
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
 	if clusterRequest.Cluster.Spec.LogStore == nil || clusterRequest.Cluster.Spec.LogStore.Type == "" {
-		if err = clusterRequest.removeElasticsearch(); err != nil {
-			return
-		}
 		return nil
 	}
 	if clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {

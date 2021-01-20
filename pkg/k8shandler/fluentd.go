@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/servicemonitor"
-	"github.com/openshift/cluster-logging-operator/pkg/utils/resource"
 
 	"github.com/ViaQ/logerr/log"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -363,17 +362,15 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 	}
 
-	forwarderSpec := logging.ForwarderSpec{}
 	if cluster.Spec.Forwarder != nil {
-		forwarderSpec = *cluster.Spec.Forwarder
-		if forwarderSpec.Fluentd.Buffer != nil {
-			if forwarderSpec.Fluentd.Buffer.ChunkLimitSize != "" {
-				if chunkLimitSize, err := resource.ParseQuantity(string(forwarderSpec.Fluentd.Buffer.ChunkLimitSize)); err == nil {
+		if cluster.Spec.Forwarder.Fluentd.Buffer != nil {
+			if cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize != "" {
+				if chunkLimitSize, err := utils.ParseQuantity(string(cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize)); err == nil {
 					fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: strconv.FormatInt(chunkLimitSize.Value(), 10)})
 				}
 			}
-			if forwarderSpec.Fluentd.Buffer.TotalLimitSize != "" {
-				if totalLimitSize, err := resource.ParseQuantity(string(forwarderSpec.Fluentd.Buffer.TotalLimitSize)); err == nil {
+			if cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize != "" {
+				if totalLimitSize, err := utils.ParseQuantity(string(cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize)); err == nil {
 					fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE", Value: strconv.FormatInt(totalLimitSize.Value(), 10)})
 				}
 			}

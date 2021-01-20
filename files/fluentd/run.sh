@@ -77,7 +77,6 @@ export TOTAL_LIMIT_SIZE
 # Calculate the max number of queued chunks given the size of each chunk
 # and the max allowed space per buffer
 ##
-
 BUFFER_SIZE_LIMIT=$(echo ${BUFFER_SIZE_LIMIT:-8388608})
 BUFFER_QUEUE_LIMIT=$(expr $TOTAL_LIMIT_SIZE / $BUFFER_SIZE_LIMIT)
 echo "Setting queued_chunks_limit_size for each buffer to $BUFFER_QUEUE_LIMIT"

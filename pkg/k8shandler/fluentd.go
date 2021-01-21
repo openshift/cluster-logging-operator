@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/servicemonitor"
@@ -359,6 +360,16 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 		{Name: "METRICS_KEY", Value: "/etc/fluent/metrics/tls.key"},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
+	}
+
+	if cluster.Spec.Forwarder != nil {
+		if cluster.Spec.Forwarder.Fluentd.Buffer != nil {
+			if cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize != "" {
+				if chunkLimitSize, err := utils.ParseQuantity(string(cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize)); err == nil {
+					fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: strconv.FormatInt(chunkLimitSize.Value(), 10)})
+				}
+			}
+		}
 	}
 
 	proxyEnv := utils.SetProxyEnvVars(proxyConfig)

@@ -2,30 +2,38 @@ package logforwarding
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"time"
 )
 
-var templateForAnyCollector = types.PipelineMetadata{Collector: types.Collector{
-	Ipaddr4:    "*",
-	Inputname:  "*",
-	Name:       "*",
-	Version:    "*",
-	ReceivedAt: time.Time{},
-},
+var templateForAnyCollector = types.PipelineMetadata{
+	Collector: types.Collector{
+		Ipaddr4:    "*",
+		Inputname:  "*",
+		Name:       "*",
+		Version:    "*",
+		ReceivedAt: time.Time{},
+	},
 }
 
 var templateForAnyKubernetes = types.Kubernetes{
-	ContainerName:     "*",
-	PodName:           "*",
-	NamespaceName:     "*",
-	NamespaceID:       "*",
-	OrphanedNamespace: "*",
+	ContainerName:    "*",
+	NamespaceName:    "*",
+	PodName:          "*",
+	ContainerImage:   "*",
+	ContainerImageID: "*",
+	PodID:            "*",
+	Host:             "*",
+	MasterURL:        "*",
+	NamespaceID:      "*",
+	FlatLabels:       []string{"*"},
+	NamespaceLabels:  map[string]string{"*": "*"},
 }
 
 var _ = Describe("[LogForwarding] Functional tests for message format", func() {
@@ -68,7 +76,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		k8sAuditLogLine := "{\\\"kind\\\":\\\"" + kind + "\\\"}"
 		Expect(framework.WriteMessagesTok8sAuditLog(k8sAuditLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadAuditLogsFrom("fluentforward")
+		raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		var logs []types.K8sAuditLog
 		err = types.StrictlyParseLogs(raw, &logs)
@@ -94,12 +102,13 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 				RecordID: "*"},
 			Timestamp:        nanoTime,
 			ViaqMsgID:        "*",
+			Level:            "*",
 			PipelineMetadata: templateForAnyCollector,
 		}
 		// Write log line as input to fluentd
 		Expect(framework.WriteMessagesToAuditLog(auditLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadAuditLogsFrom("fluentforward")
+		raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		var logs []types.LinuxAuditLog
 		err = types.StrictlyParseLogs(raw, &logs)
@@ -121,11 +130,13 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 			Timestamp:        nanoTime,
 			Message:          fmt.Sprintf("regex:^%s.*$", message),
 			ViaqIndexName:    "app-write",
-			Level:            "unknown",
+			Level:            "info",
+			Hostname:         "*",
 			ViaqMsgID:        "*",
 			PipelineMetadata: templateForAnyCollector,
 			Docker: types.Docker{
-				ContainerID: "*"},
+				ContainerID: "*",
+			},
 			Kubernetes: templateForAnyKubernetes,
 		}
 
@@ -133,7 +144,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom("fluentforward")
+		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog

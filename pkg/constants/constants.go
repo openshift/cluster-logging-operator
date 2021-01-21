@@ -27,6 +27,8 @@ const (
 
 	/* #nosec - suppressing rule G101 */
 	KibanaSessionSecretName = "kibana-session-secret"
+
+	FluentdImageEnvVar = "FLUENTD_IMAGE"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

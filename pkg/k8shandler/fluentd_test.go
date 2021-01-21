@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -392,5 +393,49 @@ func checkFluentdProxyVolumesAndVolumeMounts(t *testing.T, podSpec v1.PodSpec, t
 	}
 	if !found {
 		t.Errorf("Volume %s not found", trustedca)
+	}
+}
+
+func TestNewFluentdPodWhenChunkLimitSizeExists(t *testing.T) {
+	chunkLimitSize, _ := utils.ParseQuantity("750k")
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Forwarder: &logging.ForwarderSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					Buffer: &logging.FluentdBufferSpec{
+						ChunkLimitSize: "750k",
+					},
+				},
+			},
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
+					Type:        "fluentd",
+					FluentdSpec: logging.FluentdSpec{},
+				},
+			},
+		},
+	}
+	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+
+	if len(podSpec.Containers) != 1 {
+		t.Error("Exp. there to be 1 fluentd container")
+	}
+
+	checkFluentdForwarderEnvVar(t, podSpec, "BUFFER_SIZE_LIMIT", strconv.FormatInt(chunkLimitSize.Value(), 10))
+}
+
+func checkFluentdForwarderEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {
+	env := podSpec.Containers[0].Env
+	found := false
+	for _, elem := range env {
+		if elem.Name == name {
+			found = true
+			if elem.Value != value {
+				t.Errorf("EnvVar %s: expected %s, actual %s", name, value, elem.Value)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("EnvVar %s not found", name)
 	}
 }

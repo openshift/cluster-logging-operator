@@ -3,14 +3,17 @@ package test
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ViaQ/logerr/log"
+	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/format"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -22,14 +25,9 @@ func init() {
 		format.TruncatedDiff = false
 	}
 	// Set up logging for tests.
-	level, ok := os.LookupEnv("LOG_LEVEL")
-	if ok {
-		verbosity, err := strconv.Atoi(level)
-		if err != nil {
-			log.Error(err, "Unable to evaluate LOG_LEVEL %q, using default", level)
-		}
-		log.MustInit("test")
-		log.SetLogLevel(verbosity)
+	log.MustInit("test")
+	if level, err := strconv.Atoi(os.Getenv("LOG_LEVEL")); err == nil {
+		log.SetLogLevel(level)
 	}
 }
 
@@ -88,11 +86,11 @@ func UniqueName(prefix string) string {
 	Must(err)
 
 	// Don't exceed max label length, truncate prefix and keep time+random suffix.
-	maxPrefix := validation.DNS1123LabelMaxLength - (len(timeStamp) + len(random)*2 + 1)
+	maxPrefix := validation.DNS1123LabelMaxLength - (len(timeStamp) + len(random)*2 + 2)
 	if len(prefix) > maxPrefix {
 		prefix = prefix[:maxPrefix]
 	}
-	return fmt.Sprintf("%s-%s%x", prefix, timeStamp, random[:])
+	return fmt.Sprintf("%s-%s-%x", timeStamp, prefix, random[:])
 }
 
 // UniqueNameForTest generates a unique name prefixed with the current
@@ -111,4 +109,35 @@ func LoggingNamespace() string {
 		return ns
 	}
 	return OpenshiftLoggingNS
+}
+
+// LogBeginEnd logs an  l.V(3) begin message, returns func to log an lV(2) end message.
+// End message includes elapsed time and error errp and *errp are non nil.
+// Use it to log the time spent in a function like this:
+//     func blah() (err error) {
+//         defer LogBeginEnd(log, "eating", &err)()
+//         ...
+// Note the trailing () - this calls LogBeginEnd() and defers calling the func it returns.
+func LogBeginEnd(l logr.Logger, msg string, errp *error, kv ...interface{}) func() {
+	l.V(3).Info("begin: "+msg, kv...)
+	start := time.Now()
+	return func() {
+		kv := append(kv, "elapsed", time.Since(start).String())
+		if errp != nil && *errp != nil {
+			l.V(2).Error(*errp, "error: "+msg, kv...)
+		} else {
+			l.V(2).Info("end  : "+msg, kv...)
+		}
+	}
+}
+
+// WrapError wraps some types of error to provide more informative Error() message.
+// If err is exec.ExitError and has Stderr text, include it in Error()
+// Otherwise return err unchanged.
+func WrapError(err error) error {
+	exitErr := &exec.ExitError{}
+	if errors.As(err, &exitErr) && len(exitErr.Stderr) != 0 {
+		return fmt.Errorf("%w: %v", err, string(exitErr.Stderr))
+	}
+	return err
 }

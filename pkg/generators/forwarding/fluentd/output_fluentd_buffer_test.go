@@ -80,7 +80,7 @@ var _ = Describe("Generating fluentd config", func() {
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
               # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer' 
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
               reload_on_failure false
               # 2 ^ 31
               request_timeout 2147483648
@@ -123,7 +123,7 @@ var _ = Describe("Generating fluentd config", func() {
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
               # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'              
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
               reload_on_failure false
               # 2 ^ 31
               request_timeout 2147483648
@@ -147,7 +147,7 @@ var _ = Describe("Generating fluentd config", func() {
           </match>
         </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, defaultForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, defaultForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(esConf))
@@ -193,7 +193,7 @@ var _ = Describe("Generating fluentd config", func() {
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
               # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer' 
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
               reload_on_failure false
               # 2 ^ 31
               request_timeout 2147483648
@@ -236,7 +236,7 @@ var _ = Describe("Generating fluentd config", func() {
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
               # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'              
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
               reload_on_failure false
               # 2 ^ 31
               request_timeout 2147483648
@@ -260,7 +260,7 @@ var _ = Describe("Generating fluentd config", func() {
           </match>
         </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, defaultForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, defaultForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(esConf))
@@ -289,7 +289,7 @@ var _ = Describe("Generating fluentd config", func() {
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
               # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'              
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
               reload_on_failure false
               # 2 ^ 31
               request_timeout 2147483648
@@ -332,7 +332,7 @@ var _ = Describe("Generating fluentd config", func() {
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
               # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
-              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'              
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
               reload_on_failure false
               # 2 ^ 31
               request_timeout 2147483648
@@ -356,7 +356,7 @@ var _ = Describe("Generating fluentd config", func() {
           </match>
         </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, customForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, customForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(esConf))
@@ -414,7 +414,7 @@ var _ = Describe("Generating fluentd config", func() {
            </match>
          </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, defaultForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, defaultForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(fluentdForwardConf))
@@ -455,7 +455,7 @@ var _ = Describe("Generating fluentd config", func() {
         </match>
       </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, customForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, customForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(fluentdForwardConf))
@@ -525,7 +525,7 @@ var _ = Describe("Generating fluentd config", func() {
           </match>
         </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, defaultForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, defaultForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(syslogConf))
@@ -578,7 +578,7 @@ var _ = Describe("Generating fluentd config", func() {
           </match>
         </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, customForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, customForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(syslogConf))
@@ -630,7 +630,7 @@ var _ = Describe("Generating fluentd config", func() {
         </match>
         </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, defaultForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, defaultForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -665,7 +665,7 @@ var _ = Describe("Generating fluentd config", func() {
         </match>
         </label>`
 
-			results, err := generator.generateOutputLabelBlocks(outputs, customForwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, customForwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))

@@ -3,9 +3,10 @@ package helpers
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	clolog "github.com/ViaQ/logerr/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -225,8 +226,7 @@ func (tc *E2ETestFramework) createKafkaConsumers(rcv *kafkaReceiver) error {
 			return err
 		}
 	}
-
-	return err
+	return nil
 }
 
 func (tc *E2ETestFramework) createKafkaBrokerStatefulSet() (*apps.StatefulSet, error) {

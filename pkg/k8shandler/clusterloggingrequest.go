@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -21,13 +22,15 @@ type ClusterLoggingRequest struct {
 
 	// ForwarderSpec is the normalized and sanitized logforwarder spec
 	ForwarderSpec logging.ClusterLogForwarderSpec
+
+	// OutputSecrets are retrieved during validation and used for generation.
+	OutputSecrets map[string]*corev1.Secret
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {
 	return clusterRequest.Cluster != nil && clusterRequest.Cluster.Spec.LogStore != nil
 }
 
-// TODO: determine if this is even necessary
 func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
 	return clusterRequest.Cluster.Spec.ManagementState == logging.ManagementStateManaged
 }

@@ -2,11 +2,12 @@ package matchers
 
 import (
 	"fmt"
-	logger "github.com/ViaQ/logerr/log"
-	"github.com/onsi/gomega/types"
 	"reflect"
 	"regexp"
 	"strings"
+
+	logger "github.com/ViaQ/logerr/log"
+	"github.com/onsi/gomega/types"
 )
 
 type LogMatcher struct {

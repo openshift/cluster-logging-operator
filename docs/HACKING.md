@@ -2,17 +2,11 @@
 
 ## Preparation
 
-Clone this repository into `$GOPATH/github.com/openshift/cluster-logging-operator`
-
-Install `podman`. For example on Fedora:
-```
-sudo dnf install -y podman
-```
-
-Check out some other required repositories in your $GOPATH:
-```
-go get -d -u github.com/openshift/elasticsearch-operator/... github.com/openshift/origin-aggregated-logging/...
-```
+* Clone this repository into `$GOPATH/github.com/openshift/cluster-logging-operator`
+* Install `podman`. For example on Fedora:
+  ```
+  sudo dnf install -y podman
+  ```
 
 ## Makefile tagets
 
@@ -33,14 +27,15 @@ To run the e2e tests:
 * `make test-e2e-local`: Run e2e tests using locally built images.
 * `make test-e2e-olm`: Run e2e tests using CI latest images.
 
-NOTE: e2e tests require a clean cluster starting point, `make undeploy-all` will provide it.
+**Note**: e2e tests require a clean cluster starting point, `make undeploy-all` will provide it.
 
-NOTE: There is a temporary issue with openshift base images using RHEL8
+**Note**: There is a temporary issue with openshift base images using RHEL8
 repositories that are not accessible to all. This will be fixed, but until it is
-you can build using CentOS as the base instead:
+you can build using CentOS as the base instead, as follows:
 
+```bash
     PATCH=Dockerfile.centos.patch make ...
-
+```
 
 ## Testing Overview
 
@@ -58,31 +53,67 @@ To get a code review of unfinished work, create a PR with "[WIP]" at the start o
 
 ## Setting up a test cluster
 
-Should work with any k8s cluster; tested with AWS and [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download). See below for extra steps with some specific cluster providers.
+Developers can use a public cluster provider or a local cluster using [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download).
 
-Cluster creation requires a pull-secret from the cluster provider. You need
-to add a secret to this file so `make` can pull images from the openshift
-CI registry:
+### Pull secret
 
-Copy the `oc login` command from https://api.ci.openshift.org/oauth/token/request, then:
-```
-oc login api.ci.openshift.org ... # command from the web page
-oc registry login --to my-secret-file
-oc logout
-# This creates or adds to my-secret-file
-```
+Pull secrets are tokens used to pull OCI images from multiple sources, such as quay.io or cloud.openshift.com.
 
-Once created, you can `export KUBECONFIG=/path/to/my/cluster/config` or copy your config to `$HOME/.kube/config`.
+**Note**: From now on we assume `$PULL_SECRET` is the path to your pull secret file, e.g.
+  ```
+  PULL_SECRET=~/my-pull-secret
+  ```
 
-**Note**: Don't symlink `$HOME/.kube/config`. Some commands may overwrite this file and break the symlink, causing much confusion.
+1. In a browser, visit https://cloud.redhat.com/openshift/install#pull-secret (log in if necessary)
+1. Select your preferred cluster deployment method.
+1. Use the `download pull secret` button, save the file to `$PULL_SECRET`
 
-Log in to your cluster as a user with the `cluster-admin` role. User `kubeadmin` is usually predefined with this role.
+### CI token
+
+For development you also need an openshift CI repository token.
+
+1. In a browser, visit https://api.ci.openshift.org/oauth/token/request (log in if needed)
+1. Execute the`oc login ... --server=https://api.ci.openshift.org` command shown.\
+   This will log you into the CI system and update your `KUBECONFIG` (default `~/.kube/config`) with CI credentials. You should see\
+   `Logged into "https://api.ci.openshift.org:443" as "<user>" using the token provided.`
+1. Add the CI registry token to your pull-secret file, and log out of the CI system
+   ```
+   oc registry login --to $PULL_SECRET
+   oc logout
+   ```
+
+### Create a cluster
+
+Follow instructions from  https://cloud.redhat.com/openshift/install to create your cluster.
+Provide `$PULL_SECRET` as the pull-secret file when requested.
+
+Log in to your cluster as a user with the `cluster-admin` role.
+User `kubeadmin` is usually predefined with this role.
+
+**IMPORTANT**: Pull secrets and CI tokens expire after a period of several weeks.
+The symptoms are:
+
+* `make` prints "unauthorized: authentication required" errors when building images.
+* `make deploy` times out and `oc get events -A | grep Pull` shows `ImagePullBackoff` events.
+
+When a CI token expires you can simply create a new cluster.
+You can also update the pull secret of an existing cluster.
+
+### Modify the pull-secret of an existing cluster
+
+1. Repeat the steps in "Pull secret" and "CI token" above to create an up-to-date pull secret.
+1. Use the script provided to encode and update the secret
+	```
+	../hack/update_pull_secret.sh $PULL_SECRET
+	```
+
+The secret is base64 encoded, read the script for details.
 
 ### Configuration for CRC
 
-Download the crc command from [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download) and read the install instructions. 
+Download the crc command from [Code Ready Containers](https://developers.redhat.com/products/codeready-containers/download) and read the install instructions.
 
-The following is suggested configuration to set before calling `crc start`
+The following steps are recommended before calling `crc start`
 ```
 # Increase memory - default 8k may not be enough
 crc config set memory 12288

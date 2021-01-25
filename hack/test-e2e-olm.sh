@@ -69,7 +69,7 @@ popd
 
 get_logging_pod_logs
 
-ARTIFACT_DIR="/tmp/artifacts/junit/" os::test::junit::generate_report
+ARTIFACT_DIR="/tmp/artifacts/junit/" os::test::junit::generate_report ||:
 
 if [[ -n "${failed:-}" ]]; then
     exit 1

@@ -158,7 +158,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
         flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
-        retry_max_interval 300s
+        retry_max_interval 60s
         retry_forever true
         queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
         total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -196,7 +196,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
         flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
-        retry_max_interval 300s
+        retry_max_interval 60s
         retry_forever true
         queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
         total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -243,7 +243,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
         flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
-        retry_max_interval 300s
+        retry_max_interval 60s
         retry_forever true
         queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
         total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -284,7 +284,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
         flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
-        retry_max_interval 300s
+        retry_max_interval 60s
         retry_forever true
         queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
         total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G

@@ -24,8 +24,11 @@ const (
 	LogStoreService     = ElasticsearchFQDN + ":" + ElasticsearchPort
 	LogStoreURL         = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
 	MasterCASecretName  = "master-certs"
-	CollectorSecretName = "fluentd"
 
+	InternalOutputName       = "clo-default-output-es"
+	CollectorSecretName      = "fluentd"
+	DefaultAppPipelineName   = "clo-default-app-pipeline"
+	DefaultInfraPipelineName = "clo-default-infra-pipeline"
 	/* #nosec - suppressing rule G101 */
 	KibanaSessionSecretName = "kibana-session-secret"
 )

@@ -472,6 +472,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
             <store>
               @type relabel
@@ -484,6 +488,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
             <store>
               @type relabel
@@ -496,6 +504,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
             <store>
               @type relabel
@@ -505,7 +517,105 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </match>
         </label>
 
+
+        # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
+        <label @PIPELINE_0_>
+          <match **>
+            @type copy
+
+            <store>
+              @type relabel
+              @label @DEFAULT
+            </store>
+          </match>
+        </label>
+
         # Ship logs to specific outputs
+        <label @DEFAULT>
+          <match retry_default>
+            @type copy
+            <store>
+              @type elasticsearch
+              @id retry_default
+              host elasticsearch.openshift-logging.svc.cluster.local
+              port 9200
+              verify_es_version_at_startup false
+              scheme http
+              target_index_key viaq_index_name
+              id_key viaq_msg_id
+              remove_keys viaq_index_name
+              type_name _doc
+              http_backend typhoeus
+              write_operation create
+              reload_connections 'true'
+              # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+              reload_after '200'
+              # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+              reload_on_failure false
+              # 2 ^ 31
+              request_timeout 2147483648
+              <buffer>
+                @type file
+                path '/var/lib/fluentd/retry_default'
+                flush_mode interval
+                flush_interval 1s
+                flush_thread_count 2
+                flush_at_shutdown true
+                retry_type exponential_backoff
+                retry_wait 1s
+                retry_max_interval 60s
+                retry_forever true
+                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+                overflow_action block
+              </buffer>
+            </store>
+          </match>
+          <match **>
+            @type copy
+            <store>
+              @type elasticsearch
+              @id default
+              host elasticsearch.openshift-logging.svc.cluster.local
+              port 9200
+              verify_es_version_at_startup false
+              scheme http
+              target_index_key viaq_index_name
+              id_key viaq_msg_id
+              remove_keys viaq_index_name
+              type_name _doc
+              retry_tag retry_default
+              http_backend typhoeus
+              write_operation create
+              reload_connections 'true'
+              # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+              reload_after '200'
+              # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+              reload_on_failure false
+              # 2 ^ 31
+              request_timeout 2147483648
+              <buffer>
+                @type file
+                path '/var/lib/fluentd/default'
+                flush_mode interval
+                flush_interval 1s
+                flush_thread_count 2
+                flush_at_shutdown true
+                retry_type exponential_backoff
+                retry_wait 1s
+                retry_max_interval 60s
+                retry_forever true
+                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+                overflow_action block
+              </buffer>
+            </store>
+          </match>
+        </label>
 
         <label @_LEGACY_SECUREFORWARD>
           <match **>
@@ -977,6 +1087,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
 
             <store>
@@ -989,6 +1103,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
 
             <store>
@@ -1001,6 +1119,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
 
             <store>
@@ -1010,7 +1132,105 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </match>
         </label>
 
+
+        # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
+        <label @PIPELINE_0_>
+          <match **>
+            @type copy
+
+            <store>
+              @type relabel
+              @label @DEFAULT
+            </store>
+          </match>
+        </label>
+
         # Ship logs to specific outputs
+        <label @DEFAULT>
+          <match retry_default>
+            @type copy
+            <store>
+              @type elasticsearch
+              @id retry_default
+              host elasticsearch.openshift-logging.svc.cluster.local
+              port 9200
+              verify_es_version_at_startup false
+              scheme http
+              target_index_key viaq_index_name
+              id_key viaq_msg_id
+              remove_keys viaq_index_name
+              type_name _doc
+              http_backend typhoeus
+              write_operation create
+              reload_connections 'true'
+              # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+              reload_after '200'
+              # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+              reload_on_failure false
+              # 2 ^ 31
+              request_timeout 2147483648
+              <buffer>
+                @type file
+                path '/var/lib/fluentd/retry_default'
+                flush_mode interval
+                flush_interval 1s
+                flush_thread_count 2
+                flush_at_shutdown true
+                retry_type exponential_backoff
+                retry_wait 1s
+                retry_max_interval 60s
+                retry_forever true
+                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+                overflow_action block
+              </buffer>
+            </store>
+          </match>
+          <match **>
+            @type copy
+            <store>
+              @type elasticsearch
+              @id default
+              host elasticsearch.openshift-logging.svc.cluster.local
+              port 9200
+              verify_es_version_at_startup false
+              scheme http
+              target_index_key viaq_index_name
+              id_key viaq_msg_id
+              remove_keys viaq_index_name
+              type_name _doc
+              retry_tag retry_default
+              http_backend typhoeus
+              write_operation create
+              reload_connections 'true'
+              # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+              reload_after '200'
+              # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+              reload_on_failure false
+              # 2 ^ 31
+              request_timeout 2147483648
+              <buffer>
+                @type file
+                path '/var/lib/fluentd/default'
+                flush_mode interval
+                flush_interval 1s
+                flush_thread_count 2
+                flush_at_shutdown true
+                retry_type exponential_backoff
+                retry_wait 1s
+                retry_max_interval 60s
+                retry_forever true
+                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+                overflow_action block
+              </buffer>
+            </store>
+          </match>
+        </label>
 
 
         <label @_LEGACY_SYSLOG>
@@ -1483,6 +1703,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
             <store>
               @type relabel
@@ -1499,6 +1723,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
             <store>
               @type relabel
@@ -1515,6 +1743,10 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           <match **>
             @type copy
 
+            <store>
+              @type relabel
+              @label @PIPELINE_0_
+            </store>
 
             <store>
               @type relabel
@@ -1528,7 +1760,105 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           </match>
         </label>
 
+
+        # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
+        <label @PIPELINE_0_>
+          <match **>
+            @type copy
+
+            <store>
+              @type relabel
+              @label @DEFAULT
+            </store>
+          </match>
+        </label>
+
         # Ship logs to specific outputs
+        <label @DEFAULT>
+          <match retry_default>
+            @type copy
+            <store>
+              @type elasticsearch
+              @id retry_default
+              host elasticsearch.openshift-logging.svc.cluster.local
+              port 9200
+              verify_es_version_at_startup false
+              scheme http
+              target_index_key viaq_index_name
+              id_key viaq_msg_id
+              remove_keys viaq_index_name
+              type_name _doc
+              http_backend typhoeus
+              write_operation create
+              reload_connections 'true'
+              # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+              reload_after '200'
+              # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+              reload_on_failure false
+              # 2 ^ 31
+              request_timeout 2147483648
+              <buffer>
+                @type file
+                path '/var/lib/fluentd/retry_default'
+                flush_mode interval
+                flush_interval 1s
+                flush_thread_count 2
+                flush_at_shutdown true
+                retry_type exponential_backoff
+                retry_wait 1s
+                retry_max_interval 60s
+                retry_forever true
+                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+                overflow_action block
+              </buffer>
+            </store>
+          </match>
+          <match **>
+            @type copy
+            <store>
+              @type elasticsearch
+              @id default
+              host elasticsearch.openshift-logging.svc.cluster.local
+              port 9200
+              verify_es_version_at_startup false
+              scheme http
+              target_index_key viaq_index_name
+              id_key viaq_msg_id
+              remove_keys viaq_index_name
+              type_name _doc
+              retry_tag retry_default
+              http_backend typhoeus
+              write_operation create
+              reload_connections 'true'
+              # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+              reload_after '200'
+              # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+              sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+              reload_on_failure false
+              # 2 ^ 31
+              request_timeout 2147483648
+              <buffer>
+                @type file
+                path '/var/lib/fluentd/default'
+                flush_mode interval
+                flush_interval 1s
+                flush_thread_count 2
+                flush_at_shutdown true
+                retry_type exponential_backoff
+                retry_wait 1s
+                retry_max_interval 60s
+                retry_forever true
+                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+                overflow_action block
+              </buffer>
+            </store>
+          </match>
+        </label>
 
         <label @_LEGACY_SECUREFORWARD>
           <match **>

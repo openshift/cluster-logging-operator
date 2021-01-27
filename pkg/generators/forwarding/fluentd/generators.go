@@ -8,7 +8,9 @@ import (
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/generators"
+	"github.com/openshift/cluster-logging-operator/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -67,9 +69,9 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		)
 
 		routeMap = logging.RouteMap{
-			logging.InputNameInfrastructure: sets.NewString(),
-			logging.InputNameApplication:    sets.NewString(),
-			logging.InputNameAudit:          sets.NewString(),
+			logging.InputNameInfrastructure: sets.NewString("pipeline_0_"),
+			logging.InputNameApplication:    sets.NewString("pipeline_0_"),
+			logging.InputNameAudit:          sets.NewString("pipeline_0_"),
 		}
 	} else {
 		inputs, namespaces = gatherSources(clfSpec)
@@ -95,6 +97,19 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(clfSpec.Pipelines)
 		if err != nil {
 			log.V(3).Error(err, "Error generating pipeline to output labels blocks")
+			return "", err
+		}
+	}
+
+	if engine.includeLegacyForwardConfig || engine.includeLegacySyslogConfig {
+		pipelineToOutputLabels, err = engine.generatePipelineToOutputLabelsForLegacy()
+		if err != nil {
+			log.V(3).Error(err, "Error generating pipeline to output labels blocks")
+			return "", err
+		}
+		outputLabels, err = engine.generateOutputLabelBlocksForLegacy()
+		if err != nil {
+			log.V(3).Error(err, "Error generating to output label blocks")
 			return "", err
 		}
 	}
@@ -236,6 +251,27 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 	return configs, nil
 }
 
+func (engine *ConfigGenerator) generatePipelineToOutputLabelsForLegacy() ([]string, error) {
+	configs := []string{}
+	var jsonLabels string
+
+	data := struct {
+		Name           string
+		Outputs        []string
+		PipelineLabels string
+	}{
+		"pipeline_0_",
+		[]string{"default"},
+		jsonLabels,
+	}
+	result, err := engine.Execute("pipelineToOutputCopyTemplate", data)
+	if err != nil {
+		return nil, fmt.Errorf("Error processing pipelineToOutputCopyTemplate template: %v", err)
+	}
+	configs = append(configs, result)
+	return configs, nil
+}
+
 //generateStoreLabelBlocks generates fluentd label stanzas for sources to specific store destinations
 // <label @ELASTICSEARCH_OFFCLUSTER>
 //  <match retry_elasticsearch_offcluster>
@@ -281,6 +317,26 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		}
 		configs = append(configs, result)
 	}
+	log.V(3).Info("Generated output configurations", "configurations", configs)
+	return configs, nil
+}
+
+func (engine *ConfigGenerator) generateOutputLabelBlocksForLegacy() ([]string, error) {
+	configs := []string{}
+	engine.outputTemplate = "outputLabelConf" // Default
+	engine.storeTemplate = "storeElasticsearch"
+	u, err := url.Parse(constants.LogStoreURL)
+	conf := &outputLabelConf{
+		Name:            logging.OutputNameDefault,
+		URL:             u,
+		TemplateContext: engine.Template,
+		storeTemplate:   engine.storeTemplate,
+	}
+	result, err := engine.Execute(engine.outputTemplate, conf)
+	if err != nil {
+		return nil, fmt.Errorf("generating fluent output label: %v", err)
+	}
+	configs = append(configs, result)
 	log.V(3).Info("Generated output configurations", "configurations", configs)
 	return configs, nil
 }

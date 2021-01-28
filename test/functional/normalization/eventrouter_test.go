@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
@@ -16,8 +15,6 @@ import (
 	"strings"
 	"time"
 )
-
-const timestamp string = "1985-10-21T09:00:00.00000+00:00"
 
 var (
 	templateForAnyKubernetes = types.Kubernetes{
@@ -35,13 +32,15 @@ var (
 		ReceivedAt: time.Time{},
 	},
 	}
-	nanoTime, _ = time.Parse(time.RFC3339Nano, timestamp)
 )
+
 var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages", func() {
 
+	const timestamp string = "1985-10-21T09:00:00.00000+00:00"
 	var (
 		framework *functional.FluentdFunctionalFramework
 		pod       *corev1.Pod
+		nanoTime, _ = time.Parse(time.RFC3339Nano, timestamp)
 	)
 
 	BeforeEach(func() {
@@ -59,10 +58,7 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 	It("Should parse EventRouter `ADDED` message and check values", func() {
 		podRef, err := reference.GetReference(scheme.Scheme, pod)
 		Expect(err).To(BeNil())
-		newEvent := types.NewMockEvent(podRef,
-			corev1.EventTypeNormal,
-			string(utils.GetRandomWord(8)),
-			string(utils.GetRandomWord(32)))
+		newEvent := types.NewMockEvent(podRef, corev1.EventTypeNormal,"reason","message")
 		newEventData := types.EventData{Verb: "ADDED", Event: newEvent}
 		jsonBytes, _ := json.Marshal(newEventData)
 		jsonStr := string(jsonBytes)
@@ -75,23 +71,17 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 		var logs []types.EventRouterLog
 		err = types.StrictlyParseLogs(raw, &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		var outputLogTemplate = OutPutTemplate(jsonStr)
+		var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
 		outputTestLog := logs[0]
 
-		Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+		Expect(outputTestLog).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
 	})
 
 	It("Should parse EventRouter `UPDATED` message and check values", func() {
 		podRef, err := reference.GetReference(scheme.Scheme, pod)
 		Expect(err).To(BeNil())
-		newEvent := types.NewMockEvent(podRef,
-			corev1.EventTypeNormal,
-			string(utils.GetRandomWord(8)),
-			string(utils.GetRandomWord(32)))
-		oldEvent := types.NewMockEvent(podRef,
-			corev1.EventTypeWarning,
-			string(utils.GetRandomWord(8)),
-			string(utils.GetRandomWord(32)))
+		newEvent := types.NewMockEvent(podRef, corev1.EventTypeNormal,"reason","message")
+		oldEvent := types.NewMockEvent(podRef, corev1.EventTypeWarning,"old_reason", "old_message")
 		newEventData := types.EventData{Verb: "UPDATED", Event: newEvent, OldEvent: oldEvent}
 		jsonBytes, _ := json.Marshal(newEventData)
 		jsonStr := string(jsonBytes)
@@ -104,14 +94,14 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 		var logs []types.EventRouterLog
 		err = types.StrictlyParseLogs(raw, &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		var outputLogTemplate = OutPutTemplate(jsonStr)
+		var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
 		outputTestLog := logs[0]
 
-		Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+		Expect(outputTestLog).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
 	})
 })
 
-func OutPutTemplate(message string) types.EventRouterLog {
+func ExpectedLogTemplateBuilder(message string, timestamp time.Time) types.EventRouterLog {
 	return types.EventRouterLog{
 		Docker: types.Docker{
 			ContainerID: "*",
@@ -120,7 +110,7 @@ func OutPutTemplate(message string) types.EventRouterLog {
 		Message:          message,
 		Level:            "unknown",
 		PipelineMetadata: templateForAnyCollector,
-		Timestamp:        nanoTime,
+		Timestamp:        timestamp,
 		ViaqIndexName:    "app-write",
 		ViaqMsgID:        "*",
 		OpenshiftLabels:  types.OpenshiftMeta{},

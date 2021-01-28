@@ -628,6 +628,21 @@ const outputLabelConfJsonParseNoretryTemplate = `{{- define "outputLabelConfJson
 	merge_json_log false
 	replace_json_log true
   </filter>
+{{ if .Target.Syslog.AddLogSource }}
+  <filter **>
+	@type record_modifier
+	<record>
+	  kubernetes_info ${if record.has_key?('kubernetes'); record['kubernetes']; else {}; end}
+	  namespace_info  ${if record['kubernetes_info'] != nil && record['kubernetes_info'] != {}; "namespace_name=" + record['kubernetes_info']['namespace_name']; else nil; end}
+	  pod_info        ${if record['kubernetes_info'] != nil && record['kubernetes_info'] != {}; "pod_name=" + record['kubernetes_info']['pod_name']; else nil; end}
+	  container_info  ${if record['kubernetes_info'] != nil && record['kubernetes_info'] != {}; "container_name=" + record['kubernetes_info']['container_name']; else nil; end}
+	  msg_key         ${if record.has_key?('message') && record['message'] != nil; record['message']; else nil; end}
+      msg_info        ${if record['msg_key'] != nil && record['msg_key'].is_a?(Hash); require 'json'; "message="+record['message'].to_json; elsif record['msg_key'] != nil; "message="+record['message']; else nil; end}
+      message         ${if record['msg_key'] != nil && record['kubernetes_info'] != nil && record['kubernetes_info'] != {}; record['namespace_info'] + ", " + record['container_info'] + ", " + record['pod_info'] + ", " + record['msg_info']; else record['message']; end}
+	</record>
+	remove_keys kubernetes_info, namespace_info, pod_info, container_info, msg_key, msg_info
+  </filter>
+{{end -}}
   <match **>
     @type copy
 {{include .StoreTemplate . "" | indent 4}}
@@ -799,6 +814,7 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 	{{end -}}
 	protocol {{.Protocol}}
 	packet_size 4096
+	hostname "#{ENV['NODE_NAME']}"
 {{ if .Target.Secret -}}
   tls true
   ca_file '{{ .SecretPath "ca-bundle.crt"}}'

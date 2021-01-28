@@ -317,7 +317,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 			clolog.Info("No pods found for label selection", "labels", labels)
 			return true, nil
 		}
-		clolog.V(3).Info("still running pods:", len(pods.Items))
+		clolog.V(3).Info("pods still running", "num", len(pods.Items))
 		return false, nil
 	})
 }

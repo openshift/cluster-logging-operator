@@ -22,6 +22,8 @@ export NAMESPACE?=openshift-logging
 
 FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
 REPLICAS?=0
+export E2E_TEST_INCLUDES?=
+export CLF_TEST_INCLUDES?=
 
 .PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
@@ -170,9 +172,11 @@ generate-bundle: regenerate $(OPM)
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	hack/test-e2e-olm.sh
+	INCLUDES=$(E2E_TEST_INCLUDES) CLF_INCLUDES=$(CLF_TEST_INCLUDES) hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
+    CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
+    INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh

@@ -12,8 +12,16 @@ ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/o
 popd
 
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
-
+INCLUDES=${INCLUDES:-}
 for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
+        if [ -n $INCLUDES ] ; then
+          if ! echo $test | grep -P -q "$INCLUDES" ; then
+            os::log::info "==============================================================="
+            os::log::info "excluding e2e $test "
+            os::log::info "==============================================================="
+            continue
+          fi
+        fi
 	os::log::info "==============================================================="
 	os::log::info "running e2e $test "
 	os::log::info "==============================================================="

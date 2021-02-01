@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -312,26 +313,18 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 	return oc.Exec().WithNamespace(namespace).Pod(name).Container(container).WithCmd(command[0], command[1:]...).Run()
 }
 
-func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (secret *corev1.Secret, err error) {
-	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
+func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (workingDir string, secret *corev1.Secret, err error) {
+	workingDir = fmt.Sprintf("/tmp/clo-test-%d", time.Now().Unix())
 	logger.Debugf("Generating Pipeline certificates for %q to %s", logStoreName, workingDir)
-	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		if err = os.MkdirAll(workingDir, 0766); err != nil {
-			return nil, err
-		}
-	}
-	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
-		return nil, err
-	}
 	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
 	if err, _ = certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
-		return nil, err
+		return workingDir, nil, err
 	}
 	data := map[string][]byte{
-		"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-		"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
-		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-		"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
+		"tls.key":       utils.GetFileContents(path.Join(workingDir,"system.logging.fluentd.key")),
+		"tls.crt":       utils.GetFileContents(path.Join(workingDir, "system.logging.fluentd.crt")),
+		"ca-bundle.crt": utils.GetFileContents(path.Join(workingDir, "ca.crt")),
+		"ca.key":        utils.GetFileContents(path.Join(workingDir, "ca.key")),
 	}
 	for key, value := range otherData {
 		data[key] = value
@@ -343,7 +336,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 	)
 	logger.Debugf("Creating secret %s for logStore %s", secret.Name, logStoreName)
 	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
-		return nil, err
+		return workingDir, nil, err
 	}
-	return secret, nil
+	return workingDir,secret, nil
 }

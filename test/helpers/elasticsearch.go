@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -159,14 +160,23 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
 	logger.Debug("DeployAnElasticsearchCluster")
 	logStoreName := "test-elastic-cluster"
-	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
+	workingDir := ""
+	if workingDir, pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
 		return nil, nil, err
 	}
 
 	esSecret := k8shandler.NewSecret(
 		logStoreName,
 		OpenshiftLoggingNS,
-		k8shandler.LoadElasticsearchSecretMap(),
+		map[string][]byte{
+			"elasticsearch.key": utils.GetFileContents(path.Join(workingDir,"elasticsearch.key")),
+			"elasticsearch.crt": utils.GetFileContents(path.Join(workingDir,"elasticsearch.crt")),
+			"logging-es.key":    utils.GetFileContents(path.Join(workingDir,"logging-es.key")),
+			"logging-es.crt":    utils.GetFileContents(path.Join(workingDir,"logging-es.crt")),
+			"admin-key":         utils.GetFileContents(path.Join(workingDir,"system.admin.key")),
+			"admin-cert":        utils.GetFileContents(path.Join(workingDir,"system.admin.crt")),
+			"admin-ca":          utils.GetFileContents(path.Join(workingDir,"ca.crt")),
+		},
 	)
 	logger.Debugf("Creating secret for an elasticsearch cluster: %s", esSecret.Name)
 	if esSecret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(esSecret); err != nil {

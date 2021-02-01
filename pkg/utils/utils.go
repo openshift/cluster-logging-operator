@@ -194,15 +194,15 @@ func GetScriptsDir() string {
 	return scriptsDir
 }
 
-func GetWorkingDirFileContents(filePath string) []byte {
-	return GetFileContents(GetWorkingDirFilePath(filePath))
-}
 func GetWorkingDir() string {
 	workingDir := os.Getenv("WORKING_DIR")
 	if workingDir == "" {
 		workingDir = DefaultWorkingDir
 	}
 	return workingDir
+}
+func GetWorkingDirFileContents(filePath string) []byte {
+	return GetFileContents(GetWorkingDirFilePath(filePath))
 }
 func GetWorkingDirFilePath(toFile string) string {
 	return path.Join(GetWorkingDir(), toFile)

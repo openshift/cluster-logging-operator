@@ -12,6 +12,7 @@ test_artifactdir="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
 if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
+INCLUDES=${INCLUDES:-}
 cleanup(){
   local return_code="$?"
   
@@ -36,6 +37,14 @@ popd
 get_setup_artifacts=false
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
 for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
+  if [ -n $INCLUDES ] ; then
+    if ! echo $test | grep -P -q "$INCLUDES" ; then
+      os::log::info "==============================================================="
+	    os::log::info "excluding e2e $test "
+	    os::log::info "==============================================================="
+      continue
+    fi
+  fi
 	os::log::info "==============================================================="
 	os::log::info "running e2e $test "
 	os::log::info "==============================================================="

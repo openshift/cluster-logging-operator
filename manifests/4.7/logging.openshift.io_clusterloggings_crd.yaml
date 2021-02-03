@@ -22,13 +22,18 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: "ClusterLogging is the Schema for the clusterloggings API \n ClusterLogging is the Schema for the clusterloggings API"
+        description: "ClusterLogging is the Schema for the clusterloggings API \n
+          ClusterLogging is the Schema for the clusterloggings API"
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             properties:
@@ -53,7 +58,8 @@ spec:
                           nodeSelector:
                             additionalProperties:
                               type: string
-                            description: Define which Nodes the Pods are scheduled on.
+                            description: Define which Nodes the Pods are scheduled
+                              on.
                             nullable: true
                             type: object
                           resources:
@@ -67,7 +73,8 @@ spec:
                                   - type: string
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
-                                description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                description: 'Limits describes the maximum amount
+                                  of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                               requests:
                                 additionalProperties:
@@ -76,28 +83,53 @@ spec:
                                   - type: string
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
-                                description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                description: 'Requests describes the minimum amount
+                                  of compute resources required. If Requests is omitted
+                                  for a container, it defaults to Limits if that is
+                                  explicitly specified, otherwise to an implementation-defined
+                                  value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                             type: object
                           tolerations:
                             items:
-                              description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                              description: The pod this Toleration is attached to
+                                tolerates any taint that matches the triple <key,value,effect>
+                                using the matching operator <operator>.
                               properties:
                                 effect:
-                                  description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                                  description: Effect indicates the taint effect to
+                                    match. Empty means match all taint effects. When
+                                    specified, allowed values are NoSchedule, PreferNoSchedule
+                                    and NoExecute.
                                   type: string
                                 key:
-                                  description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                                  description: Key is the taint key that the toleration
+                                    applies to. Empty means match all taint keys.
+                                    If the key is empty, operator must be Exists;
+                                    this combination means to match all values and
+                                    all keys.
                                   type: string
                                 operator:
-                                  description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                                  description: Operator represents a key's relationship
+                                    to the value. Valid operators are Exists and Equal.
+                                    Defaults to Equal. Exists is equivalent to wildcard
+                                    for value, so that a pod can tolerate all taints
+                                    of a particular category.
                                   type: string
                                 tolerationSeconds:
-                                  description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                                  description: TolerationSeconds represents the period
+                                    of time the toleration (which must be of effect
+                                    NoExecute, otherwise this field is ignored) tolerates
+                                    the taint. By default, it is not set, which means
+                                    tolerate the taint forever (do not evict). Zero
+                                    and negative values will be treated as 0 (evict
+                                    immediately) by the system.
                                   format: int64
                                   type: integer
                                 value:
-                                  description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                                  description: Value is the taint value the toleration
+                                    matches to. If the operator is Exists, the value
+                                    should be empty, otherwise just a regular string.
                                   type: string
                               type: object
                             type: array
@@ -133,7 +165,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                            description: 'Limits describes the maximum amount of compute
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                             type: object
                           requests:
                             additionalProperties:
@@ -142,31 +175,55 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                            description: 'Requests describes the minimum amount of
+                              compute resources required. If Requests is omitted for
+                              a container, it defaults to Limits if that is explicitly
+                              specified, otherwise to an implementation-defined value.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                             type: object
                         type: object
                       schedule:
-                        description: The cron schedule that the Curator job is run. Defaults to "30 3 * * *"
+                        description: The cron schedule that the Curator job is run.
+                          Defaults to "30 3 * * *"
                         type: string
                       tolerations:
                         items:
-                          description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                          description: The pod this Toleration is attached to tolerates
+                            any taint that matches the triple <key,value,effect> using
+                            the matching operator <operator>.
                           properties:
                             effect:
-                              description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                              description: Effect indicates the taint effect to match.
+                                Empty means match all taint effects. When specified,
+                                allowed values are NoSchedule, PreferNoSchedule and
+                                NoExecute.
                               type: string
                             key:
-                              description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                              description: Key is the taint key that the toleration
+                                applies to. Empty means match all taint keys. If the
+                                key is empty, operator must be Exists; this combination
+                                means to match all values and all keys.
                               type: string
                             operator:
-                              description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                              description: Operator represents a key's relationship
+                                to the value. Valid operators are Exists and Equal.
+                                Defaults to Equal. Exists is equivalent to wildcard
+                                for value, so that a pod can tolerate all taints of
+                                a particular category.
                               type: string
                             tolerationSeconds:
-                              description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                              description: TolerationSeconds represents the period
+                                of time the toleration (which must be of effect NoExecute,
+                                otherwise this field is ignored) tolerates the taint.
+                                By default, it is not set, which means tolerate the
+                                taint forever (do not evict). Zero and negative values
+                                will be treated as 0 (evict immediately) by the system.
                               format: int64
                               type: integer
                             value:
-                              description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                              description: Value is the taint value the toleration
+                                matches to. If the operator is Exists, the value should
+                                be empty, otherwise just a regular string.
                               type: string
                           type: object
                         type: array
@@ -184,53 +241,81 @@ spec:
                 nullable: true
                 properties:
                   fluentd:
-                    description: FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
+                    description: FluentdForwarderSpec represents the configuration
+                      for forwarders of type fluentd.
                     properties:
                       buffer:
-                        description: "FluentdBufferSpec represents a subset of fluentd buffer parameters to tune the buffer configuration for all fluentd outputs. It supports a subset of parameters to configure buffer and queue sizing, flush operations and retry flushing. \n For general parameters refer to: https://docs.fluentd.org/configuration/buffer-section#buffering-parameters \n For flush parameters refer to: https://docs.fluentd.org/configuration/buffer-section#flushing-parameters \n For retry parameters refer to: https://docs.fluentd.org/configuration/buffer-section#retries-parameters"
+                        description: "FluentdBufferSpec represents a subset of fluentd
+                          buffer parameters to tune the buffer configuration for all
+                          fluentd outputs. It supports a subset of parameters to configure
+                          buffer and queue sizing, flush operations and retry flushing.
+                          \n For general parameters refer to: https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
+                          \n For flush parameters refer to: https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
+                          \n For retry parameters refer to: https://docs.fluentd.org/configuration/buffer-section#retries-parameters"
                         properties:
                           chunkLimitSize:
-                            description: ChunkLimitSize represents the maximum size of each chunk. Events will be written into chunks until the size of chunks become this size.
+                            description: ChunkLimitSize represents the maximum size
+                              of each chunk. Events will be written into chunks until
+                              the size of chunks become this size.
                             pattern: ^([0-9]+)([kmgtKMGT]{0,1})$
                             type: string
                           flushInterval:
-                            description: 'FlushInterval represents the time duration to wait between two consecutive flush operations. Takes only effect used together with `flushMode: interval`.'
+                            description: 'FlushInterval represents the time duration
+                              to wait between two consecutive flush operations. Takes
+                              only effect used together with `flushMode: interval`.'
                             pattern: ^([0-9]+)([smhd]{0,1})$
                             type: string
                           flushMode:
-                            description: FlushMode represents the mode of the flushing thread to write chunks. The mode allows lazy (if `time` parameter set), per interval or immediate flushing.
+                            description: FlushMode represents the mode of the flushing
+                              thread to write chunks. The mode allows lazy (if `time`
+                              parameter set), per interval or immediate flushing.
                             enum:
                             - lazy
                             - interval
                             - immediate
                             type: string
                           flushThreadCount:
-                            description: FlushThreadCount reprents the number of threads used by the fluentd buffer plugin to flush/write chunks in parallel.
+                            description: FlushThreadCount reprents the number of threads
+                              used by the fluentd buffer plugin to flush/write chunks
+                              in parallel.
                             format: int32
                             type: integer
                           overflowAction:
-                            description: 'OverflowAction represents the action for the fluentd buffer plugin to execute when a buffer queue is full. (Default: block)'
+                            description: 'OverflowAction represents the action for
+                              the fluentd buffer plugin to execute when a buffer queue
+                              is full. (Default: block)'
                             enum:
                             - throw_exception
                             - block
                             - drop_oldest_chunk
                             type: string
                           retryMaxInterval:
-                            description: 'RetryMaxInterval represents the maxixum time interval for exponential backoff between retries. Takes only effect if used together with `retryType: exponential_backoff`.'
+                            description: 'RetryMaxInterval represents the maxixum
+                              time interval for exponential backoff between retries.
+                              Takes only effect if used together with `retryType:
+                              exponential_backoff`.'
                             pattern: ^([0-9]+)([smhd]{0,1})$
                             type: string
                           retryType:
-                            description: RetryType represents the type of retrying flush operations. Flush operations can be retried either periodically or by applying exponential backoff.
+                            description: RetryType represents the type of retrying
+                              flush operations. Flush operations can be retried either
+                              periodically or by applying exponential backoff.
                             enum:
                             - exponential_backoff
                             - periodic
                             type: string
                           retryWait:
-                            description: RetryWait represents the time duration between two consecutive retries to flush buffers for periodic retries or a constant factor of time on retries with exponential backoff.
+                            description: RetryWait represents the time duration between
+                              two consecutive retries to flush buffers for periodic
+                              retries or a constant factor of time on retries with
+                              exponential backoff.
                             pattern: ^([0-9]+)([smhd]{0,1})$
                             type: string
                           totalLimitSize:
-                            description: TotalLimitSize represents the threshold of node space allowed per fluentd buffer to allocate. Once this threshold is reached, all append operations will fail with error (and data will be lost).
+                            description: TotalLimitSize represents the threshold of
+                              node space allowed per fluentd buffer to allocate. Once
+                              this threshold is reached, all append operations will
+                              fail with error (and data will be lost).
                             pattern: ^([0-9]+)([kmgtKMGT]{0,1})$
                             type: string
                         type: object
@@ -257,7 +342,8 @@ spec:
                         description: Specification of the Elasticsearch Proxy component
                         properties:
                           resources:
-                            description: ResourceRequirements describes the compute resource requirements.
+                            description: ResourceRequirements describes the compute
+                              resource requirements.
                             nullable: true
                             properties:
                               limits:
@@ -267,7 +353,8 @@ spec:
                                   - type: string
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
-                                description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                description: 'Limits describes the maximum amount
+                                  of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                               requests:
                                 additionalProperties:
@@ -276,14 +363,19 @@ spec:
                                   - type: string
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
-                                description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                description: 'Requests describes the minimum amount
+                                  of compute resources required. If Requests is omitted
+                                  for a container, it defaults to Limits if that is
+                                  explicitly specified, otherwise to an implementation-defined
+                                  value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                             type: object
                         required:
                         - resources
                         type: object
                       redundancyPolicy:
-                        description: The policy towards data redundancy to specify the number of redundant primary shards
+                        description: The policy towards data redundancy to specify
+                          the number of redundant primary shards
                         enum:
                         - FullRedundancy
                         - MultipleRedundancy
@@ -301,7 +393,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                            description: 'Limits describes the maximum amount of compute
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                             type: object
                           requests:
                             additionalProperties:
@@ -310,11 +403,16 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                            description: 'Requests describes the minimum amount of
+                              compute resources required. If Requests is omitted for
+                              a container, it defaults to Limits if that is explicitly
+                              specified, otherwise to an implementation-defined value.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                             type: object
                         type: object
                       storage:
-                        description: The storage specification for Elasticsearch data nodes
+                        description: The storage specification for Elasticsearch data
+                          nodes
                         nullable: true
                         properties:
                           size:
@@ -325,28 +423,48 @@ spec:
                             pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                             x-kubernetes-int-or-string: true
                           storageClassName:
-                            description: 'The class of storage to provision. More info: https://kubernetes.io/docs/concepts/storage/storage-classes/'
+                            description: 'The class of storage to provision. More
+                              info: https://kubernetes.io/docs/concepts/storage/storage-classes/'
                             type: string
                         type: object
                       tolerations:
                         items:
-                          description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                          description: The pod this Toleration is attached to tolerates
+                            any taint that matches the triple <key,value,effect> using
+                            the matching operator <operator>.
                           properties:
                             effect:
-                              description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                              description: Effect indicates the taint effect to match.
+                                Empty means match all taint effects. When specified,
+                                allowed values are NoSchedule, PreferNoSchedule and
+                                NoExecute.
                               type: string
                             key:
-                              description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                              description: Key is the taint key that the toleration
+                                applies to. Empty means match all taint keys. If the
+                                key is empty, operator must be Exists; this combination
+                                means to match all values and all keys.
                               type: string
                             operator:
-                              description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                              description: Operator represents a key's relationship
+                                to the value. Valid operators are Exists and Equal.
+                                Defaults to Equal. Exists is equivalent to wildcard
+                                for value, so that a pod can tolerate all taints of
+                                a particular category.
                               type: string
                             tolerationSeconds:
-                              description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                              description: TolerationSeconds represents the period
+                                of time the toleration (which must be of effect NoExecute,
+                                otherwise this field is ignored) tolerates the taint.
+                                By default, it is not set, which means tolerate the
+                                taint forever (do not evict). Zero and negative values
+                                will be treated as 0 (evict immediately) by the system.
                               format: int64
                               type: integer
                             value:
-                              description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                              description: Value is the taint value the toleration
+                                matches to. If the operator is Exists, the value should
+                                be empty, otherwise just a regular string.
                               type: string
                           type: object
                         type: array
@@ -354,7 +472,8 @@ spec:
                     - nodeCount
                     type: object
                   retentionPolicy:
-                    description: Retention policy defines the maximum age for an index after which it should be deleted
+                    description: Retention policy defines the maximum age for an index
+                      after which it should be deleted
                     nullable: true
                     properties:
                       application:
@@ -386,13 +505,15 @@ spec:
                 - type
                 type: object
               managementState:
-                description: Indicator if the resource is 'Managed' or 'Unmanaged' by the operator
+                description: Indicator if the resource is 'Managed' or 'Unmanaged'
+                  by the operator
                 enum:
                 - Managed
                 - Unmanaged
                 type: string
               visualization:
-                description: Specification of the Visualization component for the cluster
+                description: Specification of the Visualization component for the
+                  cluster
                 nullable: true
                 properties:
                   kibana:
@@ -408,7 +529,8 @@ spec:
                         description: Specification of the Kibana Proxy component
                         properties:
                           resources:
-                            description: ResourceRequirements describes the compute resource requirements.
+                            description: ResourceRequirements describes the compute
+                              resource requirements.
                             nullable: true
                             properties:
                               limits:
@@ -418,7 +540,8 @@ spec:
                                   - type: string
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
-                                description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                description: 'Limits describes the maximum amount
+                                  of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                               requests:
                                 additionalProperties:
@@ -427,7 +550,11 @@ spec:
                                   - type: string
                                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                                   x-kubernetes-int-or-string: true
-                                description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                description: 'Requests describes the minimum amount
+                                  of compute resources required. If Requests is omitted
+                                  for a container, it defaults to Limits if that is
+                                  explicitly specified, otherwise to an implementation-defined
+                                  value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                             type: object
                         required:
@@ -448,7 +575,8 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: 'Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                            description: 'Limits describes the maximum amount of compute
+                              resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                             type: object
                           requests:
                             additionalProperties:
@@ -457,28 +585,51 @@ spec:
                               - type: string
                               pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                               x-kubernetes-int-or-string: true
-                            description: 'Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                            description: 'Requests describes the minimum amount of
+                              compute resources required. If Requests is omitted for
+                              a container, it defaults to Limits if that is explicitly
+                              specified, otherwise to an implementation-defined value.
+                              More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                             type: object
                         type: object
                       tolerations:
                         items:
-                          description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                          description: The pod this Toleration is attached to tolerates
+                            any taint that matches the triple <key,value,effect> using
+                            the matching operator <operator>.
                           properties:
                             effect:
-                              description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                              description: Effect indicates the taint effect to match.
+                                Empty means match all taint effects. When specified,
+                                allowed values are NoSchedule, PreferNoSchedule and
+                                NoExecute.
                               type: string
                             key:
-                              description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                              description: Key is the taint key that the toleration
+                                applies to. Empty means match all taint keys. If the
+                                key is empty, operator must be Exists; this combination
+                                means to match all values and all keys.
                               type: string
                             operator:
-                              description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                              description: Operator represents a key's relationship
+                                to the value. Valid operators are Exists and Equal.
+                                Defaults to Equal. Exists is equivalent to wildcard
+                                for value, so that a pod can tolerate all taints of
+                                a particular category.
                               type: string
                             tolerationSeconds:
-                              description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                              description: TolerationSeconds represents the period
+                                of time the toleration (which must be of effect NoExecute,
+                                otherwise this field is ignored) tolerates the taint.
+                                By default, it is not set, which means tolerate the
+                                taint forever (do not evict). Zero and negative values
+                                will be treated as 0 (evict immediately) by the system.
                               format: int64
                               type: integer
                             value:
-                              description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                              description: Value is the taint value the toleration
+                                matches to. If the operator is Exists, the value should
+                                be empty, otherwise just a regular string.
                               type: string
                           type: object
                         type: array
@@ -498,7 +649,16 @@ spec:
               clusterConditions:
                 description: Conditions is a set of Condition instances.
                 items:
-                  description: "Condition represents an observation of an object's state. Conditions are an extension mechanism intended to be used when the details of an observation are not a priori known or would not apply to all instances of a given Kind. \n Conditions should be added to explicitly convey properties that users and components care about rather than requiring those properties to be inferred from other observations. Once defined, the meaning of a Condition can not be changed arbitrarily - it becomes part of the API, and has the same backwards- and forwards-compatibility concerns of any other part of the API."
+                  description: "Condition represents an observation of an object's
+                    state. Conditions are an extension mechanism intended to be used
+                    when the details of an observation are not a priori known or would
+                    not apply to all instances of a given Kind. \n Conditions should
+                    be added to explicitly convey properties that users and components
+                    care about rather than requiring those properties to be inferred
+                    from other observations. Once defined, the meaning of a Condition
+                    can not be changed arbitrarily - it becomes part of the API, and
+                    has the same backwards- and forwards-compatibility concerns of
+                    any other part of the API."
                   properties:
                     lastTransitionTime:
                       format: date-time
@@ -506,12 +666,20 @@ spec:
                     message:
                       type: string
                     reason:
-                      description: ConditionReason is intended to be a one-word, CamelCase representation of the category of cause of the current status. It is intended to be used in concise output, such as one-line kubectl get output, and in summarizing occurrences of causes.
+                      description: ConditionReason is intended to be a one-word, CamelCase
+                        representation of the category of cause of the current status.
+                        It is intended to be used in concise output, such as one-line
+                        kubectl get output, and in summarizing occurrences of causes.
                       type: string
                     status:
                       type: string
                     type:
-                      description: "ConditionType is the type of the condition and is typically a CamelCased word or short phrase. \n Condition types should indicate state in the \"abnormal-true\" polarity. For example, if the condition indicates when a policy is invalid, the \"is valid\" case is probably the norm, so the condition should be called \"Invalid\"."
+                      description: "ConditionType is the type of the condition and
+                        is typically a CamelCased word or short phrase. \n Condition
+                        types should indicate state in the \"abnormal-true\" polarity.
+                        For example, if the condition indicates when a policy is invalid,
+                        the \"is valid\" case is probably the norm, so the condition
+                        should be called \"Invalid\"."
                       type: string
                   required:
                   - status
@@ -526,9 +694,21 @@ spec:
                         properties:
                           clusterCondition:
                             additionalProperties:
-                              description: '`operator-sdk generate crds` does not allow map-of-slice, must use a named type.'
+                              description: '`operator-sdk generate crds` does not
+                                allow map-of-slice, must use a named type.'
                               items:
-                                description: "Condition represents an observation of an object's state. Conditions are an extension mechanism intended to be used when the details of an observation are not a priori known or would not apply to all instances of a given Kind. \n Conditions should be added to explicitly convey properties that users and components care about rather than requiring those properties to be inferred from other observations. Once defined, the meaning of a Condition can not be changed arbitrarily - it becomes part of the API, and has the same backwards- and forwards-compatibility concerns of any other part of the API."
+                                description: "Condition represents an observation
+                                  of an object's state. Conditions are an extension
+                                  mechanism intended to be used when the details of
+                                  an observation are not a priori known or would not
+                                  apply to all instances of a given Kind. \n Conditions
+                                  should be added to explicitly convey properties
+                                  that users and components care about rather than
+                                  requiring those properties to be inferred from other
+                                  observations. Once defined, the meaning of a Condition
+                                  can not be changed arbitrarily - it becomes part
+                                  of the API, and has the same backwards- and forwards-compatibility
+                                  concerns of any other part of the API."
                                 properties:
                                   lastTransitionTime:
                                     format: date-time
@@ -536,12 +716,24 @@ spec:
                                   message:
                                     type: string
                                   reason:
-                                    description: ConditionReason is intended to be a one-word, CamelCase representation of the category of cause of the current status. It is intended to be used in concise output, such as one-line kubectl get output, and in summarizing occurrences of causes.
+                                    description: ConditionReason is intended to be
+                                      a one-word, CamelCase representation of the
+                                      category of cause of the current status. It
+                                      is intended to be used in concise output, such
+                                      as one-line kubectl get output, and in summarizing
+                                      occurrences of causes.
                                     type: string
                                   status:
                                     type: string
                                   type:
-                                    description: "ConditionType is the type of the condition and is typically a CamelCased word or short phrase. \n Condition types should indicate state in the \"abnormal-true\" polarity. For example, if the condition indicates when a policy is invalid, the \"is valid\" case is probably the norm, so the condition should be called \"Invalid\"."
+                                    description: "ConditionType is the type of the
+                                      condition and is typically a CamelCased word
+                                      or short phrase. \n Condition types should indicate
+                                      state in the \"abnormal-true\" polarity. For
+                                      example, if the condition indicates when a policy
+                                      is invalid, the \"is valid\" case is probably
+                                      the norm, so the condition should be called
+                                      \"Invalid\"."
                                     type: string
                                 required:
                                 - status
@@ -571,9 +763,21 @@ spec:
                       properties:
                         clusterCondition:
                           additionalProperties:
-                            description: '`operator-sdk generate crds` does not allow map-of-slice, must use a named type.'
+                            description: '`operator-sdk generate crds` does not allow
+                              map-of-slice, must use a named type.'
                             items:
-                              description: "Condition represents an observation of an object's state. Conditions are an extension mechanism intended to be used when the details of an observation are not a priori known or would not apply to all instances of a given Kind. \n Conditions should be added to explicitly convey properties that users and components care about rather than requiring those properties to be inferred from other observations. Once defined, the meaning of a Condition can not be changed arbitrarily - it becomes part of the API, and has the same backwards- and forwards-compatibility concerns of any other part of the API."
+                              description: "Condition represents an observation of
+                                an object's state. Conditions are an extension mechanism
+                                intended to be used when the details of an observation
+                                are not a priori known or would not apply to all instances
+                                of a given Kind. \n Conditions should be added to
+                                explicitly convey properties that users and components
+                                care about rather than requiring those properties
+                                to be inferred from other observations. Once defined,
+                                the meaning of a Condition can not be changed arbitrarily
+                                - it becomes part of the API, and has the same backwards-
+                                and forwards-compatibility concerns of any other part
+                                of the API."
                               properties:
                                 lastTransitionTime:
                                   format: date-time
@@ -581,12 +785,23 @@ spec:
                                 message:
                                   type: string
                                 reason:
-                                  description: ConditionReason is intended to be a one-word, CamelCase representation of the category of cause of the current status. It is intended to be used in concise output, such as one-line kubectl get output, and in summarizing occurrences of causes.
+                                  description: ConditionReason is intended to be a
+                                    one-word, CamelCase representation of the category
+                                    of cause of the current status. It is intended
+                                    to be used in concise output, such as one-line
+                                    kubectl get output, and in summarizing occurrences
+                                    of causes.
                                   type: string
                                 status:
                                   type: string
                                 type:
-                                  description: "ConditionType is the type of the condition and is typically a CamelCased word or short phrase. \n Condition types should indicate state in the \"abnormal-true\" polarity. For example, if the condition indicates when a policy is invalid, the \"is valid\" case is probably the norm, so the condition should be called \"Invalid\"."
+                                  description: "ConditionType is the type of the condition
+                                    and is typically a CamelCased word or short phrase.
+                                    \n Condition types should indicate state in the
+                                    \"abnormal-true\" polarity. For example, if the
+                                    condition indicates when a policy is invalid,
+                                    the \"is valid\" case is probably the norm, so
+                                    the condition should be called \"Invalid\"."
                                   type: string
                               required:
                               - status
@@ -651,19 +866,23 @@ spec:
                           items:
                             properties:
                               lastTransitionTime:
-                                description: Last time the condition transitioned from one status to another.
+                                description: Last time the condition transitioned
+                                  from one status to another.
                                 format: date-time
                                 type: string
                               message:
-                                description: Human-readable message indicating details about last transition.
+                                description: Human-readable message indicating details
+                                  about last transition.
                                 type: string
                               reason:
-                                description: Unique, one-word, CamelCase reason for the condition's last transition.
+                                description: Unique, one-word, CamelCase reason for
+                                  the condition's last transition.
                                 type: string
                               status:
                                 type: string
                               type:
-                                description: ClusterConditionType is a valid value for ClusterCondition.Type
+                                description: ClusterConditionType is a valid value
+                                  for ClusterCondition.Type
                                 type: string
                             required:
                             - lastTransitionTime
@@ -684,19 +903,23 @@ spec:
                             items:
                               properties:
                                 lastTransitionTime:
-                                  description: Last time the condition transitioned from one status to another.
+                                  description: Last time the condition transitioned
+                                    from one status to another.
                                   format: date-time
                                   type: string
                                 message:
-                                  description: Human-readable message indicating details about last transition.
+                                  description: Human-readable message indicating details
+                                    about last transition.
                                   type: string
                                 reason:
-                                  description: Unique, one-word, CamelCase reason for the condition's last transition.
+                                  description: Unique, one-word, CamelCase reason
+                                    for the condition's last transition.
                                   type: string
                                 status:
                                   type: string
                                 type:
-                                  description: ClusterConditionType is a valid value for ClusterCondition.Type
+                                  description: ClusterConditionType is a valid value
+                                    for ClusterCondition.Type
                                   type: string
                               required:
                               - lastTransitionTime
@@ -740,19 +963,23 @@ spec:
                             items:
                               properties:
                                 lastTransitionTime:
-                                  description: Last time the condition transitioned from one status to another.
+                                  description: Last time the condition transitioned
+                                    from one status to another.
                                   format: date-time
                                   type: string
                                 message:
-                                  description: Human-readable message indicating details about last transition.
+                                  description: Human-readable message indicating details
+                                    about last transition.
                                   type: string
                                 reason:
-                                  description: Unique, one-word, CamelCase reason for the condition's last transition.
+                                  description: Unique, one-word, CamelCase reason
+                                    for the condition's last transition.
                                   type: string
                                 status:
                                   type: string
                                 type:
-                                  description: ClusterConditionType is a valid value for ClusterCondition.Type
+                                  description: ClusterConditionType is a valid value
+                                    for ClusterCondition.Type
                                   type: string
                               required:
                               - lastTransitionTime

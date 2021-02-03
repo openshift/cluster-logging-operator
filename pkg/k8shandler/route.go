@@ -49,7 +49,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateRoute(newRoute *route
 	err := clusterRequest.Create(newRoute)
 	if err != nil {
 		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure creating route for %q: %v", clusterRequest.cluster.Name, err)
+			return fmt.Errorf("Failure creating route for %q: %v", clusterRequest.Cluster.Name, err)
 		}
 
 		// else -- try to update it if its a valid change (e.g. spec.tls)
@@ -92,7 +92,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveRoute(routeName string) error
 
 	rt := NewRoute(
 		routeName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		routeName,
 		"",
 	)

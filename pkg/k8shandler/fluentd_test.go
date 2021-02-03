@@ -208,7 +208,7 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{}
 	httpproxy := "http://proxy-user@test.example.com/3128/"
-	noproxy := ".cluster.local,localhost"
+	noproxy := ".Cluster.local,localhost"
 	caBundle := fmt.Sprint("-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n")
 	podSpec := newFluentdPodSpec(cluster, "test-app-name", "test-infra-name",
 		&configv1.Proxy{

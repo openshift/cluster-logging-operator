@@ -28,7 +28,7 @@ const (
 func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailService() error {
 	service := NewService(
 		promtailName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		promtailName,
 		[]v1.ServicePort{
 			{
@@ -43,7 +43,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailService() err
 		"service.alpha.openshift.io/serving-cert-secret-name": promtailMetricsName,
 	}
 
-	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(service, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(service)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -55,7 +55,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailService() err
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailServiceMonitor() error {
 
-	cluster := clusterRequest.cluster
+	cluster := clusterRequest.Cluster
 
 	serviceMonitor := NewServiceMonitor(promtailName, cluster.Namespace)
 
@@ -98,13 +98,13 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailConfigMap() e
 
 	configMap := NewConfigMap(
 		promtailName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		map[string]string{
 			"promtail.yaml": string(utils.GetFileContents(utils.GetShareDir() + "/promtail/promtail.yaml")),
 		},
 	)
 
-	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.cluster))
+	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(configMap)
 	if err != nil && !errors.IsAlreadyExists(err) {
@@ -117,7 +117,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailConfigMap() e
 				logrus.Debugf("Returning nil. The configmap %q was not found even though create previously failed.  Was it culled?", configMap.Name)
 				return nil
 			}
-			return fmt.Errorf("Failed to get %v configmap for %q: %v", configMap.Name, clusterRequest.cluster.Name, err)
+			return fmt.Errorf("Failed to get %v configmap for %q: %v", configMap.Name, clusterRequest.Cluster.Name, err)
 		}
 		if reflect.DeepEqual(configMap.Data, current.Data) {
 			return nil
@@ -165,7 +165,7 @@ func newPromTailPodSpec(collector *collector.CollectorSpec) (v1.PodSpec, error) 
 	}
 	container.Args = []string{
 		"-config.file=/etc/promtail/promtail.yaml",
-		"-client.url=" + collector.PromTailSpec.Endpoint,
+		"-Client.url=" + collector.PromTailSpec.Endpoint,
 	}
 
 	container.VolumeMounts = []v1.VolumeMount{
@@ -219,7 +219,7 @@ func newPromTailPodSpec(collector *collector.CollectorSpec) (v1.PodSpec, error) 
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdatePromTailDaemonset() (err error) {
 
-	cluster := clusterRequest.cluster
+	cluster := clusterRequest.Cluster
 
 	podSpec, err := newPromTailPodSpec(clusterRequest.Collector)
 	if err != nil {

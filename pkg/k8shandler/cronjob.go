@@ -51,7 +51,7 @@ func (clusterRequest *ClusterLoggingRequest) RemoveCronJob(cronjobName string) e
 
 	cronjob := NewCronJob(
 		cronjobName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		cronjobName,
 		cronjobName,
 		batch.CronJobSpec{},

@@ -8,19 +8,64 @@ CA_PATH=${CA_PATH:-$WORKING_DIR/ca.crt}
 LOG_STORE=$3
 REGENERATE_NEEDED=0
 
+function info() {
+  local msg=$1
+  local type=${2:-}
+  local reason=${3:-}
+  local out="\"msg\":\"$msg\""
+  if [ -n "$type" ] ; then
+    out="$out, \"type\":\"$type\""
+  fi
+  if [ -n "$reason" ] ; then
+    out="$out, \"reason\":\"$reason\""
+  fi
+  if [ -f ${WORKING_DIR}/action.log ] && [ "$(stat -c%s ${WORKING_DIR}/action.log)" != "0" ] ; then
+    echo "," >> ${WORKING_DIR}/action.log
+  fi
+  echo "{$out}" >> ${WORKING_DIR}/action.log
+}
+
 function init_cert_files() {
 
   if [ ! -f ${WORKING_DIR}/ca.db ]; then
+    info "${WORKING_DIR}/ca.db" "File intialization" "Missing"
     touch ${WORKING_DIR}/ca.db
   fi
 
   if [ ! -f ${WORKING_DIR}/ca.serial.txt ]; then
+    info "${WORKING_DIR}/ca.serial.txt" "File intialization" "Missing"
     echo 00 > ${WORKING_DIR}/ca.serial.txt
   fi
 }
 
 function generate_signing_ca() {
-  if [ ! -f ${WORKING_DIR}/ca.crt ] || [ ! -f ${WORKING_DIR}/ca.key ] || ! openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/ca.crt; then
+  local regen=false
+  local fileExists=$(test -f ${WORKING_DIR}/ca.crt;echo $?)
+  if [ "$fileExists" == "1" ] ; then
+    info "${WORKING_DIR}/ca.crt" "Regenerate" "FileMissing"
+    regen=true
+  fi
+  local filetype=$(file -b ${WORKING_DIR}/ca.crt)
+  if [ "$fileExists" == "0" ] && [ "$filetype" != "PEM certificate" ] ; then
+    info "${WORKING_DIR}/ca.crt '$filetype' != 'PEM certificate'" "Regenerate" "InvalidFileType"
+    regen=true
+  fi
+  fileExists=$(test -f ${WORKING_DIR}/ca.key;echo $?)
+  if [ "$fileExists" == "1" ] ; then
+    info "${WORKING_DIR}/ca.key" "Regenerate" "FileMissing"
+    regen=true
+  fi
+  filetype=$(file -b ${WORKING_DIR}/ca.key)
+  if [ "$fileExists" == "0" ] && [ "$filetype" != "ASCII text" ] ; then
+    info "${WORKING_DIR}/ca.key '$filetype' != 'ASCII text'" "Regenerate" "InvalidFileType"
+    regen=true
+  fi
+  if ! $(openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/ca.crt > /dev/null 2>&1) ; then
+    info "${WORKING_DIR}/ca.crt" "Regenerate" "ExpiredOrMissing"
+    regen=true
+  fi
+  if [ "${regen}" == "true" ] ; then
+    info "generating signing request"
     openssl req -x509 \
                 -new \
                 -newkey rsa:4096 \
@@ -144,7 +189,7 @@ EOF
 
 function sign_cert() {
   local component=$1
-
+  info "Signing cert for component: $component"
   openssl ca \
           -in ${WORKING_DIR}/${component}.csr  \
           -notext                              \
@@ -158,7 +203,7 @@ function sign_cert() {
 function generate_cert_config() {
   local component=$1
   local extensions=${2:-}
-
+  info "generating cert config for component '$component' with ext: '${extensions}'"
   if [ "$extensions" != "" ]; then
     cat <<EOF > "${WORKING_DIR}/${component}.conf"
 [ req ]
@@ -193,7 +238,7 @@ EOF
 
 function generate_request() {
   local component=$1
-
+  info "signing request for component: $component"
   openssl req -new                                        \
           -out ${WORKING_DIR}/${component}.csr            \
           -newkey rsa:4096                                \
@@ -206,8 +251,27 @@ function generate_request() {
 function generate_certs() {
   local component=$1
   local extensions=${2:-}
-
-  if [ $REGENERATE_NEEDED = 1 ] || [ ! -f ${WORKING_DIR}/${component}.crt ] || ! openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/${component}.crt; then
+  local regen=false
+  if [ $REGENERATE_NEEDED = 1 ] ; then
+    info "REGENERATE_NEEDED=1"
+    regen=true
+  fi
+  local fileExists=$(test -f ${WORKING_DIR}/${component}.crt;echo $?)
+  if [ "$fileExists" == "1" ] ; then
+    info "${WORKING_DIR}/${component}.crt" "Regenerate" "FileMissing"
+    regen=true
+  fi
+  local filetype=$(file -b ${WORKING_DIR}/${component}.crt)
+  if [ "$fileExists" == "0" ] && [ "$filetype" != "PEM certificate" ] ; then
+    info "${WORKING_DIR}/${component}.crt '$filetype' != 'PEM certificate'" "Regenerate" "InvalidFileType"
+    regen=true
+  fi
+  if ! $(openssl x509 -checkend 0 -noout -in ${WORKING_DIR}/${component}.crt > /dev/null 2>&1); then
+    info "${WORKING_DIR}/${component}.crt" "Regenerate" "ExpiredOrMissing"
+    regen=true
+  fi
+  if [ "${regen}" == "true" ]; then
+    info "Generating certs for ${component} with ext: ${extensions}"
     generate_cert_config $component $extensions
     generate_request $component
     sign_cert $component
@@ -265,3 +329,15 @@ generate_certs 'system.admin'
 generate_certs 'kibana-internal' "$(generate_extensions false false kibana)"
 generate_certs 'elasticsearch' "$(generate_extensions true true $LOG_STORE{,-cluster}{,.${NAMESPACE}.svc}{,.cluster.local})"
 generate_certs 'logging-es' "$(generate_extensions false true $LOG_STORE{,.${NAMESPACE}.svc}{,.cluster.local})"
+
+if [ ! -s "${WORKING_DIR}/kibana-session-secret" ] ; then
+  info "Generating kibana session secret"
+  dd if=/dev/urandom count=1 ibs=16 status=none | hexdump -e '"%02X"' >  "${WORKING_DIR}/kibana-session-secret"
+fi
+
+if [ -f ${WORKING_DIR}/action.log ] ; then
+  # remove newlines from log to have condensed JSON array
+  sed -i ':a;N;$!ba;s/\n//g' ${WORKING_DIR}/action.log
+  echo "[$(cat ${WORKING_DIR}/action.log)]"
+  rm ${WORKING_DIR}/action.log
+fi

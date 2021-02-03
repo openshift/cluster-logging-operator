@@ -37,7 +37,7 @@ func NewConsoleExternalLogLink(resourceName, namespace, consoleText, hrefTemplat
 func (clusterRequest *ClusterLoggingRequest) RemoveConsoleExternalLogLink(resourceName string) (err error) {
 	consoleExternalLogLink := NewConsoleExternalLogLink(
 		resourceName,
-		clusterRequest.cluster.Namespace,
+		clusterRequest.Cluster.Namespace,
 		"",
 		"",
 		"",

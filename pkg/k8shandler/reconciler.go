@@ -17,8 +17,8 @@ import (
 
 func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
-		client:  requestClient,
-		cluster: requestCluster,
+		Client:  requestClient,
+		Cluster: requestCluster,
 	}
 
 	forwarding := clusterLoggingRequest.getLogForwarding()
@@ -31,27 +31,27 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 
 	// Reconcile certs
 	if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
-		return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	// Reconcile Log Store
 	if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
-		return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	// Reconcile Visualization
 	if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	// Reconcile Curation
 	if err = clusterLoggingRequest.CreateOrUpdateCuration(); err != nil {
-		return fmt.Errorf("Unable to create or update curation for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		return fmt.Errorf("Unable to create or update curation for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	return nil
@@ -60,7 +60,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestClient client.Client) (err error) {
 	logger.DebugObject("Reconciling LogForwarding instance: %v", forwarding)
 	clusterLoggingRequest := ClusterLoggingRequest{
-		client: requestClient,
+		Client: requestClient,
 	}
 	if forwarding != nil {
 		clusterLoggingRequest.ForwardingRequest = forwarding
@@ -71,7 +71,7 @@ func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestC
 	if clusterLogging == nil {
 		return nil
 	}
-	clusterLoggingRequest.cluster = clusterLogging
+	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
 		return nil
@@ -81,7 +81,7 @@ func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestC
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		return fmt.Errorf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	return nil
@@ -90,7 +90,7 @@ func ReconcileForLogForwarding(forwarding *logforwarding.LogForwarding, requestC
 func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.Client) (err error) {
 
 	clusterLoggingRequest := ClusterLoggingRequest{
-		client: requestClient,
+		Client: requestClient,
 	}
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
@@ -98,7 +98,7 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 		return nil
 	}
 
-	clusterLoggingRequest.cluster = clusterLogging
+	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
 		return nil
@@ -112,7 +112,7 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
-		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.cluster.Name, err)
+		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	return nil
@@ -120,7 +120,7 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 
 func ReconcileForTrustedCABundle(requestName string, requestClient client.Client) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
-		client: requestClient,
+		Client: requestClient,
 	}
 
 	clusterLogging := clusterLoggingRequest.getClusterLogging()
@@ -128,7 +128,7 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 		return nil
 	}
 
-	clusterLoggingRequest.cluster = clusterLogging
+	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
 		return nil
@@ -149,7 +149,7 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.Cluste
 	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	clusterLogging := &logging.ClusterLogging{}
 
-	if err := clusterRequest.client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
+	if err := clusterRequest.Client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
 		if !apierrors.IsNotFound(err) {
 			fmt.Printf("Encountered unexpected error getting %v", clusterLoggingNamespacedName)
 		}
@@ -164,7 +164,7 @@ func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
 	// don't blank out any proxy configured changes...
 	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
 	proxyConfig := &configv1.Proxy{}
-	if err := clusterRequest.client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
+	if err := clusterRequest.Client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
 		if !apierrors.IsNotFound(err) {
 			fmt.Printf("Encountered unexpected error getting %v", proxyNamespacedName)
 		}
@@ -177,7 +177,7 @@ func (clusterRequest *ClusterLoggingRequest) getLogForwarding() *logforwarding.L
 	logForwardingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	logForwarding := &logforwarding.LogForwarding{}
 	logger.Debug("logforwarding-controller fetching LF instance")
-	if err := clusterRequest.client.Get(context.TODO(), logForwardingNamespacedName, logForwarding); err != nil {
+	if err := clusterRequest.Client.Get(context.TODO(), logForwardingNamespacedName, logForwarding); err != nil {
 		if !apierrors.IsNotFound(err) {
 			fmt.Printf("Encountered unexpected error getting %v", logForwardingNamespacedName)
 		}

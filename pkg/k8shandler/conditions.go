@@ -18,16 +18,16 @@ func (clusterRequest *ClusterLoggingRequest) UpdateCondition(conditionType loggi
 
 	found := false
 	updated := false
-	for index, clusterCondition := range clusterRequest.cluster.Status.Conditions {
+	for index, clusterCondition := range clusterRequest.Cluster.Status.Conditions {
 		if clusterCondition.Type == condition.Type {
 			found = true
 			if condition.Status == v1.ConditionFalse {
-				clusterRequest.cluster.Status.Conditions = removeCondition(clusterRequest.cluster.Status.Conditions, index)
+				clusterRequest.Cluster.Status.Conditions = removeCondition(clusterRequest.Cluster.Status.Conditions, index)
 				updated = true
 			} else {
 				if isConditionDifferent(clusterCondition, condition) {
 					condition.LastTransitionTime = metav1.Now()
-					clusterRequest.cluster.Status.Conditions[index] = condition
+					clusterRequest.Cluster.Status.Conditions[index] = condition
 					updated = true
 				}
 			}
@@ -38,13 +38,13 @@ func (clusterRequest *ClusterLoggingRequest) UpdateCondition(conditionType loggi
 	if !found {
 		if condition.Status == v1.ConditionTrue {
 			condition.LastTransitionTime = metav1.Now()
-			clusterRequest.cluster.Status.Conditions = append(clusterRequest.cluster.Status.Conditions, condition)
+			clusterRequest.Cluster.Status.Conditions = append(clusterRequest.Cluster.Status.Conditions, condition)
 			updated = true
 		}
 	}
 
 	if updated {
-		return clusterRequest.UpdateStatus(clusterRequest.cluster)
+		return clusterRequest.UpdateStatus(clusterRequest.Cluster)
 	}
 
 	return nil
@@ -52,7 +52,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateCondition(conditionType loggi
 
 func (clusterRequest *ClusterLoggingRequest) GetCondition(conditionType logging.ClusterConditionType) logging.ClusterCondition {
 
-	for _, clusterCondition := range clusterRequest.cluster.Status.Conditions {
+	for _, clusterCondition := range clusterRequest.Cluster.Status.Conditions {
 		if clusterCondition.Type == conditionType {
 			return clusterCondition
 		}

@@ -43,21 +43,21 @@ func isForwardingEnabled(cluster *logging.ClusterLogging) bool {
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 
-	if clusterRequest.cluster == nil || clusterRequest.cluster.Spec.Collection == nil {
+	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
 		logger.Warnf("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
 		return "", nil
 	}
 
-	switch clusterRequest.cluster.Spec.Collection.Logs.Type {
+	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
 	case logging.LogCollectionTypeFluentd:
 		break
 	default:
-		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.cluster.Spec.Collection.Logs.Type)
+		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Logs.Type)
 	}
 
-	clusterRequest.ForwardingSpec = clusterRequest.normalizeLogForwarding(clusterRequest.cluster.Namespace, clusterRequest.cluster)
+	clusterRequest.ForwardingSpec = clusterRequest.normalizeLogForwarding(clusterRequest.Cluster.Namespace, clusterRequest.Cluster)
 	generator, err := forwarding.NewConfigGenerator(
-		clusterRequest.cluster.Spec.Collection.Logs.Type,
+		clusterRequest.Cluster.Spec.Collection.Logs.Type,
 		clusterRequest.includeLegacyForwardConfig(),
 		clusterRequest.includeLegacySyslogConfig(),
 		clusterRequest.useOldRemoteSyslogPlugin(),

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -93,15 +94,10 @@ func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (string, er
 }
 
 func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		errorCount := 0
+	err := wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			logger.Errorf("Error retrieving indices from elasticsearch %v", err)
-			errorCount++
-			if errorCount > 5 { //accept arbitrary errors like 'etcd leader change'
-				return false, err
-			}
 			return false, nil
 		}
 		return indices.HasInfraStructureLogs(), nil
@@ -110,15 +106,10 @@ func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool
 }
 
 func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		errorCount := 0
+	err := wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			logger.Errorf("Error retrieving indices from elasticsearch %v", err)
-			errorCount++
-			if errorCount > 5 {
-				return false, err
-			}
 			return false, nil
 		}
 		return indices.HasApplicationLogs(), nil
@@ -127,7 +118,7 @@ func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, e
 }
 
 func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) {
-	err := wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
+	err := wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		indices, err := es.Indices()
 		if err != nil {
 			return false, err
@@ -169,14 +160,23 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
 	logger.Debug("DeployAnElasticsearchCluster")
 	logStoreName := "test-elastic-cluster"
-	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
+	workingDir := ""
+	if workingDir, pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
 		return nil, nil, err
 	}
 
 	esSecret := k8shandler.NewSecret(
 		logStoreName,
 		OpenshiftLoggingNS,
-		k8shandler.LoadElasticsearchSecretMap(),
+		map[string][]byte{
+			"elasticsearch.key": utils.GetFileContents(path.Join(workingDir,"elasticsearch.key")),
+			"elasticsearch.crt": utils.GetFileContents(path.Join(workingDir,"elasticsearch.crt")),
+			"logging-es.key":    utils.GetFileContents(path.Join(workingDir,"logging-es.key")),
+			"logging-es.crt":    utils.GetFileContents(path.Join(workingDir,"logging-es.crt")),
+			"admin-key":         utils.GetFileContents(path.Join(workingDir,"system.admin.key")),
+			"admin-cert":        utils.GetFileContents(path.Join(workingDir,"system.admin.crt")),
+			"admin-ca":          utils.GetFileContents(path.Join(workingDir,"ca.crt")),
+		},
 	)
 	logger.Debugf("Creating secret for an elasticsearch cluster: %s", esSecret.Name)
 	if esSecret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(esSecret); err != nil {

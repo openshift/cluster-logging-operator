@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +21,7 @@ import (
 
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logforwarding "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1alpha1"
+	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -31,26 +33,13 @@ const (
 	clusterLoggingURI     = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
 	logforwardingURI      = "apis/logging.openshift.io/v1alpha1/namespaces/openshift-logging/logforwardings"
 	DefaultCleanUpTimeout = 60.0 * 2
+	defaultRetryInterval      = 1 * time.Second
+	defaultTimeout            = 10 * time.Minute
+	DefaultWaitForLogsTimeout = 10 * time.Minute
+	// Shorter timeout for when we are expecting that there will be no logs
+	// since we will always go to the timeout in that case.a
+	DefaultWaitForNoLogsTimeout = 1 * time.Minute
 )
-
-var (
-	defaultRetryInterval      time.Duration
-	defaultTimeout            time.Duration
-	DefaultWaitForLogsTimeout time.Duration
-	err                       error
-)
-
-func init() {
-	if defaultRetryInterval, err = time.ParseDuration("1s"); err != nil {
-		panic(err)
-	}
-	if defaultTimeout, err = time.ParseDuration("5m"); err != nil {
-		panic(err)
-	}
-	if DefaultWaitForLogsTimeout, err = time.ParseDuration("5m"); err != nil {
-		panic(err)
-	}
-}
 
 type LogStore interface {
 	//ApplicationLogs returns app logs for a given log store
@@ -324,25 +313,18 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 	return oc.Exec().WithNamespace(namespace).Pod(name).Container(container).WithCmd(command[0], command[1:]...).Run()
 }
 
-func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (secret *corev1.Secret, err error) {
-	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
+func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (workingDir string, secret *corev1.Secret, err error) {
+	workingDir = fmt.Sprintf("/tmp/clo-test-%d", time.Now().Unix())
 	logger.Debugf("Generating Pipeline certificates for %q to %s", logStoreName, workingDir)
-	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		if err = os.MkdirAll(workingDir, 0766); err != nil {
-			return nil, err
-		}
-	}
-	if err = os.Setenv("WORKING_DIR", workingDir); err != nil {
-		return nil, err
-	}
-	if err = k8shandler.GenerateCertificates(OpenshiftLoggingNS, pwd, logStoreName, workingDir); err != nil {
-		return nil, err
+	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
+	if err, _ = certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
+		return workingDir, nil, err
 	}
 	data := map[string][]byte{
-		"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-		"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
-		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-		"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
+		"tls.key":       utils.GetFileContents(path.Join(workingDir,"system.logging.fluentd.key")),
+		"tls.crt":       utils.GetFileContents(path.Join(workingDir, "system.logging.fluentd.crt")),
+		"ca-bundle.crt": utils.GetFileContents(path.Join(workingDir, "ca.crt")),
+		"ca.key":        utils.GetFileContents(path.Join(workingDir, "ca.key")),
 	}
 	for key, value := range otherData {
 		data[key] = value
@@ -354,7 +336,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 	)
 	logger.Debugf("Creating secret %s for logStore %s", secret.Name, logStoreName)
 	if secret, err = tc.KubeClient.Core().Secrets(OpenshiftLoggingNS).Create(secret); err != nil {
-		return nil, err
+		return workingDir, nil, err
 	}
-	return secret, nil
+	return workingDir,secret, nil
 }

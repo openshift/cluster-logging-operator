@@ -4,7 +4,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   # The version value is substituted by the ART pipeline
-  name: clusterlogging.v4.7.0
+  name: clusterlogging.v5.1.0-beta1
   namespace: placeholder
   labels:
     "operatorframework.io/arch.amd64": supported
@@ -22,7 +22,7 @@ metadata:
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
     # The version value is substituted by the ART pipeline
-    olm.skipRange: ">=4.4.0-0 <4.7.0"
+    olm.skipRange: ">=4.6.0-0 <5.1.0.beta1"
     alm-examples: |-
         [
           {
@@ -40,6 +40,7 @@ metadata:
                   "nodeCount": 3,
                   "redundancyPolicy": "SingleRedundancy",
                   "storage": {
+                    "storageClassName": "gp2",
                     "size": "200G"
                   }
                 },
@@ -103,8 +104,8 @@ metadata:
           }
         ]
 spec:
-  # The version value is substituted by the ART pipeline
-  version: 4.7.0
+  # the version is 5.1.0-beta1 instead of 5.1.0.beta1 because this disallows upgrade to 5.1.0
+  version: 5.1.0-beta1
   displayName: Cluster Logging
   minKubeVersion: 1.18.3
   description: |
@@ -121,7 +122,7 @@ spec:
     must be explicitly created by a cluster administrator (e.g. `oc create ns openshift-logging`). To enable metrics
     service discovery add namespace label `openshift.io/cluster-monitoring: "true"`.
 
-    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/4.7/logging/cluster-logging-deploying.html)
+    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/5.1/logging/cluster-logging-deploying.html)
     in the OpenShift product documentation.
 
     ### Elasticsearch Operator

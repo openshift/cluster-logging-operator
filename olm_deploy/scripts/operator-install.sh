@@ -24,7 +24,8 @@ echo "##################"
 envsubst < olm_deploy/subscription/operator-group.yaml | oc apply -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -
 
 # create the subscription
-export OPERATOR_PACKAGE_CHANNEL=\"$(grep name manifests/cluster-logging.package.yaml | grep  -oh "[0-9]\+\.[0-9]\+")\"
+export OPERATOR_PACKAGE_CHANNEL=\"$(grep name manifests/cluster-logging.package.yaml | awk -F\" '{print $2}')\"
+echo "Deploying logging from channel ${OPERATOR_PACKAGE_CHANNEL}"
 envsubst < olm_deploy/subscription/subscription.yaml | oc apply -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -
 
 olm_deploy/scripts/wait_for_deployment.sh ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} cluster-logging-operator

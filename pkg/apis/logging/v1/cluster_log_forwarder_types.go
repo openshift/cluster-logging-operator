@@ -126,18 +126,18 @@ type OutputSpec struct {
 	// +required
 	Type string `json:"type"`
 
-	// URL to send log messages to.
+	// URL to send log records to.
 	//
-	// Must be an absolute URL, with a scheme. Valid URL schemes depend on `type`.
-	// Special schemes 'tcp', 'tls', 'udp' and 'udps are used for output types that don't
-	// define their own URL scheme.  Example:
+	// An absolute URL, with a scheme. Valid schemes depend on `type`.
+	// Special schemes `tcp`, `tls`, `udp` and `udps` are used for types that
+	// have no scheme of their own. For example, to send syslog records using secure UDP:
 	//
 	//     { type: syslog, url: udps://syslog.example.com:1234 }
 	//
-	// TLS with server authentication is enabled by the URL scheme, for
-	// example 'tls' or 'https'.  See `secret` for TLS client authentication.
-	//
-	// This field is optional and can be empty if there is an output-type field with alternative connection information.
+	// Basic TLS is enabled if the URL scheme requires it (for example 'https' or 'tls').
+	// The 'username@password' part of `url` is ignored.
+	// Any additional authentication material is in the `secret`.
+	// See the `secret` field for more details.
 	//
 	// +kubebuilder:validation:Pattern:=`^$|[a-zA-z]+:\/\/.*`
 	// +optional
@@ -145,13 +145,14 @@ type OutputSpec struct {
 
 	OutputTypeSpec `json:",inline"`
 
-	// Secret for secure communication.
-	// Secrets must be stored in the namespace containing the cluster logging operator.
+	// Secret for authentication.
+	// Name of a secret in the same namespace as the cluster logging operator.
 	//
-	// Client-authenticated TLS is enabled if the secret contains keys `tls.crt`,
-	// `tls.key` and `ca.crt`. Output types with password authentication will use
-	// keys `password` and `username`, not the exposed 'username@password' part of
-	// the `url`.
+	// For client authentication, set secret keys `tls.crt` and `tls.key` to the client certificate and private key.
+	//
+	// To use your own certificate authority, set secret key `ca-bundle.crt`.
+	//
+	// Depending on the `type` there may be other secret keys that have meaning.
 	//
 	// +optional
 	Secret *OutputSecretSpec `json:"secret,omitempty"`

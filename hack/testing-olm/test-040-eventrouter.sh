@@ -15,7 +15,7 @@ if [ ! -d $test_artifactdir ] ; then
 fi
 LOGGING_NS=${LOGGING_NS:-openshift-logging}
 OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-4.6}
-IMAGE_FORMAT=${IMAGE_FORMAT:-"registry.svc.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:\${component}"}
+IMAGE_FORMAT=${IMAGE_FORMAT:-"registry.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:\${component}"}
 IMAGE_LOGGING_EVENTROUTER=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-eventrouter,")
 EVENT_ROUTER_TEMPLATE=${repo_dir}/hack/eventrouter-template.yaml
 

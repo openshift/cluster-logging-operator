@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ViaQ/logerr/log"
-	"github.com/openshift/elasticsearch-operator/pkg/logger"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"sort"
 	"text/template"
 
@@ -56,24 +56,25 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		err                    error
 	)
 
+	inputs, namespaces = gatherSources(clfSpec)
+	routeMap = inputsToPipelines(clfSpec)
 	// Provide inputs and inputsPipelines for legacy forwarding protocols
 	// w/o a user-provided ClusterLogFowarder instance to enable inputs and
 	// inputs-to-pipelines a.k.a. route map template generation.
 	if engine.includeLegacyForwardConfig || engine.includeLegacySyslogConfig {
-		inputs = sets.NewString(
-			string(logging.InputNameInfrastructure),
-			string(logging.InputNameApplication),
-			string(logging.InputNameAudit),
+		inputs.Insert(
+			logging.InputNameInfrastructure,
+			logging.InputNameApplication,
+			logging.InputNameAudit,
 		)
-
-		routeMap = logging.RouteMap{
-			logging.InputNameInfrastructure: sets.NewString(),
-			logging.InputNameApplication:    sets.NewString(),
-			logging.InputNameAudit:          sets.NewString(),
+		for _, logType := range inputs.List() {
+			if engine.includeLegacySyslogConfig {
+				routeMap.Insert(logType, constants.LegacySyslog)
+			}
+			if engine.includeLegacyForwardConfig {
+				routeMap.Insert(logType, constants.LegacySecureforward)
+			}
 		}
-	} else {
-		inputs, namespaces = gatherSources(clfSpec)
-		routeMap = inputsToPipelines(clfSpec)
 	}
 
 	sourceInputLabels, err = engine.generateSource(inputs)
@@ -250,9 +251,9 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 // </label>
 func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.OutputSpec, outputConf *logging.ForwarderSpec) ([]string, error) {
 	configs := []string{}
-	logger.Debugf("Evaluating %v forwarder logging...", len(outputs))
+	log.V(2).Info("Evaluating forwarder logging", "outputs", len(outputs))
 	for _, output := range outputs {
-		logger.Debugf("Generate output type %v", output.Type)
+		log.V(2).Info("Generate output", "type", output.Type)
 		engine.outputTemplate = "outputLabelConf" // Default
 		switch output.Type {
 		case logging.OutputTypeElasticsearch:
@@ -282,6 +283,6 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		}
 		configs = append(configs, result)
 	}
-	logger.Debugf("Generated output configurations: %v", configs)
+	log.V(2).Info("Generated output", "configs", configs)
 	return configs, nil
 }

@@ -21,6 +21,15 @@ type ClusterLoggingRequest struct {
 
 	// ForwarderSpec is the normalized and sanitized logforwarder spec
 	ForwarderSpec logging.ClusterLogForwarderSpec
+
+	// OutputSecrets are retrieved during validation and used for generation.
+	OutputSecrets map[string]*v1.Secret
+
+	//FnIncludeLegacyForward function to allow override for internal use
+	FnIncludeLegacyForward func() bool
+
+	//fnIncludeLegacySyslog function to allow override for internal use
+	FnIncludeLegacySyslog func() bool
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {

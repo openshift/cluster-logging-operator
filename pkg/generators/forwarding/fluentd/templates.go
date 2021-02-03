@@ -546,18 +546,6 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
       @label {{labelName $pipelineLabel}}
     </store>
 {{- end }}
-{{ if .IncludeLegacySecureForward }}
-    <store>
-      @type relabel
-      @label @_LEGACY_SECUREFORWARD
-    </store>
-{{- end }}
-{{ if .IncludeLegacySyslog }}
-    <store>
-      @type relabel
-      @label @_LEGACY_SYSLOG
-    </store>
-{{- end }}
   </match>
 </label>
 {{- end}}`

@@ -181,6 +181,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 // includeLegacyForwardConfig to address Bug 1782566.
 // To be removed when legacy forwarding is unsupported
 func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
+	if clusterRequest.FnIncludeLegacyForward != nil {
+		return clusterRequest.FnIncludeLegacySyslog()
+	}
 	config := &v1.ConfigMap{
 		Data: map[string]string{},
 	}
@@ -197,6 +200,9 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
 // includeLegacySyslogConfig to address Bug 1799024.
 // To be removed when legacy syslog is no longer supported.
 func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
+	if clusterRequest.FnIncludeLegacySyslog != nil {
+		return clusterRequest.FnIncludeLegacySyslog()
+	}
 	config := &v1.ConfigMap{
 		Data: map[string]string{},
 	}

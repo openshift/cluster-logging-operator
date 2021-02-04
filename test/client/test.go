@@ -7,6 +7,8 @@ import (
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/ViaQ/logerr/log"
 )
 
 // Test wraps the singleton test client with setup/teardown and convenience methods
@@ -37,4 +39,25 @@ func (t *Test) Close() {
 		fmt.Printf("To delete all lingering functional test namespaces, run \"oc delete ns -ltest-client=true\"\n")
 		fmt.Printf("============\n\n")
 	}
+}
+
+//NamespaceClient wraps the singleton test client for use with hack testing
+type NamespaceClient struct {
+	Test
+}
+
+func NewNamesapceClient() *NamespaceClient {
+	namespace := test.UniqueName("testhack")
+	t := &NamespaceClient{
+		Test{
+			Client: Get(),
+			NS:     runtime.NewNamespace(namespace),
+		},
+	}
+	test.Must(t.Create(t.NS))
+	log.Info("testhack", "namespace", t.NS.Name)
+	return t
+}
+func (t *NamespaceClient) Close() {
+	_ = t.Remove(t.NS)
 }

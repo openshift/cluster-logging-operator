@@ -1,8 +1,6 @@
 #!/bin/bash
 source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/utils"
 assert_resources_exist(){
-	# verify cron
-	os::cmd::try_until_success "oc -n $NAMESPACE get cronjob curator" ${TIMEOUT_MIN}
 
 	# verify DS
 	os::cmd::try_until_success "oc -n $NAMESPACE get ds fluentd" ${TIMEOUT_MIN}

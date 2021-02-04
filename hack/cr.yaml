@@ -7,17 +7,15 @@ spec:
   logStore:
     type: "elasticsearch"
     elasticsearch:
-      nodeCount: 1
-      storage: {}
+      nodeCount: 3
+      resources:
+        requests:
+          limits: 2Gi
       redundancyPolicy: "ZeroRedundancy"
   visualization:
     type: "kibana"
     kibana:
       replicas: 1
-  curation:
-    type: "curator"
-    curator:
-      schedule: "30 3,9,15,21 * * *"
   collection:
     logs:
       type: "fluentd"

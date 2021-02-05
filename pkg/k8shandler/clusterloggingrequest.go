@@ -32,6 +32,14 @@ type ClusterLoggingRequest struct {
 
 	//fnIncludeLegacySyslog function to allow override for internal use
 	FnIncludeLegacySyslog func() bool
+
+	//CLFVerifier is a collection of functions to control verification
+	//of ClusterLogForwarding
+	CLFVerifier ClusterLogForwarderVerifier
+}
+
+type ClusterLogForwarderVerifier struct {
+	VerifyOutputSecret func(output *logging.OutputSpec, conds logging.NamedConditions) bool
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {

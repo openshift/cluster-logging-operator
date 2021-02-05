@@ -296,6 +296,8 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		log.V(3).Info("Generate output type", "type", output.Type)
 		engine.outputTemplate = "outputLabelConf" // Default
 		switch output.Type {
+		case logging.OutputTypeCloudwatch:
+			engine.outputTemplate = "outputLabelConfCloudwatch"
 		case logging.OutputTypeElasticsearch:
 			engine.storeTemplate = "storeElasticsearch"
 		case logging.OutputTypeFluentdForward:
@@ -313,7 +315,12 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		default:
 			return nil, fmt.Errorf("Unknown output type: %v", output.Type)
 		}
-		conf, err := newOutputLabelConf(engine.Template, engine.storeTemplate, output, secrets[output.Name], outputConf)
+
+		var secret *corev1.Secret
+		if output.Secret != nil {
+			secret = secrets[output.Name]
+		}
+		conf, err := newOutputLabelConf(engine.Template, engine.storeTemplate, output, secret, outputConf)
 		if err != nil {
 			return nil, fmt.Errorf("generating fluentd output label: %v", err)
 		}

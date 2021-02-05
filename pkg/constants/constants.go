@@ -6,6 +6,8 @@ const (
 	// global proxy / trusted ca bundle consts
 	ProxyName                  = "cluster"
 	TrustedCABundleKey         = "ca-bundle.crt"
+	AWSSecretAccessKey         = "aws_secret_access_key" //nolint:gosec
+	AWSAccessKeyID             = "aws_access_key_id"
 	ClientCertKey              = "tls.crt"
 	ClientPrivateKey           = "tls.key"
 	ClientUsername             = "username"
@@ -36,9 +38,10 @@ const (
 	LegacySecureforward = "_LEGACY_SECUREFORWARD"
 	LegacySyslog        = "_LEGACY_SYSLOG"
 
-	FluentdImageEnvVar        = "FLUENTD_IMAGE"
-	LogfilesmetricImageEnvVar = "LOGFILEMETRICEXPORTER_IMAGE"
-	CertEventName             = "cluster-logging-certs-generate"
+	FluentdImageEnvVar            = "FLUENTD_IMAGE"
+	LogfilesmetricImageEnvVar     = "LOGFILEMETRICEXPORTER_IMAGE"
+	CertEventName                 = "cluster-logging-certs-generate"
+	ClusterInfrastructureInstance = "cluster"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

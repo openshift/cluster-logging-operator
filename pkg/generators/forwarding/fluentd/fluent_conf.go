@@ -108,6 +108,29 @@ func (conf *outputLabelConf) Port() string {
 // Protocol returns the insecure protocol name used in fluentd configuration.
 func (conf *outputLabelConf) Protocol() string { return url.PlainScheme(conf.URL.Scheme) }
 
+func (conf *outputLabelConf) LogGroupName() string {
+	if conf.Target.Type == logging.OutputTypeCloudwatch {
+		switch conf.Target.Cloudwatch.GroupBy {
+		case logging.LogGroupByNamespaceName:
+			return "${record['kubernetes']['namespace_name']}"
+		case logging.LogGroupByNamespaceUUID:
+			return "${record['kubernetes']['namespace_id']}"
+		default:
+			return logging.InputNameApplication
+		}
+	}
+	return ""
+}
+func (conf *outputLabelConf) LogGroupPrefix() string {
+	if conf.Target.Type == logging.OutputTypeCloudwatch {
+		prefix := conf.Target.Cloudwatch.GroupPrefix
+		if prefix != nil && strings.TrimSpace(*prefix) != "" {
+			return fmt.Sprintf("%s.", *prefix)
+		}
+	}
+	return ""
+}
+
 func (conf *outputLabelConf) BufferPath() string {
 	return fmt.Sprintf("/var/lib/fluentd/%s", conf.StoreID())
 }

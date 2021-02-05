@@ -58,7 +58,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -73,7 +73,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -124,7 +124,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -177,7 +177,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -199,7 +199,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 				},
 			}
 
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
 			Expect(results[0]).To(EqualTrimLines(kafkaConf))
@@ -219,7 +219,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 					},
 				},
 			}
-			_, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			_, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).Should(HaveOccurred())
 		})
 
@@ -231,7 +231,7 @@ var _ = Describe("Generating external kafka server output store config block", f
 					URL:  "not-a-valid-URL",
 				},
 			}
-			_, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			_, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).Should(HaveOccurred())
 		})
 	})

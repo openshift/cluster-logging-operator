@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
-	testrt "github.com/openshift/cluster-logging-operator/test/runtime"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -33,18 +33,19 @@ func (w *watcher) Stop() { w.Interface.Stop(); w.cancel() }
 
 // Watch for changes in namespace to objects with the given GroupVersionResource,
 // apply the given list options to the watch.
-func (c *Client) Watch(namespace string, gvr schema.GroupVersionResource, opts metav1.ListOptions) (watch.Interface, error) {
+func (c *Client) Watch(gvr schema.GroupVersionResource, opts ...ListOption) (w watch.Interface, err error) {
 	restClient, err := c.rest(gvr.GroupVersion())
 	if err != nil {
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
-	opts.Watch = true
-	w, err := restClient.Get().
+	listOpts := ListOptions{Raw: &metav1.ListOptions{Watch: true}}
+	listOpts.ApplyOptions(opts)
+	w, err = restClient.Get().
 		Timeout(c.timeout).
-		Namespace(namespace).
+		NamespaceIfScoped(listOpts.Namespace, listOpts.Namespace != "").
 		Resource(gvr.Resource).
-		VersionedParams(&opts, scheme.ParameterCodec).
+		VersionedParams(listOpts.AsListOptions(), scheme.ParameterCodec).
 		Watch(ctx)
 	if err != nil {
 		cancel()
@@ -53,17 +54,23 @@ func (c *Client) Watch(namespace string, gvr schema.GroupVersionResource, opts m
 	return &watcher{Interface: w, cancel: cancel}, nil
 }
 
-// WatchObject returns a watch for changes to a single named object.
-// Note: it is not an error if no such object exists, the watcher will wait for creation.
-func (c *Client) WatchObject(o runtime.Object) (w watch.Interface, err error) {
-	gvr, err := c.GetGroupVersionResource(o)
+// WatchTypeOf returns a watch using the GroupVersionResource of object o.
+func (c *Client) WatchTypeOf(o runtime.Object, opts ...ListOption) (w watch.Interface, err error) {
+	gvr, err := c.GroupVersionResource(o)
 	if err != nil {
 		return nil, err
 	}
-	m := runtime.Meta(o)
-	opts := metav1.ListOptions{FieldSelector: "metadata.name=" + m.GetName()}
-	w, err = c.Watch(m.GetNamespace(), gvr, opts)
-	return w, err
+	return c.Watch(gvr, opts...)
+}
+
+// WatchObject returns a watch for changes to a single named object.
+// Note: it is not an error if no such object exists, the watcher will wait for creation.
+func (c *Client) WatchObject(o runtime.Object) (w watch.Interface, err error) {
+	mo := runtime.Meta(o)
+	return c.WatchTypeOf(o,
+		InNamespace(mo.GetNamespace()),
+		MatchingFields{"metadata.name": mo.GetName()},
+	)
 }
 
 // Condition returns true if an event meets the condition, error if something goes wrong.
@@ -76,39 +83,27 @@ func funcName(f interface{}) string {
 	return name[i+1:]
 }
 
-// WaitFor watches o until condition() returns true or error, or c.Timeout expires.
-// o is updated (replaced) by the latest state.
-func (c *Client) WaitFor(o runtime.Object, condition Condition) (err error) {
-	defer logBeginEnd(fmt.Sprintf("WaitFor(%v)", funcName(condition)), o, &err,
-		"resourceVersion", testrt.Meta(o).GetResourceVersion())()
+func (c *Client) waitFor(o runtime.Object, condition Condition, w watch.Interface, msg string) (err error) {
+	defer logBeginEnd(msg, o, &err)()
 	start := time.Now()
-	w, err := c.WatchObject(o)
-	if err != nil {
-		return err
-	}
 	defer w.Stop()
-	// Watch won't fail if the object doesn't exist, make sure it does or we'll wait forever.
-	if err = c.get(o); err != nil {
-		return err
-	}
 	for {
 		select {
 		case e, ok := <-w.ResultChan():
 			if !ok {
-				return ErrWatchClosed
+				return fmt.Errorf("%w: %v: %v", ErrWatchClosed, msg, runtime.ID(o))
 			}
-			trace.Info("Client.WaitFor event",
-				"object", runtime.ID(o),
-				"resourceVersion", testrt.Meta(o).GetResourceVersion(),
-				"event", e.Type,
-				"delay", time.Since(start),
+			log.V(3).Info("event: "+msg,
+				"object", runtime.ID(e.Object),
+				"type", e.Type,
+				"elapsed", time.Since(start).String(),
 			)
 			start = time.Now()
 			// Copy payload of event to the original object so it is up-to-date.
-			if rhs := reflect.Indirect(reflect.ValueOf(e.Object)); rhs.IsValid() {
-				if lhs := reflect.Indirect(reflect.ValueOf(o)); lhs.IsValid() {
-					lhs.Set(rhs)
-				}
+			rhs := reflect.Indirect(reflect.ValueOf(e.Object))
+			lhs := reflect.Indirect(reflect.ValueOf(o))
+			if rhs.IsValid() && lhs.IsValid() && rhs.Type().AssignableTo(lhs.Type()) {
+				lhs.Set(rhs)
 			}
 			if ok, err := condition(e); ok {
 				return nil
@@ -119,4 +114,30 @@ func (c *Client) WaitFor(o runtime.Object, condition Condition) (err error) {
 			return ErrTimeout
 		}
 	}
+}
+
+// WaitFor watches o until condition() returns true or error, or c.Timeout expires.
+// It is not an error if o does not exist, it will be waited for.
+// o is updated from the last object seen by the watch.
+func (c *Client) WaitFor(o runtime.Object, condition Condition) (err error) {
+	w, err := c.WatchObject(o)
+	if err != nil {
+		return err
+	}
+	defer w.Stop()
+	msg := fmt.Sprintf("WaitFor(%v)", funcName(condition))
+	return c.waitFor(o, condition, w, msg)
+}
+
+// WaitForType watches for events involving objects of the same type as o,
+// until condition() returns true or error, or c.Timeout expires.
+// o is updated from the last object seen by the watch.
+func (c *Client) WaitForType(o runtime.Object, condition Condition, opts ...ListOption) (err error) {
+	w, err := c.WatchTypeOf(o, opts...)
+	if err != nil {
+		return err
+	}
+	defer w.Stop()
+	msg := fmt.Sprintf("WaitForTypeOf(%v, %#v)", funcName(condition), opts)
+	return c.waitFor(o, condition, w, msg)
 }

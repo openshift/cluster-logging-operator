@@ -226,8 +226,7 @@ func (tc *E2ETestFramework) createKafkaConsumers(rcv *kafkaReceiver) error {
 			return err
 		}
 	}
-
-	return err
+	return nil
 }
 
 func (tc *E2ETestFramework) createKafkaBrokerStatefulSet() (*apps.StatefulSet, error) {

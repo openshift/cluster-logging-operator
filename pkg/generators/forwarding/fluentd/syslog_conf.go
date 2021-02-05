@@ -76,6 +76,10 @@ func (conf *outputLabelConf) PayloadKey() string {
 	return conf.Target.Syslog.PayloadKey
 }
 
+func (conf *outputLabelConf) AddLogSource() bool {
+	return conf.Target.Syslog.AddLogSource
+}
+
 func (conf *outputLabelConf) AppName() string {
 	appname := conf.Target.Syslog.AppName
 	if appname == "" {

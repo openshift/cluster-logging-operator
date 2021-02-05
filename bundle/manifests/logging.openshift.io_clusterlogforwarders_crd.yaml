@@ -138,6 +138,7 @@ spec:
                       - fluentdForward
                       - elasticsearch
                       - kafka
+                      - cloudwatch
                       type: string
                     url:
                       description: "URL to send log messages to. \n Must be an absolute URL, with a scheme. Valid URL schemes depend on `type`. Special schemes 'tcp', 'tls', 'udp' and 'udps are used for output types that don't define their own URL scheme.  Example: \n     { type: syslog, url: udps://syslog.example.com:1234 } \n TLS with server authentication is enabled by the URL scheme, for example 'tls' or 'https'.  See `secret` for TLS client authentication. \n This field is optional and can be empty if there is an output-type field with alternative connection information."

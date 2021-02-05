@@ -156,6 +156,26 @@ spec:
                 items:
                   description: Output defines a destination for log messages.
                   properties:
+                    cloudwatch:
+                      description: Cloudwatch provides configuration for the output
+                        type `cloudwatch`
+                      properties:
+                        groupBy:
+                          description: GroupBy defines the strategy for grouping logstreams
+                          enum:
+                          - logType
+                          - namespaceName
+                          - namespaceUUID
+                          type: string
+                        groupPrefix:
+                          description: GroupPrefix Add this prefix to all group names.  Useful
+                            to avoid group name clashes if an AWS account is used
+                            for multiple clusters and  used verbatim (e.g. "" means
+                            no prefix)  The default prefix is cluster-name/log-type
+                          type: string
+                        region:
+                          type: string
+                      type: object
                     elasticsearch:
                       properties:
                         structuredTypeKey:
@@ -272,6 +292,7 @@ spec:
                       - fluentdForward
                       - elasticsearch
                       - kafka
+                      - cloudwatch
                       type: string
                     url:
                       description: "URL to send log records to. \n An absolute URL,

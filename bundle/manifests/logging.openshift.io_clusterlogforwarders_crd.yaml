@@ -272,6 +272,7 @@ spec:
                       - fluentdForward
                       - elasticsearch
                       - kafka
+                      - cloudwatch
                       type: string
                     url:
                       description: "URL to send log records to. \n An absolute URL,

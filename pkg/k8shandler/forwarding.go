@@ -1,10 +1,12 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
@@ -12,6 +14,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
@@ -92,8 +95,21 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	return generatedConfig, err
 }
 
+func (clusterRequest *ClusterLoggingRequest) readClusterName() (string, error) {
+	infra := configv1.Infrastructure{}
+	err := clusterRequest.Client.Get(context.Background(), client.ObjectKey{Name: constants.ClusterInfrastructureInstance}, &infra)
+	if err != nil {
+		return "", err
+	}
+
+	return infra.Status.InfrastructureName, nil
+}
+
 // NormalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
 func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
+	if clusterRequest.CLFVerifier.VerifyOutputSecret == nil {
+		clusterRequest.CLFVerifier.VerifyOutputSecret = clusterRequest.verifyOutputSecret
+	}
 
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
@@ -227,6 +243,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 
 		goodIn, msgIn := verifyRefs("inputs", pipeline.InputRefs, inputs)
 		goodOut, msgOut := verifyRefs("outputs", pipeline.OutputRefs, outputs)
+
 		if msgs := append(msgIn, msgOut...); len(msgs) > 0 { // Something wrong
 			msg := strings.Join(msgs, ", ")
 			if len(goodIn) == 0 || len(goodOut) == 0 { // All bad, disabled
@@ -299,9 +316,21 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
 		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
 			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
+		case !clusterRequest.CLFVerifier.VerifyOutputSecret(&output, status.Outputs):
+			break
 		default:
 			status.Outputs.Set(output.Name, condReady)
 			spec.Outputs = append(spec.Outputs, output)
+		}
+		if output.Type == logging.OutputTypeCloudwatch {
+			if output.Cloudwatch != nil && output.Cloudwatch.GroupPrefix == nil {
+				clusterName, err := clusterRequest.readClusterName()
+				if err != nil {
+					badName("outputprefix is not set and it can't be fetched from the cluster. Error: %s", err.Error())
+				} else {
+					output.Cloudwatch.GroupPrefix = &clusterName
+				}
+			}
 		}
 		names.Insert(output.Name)
 	}
@@ -336,7 +365,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputURL(output *logging.Out
 	if output.URL == "" {
 		// Some output types (currently just kafka) allow a missing URL
 		// TODO (alanconway) move output-specific valiation to the output implementation.
-		if output.Type == "kafka" {
+		if output.Type == logging.OutputTypeKafka || output.Type == logging.OutputTypeCloudwatch {
 			return true
 		} else {
 			return fail(condInvalid("URL is required for output type %v", output.Type))
@@ -369,6 +398,22 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.
 	if err != nil {
 		return fail(condMissing("secret %q not found", output.Secret.Name))
 	}
+	verifySecret := verifySecretKeysForTLS
+	if output.Type == logging.OutputTypeCloudwatch {
+		verifySecret = verifySecretKeysForCloudwatch
+	}
+	if !verifySecret(output, conds, secret) {
+		return false
+	}
+	clusterRequest.OutputSecrets[output.Name] = secret
+	return true
+}
+
+func verifySecretKeysForTLS(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool {
+	fail := func(c status.Condition) bool {
+		conds.Set(output.Name, c)
+		return false
+	}
 	// Make sure we have secrets for a valid TLS configuration.
 	haveCert := len(secret.Data[constants.ClientCertKey]) > 0
 	haveKey := len(secret.Data[constants.ClientPrivateKey]) > 0
@@ -384,6 +429,19 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.
 	case !haveUsername && havePassword:
 		return fail(condMissing("cannot have %v without %v", constants.ClientPassword, constants.ClientUsername))
 	}
-	clusterRequest.OutputSecrets[output.Name] = secret
+	return true
+}
+func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool {
+	log.V(3).Info("V")
+	fail := func(c status.Condition) bool {
+		conds.Set(output.Name, c)
+		return false
+	}
+	hasID := len(secret.Data[constants.AWSAccessKeyID]) > 0
+	hasKey := len(secret.Data[constants.AWSSecretAccessKey]) > 0
+	missingMessage := "aws_access_key_id and aws_secret_access_key are required"
+	if !hasID || !hasKey {
+		return fail(condMissing(missingMessage))
+	}
 	return true
 }

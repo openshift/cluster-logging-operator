@@ -2,6 +2,7 @@ package v1
 
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
 const (
+	OutputTypeCloudwatch     = "cloudwatch"
 	OutputTypeElasticsearch  = "elasticsearch"
 	OutputTypeFluentdForward = "fluentdForward"
 	OutputTypeSyslog         = "syslog"
@@ -22,7 +23,43 @@ type OutputTypeSpec struct {
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 	// +optional
 	Kafka *Kafka `json:"kafka,omitempty"`
+	// +optional
+	Cloudwatch *Cloudwatch `json:"cloudwatch,omitempty"`
 }
+
+// Cloudwatch provides configuration for the output type `cloudwatch`
+type Cloudwatch struct {
+	// +required
+	Region string `json:"region,omitempty"`
+
+	//GroupBy defines the strategy for grouping logstreams
+	// +required
+	//+kubebuilder:validation:Enum:=logType;namespaceName;namespaceUUID
+	GroupBy LogGroupByType `json:"groupBy,omitempty"`
+
+	//GroupPrefix Add this prefix to all group names.
+	//  Useful to avoid group name clashes if an AWS account is used for multiple clusters and
+	//  used verbatim (e.g. "" means no prefix)
+	//  The default prefix is cluster-name/log-type
+	// +optional
+	GroupPrefix *string `json:"groupPrefix,omitempty"`
+}
+
+// LogGroupByType defines a fixed strategy type
+type LogGroupByType string
+
+const (
+	//LogGroupByLogType is the strategy to group logs by source(e.g. app, infra)
+	LogGroupByLogType LogGroupByType = "logType"
+
+	// LogGroupByNamespaceName is the strategy to use for grouping logs by namespace. Infrastructure and
+	// audit logs are always grouped by "logType"
+	LogGroupByNamespaceName LogGroupByType = "namespaceName"
+
+	// LogGroupByNamespaceUUID  is the strategy to use for grouping logs by namespace UUID. Infrastructure and
+	// audit logs are always grouped by "logType"
+	LogGroupByNamespaceUUID LogGroupByType = "namespaceUUID"
+)
 
 // Syslog provides optional extra properties for output type `syslog`
 type Syslog struct {

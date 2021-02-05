@@ -169,6 +169,19 @@ spec:
       - serviceAccountName: cluster-logging-operator
         rules:
         - apiGroups:
+          - cloudcredential.openshift.io
+          resources:
+          - credentialsrequests
+          verbs:
+          - '*'
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - subscriptions
+          - clusterserviceversions
+          verbs:
+          - "*"
+        - apiGroups:
           - logging.openshift.io
           resources:
           - "*"
@@ -177,6 +190,7 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - namespaces
           - pods
           - services
           - endpoints
@@ -244,6 +258,21 @@ spec:
       clusterPermissions:
       - serviceAccountName: cluster-logging-operator
         rules:
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - infrastructures
+          verbs:
+          - list
+          - get
+          - watch
+        - apiGroups:
+          - "logging.openshift.io"
+          resources:
+          - clusterlogforwarders
+          - clusterlogforwarders/status
+          verbs:
+          - '*'
         - apiGroups:
           - console.openshift.io
           resources:

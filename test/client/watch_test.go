@@ -1,6 +1,8 @@
 package client_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -17,7 +19,7 @@ var _ = Describe("Watch", func() {
 	BeforeEach(func() { t = NewTest() })
 	AfterEach(func() { t.Close() })
 
-	It("ForObject watches resources", func() {
+	It("WatchObject watches resources", func() {
 		o := runtime.NewConfigMap(t.NS.Name, "test", map[string]string{"a": "b"})
 		w, err := t.WatchObject(o)
 		ExpectOK(err)
@@ -66,6 +68,6 @@ var _ = Describe("Watch", func() {
 	})
 
 	It("times out waiting for non-existent pod", func() {
-		Expect(t.WithTimeout(test.FailureTimeout()).WaitFor(runtime.NewPod(t.NS.Name, "no-such-pod"), PodRunning)).To(HaveOccurred())
+		Expect(t.WithTimeout(time.Second/10).WaitFor(runtime.NewPod(t.NS.Name, "no-such-pod"), PodRunning)).To(HaveOccurred())
 	})
 })

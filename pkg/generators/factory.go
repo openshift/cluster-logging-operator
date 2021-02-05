@@ -3,6 +3,7 @@ package generators
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"text/template"
 )
 
@@ -18,7 +19,13 @@ func New(name string, addFunctions *template.FuncMap, templates ...string) (*Gen
 	for i, s := range templates {
 		tmpl, err = tmpl.Parse(s)
 		if err != nil {
-			return nil, fmt.Errorf("Error parsing %q template %v: %s", name, i, err)
+			// Include the first line containing the template name in the error message.
+			templateName := "unknown"
+			lines := strings.SplitN(s, "\n", 2)
+			if len(lines) > 0 {
+				templateName = lines[0]
+			}
+			return nil, fmt.Errorf("Error parsing %v template %v %q: %s", name, i, templateName, err)
 		}
 	}
 	return &Generator{tmpl}, nil

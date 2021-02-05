@@ -20,11 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-var (
-	debug = log.V(7) // Log at debug verbosity.
-	trace = log.V(8) // Lower priority, more verbose.
-)
-
 // Client operates on any runtime.Object (core or custom) and has Watch to wait efficiently.
 type Client struct {
 	c       crclient.Client
@@ -81,22 +76,16 @@ func logKeyId(v interface{}) (key, id string) {
 
 func logBeginEnd(op string, v interface{}, errp *error, kv ...interface{}) func() {
 	key, id := logKeyId(v)
-	kv = append([]interface{}{key, id}, kv...)
-	trace.Info("Client."+op+" call", kv...)
-	start := time.Now()
-	return func() {
-		kv := append(kv, "delay", time.Since(start))
-		if errp != nil && *errp != nil {
-			debug.Error(*errp, "Client."+op+" error", kv...)
-		} else {
-			debug.Info("Client."+op+" ok", kv...)
-		}
-	}
+	return test.LogBeginEnd(log.GetLogger(), op, errp, append(kv, key, id)...)
 }
 
 // Create the cluster resource described by the struct o.
 func (c *Client) Create(o runtime.Object) (err error) {
 	defer logBeginEnd("Create", o, &err)()
+	return c.create(o)
+}
+
+func (c *Client) create(o runtime.Object) (err error) {
 	for k, v := range c.labels {
 		testrt.Labels(o)[k] = v
 	}
@@ -122,18 +111,24 @@ func (c *Client) get(o runtime.Object) (err error) {
 	return c.c.Get(ctx, nsName, o)
 }
 
-// ListOption alias
+// List options aliased from crclient
 type ListOption = crclient.ListOption
-
-// InNamespace alias
+type ListOptions = crclient.ListOptions
+type MatchingLabels = crclient.MatchingLabels
+type HasLabels = crclient.HasLabels
+type MatchingLabelsSelector = crclient.MatchingLabelsSelector
+type MatchingFields = crclient.MatchingFields
+type MatchingFieldsSelector = crclient.MatchingFieldsSelector
 type InNamespace = crclient.InNamespace
+type Limit = crclient.Limit
+type Continue = crclient.Continue
 
 // List resources, return results in o, which must be an xxxList struct.
-func (c *Client) List(o runtime.Object, opts ...ListOption) (err error) {
-	defer logBeginEnd("List", o, &err)()
+func (c *Client) List(list runtime.Object, opts ...ListOption) (err error) {
+	defer logBeginEnd("List", list, &err)()
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
-	return c.c.List(ctx, o, opts...)
+	return c.c.List(ctx, list, opts...)
 }
 
 // Update the state of resource with name, namespace and type of o using the state in o.
@@ -147,17 +142,22 @@ func (c *Client) Update(o runtime.Object) (err error) {
 // Delete the of resource with name, namespace and type of o.
 func (c *Client) Delete(o runtime.Object) (err error) {
 	defer logBeginEnd("Delete", o, &err)()
+	return c.delete(o)
+}
+
+func (c *Client) delete(o runtime.Object) (err error) {
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
 	return c.c.Delete(ctx, o)
 }
 
 // Remove is like Delete but ignores NotFound errors.
-func (c *Client) Remove(o runtime.Object) error {
-	// No logBeginEnd, Delete logs for itself.
-	return crclient.IgnoreNotFound(c.Delete(o))
+func (c *Client) Remove(o runtime.Object) (err error) {
+	defer logBeginEnd("Remove", o, &err)()
+	return crclient.IgnoreNotFound(c.delete(o))
 }
 
+// Deleted is a condition for Client.WaitFor true when the event is of type Deleted.
 func Deleted(e watch.Event) (bool, error) {
 	if e.Type == watch.Deleted {
 		return true, nil
@@ -165,15 +165,15 @@ func Deleted(e watch.Event) (bool, error) {
 	return false, nil
 }
 
-// Recreate creates o, removing any existing object of the same name and type.
+// Recreate creates o after removing any existing object of the same name and type.
 func (c *Client) Recreate(o runtime.Object) (err error) {
 	defer logBeginEnd("Recreate", o, &err)()
-	if err := c.Remove(o); err != nil {
+	if err := crclient.IgnoreNotFound(c.delete(o)); err != nil {
 		return err
 	}
 	// Clear resource version so we can re-create, even if o was used before.
 	testrt.Meta(o).SetResourceVersion("")
-	err = c.Create(o)
+	err = c.create(o)
 	switch {
 	case err == nil:
 		return nil
@@ -188,6 +188,22 @@ func (c *Client) Recreate(o runtime.Object) (err error) {
 	}
 }
 
+// IgnoreNotFound returns nil on NotFound errors, other values returned unmodified.
+func IgnoreNotFound(err error) error {
+	if errors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
+// IgnoreAlreadyExists returns nil on AlreadyExists errors, other values returned unmodified.
+func IgnoreAlreadyExists(err error) error {
+	if errors.IsAlreadyExists(err) {
+		return nil
+	}
+	return err
+}
+
 func (c *Client) rest(gv schema.GroupVersion) (rest.Interface, error) {
 	var err error
 	if c.rests[gv] == nil {
@@ -196,8 +212,8 @@ func (c *Client) rest(gv schema.GroupVersion) (rest.Interface, error) {
 	return c.rests[gv], err
 }
 
-// GetGroupVersionResource uses the Client's RESTMapping to find the resource name for o.
-func (c *Client) GetGroupVersionResource(o runtime.Object) (schema.GroupVersionResource, error) {
+// GroupVersionResource uses the Client's RESTMapping to find the resource name for o.
+func (c *Client) GroupVersionResource(o runtime.Object) (schema.GroupVersionResource, error) {
 	m, err := c.mapper.RESTMapping(testrt.GroupVersionKind(o).GroupKind())
 	if err != nil {
 		return schema.GroupVersionResource{}, err

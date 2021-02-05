@@ -55,51 +55,39 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 		framework.Cleanup()
 	})
 
-	It("Should parse EventRouter `ADDED` message and check values", func() {
-		podRef, err := reference.GetReference(scheme.Scheme, pod)
-		Expect(err).To(BeNil())
-		newEvent := types.NewMockEvent(podRef, corev1.EventTypeNormal,"reason","message")
-		newEventData := types.EventData{Verb: "ADDED", Event: newEvent}
-		jsonBytes, _ := json.Marshal(newEventData)
-		jsonStr := string(jsonBytes)
-		msg := strings.ReplaceAll(fmt.Sprintf("%s stdout F %s", timestamp, jsonStr), "\"", "\\\"")
-		err = framework.WriteMessagesToApplicationLog(msg, 1)
-		Expect(err).To(BeNil())
+	for _, verb := range []string{"ADDED","UPDATED"} {
+		It(fmt.Sprintf("Should parse EventRouter %s message and check values", verb), func() {
+			podRef, err := reference.GetReference(scheme.Scheme, pod)
+			Expect(err).To(BeNil())
+			newEventData := NewEventDataBuilder(verb, podRef)
+			jsonBytes, _ := json.Marshal(newEventData)
+			jsonStr := string(jsonBytes)
+			msg := strings.ReplaceAll(fmt.Sprintf("%s stdout F %s", timestamp, jsonStr), "\"", "\\\"")
+			err = framework.WriteMessagesToApplicationLog(msg, 1)
+			Expect(err).To(BeNil())
 
-		raw, err := framework.ReadApplicationLogsFrom("fluentforward")
-		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		var logs []types.EventRouterLog
-		err = types.StrictlyParseLogs(raw, &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
-		outputTestLog := logs[0]
+			raw, err := framework.ReadApplicationLogsFrom("fluentforward")
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			var logs []types.EventRouterLog
+			err = types.StrictlyParseLogs(raw, &logs)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
+			outputTestLog := logs[0]
 
-		Expect(outputTestLog).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
-	})
-
-	It("Should parse EventRouter `UPDATED` message and check values", func() {
-		podRef, err := reference.GetReference(scheme.Scheme, pod)
-		Expect(err).To(BeNil())
-		newEvent := types.NewMockEvent(podRef, corev1.EventTypeNormal,"reason","message")
-		oldEvent := types.NewMockEvent(podRef, corev1.EventTypeWarning,"old_reason", "old_message")
-		newEventData := types.EventData{Verb: "UPDATED", Event: newEvent, OldEvent: oldEvent}
-		jsonBytes, _ := json.Marshal(newEventData)
-		jsonStr := string(jsonBytes)
-		msg := strings.ReplaceAll(fmt.Sprintf("%s stdout F %s", timestamp, jsonStr), "\"", "\\\"")
-		err = framework.WriteMessagesToApplicationLog(msg, 1)
-		Expect(err).To(BeNil())
-
-		raw, err := framework.ReadApplicationLogsFrom("fluentforward")
-		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		var logs []types.EventRouterLog
-		err = types.StrictlyParseLogs(raw, &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
-		outputTestLog := logs[0]
-
-		Expect(outputTestLog).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
-	})
+			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
+		})
+	}
 })
+
+func NewEventDataBuilder(verb string, podRef *corev1.ObjectReference) types.EventData {
+	newEvent := types.NewMockEvent(podRef, corev1.EventTypeNormal, "reason", "message")
+	if verb == "UPDATED" {
+		oldEvent := types.NewMockEvent(podRef, corev1.EventTypeWarning,"old_reason", "old_message")
+		return types.EventData{Verb: "UPDATED", Event: newEvent, OldEvent: oldEvent}
+	} else {
+		return types.EventData{Verb: "ADDED", Event: newEvent}
+	}
+}
 
 func ExpectedLogTemplateBuilder(message string, timestamp time.Time) types.EventRouterLog {
 	return types.EventRouterLog{

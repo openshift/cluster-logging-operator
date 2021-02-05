@@ -2,12 +2,15 @@ package fluentd
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"text/template"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/url"
 )
 
@@ -23,10 +26,11 @@ type outputLabelConf struct {
 	hints           sets.String
 	storeTemplate   string
 	URL             *url.URL
+	Secret          *corev1.Secret
 }
 
-func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, config *logging.ForwarderSpec, fluentTags ...string) (*outputLabelConf, error) {
-	u, err := url.ParseAbsoluteOrEmpty(target.URL)
+func newOutputLabelConf(t *template.Template, storeTemplate string, target logging.OutputSpec, secret *corev1.Secret, config *logging.ForwarderSpec, fluentTags ...string) (*outputLabelConf, error) {
+	u, err := url.Parse(target.URL)
 	if err != nil {
 		return nil, fmt.Errorf("url field: %v", err)
 	}
@@ -41,6 +45,7 @@ func newOutputLabelConf(t *template.Template, storeTemplate string, target loggi
 		fluentTags:      sets.NewString(fluentTags...),
 		storeTemplate:   storeTemplate,
 		URL:             u,
+		Secret:          secret,
 	}, nil
 }
 
@@ -66,24 +71,38 @@ func (conf *outputLabelConf) Port() string {
 	return p
 }
 
-// Protocol returns the insecure base protocol name used in fluentd configuration.
-func (conf *outputLabelConf) Protocol() string {
-	protocol := strings.ToLower(conf.URL.Scheme)
-	switch protocol {
-	case "tls":
-		return "tcp" // Fluentd uses "tcp" for TLS connections, TLS is dealt with elsewhere.
-	case "udps":
-		return "udp"
-	default:
-		return protocol
-	}
-}
+// Protocol returns the insecure protocol name used in fluentd configuration.
+func (conf *outputLabelConf) Protocol() string { return url.PlainScheme(conf.URL.Scheme) }
 
 func (conf *outputLabelConf) BufferPath() string {
 	return fmt.Sprintf("/var/lib/fluentd/%s", conf.StoreID())
 }
+
+func (conf *outputLabelConf) IsTLS() bool {
+	return url.IsTLSScheme(conf.URL.Scheme) || conf.Secret != nil
+}
+
 func (conf *outputLabelConf) SecretPath(file string) string {
-	return fmt.Sprintf("/var/run/ocp-collector/secrets/%s/%s", conf.Target.Secret.Name, file)
+	if conf.Target.Secret != nil {
+		return filepath.Join(constants.CollectorSecretsDir, conf.Target.Secret.Name, file)
+	}
+	return ""
+}
+
+func (conf *outputLabelConf) SecretPathIfFound(file string) string {
+	if conf.Secret != nil {
+		if _, ok := conf.Secret.Data[file]; ok {
+			return conf.SecretPath(file)
+		}
+	}
+	return ""
+}
+
+func (conf *outputLabelConf) GetSecret(key string) string {
+	if conf.Secret != nil {
+		return string(conf.Secret.Data[key])
+	}
+	return ""
 }
 
 func (conf *outputLabelConf) LabelName() string {

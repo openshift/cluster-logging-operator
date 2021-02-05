@@ -1,120 +1,66 @@
 package fluent_test
 
 import (
-	"context"
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
-	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const message = "My life is my message"
 
-var (
-	// Create/delete clusterlogging instance around entire suite.
-	cl = runtime.NewClusterLogging()
-	_  = BeforeSuite(func() { ExpectOK(client.Get().Recreate(cl)) })
-	_  = AfterSuite(func() { _ = client.Get().Remove(cl) })
-)
-
-// Extend client.Test for tests using logGenerator and receiver.
-type Test struct {
-	*client.Test
-	receiver     *fluentd.Receiver
-	logGenerator *corev1.Pod
-	group        test.FailGroup // Run cluster operations in parallel
-}
-
-func (t *Test) ReaderForSource(name string) *cmd.Reader {
-	return t.receiver.Sources[name].TailReader()
-}
-
-func NewTest(message string) *Test {
-	ct := client.NewTest()
-	t := &Test{
-		Test:         ct,
-		receiver:     fluentd.NewReceiver(ct.NS.Name, "receiver"),
-		logGenerator: runtime.NewLogGenerator(ct.NS.Name, "log-generator", 10000, 0, message),
-	}
-	t.group.Go(func() { ExpectOK(t.Create(t.logGenerator)) })
-	return t
-}
-
-func (t *Test) Close() {
-	defer t.Test.Close()
-	t.group.Wait()
-}
-
 var _ = Describe("[ClusterLogForwarder]", func() {
-	var t *Test
-	BeforeEach(func() { t = NewTest(message) })
-	AfterEach(func() { t.Close() })
+	var (
+		c *client.Test
+		f *Fixture
+	)
+	BeforeEach(func() { c = client.NewTest(); f = NewFixture(c.NS.Name, message) })
+	AfterEach(func() { c.Close() })
 
 	Context("with app/infra/audit receiver", func() {
 		BeforeEach(func() {
-			t.receiver.AddSource(&fluentd.Source{Name: "application", Type: "forward", Port: 24224})
-			t.receiver.AddSource(&fluentd.Source{Name: "infrastructure", Type: "forward", Port: 24225})
-			t.receiver.AddSource(&fluentd.Source{Name: "audit", Type: "forward", Port: 24226})
-			t.group.Go(func() { ExpectOK(t.receiver.Create(t.Client)) })
+			f.Receiver.AddSource(&fluentd.Source{Name: "application", Type: "forward", Port: 24224})
+			f.Receiver.AddSource(&fluentd.Source{Name: "infrastructure", Type: "forward", Port: 24225})
+			f.Receiver.AddSource(&fluentd.Source{Name: "audit", Type: "forward", Port: 24226})
 		})
 
 		It("forwards application logs only", func() {
-			clf := runtime.NewClusterLogForwarder()
-			addPipeline(clf, t.receiver.Sources["application"])
-			t.group.Go(func() { ExpectOK(t.Recreate(clf)) })
-			// Use ctx to let empty checks run until we get the expected lines.
-			ctx, cancel := context.WithCancel(context.Background())
-			t.group.Go(func() {
-				defer cancel() // Cancel goroutines verifying empty when we get our logs.
-				r := t.ReaderForSource("application")
-				ExpectOK(r.ExpectLines(10, message, `{"viaq_index_name":"(inf|aud)`))
-			})
-			t.group.Go(func() { ExpectOK(t.ReaderForSource("infrastructure").ExpectEmpty(ctx)) })
-			t.group.Go(func() { ExpectOK(t.ReaderForSource("audit").ExpectEmpty(ctx)) })
+			clf := f.ClusterLogForwarder
+			addPipeline(clf, f.Receiver.Sources["application"])
+			f.Create(c.Client)
+			r := f.Receiver.Sources["application"].TailReader()
+			for i := 0; i < 10; {
+				l, err := r.ReadLine()
+				ExpectOK(err)
+				Expect(l).To(ContainSubstring(`"viaq_index_name":"app`)) // Only app logs
+				if strings.Contains(l, message) {
+					i++ // Count our own app messages, ignore others.
+				}
+			}
+			for _, name := range []string{"infrastructure", "audit"} {
+				Expect(f.Receiver.Sources[name].HasOutput()).To(BeFalse())
+			}
 		})
 
 		It("forwards infrastructure logs only", func() {
-			clf := runtime.NewClusterLogForwarder()
-			addPipeline(clf, t.receiver.Sources["infrastructure"])
-			t.group.Go(func() { ExpectOK(t.Recreate(clf)) })
-			// Use ctx to let empty checks run until we get the expected lines.
-			ctx, cancel := context.WithCancel(context.Background())
-			t.group.Go(func() {
-				defer cancel()
-				r := t.ReaderForSource("infrastructure")
-				ExpectOK(r.ExpectLines(10, "", `{"viaq_index_name":"(app|aud)`))
-			})
-			t.group.Go(func() { ExpectOK(t.ReaderForSource("application").ExpectEmpty(ctx)) })
-			t.group.Go(func() { ExpectOK(t.ReaderForSource("audit").ExpectEmpty(ctx)) })
-		})
-
-		It("forwards audit logs only", func() {
-			clf := runtime.NewClusterLogForwarder()
-			addPipeline(clf, t.receiver.Sources["audit"])
-			// Do everything in parallel - by eventual consistency the test will pass.
-			t.group.Go(func() { ExpectOK(t.Recreate(clf)) })
-			// Use ctx to let empty checks run until we get the expected lines.
-			ctx, cancel := context.WithCancel(context.Background())
-			t.group.Go(func() {
-				defer cancel()
-				r := t.ReaderForSource("audit")
-				ExpectOK(r.ExpectLines(10, "", `{"viaq_index_name":"(inf|app)`))
-			})
-			t.group.Go(func() { ExpectOK(t.ReaderForSource("application").ExpectEmpty(ctx)) })
-			t.group.Go(func() { ExpectOK(t.ReaderForSource("infrastructure").ExpectEmpty(ctx)) })
+			clf := f.ClusterLogForwarder
+			addPipeline(clf, f.Receiver.Sources["infrastructure"])
+			f.Create(c.Client)
+			r := f.Receiver.Sources["infrastructure"].TailReader()
+			l, err := r.ReadLine()
+			ExpectOK(err)
+			Expect(l).To(ContainSubstring(`"viaq_index_name":"inf`)) // Only infra logs
 		})
 
 		It("forwards different types to different outputs with labels", func() {
-			clf := runtime.NewClusterLogForwarder()
+			clf := f.ClusterLogForwarder
 			for _, name := range []string{"application", "infrastructure", "audit"} {
-				s := t.receiver.Sources[name]
+				s := f.Receiver.Sources[name]
 				clf.Spec.Outputs = append(clf.Spec.Outputs, loggingv1.OutputSpec{
 					Name: s.Name,
 					Type: "fluentdForward",
@@ -126,15 +72,11 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 					Labels:     map[string]string{"log-type": s.Name},
 				})
 			}
-
-			// Do everything in parallel - by eventual consistency the test will pass.
-			t.group.Go(func() { ExpectOK(t.Recreate(clf)) })
+			f.Create(c.Client)
 			for _, name := range []string{"application", "infrastructure", "audit"} {
 				name := name // Don't bind to range variable
-				r := t.ReaderForSource(name)
-				t.group.Go(func() {
-					ExpectOK(r.ExpectLines(3, fmt.Sprintf(`"log-type":%q`, name), `"log-type":`))
-				})
+				r := f.Receiver.Sources[name].TailReader()
+				Expect(r.ReadLine()).To(ContainSubstring(fmt.Sprintf(`"log-type":%q`, name)))
 			}
 		})
 	})

@@ -1,21 +1,9 @@
 package matchers
 
 import (
-	"errors"
-	"fmt"
-	"os/exec"
-
 	"github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/test"
 )
-
-// WrapError wraps certain error types with additional information.
-func WrapError(err error) error {
-	exitErr := &exec.ExitError{}
-	if errors.As(err, &exitErr) && len(exitErr.Stderr) != 0 {
-		return fmt.Errorf("%w: %v", err, string(exitErr.Stderr))
-	}
-	return err
-}
 
 // ExpectOK is shorthand for these annoyingly long ginkgo forms:
 //    Expect(err).NotTo(HaveOccured()
@@ -26,5 +14,5 @@ func ExpectOK(err error, description ...interface{}) {
 }
 
 func ExpectOKWithOffset(skip int, err error, description ...interface{}) {
-	gomega.ExpectWithOffset(skip+1, WrapError(err)).To(gomega.Succeed(), description...)
+	gomega.ExpectWithOffset(skip+1, test.WrapError(err)).To(gomega.Succeed(), description...)
 }

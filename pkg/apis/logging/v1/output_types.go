@@ -65,6 +65,12 @@ type Syslog struct {
 	// +optional
 	PayloadKey string `json:"payloadKey,omitempty"`
 
+	// AddLogSource adds log's source information to the log message
+	// If the logs are collected from a process; namespace_name, pod_name, container_name is added to the log
+	//
+	// +optional
+	AddLogSource bool `json:"addLogSource,omitempty"`
+
 	// Rfc specifies the rfc to be used for sending syslog
 	//
 	// Rfc values can be one of:

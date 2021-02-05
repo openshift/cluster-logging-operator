@@ -3,7 +3,6 @@ package fluentd
 
 import (
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -32,8 +31,7 @@ type Receiver struct {
 
 	service *corev1.Service
 	config  strings.Builder
-	done    chan struct{}
-	err     error
+	ready   chan struct{}
 }
 
 // Source represents a fluentd listening port and output file.
@@ -61,17 +59,27 @@ func (s *Source) Host() string { return s.receiver.Host() }
 func (s *Source) OutFile() string { return filepath.Join(dataDir, s.Name) }
 
 // TailReader returns a CmdReader that tails the source's log stream.
+// Will fail if called before Receiver.Create() has returned.
 //
 // It waits for the file to exist, and will tail the output file forever,
 // so it won't normally return io.EOF.
 func (s *Source) TailReader() *cmd.Reader {
-	test.Must(s.receiver.Wait()) // Make sure r.Pod is running before we exec.
 	r, err := cmd.TailReader(s.receiver.Pod, s.OutFile())
 	test.Must(err)
 	return r
 }
 
-// NewReceiver creates a receiver. Use AddSource() to add sources before calling Create().
+// HasOutput returns true if the source's output file exists and is non empty.
+func (s *Source) HasOutput() (bool, error) {
+	script := fmt.Sprintf("if test -s %q; then echo yes; fi", s.OutFile())
+	out, err := runtime.Exec(s.receiver.Pod, "sh", "-c", script).Output()
+	if err != nil {
+		return false, test.WrapError(err)
+	}
+	return len(out) > 0, nil
+}
+
+// NewReceiver returns a receiver with no sources. Use AddSource() before calling Create().
 func NewReceiver(ns, name string) *Receiver {
 	r := &Receiver{
 		Name:      name,
@@ -79,28 +87,26 @@ func NewReceiver(ns, name string) *Receiver {
 		ConfigMap: runtime.NewConfigMap(ns, name, nil),
 		Pod:       runtime.NewPod(ns, name),
 		service:   runtime.NewService(ns, name),
-		done:      make(chan struct{}),
+		ready:     make(chan struct{}),
 	}
 	r.Pod.Spec.RestartPolicy = corev1.RestartPolicyNever // Don't restart if fluentd fails.
 	runtime.Labels(r.Pod)[appName] = name
-	r.Pod.Spec.Containers = []corev1.Container{
-		{
-			Name:  name,
-			Image: "quay.io/openshift/origin-logging-fluentd:latest",
-			Args:  []string{"fluentd", "-c", filepath.Join(configDir, "fluent.conf")},
-			VolumeMounts: []corev1.VolumeMount{
-				{
-					Name:      "config",
-					ReadOnly:  true,
-					MountPath: configDir,
-				},
-				{
-					Name:      "data",
-					MountPath: dataDir,
-				},
+	r.Pod.Spec.Containers = []corev1.Container{{
+		Name:  name,
+		Image: "quay.io/openshift/origin-logging-fluentd:latest",
+		Args:  []string{"fluentd", "-c", filepath.Join(configDir, "fluent.conf")},
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      "config",
+				ReadOnly:  true,
+				MountPath: configDir,
+			},
+			{
+				Name:      "data",
+				MountPath: dataDir,
 			},
 		},
-	}
+	}}
 	r.Pod.Spec.Volumes = []corev1.Volume{
 		{
 			Name: "config",
@@ -124,10 +130,6 @@ func NewReceiver(ns, name string) *Receiver {
 	}
 	// Start of fluent config: ignore fluent's internal events
 	r.config.WriteString(`
-<system>
-  log_level trace
-</system>
-
 <label @FLUENT_LOG>
   <match **>
     @type null
@@ -199,7 +201,7 @@ func (s *Source) config() {
 	test.Must(t.Execute(&s.receiver.config, s))
 }
 
-// Create the receiver's resources, wait for pod to be running.
+// Create the receiver's resources. Blocks till created.
 func (r *Receiver) Create(c *client.Client) error {
 	for _, s := range r.Sources {
 		s.config()
@@ -213,25 +215,10 @@ func (r *Receiver) Create(c *client.Client) error {
 		if err := c.Create(r.Pod); err != nil {
 			return err
 		}
-		err := c.WaitFor(r.Pod, client.PodRunning)
-		return err
+		return c.WaitFor(r.Pod, client.PodRunning)
 	})
-	if err := g.Wait(); err != nil {
-		r.err = fmt.Errorf("%w\n%v", err, r.Logs())
-	}
-	close(r.done)
-	return r.err
+	return g.Wait()
 }
-
-func (r *Receiver) Logs() string {
-	ns, name := r.Pod.Namespace, r.Pod.Name
-	cmd := exec.Command("oc", "logs", "-n", ns, name)
-	b, _ := cmd.CombinedOutput()
-	return string(b)
-}
-
-// Wait till r.Pod is running.
-func (r *Receiver) Wait() error { <-r.done; return r.err }
 
 // Host name for the receiver.
 func (r *Receiver) Host() string { return runtime.ServiceDomainName(r.service) }

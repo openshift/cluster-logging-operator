@@ -5,6 +5,7 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding/fluentd"
+	corev1 "k8s.io/api/core/v1"
 )
 
 //NewConfigGenerator create a config generator for a given collector type
@@ -21,5 +22,5 @@ func NewConfigGenerator(collector logging.LogCollectionType, includeLegacyForwar
 type ConfigGenerator interface {
 
 	//Generate the config
-	Generate(clfSpec *logging.ClusterLogForwarderSpec, fwSpec *logging.ForwarderSpec) (string, error)
+	Generate(clfSpec *logging.ClusterLogForwarderSpec, secrets map[string]*corev1.Secret, fwSpec *logging.ForwarderSpec) (string, error)
 }

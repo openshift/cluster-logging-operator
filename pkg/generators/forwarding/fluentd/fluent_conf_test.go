@@ -164,7 +164,7 @@ var _ = Describe("Generating fluentd config", func() {
       </pattern>
       <pattern>
         format regexp
-        expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+        expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
         time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
         keep_time_key true
       </pattern>
@@ -699,7 +699,7 @@ var _ = Describe("Generating fluentd config", func() {
 				</pattern>
 				<pattern>
 					format regexp
-					expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+					expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
 					time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
 					keep_time_key true
 				</pattern>
@@ -1142,7 +1142,7 @@ var _ = Describe("Generating fluentd config", func() {
 				</pattern>
 				<pattern>
 					format regexp
-					expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+					expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
 					time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
 					keep_time_key true
 				</pattern>
@@ -2033,7 +2033,7 @@ var _ = Describe("Generating fluentd config", func() {
         </pattern>
         <pattern>
           format regexp
-          expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+          expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
           time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
           keep_time_key true
         </pattern>

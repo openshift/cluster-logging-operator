@@ -1,7 +1,6 @@
 package functional
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
@@ -11,42 +10,81 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
-const unsecureFluentConf = `
+const (
+	unsecureFluentConf = `
 <system>
-	log_level trace
+  log_level debug
 </system>
 <source>
-	@type forward
+  @type forward
 </source>
+<filter **>
+	@type stdout
+	include_time_key true 
+</filter>
+
+<filter **>
+  @type record_transformer
+  enable_ruby
+  <record>
+    epoc_out ${Time.now.to_f}
+    epoc_in ${Time.parse(record['@timestamp']).to_f}
+    level info
+  </record>
+</filter>
+
 <match kubernetes.**>
+  @type file
+  append true
+  path /tmp/app.logs
+  symlink_path /tmp/app-logs
+  <format>
+    @type json
+  </format>
+</match>
+
+<filter linux-audit.log**>
+  @type parser
+  key_name @timestamp
+  reserve_data true
+  <parse>
+	@type regexp
+	expression (?<time>[^\]]*)
+    time_type string
+	time_key time
+    time_format %Y-%m-%dT%H:%M:%S.%N%z
+  </parse>
+</filter>
+
+<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
 	@type file
+	path /tmp/audit.logs
 	append true
-	path /tmp/app.logs
-	symlink_path /tmp/app-logs
+	symlink_path /tmp/audit-logs
 	<format>
 		@type json
 	</format>
 </match>
+	
 <match **>
-	@type stdout
-</match>
-	`
+  @type stdout
+</match>`
+)
 
 func (f *FluentdFunctionalFramework) addForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
 	log.V(2).Info("Adding forward output", "name", output.Name)
 	name := strings.ToLower(output.Name)
-	configName := fmt.Sprintf("%s-config", name)
-	log.V(2).Info("Creating configmap", "name", configName)
-	config := runtime.NewConfigMap(b.Pod.Namespace, configName, map[string]string{
+	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"fluent.conf": unsecureFluentConf,
 	})
+	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "fluent.conf", unsecureFluentConf)
 	if err := f.test.Client.Create(config); err != nil {
 		return err
 	}
 
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer(name, utils.GetComponentImage(constants.FluentdName)).
-		AddVolumeMount(config.Name, "/tmp/config", "", true).
+		AddVolumeMount(config.Name, "/tmp/config", "", false).
 		WithCmd("fluentd -c /tmp/config/fluent.conf").
 		End().
 		AddConfigMapVolume(config.Name, config.Name)

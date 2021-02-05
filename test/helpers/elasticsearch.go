@@ -12,6 +12,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -172,7 +173,6 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 }
 
 func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
-	clolog.V(3).Info("DeployAnElasticsearchCluster")
 	logStoreName := "test-elastic-cluster"
 	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
 		return nil, nil, err
@@ -185,8 +185,17 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		k8shandler.LoadElasticsearchSecretMap(),
 	)
 	clolog.V(3).Info("Creating secret for an elasticsearch cluster: ", "secret", esSecret.Name)
-	if esSecret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), esSecret, opts); err != nil {
-		return nil, nil, err
+	_, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), esSecret, opts)
+	if err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			sOpts := metav1.UpdateOptions{}
+			_, err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Update(context.TODO(), esSecret, sOpts)
+			if err != nil {
+				return nil, nil, nil
+			}
+		} else {
+			return nil, nil, nil
+		}
 	}
 	pvcSize := resource.MustParse("200G")
 	node := elasticsearch.ElasticsearchNode{

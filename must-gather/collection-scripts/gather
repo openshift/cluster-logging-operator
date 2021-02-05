@@ -36,7 +36,6 @@ done
 
     # Call per component gather scripts
     ./gather_collection_resources "$BASE_COLLECTION_PATH"
-    ./gather_curation_resources "$BASE_COLLECTION_PATH"
     ./gather_logstore_resources "$BASE_COLLECTION_PATH"
     ./gather_visualization_resources "$BASE_COLLECTION_PATH"
 } >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1

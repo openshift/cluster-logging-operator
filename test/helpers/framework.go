@@ -119,7 +119,7 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) er
 		Containers: []corev1.Container{container},
 	}
 	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
-	clolog.Info("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
+	clolog.Info("Deploying LogGenerator to namespace", "deployment name", deployment.Name, "namespace", deployment.Namespace)
 	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, opts)
 	if err != nil {
 		return err
@@ -260,19 +260,28 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 			clolog.Error(err, "Error listing elasticsearch pods")
 			return false, nil
 		}
-		if len(pods.Items) == 0 {
+		numberOfPods := len(pods.Items)
+		if numberOfPods == 0 {
 			clolog.V(2).Info("No elasticsearch pods found ", "pods", pods)
 			return false, nil
 		}
-
+		containersReadyCount := 0
+		containersNotReadyCount := 0
 		for _, pod := range pods.Items {
 			for _, status := range pod.Status.ContainerStatuses {
 				clolog.V(3).Info("Checking status of", "PodName", pod.Name, "ContainerID", status.ContainerID, "status", status.Ready)
-				if !status.Ready {
-					return false, nil
+				if status.Ready {
+					containersReadyCount++
+				} else {
+					containersNotReadyCount++
 				}
 			}
 		}
+		if containersReadyCount == 0 || containersNotReadyCount > 0 {
+			clolog.V(3).Info("elasticsearch containers are not ready", "pods", numberOfPods, "ready containers", containersReadyCount, "not ready containers", containersNotReadyCount)
+			return false, nil
+		}
+
 		return true, nil
 	})
 }
@@ -570,7 +579,7 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 	return oc.Exec().WithNamespace(namespace).Pod(name).Container(container).WithCmd(command[0], command[1:]...).Run()
 }
 
-func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (secret *corev1.Secret, err error) {
+func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {
 	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
 	clolog.V(3).Info("Generating Pipeline certificates for Log Store to working dir", "logStoreName", logStoreName, "workingDir", workingDir)
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
@@ -596,14 +605,23 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 	}
 
 	sOpts := metav1.CreateOptions{}
-	secret = k8shandler.NewSecret(
+	secret := k8shandler.NewSecret(
 		secretName,
 		OpenshiftLoggingNS,
 		data,
 	)
-	clolog.V(3).Info("Creating secret  for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
-	if secret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts); err != nil {
-		return nil, err
+	clolog.V(3).Info("Creating secret for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
+	newSecret, err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts)
+	if err == nil {
+		return newSecret, nil
 	}
-	return secret, nil
+	if errors.IsAlreadyExists(err) {
+		sOpts := metav1.UpdateOptions{}
+		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Update(context.TODO(), secret, sOpts)
+		if err == nil {
+			return updatedSecret, nil
+		}
+	}
+
+	return nil, err
 }

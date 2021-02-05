@@ -28,10 +28,10 @@ var _ = Describe("[Collection] Namespace filtering", func() {
 	appNamespace2 := "application-ns2"
 
 	BeforeEach(func() {
-		if _, err = oc.Literal().From(fmt.Sprintf("oc create ns %s", appNamespace1)).Run(); err != nil {
+		if _, err = oc.Literal().From("oc create ns %s", appNamespace1).Run(); err != nil {
 			Fail("failed to create namespace")
 		}
-		if _, err = oc.Literal().From(fmt.Sprintf("oc create ns %s", appNamespace2)).Run(); err != nil {
+		if _, err = oc.Literal().From("oc create ns %s", appNamespace2).Run(); err != nil {
 			Fail("failed to create namespace")
 		}
 	})
@@ -107,10 +107,10 @@ var _ = Describe("[Collection] Namespace filtering", func() {
 
 	AfterEach(func() {
 		e2e.Cleanup()
-		if _, err = oc.Literal().From(fmt.Sprintf("oc delete ns %s", appNamespace1)).Run(); err != nil {
+		if _, err = oc.Literal().From("oc delete ns %s", appNamespace1).Run(); err != nil {
 			Fail("failed to create namespace")
 		}
-		if _, err = oc.Literal().From(fmt.Sprintf("oc delete ns %s", appNamespace2)).Run(); err != nil {
+		if _, err = oc.Literal().From("oc delete ns %s", appNamespace2).Run(); err != nil {
 			Fail("failed to create namespace")
 		}
 		e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd"})

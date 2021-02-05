@@ -292,7 +292,6 @@ create_signing_conf
 
 generate_certs 'system.logging.fluentd'
 generate_certs 'system.logging.kibana'
-generate_certs 'system.logging.curator'
 generate_certs 'system.admin'
 
 # TODO: get es SAN DNS, IP values from es service names

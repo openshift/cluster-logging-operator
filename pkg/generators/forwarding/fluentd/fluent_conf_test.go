@@ -945,8 +945,6 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
@@ -990,8 +988,6 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
@@ -1038,8 +1034,6 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
@@ -1083,8 +1077,6 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
@@ -1131,8 +1123,6 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
@@ -1176,8 +1166,6 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
@@ -1224,8 +1212,6 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
@@ -1269,8 +1255,6 @@ var _ = Describe("Generating fluentd config", func() {
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
-						user fluentd
-						password changeme
 
 						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
 						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'

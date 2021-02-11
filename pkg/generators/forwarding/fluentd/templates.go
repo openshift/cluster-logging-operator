@@ -594,8 +594,6 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   target_index_key viaq_index_name
   id_key viaq_msg_id
   remove_keys viaq_index_name
-  user fluentd
-  password changeme
 {{- if .Target.Secret }}
   client_key '{{ .SecretPath "tls.key"}}'
   client_cert '{{ .SecretPath "tls.crt"}}'

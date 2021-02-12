@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"os"
 	"reflect"
 	"strconv"
 	"testing"
@@ -9,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
-	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -25,7 +25,7 @@ var _ = Describe("fluentd.go#newFluentdPodSpec", func() {
 		container v1.Container
 	)
 	BeforeEach(func() {
-		podSpec = newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+		podSpec = newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 		container = podSpec.Containers[0]
 	})
 	Describe("when creating of the collector container", func() {
@@ -43,7 +43,7 @@ var _ = Describe("fluentd.go#newFluentdPodSpec", func() {
 func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{}
-	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -79,7 +79,7 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -121,7 +121,7 @@ func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 
 	if !reflect.DeepEqual(podSpec.Tolerations, expectedTolerations) {
 		t.Errorf("Exp. the tolerations to be %v but was %v", expectedTolerations, podSpec.Tolerations)
@@ -144,7 +144,7 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 
 	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, podSpec.NodeSelector)
@@ -176,7 +176,7 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -221,7 +221,7 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -231,40 +231,32 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 
 func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 
+	_httpProxy := os.Getenv("HTTP_PROXY")
+	_httpsProxy := os.Getenv("HTTPS_PROXY")
+	_noProxy := os.Getenv("NO_PROXY")
+	cleanup := func() {
+		_ = os.Setenv("HTTP_PROXY", _httpProxy)
+		_ = os.Setenv("HTTPS_PROXY", _httpsProxy)
+		_ = os.Setenv("NO_PROXY", _noProxy)
+	}
+	defer cleanup()
+
 	cluster := &logging.ClusterLogging{}
 	httpproxy := "http://proxy-user@test.example.com/3128/"
 	noproxy := ".cluster.local,localhost"
+	_ = os.Setenv("HTTP_PROXY", httpproxy)
+	_ = os.Setenv("HTTPS_PROXY", httpproxy)
+	_ = os.Setenv("NO_PROXY", noproxy)
 	caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
-	podSpec := newFluentdPodSpec(cluster,
-		&configv1.Proxy{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Proxy",
-				APIVersion: "config.openshift.io/v1",
-			},
-			Spec: configv1.ProxySpec{
-				HTTPProxy:  httpproxy,
-				HTTPSProxy: httpproxy,
-				TrustedCA: configv1.ConfigMapNameReference{
-					Name: "user-ca-bundle",
-				},
-			},
-			Status: configv1.ProxyStatus{
-				HTTPProxy:  httpproxy,
-				HTTPSProxy: httpproxy,
-				NoProxy:    noproxy,
-			},
+	podSpec := newFluentdPodSpec(cluster, &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "openshift-logging",
+			Name:      constants.FluentdTrustedCAName,
 		},
-		&v1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "openshift-logging",
-				Name:      constants.FluentdTrustedCAName,
-			},
-			Data: map[string]string{
-				constants.TrustedCABundleKey: caBundle,
-			},
+		Data: map[string]string{
+			constants.TrustedCABundleKey: caBundle,
 		},
-		logging.ClusterLogForwarderSpec{},
-	)
+	}, logging.ClusterLogForwarderSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
@@ -299,7 +291,7 @@ func TestFluentdPodInitContainerWithDefaultForwarding(t *testing.T) {
 		Outputs: []logging.OutputSpec{{Name: "default"}},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, nil, nil, spec)
+	podSpec := newFluentdPodSpec(cluster, nil, spec)
 
 	if len(podSpec.InitContainers) == 0 {
 		t.Error("Expected pod to have defined init container")
@@ -325,7 +317,7 @@ func TestFluentdPodInitContainerWithZeroESCount(t *testing.T) {
 		Outputs: []logging.OutputSpec{{Name: "default"}},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, nil, nil, spec)
+	podSpec := newFluentdPodSpec(cluster, nil, spec)
 
 	if len(podSpec.InitContainers) > 0 {
 		t.Error("Expected pod not define init container")
@@ -344,7 +336,7 @@ func TestFluentdPodNoInitContainerWithOutDefaultForwarding(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 	if len(podSpec.InitContainers) > 0 {
 		t.Error("Expected pod to have no init containers")
 	}
@@ -415,7 +407,7 @@ func TestNewFluentdPodWhenChunkLimitSizeExists(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
 
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")

@@ -28,9 +28,10 @@ const (
 	CollectorSecretName = "fluentd"
 
 	// Disable gosec linter, complains "possible hard-coded secret"
-	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
-	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
-	FluentdImageEnvVar      = "FLUENTD_IMAGE"
+	CollectorSecretsDir           = "/var/run/ocp-collector/secrets" //nolint:gosec
+	KibanaSessionSecretName       = "kibana-session-secret"          //nolint:gosec
+	FluentdImageEnvVar            = "FLUENTD_IMAGE"
+	ClusterInfrastructureInstance = "cluster"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

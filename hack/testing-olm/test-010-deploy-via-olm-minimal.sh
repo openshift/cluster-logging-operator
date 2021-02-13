@@ -69,3 +69,16 @@ os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
 assert_resources_exist
 # assert kibana instance exists
 assert_kibana_instance_exists
+
+# delete cluster logging
+os::cmd::expect_success "oc -n $NAMESPACE delete -f ${repo_dir}/hack/cr.yaml"
+
+# deploy cluster logging with unmanaged state
+os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr-unmanaged.yaml"
+
+# wait few seconds
+sleep 10
+# assert does not exist
+assert_resources_does_not_exist
+# assert kibana instance does not exists
+assert_kibana_instance_does_not_exists

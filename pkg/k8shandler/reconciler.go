@@ -21,6 +21,10 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		Cluster: requestCluster,
 	}
 
+	if !clusterLoggingRequest.isManaged() {
+		return nil
+	}
+
 	forwarder := clusterLoggingRequest.getLogForwarder()
 	if forwarder != nil {
 		clusterLoggingRequest.ForwarderRequest = forwarder

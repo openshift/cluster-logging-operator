@@ -86,11 +86,16 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
 		if clusterRequest.Cluster.Spec.LogStore != nil && clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 			log.V(2).Info("ClusterLogForwarder forwarding to default store")
-			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
-				{
+			defaultPipeline := logging.PipelineSpec{
 					InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
 					OutputRefs: []string{logging.OutputNameDefault},
-				},
+				}
+			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{ defaultPipeline }
+			if clusterRequest.includeLegacySyslogConfig() {
+				defaultPipeline.OutputRefs = append(defaultPipeline.OutputRefs,constants.LegacySyslog)
+			}
+			if clusterRequest.includeLegacyForwardConfig() {
+				defaultPipeline.OutputRefs = append(defaultPipeline.OutputRefs,constants.LegacySecureforward)
 			}
 			// Continue with normalization to fill out spec and status.
 		} else if clusterRequest.ForwarderRequest == nil {

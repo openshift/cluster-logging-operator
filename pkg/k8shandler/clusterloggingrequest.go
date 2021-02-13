@@ -25,6 +25,12 @@ type ClusterLoggingRequest struct {
 
 	// OutputSecrets are retrieved during validation and used for generation.
 	OutputSecrets map[string]*corev1.Secret
+
+	//FnIncludeLegacyForward function to allow override for internal use
+	FnIncludeLegacyForward func() bool
+
+	//fnIncludeLegacySyslog function to allow override for internal use
+	FnIncludeLegacySyslog func() bool
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {

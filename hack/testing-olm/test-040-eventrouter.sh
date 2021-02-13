@@ -14,11 +14,13 @@ if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
 LOGGING_NS=${LOGGING_NS:-openshift-logging}
-OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-4.6}
-IMAGE_FORMAT=${IMAGE_FORMAT:-"registry.ci.openshift.org/ocp/${OPENSHIFT_VERSION}:\${component}"}
-IMAGE_LOGGING_EVENTROUTER=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-eventrouter,")
+LOGGING_VERSION=${LOGGING_VERSION:-5.1}
+IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"registry.ci.openshift.org/logging/${LOGGING_VERSION}:\${component}"}
+if [ -n "${IMAGE_FORMAT:-}" ] ; then
+  IMAGE_LOGGING_EVENTROUTER=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-eventrouter,")
+fi
 EVENT_ROUTER_TEMPLATE=${repo_dir}/hack/eventrouter-template.yaml
-
+MAX_DEPLOY_WAIT_SECONDS=${MAX_DEPLOY_WAIT_SECONDS:-120}
 mkdir -p /tmp/artifacts/junit
 os::test::junit::declare_suite_start "[ClusterLogging] event router e2e test"
 
@@ -26,20 +28,20 @@ deploy_eventrouter() {
     oc process -p NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
         -f $EVENT_ROUTER_TEMPLATE | oc create -f - 2>&1
 
-    local looptries=30
+    local looptries=${MAX_DEPLOY_WAIT_SECONDS}
     local ii
     for (( ii=0; ii<$looptries; ii++ ))
     do
-	if [[ $(oc get pods -l component=eventrouter -n $LOGGING_NS -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; then
-	    sleep 1
-	else
-	    break
-	fi
+      if [[ $(oc get pods -l component=eventrouter -n $LOGGING_NS -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; then
+          sleep 1
+      else
+          break
+      fi
     done
     if [ $ii -eq $looptries ] ; then
-        os::log::error could not start eventrouter pod after $looptries tries
-	oc get pods -l component=eventrouter -n $LOGGING_NS -oyaml
-        exit 1
+      os::log::error could not start eventrouter pod after $looptries seconds
+      oc get pods -l component=eventrouter -n $LOGGING_NS -oyaml
+      exit 1
     fi
 }
 

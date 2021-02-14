@@ -72,7 +72,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdPrometheusRule(); err != nil {
-			return
+			log.Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {

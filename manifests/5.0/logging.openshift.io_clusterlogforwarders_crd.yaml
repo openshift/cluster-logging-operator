@@ -99,6 +99,9 @@ spec:
                     syslog:
                       description: Syslog provides optional extra properties for output type `syslog`
                       properties:
+                        addLogSource:
+                          description: AddLogSource adds log's source information to the log message If the logs are collected from a process; namespace_name, pod_name, container_name is added to the log
+                          type: boolean
                         appName:
                           description: "AppName is APP-NAME part of the syslog-msg header \n AppName needs to be specified if using rfc5424"
                           type: string

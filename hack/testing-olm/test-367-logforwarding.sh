@@ -15,6 +15,7 @@ ARTIFACT_DIR=${ARTIFACT_DIR:-"$repo_dir/_output"}
 if [ ! -d $ARTIFACT_DIR ] ; then
   mkdir -p $ARTIFACT_DIR
 fi
+CLF_INCLUDES=${CLF_INCLUDES:-}
 
 cleanup(){
   local return_code="$?"
@@ -38,6 +39,14 @@ trap cleanup exit
 
 failed=0
 for dir in $(ls -d $TEST_DIR); do
+  if [ -n "${CLF_INCLUDES}" ] ; then
+    if ! echo $dir | grep -P -q "${CLF_INCLUDES}" ; then
+      os::log::info "==============================================================="
+	    os::log::info "excluding logforwarding $dir "
+	    os::log::info "==============================================================="
+      continue
+    fi
+  fi
   os::log::info "=========================================================="
   os::log::info "Starting test of logforwarding $dir"
   os::log::info "=========================================================="

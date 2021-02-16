@@ -18,7 +18,7 @@ metadata:
     categories: "OpenShift Optional, Logging & Tracing"
     certified: "false"
     description: |-
-      The Cluster Logging Operator for OCP provides a means for configuring and managing your aggregated logging stack.
+      The Red Hat OpenShift Logging Operator for OCP provides a means for configuring and managing your aggregated logging stack.
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
@@ -105,19 +105,19 @@ metadata:
 spec:
   # The version value is substituted by the ART pipeline
   version: 5.2.0
-  displayName: Cluster Logging
+  displayName: Red Hat OpenShift Logging
   minKubeVersion: 1.18.3
   description: |
-    # Cluster Logging
-    The Cluster Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.
+    # Red Hat OpenShift Logging
+    The Red Hat OpenShift Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.
 
     ##Features
     * **Create/Destroy**: Launch and create an aggregated logging stack to support the entire OCP cluster.
     * **Simplified Configuration**: Configure your aggregated logging cluster's structure like components and end points easily.
 
     ## Prerequisites and Requirements
-    ### Cluster Logging Namespace
-    Cluster logging and the Cluster Logging Operator is only deployable to the **openshift-logging** namespace. This namespace
+    ### Red Hat OpenShift Logging Namespace
+    Cluster logging and the Red Hat OpenShift Logging Operator is only deployable to the **openshift-logging** namespace. This namespace
     must be explicitly created by a cluster administrator (e.g. `oc create ns openshift-logging`). To enable metrics
     service discovery add namespace label `openshift.io/cluster-monitoring: "true"`.
 
@@ -128,7 +128,7 @@ spec:
     The Elasticsearch Operator is responsible for orchestrating and managing cluster logging's Elasticsearch cluster.  This
     operator must be deployed to the global operator group namespace
     ### Memory Considerations
-    Elasticsearch is a memory intensive application.  Cluster Logging will specify that each Elasticsearch node needs
+    Elasticsearch is a memory intensive application.  Red Hat OpenShift Logging will specify that each Elasticsearch node needs
     16G of memory for both request and limit unless otherwise defined in the ClusterLogging custom resource. The initial
     set of OCP nodes may not be large enough to support the Elasticsearch cluster.  Additional OCP nodes must be added
     to the OCP cluster if you desire to run with the recommended(or better) memory. Each ES node can operate with a
@@ -151,7 +151,7 @@ spec:
     url: https://www.fluentd.org/
   - name: Documentation
     url: https://github.com/openshift/cluster-logging-operator/blob/master/README.md
-  - name: Cluster Logging Operator
+  - name: Red Hat OpenShift Logging Operator
     url: https://github.com/openshift/cluster-logging-operator
   installModes:
   - type: OwnNamespace
@@ -337,8 +337,8 @@ spec:
     - name: clusterloggings.logging.openshift.io
       version: v1
       kind: ClusterLogging
-      displayName: Cluster Logging
-      description: A Cluster Logging instance
+      displayName: Red Hat OpenShift Logging
+      description: A Red Hat OpenShift Logging instance
       resources:
       - kind: Deployment
         version: v1

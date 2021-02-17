@@ -10,7 +10,7 @@ echo -e "\n\n"
 IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift/origin-cluster-logging-operator:latest}
 IMAGE_OAUTH_PROXY=${IMAGE_OAUTH_PROXY:-quay.io/openshift/origin-oauth-proxy:latest}
 IMAGE_LOGGING_CURATOR5=${IMAGE_LOGGING_CURATOR5:-quay.io/openshift/origin-logging-curator5:latest}
-IMAGE_LOGGING_FLUENTD=${IMAGE_LOGGING_FLUENTD:-quay.io/openshift/origin-logging-fluentd:latest}
+IMAGE_LOGGING_FLUENTD=quay.io/syedriko/origin-logging-fluentd:latest
 IMAGE_PROMTAIL=${IMAGE_PROMTAIL:-name: quay.io/openshift/origin-promtail:latest}
 IMAGE_ELASTICSEARCH6=${IMAGE_ELASTICSEARCH6:-quay.io/openshift/origin-logging-elasticsearch6:latest}
 IMAGE_LOGGING_KIBANA6=${IMAGE_LOGGING_KIBANA6:-quay.io/openshift/origin-logging-kibana6:latest}

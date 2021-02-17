@@ -6,7 +6,7 @@ source "${current_dir}/lib/util/logs.sh"
 
 pushd ../elasticsearch-operator
 # install the catalog containing the elasticsearch operator csv
-ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/catalog-deploy.sh
+ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat IMAGE_LOGGING_FLUENTD=quay.io/syedriko/origin-logging-fluentd:latest olm_deploy/scripts/catalog-deploy.sh
 # install the elasticsearch operator from that catalog
 ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
 popd

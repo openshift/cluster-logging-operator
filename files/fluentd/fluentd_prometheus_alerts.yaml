@@ -23,11 +23,11 @@
       "severity": "warning"
   - "alert": "FluentdQueueLengthIncreasing"
     "annotations":
-      "message": "In the last 12h, fluentd {{ $labels.instance }} buffer queue length constantly increased more than 1. Current value is {{ $value }}."
+      "message": "In the last minute, fluentd {{ $labels.instance }} buffer queue length increased more than 20%. Current value is {{ $value }}."
       "summary": "Fluentd file buffer usage issue"
     "expr": |
-      delta(fluentd_output_status_buffer_queue_length[1m]) > 1
-    "for": "12h"
+      rate(fluentd_output_status_buffer_queue_length[1m]) > 0.2
+    "for": "1m"
     "labels":
       "service": "fluentd"
       "severity": "critical"

@@ -130,7 +130,7 @@ test-cleanup:			# Only needed if e2e tests are interrupted.
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm:
-	hack/test-e2e-olm.sh
+	IMAGE_LOGGING_FLUENTD=quay.io/syedriko/origin-logging-fluentd:latest hack/test-e2e-olm.sh
 
 test-e2e-local: deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \

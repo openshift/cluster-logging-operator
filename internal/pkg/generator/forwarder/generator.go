@@ -3,7 +3,7 @@ package forwarder
 import (
 	"fmt"
 
-	yaml "gopkg.in/yaml.v2"
+	yaml "sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -42,14 +42,19 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool)
 		Cluster: &logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{},
 		},
+		CLFVerifier: k8shandler.ClusterLogForwarderVerifier{
+			VerifyOutputSecret: func(output *logging.OutputSpec, conds logging.NamedConditions) bool { return true },
+		},
 	}
 	if includeDefaultLogStore {
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{
 			Type: logging.LogStoreTypeElasticsearch,
 		}
 	}
+
 	spec, status := clRequest.NormalizeForwarder()
 	log.V(2).Info("Normalization", "status", status)
+
 	tunings := &logging.ForwarderSpec{}
 
 	generatedConfig, err := generator.Generate(spec, nil, tunings)

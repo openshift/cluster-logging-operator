@@ -25,6 +25,14 @@ type ClusterLoggingRequest struct {
 
 	// OutputSecrets are retrieved during validation and used for generation.
 	OutputSecrets map[string]*corev1.Secret
+
+	//CLFVerifier is a collection of functions to control verification
+	//of ClusterLogForwarding
+	CLFVerifier ClusterLogForwarderVerifier
+}
+
+type ClusterLogForwarderVerifier struct {
+	VerifyOutputSecret func(output *logging.OutputSpec, conds logging.NamedConditions) bool
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {

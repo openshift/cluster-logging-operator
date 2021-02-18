@@ -81,6 +81,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 
 // NormalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
 func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
+	if clusterRequest.CLFVerifier.VerifyOutputSecret == nil {
+		clusterRequest.CLFVerifier.VerifyOutputSecret = clusterRequest.verifyOutputSecret
+	}
 
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
@@ -199,6 +202,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 
 		goodIn, msgIn := verifyRefs("inputs", pipeline.InputRefs, inputs)
 		goodOut, msgOut := verifyRefs("outputs", pipeline.OutputRefs, outputs)
+
 		if msgs := append(msgIn, msgOut...); len(msgs) > 0 { // Something wrong
 			msg := strings.Join(msgs, ", ")
 			if len(goodIn) == 0 || len(goodOut) == 0 { // All bad, disabled
@@ -264,7 +268,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
 		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
 			break
-		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
+		case !clusterRequest.CLFVerifier.VerifyOutputSecret(&output, status.Outputs):
 			break
 		default:
 			status.Outputs.Set(output.Name, condReady)

@@ -5,9 +5,7 @@ import (
 )
 
 const (
-	fluentForwardOutputName        = "fluentForward"
-	elasticSearchForwardOutputName = "elasticSearchForward"
-	forwardPipelineName            = "forward-pipeline"
+	forwardPipelineName = "forward-pipeline"
 )
 
 type ClusterLogForwarderBuilder struct {
@@ -36,10 +34,10 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 }
 
 func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
-	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, fluentForwardOutputName)
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeFluentdForward)
 }
 func (p *PipelineBuilder) ToElasticSearchOutput() *ClusterLogForwarderBuilder {
-	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, elasticSearchForwardOutputName)
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeElasticsearch)
 }
 
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, forwardOutputName string) *ClusterLogForwarderBuilder {
@@ -47,16 +45,16 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, forwardOu
 	outputs := clf.Spec.OutputMap()
 	var output *logging.OutputSpec
 	var found bool
-	if output, found = outputs[fluentForwardOutputName]; !found {
-		if forwardOutputName == fluentForwardOutputName {
+	if output, found = outputs[logging.OutputTypeFluentdForward]; !found {
+		if forwardOutputName == logging.OutputTypeFluentdForward {
 			output = &logging.OutputSpec{
-				Name: fluentForwardOutputName,
+				Name: logging.OutputTypeFluentdForward,
 				Type: logging.OutputTypeFluentdForward,
 				URL:  "tcp://0.0.0.0:24224",
 			}
-		} else if forwardOutputName == elasticSearchForwardOutputName {
+		} else if forwardOutputName == logging.OutputTypeElasticsearch {
 			output = &logging.OutputSpec{
-				Name: elasticSearchForwardOutputName,
+				Name: logging.OutputTypeElasticsearch,
 				Type: logging.OutputTypeElasticsearch,
 				URL:  "https://0.0.0.0:9200",
 			}

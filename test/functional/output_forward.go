@@ -23,7 +23,7 @@ const (
 	include_time_key true 
 </filter>
 
-<filter **>
+<filter kubernetes.**>
   @type record_transformer
   enable_ruby
   <record>

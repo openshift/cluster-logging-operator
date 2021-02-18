@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/ViaQ/logerr/log"
-	logger "github.com/ViaQ/logerr/log"
 
 	"github.com/openshift/cluster-logging-operator/test"
 )
@@ -212,11 +211,13 @@ type EventRouterLog struct {
 	Kubernetes       Kubernetes       `json:"kubernetes"`
 	Message          string           `json:"message"`
 	Level            string           `json:"level"`
+	Hostname         string           `json:"hostname,omitempty"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
 	Timestamp        time.Time        `json:"@timestamp"`
 	ViaqIndexName    string           `json:"viaq_index_name"`
 	ViaqMsgID        string           `json:"viaq_msg_id"`
 	OpenshiftLabels  OpenshiftMeta    `json:"openshift"`
+	Timing           `json:",inline"`
 }
 
 type User struct {

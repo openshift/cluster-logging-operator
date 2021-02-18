@@ -3,7 +3,6 @@ package functional
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -101,7 +100,7 @@ func NewFluentdFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosit
 		Test:             t,
 		Forwarder:        runtime.NewClusterLogForwarder(),
 		receiverBuilders: []receiverBuilder{},
-		closeClient: fnClose,
+		closeClient:      fnClose,
 	}
 	return framework
 }
@@ -182,17 +181,17 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 		return err
 	}
 
-	role := runtime.NewRole(f.test.NS.Name, f.Name,
+	role := runtime.NewRole(f.Test.NS.Name, f.Name,
 		v1.PolicyRule{
 			Verbs:     []string{"list", "get"},
 			Resources: []string{"pods", "namespaces"},
 			APIGroups: []string{""},
 		},
 	)
-	if err = f.test.Client.Create(role); err != nil {
+	if err = f.Test.Client.Create(role); err != nil {
 		return err
 	}
-	rolebinding := runtime.NewRoleBinding(f.test.NS.Name, f.Name,
+	rolebinding := runtime.NewRoleBinding(f.Test.NS.Name, f.Name,
 		v1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
@@ -203,7 +202,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 			Name: "default",
 		},
 	)
-	if err = f.test.Client.Create(rolebinding); err != nil {
+	if err = f.Test.Client.Create(rolebinding); err != nil {
 		return err
 	}
 
@@ -295,11 +294,6 @@ func (f *FluentdFunctionalFramework) WaitForPodToBeReady() error {
 	return oc.Literal().From(fmt.Sprintf("oc wait -n %s pod/%s --timeout=60s --for=condition=Ready", f.Test.NS.Name, f.Name)).Output()
 }
 
-func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs int) error {
-	msg := "2020-11-04T18:13:59.061892999+00:00 stdout F Functional Test message $n"
-	return f.WriteMessagesToApplicationLog(msg, numOfLogs)
-}
-
 func (f *FluentdFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
 	filename := fmt.Sprintf("%s/%s_%s_%s-%s.log", fluentdLogPath[applicationLog], f.pod.Name, f.pod.Namespace, constants.FluentdName, f.fluentContainerId)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
@@ -327,11 +321,6 @@ func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, siz
 	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p /var/log/containers;echo > %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", filepath, size, numOfLogs, msg, filepath))
 	log.V(3).Info("FluentdFunctionalFramework.WritesNApplicationLogsOfSize", "result", result, "err", err)
 	return err
-}
-
-func (f *FluentdFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
-	filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", f.pod.Name, f.pod.Namespace, constants.FluentdName, f.fluentContainerId)
-	return f.WriteMessagesToLog(msg, numOfLogs, filepath)
 }
 
 func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs int, filename string) error {

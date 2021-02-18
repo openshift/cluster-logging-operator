@@ -1,4 +1,4 @@
-package logforwarding
+package normalization
 
 import (
 	"fmt"
@@ -12,34 +12,10 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
-var templateForAnyCollector = types.PipelineMetadata{
-	Collector: types.Collector{
-		Ipaddr4:    "*",
-		Inputname:  "*",
-		Name:       "*",
-		Version:    "*",
-		ReceivedAt: time.Time{},
-	},
-}
-
-var templateForAnyKubernetes = types.Kubernetes{
-	ContainerName:    "*",
-	NamespaceName:    "*",
-	PodName:          "*",
-	ContainerImage:   "*",
-	ContainerImageID: "*",
-	PodID:            "*",
-	Host:             "*",
-	MasterURL:        "*",
-	NamespaceID:      "*",
-	FlatLabels:       []string{"*"},
-	NamespaceLabels:  map[string]string{"*": "*"},
-}
-
 var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework               *functional.FluentdFunctionalFramework
 	)
 
 	BeforeEach(func() {
@@ -69,7 +45,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 				Level:            "info",
 				Timestamp:        time.Time{},
 				ViaqMsgID:        "*",
-				PipelineMetadata: templateForAnyCollector,
+				PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 			},
 		}
 		// Template expected as output Log
@@ -99,11 +75,11 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 			ViaqIndexName: "audit-write",
 			AuditLinux: types.AuditLinux{
 				Type:     msgType,
-				RecordID: "*"},
+				RecordID: "*",
+			},
 			Timestamp:        nanoTime,
 			ViaqMsgID:        "*",
-			Level:            "*",
-			PipelineMetadata: templateForAnyCollector,
+			PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 		}
 		// Write log line as input to fluentd
 		Expect(framework.WriteMessagesToAuditLog(auditLogLine, 10)).To(BeNil())
@@ -126,19 +102,10 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 
 		// Template expected as output Log
-		var outputLogTemplate = types.ApplicationLog{
-			Timestamp:        nanoTime,
-			Message:          fmt.Sprintf("regex:^%s.*$", message),
-			ViaqIndexName:    "app-write",
-			Level:            "info",
-			Hostname:         "*",
-			ViaqMsgID:        "*",
-			PipelineMetadata: templateForAnyCollector,
-			Docker: types.Docker{
-				ContainerID: "*",
-			},
-			Kubernetes: templateForAnyKubernetes,
-		}
+		var outputLogTemplate = functional.NewApplicationLogTemplate()
+		outputLogTemplate.Timestamp = nanoTime
+		outputLogTemplate.Message =  fmt.Sprintf("regex:^%s.*$", message)
+		outputLogTemplate.Level = "info"
 
 		// Write log line as input to fluentd
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)
@@ -163,23 +130,16 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 
 		// Template expected as output Log
-		var outputLogTemplate = types.ApplicationLog{
-			Timestamp:        nanoTime,
-			Message:          fmt.Sprintf("regex:^%s.*$", message),
-			ViaqIndexName:    "app-write",
-			Level:            "unknown",
-			ViaqMsgID:        "*",
-			PipelineMetadata: templateForAnyCollector,
-			Docker: types.Docker{
-				ContainerID: "*"},
-			Kubernetes: templateForAnyKubernetes,
-		}
+		var outputLogTemplate = functional.NewApplicationLogTemplate()
+		outputLogTemplate.Timestamp = nanoTime
+		outputLogTemplate.Message =  fmt.Sprintf("regex:^%s.*$", message)
+		outputLogTemplate.Level = "*"
 
 		// Write log line as input to fluentd
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom("fluentforward")
+		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog

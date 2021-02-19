@@ -91,6 +91,8 @@ github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWX
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/ViaQ/logerr v0.0.0-20201005161545-59fa62e1e498 h1:9i8Ah3ZqY1j2PQ/Ib2NHfBaa8pLUVbu+VkVIYkPkPgE=
 github.com/ViaQ/logerr v0.0.0-20201005161545-59fa62e1e498/go.mod h1:KCNTKsS4LgOp1oIDXkWxGWs4Fqwu/SdfyfUcIShsjPE=
+github.com/ViaQ/logerr v1.0.9 h1:37DLQW3QYFAkD57X+99AClUaM0E8WMgzUplMjdvsJsY=
+github.com/ViaQ/logerr v1.0.9/go.mod h1:KZ3ne81U/sJhHt3AjE5AvhoQDY0Rh1O+u4rEHKjG/No=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=

@@ -272,11 +272,7 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		default:
 			return nil, fmt.Errorf("Unknown output type: %v", output.Type)
 		}
-		var secret *corev1.Secret
-		if output.Secret != nil {
-			secret = secrets[output.Secret.Name]
-		}
-		conf, err := newOutputLabelConf(engine.Template, engine.storeTemplate, output, secret, outputConf)
+		conf, err := newOutputLabelConf(engine.Template, engine.storeTemplate, output, secrets[output.Name], outputConf)
 		if err != nil {
 			return nil, fmt.Errorf("generating fluentd output label: %v", err)
 		}

@@ -35,6 +35,7 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 }
 
 func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
+
 	return p.ToFluentForwardOutputWithVisitor(func(output *logging.OutputSpec) {})
 }
 

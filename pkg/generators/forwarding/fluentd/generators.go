@@ -3,7 +3,8 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/elasticsearch-operator/pkg/logger"
 	"sort"
 	"text/template"
 
@@ -78,13 +79,13 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	sourceInputLabels, err = engine.generateSource(inputs)
 	if err != nil {
 
-		logger.Tracef("Error generating source blocks: %v", err)
+		log.V(3).Error(err, "Error generating source blocks")
 		return "", err
 	}
 
 	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(routeMap)
 	if err != nil {
-		logger.Tracef("Error generating source to pipeline blocks: %v", err)
+		log.V(3).Error(err, "Error generating source to pipeline blocks")
 		return "", err
 	}
 	sort.Strings(sourceToPipelineLabels)
@@ -93,7 +94,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	if len(clfSpec.Pipelines) > 0 {
 		pipelineToOutputLabels, err = engine.generatePipelineToOutputLabels(clfSpec.Pipelines)
 		if err != nil {
-			logger.Tracef("Error generating pipeline to output labels blocks: %v", err)
+			log.V(3).Error(err, "Error generating pipeline to output labels blocks")
 			return "", err
 		}
 	}
@@ -102,7 +103,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	if len(clfSpec.Outputs) > 0 {
 		outputLabels, err = engine.generateOutputLabelBlocks(clfSpec.Outputs, fwSpec)
 		if err != nil {
-			logger.Tracef("Error generating to output label blocks: %v", err)
+			log.V(3).Error(err, "Error generating to output label blocks")
 			return "", err
 		}
 	}
@@ -132,10 +133,10 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	}
 	result, err := engine.Execute("fluentConf", data)
 	if err != nil {
-		logger.Tracef("Error generating fluentConf")
+		log.V(3).Info("Error generating fluentConf")
 		return "", fmt.Errorf("Error processing fluentConf template: %v", err)
 	}
-	logger.Tracef("Successfully generated fluent.conf: %v", result)
+	log.V(3).Info("Successfully generated fluent.conf", "conf", result)
 	return result, nil
 }
 

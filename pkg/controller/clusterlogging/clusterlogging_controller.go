@@ -87,7 +87,7 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 	}
 
 	if err = k8shandler.Reconcile(instance, r.client); err != nil {
-		logrus.Error(err, "Error reconciling clusterlogging instance")
+		log.Error(err, "Error reconciling clusterlogging instance")
 	}
 
 	if result, err := r.updateStatus(instance); err != nil {

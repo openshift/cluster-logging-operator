@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 	"sigs.k8s.io/yaml"
 )
 
@@ -14,16 +14,16 @@ func GenerateCertificates(namespace, scriptsDir, logStoreName, workDir string) (
 }
 
 func RunCertificatesScript(namespace, logStoreName, workDir, script string) (err error, updated bool) {
-	logger.Tracef("Running script %s workdir %s namespace %s logstore %s", script, workDir, namespace, logStoreName)
+	log.V(3).Info("Running script", "script", script, "workDir", workDir, "namespace", namespace, "logstorename", logStoreName)
 	cmd := exec.Command(script, workDir, namespace, logStoreName)
 	out, err := cmd.Output()
 	result := string(out)
-	logger.Tracef("Cert generation result %s / err: %v", result, err)
+	log.V(3).Info("Cert generation result", "result", result, "error", err)
 	if result != "" {
 		updated = true
 		dumpLogs(result)
 	}
-	logger.Tracef("Returning err: %v , updated: %v", err, updated)
+	log.V(3).Info("Returning", "error", err, "updated", updated)
 	return err, updated
 }
 
@@ -32,10 +32,10 @@ func dumpLogs(raw string) {
 	err := yaml.Unmarshal([]byte(raw), &genLogs)
 	if err == nil {
 		for _, eventlog := range genLogs {
-			logger.Infof("cert_generation output: %v", eventlog)
+			log.Info("cert_generation output", eventlog)
 		}
 		return
 	}
-	logger.Errorf("Unable to unmarshal cert_generation to structured output: %v", err)
-	logger.Infof("cert_generation output: %s", raw)
+	log.Error(err, "Unable to unmarshal cert_generation to structured output")
+	log.Info("cert_generation", "raw_output", raw)
 }

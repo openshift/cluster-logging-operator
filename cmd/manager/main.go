@@ -52,11 +52,9 @@ func main() {
 			log.Error(err, "Unable to evaluate the LOG_LEVEL: %s", logLevel)
 			os.Exit(1)
 		}
-		opt := log.WithVerbosity(uint8(verbosity))
-		log.MustInitWithOptions("cluster-logging-operator", []log.Option{opt})
-	} else {
-		log.MustInit("cluster-logging-operator")
+		log.SetLogLevel(verbosity)
 	}
+	log.MustInit("cluster-logging-operator")
 	log.Info("starting up...",
 		"operator_version", version.Version,
 		"go_version", runtime.Version(),

@@ -2,12 +2,13 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/elasticsearch-operator/pkg/logger"
 	"io/ioutil"
 	"path"
 	"sync"
 
-	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -80,7 +81,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 	return Synchronize(func() error {
 		var extracted bool
 		if extracted, err = clusterRequest.extractMasterCerts(); err != nil {
-			logger.Errorf("Error extracting master-cert: %v", err)
+			log.Error(err, "Error extracting master-cert")
 			return err
 		}
 
@@ -89,7 +90,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 		if err, updated = certificates.GenerateCertificates(clusterRequest.Cluster.Namespace, scriptsDir, "elasticsearch", utils.GetWorkingDir()); err != nil {
 			return fmt.Errorf("Error running script: %v", err)
 		}
-		logger.Tracef("Writing secret updated: %v", updated)
+		log.V(3).Info("Writing secret updated", "updated", updated)
 		if !extracted || updated {
 			if err = clusterRequest.writeSecret(); err != nil {
 				return err

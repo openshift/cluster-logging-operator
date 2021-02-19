@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -67,10 +66,10 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 }
 
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
-	logger.Debug("Removing managed store components...")
+	log.V(2).Info("Removing managed store components...")
 	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeCurator} {
 		if err := remove(); err != nil {
-			logger.Debug(err, "Error removing component")
+			log.V(2).Error(err, "Error removing component")
 		}
 	}
 }

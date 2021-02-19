@@ -38,8 +38,8 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 
 	const timestamp string = "1985-10-21T09:00:00.00000+00:00"
 	var (
-		framework *functional.FluentdFunctionalFramework
-		pod       *corev1.Pod
+		framework   *functional.FluentdFunctionalFramework
+		pod         *corev1.Pod
 		nanoTime, _ = time.Parse(time.RFC3339Nano, timestamp)
 	)
 
@@ -55,7 +55,7 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 		framework.Cleanup()
 	})
 
-	for _, verb := range []string{"ADDED","UPDATED"} {
+	for _, verb := range []string{"ADDED", "UPDATED"} {
 		It(fmt.Sprintf("Should parse EventRouter %s message and check values", verb), func() {
 			podRef, err := reference.GetReference(scheme.Scheme, pod)
 			Expect(err).To(BeNil())
@@ -82,7 +82,7 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 func NewEventDataBuilder(verb string, podRef *corev1.ObjectReference) types.EventData {
 	newEvent := types.NewMockEvent(podRef, corev1.EventTypeNormal, "reason", "message")
 	if verb == "UPDATED" {
-		oldEvent := types.NewMockEvent(podRef, corev1.EventTypeWarning,"old_reason", "old_message")
+		oldEvent := types.NewMockEvent(podRef, corev1.EventTypeWarning, "old_reason", "old_message")
 		return types.EventData{Verb: "UPDATED", Event: newEvent, OldEvent: oldEvent}
 	} else {
 		return types.EventData{Verb: "ADDED", Event: newEvent}

@@ -68,7 +68,7 @@ func (builder *ContainerBuilder) AddEnvVarFromFieldRef(name, fieldRef string) *C
 func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	containerBuilder := ContainerBuilder{
 		container: corev1.Container{
-			Name:  name,
+			Name:  strings.ToLower(name),
 			Image: image,
 			Env:   []corev1.EnvVar{},
 		},

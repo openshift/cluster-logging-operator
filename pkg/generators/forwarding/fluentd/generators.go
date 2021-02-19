@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
+
 //ConfigGenerator is a config generator for fluentd
 type ConfigGenerator struct {
 	*generators.Generator
@@ -67,12 +68,12 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 			logging.InputNameApplication,
 			logging.InputNameAudit,
 		)
-		for _, logType := range inputs.List(){
+		for _, logType := range inputs.List() {
 			if engine.includeLegacySyslogConfig {
-				routeMap.Insert(logType,constants.LegacySyslog)
+				routeMap.Insert(logType, constants.LegacySyslog)
 			}
 			if engine.includeLegacyForwardConfig {
-				routeMap.Insert(logType,constants.LegacySecureforward)
+				routeMap.Insert(logType, constants.LegacySecureforward)
 			}
 		}
 	}

@@ -12,26 +12,26 @@
       "service": "fluentd"
       "severity": "critical"
   - "alert": "FluentdQueueLengthBurst"
-    "annotations":
-      "message": "In the last minute, fluentd {{ $labels.instance }} buffer queue length increased more than 32. Current value is {{ $value }}."
-      "summary": "Fluentd is overwhelmed"
-    "expr": |
-      delta(fluentd_output_status_buffer_queue_length[1m]) > 32
-    "for": "1m"
-    "labels":
-      "service": "fluentd"
-      "severity": "warning"
-  - "alert": "FluentdQueueLengthIncreasing"
-    "annotations":
-      "message": "In the last minute, fluentd {{ $labels.instance }} buffer queue length increased more than 20%. Current value is {{ $value }}."
-      "summary": "Fluentd file buffer usage issue"
-    "expr": |
-      rate(fluentd_output_status_buffer_queue_length[1m]) > 0.2
-    "for": "1m"
-    "labels":
-      "service": "fluentd"
-      "severity": "critical"
-
+      "annotations":
+        "message": "In the last minute, fluentd {{ $labels.instance }} buffer queue length increased more than 32. Current value is {{ $value }}."
+        "summary": "Fluentd unable to keep up with burst in traffic."
+      "expr": |
+        delta(fluentd_output_status_buffer_queue_length[1m]) > 32
+      "for": "1m"
+      "labels":
+        "service": "fluentd"
+        "severity": "warning"
+        - "alert": "FluentdQueueLengthIncreasing"
+          "annotations":
+            "message": "For the last hour, fluentd {{ $labels.instance }} average buffer queue length has increased continuously. Current value is {{ $value }}."
+            "summary": "Fluentd unable to keep up with traffic over time."
+          "expr": |
+            avg_over_time(fluentd_output_status_buffer_queue_length[5m]) >
+            avg_over_time(fluentd_output_status_buffer_queue_length[5m] offset 5m)
+          "for": "1h"
+          "labels":
+            "service": "fluentd"
+            "severity": "error"
   - alert: FluentDHighErrorRate
     annotations:
       message: |-

@@ -96,10 +96,6 @@ spec:
                       properties:
                         groupBy:
                           description: GroupBy defines the strategy for grouping logstreams
-                          enum:
-                          - logType
-                          - namespaceName
-                          - namespaceUUID
                           type: string
                         groupPrefix:
                           description: GroupPrefix Add this prefix to all group names.  Useful

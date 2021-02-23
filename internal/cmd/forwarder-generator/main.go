@@ -44,14 +44,14 @@ func main() {
 	var reader func() ([]byte, error)
 	switch *yamlFile {
 	case "-":
-		reader = func() ([]byte, error) { return ioutil.ReadFile(*yamlFile) }
-	case "":
-		reader = func() ([]byte, error) { return []byte{}, nil }
-	default:
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
 			return ioutil.ReadAll(stdin)
 		}
+	case "":
+		reader = func() ([]byte, error) { return []byte{}, nil }
+	default:
+		reader = func() ([]byte, error) { return ioutil.ReadFile(*yamlFile) }
 	}
 
 	content, err := reader()

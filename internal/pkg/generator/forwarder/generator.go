@@ -2,6 +2,7 @@ package forwarder
 
 import (
 	"fmt"
+	"github.com/openshift/elasticsearch-operator/pkg/utils"
 
 	yaml "sigs.k8s.io/yaml"
 
@@ -53,6 +54,7 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool)
 	}
 
 	spec, status := clRequest.NormalizeForwarder()
+	utils.ToJson(status)
 	log.V(2).Info("Normalization", "status", status)
 
 	tunings := &logging.ForwarderSpec{}

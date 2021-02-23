@@ -303,7 +303,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputURL(output *logging.Out
 	if output.URL == "" {
 		// Some output types (currently just kafka) allow a missing URL
 		// TODO (alanconway) move output-specific valiation to the output implementation.
-		if output.Type == "kafka" {
+		if output.Type == logging.OutputTypeKafka || output.Type == logging.OutputTypeCloudwatch{
 			return true
 		} else {
 			return fail(condInvalid("URL is required for output type %v", output.Type))
@@ -336,6 +336,22 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.
 	if err != nil {
 		return fail(condMissing("secret %q not found", output.Secret.Name))
 	}
+	verifySecret := verifySecretKeysForTLS
+	if output.Type == logging.OutputTypeCloudwatch {
+		verifySecret = verifySecretKeysForCloudwatch
+	}
+	if !verifySecret(output, conds, secret) {
+		return false
+	}
+	clusterRequest.OutputSecrets[output.Name] = secret
+	return true
+}
+
+func verifySecretKeysForTLS(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool{
+	fail := func(c status.Condition) bool {
+		conds.Set(output.Name, c)
+		return false
+	}
 	// Make sure we have secrets for a valid TLS configuration.
 	haveCert := len(secret.Data[constants.ClientCertKey]) > 0
 	haveKey := len(secret.Data[constants.ClientPrivateKey]) > 0
@@ -345,6 +361,20 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.
 	case !haveCert && haveKey:
 		return fail(condMissing("cannot have %v without %v", constants.ClientPrivateKey, constants.ClientCertKey))
 	}
-	clusterRequest.OutputSecrets[output.Name] = secret
 	return true
 }
+func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool{
+	log.V(3).Info("V")
+	fail := func(c status.Condition) bool {
+		conds.Set(output.Name, c)
+		return false
+	}
+	hasID := len(secret.Data[constants.AWSAccessKeyID]) > 0
+	hasKey := len(secret.Data[constants.AWSSecretAccessKey]) > 0
+	missingMessage := "aws_access_key_id and aws_secret_access_key are required"
+	if !hasID || !hasKey {
+		return fail(condMissing(missingMessage))
+	}
+	return true
+}
+

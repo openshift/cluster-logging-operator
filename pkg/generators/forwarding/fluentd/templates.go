@@ -627,10 +627,10 @@ const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
     remove_log_group_name_key true
     auto_create_stream true
     concurrency 2
-{{- with $path := .SecretPathIfFound "aws_access_key_id"}}
+{{- with $path := .SecretPath "aws_access_key_id"}}
     aws_key_id "#{open('{{ $path }}','r') do |f|f.read end}"
 {{- end}}
-{{- with $path := .SecretPathIfFound "aws_secret_access_key"}}
+{{- with $path := .SecretPath "aws_secret_access_key"}}
     aws_sec_key "#{open('{{ $path }}','r') do |f|f.read end}"
 {{- end}}
     include_time_key true

@@ -33,8 +33,8 @@ type Cloudwatch struct {
 	Region string `json:"region,omitempty"`
 
 	//GroupBy defines the strategy for grouping logstreams
-	//+kubebuilder:validation:Enum:=logType;namespaceName;namespaceUUID
 	// +required
+	//+kubebuilder:validation:Enum:=logType;namespaceName;namespaceUUID
 	GroupBy LogGroupByType `json:"groupBy,omitempty"`
 
 	//GroupPrefix Add this prefix to all group names.

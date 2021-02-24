@@ -1,10 +1,12 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
@@ -12,6 +14,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/url"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
@@ -77,6 +80,16 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	)
 	log.V(3).Info("ClusterLogForwarder generated config", generatedConfig)
 	return generatedConfig, err
+}
+
+func (clusterRequest *ClusterLoggingRequest) readClusterName() (string, error) {
+	infra := configv1.Infrastructure{}
+	err := clusterRequest.Client.Get(context.Background(), client.ObjectKey{Name: constants.ClusterInfrastructureInstance}, &infra)
+	if err != nil {
+		return "", err
+	}
+
+	return infra.Status.InfrastructureName, nil
 }
 
 // NormalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
@@ -273,6 +286,16 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		default:
 			status.Outputs.Set(output.Name, condReady)
 			spec.Outputs = append(spec.Outputs, output)
+		}
+		if output.Type == logging.OutputTypeCloudwatch {
+			if output.Cloudwatch != nil && output.Cloudwatch.GroupPrefix == nil {
+				clusterName, err := clusterRequest.readClusterName()
+				if err != nil {
+					badName("outputprefix is not set and it can't be fetched from the cluster. Error: %s", err.Error())
+				} else {
+					output.Cloudwatch.GroupPrefix = &clusterName
+				}
+			}
 		}
 		names.Insert(output.Name)
 	}

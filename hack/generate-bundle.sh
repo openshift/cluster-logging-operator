@@ -6,12 +6,12 @@ set -euo pipefail
 
 mkdir -p bundle
 
-$OPM alpha bundle generate --directory manifests/${MANIFEST_VERSION} --package cluster-logging-operator --channels ${MANIFEST_VERSION} --default ${MANIFEST_VERSION} --output-dir bundle/
+$OPM alpha bundle generate --directory manifests/${MANIFEST_VERSION} --package cluster-logging-operator --channels "tech-preview" --default "tech-preview" --output-dir bundle/
 
 cat >> bundle.Dockerfile <<EOF
 
 LABEL com.redhat.delivery.operator.bundle=true
-LABEL com.redhat.openshift.versions="v${MANIFEST_VERSION}"
+LABEL com.redhat.openshift.versions="${OPENSHIFT_VERSIONS}"
 
 LABEL \\
     com.redhat.component="cluster-logging-operator" \\

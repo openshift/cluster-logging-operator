@@ -16,9 +16,6 @@ fi
 LOGGING_NS=${LOGGING_NS:-openshift-logging}
 LOGGING_VERSION=${LOGGING_VERSION:-5.1}
 IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"registry.ci.openshift.org/logging/${LOGGING_VERSION}:\${component}"}
-if [ -n "${IMAGE_FORMAT:-}" ] ; then
-  IMAGE_LOGGING_EVENTROUTER=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-eventrouter,")
-fi
 EVENT_ROUTER_TEMPLATE=${repo_dir}/hack/eventrouter-template.yaml
 MAX_DEPLOY_WAIT_SECONDS=${MAX_DEPLOY_WAIT_SECONDS:-120}
 mkdir -p /tmp/artifacts/junit

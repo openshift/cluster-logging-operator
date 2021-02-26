@@ -2,10 +2,10 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/ViaQ/logerr/log"
 	"reflect"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
@@ -329,39 +329,39 @@ func isCuratorDifferent(current *batch.CronJob, desired *batch.CronJob) (*batch.
 	different := false
 
 	if !utils.AreMapsSame(current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector, desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector) {
-		logrus.Infof("Invalid Curator nodeSelector change found, updating '%s'", current.Name)
+		log.Info("Invalid Curator nodeSelector change found, updating", "current", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.NodeSelector = desired.Spec.JobTemplate.Spec.Template.Spec.NodeSelector
 		different = true
 	}
 
 	if !utils.AreTolerationsSame(current.Spec.JobTemplate.Spec.Template.Spec.Tolerations, desired.Spec.JobTemplate.Spec.Template.Spec.Tolerations) {
-		logrus.Infof("Curator tolerations change found, updating '%s'", current.Name)
+		log.Info("Curator tolerations change found, updating ", "current", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.Tolerations = desired.Spec.JobTemplate.Spec.Template.Spec.Tolerations
 		different = true
 	}
 
 	// Check schedule
 	if current.Spec.Schedule != desired.Spec.Schedule {
-		logrus.Infof("Invalid Curator schedule found, updating %q", current.Name)
+		log.Info("Invalid Curator schedule found, updating", "current", current.Name)
 		current.Spec.Schedule = desired.Spec.Schedule
 		different = true
 	}
 
 	// Check suspended
 	if current.Spec.Suspend != nil && desired.Spec.Suspend != nil && *current.Spec.Suspend != *desired.Spec.Suspend {
-		logrus.Infof("Invalid Curator suspend value found, updating %q", current.Name)
+		log.Info("Invalid Curator suspend value found, updating ", "current", current.Name)
 		current.Spec.Suspend = desired.Spec.Suspend
 		different = true
 	}
 
 	if current.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image != desired.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image {
-		logrus.Infof("Curator image change found, updating %q", current.Name)
+		log.Info("Curator image change found, updating ", "current", current.Name)
 		current.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image = desired.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Image
 		different = true
 	}
 
 	if utils.AreResourcesDifferent(current, desired) {
-		logrus.Infof("Curator resources change found, updating %q", current.Name)
+		log.Info("Curator resources change found, updating ", "current", current.Name)
 		different = true
 	}
 

@@ -26,7 +26,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+    clolog "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -118,7 +118,7 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) er
 		Containers: []corev1.Container{container},
 	}
 	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
-	logger.Infof("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
+	clolog.Info("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
 	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, opts)
 	if err != nil {
 		return err
@@ -171,7 +171,7 @@ def set_vals():
 		Containers: []corev1.Container{container},
 	}
 	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
-	logger.Infof("Deploying %q to namespace: %q...", deployment.Name, deployment.Namespace)
+	clolog.Info("Deploying deployment to namespace", "deployment", deployment.Name, "namespace", deployment.Namespace)
 	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
 		return "", "", err
@@ -201,7 +201,7 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 	}
 	_, err := tc.KubeClient.CoreV1().Namespaces().Create(context.TODO(), namespace, opts)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		logger.Error(err)
+		clolog.Error(err, "Error:")
 	}
 	return name
 }
@@ -211,7 +211,7 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 	case ComponentTypeVisualization:
 		return tc.waitForDeployment(OpenshiftLoggingNS, "kibana", defaultRetryInterval, defaultTimeout)
 	case ComponentTypeCollector:
-		logger.Debugf("Waiting for %v", component)
+		clolog.V(3).Info("Waiting for ", "component", component)
 		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
@@ -245,7 +245,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 }
 
 func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time.Duration) error {
-	logger.Debugf("Waiting for %v", "elasticsearch")
+	clolog.V(3).Info("Waiting for elasticsearch")
 	return wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
@@ -253,20 +253,20 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logger.Debugf("Did not find elasticsearch pods %v", err)
+				clolog.V(2).Error(err, "Did not find elasticsearch pods")
 				return false, nil
 			}
-			logger.Errorf("Error listing elasticsearch pods %v", err)
+			clolog.Error(err,"Error listing elasticsearch pods")
 			return false, nil
 		}
 		if len(pods.Items) == 0 {
-			logger.Debugf("No elasticsearch pods found %v", pods)
+			clolog.V(2).Info("No elasticsearch pods found ", "pods", pods)
 			return false, nil
 		}
 
 		for _, pod := range pods.Items {
 			for _, status := range pod.Status.ContainerStatuses {
-				logger.Debugf("Checking status of %s.%s: %v", pod.Name, status.ContainerID, status.Ready)
+				clolog.V(3).Info("Checking status of", "PodName", pod.Name, "ContainerID", status.ContainerID, "status", status.Ready)
 				if !status.Ready {
 					return false, nil
 				}
@@ -283,7 +283,7 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			logger.Errorf("Error trying to retrieve deployment: %v", err)
+			clolog.Error(err, "Error trying to retrieve deployment")
 			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)
@@ -296,13 +296,13 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 
 func (tc *E2ETestFramework) WaitForCleanupCompletion(namespace string, podlabels []string) {
 	if err := tc.waitForClusterLoggingPodsCompletion(namespace, podlabels); err != nil {
-		logger.Errorf("Cleanup completion error %v", err)
+		clolog.Error(err, "Cleanup completion error")
 	}
 }
 
 func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string, podlabels []string) error {
 	labels := strings.Join(podlabels, ",")
-	logger.Infof("waiting for pods to complete with labels: %s in namespace: %s", labels, namespace)
+	clolog.Info("waiting for pods to complete with labels in namespace:", "labels", labels, "namespace", namespace)
 	labelSelector := fmt.Sprintf("component in (%s)", labels)
 	options := metav1.ListOptions{
 		LabelSelector: labelSelector,
@@ -312,17 +312,17 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 		pods, err := tc.KubeClient.CoreV1().Pods(namespace).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				logger.Infof("Did not find pods %v", err)
+				clolog.Error(err, "Did not find pods")
 				return false, nil
 			}
-			logger.Errorf("Error listing pods %v", err)
+			clolog.Error(err, "Error listing pods ")
 			return false, nil
 		}
 		if len(pods.Items) == 0 {
-			logger.Infof("No pods found for label selection: %s", labels)
+			clolog.Info("No pods found for label selection", "labels",labels)
 			return true, nil
 		}
-		logger.Debugf("%v pods still running", len(pods.Items))
+		clolog.V(3).Info("still running pods:", len(pods.Items))
 		return false, nil
 	})
 }
@@ -334,7 +334,7 @@ func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInte
 			if apierrors.IsNotFound(err) {
 				return false, nil
 			}
-			logger.Errorf("Error Getting StatfuleSet %v", err)
+			clolog.Error(err, "Error Getting StatfuleSet")
 			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)
@@ -362,7 +362,7 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	if err != nil {
 		return err
 	}
-	logger.Debugf("Creating ClusterLogging: %s", string(body))
+	clolog.V(3).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
 	result := tc.KubeClient.RESTClient().Post().
 		RequestURI(clusterLoggingURI).
 		SetHeader("Content-Type", "application/json").
@@ -382,7 +382,7 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 	if err != nil {
 		return err
 	}
-	logger.Debugf("Creating ClusterLogForwarder: %s", string(body))
+	clolog.V(3).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
 	result := tc.KubeClient.RESTClient().Post().
 		RequestURI(clusterlogforwarderURI).
 		SetHeader("Content-Type", "application/json").
@@ -400,19 +400,19 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 func (tc *E2ETestFramework) Cleanup() {
 	if ginkgo.CurrentGinkgoTestDescription().Failed {
 		//allow caller to cleanup if unset (e.g script cleanup())
-		logger.Infof("Running Cleanup script ....")
+		clolog.Info("Running Cleanup script ....")
 		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
 		if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
 			RunCleanupScript()
 		}
 	} else {
-		logger.Infof("Not Running Cleanup script")
+		clolog.Info("Not Running Cleanup script")
 	}
-	logger.Debugf("Running %v e2e cleanup functions", len(tc.CleanupFns))
+	clolog.V(3).Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {
-		logger.Debug("Running an e2e cleanup function")
+		clolog.V(3).Info("Running an e2e cleanup function")
 		if err := cleanup(); err != nil {
-			logger.Debugf("Error during cleanup %v", err)
+			clolog.V(2).Info("Error during cleanup ", "error", err)
 		}
 	}
 	tc.CleanFluentDBuffers()
@@ -421,7 +421,7 @@ func (tc *E2ETestFramework) Cleanup() {
 func RunCleanupScript() {
 	if value, found := os.LookupEnv("CLEANUP_CMD"); found {
 		if strings.TrimSpace(value) == "" {
-			logger.Info("No cleanup script provided")
+			clolog.Info("No cleanup script provided")
 			return
 		}
 		args := strings.Split(value, " ")
@@ -429,8 +429,8 @@ func RunCleanupScript() {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Env = nil
 		result, err := cmd.CombinedOutput()
-		logger.Infof("RunCleanupScript output: %s", string(result))
-		logger.Infof("RunCleanupScript err: %v", err)
+		clolog.Info("RunCleanupScript output: ", "output", string(result))
+		clolog.Info("RunCleanupScript err: ", "error", err)
 	}
 }
 
@@ -505,17 +505,17 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	}
 	ds, err := tc.KubeClient.AppsV1().DaemonSets("default").Create(context.TODO(), spec, metav1.CreateOptions{})
 	if err != nil {
-		logger.Errorf("Could not create DaemonSet for cleaning fluentd buffers. err: %v", err)
+		clolog.Error(err,"Could not create DaemonSet for cleaning fluentd buffers.")
 		return
 	} else {
-		logger.Info("DaemonSet to clean fluent buffers created")
+		clolog.Info("DaemonSet to clean fluent buffers created")
 	}
 	time.Sleep(time.Second * 20)
 	err = tc.KubeClient.AppsV1().DaemonSets(ds.GetNamespace()).Delete(context.TODO(), ds.GetName(), metav1.DeleteOptions{})
 	if err != nil {
-		logger.Errorf("Could not delete DaemonSet for cleaning fluentd buffers. err: %v", err)
+		clolog.Error(err, "Could not delete DaemonSet for cleaning fluentd buffers.")
 	} else {
-		logger.Info("DaemonSet to clean fluent buffers deleted")
+		clolog.Info("DaemonSet to clean fluent buffers deleted")
 	}
 }
 
@@ -545,7 +545,7 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 
 func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (secret *corev1.Secret, err error) {
 	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
-	logger.Debugf("Generating Pipeline certificates for %q to %s", logStoreName, workingDir)
+	clolog.V(3).Info("Generating Pipeline certificates for Log Store to working dir", "logStoreName",logStoreName, "workingDir", workingDir)
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(workingDir, 0766); err != nil {
 			return nil, err
@@ -574,7 +574,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		OpenshiftLoggingNS,
 		data,
 	)
-	logger.Debugf("Creating secret %s for logStore %s", secret.Name, logStoreName)
+	clolog.V(3).Info("Creating secret  for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
 	if secret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts); err != nil {
 		return nil, err
 	}

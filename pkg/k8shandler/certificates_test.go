@@ -131,7 +131,7 @@ var _ = Describe("Reconciling", func() {
 			Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
 			Expect(os.RemoveAll(utils.GetWorkingDir())).To(Succeed())
-			clusterRequest.CreateOrUpdateCertificates()
+			_ = clusterRequest.CreateOrUpdateCertificates()
 
 			updatedsecret := &corev1.Secret{}
 			Expect(client.Get(context.TODO(), key, updatedsecret)).Should(Succeed())

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/status"
 	"github.com/openshift/cluster-logging-operator/pkg/url"
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +17,7 @@ import (
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 
 	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
-		logger.Warnf("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
+		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
 		return "", nil
 	}
 
@@ -44,7 +44,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	)
 
 	if err != nil {
-		logger.Warnf("Unable to create collector config generator: %v", err)
+		log.Error(err, "Unable to create collector config generator")
 		return "",
 			clusterRequest.UpdateCondition(
 				logging.CollectorDeadEnd,
@@ -59,7 +59,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	generatedConfig, err := generator.Generate(clfSpec, fwSpec)
 
 	if err != nil {
-		logger.Warnf("Unable to generate log configuration: %v", err)
+		log.Error(err, "Unable to generate log configuration")
 		return "",
 			clusterRequest.UpdateCondition(
 				logging.CollectorDeadEnd,
@@ -75,18 +75,17 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		"",
 		corev1.ConditionFalse,
 	)
-	logger.Debugf("ClusterLogForwarder generated config:\n----\n%v\n----", generatedConfig)
+	log.V(3).Info("ClusterLogForwarder generated config", generatedConfig)
 	return generatedConfig, err
 }
 
 // NormalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
 func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
-	logger.DebugObject("Normalizing ClusterLogForwarder from request: %v", clusterRequest)
 
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
 		if clusterRequest.Cluster.Spec.LogStore != nil && clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
-			logger.Debug("ClusterLogForwarder forwarding to default store")
+			log.V(2).Info("ClusterLogForwarder forwarding to default store")
 			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
 				{
 					InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
@@ -96,7 +95,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 			// Continue with normalization to fill out spec and status.
 		} else {
 			if clusterRequest.ForwarderRequest == nil {
-				logger.Debug("ClusterLogForwarder disabled")
+				log.V(3).Info("ClusterLogForwarder disabled")
 				return &logging.ClusterLogForwarderSpec{}, &logging.ClusterLogForwarderStatus{}
 			}
 		}

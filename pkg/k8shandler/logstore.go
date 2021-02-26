@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
 
@@ -345,49 +344,49 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 	different := false
 
 	if !utils.AreMapsSame(current.Spec.Spec.NodeSelector, desired.Spec.Spec.NodeSelector) {
-		logrus.Infof("Elasticsearch nodeSelector change found, updating '%s'", current.Name)
+		log.Info("Elasticsearch nodeSelector change found, updating", "currentName", current.Name)
 		current.Spec.Spec.NodeSelector = desired.Spec.Spec.NodeSelector
 		different = true
 	}
 
 	if !utils.AreTolerationsSame(current.Spec.Spec.Tolerations, desired.Spec.Spec.Tolerations) {
-		logrus.Infof("Elasticsearch tolerations change found, updating '%s'", current.Name)
+		log.Info("Elasticsearch tolerations change found, updating", "currentName", current.Name)
 		current.Spec.Spec.Tolerations = desired.Spec.Spec.Tolerations
 		different = true
 	}
 
 	if current.Spec.Spec.Image != desired.Spec.Spec.Image {
-		logrus.Infof("Elasticsearch image change found, updating %v", current.Name)
+		log.Info("Elasticsearch image change found, updating", "currentName", current.Name)
 		current.Spec.Spec.Image = desired.Spec.Spec.Image
 		different = true
 	}
 
 	if current.Spec.RedundancyPolicy != desired.Spec.RedundancyPolicy {
-		logrus.Infof("Elasticsearch redundancy policy change found, updating %v", current.Name)
+		log.Info("Elasticsearch redundancy policy change found, updating", "currentName", current.Name)
 		current.Spec.RedundancyPolicy = desired.Spec.RedundancyPolicy
 		different = true
 	}
 
 	if !reflect.DeepEqual(current.Spec.Spec.Resources, desired.Spec.Spec.Resources) {
-		logrus.Infof("Elasticsearch resources change found, updating %v", current.Name)
+		log.Info("Elasticsearch resources change found, updating", "currentName", current.Name)
 		current.Spec.Spec.Resources = desired.Spec.Spec.Resources
 		different = true
 	}
 
 	if !reflect.DeepEqual(current.Spec.Spec.ProxyResources, desired.Spec.Spec.ProxyResources) {
-		logrus.Infof("Elasticsearch Proxy resources change found, updating %v", current.Name)
+		log.Info("Elasticsearch Proxy resources change found, updating", "currentName", current.Name)
 		current.Spec.Spec.ProxyResources = desired.Spec.Spec.ProxyResources
 		different = true
 	}
 
 	if nodes, ok := areNodesDifferent(current.Spec.Nodes, desired.Spec.Nodes); ok {
-		logrus.Infof("Elasticsearch node configuration change found, updating %v", current.Name)
+		log.Info("Elasticsearch node configuration change found, updating", "currentName", current.Name)
 		current.Spec.Nodes = nodes
 		different = true
 	}
 
 	if !reflect.DeepEqual(current.Spec.IndexManagement, desired.Spec.IndexManagement) {
-		logger.Infof("Elasticsearch IndexManagement change found, updating %v", current.Name)
+		log.Info("Elasticsearch IndexManagement change found, updating", "currentName", current.Name)
 		current.Spec.IndexManagement = desired.Spec.IndexManagement
 		different = true
 	}

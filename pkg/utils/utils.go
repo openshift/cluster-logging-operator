@@ -4,7 +4,9 @@ import (
 	// #nosec G501
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"github.com/ViaQ/logerr/log"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -12,8 +14,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"time"
-
-	"github.com/sirupsen/logrus"
 
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -82,7 +82,7 @@ func EnsureLinuxNodeSelector(selectors map[string]string) map[string]string {
 			return selectors
 		}
 		// Selector is provided but is not "linux"
-		logrus.Warnf("Overriding node selector value: %s=%s to %s", OsNodeLabel, osType, LinuxValue)
+		log.Info("Overriding node selector value", "OsNodeLabel", OsNodeLabel, "osType", osType, "LinuxValue", LinuxValue)
 	}
 	selectors[OsNodeLabel] = LinuxValue
 	return selectors
@@ -154,27 +154,27 @@ func GetComponentImage(component string) string {
 
 	envVarName, ok := COMPONENT_IMAGES[component]
 	if !ok {
-		logrus.Errorf("Environment variable name mapping missing for component: %s", component)
+		log.Error(errors.New("Can't get component image"), "Environment variable name mapping missing for component", "component", component)
 		return ""
 	}
 	imageTag := os.Getenv(envVarName)
 	if imageTag == "" {
-		logrus.Errorf("No image tag defined for component '%s' by environment variable '%s'", component, envVarName)
+		log.Error(errors.New("Can't get component image"), "No image tag defined for component by environment variable", "component", component, "envVarName", envVarName)
 	}
-	logrus.Debugf("Setting component image for '%s' to: '%s'", component, imageTag)
+	log.V(3).Info("Setting component image for to", "component", component, "imageTag", imageTag)
 	return imageTag
 }
 
 func GetFileContents(filePath string) []byte {
 
 	if filePath == "" {
-		logrus.Debug("Empty file path provided for retrieving file contents")
+		log.V(2).Info("Empty file path provided for retrieving file contents")
 		return nil
 	}
 
 	contents, err := ioutil.ReadFile(filepath.Clean(filePath))
 	if err != nil {
-		logrus.Errorf("Operator unable to read local file to get contents: %v", err)
+		log.Error(err, "Operator unable to read local file to get contents")
 		return nil
 	}
 

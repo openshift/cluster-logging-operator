@@ -11,14 +11,14 @@ import (
 	apps "k8s.io/api/apps/v1"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/logger"
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger.Infof("Running %s", filename)
+	log.Info("Running ", "filename",filename)
 	var (
 		err              error
 		fluentDeployment *apps.Deployment
@@ -27,7 +27,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	)
 	BeforeEach(func() {
 		if err := e2e.DeployLogGenerator(); err != nil {
-			logger.Errorf("unable to deploy log generator. E: %s", err.Error())
+			log.Error(err, "unable to deploy log generator")
 		}
 		rootDir = filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
 	})

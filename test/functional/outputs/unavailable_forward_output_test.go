@@ -20,13 +20,10 @@ var _ = Describe("[Functional][Outputs] FluentdForward Output", func() {
 	)
 
 	BeforeEach(func() {
-		visitor := func(spec *logging.OutputSpec) {
-			spec.URL = "tcp://foo.somenamespace.svc"
-		}
 		framework = functional.NewFluentdFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
-			ToFluentForwardOutputWithVisitor(visitor)
+			ToFluentForwardOutput()
 	})
 	AfterEach(func() {
 		framework.Cleanup()

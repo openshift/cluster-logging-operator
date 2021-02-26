@@ -32,7 +32,7 @@ const (
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
 
 	LegacySecureforward = "_LEGACY_SECUREFORWARD"
-	LegacySyslog = "_LEGACY_SYSLOG"
+	LegacySyslog        = "_LEGACY_SYSLOG"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

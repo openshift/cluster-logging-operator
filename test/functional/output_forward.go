@@ -12,6 +12,7 @@ import (
 )
 
 const (
+
 	unsecureFluentConf = `
 <system>
 	log_level trace
@@ -56,8 +57,7 @@ const (
 	<format>
 		@type json
 	</format>
-</match>
-	`
+</match>`
 )
 
 func (f *FluentdFunctionalFramework) addForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
@@ -68,7 +68,7 @@ func (f *FluentdFunctionalFramework) addForwardOutput(b *runtime.PodBuilder, out
 	config := runtime.NewConfigMap(b.Pod.Namespace, configName, map[string]string{
 		"fluent.conf": unsecureFluentConf,
 	})
-	if err := f.test.Client.Create(config); err != nil {
+	if err := f.Test.Client.Create(config); err != nil {
 		return err
 	}
 
@@ -80,3 +80,4 @@ func (f *FluentdFunctionalFramework) addForwardOutput(b *runtime.PodBuilder, out
 		AddConfigMapVolume(config.Name, config.Name)
 	return nil
 }
+

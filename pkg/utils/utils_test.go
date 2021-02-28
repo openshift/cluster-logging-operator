@@ -1,9 +1,13 @@
 package utils
 
 import (
+	"os"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 func TestAreMapsSameWhenBothAreEmpty(t *testing.T) {
@@ -135,3 +139,27 @@ func TestEnvVarEqualNotEqual2(t *testing.T) {
 		t.Errorf("EnvVarEqual returned true when the desired is longer than the current")
 	}
 }
+
+var _ = Describe("GetProxyEnvVars", func() {
+	var (
+		envvars = map[string]string{}
+	)
+	BeforeEach(func() {
+		for _, envvar := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"} {
+			envvars[envvar] = os.Getenv(envvar)
+			Expect(os.Setenv(envvar, envvar)).To(Succeed())
+		}
+	})
+	AfterEach(func() {
+		for k, v := range envvars {
+			Expect(os.Setenv(k, v)).To(Succeed())
+		}
+	})
+	It("should retrieve the proxy settings from the operators ENV variables", func() {
+		envvars := GetProxyEnvVars()
+		Expect(envvars).To(HaveLen(6)) //proxy,noproxy vars
+		for _, envvar := range envvars {
+			Expect(envvar.Name).To(Equal(envvar.Value), "Exp. the value to be set to the name for the test")
+		}
+	})
+})

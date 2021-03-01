@@ -3,13 +3,13 @@
 ## What are these docs for?
 
 The topics in this `/docs` directory are a place for developers to share development-related information with other developers. 
-These are informal and unofficial docs. They and are not not carefully maintained or updated.
+These are informal and unofficial docs. They are not carefully maintained or updated.
 
 For the official documentation, see https://docs.openshift.com/container-platform/4.6/logging/cluster-logging-deploying.html
 
 ## Where can you get help with these docs?
 
-If you have questions, connect to the coreos.slack.com workspace on slack and check out the #forum-logging or #logging-dev channels.
+If you have questions, connect to the coreos.slack.com workspace on slack and check out the #forum-logging channel.
 
 ## Index of topics
 

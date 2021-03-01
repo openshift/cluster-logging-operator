@@ -409,6 +409,7 @@ pipelines:
 		}
 		spec, status := request.NormalizeForwarder()
 		Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""), "unexpected "+YAMLString(status))
+		Expect(status.Conditions).NotTo(HaveCondition("Degraded", true, "", ""), "unexpected "+YAMLString(status))
 		Expect(*spec).To(EqualDiff(request.ForwarderSpec))
 	})
 })

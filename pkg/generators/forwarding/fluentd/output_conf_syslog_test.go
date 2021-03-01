@@ -75,7 +75,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				}
 			})
 			It("should produce well formed output label config", func() {
-				results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+				results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
 				Expect(results[0]).To(EqualTrimLines(tcpConf))
@@ -93,7 +93,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				}
 			})
 			It("should produce well formed output label config", func() {
-				results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+				results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
 				Expect(results[0]).To(EqualTrimLines(tcpConf))
@@ -111,7 +111,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 				}
 			})
 			It("should produce well formed output label config", func() {
-				results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+				results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 				Expect(err).To(BeNil())
 				Expect(len(results)).To(Equal(1))
 				Expect(results[0]).To(EqualTrimLines(udpConf))
@@ -307,7 +307,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 				})
 				It("should produce well formed output label config", func() {
-					results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+					results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
 					Expect(results[0]).To(EqualTrimLines(tcpConf))
@@ -327,7 +327,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 				})
 				It("should produce well formed output label config", func() {
-					results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+					results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
 					Expect(results[0]).To(EqualTrimLines(tcpWithTLSConf))
@@ -347,7 +347,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 				})
 				It("should produce well formed output label config", func() {
-					results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+					results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
 					Expect(results[0]).To(EqualTrimLines(udpConf))
@@ -367,7 +367,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 				})
 				It("should produce well formed output label config", func() {
-					results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+					results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 					Expect(err).To(BeNil())
 					Expect(len(results)).To(Equal(1))
 					Expect(results[0]).To(EqualTrimLines(udpWithTLSConf))

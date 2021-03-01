@@ -99,7 +99,7 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 		}
-		results, err := generator.Generate(forwarder, forwarderSpec)
+		results, err := generator.Generate(forwarder, nil, forwarderSpec)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(`
   ## CLO GENERATED CONFIGURATION ###
@@ -627,7 +627,7 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 			},
 		}
-		results, err := generator.Generate(forwarder, forwarderSpec)
+		results, err := generator.Generate(forwarder, nil, forwarderSpec)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(`
 			## CLO GENERATED CONFIGURATION ### 
@@ -1046,7 +1046,7 @@ var _ = Describe("Generating fluentd config", func() {
 	})
 
 	It("should produce well formed fluent.conf", func() {
-		results, err := generator.Generate(forwarder, forwarderSpec)
+		results, err := generator.Generate(forwarder, nil, forwarderSpec)
 		Expect(err).To(BeNil())
 		Expect(results).To(EqualTrimLines(`
 			## CLO GENERATED CONFIGURATION ### 
@@ -1935,7 +1935,7 @@ var _ = Describe("Generating fluentd config", func() {
 		func(yamlSpec, wantFluentdConf string) {
 			var spec logging.ClusterLogForwarderSpec
 			Expect(yaml.Unmarshal([]byte(yamlSpec), &spec)).To(Succeed())
-			gotFluentdConf, err := generator.Generate(&spec, nil)
+			gotFluentdConf, err := generator.Generate(&spec, nil, nil)
 			Expect(err).To(Succeed())
 			Expect(wantFluentdConf).To(EqualTrimLines(gotFluentdConf))
 		},

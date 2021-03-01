@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	corev1 "k8s.io/api/core/v1"
 	"sort"
 	"text/template"
 
@@ -43,7 +44,7 @@ func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, u
 }
 
 //Generate the fluent.conf file using the forwarding information
-func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec, fwSpec *logging.ForwarderSpec) (string, error) {
+func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec, secrets map[string]*corev1.Secret, fwSpec *logging.ForwarderSpec) (string, error) {
 	//sanitize here
 	var (
 		inputs                 sets.String
@@ -102,7 +103,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 
 	// Omit generation for missing outputs, i.e. legacy methods provide them via configmap
 	if len(clfSpec.Outputs) > 0 {
-		outputLabels, err = engine.generateOutputLabelBlocks(clfSpec.Outputs, fwSpec)
+		outputLabels, err = engine.generateOutputLabelBlocks(clfSpec.Outputs, secrets, fwSpec)
 		if err != nil {
 			log.V(3).Error(err, "Error generating to output label blocks")
 			return "", err
@@ -249,7 +250,7 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 //    @type copy
 //  </match>
 // </label>
-func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.OutputSpec, outputConf *logging.ForwarderSpec) ([]string, error) {
+func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.OutputSpec, secrets map[string]*corev1.Secret, outputConf *logging.ForwarderSpec) ([]string, error) {
 	configs := []string{}
 	log.V(2).Info("Evaluating forwarder logging", "outputs", len(outputs))
 	for _, output := range outputs {
@@ -271,9 +272,9 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 			engine.storeTemplate = "storeKafka"
 			engine.outputTemplate = "outputLabelConfNoCopy"
 		default:
-			return nil, fmt.Errorf("Unknown outpt type: %v", output.Type)
+			return nil, fmt.Errorf("Unknown output type: %v", output.Type)
 		}
-		conf, err := newOutputLabelConf(engine.Template, engine.storeTemplate, output, outputConf)
+		conf, err := newOutputLabelConf(engine.Template, engine.storeTemplate, output, secrets[output.Name], outputConf)
 		if err != nil {
 			return nil, fmt.Errorf("generating fluentd output label: %v", err)
 		}

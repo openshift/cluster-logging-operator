@@ -64,7 +64,7 @@ func main() {
 	spec, _ := clRequest.NormalizeForwarder()
 	tunings := &logging.ForwarderSpec{}
 
-	generatedConfig, err := generator.Generate(spec, tunings)
+	generatedConfig, err := generator.Generate(spec, nil, tunings)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		os.Exit(1)

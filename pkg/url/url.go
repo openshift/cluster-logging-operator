@@ -7,43 +7,39 @@ import (
 	"strings"
 )
 
-// ParseAbsolute parses an absolute URL - one with non-empty Scheme and Host.
-// Returned errors include the string s.
-func ParseAbsolute(s string) (*URL, error) {
-	if s == "" {
-		return nil, fmt.Errorf("empty")
-	}
-	u, err := url.Parse(s)
+// CheckAbsolute returns an error if Scheme or Host is empty.
+func CheckAbsolute(u *URL) error {
 	switch {
-	case err != nil:
-		return nil, err
+	case u == nil:
+		return fmt.Errorf("empty")
 	case u.Scheme == "":
-		return nil, fmt.Errorf("no scheme: %v", u)
+		return fmt.Errorf("no scheme: %q", u)
 	case u.Host == "":
-		return nil, fmt.Errorf("no host: %v", u)
+		return fmt.Errorf("no host: %q", u)
 	}
-	return u, nil
+	return nil
 }
 
-// ParseAbsoluteOrEmpty is like ParseAbsolute but returns an empty
-// URL rather than an error if s == "".
-func ParseAbsoluteOrEmpty(s string) (*URL, error) {
-	if s == "" {
-		return &url.URL{}, nil
-	} else {
-		return ParseAbsolute(s)
-	}
+var secureSchemes = map[string]string{
+	"https": "http",
+	"udps":  "udp",
+	"tls":   "tcp",
 }
 
 // IsTLSScheme returns true if scheme is recognized as needing TLS security,
-// for example "https", "tls" or "udps"
+// for example "https", "tls"
 func IsTLSScheme(scheme string) bool {
-	switch strings.ToLower(scheme) {
-	case "https", "tls", "udps":
-		return true
-	default:
-		return false
+	return secureSchemes[strings.ToLower(scheme)] != ""
+}
+
+// PlainScheme returns the plain, non-TLS, version of scheme.
+// Example: PlainScheme("https") == "http"
+func PlainScheme(scheme string) string {
+	scheme = strings.ToLower(scheme)
+	if base, ok := secureSchemes[scheme]; ok {
+		return base
 	}
+	return scheme
 }
 
 // Stubs for net/url types/functions so it's not necessary to import it as well.

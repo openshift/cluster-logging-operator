@@ -18,14 +18,13 @@ var _ = Describe("[Functional][Outputs][Logstash] FluentdForward Output to Logst
 	//Logstash over fluentd forward protocol
 	type LogstashApplicationLog struct {
 		types.ApplicationLog
-		Tags []string `json:"tags"`
-		Version string `json:"@version"`
-		Host string `json:"host"`
-		Port int `json:"port"`
+		Tags    []string `json:"tags"`
+		Version string   `json:"@version"`
+		Host    string   `json:"host"`
+		Port    int      `json:"port"`
 	}
 
 	const (
-
 		logStashImage        = "logstash:7.10.1"
 		logstashConfFileName = "logstash.yml"
 		logstashConf         = `xpack.monitoring.enabled: false`
@@ -78,10 +77,10 @@ output {
 		// Template expected as output Log
 		outputLogTemplate = LogstashApplicationLog{
 			ApplicationLog: functional.NewApplicationLogTempate(),
-			Tags: []string{},
-			Version: "1",
-			Host: "*",
-			Port: 0,
+			Tags:           []string{},
+			Version:        "1",
+			Host:           "*",
+			Port:           0,
 		}
 	)
 

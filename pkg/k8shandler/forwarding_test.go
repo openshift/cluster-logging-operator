@@ -326,7 +326,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						Data: map[string][]byte{},
 					}
 				})
-				Context("for writing to Cloudwatch", func(){
+				Context("for writing to Cloudwatch", func() {
 					const missingMessage = "aws_access_key_id and aws_secret_access_key are required"
 					BeforeEach(func() {
 						output = logging.OutputSpec{
@@ -351,7 +351,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					})
 					It("should drop outputs with secrets that has empty aws_secret_access_key", func() {
 						secret.Data["aws_secret_access_key"] = []byte{}
-						secret.Data["aws_access_key_id"] = []byte{1,2,3}
+						secret.Data["aws_access_key_id"] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret)
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
@@ -366,7 +366,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					})
 					It("should drop outputs with secrets that have empty aws_access_key_id", func() {
 						secret.Data["aws_access_key_id"] = []byte{}
-						secret.Data["aws_secret_access_key"] = []byte{1,2,3}
+						secret.Data["aws_secret_access_key"] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret)
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
@@ -381,7 +381,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 					})
 				})
-				Context("with certs", func(){
+				Context("with certs", func() {
 					BeforeEach(func() {
 						output = logging.OutputSpec{
 							Name:   "aName",
@@ -400,7 +400,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					})
 					It("should drop outputs with secrets that have empty tls.crt", func() {
 						secret.Data["tls.crt"] = []byte{}
-						secret.Data["tls.key"] = []byte{1,2,3}
+						secret.Data["tls.key"] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret)
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
@@ -415,7 +415,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					})
 					It("should drop outputs with secrets that have empty tls.key", func() {
 						secret.Data["tls.key"] = []byte{}
-						secret.Data["tls.crt"] = []byte{1,2,3}
+						secret.Data["tls.crt"] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret)
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))

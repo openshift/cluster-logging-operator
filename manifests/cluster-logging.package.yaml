@@ -2,4 +2,4 @@
 packageName: cluster-logging
 channels:
 - name: "tech-preview"
-  currentCSV: clusterlogging.v5.1.0-beta1
+  currentCSV: clusterlogging.v5.1.0-preview.1

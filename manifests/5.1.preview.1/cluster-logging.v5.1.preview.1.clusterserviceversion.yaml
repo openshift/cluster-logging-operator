@@ -4,7 +4,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   # The version value is substituted by the ART pipeline
-  name: clusterlogging.v5.1.0-beta1
+  name: clusterlogging.v5.1.0-preview.1
   namespace: placeholder
   labels:
     "operatorframework.io/arch.amd64": supported
@@ -22,7 +22,7 @@ metadata:
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
     # The version value is substituted by the ART pipeline
-    olm.skipRange: ">=4.6.0-0 <5.1.0.beta1"
+    olm.skipRange: ">=4.6.0-0 <5.1.0.preview.1"
     alm-examples: |-
         [
           {
@@ -98,8 +98,8 @@ metadata:
           }
         ]
 spec:
-  # the version is 5.1.0-beta1 instead of 5.1.0.beta1 because this disallows upgrade to 5.1.0
-  version: 5.1.0-beta1
+  # the version is 5.1.0-preview instead of 5.1.0.preview because this disallows upgrade to 5.1.0
+  version: 5.1.0-preview.1
   displayName: Cluster Logging
   minKubeVersion: 1.18.3
   description: |

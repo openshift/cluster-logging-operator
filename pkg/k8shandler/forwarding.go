@@ -326,7 +326,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputURL(output *logging.Out
 	if output.URL == "" {
 		// Some output types (currently just kafka) allow a missing URL
 		// TODO (alanconway) move output-specific valiation to the output implementation.
-		if output.Type == logging.OutputTypeKafka || output.Type == logging.OutputTypeCloudwatch{
+		if output.Type == logging.OutputTypeKafka || output.Type == logging.OutputTypeCloudwatch {
 			return true
 		} else {
 			return fail(condInvalid("URL is required for output type %v", output.Type))
@@ -370,7 +370,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.
 	return true
 }
 
-func verifySecretKeysForTLS(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool{
+func verifySecretKeysForTLS(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool {
 	fail := func(c status.Condition) bool {
 		conds.Set(output.Name, c)
 		return false
@@ -386,7 +386,7 @@ func verifySecretKeysForTLS(output *logging.OutputSpec, conds logging.NamedCondi
 	}
 	return true
 }
-func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool{
+func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool {
 	log.V(3).Info("V")
 	fail := func(c status.Condition) bool {
 		conds.Set(output.Name, c)
@@ -400,4 +400,3 @@ func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.Nam
 	}
 	return true
 }
-

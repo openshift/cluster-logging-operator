@@ -12,7 +12,6 @@ import (
 )
 
 const (
-
 	unsecureFluentConf = `
 <system>
 	log_level trace
@@ -80,4 +79,3 @@ func (f *FluentdFunctionalFramework) addForwardOutput(b *runtime.PodBuilder, out
 		AddConfigMapVolume(config.Name, config.Name)
 	return nil
 }
-

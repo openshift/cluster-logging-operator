@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	forwardOutputName   = "fluentForward"
-	forwardPipelineName = "forward-pipeline"
+	fluentForwardOutputName        = "fluentForward"
+	elasticSearchForwardOutputName = "elasticSearchForward"
+	forwardPipelineName            = "forward-pipeline"
 )
 
 type ClusterLogForwarderBuilder struct {
@@ -35,21 +36,32 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 }
 
 func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
-
-	return p.ToFluentForwardOutputWithVisitor(func(output *logging.OutputSpec) {})
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, fluentForwardOutputName)
+}
+func (p *PipelineBuilder) ToElasticSearchOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, elasticSearchForwardOutputName)
 }
 
-func (p *PipelineBuilder) ToFluentForwardOutputWithVisitor(visit OutputSpecVisiter) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, forwardOutputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
 	var output *logging.OutputSpec
 	var found bool
-	if output, found = outputs[forwardOutputName]; !found {
-		output = &logging.OutputSpec{
-			Name: forwardOutputName,
-			Type: logging.OutputTypeFluentdForward,
-			URL:  "tcp://0.0.0.0:24224",
+	if output, found = outputs[fluentForwardOutputName]; !found {
+		if forwardOutputName == fluentForwardOutputName {
+			output = &logging.OutputSpec{
+				Name: fluentForwardOutputName,
+				Type: logging.OutputTypeFluentdForward,
+				URL:  "tcp://0.0.0.0:24224",
+			}
+		} else if forwardOutputName == elasticSearchForwardOutputName {
+			output = &logging.OutputSpec{
+				Name: elasticSearchForwardOutputName,
+				Type: logging.OutputTypeElasticsearch,
+				URL:  "https://0.0.0.0:9200",
+			}
 		}
+
 		visit(output)
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}

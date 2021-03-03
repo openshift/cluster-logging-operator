@@ -117,7 +117,7 @@ func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string)
 //Deploy the objects needed to functional Test
 func (f *FluentdFunctionalFramework) Deploy() (err error) {
 	visitors := []runtime.PodBuilderVisitor{
-		func(b *runtime.PodBuilder)error{
+		func(b *runtime.PodBuilder) error {
 			return f.addOutputContainers(b, f.Forwarder.Spec.Outputs)
 		},
 	}
@@ -129,6 +129,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitor(visitor runtime.PodBuilde
 	}
 	return f.DeployWithVisitors(visitors)
 }
+
 //Deploy the objects needed to functional Test
 func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBuilderVisitor) (err error) {
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)

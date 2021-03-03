@@ -91,6 +91,13 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 	return builder
 }
 
+func (builder *ContainerBuilder) AddRunAsUser(uid int64) *ContainerBuilder {
+	builder.container.SecurityContext = &corev1.SecurityContext{
+		RunAsUser: &uid,
+	}
+	return builder
+}
+
 func (builder *PodBuilder) WithLabels(labels map[string]string) *PodBuilder {
 	builder.Pod.Labels = labels
 	return builder

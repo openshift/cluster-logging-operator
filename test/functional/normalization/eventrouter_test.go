@@ -56,10 +56,11 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 	})
 
 	for _, verb := range []string{"ADDED", "UPDATED"} {
-		It(fmt.Sprintf("Should parse EventRouter %s message and check values", verb), func() {
+		v := verb // Make a local copy to avoid the "Using the variable on range scope `verb` in function literal" scopelint error
+		It(fmt.Sprintf("Should parse EventRouter %s message and check values", v), func() {
 			podRef, err := reference.GetReference(scheme.Scheme, pod)
 			Expect(err).To(BeNil())
-			newEventData := NewEventDataBuilder(verb, podRef)
+			newEventData := NewEventDataBuilder(v, podRef)
 			jsonBytes, _ := json.Marshal(newEventData)
 			jsonStr := string(jsonBytes)
 			msg := strings.ReplaceAll(fmt.Sprintf("%s stdout F %s", timestamp, jsonStr), "\"", "\\\"")

@@ -61,7 +61,7 @@ var _ = Describe("Reconciling", func() {
                 `,
 			},
 		}
- 	)
+	)
 
 	Describe("Collection", func() {
 		var (

@@ -24,13 +24,28 @@ var (
 	}
 )
 
-func NewApplicationLogTempate() types.ApplicationLog {
+func NewApplicationLogTemplate() types.ApplicationLog{
 	return types.ApplicationLog{
 		Timestamp:        time.Time{},
 		Message:          "*",
 		ViaqIndexName:    "app-write",
 		Level:            "unknown",
 		ViaqMsgID:        "*",
+		PipelineMetadata: templateForAnyPipelineMetadata,
+		Docker: types.Docker{
+			ContainerID: "*",
+		},
+		Kubernetes: templateForAnyKubernetes,
+	}
+}
+
+func NewLogTemplate() types.AllLog{
+	return types.AllLog{
+		Timestamp:    time.Time{},
+		Message:       "*",
+		ViaqIndexName: "app-write",
+		Level:         "unknown",
+		ViaqMsgID:     "*",
 		PipelineMetadata: templateForAnyPipelineMetadata,
 		Docker: types.Docker{
 			ContainerID: "*",

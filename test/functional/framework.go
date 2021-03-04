@@ -3,6 +3,7 @@ package functional
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -61,6 +62,7 @@ type FluentdFunctionalFramework struct {
 	pod               *corev1.Pod
 	fluentContainerId string
 	receiverBuilders  []receiverBuilder
+	fluentConfigFile  string
 }
 
 func init() {
@@ -107,6 +109,10 @@ func (f *FluentdFunctionalFramework) Cleanup() {
 	f.Test.Close()
 }
 
+func (f *FluentdFunctionalFramework) SetFluentConfigFileName(ConfigFileName string) {
+	f.fluentConfigFile = ConfigFileName
+}
+
 func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string) (string, error) {
 	log.V(2).Info("Running", "container", container, "cmd", cmd)
 	out, err := runtime.ExecOc(f.pod, strings.ToLower(container), cmd[0], cmd[1:]...)
@@ -136,6 +142,13 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	if f.Conf, err = forwarder.Generate(string(clfYaml), false, false); err != nil {
 		return err
+	}
+	if f.fluentConfigFile != "" {
+		confFromFile,err := ioutil.ReadFile(f.fluentConfigFile)
+		if err != nil {
+			return err
+		}
+		f.Conf = string(confFromFile)
 	}
 	log.V(2).Info("Generating Certificates")
 	if err, _ = certificates.GenerateCertificates(f.Test.NS.Name,
@@ -261,6 +274,11 @@ func (f *FluentdFunctionalFramework) WaitForPodToBeReady() error {
 
 func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs int) error {
 	msg := "2020-11-04T18:13:59.061892999+00:00 stdout F Functional Test message $n"
+	return f.WriteMessagesToApplicationLog(msg, numOfLogs)
+}
+
+func (f *FluentdFunctionalFramework) WritesJsonApplicationLogs(json string, numOfLogs int) error {
+	msg := fmt.Sprintf("2020-11-04T18:13:59.061892999+00:00 stdout F %s", json)
 	return f.WriteMessagesToApplicationLog(msg, numOfLogs)
 }
 

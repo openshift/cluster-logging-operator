@@ -33,7 +33,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 		}
 
 		// Template expected as output Log
-		outputLogTemplate = functional.NewApplicationLogTempate()
+		outputLogTemplate = functional.NewApplicationLogTemplate()
 	)
 
 	BeforeEach(func() {

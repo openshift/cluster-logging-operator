@@ -1,10 +1,13 @@
 package kafka
 
 import (
+	"bytes"
 	"fmt"
+	"strconv"
 
 	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -20,7 +23,7 @@ const (
 	kafkaBrokerProvider      = "openshift"
 	kafkaNodeReader          = "kafka-node-reader"
 	kafkaNodeReaderBinding   = "kafka-node-reader-binding"
-	kafkaInsidePort          = 9092
+	kafkaInsidePort          = 9093
 	kafkaOutsidePort         = 9094
 	kafkaJMXPort             = 5555
 )
@@ -84,7 +87,7 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 					InitContainers: []v1.Container{
 						{
 							Name:  "init-config",
-							Image: "solsson/kafka-initutils@sha256:f6d9850c6c3ad5ecc35e717308fddb47daffbde18eb93e98e031128fe8b899ef",
+							Image: KafkaInitUtilsImage,
 							Env: []v1.EnvVar{
 								{
 									Name: "NODE_NAME",
@@ -138,7 +141,7 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 					Containers: []v1.Container{
 						{
 							Name:  kafkaBrokerContainerName,
-							Image: "solsson/kafka:2.4.1",
+							Image: KafkaImage,
 							Env: []v1.EnvVar{
 								{
 									Name:  "CLASSPATH",
@@ -150,7 +153,7 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 								},
 								{
 									Name:  "JMX_PORT",
-									Value: "5555",
+									Value: strconv.Itoa(kafkaJMXPort),
 								},
 							},
 							Ports: []v1.ContainerPort{
@@ -159,7 +162,7 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 									ContainerPort: kafkaInsidePort,
 								},
 								{
-									Name:          "outide",
+									Name:          "outside",
 									ContainerPort: kafkaOutsidePort,
 								},
 								{
@@ -205,6 +208,10 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 									MountPath: "/etc/kafka-configmap",
 								},
 								{
+									Name:      "brokercerts",
+									MountPath: "/etc/kafka-certs",
+								},
+								{
 									Name:      "config",
 									MountPath: "/etc/kafka",
 								},
@@ -231,6 +238,14 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 									LocalObjectReference: v1.LocalObjectReference{
 										Name: DeploymentName,
 									},
+								},
+							},
+						},
+						{
+							Name: "brokercerts",
+							VolumeSource: v1.VolumeSource{
+								Secret: &v1.SecretVolumeSource{
+									SecretName: DeploymentName,
 								},
 							},
 						},
@@ -262,8 +277,12 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 func NewBrokerService(namespace string) *v1.Service {
 	ports := []v1.ServicePort{
 		{
-			Name: "server",
-			Port: kafkaInsidePort,
+			Name: "plaintext",
+			Port: 9092,
+		},
+		{
+			Name: "ssl",
+			Port: 9093,
 		},
 	}
 	return factory.NewService(DeploymentName, namespace, kafkaBrokerComponent, ports)
@@ -313,7 +332,27 @@ func NewBrokerConfigMap(namespace string) *v1.ConfigMap {
 	data := map[string]string{
 		"init.sh":           initKafkaScript,
 		"server.properties": serverProperties,
+		"client.properties": clientProperties,
 		"log4j.properties":  log4jProperties,
 	}
 	return k8shandler.NewConfigMap(DeploymentName, namespace, data)
+}
+
+func NewBrokerSecret(namespace string) *v1.Secret {
+	rootCA := certificate.NewCA(nil, "Root CA")
+	intermediateCA := certificate.NewCA(rootCA, "Intermediate CA")
+	serverCert := certificate.NewCert(intermediateCA, "Server", fmt.Sprintf("%s.%s.svc.cluster.local", DeploymentName, namespace))
+
+	data := map[string][]byte{
+		"server.jks":    certificate.JKSKeyStore(serverCert, "server"),
+		"ca-bundle.jks": certificate.JKSTrustStore([]*certificate.CertKey{rootCA, intermediateCA}, "ca-bundle"),
+		"ca-bundle.crt": bytes.Join([][]byte{rootCA.CertificatePEM(), intermediateCA.CertificatePEM()}, []byte{}),
+	}
+
+	secret := k8shandler.NewSecret(
+		DeploymentName,
+		namespace,
+		data,
+	)
+	return secret
 }

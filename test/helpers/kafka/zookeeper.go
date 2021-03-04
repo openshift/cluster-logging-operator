@@ -77,7 +77,7 @@ func NewZookeeperStatefuleSet(namespace string) *apps.StatefulSet {
 					InitContainers: []v1.Container{
 						{
 							Name:  "init-config",
-							Image: "solsson/kafka-initutils@sha256:f6d9850c6c3ad5ecc35e717308fddb47daffbde18eb93e98e031128fe8b899ef",
+							Image: KafkaInitUtilsImage,
 							Command: []string{
 								"/bin/bash",
 								"/etc/kafka-configmap/init.sh",
@@ -101,7 +101,7 @@ func NewZookeeperStatefuleSet(namespace string) *apps.StatefulSet {
 					Containers: []v1.Container{
 						{
 							Name:  zookeeperDeploymentName,
-							Image: "solsson/kafka:2.4.1",
+							Image: KafkaImage,
 							Env: []v1.EnvVar{
 
 								{

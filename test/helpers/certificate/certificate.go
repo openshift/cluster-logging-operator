@@ -95,11 +95,11 @@ func (ck *CertKey) StartServer(handler http.Handler, clientCA *CertKey) *httptes
 }
 
 // NewCA creates a new dummy CA cert signed by signer, or self-signed if signer is nil.
-func NewCA(signer *CertKey) *CertKey {
+func NewCA(signer *CertKey, org string) *CertKey {
 	return New(&x509.Certificate{
 		SerialNumber: big.NewInt(1234),
 		Subject: pkix.Name{
-			Organization: []string{"Testing, INC."},
+			Organization: []string{org},
 			// Country:       []string{"US"},
 			// Province:      []string{""},
 			// Locality:      []string{"San Francisco"},
@@ -118,7 +118,7 @@ func NewCA(signer *CertKey) *CertKey {
 // NewCert creates a dummy server cert signed by signer, or self-signed if signer is nil.
 // The addrs list can contain strings (DNS names) or net.IP addresses, if addrs
 // is empty will use "localhost", v4 and v6 loopback
-func NewCert(signer *CertKey, addrs ...interface{}) *CertKey {
+func NewCert(signer *CertKey, org string, addrs ...interface{}) *CertKey {
 	var (
 		dns []string
 		ips []net.IP
@@ -138,7 +138,7 @@ func NewCert(signer *CertKey, addrs ...interface{}) *CertKey {
 	}
 	return New(&x509.Certificate{
 		SerialNumber: big.NewInt(1234),
-		Subject:      pkix.Name{Organization: []string{"Testing, INC."}},
+		Subject:      pkix.Name{Organization: []string{org}},
 		NotBefore:    time.Now(),
 		NotAfter:     time.Now().AddDate(10, 0, 0),
 		SubjectKeyId: []byte{1, 2, 3, 4, 6},
@@ -151,7 +151,7 @@ func NewCert(signer *CertKey, addrs ...interface{}) *CertKey {
 }
 
 // NewServer creates a dummy client cert signed by signer, or self-signed if signer is nil.
-func NewClient(signer *CertKey) *CertKey {
+func NewClient(signer *CertKey, org string) *CertKey {
 	// Its the same as a server cert but with no DNS/IP addrs.
-	return NewCert(signer)
+	return NewCert(signer, org)
 }

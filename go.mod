@@ -23,12 +23,12 @@ require (
 	github.com/openshift/api v0.0.0-20200602204738-768b7001fe69
 	github.com/openshift/elasticsearch-operator v0.0.0-20200722044541-14fae5dcddfd
 	github.com/operator-framework/operator-sdk v0.18.1
+	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rogpeppe/go-internal v1.5.2 // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/zap v1.16.0 // indirect
-	golang.org/x/crypto v0.0.0-20200602180216-279210d13fed // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8

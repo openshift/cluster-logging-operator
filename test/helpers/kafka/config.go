@@ -23,10 +23,7 @@ const (
         fi
 
         [ -z "$ADVERTISE_ADDR" ] && echo "ADVERTISE_ADDR is empty, will advertise detected DNS name"
-        OUTSIDE_HOST=$(kubectl get node "$NODE_NAME" -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}')
-        OUTSIDE_PORT=$((32400 + ${KAFKA_BROKER_ID}))
-        SEDS+=("s|#init#advertised.listeners=PLAINTEXT://#init#|advertised.listeners=PLAINTEXT://${ADVERTISE_ADDR}:9092,OUTSIDE://${OUTSIDE_HOST}:${OUTSIDE_PORT}|")
-        ANNOTATIONS="$ANNOTATIONS kafka-listener-outside-host=$OUTSIDE_HOST kafka-listener-outside-port=$OUTSIDE_PORT"
+        SEDS+=("s|#init#advertised.listeners=PLAINTEXT://#init#|advertised.listeners=PLAINTEXT://${ADVERTISE_ADDR}:9092,SSL://${ADVERTISE_ADDR}:9093|")
 
         if [ ! -z "$LABELS" ]; then
           kubectl -n $POD_NAMESPACE label pod $POD_NAME $LABELS || echo "Failed to label $POD_NAMESPACE.$POD_NAME - RBAC issue?"
@@ -37,6 +34,15 @@ const (
       }
       printf '%s\n' "${SEDS[@]}" | sed -f - /etc/kafka-configmap/server.properties > /etc/kafka/server.properties.tmp
       [ $? -eq 0 ] && mv /etc/kafka/server.properties.tmp /etc/kafka/server.properties
+
+      rm -rf /var/lib/kafka/data/*
+    `
+
+	clientProperties = `
+      security.protocol=SSL
+      ssl.truststore.location=/etc/kafka-certs/ca-bundle.jks
+      ssl.truststore.type=JKS
+      ssl.truststore.password=ca-bundle
     `
 
 	serverProperties = `
@@ -80,7 +86,10 @@ const (
       #   EXAMPLE:
       #     listeners = PLAINTEXT://your.host.name:9092
       #listeners=PLAINTEXT://:9092
-      listeners=PLAINTEXT://:9092,OUTSIDE://:9094
+      listeners=PLAINTEXT://:9092,SSL://:9093
+      ssl.keystore.type=JKS
+      ssl.keystore.location=/etc/kafka-certs/server.jks
+      ssl.keystore.password=server
 
       # Hostname and port the broker will advertise to producers and consumers. If not set,
       # it uses the value for "listeners" if configured.  Otherwise, it will use the value

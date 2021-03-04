@@ -37,3 +37,10 @@ func JSONString(v interface{}) string {
 //YAMLString returns a YAML string of a value, using the sigs.k8s.io/yaml package,
 //or an error message.
 func YAMLString(v interface{}) string { return marshalString(yaml.Marshal(v)) }
+
+// Must panics if err is not nil.
+func Must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

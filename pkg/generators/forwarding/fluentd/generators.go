@@ -3,9 +3,10 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"sort"
 	"text/template"
+
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -224,10 +225,12 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 			Name           string
 			Outputs        []string
 			PipelineLabels string
+			Parse          string
 		}{
 			pipeline.Name,
 			pipeline.OutputRefs,
 			jsonLabels,
+			pipeline.Parse,
 		}
 		result, err := engine.Execute("pipelineToOutputCopyTemplate", data)
 		if err != nil {

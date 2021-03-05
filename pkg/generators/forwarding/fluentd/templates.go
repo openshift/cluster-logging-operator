@@ -546,7 +546,7 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
 <label {{sourceTypelabelName .Source}}>
   <match **>
     @type copy
-{{ range $index, $pipelineLabel := .PipelineNames }}
+{{- range $index, $pipelineLabel := .PipelineNames }}
     <store>
       @type relabel
       @label {{labelName $pipelineLabel}}
@@ -566,9 +566,21 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
     </record>
   </filter>
   {{ end -}}
+  {{ if (eq .Parse "json") -}}
+  <filter **>
+    @type parser
+    key_name message
+    reserve_data yes
+    hash_value_field structured
+    <parse>
+      @type json
+	  json_parser oj
+    </parse>
+  </filter>
+  {{ end -}}
   <match **>
     @type copy
-{{ range $index, $target := .Outputs }}
+{{- range $index, $target := .Outputs }}
     <store>
       @type relabel
       @label {{labelName $target}}

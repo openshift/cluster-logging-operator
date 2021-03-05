@@ -1949,6 +1949,59 @@ var _ = Describe("Generating fluentd config", func() {
 		})
 		Expect(sources.List()).To(ContainElements("application", "audit"))
 	})
+
+	Describe("Json Parsing", func() {
+
+		fw := &logging.ClusterLogForwarderSpec{
+			Outputs: []logging.OutputSpec{
+				{
+					Type: logging.OutputTypeElasticsearch,
+					Name: "apps-es-1",
+					URL:  "https://es.svc.messaging.cluster.local:9654",
+				},
+			},
+			Inputs: []logging.InputSpec{
+				{
+					Name:        "myInput",
+					Application: &logging.Application{},
+				},
+			},
+			Pipelines: []logging.PipelineSpec{
+				{
+					Name:       "apps-pipeline",
+					InputRefs:  []string{"myInput"},
+					OutputRefs: []string{"apps-es-1"},
+					Parse:      "json",
+				},
+			},
+		}
+		It("should generate config for Json parsing", func() {
+			spec, err := generator.generatePipelineToOutputLabels(fw.Pipelines)
+			Expect(err).To(BeNil())
+			Expect(spec[0]).To(EqualTrimLines(`
+  <label @APPS_PIPELINE>
+    <filter **>
+      @type parser
+	  key_name message
+	  reserve_data yes
+	  hash_value_field structured
+	  <parse>
+	    @type json
+		json_parser oj
+	  </parse>
+	</filter>
+    <match **>
+      @type copy
+      <store>
+        @type relabel
+        @label @APPS_ES_1
+      </store>
+    </match>
+  </label>`))
+		})
+
+	})
+
 	var _ = DescribeTable("Verify generated fluentd.conf for valid forwarder specs",
 		func(yamlSpec, wantFluentdConf string) {
 			var spec logging.ClusterLogForwarderSpec

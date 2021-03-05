@@ -180,8 +180,8 @@ test-e2e-olm: $(JUNITREPORT)
 	INCLUDES=$(E2E_TEST_INCLUDES) CLF_INCLUDES=$(CLF_TEST_INCLUDES) hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
-    CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
-    INCLUDES=$(E2E_TEST_INCLUDES) \
+	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
+	INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh

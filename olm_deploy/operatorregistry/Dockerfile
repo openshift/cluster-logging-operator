@@ -1,6 +1,6 @@
 FROM quay.io/operator-framework/upstream-registry-builder AS registry-builder
 
-FROM registry.svc.ci.openshift.org/openshift/release:golang-1.12
+FROM registry.ci.openshift.org/openshift/release:golang-1.12
 
 WORKDIR /
 COPY manifests/ /manifests

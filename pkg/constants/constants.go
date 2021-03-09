@@ -33,6 +33,8 @@ const (
 
 	LegacySecureforward = "_LEGACY_SECUREFORWARD"
 	LegacySyslog        = "_LEGACY_SYSLOG"
+
+	FluentdImageEnvVar = "FLUENTD_IMAGE"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

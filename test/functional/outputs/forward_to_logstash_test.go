@@ -76,7 +76,7 @@ output {
 
 		// Template expected as output Log
 		outputLogTemplate = LogstashApplicationLog{
-			ApplicationLog: functional.NewApplicationLogTempate(),
+			ApplicationLog: functional.NewApplicationLogTemplate(),
 			Tags:           []string{},
 			Version:        "1",
 			Host:           "*",

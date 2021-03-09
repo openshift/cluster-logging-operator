@@ -2,6 +2,7 @@ package normalization
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	. "github.com/onsi/ginkgo"
@@ -30,7 +31,7 @@ var _ = Describe("[Normalization] Fluentd normalization", func() {
 	})
 
 	It("should remove 'kubernetes.labels' and create 'kubernetes.flat_labels' with an array of 'kubernetes.labels'", func() {
-		raw, err := framework.ReadApplicationLogsFrom("fluentforward")
+		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		logs, err := types.ParseLogs(raw)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")

@@ -28,7 +28,6 @@ const (
 	LogStoreURL         = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
 	MasterCASecretName  = "master-certs"
 	CollectorSecretName = "fluentd"
-
 	// Disable gosec linter, complains "possible hard-coded secret"
 	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec

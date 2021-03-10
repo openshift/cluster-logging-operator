@@ -3,6 +3,7 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"sort"
 	"text/template"
 
@@ -12,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
-
 //ConfigGenerator is a config generator for fluentd
 type ConfigGenerator struct {
 	*generators.Generator
@@ -56,24 +56,25 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		err                    error
 	)
 
+	inputs, namespaces = gatherSources(clfSpec)
+	routeMap = inputsToPipelines(clfSpec)
 	// Provide inputs and inputsPipelines for legacy forwarding protocols
 	// w/o a user-provided ClusterLogFowarder instance to enable inputs and
 	// inputs-to-pipelines a.k.a. route map template generation.
 	if engine.includeLegacyForwardConfig || engine.includeLegacySyslogConfig {
-		inputs = sets.NewString(
-			string(logging.InputNameInfrastructure),
-			string(logging.InputNameApplication),
-			string(logging.InputNameAudit),
+		inputs.Insert(
+			logging.InputNameInfrastructure,
+			logging.InputNameApplication,
+			logging.InputNameAudit,
 		)
-
-		routeMap = logging.RouteMap{
-			logging.InputNameInfrastructure: sets.NewString(),
-			logging.InputNameApplication:    sets.NewString(),
-			logging.InputNameAudit:          sets.NewString(),
+		for _, logType := range inputs.List(){
+			if engine.includeLegacySyslogConfig {
+				routeMap.Insert(logType,constants.LegacySyslog)
+			}
+			if engine.includeLegacyForwardConfig {
+				routeMap.Insert(logType,constants.LegacySecureforward)
+			}
 		}
-	} else {
-		inputs, namespaces = gatherSources(clfSpec)
-		routeMap = inputsToPipelines(clfSpec)
 	}
 
 	sourceInputLabels, err = engine.generateSource(inputs)

@@ -42,6 +42,8 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool)
 		Cluster: &logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{},
 		},
+		FnIncludeLegacyForward:  func()bool { return includeLegacyForward},
+		FnIncludeLegacySyslog:  func()bool { return includeLegacySyslog},
 	}
 	if includeDefaultLogStore {
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{

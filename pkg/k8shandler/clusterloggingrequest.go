@@ -7,6 +7,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -14,9 +15,9 @@ import (
 )
 
 type ClusterLoggingRequest struct {
-	Client  client.Client
-	Cluster *logging.ClusterLogging
-
+	Client        client.Client
+	Cluster       *logging.ClusterLogging
+	EventRecorder record.EventRecorder
 	// ForwarderRequest is a logforwarder instance
 	ForwarderRequest *logging.ClusterLogForwarder
 

@@ -148,7 +148,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 		return err
 	}
 	log.V(2).Info("Generating Certificates")
-	if err, _ = certificates.GenerateCertificates(f.Test.NS.Name,
+	if err, _, _ = certificates.GenerateCertificates(f.Test.NS.Name,
 		utils.GetScriptsDir(), "elasticsearch",
 		utils.DefaultWorkingDir); err != nil {
 		return err

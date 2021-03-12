@@ -225,6 +225,7 @@ func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, ex
 	// build Nodes
 	esNodes = append(esNodes, esNode)
 
+	keepEsStatus := false
 	// if we had more than 1 es node before, we also want to enter this condition
 	if logStoreSpec.NodeCount > maximumElasticsearchMasterCount || len(existing.Spec.Nodes) > 1 {
 
@@ -246,6 +247,10 @@ func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, ex
 
 		esNodes = append(esNodes, dataNode)
 
+		// if the cluster is set to be redeployed, keep the status
+		if len(existing.Status.Nodes) > 0 && existing.Status.Nodes[0].UpgradeStatus.ScheduledForCertRedeploy == v1.ConditionTrue {
+			keepEsStatus = true
+		}
 	}
 
 	redundancyPolicy := logStoreSpec.ElasticsearchSpec.RedundancyPolicy
@@ -267,6 +272,10 @@ func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, ex
 		ManagementState:  elasticsearch.ManagementStateManaged,
 		RedundancyPolicy: redundancyPolicy,
 		IndexManagement:  indexManagementSpec,
+	}
+
+	if keepEsStatus {
+		es.Status = existing.Status
 	}
 
 	utils.AddOwnerRefToObject(es, utils.AsOwner(cr.Cluster))

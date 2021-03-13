@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"testing"
 
@@ -168,7 +169,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 			It("should drop pipelines that conflict with the internally reserved name", func() {
 				request.ForwardingSpec.Pipelines = append(request.ForwardingSpec.Pipelines,
 					loggingv1alpha1.PipelineSpec{
-						Name:       defaultAppPipelineName,
+						Name:       constants.DefaultAppPipelineName,
 						OutputRefs: []string{output.Name, otherOutput.Name},
 						SourceType: loggingv1alpha1.LogSourceTypeApp,
 					})
@@ -252,7 +253,7 @@ var _ = Describe("Normalizing Forwarding", func() {
 
 			It("should drop outputs that conflict with the internally reserved name", func() {
 				request.ForwardingSpec.Outputs = append(request.ForwardingSpec.Outputs, loggingv1alpha1.OutputSpec{
-					Name:     internalOutputName,
+					Name:     constants.InternalOutputName,
 					Type:     loggingv1alpha1.OutputTypeElasticsearch,
 					Endpoint: "anOutPut",
 				})

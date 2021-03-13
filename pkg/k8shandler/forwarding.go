@@ -17,10 +17,6 @@ import (
 )
 
 const (
-	internalOutputName       = "clo-default-output-es"
-	collectorSecretName      = "fluentd"
-	defaultAppPipelineName   = "clo-default-app-pipeline"
-	defaultInfraPipelineName = "clo-default-infra-pipeline"
 
 	//ForwardingAnnotation  Annotate CL instance with a value of "enabled"
 	ForwardingAnnotation = "clusterlogging.openshift.io/logforwardingtechpreview"
@@ -110,7 +106,7 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 			clusterRequest.ForwardingRequest.Status.LogSources = []logforward.LogSourceType{logforward.LogSourceTypeApp, logforward.LogSourceTypeInfra}
 			clusterRequest.ForwardingRequest.Status.Outputs = []logforward.OutputStatus{
 				logforward.NewOutputStatus(
-					internalOutputName,
+					constants.InternalOutputName,
 					logforward.OutputStateAccepted,
 					logforward.OutputStateReasonConditionsMet,
 					"This is an operator generated output because forwarding is undefined and 'DisableDefaultForwarding' is false",
@@ -118,7 +114,7 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 			}
 			clusterRequest.ForwardingRequest.Status.Pipelines = []logforward.PipelineStatus{
 				logforward.NewPipelineStatus(
-					defaultAppPipelineName,
+					constants.DefaultAppPipelineName,
 					logforward.PipelineStateAccepted,
 					logforward.PipelineStateReasonConditionsMet,
 					"This is an operator generated pipeline because forwarding is undefined and 'DisableDefaultForwarding' is false",
@@ -127,24 +123,24 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 			return logforward.ForwardingSpec{
 				Outputs: []logforward.OutputSpec{
 					{
-						Name:     internalOutputName,
+						Name:     constants.InternalOutputName,
 						Type:     logforward.OutputTypeElasticsearch,
 						Endpoint: constants.LogStoreService,
 						Secret: &logforward.OutputSecretSpec{
-							Name: collectorSecretName,
+							Name: constants.CollectorSecretName,
 						},
 					},
 				},
 				Pipelines: []logforward.PipelineSpec{
 					{
-						Name:       defaultAppPipelineName,
+						Name:       constants.DefaultAppPipelineName,
 						SourceType: logforward.LogSourceTypeApp,
-						OutputRefs: []string{internalOutputName},
+						OutputRefs: []string{constants.InternalOutputName},
 					},
 					{
-						Name:       defaultInfraPipelineName,
+						Name:       constants.DefaultInfraPipelineName,
 						SourceType: logforward.LogSourceTypeInfra,
-						OutputRefs: []string{internalOutputName},
+						OutputRefs: []string{constants.InternalOutputName},
 					},
 				},
 			}
@@ -165,7 +161,7 @@ func (clusterRequest *ClusterLoggingRequest) normalizeLogForwarding(namespace st
 			status.Name = fmt.Sprintf("pipeline[%d]", i)
 			status.AddCondition(logforward.PipelineConditionTypeName, logforward.PipelineConditionReasonMissingName, "")
 		}
-		if pipeline.Name == defaultAppPipelineName || pipeline.Name == defaultInfraPipelineName {
+		if pipeline.Name == constants.DefaultAppPipelineName || pipeline.Name == constants.DefaultInfraPipelineName {
 			status.Name = fmt.Sprintf("pipeline[%d]", i)
 			status.AddCondition(logforward.PipelineConditionTypeName, logforward.PipelineConditionReasonReservedNameConflict, "")
 		}
@@ -230,7 +226,7 @@ func (clusterRequest *ClusterLoggingRequest) gatherAndVerifyOutputRefs(spec *log
 			outStatus.Name = fmt.Sprintf("output[%d]", i)
 			outStatus.AddCondition(logforward.OutputConditionTypeName, logforward.OutputConditionReasonMissingName, "")
 		}
-		if output.Name == internalOutputName {
+		if output.Name == constants.InternalOutputName {
 			outStatus.Name = fmt.Sprintf("output[%d]", i)
 			outStatus.AddCondition(logforward.OutputConditionTypeName, logforward.OutputConditionReasonReservedNameConflict, "")
 		}

@@ -11,6 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+const (
+	legacySecureforward = "_LEGACY_SECUREFORWARD"
+	legacySyslog = "_LEGACY_SYSLOG"
+)
 //ConfigGenerator is a config generator for fluentd
 type ConfigGenerator struct {
 	*generators.Generator
@@ -47,23 +51,31 @@ func (engine *ConfigGenerator) Generate(forwarding *logforward.ForwardingSpec) (
 		outputLabels           []string
 		err                    error
 	)
-
+	logTypes, appNs = gatherLogSourceTypes(forwarding.Pipelines)
+	pipelineNames = mapSourceTypesToPipelineNames(forwarding.Pipelines)
 	// Provide logTypes for legacy forwarding protocols w/o a user-provided
 	// LogFowarding instance to enable logTypes and appNs for template generation.
 	if engine.includeLegacyForwardConfig || engine.includeLegacySyslogConfig {
-		logTypes = sets.NewString(
+		logTypes.Insert(
 			string(logforward.LogSourceTypeApp),
 			string(logforward.LogSourceTypeAudit),
 			string(logforward.LogSourceTypeInfra),
 		)
-		pipelineNames = map[logforward.LogSourceType][]string{
-			logforward.LogSourceTypeApp:   {},
-			logforward.LogSourceTypeAudit: {},
-			logforward.LogSourceTypeInfra: {},
+		for _, logTypeName := range logTypes.List(){
+			logType := logforward.LogSourceType(logTypeName)
+			names, found := pipelineNames[logType]
+			if !found {
+				names = []string{}
+			}
+			pipelines := sets.NewString(names...)
+			if engine.includeLegacySyslogConfig {
+				pipelines.Insert(legacySyslog)
+			}
+			if engine.includeLegacyForwardConfig {
+				pipelines.Insert(legacySecureforward)
+			}
+			pipelineNames[logType] = pipelines.List()
 		}
-	} else {
-		logTypes, appNs = gatherLogSourceTypes(forwarding.Pipelines)
-		pipelineNames = mapSourceTypesToPipelineNames(forwarding.Pipelines)
 	}
 
 	sourceInputLabels, err = engine.generateSource(logTypes, appNs)

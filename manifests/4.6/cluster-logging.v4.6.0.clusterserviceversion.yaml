@@ -315,6 +315,11 @@ spec:
                 imagePullPolicy: IfNotPresent
                 command:
                 - cluster-logging-operator
+                ports:
+                  - containerPort: 8383
+                    name: http-metrics
+                  - containerPort: 8686
+                    name: cr-metrics
                 env:
                   - name: WATCH_NAMESPACE
                     valueFrom:

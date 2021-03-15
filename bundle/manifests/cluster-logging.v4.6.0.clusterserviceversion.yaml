@@ -159,9 +159,9 @@ spec:
   - type: SingleNamespace
     supported: true
   - type: MultiNamespace
-    supported: true
+    supported: false
   - type: AllNamespaces
-    supported: true
+    supported: false
   install:
     strategy: deployment
     spec:
@@ -245,16 +245,6 @@ spec:
       - serviceAccountName: cluster-logging-operator
         rules:
         - apiGroups:
-          - "logging.openshift.io"
-          resources:
-          - clusterlogforwarders
-          - clusterlogforwarders/status
-          verbs:
-          - get
-          - list
-          - watch
-          - update
-        - apiGroups:
           - console.openshift.io
           resources:
           - consoleexternalloglinks
@@ -325,6 +315,11 @@ spec:
                 imagePullPolicy: IfNotPresent
                 command:
                 - cluster-logging-operator
+                ports:
+                  - containerPort: 8383
+                    name: http-metrics
+                  - containerPort: 8686
+                    name: cr-metrics
                 env:
                   - name: WATCH_NAMESPACE
                     valueFrom:

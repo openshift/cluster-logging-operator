@@ -158,7 +158,11 @@ test-functional:
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
-test-unit:
+test-forwarder-generator: bin/forwarder-generator
+	@bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null 2>&1
+ .PHONY: test-forwarder-generator
+
+test-unit: test-forwarder-generator
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
 	go test -cover -race ./pkg/...

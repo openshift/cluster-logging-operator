@@ -15,7 +15,7 @@ import (
 var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 
 	var (
-		framework               *functional.FluentdFunctionalFramework
+		framework *functional.FluentdFunctionalFramework
 	)
 
 	BeforeEach(func() {
@@ -104,7 +104,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		// Template expected as output Log
 		var outputLogTemplate = functional.NewApplicationLogTemplate()
 		outputLogTemplate.Timestamp = nanoTime
-		outputLogTemplate.Message =  fmt.Sprintf("regex:^%s.*$", message)
+		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "info"
 
 		// Write log line as input to fluentd
@@ -132,7 +132,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		// Template expected as output Log
 		var outputLogTemplate = functional.NewApplicationLogTemplate()
 		outputLogTemplate.Timestamp = nanoTime
-		outputLogTemplate.Message =  fmt.Sprintf("regex:^%s.*$", message)
+		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
 
 		// Write log line as input to fluentd

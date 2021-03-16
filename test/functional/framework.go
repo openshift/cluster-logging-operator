@@ -115,7 +115,7 @@ func NewCRIOLogMessage(timestamp, message string, partial bool) string {
 }
 
 func (f *FluentdFunctionalFramework) Cleanup() {
-	f.Test.Close()
+	f.closeClient()
 }
 
 func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string) (string, error) {

@@ -1,15 +1,15 @@
 [xyz]
-baseurl = http://pulp.dist.prod.ext.phx2.redhat.com/content/dist/rhel8/8/x86_64/appstream/os/
+baseurl = http://rhsm-pulp.corp.redhat.com/content/dist/rhel8/8/x86_64/appstream/os/
 enabled = 1
 gpgcheck = 0
 
 [xyz2]
-baseurl = http://pulp.dist.prod.ext.phx2.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2.9/os/
+baseurl = http://rhsm-pulp.corp.redhat.com/content/dist/layered/rhel8/x86_64/ansible/2.9/os/
 enabled = 1
 gpgcheck = 0
 
 [xyz3]
-baseurl = http://pulp.dist.prod.ext.phx2.redhat.com/content/dist/layered/rhel8/x86_64/openstack/16/os/
+baseurl = http://rhsm-pulp.corp.redhat.com/content/dist/layered/rhel8/x86_64/openstack/16/os/
 enabled = 1
 gpgcheck = 0
 
@@ -19,6 +19,6 @@ enabled = 1
 gpgcheck = 0
 
 [xyz5]
-baseurl = http://pulp.dist.prod.ext.phx2.redhat.com/content/dist/rhel8/8/x86_64/baseos/os/
+baseurl = http://rhsm-pulp.corp.redhat.com/content/dist/rhel8/8/x86_64/baseos/os/
 enabled = 1
 gpgcheck = 0

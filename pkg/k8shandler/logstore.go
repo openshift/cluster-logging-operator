@@ -257,7 +257,7 @@ func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, ex
 	var es *elasticsearch.Elasticsearch
 	if existing != nil && existing.Name != "" {
 		// using existing es if a valid one exists
-		es = existing
+		es = existing.DeepCopy()
 	} else {
 		es = cr.emptyElasticsearchCR(elasticsearchName)
 	}

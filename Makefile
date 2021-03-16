@@ -166,10 +166,9 @@ test-unit:
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-MANIFEST_VERSION?="5.0"
+OPENSHIFT_VERSIONS?="v4.7"
 generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=${MANIFEST_VERSION} hack/generate-bundle.sh
-
+	MANIFEST_VERSION=${OCP_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} hack/generate-bundle.sh
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.

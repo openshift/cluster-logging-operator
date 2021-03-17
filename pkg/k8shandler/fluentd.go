@@ -3,6 +3,8 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"reflect"
 	"time"
 
@@ -263,11 +265,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error {
 	var secrets = map[string][]byte{}
 	_ = Synchronize(func() error {
-		secrets = map[string][]byte{
-			"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-			"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-			"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
-		}
+		secrets = map[string][]byte{}
+		// Ignore errors, these files are optional depending on security settings.
+		secrets["ca-bundle.crt"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("ca.crt"))
+		secrets["tls.key"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("system.logging.fluentd.key"))
+		secrets["tls.crt"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("system.logging.fluentd.crt"))
 		return nil
 	})
 	fluentdSecret := NewSecret(
@@ -337,11 +339,18 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 		{Name: "filebufferstorage", MountPath: "/var/lib/fluentd"},
 		{Name: metricsVolumeName, MountPath: "/etc/fluent/metrics"},
 	}
-	for _, target := range pipelineSpec.Outputs {
-		if target.Secret != nil && target.Secret.Name != "" {
-			path := fmt.Sprintf("/var/run/ocp-collector/secrets/%s", target.Secret.Name)
-			fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts, v1.VolumeMount{Name: target.Name, MountPath: path})
+	// List of _unique_ output secret names, several outputs may use the same secret.
+	unique := sets.NewString()
+	for _, o := range pipelineSpec.Outputs {
+		if o.Secret != nil && o.Secret.Name != "" {
+			unique.Insert(o.Secret.Name)
 		}
+	}
+	secretNames := unique.List()
+
+	for _, name := range secretNames {
+		path := fmt.Sprintf("/var/run/ocp-collector/secrets/%s", name)
+		fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts, v1.VolumeMount{Name: name, MountPath: path})
 	}
 
 	addTrustedCAVolume := false
@@ -398,10 +407,8 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 		collectionSpec.Logs.FluentdSpec.NodeSelector,
 		tolerations,
 	)
-	for _, target := range pipelineSpec.Outputs {
-		if target.Secret != nil && target.Secret.Name != "" {
-			fluentdPodSpec.Volumes = append(fluentdPodSpec.Volumes, v1.Volume{Name: target.Name, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: target.Secret.Name}}})
-		}
+	for _, name := range secretNames {
+		fluentdPodSpec.Volumes = append(fluentdPodSpec.Volumes, v1.Volume{Name: name, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: name}}})
 	}
 
 	if addTrustedCAVolume {

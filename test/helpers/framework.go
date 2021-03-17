@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -77,6 +78,8 @@ type LogStore interface {
 	RetrieveLogs() (map[string]string, error)
 
 	ClusterLocalEndpoint() string
+
+	Secret() *corev1.Secret
 }
 
 type E2ETestFramework struct {
@@ -301,6 +304,9 @@ func (tc *E2ETestFramework) WaitForCleanupCompletion(namespace string, podlabels
 }
 
 func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string, podlabels []string) error {
+	if !tc.DoCleanup() {
+		return nil
+	}
 	labels := strings.Join(podlabels, ",")
 	clolog.Info("waiting for pods to complete with labels in namespace:", "labels", labels, "namespace", namespace)
 	labelSelector := fmt.Sprintf("component in (%s)", labels)
@@ -362,18 +368,19 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	if err != nil {
 		return err
 	}
-	clolog.V(3).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterLoggingURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do(context.TODO())
 	tc.AddCleanup(func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
 	})
+	clolog.V(3).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
+	result := tc.KubeClient.RESTClient().Post().
+		RequestURI(clusterLoggingURI).
+		SetHeader("Content-Type", "application/json").
+		Body(body).
+		Do(context.TODO())
+
 	return result.Error()
 }
 
@@ -382,28 +389,39 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 	if err != nil {
 		return err
 	}
-	clolog.V(3).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterlogforwarderURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do(context.TODO())
 	tc.AddCleanup(func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterlogforwarderURI)).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
 	})
+	clolog.V(3).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
+	result := tc.KubeClient.RESTClient().Post().
+		RequestURI(clusterlogforwarderURI).
+		SetHeader("Content-Type", "application/json").
+		Body(body).
+		Do(context.TODO())
+
 	return result.Error()
+}
+
+func (tc *E2ETestFramework) DoCleanup() bool {
+	doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
+	if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
+		return true
+	}
+	return false
 }
 
 func (tc *E2ETestFramework) Cleanup() {
 	if ginkgo.CurrentGinkgoTestDescription().Failed {
 		//allow caller to cleanup if unset (e.g script cleanup())
 		clolog.Info("Running Cleanup script ....")
-		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
-		if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
+		if tc.DoCleanup() {
 			RunCleanupScript()
+		}else{
+			clolog.Info("Skipping cleanup")
+			return
 		}
 	} else {
 		clolog.Info("Not Running Cleanup script")
@@ -437,25 +455,26 @@ func RunCleanupScript() {
 func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	h := corev1.HostPathDirectory
 	p := true
-	spec := &v1.DaemonSet{
+	name :=  "clean-fluentd-buffers"
+	ds := &v1.DaemonSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "DaemonSet",
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "clean-fluentd-buffers",
-			Namespace: "default",
+			Name:     name,
+			Namespace: constants.OpenshiftNS,
 		},
 		Spec: v1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": "clean-fluentd-buffers",
+					"name": name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"name": "clean-fluentd-buffers",
+						"name": name,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -467,7 +486,7 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 					},
 					InitContainers: []corev1.Container{
 						{
-							Name:  "clean-fluentd-buffers",
+							Name:  name,
 							Image: "centos:centos7",
 							Args:  []string{"sh", "-c", "rm -rf /fluentd-buffers/** "},
 							SecurityContext: &corev1.SecurityContext{
@@ -503,20 +522,25 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 			},
 		},
 	}
-	ds, err := tc.KubeClient.AppsV1().DaemonSets("default").Create(context.TODO(), spec, metav1.CreateOptions{})
+	ds, err := tc.KubeClient.AppsV1().DaemonSets(ds.Namespace).Create(context.TODO(), ds, metav1.CreateOptions{})
 	if err != nil {
-		clolog.Error(err,"Could not create DaemonSet for cleaning fluentd buffers.")
-		return
-	} else {
-		clolog.Info("DaemonSet to clean fluent buffers created")
+		 if !apierrors.IsAlreadyExists(err) {
+			 clolog.Error(err, "Could not create DaemonSet for cleaning fluentd buffers.")
+			 return
+		 }
+		ds, err = tc.KubeClient.AppsV1().DaemonSets(ds.Namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			return
+		}
 	}
+	clolog.Info("DaemonSet to clean fluent buffers created")
 	time.Sleep(time.Second * 20)
-	err = tc.KubeClient.AppsV1().DaemonSets(ds.GetNamespace()).Delete(context.TODO(), ds.GetName(), metav1.DeleteOptions{})
+	err = tc.KubeClient.AppsV1().DaemonSets(ds.Namespace).Delete(context.TODO(), ds.Name, metav1.DeleteOptions{})
 	if err != nil {
 		clolog.Error(err, "Could not delete DaemonSet for cleaning fluentd buffers.")
-	} else {
-		clolog.Info("DaemonSet to clean fluent buffers deleted")
+		return
 	}
+	clolog.Info("DaemonSet to clean fluent buffers deleted")
 }
 
 //newKubeClient returns a client using the KUBECONFIG env var or incluster settings
@@ -562,7 +586,8 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
 		"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
 		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-		"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
+		"system.admin.key":        utils.GetWorkingDirFileContents("system.admin.key"),
+		"system.admin.crt":        utils.GetWorkingDirFileContents("system.admin.crt"),
 	}
 	for key, value := range otherData {
 		data[key] = value
@@ -574,9 +599,14 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		OpenshiftLoggingNS,
 		data,
 	)
+	tc.AddCleanup(func() error {
+		opts := metav1.DeleteOptions{}
+		return tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Delete(context.TODO(), secret.Name, opts)
+	})
 	clolog.V(3).Info("Creating secret  for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
 	if secret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts); err != nil {
 		return nil, err
 	}
+
 	return secret, nil
 }

@@ -206,6 +206,10 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	return value, nil
 }
 
+func (syslog *syslogReceiverLogStore) Secret() *corev1.Secret {
+	panic("Method not implemented")
+}
+
 func (syslog *syslogReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
 	panic("Method not implemented")
 }

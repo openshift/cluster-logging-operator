@@ -98,21 +98,27 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			})
 		})
 
-		Context("and the receiver is secured", func() {
-
+		Context("and the receivers are secured", func() {
+			var otherFluentDeployment *apps.Deployment
 			BeforeEach(func() {
 				if fluentDeployment, err = e2e.DeployFluentdReceiver(rootDir, true); err != nil {
 					Fail(fmt.Sprintf("Unable to deploy fluent receiver: %v", err))
 				}
+				if otherFluentDeployment, err = e2e.DeployNamedFluentdReceiverWithSecret(rootDir, "otherFluent", e2e.LogStores[fluentDeployment.GetName()].Secret()); err != nil {
+					Fail(fmt.Sprintf("Unable to deploy fluent receiver: %v", err))
+				}
 				//sanity check
 				initialWaitForLogsTimeout, _ := time.ParseDuration("30s")
-				name := fluentDeployment.GetName()
-				if exist, _ := e2e.LogStores[name].HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
-					Fail("Found logs when we didnt expect them")
+				for _, deployment := range []*apps.Deployment {fluentDeployment, otherFluentDeployment} {
+					name := deployment.GetName()
+					if exist, _ := e2e.LogStores[name].HasInfraStructureLogs(initialWaitForLogsTimeout); exist {
+						Fail(fmt.Sprintf("Found ifra logs when we didnt expect them for receiver %q", deployment.Name))
+					}
+					if exist, _ := e2e.LogStores[name].HasApplicationLogs(initialWaitForLogsTimeout); exist {
+						Fail(fmt.Sprintf("Found application logs when we didnt expect them for receiver %q", deployment.Name))
+					}
 				}
-				if exist, _ := e2e.LogStores[name].HasApplicationLogs(initialWaitForLogsTimeout); exist {
-					Fail("Found logs when we didnt expect them")
-				}
+
 
 				cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector)
 				if err := e2e.CreateClusterLogging(cr); err != nil {
@@ -136,22 +142,20 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 									Name: fluentDeployment.ObjectMeta.Name,
 								},
 							},
+							{
+								Name: otherFluentDeployment.Name,
+								Type: logging.OutputTypeFluentdForward,
+								URL:  fmt.Sprintf("tcp://%s.%s.svc:24224", otherFluentDeployment.Name, otherFluentDeployment.Namespace),
+								Secret: &logging.OutputSecretSpec{
+									Name: fluentDeployment.ObjectMeta.Name,
+								},
+							},
 						},
 						Pipelines: []logging.PipelineSpec{
 							{
 								Name:       "test-app",
-								OutputRefs: []string{fluentDeployment.ObjectMeta.Name},
-								InputRefs:  []string{logging.InputNameApplication},
-							},
-							{
-								Name:       "test-infra",
-								OutputRefs: []string{fluentDeployment.ObjectMeta.Name},
-								InputRefs:  []string{logging.InputNameInfrastructure},
-							},
-							{
-								Name:       "test-audit",
-								OutputRefs: []string{fluentDeployment.ObjectMeta.Name},
-								InputRefs:  []string{logging.InputNameAudit},
+								OutputRefs: []string{fluentDeployment.Name, otherFluentDeployment.Name},
+								InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit},
 							},
 						},
 					},
@@ -168,8 +172,13 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 			})
 
-			It("should send logs to the forward.Output logstore", func() {
+			It("should send logs to the forward.Output logstores", func() {
 				name := fluentDeployment.GetName()
+				Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStores[name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+
+				name = otherFluentDeployment.GetName()
 				Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 				Expect(e2e.LogStores[name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")

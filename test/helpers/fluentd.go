@@ -10,13 +10,12 @@ import (
 
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 	clolog "github.com/ViaQ/logerr/log"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 )
 
 type fluentReceiverLogStore struct {
@@ -34,8 +33,10 @@ const (
 <source>
   @type forward
   <transport tls>
-	  ca_cert_path /etc/fluentd/secrets/ca-bundle.crt
-	  ca_private_key_path /etc/fluentd/secrets/ca.key
+    client_cert_auth true
+    ca_path /etc/fluentd/secrets/ca-bundle.crt
+    cert_path /etc/fluentd/secrets/system.admin.crt
+    private_key_path /etc/fluentd/secrets/system.admin.key
   </transport>
   <security>
 	shared_key fluent-receiver
@@ -61,7 +62,7 @@ const (
   symlink_path /tmp/audit-logs
 </match>
 <match **>
-	@type stdout
+  @type stdout
 </match>
 	`
 	unsecureFluentConf = `
@@ -96,23 +97,24 @@ const (
 )
 
 func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Duration) (bool, error) {
+	name := fluent.deployment.Name
 	options := metav1.ListOptions{
-		LabelSelector: "component=fluent-receiver",
+		LabelSelector: fmt.Sprintf("component=%s", name),
 	}
 	pods, err := fluent.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
 	if err != nil {
 		return false, err
 	}
 	if len(pods.Items) == 0 {
-		return false, errors.New("No pods found for fluent receiver")
+		return false, errors.New(fmt.Sprintf("No pods found for fluent receiver: %s", options.LabelSelector))
 	}
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		output, err := fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
+		output, err := fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"bash", "-c", cmd})
 		if err != nil {
-			clolog.Error(err,"Error polling fluent-receiver for logs")
+			clolog.Error(err, "Error polling fluent-receiver for logs", "podname", pods.Items[0].Name, "container", name)
 			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
@@ -129,8 +131,9 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 }
 
 func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration) (string, error) {
+	name := fluent.deployment.Name
 	options := metav1.ListOptions{
-		LabelSelector: "component=fluent-receiver",
+		LabelSelector: fmt.Sprintf("component=%s", name),
 	}
 	pods, err := fluent.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
 	if err != nil {
@@ -143,8 +146,8 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	cmd := fmt.Sprintf("cat %s | awk -F '\t' '{print $3}'| head -n 1", file)
 	result := ""
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		if result, err = fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
-			clolog.Error(err,"Failed to fetch logs from fluent-receiver ")
+		if result, err = fluent.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"bash", "-c", cmd}); err != nil {
+			clolog.Error(err, "Failed to fetch logs from fluent-receiver ", "options", options)
 			return false, nil
 		}
 		return true, nil
@@ -155,6 +158,9 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	return result, nil
 }
 
+func (fluent *fluentReceiverLogStore) Secret() *corev1.Secret {
+	return fluent.pipelineSecret
+}
 func (fluent *fluentReceiverLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
 	fl, err := fluent.logs("/tmp/app-logs", timeToWait)
 	if err != nil {
@@ -203,14 +209,20 @@ func (fluent *fluentReceiverLogStore) ClusterLocalEndpoint() string {
 
 func (tc *E2ETestFramework) createServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
 	opts := metav1.CreateOptions{}
-	serviceAccount = k8shandler.NewServiceAccount("fluent-receiver", OpenshiftLoggingNS)
-	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(OpenshiftLoggingNS).Create(context.TODO(), serviceAccount, opts); err != nil {
-		return nil, err
-	}
+	serviceAccount = k8shandler.NewServiceAccount(receiverName, OpenshiftLoggingNS)
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
 		return tc.KubeClient.CoreV1().ServiceAccounts(OpenshiftLoggingNS).Delete(context.TODO(), serviceAccount.Name, opts)
 	})
+	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(OpenshiftLoggingNS).Create(context.TODO(), serviceAccount, opts); err != nil {
+		if err != nil && !apierrors.IsAlreadyExists(err) {
+			return nil, err
+		}
+		if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(OpenshiftLoggingNS).Get(context.TODO(), receiverName, metav1.GetOptions{}); err != nil {
+			return nil, err
+		}
+	}
+
 	return serviceAccount, nil
 }
 
@@ -229,7 +241,9 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 		),
 	)
 	if _, err = tc.KubeClient.RbacV1().Roles(OpenshiftLoggingNS).Create(context.TODO(), saRole, opts); err != nil {
-		return err
+		if err != nil && !apierrors.IsAlreadyExists(err) {
+			return err
+		}
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
@@ -249,7 +263,9 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 		),
 	)
 	if _, err = tc.KubeClient.RbacV1().RoleBindings(OpenshiftLoggingNS).Create(context.TODO(), roleBinding, opts); err != nil {
-		return err
+		if err != nil && !apierrors.IsAlreadyExists(err) {
+			return err
+		}
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
@@ -257,8 +273,22 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 	})
 	return nil
 }
-
 func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (deployment *apps.Deployment, err error) {
+	var secret *corev1.Secret
+	if secure {
+		otherConf := map[string][]byte{
+			"shared_key": []byte("fluent-receiver"),
+		}
+		if secret, err = tc.CreatePipelineSecret(rootDir, receiverName, receiverName, otherConf); err != nil {
+			return nil, err
+		}
+	}
+	return tc.DeployNamedFluentdReceiverWithSecret(rootDir, receiverName, secret)
+}
+
+func (tc *E2ETestFramework) DeployNamedFluentdReceiverWithSecret(rootDir string, name string, secret *corev1.Secret) (deployment *apps.Deployment, err error) {
+	name = strings.ToLower(name)
+	clolog.Info("Deploying fluent receiver", "name", name)
 	logStore := &fluentReceiverLogStore{
 		tc: tc,
 	}
@@ -266,11 +296,11 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	if err != nil {
 		return nil, err
 	}
-	if err := tc.createRbac(receiverName); err != nil {
+	if err := tc.createRbac(name); err != nil {
 		return nil, err
 	}
 	container := corev1.Container{
-		Name:            receiverName,
+		Name:            name,
 		Image:           "quay.io/openshift/origin-logging-fluentd:latest",
 		ImagePullPolicy: corev1.PullAlways,
 		Args:            []string{"fluentd", "-c", "/fluentd/etc/fluent.conf"},
@@ -281,38 +311,30 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 				MountPath: "/fluentd/etc",
 			},
 		},
-		SecurityContext: &corev1.SecurityContext{
-			Privileged: utils.GetBool(true),
-		},
 	}
 	podSpec := corev1.PodSpec{
 		Containers: []corev1.Container{container},
 		Volumes: []corev1.Volume{
 			{
 				Name: "config", VolumeSource: corev1.VolumeSource{
-					ConfigMap: &corev1.ConfigMapVolumeSource{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: container.Name,
-						},
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: container.Name,
 					},
 				},
+			},
 			},
 		},
 		ServiceAccountName: serviceAccount.Name,
 	}
 
 	fluentConf := unsecureFluentConf
-	if secure {
+	if secret != nil {
 		fluentConf = secureFluentConfTemplate
-		otherConf := map[string][]byte{
-			"shared_key": []byte("my_shared_key"),
-		}
-		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(rootDir, receiverName, receiverName, otherConf); err != nil {
-			return nil, err
-		}
+		logStore.pipelineSecret = secret
 		tc.AddCleanup(func() error {
 			opts := metav1.DeleteOptions{}
-			return tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Delete(context.TODO(), receiverName, opts)
+			return tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Delete(context.TODO(), name, opts)
 		})
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 			Name:      "certs",
@@ -320,12 +342,6 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 			MountPath: "/etc/fluentd/secrets",
 		})
 		podSpec.Containers = []corev1.Container{container}
-		logStore.pipelineSecret.Data["shared_key"] = []byte("fluent-receiver")
-
-		opts := metav1.UpdateOptions{}
-		if logStore.pipelineSecret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Update(context.TODO(), logStore.pipelineSecret, opts); err != nil {
-			return nil, err
-		}
 		podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
 			Name: "certs", VolumeSource: corev1.VolumeSource{
 				Secret: &corev1.SecretVolumeSource{
@@ -339,32 +355,38 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	config := k8shandler.NewConfigMap(container.Name, OpenshiftLoggingNS, map[string]string{
 		"fluent.conf": fluentConf,
 	})
-	config, err = tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), config, opts)
-	if err != nil {
-		return nil, err
-	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
 		return tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Delete(context.TODO(), config.Name, opts)
 	})
-
+	config, err = tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), config, opts)
+	if err != nil {
+		return nil, err
+	}
 	dOpts := metav1.CreateOptions{}
 	fluentDeployment := k8shandler.NewDeployment(
 		container.Name,
 		OpenshiftLoggingNS,
 		container.Name,
-		serviceAccount.Name,
+		container.Name,
 		podSpec,
 	)
-
+	tc.AddCleanup(func() error {
+		var zerograce int64
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		clolog.Info("Removing deployment", "name", name)
+		return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(context.TODO(), name, opts)
+	})
 	fluentDeployment, err = tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Create(context.TODO(), fluentDeployment, dOpts)
 	if err != nil {
 		return nil, err
 	}
 	service := k8shandler.NewService(
-		serviceAccount.Name,
+		container.Name,
 		OpenshiftLoggingNS,
-		serviceAccount.Name,
+		container.Name,
 		[]corev1.ServicePort{
 			{
 				Port: 24224,
@@ -373,38 +395,16 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	)
 
 	tc.AddCleanup(func() error {
-		_, err := oc.Exec().
-			WithNamespace(OpenshiftLoggingNS).
-			WithPodGetter(oc.Get().
-				WithNamespace(OpenshiftLoggingNS).
-				Pod().
-				Selector("component=fluent-receiver").
-				OutputJsonpath("{.items[0].metadata.name}")).
-			Container("fluent-receiver").
-			WithCmd("/bin/sh", "-c", "rm -rf /tmp/app.logs /tmp/app-logs").
-			Run()
-		return err
-	})
-
-	tc.AddCleanup(func() error {
-		var zerograce int64
-		opts := metav1.DeleteOptions{
-			GracePeriodSeconds: &zerograce,
-		}
-		return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(context.TODO(), fluentDeployment.Name, opts)
-	})
-
-	sOpts := metav1.CreateOptions{}
-	service, err = tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(context.TODO(), service, sOpts)
-	if err != nil {
-		return nil, err
-	}
-	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
 		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(context.TODO(), service.Name, opts)
 	})
+	sOpts := metav1.CreateOptions{}
+	service, err = tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(context.TODO(), service, sOpts)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return nil, err
+	}
+
 	logStore.deployment = fluentDeployment
-	name := fluentDeployment.GetName()
 	tc.LogStores[name] = logStore
 	return fluentDeployment, tc.waitForDeployment(OpenshiftLoggingNS, fluentDeployment.Name, defaultRetryInterval, defaultTimeout)
 }

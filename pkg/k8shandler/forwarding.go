@@ -56,7 +56,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 
 	clfSpec := &clusterRequest.ForwarderSpec
 	fwSpec := clusterRequest.Cluster.Spec.Forwarder
-	generatedConfig, err := generator.Generate(clfSpec, fwSpec)
+	generatedConfig, err := generator.Generate(clfSpec, clusterRequest.OutputSecrets, fwSpec)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
@@ -146,6 +146,10 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 
 func condNotReady(r status.ConditionReason, format string, args ...interface{}) status.Condition {
 	return logging.NewCondition(logging.ConditionReady, corev1.ConditionFalse, r, format, args...)
+}
+
+func condMissing(format string, args ...interface{}) status.Condition {
+	return condNotReady(logging.ReasonMissingResource, format, args...)
 }
 
 func condDegraded(r status.ConditionReason, format string, args ...interface{}) status.Condition {
@@ -246,16 +250,13 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
 	status.Outputs = logging.NamedConditions{}
+	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.ForwarderSpec.Outputs))
 	names := sets.NewString() // Collect pipeline names
 	for i, out := range clusterRequest.ForwarderSpec.Outputs {
 		output := out
 		badName := func(format string, args ...interface{}) {
 			output.Name = fmt.Sprintf("output_%v_", i)
 			status.Outputs.Set(output.Name, condInvalid(format, args...))
-		}
-		var urlErr error
-		if output.URL != "" { // Allow missing URL
-			_, urlErr = url.ParseAbsolute(output.URL)
 		}
 		switch {
 		case output.Name == "":
@@ -266,8 +267,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			badName("duplicate name: %q", output.Name)
 		case !logging.IsOutputTypeName(output.Type):
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
-		case urlErr != nil:
-			status.Outputs.Set(output.Name, condInvalid("%v", urlErr))
 		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
 			break
 		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
@@ -284,7 +283,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 	name := logging.OutputNameDefault
 	if _, ok := routes.ByOutput[name]; ok {
 		if clusterRequest.Cluster.Spec.LogStore == nil {
-			status.Outputs.Set(name, condNotReady(logging.ReasonMissingResource, "no default log store specified"))
+			status.Outputs.Set(name, condMissing("no default log store specified"))
 		} else {
 			spec.Outputs = append(spec.Outputs, logging.OutputSpec{
 				Name:   logging.OutputNameDefault,
@@ -298,23 +297,34 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 }
 
 func (clusterRequest *ClusterLoggingRequest) verifyOutputURL(output *logging.OutputSpec, conds logging.NamedConditions) bool {
-	switch strings.ToLower(output.Type) {
-	case "fluentdforward", "elasticsearch", "syslog":
-		if strings.TrimSpace(output.URL) == "" {
-			conds.Set(output.Name, condNotReady(logging.ReasonMissingResource, "output %q: URL not set for output type %q",
-				output.Name, output.Type))
-			return false
-		}
-		return true
-	case "kafka":
-		//TODO add kafka brokers verification here
-		return true
-	default:
-		return true
+	fail := func(c status.Condition) bool {
+		conds.Set(output.Name, c)
+		return false
 	}
+	if output.URL == "" {
+		// Some output types (currently just kafka) allow a missing URL
+		// TODO (alanconway) move output-specific valiation to the output implementation.
+		if output.Type == "kafka" {
+			return true
+		} else {
+			return fail(condInvalid("URL is required for output type %v", output.Type))
+		}
+	}
+	u, err := url.Parse(output.URL)
+	if err != nil {
+		return fail(condInvalid("invalid URL: %v", err))
+	}
+	if err := url.CheckAbsolute(u); err != nil {
+		return fail(condInvalid("invalid URL: %v", err))
+	}
+	return true
 }
 
 func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.OutputSpec, conds logging.NamedConditions) bool {
+	fail := func(c status.Condition) bool {
+		conds.Set(output.Name, c)
+		return false
+	}
 	if output.Secret == nil {
 		return true
 	}
@@ -322,9 +332,20 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.
 		conds.Set(output.Name, condInvalid("secret has empty name"))
 		return false
 	}
-	if _, err := clusterRequest.GetSecret(output.Secret.Name); err != nil {
-		conds.Set(output.Name, condNotReady(logging.ReasonMissingResource, "output %q: secret %q not found", output.Name, output.Secret.Name))
-		return false
+	log.V(3).Info("getting output secret", "output", output.Name, "secret", output.Secret.Name)
+	secret, err := clusterRequest.GetSecret(output.Secret.Name)
+	if err != nil {
+		return fail(condMissing("secret %q not found", output.Secret.Name))
 	}
+	// Make sure we have secrets for a valid TLS configuration.
+	haveCert := len(secret.Data[constants.ClientCertKey]) > 0
+	haveKey := len(secret.Data[constants.ClientPrivateKey]) > 0
+	switch {
+	case haveCert && !haveKey:
+		return fail(condMissing("cannot have %v without %v", constants.ClientCertKey, constants.ClientPrivateKey))
+	case !haveCert && haveKey:
+		return fail(condMissing("cannot have %v without %v", constants.ClientPrivateKey, constants.ClientCertKey))
+	}
+	clusterRequest.OutputSecrets[output.Name] = secret
 	return true
 }

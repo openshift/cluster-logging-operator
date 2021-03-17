@@ -62,7 +62,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 		})
 
 		It("should produce well formed output label config", func() {
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @ONCLUSTER_ELASTICSEARCH>
 	<match retry_oncluster_elasticsearch>
@@ -174,7 +174,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			}
 		})
 		It("should produce well formed output label config", func() {
-			results, err := generator.generateOutputLabelBlocks(outputs, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @OTHER_ELASTICSEARCH>
 	<match retry_other_elasticsearch>

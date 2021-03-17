@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"strings"
 	"time"
 
@@ -19,7 +20,9 @@ type kafkaReceiver struct {
 	app    *apps.StatefulSet
 	topics []string
 }
-
+func (kr *kafkaReceiver) Secret() *corev1.Secret {
+	panic("Method not implemented")
+}
 func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (logs, error) {
 	logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
 	if err != nil {

@@ -89,6 +89,10 @@ type ElasticLogStore struct {
 	Framework *E2ETestFramework
 }
 
+func (es *ElasticLogStore) Secret() *corev1.Secret {
+	panic("Method not implemented")
+}
+
 func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (logs, error) {
 	panic("Method not implemented")
 }

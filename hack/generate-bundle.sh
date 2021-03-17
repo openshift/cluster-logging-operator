@@ -11,7 +11,7 @@ $OPM alpha bundle generate --directory manifests/${MANIFEST_VERSION} --package c
 cat >> bundle.Dockerfile <<EOF
 
 LABEL com.redhat.delivery.operator.bundle=true
-LABEL com.redhat.openshift.versions="v${MANIFEST_VERSION}"
+LABEL com.redhat.openshift.versions="${OPENSHIFT_VERSIONS}"
 
 LABEL \\
     com.redhat.component="cluster-logging-operator" \\

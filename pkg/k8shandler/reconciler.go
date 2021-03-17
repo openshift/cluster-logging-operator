@@ -27,8 +27,6 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
-	proxyConfig := clusterLoggingRequest.getProxyConfig()
-
 	if clusterLoggingRequest.IncludesManagedStorage() {
 		// Reconcile certs
 		if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
@@ -41,7 +39,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		}
 
 		// Reconcile Visualization
-		if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig); err != nil {
+		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
 			return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
@@ -54,7 +52,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
@@ -94,10 +92,8 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 		return nil
 	}
 
-	proxyConfig := clusterLoggingRequest.getProxyConfig()
-
 	// Reconcile Collection
-	err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig)
+	err = clusterLoggingRequest.CreateOrUpdateCollection()
 	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
@@ -131,7 +127,7 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
@@ -160,9 +156,7 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
-	proxyConfig := clusterLoggingRequest.getProxyConfig()
-
-	return clusterLoggingRequest.RestartFluentd(proxyConfig)
+	return clusterLoggingRequest.RestartFluentd()
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {
@@ -177,20 +171,6 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.Cluste
 	}
 
 	return clusterLogging
-}
-
-func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
-	// we need to see if we have the proxy available so we
-	// don't blank out any proxy configured changes...
-	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
-	proxyConfig := &configv1.Proxy{}
-	if err := clusterRequest.Client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
-		if !apierrors.IsNotFound(err) {
-			fmt.Printf("Encountered unexpected error getting %v", proxyNamespacedName)
-		}
-	}
-
-	return proxyConfig
 }
 
 func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {

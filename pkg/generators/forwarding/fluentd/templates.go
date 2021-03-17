@@ -262,10 +262,16 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
   </filter>
 
   <filter k8s-audit.log**>
-    @type record_transformer
-    enable_ruby
+    @type record_modifier
     <record>
       k8s_audit_level ${record['level']}
+      level info
+    </record>
+  </filter>
+  <filter openshift-audit.log**>
+    @type record_modifier
+    <record>
+      openshift_audit_level ${record['level']}
       level info
     </record>
   </filter>

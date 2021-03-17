@@ -20,7 +20,7 @@ export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -not -name patches -type d))
 export NAMESPACE?=openshift-logging
 
-FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift/origin-logging-fluentd:latest
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
@@ -75,7 +75,7 @@ run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -151,7 +151,7 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-functional:
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
 	go test -race ./test/functional/...
@@ -164,7 +164,7 @@ test-forwarder-generator: bin/forwarder-generator
 
 test-unit: test-forwarder-generator
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	go test -cover -race ./pkg/...
 
 test-cluster:

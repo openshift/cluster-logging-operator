@@ -9,9 +9,10 @@ import (
 
 // Reserved input names.
 const (
-	InputNameApplication    = "application"    // Non-infrastructure container logs.
-	InputNameInfrastructure = "infrastructure" // Infrastructure containers and system logs.
-	InputNameAudit          = "audit"          // System audit logs.
+	InputNameApplication    	= "application"    		// Non-infrastructure container logs.
+	InputNameJsonApplication    = "json_application"    // Non-infrastructure json container logs.
+	InputNameInfrastructure 	= "infrastructure" 		// Infrastructure containers and system logs.
+	InputNameAudit          	= "audit"          		// System audit logs.
 )
 
 var ReservedInputNames = sets.NewString(InputNameApplication, InputNameInfrastructure, InputNameAudit)

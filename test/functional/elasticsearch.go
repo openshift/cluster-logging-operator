@@ -9,7 +9,8 @@ import (
 )
 
 var ElasticIndex = map[string]string{
-	applicationLog: "app-write",
+	"application": 			"app-write",
+	"json_application": 	"json-index",
 }
 
 func (f *FluentdFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string) (result string, err error) {

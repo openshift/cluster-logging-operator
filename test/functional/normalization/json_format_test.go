@@ -17,7 +17,6 @@ var _ = Describe("[Functional][Normalization][Json] Parse json format log", func
 		framework *functional.FluentdFunctionalFramework
 		// json message
 		jsonMsg = "{\\\"name\\\":\\\"fred\\\",\\\"home\\\":\\\"bedrock\\\"}"
-		// Template expected as output Log
 	)
 
 	BeforeEach(func() {

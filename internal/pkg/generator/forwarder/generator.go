@@ -3,7 +3,7 @@ package forwarder
 import (
 	"fmt"
 
-	yaml "gopkg.in/yaml.v2"
+	yaml "sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"

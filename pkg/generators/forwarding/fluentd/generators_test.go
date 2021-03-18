@@ -142,7 +142,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </filter>
   <match **>
     @type copy
-
     <store>
       @type relabel
       @label @INFRA_ES
@@ -157,7 +156,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </filter>
   <match **>
     @type copy
-
     <store>
       @type relabel
       @label @INFRA_ES

@@ -9,12 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/pkg/certificates"
+
 	"gopkg.in/yaml.v2"
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/certificates"
 	"github.com/openshift/cluster-logging-operator/pkg/components/fluentd"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -76,7 +77,7 @@ func init() {
 
 func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
 	test := client.NewTest()
-	return NewFluentdFunctionalFrameworkUsing(client.NewTest(), test.Close, 0)
+	return NewFluentdFunctionalFrameworkUsing(test, test.Close, 0)
 }
 
 func NewFluentdFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosity int) *FluentdFunctionalFramework {
@@ -282,7 +283,7 @@ func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, 
 	log.V(2).Info("Adding outputs", "outputs", outputs)
 	for _, output := range outputs {
 		if output.Type == logging.OutputTypeFluentdForward {
-			if err := f.addForwardOutput(b, output); err != nil {
+			if err := f.AddForwardOutput(b, output); err != nil {
 				return err
 			}
 		}

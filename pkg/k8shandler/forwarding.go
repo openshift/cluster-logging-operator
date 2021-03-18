@@ -219,6 +219,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 			InputRefs:  goodIn.List(),
 			OutputRefs: goodOut.List(),
 			Labels:     pipeline.Labels,
+			Parse:      pipeline.Parse,
 		})
 	}
 }

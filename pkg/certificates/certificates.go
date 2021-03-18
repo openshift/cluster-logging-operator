@@ -7,6 +7,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 )
 
 func GenerateCertificates(namespace, scriptsDir, logStoreName, workDir string) (err error, updated bool) {
@@ -20,6 +21,8 @@ func RunCertificatesScript(namespace, logStoreName, workDir, script string) (err
 	cmd := exec.Command(script, workDir, namespace, logStoreName)
 	out, err := cmd.Output()
 	result := string(out)
+	// get error string from certificate generation script
+	err = utils.WrapError(err)
 	log.V(3).Info("Cert generation", "out", result, "err", err)
 	if result != "" {
 		updated = true

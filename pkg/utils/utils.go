@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -428,4 +429,15 @@ func GetProxyEnvVars() []v1.EnvVar {
 		}
 	}
 	return envVars
+}
+
+// WrapError wraps some types of error to provide more informative Error() message.
+// If err is exec.ExitError and has Stderr text, include it in Error()
+// Otherwise return err unchanged.
+func WrapError(err error) error {
+	exitErr := &exec.ExitError{}
+	if errors.As(err, &exitErr) && len(exitErr.Stderr) != 0 {
+		return fmt.Errorf("%w: %v", err, string(exitErr.Stderr))
+	}
+	return err
 }

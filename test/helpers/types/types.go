@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"math/rand"
+	"strings"
+	"time"
+
 	logger "github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"math/rand"
-	"strings"
-	"time"
 
 	"github.com/ViaQ/logerr/log"
 
@@ -22,17 +24,17 @@ var ErrParse = errors.New("logs could not be parsed")
 
 // ContainerLog
 type ContainerLog struct {
-	Timestamp        time.Time        `json:"@timestamp,omitempty"`
-	Docker           Docker           `json:"docker,omitempty"`
-	Kubernetes       Kubernetes       `json:"kubernetes,omitempty"`
-	Message          string           `json:"message"`
-	Level            string           `json:"level,omitempty"`
-	Hostname         string           `json:"hostname,omitempty"`
-	PipelineMetadata PipelineMetadata `json:"pipeline_metadata,omitempty"`
-	ViaqIndexName    string           `json:"viaq_index_name,omitempty"`
-	ViaqMsgID        string           `json:"viaq_msg_id,omitempty"`
-	OpenshiftLabels  OpenshiftMeta    `json:"openshift,omitempty"`
-	Timing           `json:",inline"`
+	Timestamp        time.Time              `json:"@timestamp"`
+	Docker           Docker                 `json:"docker"`
+	Kubernetes       Kubernetes             `json:"kubernetes"`
+	Message          string                 `json:"message"`
+	Level            string                 `json:"level"`
+	Hostname         string                 `json:"hostname"`
+	PipelineMetadata PipelineMetadata       `json:"pipeline_metadata"`
+	ViaqIndexName    string                 `json:"viaq_index_name"`
+	ViaqMsgID        string                 `json:"viaq_msg_id"`
+	OpenshiftLabels  OpenshiftMeta          `json:"openshift"`
+	Structured       map[string]interface{} `json:"structured"`
 }
 
 type Docker struct {
@@ -315,14 +317,6 @@ type AllLog struct {
 	K8SAuditLevel            string           `json:"k8s_audit_level,omitempty"`
 	OpenshiftAuditLevel      string           `json:"openshift_audit_level,omitempty"`
 	OpenshiftLabels          OpenshiftMeta    `json:"openshift,omitempty"`
-	Timing                   `json:",inline"`
-}
-
-type Timing struct {
-	//EpocIn is only added during benchmark testing
-	EpocIn float64 `json:"epoc_in,omitempty"`
-	//EpocOut is only added during benchmark testing
-	EpocOut float64 `json:"epoc_out,omitempty"`
 }
 
 func StrictlyParseLogs(in string, logs interface{}) error {
@@ -343,7 +337,25 @@ func StrictlyParseLogs(in string, logs interface{}) error {
 
 type Logs []AllLog
 
-func (t *AllLog) ElapsedEpoc() float64 {
+func ToJsonLogs(logs []string) string {
+	return fmt.Sprintf("[%s]", strings.Join(logs, ","))
+}
+
+type PerfLog struct {
+	AllLog
+	Timing `json:",inline"`
+}
+
+type Timing struct {
+	//EpocIn is only added during benchmark testing
+	EpocIn float64 `json:"epoc_in,omitempty"`
+	//EpocOut is only added during benchmark testing
+	EpocOut float64 `json:"epoc_out,omitempty"`
+}
+
+type PerfLogs []PerfLog
+
+func (t *PerfLog) ElapsedEpoc() float64 {
 	return t.EpocOut - t.EpocIn
 }
 

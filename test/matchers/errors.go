@@ -2,7 +2,7 @@ package matchers
 
 import (
 	"github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 )
 
 // ExpectOK is shorthand for these annoyingly long ginkgo forms:
@@ -14,5 +14,5 @@ func ExpectOK(err error, description ...interface{}) {
 }
 
 func ExpectOKWithOffset(skip int, err error, description ...interface{}) {
-	gomega.ExpectWithOffset(skip+1, test.WrapError(err)).To(gomega.Succeed(), description...)
+	gomega.ExpectWithOffset(skip+1, utils.WrapError(err)).To(gomega.Succeed(), description...)
 }

@@ -197,6 +197,14 @@ type PipelineSpec struct {
 	//
 	// +optional
 	Name string `json:"name,omitempty"`
+
+	// Parse enables parsing of log entries into structured logs
+	//
+	// Logs are parsed according to parse value, only `json` is supported as of now.
+	//
+	// +kubebuilder:validation:Enum:=json
+	// +optional
+	Parse string `json:"parse,omitempty"`
 }
 
 // ClusterLogForwarderList is a list of ClusterLogForwarders

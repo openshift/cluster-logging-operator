@@ -51,6 +51,7 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool)
 		}
 	}
 	spec, status := clRequest.NormalizeForwarder()
+	log.V(2).Info("Normalization", "spec", spec)
 	log.V(2).Info("Normalization", "status", status)
 	tunings := &logging.ForwarderSpec{}
 

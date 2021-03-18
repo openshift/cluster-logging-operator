@@ -105,7 +105,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		var outputLogTemplate = functional.NewApplicationLogTemplate()
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
-		outputLogTemplate.Level = "info"
+		outputLogTemplate.Level = "*"
 
 		// Write log line as input to fluentd
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)

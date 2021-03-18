@@ -91,6 +91,13 @@ spec:
                   description: Output defines a destination for log messages.
                   properties:
                     elasticsearch:
+                      properties:
+                        indexKey:
+                          description: IndexKey specifies the metadata key to be used as name of elasticsearch index It takes precedence over IndexName
+                          type: string
+                        indexName:
+                          description: IndexName specifies the name of elasticsearch schema
+                          type: string
                       type: object
                     fluentdForward:
                       type: object
@@ -246,6 +253,11 @@ spec:
                       items:
                         type: string
                       type: array
+                    parse:
+                      description: "Parse enables parsing of log entries into structured logs \n Logs are parsed according to parse value, only `json` is supported as of now."
+                      enum:
+                      - json
+                      type: string
                   required:
                   - inputRefs
                   - outputRefs

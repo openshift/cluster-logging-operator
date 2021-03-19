@@ -71,13 +71,21 @@ var _ = Describe("Generating fluentd config", func() {
 		}
 	})
 
-	It("should generate fluent config for sending given namespaces logs only to output", func() {
+	It("should generate fluent config for sending specific namespace logs to separate pipelines", func() {
 		forwarder = &logging.ClusterLogForwarderSpec{
 			Outputs: []logging.OutputSpec{
 				{
 					Type: logging.OutputTypeElasticsearch,
 					Name: "apps-es-1",
 					URL:  "https://es.svc.messaging.cluster.local:9654",
+					Secret: &logging.OutputSecretSpec{
+						Name: "my-es-secret",
+					},
+				},
+				{
+					Type: logging.OutputTypeElasticsearch,
+					Name: "apps-es-2",
+					URL:  "https://es2.svc.messaging.cluster.local:9654",
 					Secret: &logging.OutputSecretSpec{
 						Name: "my-es-secret",
 					},
@@ -90,12 +98,28 @@ var _ = Describe("Generating fluentd config", func() {
 						Namespaces: []string{"project1-namespace", "project2-namespace"},
 					},
 				},
+				{
+					Name: "myInput2",
+					Application: &logging.Application{
+						Namespaces: []string{"dev-apple", "project2-namespace"},
+					},
+				},
 			},
 			Pipelines: []logging.PipelineSpec{
+				{
+					Name:       "my-default-pipeline",
+					InputRefs:  []string{"application"},
+					OutputRefs: []string{"apps-es-2"},
+				},
 				{
 					Name:       "apps-pipeline",
 					InputRefs:  []string{"myInput"},
 					OutputRefs: []string{"apps-es-1", "apps-es-2"},
+				},
+				{
+					Name:       "apps-pipeline2",
+					InputRefs:  []string{"myInput2"},
+					OutputRefs: []string{"apps-es-2"},
 				},
 			},
 		}
@@ -463,12 +487,9 @@ var _ = Describe("Generating fluentd config", func() {
     <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
       @type null
     </match>
-    <match kubernetes.**_project1-namespace_** kubernetes.**_project2-namespace_** >
+    <match kubernetes.**>
       @type relabel
       @label @_APPLICATION
-    </match>
-    <match kubernetes.** >
-      @type null
     </match>
     <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
       @type null
@@ -482,28 +503,66 @@ var _ = Describe("Generating fluentd config", func() {
   
   # Relabel specific sources (e.g. logs.apps) to multiple pipelines
   <label @_APPLICATION>
+     <match kubernetes.**_dev-apple_**>
+      @type copy
+      <store>
+	    @type relabel
+	    @label @APPS_PIPELINE2
+      </store>
+    </match>
+    <match kubernetes.**_project1-namespace_**>
+      @type copy
+      <store>
+		@type relabel
+		@label @APPS_PIPELINE
+      </store>
+    </match>
+    <match kubernetes.**_project2-namespace_**>
+      @type copy
+      <store>
+		@type relabel
+		@label @APPS_PIPELINE
+      </store>
+      <store>
+		@type relabel
+		@label @APPS_PIPELINE2
+      </store>
+    </match>
     <match **>
       @type copy
-  
       <store>
-        @type relabel
-        @label @APPS_PIPELINE
+	    @type relabel
+	    @label @MY_DEFAULT_PIPELINE
       </store>
-  
-  
     </match>
   </label>
-  
-  
+
   # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
   <label @APPS_PIPELINE>
     <match **>
       @type copy
-  
       <store>
         @type relabel
         @label @APPS_ES_1
       </store>
+      <store>
+        @type relabel
+        @label @APPS_ES_2
+     </store>
+    </match>
+  </label>
+  <label @APPS_PIPELINE2>
+    <match **>
+      @type copy
+      <store>
+        @type relabel
+        @label @APPS_ES_2
+      </store>
+    </match>
+  </label>
+  <label @MY_DEFAULT_PIPELINE>
+    <match **>
+      @type copy
       <store>
         @type relabel
         @label @APPS_ES_2
@@ -608,6 +667,107 @@ var _ = Describe("Generating fluentd config", func() {
           
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
           
+          overflow_action block
+        </buffer>
+      </store>
+    </match>
+  </label>
+  <label @APPS_ES_2>
+    <match retry_apps_es_2>
+      @type copy
+      <store>
+        @type elasticsearch
+        @id retry_apps_es_2
+        host es2.svc.messaging.cluster.local
+        port 9654
+        verify_es_version_at_startup false
+        scheme https
+        ssl_version TLSv1_2
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
+        client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
+        client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
+        ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        type_name _doc
+        http_backend typhoeus
+        write_operation create
+        reload_connections 'true'
+        # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+        reload_after '200'
+        # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+        sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+        reload_on_failure false
+        # 2 ^ 31
+        request_timeout 2147483648
+        <buffer>
+          @type file
+          path '/var/lib/fluentd/retry_apps_es_2'
+          flush_mode interval
+          flush_interval 1s
+          flush_thread_count 2
+          flush_at_shutdown true
+          retry_type exponential_backoff
+          retry_wait 1s
+          retry_max_interval 60s
+          retry_forever true
+          queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+
+          total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+
+
+          chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+
+          overflow_action block
+        </buffer>
+      </store>
+    </match>
+    <match **>
+      @type copy
+      <store>
+        @type elasticsearch
+        @id apps_es_2
+        host es2.svc.messaging.cluster.local
+        port 9654
+        verify_es_version_at_startup false
+        scheme https
+        ssl_version TLSv1_2
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
+        client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
+        client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
+        ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        type_name _doc
+        retry_tag retry_apps_es_2
+        http_backend typhoeus
+        write_operation create
+        reload_connections 'true'
+        # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+        reload_after '200'
+        # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+        sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+        reload_on_failure false
+        # 2 ^ 31
+        request_timeout 2147483648
+        <buffer>
+          @type file
+          path '/var/lib/fluentd/apps_es_2'
+          flush_mode interval
+          flush_interval 1s
+          flush_thread_count 2
+          flush_at_shutdown true
+          retry_type exponential_backoff
+          retry_wait 1s
+          retry_max_interval 60s
+          retry_forever true
+          queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+
+          total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+
+
+          chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+
           overflow_action block
         </buffer>
       </store>
@@ -1517,15 +1677,6 @@ var _ = Describe("Generating fluentd config", func() {
 			</label>
 
 			# Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
-			<label @INFRA_PIPELINE>
-				<match **>
-					@type copy
-					<store>
-						@type relabel
-						@label @INFRA_ES
-					</store>
-				</match>
-			</label>
 			<label @APPS_PIPELINE>
 				<match **>
 					@type copy
@@ -1545,6 +1696,15 @@ var _ = Describe("Generating fluentd config", func() {
 					<store>
 						@type relabel
 						@label @AUDIT_ES
+					</store>
+				</match>
+			</label>
+			<label @INFRA_PIPELINE>
+				<match **>
+					@type copy
+					<store>
+						@type relabel
+						@label @INFRA_ES
 					</store>
 				</match>
 			</label>
@@ -1955,7 +2115,7 @@ var _ = Describe("Generating fluentd config", func() {
 			Expect(yaml.Unmarshal([]byte(yamlSpec), &spec)).To(Succeed())
 			gotFluentdConf, err := generator.Generate(&spec, nil, nil)
 			Expect(err).To(Succeed())
-			Expect(wantFluentdConf).To(EqualTrimLines(gotFluentdConf))
+			Expect(gotFluentdConf).To(EqualTrimLines(wantFluentdConf))
 		},
 		Entry("namespaces", `
   pipelines:
@@ -2333,14 +2493,11 @@ var _ = Describe("Generating fluentd config", func() {
         @type null
       </match>
     
-      <match kubernetes.**_project1_** kubernetes.**_project2_** >
+      <match kubernetes.**>
         @type relabel
         @label @_APPLICATION
       </match>
-      <match kubernetes.** >
-        @type null
-      </match>
-    
+ 
       <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
         @type null
       </match>
@@ -2353,9 +2510,15 @@ var _ = Describe("Generating fluentd config", func() {
     
     # Relabel specific sources (e.g. logs.apps) to multiple pipelines
     <label @_APPLICATION>
-      <match **>
+      <match kubernetes.**_project1_**>
         @type copy
-    
+        <store>
+          @type relabel
+          @label @TEST_APP
+        </store>
+      </match>
+      <match kubernetes.**_project2_**>
+        @type copy
         <store>
           @type relabel
           @label @TEST_APP

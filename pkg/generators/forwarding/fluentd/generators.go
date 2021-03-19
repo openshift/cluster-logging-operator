@@ -7,7 +7,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	"sort"
-	"text/template"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generators"
@@ -26,10 +25,7 @@ type ConfigGenerator struct {
 //NewConfigGenerator creates an instance of FluentdConfigGenerator
 func NewConfigGenerator(includeLegacyForwardConfig, includeLegacySyslogConfig, useOldRemoteSyslogPlugin bool) (*ConfigGenerator, error) {
 	engine, err := generators.New("OutputLabelConf",
-		&template.FuncMap{
-			"labelName":           labelName,
-			"sourceTypelabelName": sourceTypeLabelName,
-		},
+		helperRegistry,
 		templateRegistry...)
 	if err != nil {
 		return nil, err
@@ -59,6 +55,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 
 	inputs, namespaces = gatherSources(clfSpec)
 	routeMap = inputsToPipelines(clfSpec)
+	appNSToPipelines := mapAppNamespacesToPipelines(clfSpec)
 	// Provide inputs and inputsPipelines for legacy forwarding protocols
 	// w/o a user-provided ClusterLogFowarder instance to enable inputs and
 	// inputs-to-pipelines a.k.a. route map template generation.
@@ -71,9 +68,15 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		for _, logType := range inputs.List() {
 			if engine.includeLegacySyslogConfig {
 				routeMap.Insert(logType, constants.LegacySyslog)
+				if logType == logging.InputNameApplication {
+					appNSToPipelines.Insert("", constants.LegacySyslog)
+				}
 			}
 			if engine.includeLegacyForwardConfig {
 				routeMap.Insert(logType, constants.LegacySecureforward)
+				if logType == logging.InputNameApplication {
+					appNSToPipelines.Insert("", constants.LegacySecureforward)
+				}
 			}
 		}
 	}
@@ -85,7 +88,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		return "", err
 	}
 
-	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(routeMap)
+	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(routeMap, appNSToPipelines)
 	if err != nil {
 		log.V(3).Error(err, "Error generating source to pipeline blocks")
 		return "", err
@@ -142,6 +145,7 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	return result, nil
 }
 
+//gatherSources collects the set of unique source types and namespaces
 func gatherSources(forwarder *logging.ClusterLogForwarderSpec) (types sets.String, namespaces sets.String) {
 	types, namespaces = sets.NewString(), sets.NewString()
 	specs := forwarder.InputMap()
@@ -183,24 +187,64 @@ func inputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMa
 	return result
 }
 
+func mapAppNamespacesToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMap {
+	result := logging.RouteMap{}
+	inputs := fwdspec.InputMap()
+	for _, pipeline := range fwdspec.Pipelines {
+		for _, inRef := range pipeline.InputRefs {
+			if input, ok := inputs[inRef]; ok {
+				if input.Types().Has(logging.InputNameApplication) {
+					if len(input.Application.Namespaces) > 0 {
+						for _, ns := range input.Application.Namespaces {
+							result.Insert(ns, pipeline.Name)
+						}
+					} else {
+						result.Insert("", pipeline.Name)
+					}
+
+				}
+			} else if inRef == logging.InputNameApplication {
+				// Not a user defined type, insert direct.
+				result.Insert("", pipeline.Name)
+			}
+		}
+	}
+	return result
+}
+
 //generateSourceToPipelineLabels generates fluentd label stanzas to fan source types to multiple pipelines
-func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines logging.RouteMap) ([]string, error) {
+func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines, appNSToPipelines logging.RouteMap) ([]string, error) {
 	configs := []string{}
 	for sourceType, pipelineNames := range sourcesToPipelines {
+		templateName := "sourceToPipelineCopyTemplate"
+		namespaces := []string{}
+		if sourceType == logging.InputNameApplication {
+			templateName = "namespaceToPipelineTemplate"
+			namespaces = appNSToPipelines.Keys()
+			sort.Strings(namespaces)
+			// empty means ALL which MUST come last
+			if len(namespaces) >= 2 && namespaces[0] == "" {
+				namespaces = append(namespaces[1:], "")
+			}
+		}
 		data := struct {
 			IncludeLegacySecureForward bool
 			IncludeLegacySyslog        bool
 			Source                     string
 			PipelineNames              []string
+			AppNamespaces              []string
+			PipeLines                  logging.RouteMap
 		}{
 			engine.includeLegacyForwardConfig,
 			engine.includeLegacySyslogConfig,
 			sourceType,
 			pipelineNames.List(),
+			namespaces,
+			appNSToPipelines,
 		}
-		result, err := engine.Execute("sourceToPipelineCopyTemplate", data)
+		result, err := engine.Execute(templateName, data)
 		if err != nil {
-			return nil, fmt.Errorf("Error processing sourceToPipelineCopyTemplate template: %v", err)
+			return nil, fmt.Errorf("Error processing %s template: %v", templateName, err)
 		}
 		configs = append(configs, result)
 	}
@@ -209,6 +253,9 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 
 func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []logging.PipelineSpec) ([]string, error) {
 	configs := []string{}
+	sort.Slice(pipelines, func(i,j int) bool{
+		return pipelines[i].Name < pipelines[j].Name
+	})
 	for _, pipeline := range pipelines {
 		var jsonLabels string
 

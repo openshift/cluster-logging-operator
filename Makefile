@@ -17,7 +17,7 @@ export GODEBUG=x509ignoreCN=0
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 
-export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -not -name patches -type d))
+export OCP_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift/origin-logging-fluentd:latest

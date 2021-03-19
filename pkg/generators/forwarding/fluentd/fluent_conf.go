@@ -109,14 +109,6 @@ func (conf *outputLabelConf) LabelName() string {
 	return labelName(conf.Name)
 }
 
-func labelName(name string) string {
-	return strings.ToUpper(fmt.Sprintf("@%s", replacer.Replace(name)))
-}
-
-func sourceTypeLabelName(name string) string {
-	return strings.ToUpper(fmt.Sprintf("@_%s", replacer.Replace(name)))
-}
-
 func (conf *outputLabelConf) StoreID() string {
 	prefix := ""
 	if conf.Hints().Has("prefix_as_retry") {

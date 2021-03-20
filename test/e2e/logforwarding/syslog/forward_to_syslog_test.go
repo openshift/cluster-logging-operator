@@ -307,6 +307,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
 					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
 					grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_appname")
 					str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
 					Expect(err).To(BeNil())
@@ -575,6 +576,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 						logStore := e2e.LogStores[syslogDeployment.GetName()]
 						Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
 						grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_tag")
 						str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
 						Expect(err).To(BeNil())
@@ -610,6 +612,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 						logStore := e2e.LogStores[syslogDeployment.GetName()]
 						Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
 						grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "namespace_name")
 						_, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
 						Expect(err).To(BeNil())
@@ -640,6 +643,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							}
 							logStore := e2e.LogStores[syslogDeployment.GetName()]
 							Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+							_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
 							grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_tag")
 							_, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
 							Expect(err).To(BeNil())

@@ -206,18 +206,21 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 }
 
 func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.Duration) error {
-	// daemonset should have non-zero number of instances for maxtimes consecutive retryInterval to detect a CrashLoopBackOff pod
+	// daemonset should have pods running and available on all the nodes for maxtimes * retryInterval
 	maxtimes := 5
 	times := 0
 	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		numReady, err := oc.Literal().From("oc -n openshift-logging get daemonset/fluentd -o jsonpath={.status.numberReady}").Run()
+		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/fluentd -o jsonpath={.status.NumberUnavailable}").Run()
 		if err == nil {
-			value, err := strconv.Atoi(strings.TrimSpace(numReady))
+			if numUnavail == "" {
+				numUnavail = "0"
+			}
+			value, err := strconv.Atoi(strings.TrimSpace(numUnavail))
 			if err != nil {
 				times = 0
 				return false, err
 			}
-			if value > 0 {
+			if value == 0 {
 				times++
 			} else {
 				times = 0

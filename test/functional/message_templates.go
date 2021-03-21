@@ -43,7 +43,7 @@ func NewLogTemplate() types.AllLog{
 	return types.AllLog{
 		Timestamp:    time.Time{},
 		Message:       "*",
-		ViaqIndexName: "app-write",
+		ViaqIndexName: "",
 		Level:         "unknown",
 		ViaqMsgID:     "*",
 		PipelineMetadata: templateForAnyPipelineMetadata,

@@ -21,6 +21,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 
 		// json message
 		jsonMsg = "{\\\"name\\\":\\\"fred\\\",\\\"home\\\":\\\"bedrock\\\"}"
+		jsonErrorMsg = "{\\\"name\\\":\\\"fred\\\",\\\"home:\\\"bedrock\\\"}"
 	)
 
 	var (
@@ -50,8 +51,8 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 		framework.Cleanup()
 	})
 
-	Context("when sending to ElasticSearch "+elasticSearchTag+" protocol", func() {
-		FIt("should  be compatible", func() {
+	Context("when sending json to ElasticSearch "+elasticSearchTag +" and require parsing ", func() {
+		It("should parse correctly and send to custom index ( json-index ) ", func() {
 
 			framework.SetFluentConfigFileName("fluentd_structured_configuration_to_elastic.txt")
 			addElasticSearchContainer := newVisitor(framework)
@@ -75,7 +76,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 			Expect(string(jsonMessageMarshal)).To(MatchJSON(outputLogTemplate.Message))
 
 			// using custom elastic index index
-			outputLogTemplate.ViaqIndexName = "*"
+			outputLogTemplate.ViaqIndexName = ""
 
 			// Verify all other fields
 			logs, err := types.ParseLogs(raw)
@@ -84,4 +85,55 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 	})
+
+	Context("when sending errors-json to ElasticSearch "+elasticSearchTag +" and require parsing ", func() {
+		It("should send to regular index (i.e app- index and not to json-index ) ", func() {
+
+			framework.SetFluentConfigFileName("fluentd_structured_configuration_to_elastic.txt")
+			addElasticSearchContainer := newVisitor(framework)
+			Expect(framework.DeployWithVisitor(addElasticSearchContainer)).To(BeNil())
+			Expect(framework.WritesJsonApplicationLogs(jsonErrorMsg, 1)).To(BeNil())
+
+			raw, err := framework.GetLogsFromElasticSearch(logging.OutputTypeElasticsearch, logging.InputNameApplication)
+
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(raw).To(Not(BeEmpty()))
+
+			// Compare to expected template
+			outputLogTemplate := functional.NewLogTemplate()
+			outputLogTemplate.Message = "*"
+
+			// Verify all other fields
+			logs, err := types.ParseLogs(raw)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			outputTestLog := logs[0]
+			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+		})
+	})
+
+	Context("when sending None-json to ElasticSearch "+elasticSearchTag +" and require parsing ", func() {
+		It("should send to regular index (i.e app- index and not to json-index ) ", func() {
+
+			framework.SetFluentConfigFileName("fluentd_structured_configuration_to_elastic.txt")
+			addElasticSearchContainer := newVisitor(framework)
+			Expect(framework.DeployWithVisitor(addElasticSearchContainer)).To(BeNil())
+			Expect(framework.WritesApplicationLogs( 1)).To(BeNil())
+
+			raw, err := framework.GetLogsFromElasticSearch(logging.OutputTypeElasticsearch, logging.InputNameApplication)
+
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(raw).To(Not(BeEmpty()))
+
+			// Compare to expected template
+			outputLogTemplate := functional.NewLogTemplate()
+			outputLogTemplate.Message = "*"
+
+			// Verify all other fields
+			logs, err := types.ParseLogs(raw)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			outputTestLog := logs[0]
+			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+		})
+	})
+
 })

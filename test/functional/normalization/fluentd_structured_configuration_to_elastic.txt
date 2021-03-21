@@ -411,20 +411,28 @@
 
   ##### THIS IS NEW CONFIGURATION THAT WILL BE SET USING API
   <filter **>
+    @type record_modifier
+    <record>
+      viaq_original_index_name ${record['viaq_index_name']}
+    </record>
+  </filter>
+  <filter **>
     @type parser
     key_name message
     reserve_data yes
     hash_value_field structured
-    emit_invalid_record_to_error true
+    emit_invalid_record_to_error false
     <parse>
       @type json
+          json_parser oj
     </parse>
   </filter>
   <filter **>
-    @type record_transformer
+    @type record_modifier
     <record>
-      viaq_index_name "json-index"
+      viaq_index_name ${if record['structured'] != nil && record['structured'] != {}; "json-index"; else record['viaq_original_index_name']; end}
     </record>
+    remove_keys viaq_original_index_name
   </filter>
 
   #####

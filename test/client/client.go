@@ -11,6 +11,7 @@ import (
 	testrt "github.com/openshift/cluster-logging-operator/test/runtime"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -145,16 +146,22 @@ func (c *Client) Delete(o runtime.Object) (err error) {
 	return c.delete(o)
 }
 
-func (c *Client) delete(o runtime.Object) (err error) {
+func (c *Client) delete(o runtime.Object, opts ...crclient.DeleteOption) (err error) {
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
-	return c.c.Delete(ctx, o)
+	return c.c.Delete(ctx, o, opts...)
 }
 
 // Remove is like Delete but ignores NotFound errors.
 func (c *Client) Remove(o runtime.Object) (err error) {
 	defer logBeginEnd("Remove", o, &err)()
 	return crclient.IgnoreNotFound(c.delete(o))
+}
+
+// RemoveSync is like Delete but ignores NotFound errors and deletes in the foreground
+func (c *Client) RemoveSync(o runtime.Object) (err error) {
+	defer logBeginEnd("Remove", o, &err)()
+	return crclient.IgnoreNotFound(c.delete(o, crclient.PropagationPolicy(metav1.DeletePropagationForeground)))
 }
 
 // Deleted is a condition for Client.WaitFor true when the event is of type Deleted.

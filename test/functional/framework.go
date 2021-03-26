@@ -308,6 +308,10 @@ func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, 
 			if err := f.addSyslogOutput(b, output); err != nil {
 				return err
 			}
+		case logging.OutputTypeElasticsearch:
+			if err := f.addES7Output(b, output); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

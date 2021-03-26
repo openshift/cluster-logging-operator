@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/openshift/cluster-logging-operator/test/runtime"
@@ -48,7 +47,7 @@ func PodRunning(e watch.Event) (bool, error) { return podInPhase(e.Object, corev
 func IsDaemonSetReady(e watch.Event) (bool, error) {
 	ds, ok := e.Object.(*appsv1.DaemonSet)
 	if !ok {
-		return false, errors.New(fmt.Sprintf("event is not for a daemonset: %v", e))
+		return false, fmt.Errorf("event is not for a daemonset: %v", e)
 	}
 	return ds.Status.NumberUnavailable == 0, nil
 }

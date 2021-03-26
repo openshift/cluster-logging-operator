@@ -190,9 +190,9 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 			templateName = "inputSelectorToPipelineTemplate"
 		}
 		data := struct {
-			Source                     string
-			PipelineNames              []string
-			InputSelectors             []string
+			Source         string
+			PipelineNames  []string
+			InputSelectors []string
 		}{
 			sourceType,
 			pipelineNames.Difference(inputSelectorPipelineNames).List(),

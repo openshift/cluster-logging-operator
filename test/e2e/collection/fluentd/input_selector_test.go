@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
-	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	apps "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,14 +22,14 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 	var (
 		err              error
 		fluentDeployment *apps.Deployment
-		app *apps.StatefulSet
+		app              *apps.StatefulSet
 		e2e              = helpers.NewE2ETestFramework()
 		rootDir          string
 	)
 	appNamespace1 := "application-ns1"
 	appNamespace2 := "application-ns2"
-	appLabels1 := map[string]string{"name":"app1", "env":"env1"}
-	appLabels2 := map[string]string{"name":"app2", "env":"env2"}
+	appLabels1 := map[string]string{"name": "app1", "env": "env1"}
+	appLabels2 := map[string]string{"name": "app2", "env": "env2"}
 
 	Describe("when CLF has input selectors to collect application logs", func() {
 		Describe("from pods identified by labels", func() {
@@ -144,7 +144,8 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				// verify only appLabels1 logs appear in Application logs
 				for _, msg := range logs {
 					log.Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.FlatLabels).To(ContainElements("name=app1", "env=env1"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env1"))
 				}
 
 				Expect(e2e.LogStores[app.Name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs with ")
@@ -156,7 +157,8 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				// verify only appLabels2 logs appear in Application logs
 				for _, msg := range logs {
 					log.Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.FlatLabels).To(ContainElements("name=app2", "env=env2"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app2"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env2"))
 				}
 			})
 
@@ -254,7 +256,7 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				// verify only appLabels1 logs appear in Application logs
 				for _, msg := range logs {
 					log.Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.FlatLabels).To(ContainElements("name=app1", "env=env1"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
 					Expect(msg.Kubernetes.NamespaceName).To(Equal(appNamespace1))
 				}
 			})
@@ -276,4 +278,3 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 
 	})
 })
-

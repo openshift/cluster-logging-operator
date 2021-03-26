@@ -2,8 +2,8 @@ package fluentd
 
 import (
 	"fmt"
-	"sort"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -19,9 +19,9 @@ import (
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
 
 type inputSelectorConf struct {
-	Pipeline        string
-	Namespaces      string
-	Labels          string
+	Pipeline   string
+	Namespaces string
+	Labels     string
 }
 
 func newInputSelectorConf(pipeline string, namespaces []string, labelSelector *metav1.LabelSelector) (*inputSelectorConf, error) {
@@ -44,9 +44,9 @@ func newInputSelectorConf(pipeline string, namespaces []string, labelSelector *m
 	}
 
 	return &inputSelectorConf{
-		Pipeline: pipeline,
+		Pipeline:   pipeline,
 		Namespaces: strings.Join(namespaces, ","),
-		Labels: labelList,
+		Labels:     labelList,
 	}, nil
 }
 
@@ -154,6 +154,29 @@ func (conf *outputLabelConf) StoreID() string {
 func (conf *outputLabelConf) RetryTag() string {
 	return "retry_" + strings.ToLower(replacer.Replace(conf.Name))
 }
+
 func (conf *outputLabelConf) Tags() string {
 	return strings.Join(conf.fluentTags.List(), " ")
+}
+
+func (conf *outputLabelConf) IsElasticSearchOutput() bool {
+	return conf.Target.Type == logging.OutputTypeElasticsearch
+}
+
+func (conf *outputLabelConf) NeedChangeElasticsearchIndexName() bool {
+	return conf.Target.Type == logging.OutputTypeElasticsearch &&
+		conf.Target.OutputTypeSpec.Elasticsearch != nil &&
+		(conf.Target.OutputTypeSpec.Elasticsearch.IndexKey != "" || conf.Target.OutputTypeSpec.Elasticsearch.IndexName != "")
+}
+
+func generateRubyDigArgs(path string) string {
+	var args []string
+	for _, s := range strings.Split(path, ".") {
+		args = append(args, fmt.Sprintf("%q", s))
+	}
+	return strings.Join(args, ",")
+}
+
+func (conf *outputLabelConf) GetKeyVal(path string) string {
+	return generateRubyDigArgs(path)
 }

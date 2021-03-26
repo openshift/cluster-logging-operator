@@ -3,9 +3,10 @@ package functional
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/ViaQ/logerr/log"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"strings"
 )
 
 var ElasticIndex = map[string]string{
@@ -17,6 +18,11 @@ func (f *FluentdFunctionalFramework) GetLogsFromElasticSearch(outputName string,
 	if !ok {
 		return "", fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
 	}
+	return f.GetLogsFromElasticSearchIndex(outputName, index)
+}
+
+func (f *FluentdFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string) (result string, err error) {
+
 	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
 		cmd := `curl -X GET "localhost:9200/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
 {

@@ -579,15 +579,6 @@ const inputSelectorBlockTemplate = `{{- define "inputSelectorBlockTemplate" -}}
 
 const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" -}}
 <label {{labelName .Name}}>
-  #flatten labels to prevent field explosion in ES
-  <filter ** >
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
-  </filter>
   {{ if .PipelineLabels -}}
   <filter **>
     @type record_transformer
@@ -622,6 +613,28 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
 
 const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
 <label {{.LabelName}}>
+  {{- if (.NeedChangeElasticsearchIndexName)}}
+  <filter **>
+    @type record_modifier
+	<record>
+	  indexFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.IndexKey}})}
+	  hasIndexName     "{{.Target.OutputTypeSpec.Elasticsearch.IndexName}}"
+	  viaq_index_name  ${if !record['indexFromKey'].nil?; record['indexFromKey']; elsif record['hasIndexName'] != ""; record['hasIndexName']; else record['viaq_index_name']; end;}
+	</record>
+	remove_keys indexFromKey, hasIndexName
+  </filter>
+  {{- end}}
+  {{- if .IsElasticSearchOutput}}
+  #flatten labels to prevent field explosion in ES
+  <filter ** >
+    @type record_transformer
+    enable_ruby true
+    <record>
+      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+    </record>
+    remove_keys $.kubernetes.labels
+  </filter>
+  {{- end}}
   <match {{.RetryTag}}>
     @type copy
 {{ include .StoreTemplate . "prefix_as_retry" | indent 4}}

@@ -31,9 +31,9 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		f = NewFixture(c.NS.Name, secureMessage)
 
 		// Receiver acts as TLS server.
-		privateCA = certificate.NewCA(nil)
-		serverCert = certificate.NewCert(privateCA, f.Receiver.Host()) // Receiver is server.
-		clientCert = certificate.NewCert(privateCA)
+		privateCA = certificate.NewCA(nil, "Root CA")
+		serverCert = certificate.NewCert(privateCA, "Server", f.Receiver.Host()) // Receiver is server.
+		clientCert = certificate.NewCert(privateCA, "Client")
 		sharedKey = "top-secret"
 		// The Receiver Sources act as TLS servers.
 		for i, s := range []*fluentd.Source{

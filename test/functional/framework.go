@@ -71,7 +71,7 @@ type FluentdFunctionalFramework struct {
 }
 
 func init() {
-	maxDuration, _ = time.ParseDuration("2m")
+	maxDuration, _ = time.ParseDuration("5m")
 	defaultRetryInterval, _ = time.ParseDuration("1ms")
 }
 
@@ -312,6 +312,16 @@ func (f *FluentdFunctionalFramework) WriteMessagesTok8sAuditLog(msg string, numO
 
 func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs uint64) error {
 	return f.WritesNApplicationLogsOfSize(numOfLogs, uint64(100))
+}
+
+func (f *FluentdFunctionalFramework) WritesPartialApplicationLog(size uint64) error {
+	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout P $msg "
+	//podname_ns_containername-containerid.log
+	//functional_testhack-16511862744968_fluentd-90a0f0a7578d254eec640f08dd155cc2184178e793d0289dff4e7772757bb4f8.log
+	filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", f.pod.Name, f.pod.Namespace, constants.FluentdName, f.fluentContainerId)
+	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p /var/log/containers;echo > %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);echo %s >> %s;'", filepath, size, msg, filepath))
+	log.V(3).Info("FluentdFunctionalFramework.WritesPartialApplicationLog", "result", result, "err", err)
+	return err
 }
 
 func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size uint64) error {

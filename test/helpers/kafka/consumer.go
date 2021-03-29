@@ -15,7 +15,7 @@ func NewKafkaConsumerDeployment(namespace, topic string) *apps.Deployment {
 		InitContainers: []v1.Container{
 			{
 				Name:  "topic-create",
-				Image: "solsson/kafka-cli@sha256:9fa3306e9f5d18283d10e01f7c115d8321eedc682f262aff784bd0126e1f2221",
+				Image: KafkaImage,
 				Command: []string{
 					"./bin/kafka-topics.sh",
 					"--zookeeper",
@@ -40,17 +40,25 @@ func NewKafkaConsumerDeployment(namespace, topic string) *apps.Deployment {
 		Containers: []v1.Container{
 			{
 				Name:  name,
-				Image: "solsson/kafka:2.4.1",
+				Image: KafkaImage,
 				Command: []string{
 					"/bin/bash",
 					"-ce",
 					fmt.Sprintf(
-						`./bin/kafka-console-consumer.sh --bootstrap-server %s --topic %s --from-beginning | tee /shared/consumed.logs`,
+						`./bin/kafka-console-consumer.sh --bootstrap-server %s --topic %s --from-beginning --consumer.config /etc/kafka-configmap/client.properties > /shared/consumed.logs`,
 						ClusterLocalEndpoint(namespace),
 						topic,
 					),
 				},
 				VolumeMounts: []v1.VolumeMount{
+					{
+						Name:      "brokerconfig",
+						MountPath: "/etc/kafka-configmap",
+					},
+					{
+						Name:      "brokercerts",
+						MountPath: "/etc/kafka-certs",
+					},
 					{
 						Name:      "shared",
 						MountPath: "/shared",
@@ -59,6 +67,24 @@ func NewKafkaConsumerDeployment(namespace, topic string) *apps.Deployment {
 			},
 		},
 		Volumes: []v1.Volume{
+			{
+				Name: "brokerconfig",
+				VolumeSource: v1.VolumeSource{
+					ConfigMap: &v1.ConfigMapVolumeSource{
+						LocalObjectReference: v1.LocalObjectReference{
+							Name: DeploymentName,
+						},
+					},
+				},
+			},
+			{
+				Name: "brokercerts",
+				VolumeSource: v1.VolumeSource{
+					Secret: &v1.SecretVolumeSource{
+						SecretName: DeploymentName,
+					},
+				},
+			},
 			{
 				Name: "shared",
 				VolumeSource: v1.VolumeSource{

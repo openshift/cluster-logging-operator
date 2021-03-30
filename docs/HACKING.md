@@ -190,3 +190,19 @@ will attempt to clone them to a temporary directory.
 
 Bumping the release and manifest versions typically require updating the `elasticsearch-operator` as well.
 * `dep ensure -update github.com/openshift/elasticsearch-operator`
+
+## Deploying without OLM
+Production relies upon OLM to manage and control the operator deployment, permissions, etc. The manifest defines all the resources needed by OLM.  We can use this same manifest to generate a list of resources to deploy without using OLM.
+```
+make deploy-image
+```
+will produce output that should give you the pullspec on the cluster like:
+```
+image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest
+```
+
+which will allow you to use the script like:
+```                                                                                                                                                                                                                                                                               
+CLO_IMAGE=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+./hack/gen-olm-artifacts.py manifests/5.1/cluster-logging.v5.1.0.clusterserviceversion.yaml  $CLO_IMAGE | oc create -f -
+```

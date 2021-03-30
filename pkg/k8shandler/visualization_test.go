@@ -16,6 +16,11 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
+var (
+	zeroInt = int32(0)
+	twoInt  = int32(2)
+)
+
 //TODO: Remove this in the next release after removing old kibana code completely
 func TestHasCLORef(t *testing.T) {
 	clr := ClusterLoggingRequest{
@@ -113,6 +118,11 @@ func TestNewKibanaCR(t *testing.T) {
 					Visualization: &logging.VisualizationSpec{
 						KibanaSpec: logging.KibanaSpec{},
 					},
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
+						},
+					},
 				},
 			},
 			want: es.Kibana{
@@ -127,6 +137,131 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        1,
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "no kibana replica no elasticsearch",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{},
+					},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        0,
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "no kibana replica with elasticsearch",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{
+							Replicas: &zeroInt,
+						},
+					},
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
+						},
+					},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        0,
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: defaultKibanaMemory,
+							v1.ResourceCPU:    defaultKibanaCpuRequest,
+						},
+					},
+				},
+			},
+		},
+		{
+			desc: "two kibana replica with elasticsearch",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{
+							Replicas: &twoInt,
+						},
+					},
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
+						},
+					},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.SchemeGroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        2,
 					Resources: &v1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							v1.ResourceMemory: defaultKibanaMemory,
@@ -169,6 +304,11 @@ func TestNewKibanaCR(t *testing.T) {
 									},
 								},
 							},
+						},
+					},
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
 						},
 					},
 				},
@@ -223,6 +363,11 @@ func TestNewKibanaCR(t *testing.T) {
 							},
 						},
 					},
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
+						},
+					},
 				},
 			},
 			want: es.Kibana{
@@ -268,6 +413,11 @@ func TestNewKibanaCR(t *testing.T) {
 									Value: "test",
 								},
 							},
+						},
+					},
+					LogStore: &logging.LogStoreSpec{
+						ElasticsearchSpec: logging.ElasticsearchSpec{
+							NodeCount: 1,
 						},
 					},
 				},

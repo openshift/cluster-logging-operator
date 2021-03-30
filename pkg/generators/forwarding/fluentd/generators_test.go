@@ -1,38 +1,23 @@
 package fluentd
 
 import (
-	"text/template"
-
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/generators"
 )
 
 var _ = Describe("Generating pipeline to output labels", func() {
 	var (
 		configGenerator *ConfigGenerator
+		err             error
 	)
 	BeforeEach(func() {
-		engn, err := generators.New("OutputLabelConf",
-			&template.FuncMap{
-				"labelName":           labelName,
-				"sourceTypelabelName": sourceTypeLabelName,
-			},
-			templateRegistry...)
+		configGenerator, err = NewConfigGenerator(false, false, false)
 		Expect(err).To(BeNil())
-
-		configGenerator = &ConfigGenerator{
-			Generator:                  engn,
-			includeLegacyForwardConfig: false,
-			includeLegacySyslogConfig:  false,
-			useOldRemoteSyslogPlugin:   false,
-			storeTemplate:              "storeElasticsearch",
-			outputTemplate:             "outputLabelConf",
-		}
 	})
 
 	It("should generate no labels for a single pipeline", func() {
@@ -162,5 +147,78 @@ var _ = Describe("Generating pipeline to output labels", func() {
     </store>
   </match>
 </label>`}))
+	})
+})
+var _ = Describe("mapAppNamespacesToPipelines", func() {
+	var (
+		forwarder *logging.ClusterLogForwarder
+	)
+	Context("with default inputs", func() {
+
+		It("should correctly map application namespaces to pipelines", func() {
+			forwarder = &logging.ClusterLogForwarder{
+				Spec: logging.ClusterLogForwarderSpec{
+					Pipelines: []logging.PipelineSpec{
+						{
+							Name:      "pipeline-foo",
+							InputRefs: []string{logging.InputNameApplication, logging.InputNameInfrastructure},
+						},
+						{
+							Name:      "pipeline-bar",
+							InputRefs: []string{logging.InputNameAudit},
+						},
+					},
+				},
+			}
+			nsMap := logging.RouteMap{
+				"": sets.NewString("pipeline-foo"),
+			}
+
+			Expect(mapAppNamespacesToPipelines(&forwarder.Spec)).To(BeEquivalentTo(nsMap))
+		})
+	})
+	Context("explicitly defining inputs", func() {
+
+		It("should correctly map application namespaces to pipelines", func() {
+			forwarder = &logging.ClusterLogForwarder{
+				Spec: logging.ClusterLogForwarderSpec{
+					Outputs: []logging.OutputSpec{
+						{Name: "output1"},
+						{Name: "output2"},
+					},
+					Inputs: []logging.InputSpec{
+						{
+							Name: "input1",
+							Application: &logging.Application{
+								Namespaces: []string{"project-1", "project-2"},
+							},
+						},
+						{
+							Name: "input2",
+							Application: &logging.Application{
+								Namespaces: []string{"project-2", "project-3"},
+							},
+						},
+					},
+					Pipelines: []logging.PipelineSpec{
+						{
+							Name:      "pipeline-foo",
+							InputRefs: []string{"input1", logging.InputNameInfrastructure},
+						},
+						{
+							Name:      "pipeline-bar",
+							InputRefs: []string{"input2"},
+						},
+					},
+				},
+			}
+			nsMap := logging.RouteMap{
+				"project-1": sets.NewString("pipeline-foo"),
+				"project-2": sets.NewString("pipeline-foo", "pipeline-bar"),
+				"project-3": sets.NewString("pipeline-bar"),
+			}
+
+			Expect(mapAppNamespacesToPipelines(&forwarder.Spec)).To(BeEquivalentTo(nsMap))
+		})
 	})
 })

@@ -9,6 +9,7 @@ var templateRegistry = []string{
 	inputSourceOpenShiftAuditTemplate,
 	fluentConfTemplate,
 	pipelineToOutputCopyTemplate,
+	namespaceToPipelineTemplate,
 	sourceToPipelineCopyTemplate,
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
@@ -367,26 +368,14 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @type null
 {{- end}}
   </match>
+  <match kubernetes.**>
 {{- if .CollectAppLogs}}
-	{{- if .AppNamespaces}}
-  <match {{range $ns := .AppNamespaces}}kubernetes.**_{{$ns}}_** {{end}}>
     @type relabel
     @label @_APPLICATION
-  </match>
-  <match kubernetes.** >
-    @type null
-  </match>
-	{{- else}}
-  <match kubernetes.**>
-    @type relabel
-    @label @_APPLICATION
-  </match>
-	{{- end}}
 {{- else}}
-  <match kubernetes.**>
     @type null
-  </match>
 {{- end}}
+  </match>
   <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
 {{- if .CollectAuditLogs }}
     @type relabel
@@ -540,6 +529,23 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
     time_format %Y-%m-%dT%H:%M:%S.%N%z
   </parse>
 </source>
+{{- end}}`
+
+const namespaceToPipelineTemplate = `{{- define "namespaceToPipelineTemplate" -}}
+<label {{sourceTypelabelName .Source}}>
+  {{- $pipelines := $.PipeLines -}}
+  {{- range $nsindex, $ns := .AppNamespaces }}
+  <match {{applicationTag $ns}}>
+    @type copy
+  {{- range $index, $pipelineName := (routeMapValues $pipelines $ns) }}
+    <store>
+      @type relabel
+      @label {{labelName $pipelineName}}
+    </store>
+  {{- end }}
+  </match>
+  {{- end }}
+</label>
 {{- end}}`
 
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" -}}

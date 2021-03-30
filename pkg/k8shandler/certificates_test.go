@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -86,6 +88,7 @@ var _ = Describe("Reconciling", func() {
 		var (
 			client         client.Client
 			clusterRequest *ClusterLoggingRequest
+			eventRecorder  *record.FakeRecorder
 		)
 
 		BeforeSuite(func() {
@@ -97,9 +100,12 @@ var _ = Describe("Reconciling", func() {
 				kibanaSecret,
 				kibanaProxySecret,
 			)
+
+			eventRecorder = record.NewFakeRecorder(100)
 			clusterRequest = &ClusterLoggingRequest{
-				Client:  client,
-				Cluster: cluster,
+				Client:        client,
+				Cluster:       cluster,
+				EventRecorder: eventRecorder,
 			}
 			if err := os.RemoveAll(utils.GetWorkingDir()); err != nil {
 				Fail(fmt.Sprintf("%v", err))
@@ -143,6 +149,28 @@ var _ = Describe("Reconciling", func() {
 
 			Expect(secret).Should(ContainKeys("ca.key", "ca.crt", "ca.db", "ca.serial.txt"))
 			Expect(secret).Should(SucceedVerifyX509("ca.crt", "ca.crt", "openshift-cluster-logging-signer", nil, nil, nil))
+		})
+
+		It("should generate a ceritficate update event", func() {
+			//remove secret and validate
+			Expect(client.Delete(context.TODO(), masterCASecret)).Should(Succeed())
+			secret := &corev1.Secret{}
+			key := types.NamespacedName{Name: constants.MasterCASecretName, Namespace: constants.OpenshiftNS}
+			Expect(client.Get(context.TODO(), key, secret)).ShouldNot(Succeed())
+
+			//reconcile again
+			Expect(clusterRequest.CreateOrUpdateCertificates()).Should(Succeed())
+			Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
+			for {
+				select {
+				case ev := <-eventRecorder.Events:
+					Expect(ev).To(Not(BeEmpty()))
+					return
+				case <-time.After(2 * time.Second):
+					Fail("No events in 2 sec")
+					return
+				}
+			}
 		})
 
 		Context("for log store", func() {

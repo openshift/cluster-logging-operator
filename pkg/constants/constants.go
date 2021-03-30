@@ -35,6 +35,7 @@ const (
 	LegacySyslog        = "_LEGACY_SYSLOG"
 
 	FluentdImageEnvVar = "FLUENTD_IMAGE"
+	CertEventName      = "cluster-logging-certs-generate"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

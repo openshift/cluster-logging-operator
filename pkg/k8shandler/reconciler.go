@@ -11,16 +11,18 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/status"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/tools/record"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client) (err error) {
+func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client, r record.EventRecorder) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
-		Client:  requestClient,
-		Cluster: requestCluster,
+		Client:        requestClient,
+		Cluster:       requestCluster,
+		EventRecorder: r,
 	}
 
 	if !clusterLoggingRequest.isManaged() {

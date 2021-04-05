@@ -88,7 +88,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 
 		scriptsDir := utils.GetScriptsDir()
 		updated := false
-		result := []interface{}{}
+		var result []interface{}
 		if err, updated, result = certificates.GenerateCertificates(clusterRequest.Cluster.Namespace, scriptsDir, "elasticsearch", utils.GetWorkingDir()); err != nil {
 			return fmt.Errorf("Error running script: %v", err)
 		}

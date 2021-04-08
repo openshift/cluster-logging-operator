@@ -40,7 +40,7 @@ trap cleanup exit
 failed=0
 for dir in $(ls -d $TEST_DIR); do
   if [ -n "${CLF_INCLUDES}" ] ; then
-    if ! echo $dir | grep -P -q "${CLF_INCLUDES}" ; then
+    if ! basename $dir | grep -P -q "${CLF_INCLUDES}" ; then
       os::log::info "==============================================================="
 	    os::log::info "excluding logforwarding $dir "
 	    os::log::info "==============================================================="

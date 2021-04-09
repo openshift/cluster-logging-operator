@@ -150,7 +150,7 @@ undeploy-elasticsearch-operator:
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-functional:
+test-functional: test-functional-benchmarker
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
@@ -160,7 +160,11 @@ test-functional:
 
 test-forwarder-generator: bin/forwarder-generator
 	@bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null 2>&1
- .PHONY: test-forwarder-generator
+.PHONY: test-forwarder-generator
+
+test-functional-benchmarker: bin/functional-benchmarker
+	@bin/functional-benchmarker > /dev/null 2>&1
+.PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \

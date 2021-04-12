@@ -471,37 +471,28 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <label @_APPLICATION>
           <match **>
             @type copy
-
-
             <store>
               @type relabel
               @label @_LEGACY_SECUREFORWARD
             </store>
-
           </match>
         </label>
         <label @_AUDIT>
           <match **>
             @type copy
-
-
             <store>
               @type relabel
               @label @_LEGACY_SECUREFORWARD
             </store>
-
           </match>
         </label>
         <label @_INFRASTRUCTURE>
           <match **>
             @type copy
-
-
             <store>
               @type relabel
               @label @_LEGACY_SECUREFORWARD
             </store>
-
           </match>
         </label>
 

@@ -174,7 +174,7 @@ var _ = Describe("Generating fluentd config", func() {
     @id container-input
     path "/var/log/containers/*.log"
     exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
-    pos_file "/var/log/es-containers.log.pos"
+    pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
     refresh_interval 5
     rotate_wait 5
     tag kubernetes.*
@@ -894,7 +894,7 @@ var _ = Describe("Generating fluentd config", func() {
     @id container-input
     path "/var/log/containers/*.log"
     exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
-    pos_file "/var/log/es-containers.log.pos"
+    pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
     refresh_interval 5
     rotate_wait 5
     tag kubernetes.*
@@ -1595,7 +1595,7 @@ var _ = Describe("Generating fluentd config", func() {
     @id container-input
     path "/var/log/containers/*.log"
     exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
-    pos_file "/var/log/es-containers.log.pos"
+    pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
     refresh_interval 5
     rotate_wait 5
     tag kubernetes.*
@@ -2256,7 +2256,7 @@ var _ = Describe("Generating fluentd config", func() {
 				@id container-input
 				path "/var/log/containers/*.log"
 				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
-				pos_file "/var/log/es-containers.log.pos"
+				pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
@@ -2677,7 +2677,7 @@ var _ = Describe("Generating fluentd config", func() {
 					persistent true
 					# NOTE: if this does not end in .json, fluentd will think it
 					# is the name of a directory - see fluentd storage_local.rb
-					path '/var/log/journal_pos.json'
+					path '/var/lib/fluentd/pos/journal_pos.json'
 				</storage>
 				matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
 				tag journal
@@ -2690,7 +2690,7 @@ var _ = Describe("Generating fluentd config", func() {
 				@id container-input
 				path "/var/log/containers/*.log"
 				exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
-				pos_file "/var/log/es-containers.log.pos"
+				pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
 				refresh_interval 5
 				rotate_wait 5
 				tag kubernetes.*
@@ -2717,8 +2717,8 @@ var _ = Describe("Generating fluentd config", func() {
               @type tail
               @id audit-input
               @label @MEASURE
-              path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
-              pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+              path "/var/log/audit/audit.log"
+              pos_file "/var/lib/fluentd/pos/audit.log.pos"
               tag linux-audit.log
               <parse>
                 @type viaq_host_audit
@@ -2730,8 +2730,8 @@ var _ = Describe("Generating fluentd config", func() {
               @type tail
               @id k8s-audit-input
               @label @MEASURE
-              path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
-              pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+              path "/var/log/kube-apiserver/audit.log"
+              pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
               tag k8s-audit.log
               <parse>
                 @type json
@@ -2748,7 +2748,7 @@ var _ = Describe("Generating fluentd config", func() {
 				@id openshift-audit-input
 				@label @MEASURE
 				path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
-				pos_file /var/log/oauth-apiserver.audit.log
+				pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
 				tag openshift-audit.log
 				<parse>
 				@type json
@@ -3661,7 +3661,7 @@ var _ = Describe("Generating fluentd config", func() {
       @id container-input
       path "/var/log/containers/*.log"
       exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
-      pos_file "/var/log/es-containers.log.pos"
+      pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
       refresh_interval 5
       rotate_wait 5
       tag kubernetes.*

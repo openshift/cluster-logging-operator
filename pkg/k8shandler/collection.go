@@ -219,6 +219,13 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 		delfinalizer = true
 	}
 
+	// If needed create a custom SecurityContextConstraints object for the log collector to run with
+	scc := NewSCC(LogCollectorSCCName)
+	err := clusterRequest.Create(scc)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return nil, fmt.Errorf("Failure creating Log Collector SecurityContextConstraints: %v", err)
+	}
+
 	// Also create the role and role binding so that the service account has host read access
 	collectorRole := NewRole(
 		"log-collector-privileged",
@@ -227,7 +234,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 			NewPolicyRule(
 				[]string{"security.openshift.io"},
 				[]string{"securitycontextconstraints"},
-				[]string{"privileged"},
+				[]string{LogCollectorSCCName},
 				[]string{"use"},
 			),
 		),
@@ -235,7 +242,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	utils.AddOwnerRefToObject(collectorRole, utils.AsOwner(cluster))
 
-	err := clusterRequest.Create(collectorRole)
+	err = clusterRequest.Create(collectorRole)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return nil, fmt.Errorf("Failure creating Log collector privileged role: %v", err)
 	}

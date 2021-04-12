@@ -173,7 +173,7 @@ generate-bundle: regenerate $(OPM)
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	INCLUDES=$(E2E_TEST_INCLUDES) CLF_INCLUDES=$(CLF_TEST_INCLUDES) hack/test-e2e-olm.sh
+	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
     CLF_INCLUDES=$(CLF_TEST_INCLUDES) \

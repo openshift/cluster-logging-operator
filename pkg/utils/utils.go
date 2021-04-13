@@ -441,3 +441,7 @@ func WrapError(err error) error {
 	}
 	return err
 }
+
+func ToJsonLogs(logs []string) string {
+	return fmt.Sprintf("[%s]", strings.Join(logs, ","))
+}

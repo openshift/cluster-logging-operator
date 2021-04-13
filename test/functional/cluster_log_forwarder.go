@@ -36,8 +36,13 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeFluentdForward)
 }
+
 func (p *PipelineBuilder) ToElasticSearchOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeElasticsearch)
+}
+
+func (p *PipelineBuilder) ToSyslogOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeSyslog)
 }
 
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, forwardOutputName string) *ClusterLogForwarderBuilder {
@@ -46,17 +51,24 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, forwardOu
 	var output *logging.OutputSpec
 	var found bool
 	if output, found = outputs[logging.OutputTypeFluentdForward]; !found {
-		if forwardOutputName == logging.OutputTypeFluentdForward {
+		switch forwardOutputName {
+		case logging.OutputTypeFluentdForward:
 			output = &logging.OutputSpec{
 				Name: logging.OutputTypeFluentdForward,
 				Type: logging.OutputTypeFluentdForward,
 				URL:  "tcp://0.0.0.0:24224",
 			}
-		} else if forwardOutputName == logging.OutputTypeElasticsearch {
+		case logging.OutputTypeElasticsearch:
 			output = &logging.OutputSpec{
 				Name: logging.OutputTypeElasticsearch,
 				Type: logging.OutputTypeElasticsearch,
 				URL:  "https://0.0.0.0:9200",
+			}
+		case logging.OutputTypeSyslog:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeSyslog,
+				Type: logging.OutputTypeSyslog,
+				URL:  "tcp://0.0.0.0:24224",
 			}
 		}
 

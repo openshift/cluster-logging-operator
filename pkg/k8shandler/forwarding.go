@@ -132,6 +132,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 		}
 	}
 	if len(unready) == len(status.Pipelines) {
+		log.V(3).Info("NormalizeForwarder. All pipelines invalid", "ForwarderSpec", clusterRequest.ForwarderSpec)
 		status.Conditions.SetCondition(condInvalid("all pipelines invalid: %v", unready))
 	} else {
 		if len(unready)+len(degraded) > 0 {
@@ -261,17 +262,21 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		log.V(3).Info("Verifying", "outputs", output)
 		switch {
 		case output.Name == "":
+			log.V(3).Info("verifyOutputs failed", "reason", "output must have a name")
 			badName("output must have a name")
 		case logging.IsReservedOutputName(output.Name):
+			log.V(3).Info("verifyOutputs failed", "reason", "output name is reserved", "output name", output.Name)
 			badName("output name %q is reserved", output.Name)
 		case names.Has(output.Name):
+			log.V(3).Info("verifyOutputs failed", "reason", "output name is duplicated", "output name", output.Name)
 			badName("duplicate name: %q", output.Name)
 		case !logging.IsOutputTypeName(output.Type):
+			log.V(3).Info("verifyOutputs failed", "reason", "output type is invalid", "output name", output.Name, "output type", output.Type)
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
 		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
-			break
+			log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
 		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
-			break
+			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
 		default:
 			status.Outputs.Set(output.Name, condReady)
 			spec.Outputs = append(spec.Outputs, output)

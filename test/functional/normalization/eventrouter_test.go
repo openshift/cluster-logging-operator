@@ -3,17 +3,19 @@ package normalization
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/reference"
-	"strings"
-	"time"
 )
 
 var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages", func() {
@@ -100,7 +102,7 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 			raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			var logs []types.EventRouterLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
 			outputTestLog := logs[0]

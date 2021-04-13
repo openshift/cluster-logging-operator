@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -336,10 +335,6 @@ func StrictlyParseLogs(in string, logs interface{}) error {
 }
 
 type Logs []AllLog
-
-func ToJsonLogs(logs []string) string {
-	return fmt.Sprintf("[%s]", strings.Join(logs, ","))
-}
 
 type PerfLog struct {
 	AllLog

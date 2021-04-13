@@ -31,80 +31,6 @@ type syslogReceiverLogStore struct {
 
 const (
 	SyslogReceiverName = "syslog-receiver"
-
-	tcpSyslogInput = `
-# Provides TCP syslog reception
-# for parameters see http://www.rsyslog.com/doc/imtcp.html
-module(load="imtcp") # needs to be done just once
-input(type="imtcp" port="24224" ruleset="test")
-	`
-
-	tcpSyslogInputWithTLS = `
-# Provides TCP syslog reception
-# for parameters see http://www.rsyslog.com/doc/imtcp.html
-module(load="imtcp"
-    StreamDriver.Name="gtls"
-    StreamDriver.Mode="1" # run driver in TLS-only mode
-    StreamDriver.Authmode="anon"
-)
-# make gtls driver the default and set certificate files
-global(
-    DefaultNetstreamDriver="gtls"
-    DefaultNetstreamDriverCAFile="/rsyslog/etc/secrets/ca-bundle.crt"
-    DefaultNetstreamDriverCertFile="/rsyslog/etc/secrets/tls.crt"
-    DefaultNetstreamDriverKeyFile="/rsyslog/etc/secrets/tls.key"
-    )
-
-input(type="imtcp" port="24224" ruleset="test")
-	`
-
-	udpSyslogInput = `
-# Provides UDP syslog reception
-# for parameters see http://www.rsyslog.com/doc/imudp.html
-module(load="imudp") # needs to be done just once
-input(type="imudp" port="24224" ruleset="test")
-	`
-
-	udpSyslogInputWithTLS = `
-# Provides UDP syslog reception
-# for parameters see http://www.rsyslog.com/doc/imudp.html
-module(load="imudp"
-    StreamDriver.Name="gtls"
-    StreamDriver.Mode="1" # run driver in TLS-only mode
-    StreamDriver.Authmode="anon"
-) # needs to be done just once
-
-# make gtls driver the default and set certificate files
-global(
-    DefaultNetstreamDriver="gtls"
-    DefaultNetstreamDriverCAFile="/rsyslog/etc/secrets/ca-bundle.crt"
-    DefaultNetstreamDriverCertFile="/rsyslog/etc/secrets/tls.crt"
-    DefaultNetstreamDriverKeyFile="/rsyslog/etc/secrets/tls.key"
-    )
-
-input(type="imudp" port="24224" ruleset="test")
-	`
-
-	ruleSetRfc5424 = `
-#### RULES ####
-ruleset(name="test" parser=["rsyslog.rfc5424"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
-}
-	`
-
-	ruleSetRfc3164 = `
-#### RULES ####
-ruleset(name="test" parser=["rsyslog.rfc3164"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
-}
-	`
-	// includes both rfc parsers
-	ruleSetRfc3164Rfc5424 = `
-#### RULES ####
-ruleset(name="test" parser=["rsyslog.rfc3164","rsyslog.rfc5424"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
-}
-	`
 )
 
 // SyslogRfc type is the rfc used for sending syslog
@@ -132,14 +58,14 @@ func (e SyslogRfc) String() string {
 	}
 }
 
-func generateRsyslogConf(conf string, rfc SyslogRfc) string {
+func GenerateRsyslogConf(conf string, rfc SyslogRfc) string {
 	switch rfc {
 	case RFC5424:
-		return strings.Join([]string{conf, ruleSetRfc5424}, "\n")
+		return strings.Join([]string{conf, RuleSetRfc5424}, "\n")
 	case RFC3164:
-		return strings.Join([]string{conf, ruleSetRfc3164}, "\n")
+		return strings.Join([]string{conf, RuleSetRfc3164}, "\n")
 	case RFC3164RFC5424:
-		return strings.Join([]string{conf, ruleSetRfc3164Rfc5424}, "\n")
+		return strings.Join([]string{conf, RuleSetRfc3164Rfc5424}, "\n")
 	}
 	return "Invalid Conf"
 }
@@ -367,19 +293,19 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	var rsyslogConf string
 	switch {
 	case protocol == corev1.ProtocolUDP:
-		rsyslogConf = udpSyslogInput
+		rsyslogConf = UdpSyslogInput
 
 	default:
-		rsyslogConf = tcpSyslogInput
+		rsyslogConf = TcpSyslogInput
 	}
 
 	if withTLS {
 		switch {
 		case protocol == corev1.ProtocolUDP:
-			rsyslogConf = udpSyslogInputWithTLS
+			rsyslogConf = UdpSyslogInputWithTLS
 
 		default:
-			rsyslogConf = tcpSyslogInputWithTLS
+			rsyslogConf = TcpSyslogInputWithTLS
 		}
 		secret, err := tc.CreateSyslogReceiverSecrets(testDir, SyslogReceiverName, SyslogReceiverName)
 		if err != nil {
@@ -404,7 +330,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		})
 	}
 
-	rsyslogConf = generateRsyslogConf(rsyslogConf, rfc)
+	rsyslogConf = GenerateRsyslogConf(rsyslogConf, rfc)
 
 	cOpts := metav1.CreateOptions{}
 	config := k8shandler.NewConfigMap(container.Name, OpenshiftLoggingNS, map[string]string{

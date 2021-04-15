@@ -128,3 +128,9 @@ func LogBeginEnd(l logr.Logger, msg string, errp *error, kv ...interface{}) func
 		}
 	}
 }
+
+func Escapelines(logline string) string {
+	logline = strings.ReplaceAll(logline, "\\", "\\\\")
+	logline = strings.ReplaceAll(logline, "\"", "\\\"")
+	return logline
+}

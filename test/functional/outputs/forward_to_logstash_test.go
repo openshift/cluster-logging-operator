@@ -1,15 +1,17 @@
 package outputs
 
 import (
+	"path"
+
 	"github.com/ViaQ/logerr/log"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
-	"path"
 )
 
 var _ = Describe("[Functional][Outputs][Logstash] FluentdForward Output to Logstash", func() {
@@ -106,7 +108,7 @@ output {
 
 			// Parse log line
 			var logs []LogstashApplicationLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			// Compare to expected template
 			outputTestLog := logs[0]

@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
@@ -125,14 +126,18 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 
 		// Parse log line
 		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		same := cmp.Equal(logs[0].Structured, expected)
 		if !same {
 			diff := cmp.Diff(logs[0].Structured, expected)
-			log.V(3).Info("Parsed json not as expected", "diff", diff)
+			//log.V(3).Info("Parsed json not as expected", "diff", diff)
+			fmt.Printf("diff %s\n", diff)
 		}
 		Expect(same).To(BeTrue(), "parsed json message not matching")
+		fmt.Printf("Message: %s\n", logs[0].Message)
+		diff := cmp.Diff(logs[0].Message, expectedMessage)
+		fmt.Printf("diff %s\n", diff)
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
 	It("should not parse non json message into structured", func() {
@@ -153,7 +158,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 
 		// Parse log line
 		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		same := cmp.Equal(logs[0].Structured, empty)
 		if !same {
@@ -183,7 +188,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 
 		// Parse log line
 		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(logs[0].Structured).To(BeNil(), "expected nil structured field")
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
@@ -209,7 +214,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 
 		// Parse log line
 		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		same := cmp.Equal(logs[0].Structured, empty)
 		if !same {

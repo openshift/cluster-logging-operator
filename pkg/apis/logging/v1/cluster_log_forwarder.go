@@ -64,6 +64,14 @@ func (m RouteMap) Insert(k, v string) {
 	m[k].Insert(v)
 }
 
+func (m RouteMap) Keys() []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // Routes maps connected input and output names.
 type Routes struct {
 	ByInput, ByOutput RouteMap
@@ -94,19 +102,19 @@ func (spec *ClusterLogForwarderSpec) OutputMap() map[string]*OutputSpec {
 	return m
 }
 
-// InputMap returns a map of names to outputs.
+// True if spec has a default output.
+func (spec *ClusterLogForwarderSpec) HasDefaultOutput() bool {
+	_, ok := spec.OutputMap()[OutputNameDefault]
+	return ok
+}
+
+// InputMap returns a map of input names to InputSpec.
 func (spec *ClusterLogForwarderSpec) InputMap() map[string]*InputSpec {
 	m := map[string]*InputSpec{}
 	for i := range spec.Inputs {
 		m[spec.Inputs[i].Name] = &spec.Inputs[i]
 	}
 	return m
-}
-
-// True if spec has a default output.
-func (spec *ClusterLogForwarderSpec) HasDefaultOutput() bool {
-	_, ok := spec.OutputMap()[OutputNameDefault]
-	return ok
 }
 
 // Types returns the set of input types that are used to by the input spec.

@@ -38,6 +38,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 #
 check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator bin/functional-benchmarker
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
+	go test ./test/functional/... -exec true > /dev/null # Build but don't run test functional tests.
 	go test ./test/helpers/... -exec true > /dev/null # Build but don't run test helpers tests.
 	$(MAKE) lint				  # Only lint if all code builds.
 
@@ -109,7 +110,7 @@ lint: $(GOLANGCI_LINT)
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	find pkg cmd test -name '*.go' | xargs gofmt -s -l -w
+	find pkg cmd test internal -name '*.go' | xargs gofmt -s -l -w
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
@@ -154,7 +155,7 @@ test-functional: test-functional-benchmarker
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
-	go test -race ./test/functional/...
+	go test -race ./test/functional/... -timeout=40m
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 

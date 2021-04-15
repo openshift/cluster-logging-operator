@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -55,7 +56,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		var logs []types.K8sAuditLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		// Compare to expected template
 		outputTestLog := logs[0]
@@ -87,7 +88,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		var logs []types.LinuxAuditLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		// Compare to expected template
 		outputTestLog := logs[0]
@@ -115,7 +116,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		// Compare to expected template
 		outputTestLog := logs[0]
@@ -143,7 +144,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		// Compare to expected template
 		outputTestLog := logs[0]

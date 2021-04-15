@@ -12,6 +12,7 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/functional"
@@ -80,7 +81,7 @@ func main() {
 	}
 	log.V(4).Info("Read logs", "raw", logs)
 	perflogs := types.PerfLogs{}
-	err = json.Unmarshal([]byte(types.ToJsonLogs(logs)), &perflogs)
+	err = json.Unmarshal([]byte(utils.ToJsonLogs(logs)), &perflogs)
 	if err != nil {
 		log.Error(err, "Error parsing logs")
 		os.Exit(1)

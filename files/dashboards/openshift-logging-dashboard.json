@@ -1748,9 +1748,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, round(rate(fluentd_input_status_total_bytes_logged[5m])))",
+          "expr": "topk(10, round(rate(log_logged_bytes_total[5m])))",
           "interval": "",
-          "legendFormat": "{{path}}",
+          "legendFormat": "{{path}} namespace:{{namespace}}",
           "refId": "A"
         }
       ],
@@ -1758,7 +1758,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Logs emitted (top 10 containers) - Bytes/Second",
+      "title": "Logs produced (top 10 containers) - Bytes/Second",
       "tooltip": {
         "shared": true,
         "sort": 0,

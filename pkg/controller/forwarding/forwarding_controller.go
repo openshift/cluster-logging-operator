@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -28,7 +29,11 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileForwarder{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileForwarder{
+		client:   mgr.GetClient(),
+		scheme:   mgr.GetScheme(),
+		recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -54,8 +59,9 @@ var _ reconcile.Reconciler = &ReconcileForwarder{}
 type ReconcileForwarder struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	client   client.Client
+	scheme   *runtime.Scheme
+	recorder record.EventRecorder
 }
 
 var (
@@ -110,11 +116,16 @@ func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Res
 	}
 
 	if instance.Status.IsReady() {
-		instance.Status.Conditions.SetCondition(condReady)
+		if instance.Status.Conditions.SetCondition(condReady) {
+			r.recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
+		}
 	}
 
 	if instance.Status.IsDegraded() {
-		instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, "Some pipelines are degraded or invalid"))
+		msg := "Some pipelines are degraded or invalid"
+		if instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg)) {
+			r.recorder.Event(instance, "Error", string(logging.ReasonInvalid), msg)
+		}
 	}
 
 	if result, err := r.updateStatus(instance); err != nil {

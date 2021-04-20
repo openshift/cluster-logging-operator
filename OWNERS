@@ -15,7 +15,6 @@ reviewers:
   - pmoogi-redhat
   - ajaygupta978
 component: "Logging"
-filters:
- "Dockerfile(?:\\.in)?$":   # matches Dockerfile, Dockerfile.rhel8, bundle.Dockerfile
-    labels:
-      - midstream/Dockerfile
+"Dockerfile(?:\\.in)?$":   # matches Dockerfile, Dockerfile.rhel8, bundle.Dockerfile
+  labels:
+    - midstream/Dockerfile

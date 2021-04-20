@@ -471,16 +471,6 @@ var _ = Describe("Generating fluentd config", func() {
       alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
     </filter>
 
-    #flatten labels to prevent field explosion in ES
-    <filter ** >
-      @type record_transformer
-      enable_ruby true
-      <record>
-        kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-      </record>
-      remove_keys $.kubernetes.labels
-    </filter>
-
     # Relabel specific source tags to specific intermediary labels for copy processing
     # Earlier matchers remove logs so they don't fall through to later ones.
     # A log source matcher may be null if no pipeline wants that type of log.
@@ -539,6 +529,15 @@ var _ = Describe("Generating fluentd config", func() {
 
   # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
   <label @APPS_PIPELINE>
+    #flatten labels to prevent field explosion in ES
+    <filter ** >
+      @type record_transformer
+      enable_ruby true
+      <record>
+        kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+      </record>
+      remove_keys $.kubernetes.labels
+    </filter>
     <match **>
       @type copy
       <store>
@@ -552,6 +551,15 @@ var _ = Describe("Generating fluentd config", func() {
     </match>
   </label>
   <label @APPS_PIPELINE2>
+    #flatten labels to prevent field explosion in ES
+    <filter ** >
+      @type record_transformer
+      enable_ruby true
+      <record>
+        kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+      </record>
+      remove_keys $.kubernetes.labels
+    </filter>
     <match **>
       @type copy
       <store>
@@ -561,6 +569,15 @@ var _ = Describe("Generating fluentd config", func() {
     </match>
   </label>
   <label @MY_DEFAULT_PIPELINE>
+    #flatten labels to prevent field explosion in ES
+    <filter ** >
+      @type record_transformer
+      enable_ruby true
+      <record>
+        kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+      </record>
+      remove_keys $.kubernetes.labels
+    </filter>
     <match **>
       @type copy
       <store>
@@ -1127,16 +1144,6 @@ var _ = Describe("Generating fluentd config", func() {
 					alt_key kubernetes.event.metadata.uid
 					alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
 				</filter>
-				#flatten labels to prevent field explosion in ES
-				<filter ** >
-					@type record_transformer
-					enable_ruby true
-					<record>
-						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-					</record>
-					remove_keys $.kubernetes.labels
-				</filter>
-
 
 				# Relabel specific source tags to specific intermediary labels for copy processing
 				# Earlier matchers remove logs so they don't fall through to later ones.
@@ -1173,6 +1180,15 @@ var _ = Describe("Generating fluentd config", func() {
 
 			# Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
 			<label @APPS_PIPELINE>
+				#flatten labels to prevent field explosion in ES
+				<filter ** >
+					@type record_transformer
+					enable_ruby true
+					<record>
+						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+					</record>
+					remove_keys $.kubernetes.labels
+				</filter>
 				<match **>
 					@type copy
 					<store>
@@ -1618,15 +1634,6 @@ var _ = Describe("Generating fluentd config", func() {
 					alt_key kubernetes.event.metadata.uid
 					alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
 				</filter>
-				#flatten labels to prevent field explosion in ES
-				<filter ** >
-					@type record_transformer
-					enable_ruby true
-					<record>
-						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-					</record>
-					remove_keys $.kubernetes.labels
-				</filter>
 
 				# Relabel specific source tags to specific intermediary labels for copy processing
 				# Earlier matchers remove logs so they don't fall through to later ones.
@@ -1679,6 +1686,15 @@ var _ = Describe("Generating fluentd config", func() {
 
 			# Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
 			<label @APPS_PIPELINE>
+				#flatten labels to prevent field explosion in ES
+				<filter ** >
+					@type record_transformer
+					enable_ruby true
+					<record>
+						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+					</record>
+					remove_keys $.kubernetes.labels
+				</filter>
 				<match **>
 					@type copy
 					<store>
@@ -1692,6 +1708,15 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>
 			<label @AUDIT_PIPELINE>
+				#flatten labels to prevent field explosion in ES
+				<filter ** >
+					@type record_transformer
+					enable_ruby true
+					<record>
+						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+					</record>
+					remove_keys $.kubernetes.labels
+				</filter>
 				<match **>
 					@type copy
 					<store>
@@ -1701,6 +1726,15 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>
 			<label @INFRA_PIPELINE>
+				#flatten labels to prevent field explosion in ES
+				<filter ** >
+					@type record_transformer
+					enable_ruby true
+					<record>
+						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+					</record>
+					remove_keys $.kubernetes.labels
+				</filter>
 				<match **>
 					@type copy
 					<store>
@@ -2141,6 +2175,15 @@ var _ = Describe("Generating fluentd config", func() {
 			Expect(err).To(BeNil())
 			Expect(spec[0]).To(EqualTrimLines(`
   <label @APPS_PIPELINE>
+    #flatten labels to prevent field explosion in ES
+    <filter ** >
+      @type record_transformer
+      enable_ruby true
+      <record>
+        kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+      </record>
+      remove_keys $.kubernetes.labels
+    </filter>
     <filter **>
       @type parser
 	  key_name message
@@ -2530,16 +2573,6 @@ var _ = Describe("Generating fluentd config", func() {
         alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
       </filter>
 
-      #flatten labels to prevent field explosion in ES
-      <filter ** >
-        @type record_transformer
-        enable_ruby true
-        <record>
-          kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-        </record>
-        remove_keys $.kubernetes.labels
-      </filter>
-
       # Relabel specific source tags to specific intermediary labels for copy processing
       # Earlier matchers remove logs so they don't fall through to later ones.
       # A log source matcher may be null if no pipeline wants that type of log.
@@ -2582,6 +2615,15 @@ var _ = Describe("Generating fluentd config", func() {
 
     # Relabel specific pipelines to multiple, outputs (e.g. ES, kafka stores)
     <label @TEST_APP>
+      #flatten labels to prevent field explosion in ES
+      <filter ** >
+        @type record_transformer
+        enable_ruby true
+        <record>
+          kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+        </record>
+        remove_keys $.kubernetes.labels
+      </filter>
       <match **>
         @type copy
 

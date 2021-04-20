@@ -218,12 +218,12 @@ func (engine *ConfigGenerator) generateInputSelectorBlock(sourceType string, fwd
 				switch sourceType {
 				case logging.InputNameApplication:
 					app := input.Application
-					if app == nil || len(app.Namespaces) == 0 {
+					if app == nil || (len(app.Namespaces) == 0 && app.Selector == nil) {
 						// a user defined type without input selector(i.e. built-in input `application`).
 						defaultPipelineNames.Insert(pipeline.Name)
 						continue
 					}
-					conf, err := newInputSelectorConf(pipeline.Name, app.Namespaces)
+					conf, err := newInputSelectorConf(pipeline.Name, app.Namespaces, app.Selector)
 					if err != nil {
 						return nil, nil, fmt.Errorf("generating fluent input selector configurations: %v", err)
 					}

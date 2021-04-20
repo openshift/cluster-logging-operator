@@ -116,6 +116,19 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) er
 	return tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
 }
 
+func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace string, labels map[string]string) error {
+	err := tc.DeployLogGeneratorWithNamespace(namespace)
+	if err != nil {
+		return err
+	}
+	for k, v := range labels {
+		if _, err2 := oc.Literal().From("oc label pod -n %s --all %s=%s", namespace, k, v).Run(); err != nil {
+			return err2
+		}
+	}
+	return err
+}
+
 func (tc *E2ETestFramework) DeployJsonLogGenerator(vals map[string]string) (string, string, error) {
 	namespace := tc.CreateTestNamespace()
 	pycode := `

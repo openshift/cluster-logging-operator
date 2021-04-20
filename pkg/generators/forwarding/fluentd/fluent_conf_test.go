@@ -118,7 +118,7 @@ var _ = Describe("Generating fluentd config", func() {
 				},
 				{
 					Name:       "apps-pipeline2",
-					InputRefs:  []string{"myInput2"},
+					InputRefs:  []string{"myInput2", "application"},
 					OutputRefs: []string{"apps-es-2"},
 				},
 			},
@@ -493,33 +493,30 @@ var _ = Describe("Generating fluentd config", func() {
 
   # Relabel specific sources (e.g. logs.apps) to multiple pipelines
   <label @_APPLICATION>
-     <match kubernetes.**_dev-apple_**>
-      @type copy
-      <store>
-	    @type relabel
-	    @label @APPS_PIPELINE2
-      </store>
+    <match **>
+      @type label_router
+      default_route @_APPLICATION_DEFAULT
+      <route>
+        @label @APPS_PIPELINE
+        <match>
+          namespaces project1-namespace,project2-namespace
+        </match>
+      </route>
+      <route>
+        @label @APPS_PIPELINE2
+        <match>
+          namespaces dev-apple,project2-namespace
+        </match>
+      </route>
     </match>
-    <match kubernetes.**_project1-namespace_**>
-      @type copy
-      <store>
-		@type relabel
-		@label @APPS_PIPELINE
-      </store>
-    </match>
-    <match kubernetes.**_project2-namespace_**>
-      @type copy
-      <store>
-		@type relabel
-		@label @APPS_PIPELINE
-      </store>
-      <store>
-		@type relabel
-		@label @APPS_PIPELINE2
-      </store>
-    </match>
+  </label>
+  <label @_APPLICATION_DEFAULT>
     <match **>
       @type copy
+      <store>
+             @type relabel
+             @label @APPS_PIPELINE2
+      </store>
       <store>
 	    @type relabel
 	    @label @MY_DEFAULT_PIPELINE
@@ -2129,7 +2126,7 @@ var _ = Describe("Generating fluentd config", func() {
 	})
 
 	It("should generate sources for reserved inputs used as names or types", func() {
-		sources, _ := gatherSources(&logging.ClusterLogForwarderSpec{
+		sources := gatherSources(&logging.ClusterLogForwarderSpec{
 			Inputs: []logging.InputSpec{{Name: "in", Application: &logging.Application{}}},
 			Pipelines: []logging.PipelineSpec{
 				{
@@ -2597,19 +2594,15 @@ var _ = Describe("Generating fluentd config", func() {
 
     # Relabel specific sources (e.g. logs.apps) to multiple pipelines
     <label @_APPLICATION>
-      <match kubernetes.**_project1_**>
-        @type copy
-        <store>
-          @type relabel
+      <match **>
+        @type label_router
+
+        <route>
           @label @TEST_APP
-        </store>
-      </match>
-      <match kubernetes.**_project2_**>
-        @type copy
-        <store>
-          @type relabel
-          @label @TEST_APP
-        </store>
+          <match>
+            namespaces project1,project2
+          </match>
+        </route>
       </match>
     </label>
 

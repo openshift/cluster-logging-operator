@@ -44,7 +44,6 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 	//sanitize here
 	var (
 		inputs                 sets.String
-		namespaces             sets.String
 		routeMap               logging.RouteMap
 		sourceInputLabels      []string
 		sourceToPipelineLabels []string
@@ -53,9 +52,8 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		err                    error
 	)
 
-	inputs, namespaces = gatherSources(clfSpec)
+	inputs = gatherSources(clfSpec)
 	routeMap = inputsToPipelines(clfSpec)
-	appNSToPipelines := mapAppNamespacesToPipelines(clfSpec)
 	// Provide inputs and inputsPipelines for legacy forwarding protocols
 	// w/o a user-provided ClusterLogFowarder instance to enable inputs and
 	// inputs-to-pipelines a.k.a. route map template generation.
@@ -68,15 +66,9 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		for _, logType := range inputs.List() {
 			if engine.includeLegacySyslogConfig {
 				routeMap.Insert(logType, constants.LegacySyslog)
-				if logType == logging.InputNameApplication {
-					appNSToPipelines.Insert("", constants.LegacySyslog)
-				}
 			}
 			if engine.includeLegacyForwardConfig {
 				routeMap.Insert(logType, constants.LegacySecureforward)
-				if logType == logging.InputNameApplication {
-					appNSToPipelines.Insert("", constants.LegacySecureforward)
-				}
 			}
 		}
 	}
@@ -88,7 +80,8 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		return "", err
 	}
 
-	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(routeMap, appNSToPipelines)
+	sourceToPipelineLabels, err = engine.generateSourceToPipelineLabels(routeMap, clfSpec)
+
 	if err != nil {
 		log.V(3).Error(err, "Error generating source to pipeline blocks")
 		return "", err
@@ -123,7 +116,6 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		SourceToPipelineLabels     []string
 		PipelinesToOutputLabels    []string
 		OutputLabels               []string
-		AppNamespaces              []string
 	}{
 		engine.includeLegacyForwardConfig,
 		engine.includeLegacySyslogConfig,
@@ -134,7 +126,6 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		sourceToPipelineLabels,
 		pipelineToOutputLabels,
 		outputLabels,
-		namespaces.List(),
 	}
 	result, err := engine.Execute("fluentConf", data)
 	if err != nil {
@@ -146,16 +137,15 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 }
 
 //gatherSources collects the set of unique source types and namespaces
-func gatherSources(forwarder *logging.ClusterLogForwarderSpec) (types sets.String, namespaces sets.String) {
-	types, namespaces = sets.NewString(), sets.NewString()
+func gatherSources(forwarder *logging.ClusterLogForwarderSpec) sets.String {
+	types := sets.NewString()
 	specs := forwarder.InputMap()
 	for inputName := range logging.NewRoutes(forwarder.Pipelines).ByInput {
 		if logging.ReservedInputNames.Has(inputName) {
 			types.Insert(inputName) // Use name as type.
 		} else if spec, ok := specs[inputName]; ok {
-			if app := spec.Application; app != nil {
+			if spec.Application != nil {
 				types.Insert(logging.InputNameApplication)
-				namespaces.Insert(app.Namespaces...)
 			}
 			if spec.Infrastructure != nil {
 				types.Insert(logging.InputNameInfrastructure)
@@ -165,7 +155,7 @@ func gatherSources(forwarder *logging.ClusterLogForwarderSpec) (types sets.Strin
 			}
 		}
 	}
-	return types, namespaces
+	return types
 }
 
 func inputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMap {
@@ -187,60 +177,26 @@ func inputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMa
 	return result
 }
 
-func mapAppNamespacesToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMap {
-	result := logging.RouteMap{}
-	inputs := fwdspec.InputMap()
-	for _, pipeline := range fwdspec.Pipelines {
-		for _, inRef := range pipeline.InputRefs {
-			if input, ok := inputs[inRef]; ok {
-				if input.Types().Has(logging.InputNameApplication) {
-					if len(input.Application.Namespaces) > 0 {
-						for _, ns := range input.Application.Namespaces {
-							result.Insert(ns, pipeline.Name)
-						}
-					} else {
-						result.Insert("", pipeline.Name)
-					}
-
-				}
-			} else if inRef == logging.InputNameApplication {
-				// Not a user defined type, insert direct.
-				result.Insert("", pipeline.Name)
-			}
-		}
-	}
-	return result
-}
-
 //generateSourceToPipelineLabels generates fluentd label stanzas to fan source types to multiple pipelines
-func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines, appNSToPipelines logging.RouteMap) ([]string, error) {
+func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines logging.RouteMap, fwdspec *logging.ClusterLogForwarderSpec) ([]string, error) {
 	configs := []string{}
 	for sourceType, pipelineNames := range sourcesToPipelines {
 		templateName := "sourceToPipelineCopyTemplate"
-		namespaces := []string{}
-		if sourceType == logging.InputNameApplication {
-			templateName = "namespaceToPipelineTemplate"
-			namespaces = appNSToPipelines.Keys()
-			sort.Strings(namespaces)
-			// empty means ALL which MUST come last
-			if len(namespaces) >= 2 && namespaces[0] == "" {
-				namespaces = append(namespaces[1:], "")
-			}
+		inputSelectorPipelineNames, inputSelectors, err := engine.generateInputSelectorBlock(sourceType, fwdspec)
+		if err != nil {
+			return nil, fmt.Errorf("generating fluentd output label: %v", err)
+		}
+		if len(inputSelectors) > 0 {
+			templateName = "inputSelectorToPipelineTemplate"
 		}
 		data := struct {
-			IncludeLegacySecureForward bool
-			IncludeLegacySyslog        bool
 			Source                     string
 			PipelineNames              []string
-			AppNamespaces              []string
-			PipeLines                  logging.RouteMap
+			InputSelectors             []string
 		}{
-			engine.includeLegacyForwardConfig,
-			engine.includeLegacySyslogConfig,
 			sourceType,
-			pipelineNames.List(),
-			namespaces,
-			appNSToPipelines,
+			pipelineNames.Difference(inputSelectorPipelineNames).List(),
+			inputSelectors,
 		}
 		result, err := engine.Execute(templateName, data)
 		if err != nil {
@@ -249,6 +205,42 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 		configs = append(configs, result)
 	}
 	return configs, nil
+}
+
+func (engine *ConfigGenerator) generateInputSelectorBlock(sourceType string, fwdspec *logging.ClusterLogForwarderSpec) (sets.String, []string, error) {
+	selectors := []string{}
+	pipelineNames := sets.NewString()
+	defaultPipelineNames := sets.NewString()
+	inputs := fwdspec.InputMap()
+	for _, pipeline := range fwdspec.Pipelines {
+		for _, inRef := range pipeline.InputRefs {
+			if input, ok := inputs[inRef]; ok {
+				switch sourceType {
+				case logging.InputNameApplication:
+					app := input.Application
+					if app == nil || len(app.Namespaces) == 0 {
+						// a user defined type without input selector(i.e. built-in input `application`).
+						defaultPipelineNames.Insert(pipeline.Name)
+						continue
+					}
+					conf, err := newInputSelectorConf(pipeline.Name, app.Namespaces)
+					if err != nil {
+						return nil, nil, fmt.Errorf("generating fluent input selector configurations: %v", err)
+					}
+					result, err := engine.Execute("inputSelectorBlockTemplate", conf)
+					if err != nil {
+						return nil, nil, fmt.Errorf("generating fluent input selector configurations: %v", err)
+					}
+					selectors = append(selectors, result)
+					pipelineNames.Insert(pipeline.Name)
+				}
+			} else {
+				// Not a user defined type, insert direct.
+				defaultPipelineNames.Insert(pipeline.Name)
+			}
+		}
+	}
+	return pipelineNames.Difference(defaultPipelineNames), selectors, nil
 }
 
 func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []logging.PipelineSpec) ([]string, error) {

@@ -16,6 +16,18 @@ import (
 
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
 
+type inputSelectorConf struct {
+	Pipeline        string
+	Namespaces      string
+}
+
+func newInputSelectorConf(pipeline string, namespaces []string) (*inputSelectorConf, error) {
+	return &inputSelectorConf{
+		Pipeline: pipeline,
+		Namespaces: strings.Join(namespaces, ","),
+	}, nil
+}
+
 type outputLabelConf struct {
 	Name            string
 	Target          logging.OutputSpec

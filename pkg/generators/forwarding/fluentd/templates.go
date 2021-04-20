@@ -9,8 +9,9 @@ var templateRegistry = []string{
 	inputSourceOpenShiftAuditTemplate,
 	fluentConfTemplate,
 	pipelineToOutputCopyTemplate,
-	namespaceToPipelineTemplate,
 	sourceToPipelineCopyTemplate,
+	inputSelectorToPipelineTemplate,
+	inputSelectorBlockTemplate,
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
 	outputLabelConfNoretryTemplate,
@@ -521,23 +522,6 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
 </source>
 {{- end}}`
 
-const namespaceToPipelineTemplate = `{{- define "namespaceToPipelineTemplate" -}}
-<label {{sourceTypelabelName .Source}}>
-  {{- $pipelines := $.PipeLines -}}
-  {{- range $nsindex, $ns := .AppNamespaces }}
-  <match {{applicationTag $ns}}>
-    @type copy
-  {{- range $index, $pipelineName := (routeMapValues $pipelines $ns) }}
-    <store>
-      @type relabel
-      @label {{labelName $pipelineName}}
-    </store>
-  {{- end }}
-  </match>
-  {{- end }}
-</label>
-{{- end}}`
-
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" -}}
 <label {{sourceTypelabelName .Source}}>
   <match **>
@@ -550,6 +534,44 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
 {{- end }}
   </match>
 </label>
+{{- end}}`
+
+const inputSelectorToPipelineTemplate = `{{- define "inputSelectorToPipelineTemplate" -}}
+<label {{sourceTypelabelName .Source}}>
+  <match **>
+    @type label_router
+{{- if .PipelineNames }}
+    default_route {{sourceTypelabelName .Source}}_DEFAULT
+{{- end }}
+    {{- range .InputSelectors }}
+    {{ . }}
+    {{- end}}
+  </match>
+</label>
+{{ if .PipelineNames -}}
+<label {{sourceTypelabelName .Source}}_DEFAULT>
+  <match **>
+    @type copy
+{{- range $index, $pipelineLabel := .PipelineNames }}
+    <store>
+      @type relabel
+      @label {{labelName $pipelineLabel}}
+    </store>
+{{- end }}
+  </match>
+</label>
+{{- end }}
+{{- end}}`
+
+const inputSelectorBlockTemplate = `{{- define "inputSelectorBlockTemplate" -}}
+    <route>
+      @label {{labelName .Pipeline}}
+      <match>
+{{- if .Namespaces }}
+        namespaces {{ .Namespaces }}
+{{- end}}
+      </match>
+    </route>
 {{- end}}`
 
 const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" -}}

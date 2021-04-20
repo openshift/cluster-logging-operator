@@ -15,7 +15,6 @@ COPY .bingo .bingo
 COPY Makefile ./Makefile
 COPY pkg ./pkg
 
-RUN make build
 
 FROM registry.ci.openshift.org/ocp/4.7:cli as origincli
 

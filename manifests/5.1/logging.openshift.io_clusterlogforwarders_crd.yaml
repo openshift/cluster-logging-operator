@@ -44,6 +44,15 @@ spec:
                     application:
                       description: Application, if present, enables `application` logs.
                       properties:
+                        selector:
+                          description: Standard k8s LabelSelector type, if present, collect application logs to be selected by label. For testing purpose, MatchLabels is only supported.
+                          properties:
+                            matchLabels:
+                              description: matchLabels is a map of {key,value} pairs.
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
                         namespaces:
                           description: Namespaces is a list of namespaces from which to collect application logs. If the list is empty, logs are collected from all namespaces.
                           items:

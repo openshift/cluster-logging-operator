@@ -106,16 +106,16 @@ var _ = Describe("[Collection] Namespace filtering", func() {
 	})
 
 	AfterEach(func() {
-		e2e.Cleanup()
 		if _, err = oc.Literal().From("oc delete ns %s", appNamespace1).Run(); err != nil {
 			Fail("failed to create namespace")
 		}
 		if _, err = oc.Literal().From("oc delete ns %s", appNamespace2).Run(); err != nil {
 			Fail("failed to create namespace")
 		}
-		e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd"})
 		e2e.WaitForCleanupCompletion(appNamespace1, []string{"test"})
 		e2e.WaitForCleanupCompletion(appNamespace2, []string{"test"})
+		e2e.Cleanup()
+		e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd"})
 	}, helpers.DefaultCleanUpTimeout)
 
 })

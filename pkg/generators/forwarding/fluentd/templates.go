@@ -570,6 +570,9 @@ const inputSelectorBlockTemplate = `{{- define "inputSelectorBlockTemplate" -}}
 {{- if .Namespaces }}
         namespaces {{ .Namespaces }}
 {{- end}}
+{{- if .Labels }}
+        labels {{ .Labels }}
+{{- end}}
       </match>
     </route>
 {{- end}}`

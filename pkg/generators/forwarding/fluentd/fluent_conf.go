@@ -2,11 +2,13 @@ package fluentd
 
 import (
 	"fmt"
+	"sort"
 	"path/filepath"
 	"strings"
 	"text/template"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -19,12 +21,32 @@ var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
 type inputSelectorConf struct {
 	Pipeline        string
 	Namespaces      string
+	Labels          string
 }
 
-func newInputSelectorConf(pipeline string, namespaces []string) (*inputSelectorConf, error) {
+func newInputSelectorConf(pipeline string, namespaces []string, labelSelector *metav1.LabelSelector) (*inputSelectorConf, error) {
+	labelList := ""
+	var names []string
+
+	labelMap, err := metav1.LabelSelectorAsMap(labelSelector)
+	if err != nil {
+		return nil, fmt.Errorf("LabelSelector: %v", err)
+	}
+	for name := range labelMap {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, k := range names {
+		if labelList != "" {
+			labelList += ","
+		}
+		labelList += fmt.Sprintf("%s:%s", k, labelMap[k])
+	}
+
 	return &inputSelectorConf{
 		Pipeline: pipeline,
 		Namespaces: strings.Join(namespaces, ","),
+		Labels: labelList,
 	}, nil
 }
 

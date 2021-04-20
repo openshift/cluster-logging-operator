@@ -16,6 +16,6 @@ reviewers:
   - ajaygupta978
 component: "Logging"
 filters:
-  "Dockerfile":   # matches Dockerfile, Dockerfile.rhel8, bundle.Dockerfile
+ "Dockerfile(?:\\.in)?$":   # matches Dockerfile, Dockerfile.rhel8, bundle.Dockerfile
     labels:
-      - downstream
+      - midstream/Dockerfile

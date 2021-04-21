@@ -19,3 +19,4 @@ filters:
   "Dockerfile(?:\\.in)?$":   # matches Dockerfile, Dockerfile.in
     labels:
       - midstream/Dockerfile
+component: "Logging"

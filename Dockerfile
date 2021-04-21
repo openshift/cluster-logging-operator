@@ -1,6 +1,6 @@
 FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
-
+TEST
 # COPY steps are in the reverse order of frequency of change
 COPY cmd ./cmd
 COPY must-gather ./must-gather

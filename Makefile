@@ -228,3 +228,7 @@ cluster-logging-operator-install:
 # uninstalls the cluster-logging operator
 cluster-logging-operator-uninstall:
 	olm_deploy/scripts/operator-uninstall.sh
+
+lint:
+	@hack/run-linter
+.PHONY: lint

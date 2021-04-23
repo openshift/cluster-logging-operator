@@ -137,13 +137,20 @@ func getHotPhaseAge(maxAge esapi.TimeUnit) (esapi.TimeUnit, error) {
 		hotphaseAge int
 	)
 	age, unit, err = toAgeAndUnit(maxAge)
-	if err == nil {
-		hotphaseAge, unit, err = toHotPhaseAge(age, unit)
-		if err == nil {
-			return esapi.TimeUnit(fmt.Sprintf("%d%c", hotphaseAge, unit)), nil
-		}
+	if err != nil {
+		return esapi.TimeUnit(""), err
 	}
-	return esapi.TimeUnit(""), err
+
+	if age == 0 {
+		return esapi.TimeUnit(fmt.Sprintf("0%c", unit)), nil
+	}
+
+	hotphaseAge, unit, err = toHotPhaseAge(age, unit)
+	if err != nil {
+		return esapi.TimeUnit(""), err
+	}
+
+	return esapi.TimeUnit(fmt.Sprintf("%d%c", hotphaseAge, unit)), nil
 }
 
 func toAgeAndUnit(timeunit esapi.TimeUnit) (int, byte, error) {

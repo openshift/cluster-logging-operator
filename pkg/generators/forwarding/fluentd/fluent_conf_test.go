@@ -811,10 +811,10 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Name: "myInput-1",
 					Application: &logging.Application{
-						Selector:   &metav1.LabelSelector{
+						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"environment": "production",
-								"app": "nginx",
+								"app":         "nginx",
 							},
 						},
 					},
@@ -822,10 +822,10 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Name: "myInput-2",
 					Application: &logging.Application{
-						Selector:   &metav1.LabelSelector{
+						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"environment": "dev",
-								"app": "nginx",
+								"app":         "nginx",
 							},
 						},
 					},
@@ -1515,10 +1515,10 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Name: "myInput-1",
 					Application: &logging.Application{
-						Selector:   &metav1.LabelSelector{
+						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"environment": "production",
-								"app": "nginx",
+								"app":         "nginx",
 							},
 						},
 						Namespaces: []string{"project1-namespace"},
@@ -1527,10 +1527,10 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Name: "myInput-2",
 					Application: &logging.Application{
-						Selector:   &metav1.LabelSelector{
+						Selector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
 								"environment": "dev",
-								"app": "nginx",
+								"app":         "nginx",
 							},
 						},
 						Namespaces: []string{"project2-namespace"},

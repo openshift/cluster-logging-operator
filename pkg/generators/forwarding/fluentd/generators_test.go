@@ -2,7 +2,6 @@ package fluentd
 
 import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"k8s.io/apimachinery/pkg/util/sets"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -32,6 +31,15 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		got, err := configGenerator.generatePipelineToOutputLabels(pipelines)
 		Expect(err).To(BeNil())
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
+  #flatten labels to prevent field explosion in ES
+  <filter ** >
+    @type record_transformer
+    enable_ruby true
+    <record>
+      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+    </record>
+    remove_keys $.kubernetes.labels
+  </filter>
   <match **>
     @type copy
 
@@ -55,6 +63,15 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		got, err := configGenerator.generatePipelineToOutputLabels(pipelines)
 		Expect(err).To(BeNil())
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
+  #flatten labels to prevent field explosion in ES
+  <filter ** >
+    @type record_transformer
+    enable_ruby true
+    <record>
+      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+    </record>
+    remove_keys $.kubernetes.labels
+  </filter>
   <filter **>
     @type record_transformer
     <record>
@@ -84,6 +101,15 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		got, err := configGenerator.generatePipelineToOutputLabels(pipelines)
 		Expect(err).To(BeNil())
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
+  #flatten labels to prevent field explosion in ES
+  <filter ** >
+    @type record_transformer
+    enable_ruby true
+    <record>
+      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+    </record>
+    remove_keys $.kubernetes.labels
+  </filter>
   <filter **>
     @type record_transformer
     <record>
@@ -119,6 +145,15 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		got, err := configGenerator.generatePipelineToOutputLabels(pipelines)
 		Expect(err).To(BeNil())
 		Expect(got).To(BeEquivalentTo([]string{`<label @PIPELINE_1>
+  #flatten labels to prevent field explosion in ES
+  <filter ** >
+    @type record_transformer
+    enable_ruby true
+    <record>
+      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+    </record>
+    remove_keys $.kubernetes.labels
+  </filter>
   <filter **>
     @type record_transformer
     <record>
@@ -133,6 +168,15 @@ var _ = Describe("Generating pipeline to output labels", func() {
     </store>
   </match>
 </label>`, `<label @PIPELINE_2>
+  #flatten labels to prevent field explosion in ES
+  <filter ** >
+    @type record_transformer
+    enable_ruby true
+    <record>
+      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+    </record>
+    remove_keys $.kubernetes.labels
+  </filter>
   <filter **>
     @type record_transformer
     <record>
@@ -147,78 +191,5 @@ var _ = Describe("Generating pipeline to output labels", func() {
     </store>
   </match>
 </label>`}))
-	})
-})
-var _ = Describe("mapAppNamespacesToPipelines", func() {
-	var (
-		forwarder *logging.ClusterLogForwarder
-	)
-	Context("with default inputs", func() {
-
-		It("should correctly map application namespaces to pipelines", func() {
-			forwarder = &logging.ClusterLogForwarder{
-				Spec: logging.ClusterLogForwarderSpec{
-					Pipelines: []logging.PipelineSpec{
-						{
-							Name:      "pipeline-foo",
-							InputRefs: []string{logging.InputNameApplication, logging.InputNameInfrastructure},
-						},
-						{
-							Name:      "pipeline-bar",
-							InputRefs: []string{logging.InputNameAudit},
-						},
-					},
-				},
-			}
-			nsMap := logging.RouteMap{
-				"": sets.NewString("pipeline-foo"),
-			}
-
-			Expect(mapAppNamespacesToPipelines(&forwarder.Spec)).To(BeEquivalentTo(nsMap))
-		})
-	})
-	Context("explicitly defining inputs", func() {
-
-		It("should correctly map application namespaces to pipelines", func() {
-			forwarder = &logging.ClusterLogForwarder{
-				Spec: logging.ClusterLogForwarderSpec{
-					Outputs: []logging.OutputSpec{
-						{Name: "output1"},
-						{Name: "output2"},
-					},
-					Inputs: []logging.InputSpec{
-						{
-							Name: "input1",
-							Application: &logging.Application{
-								Namespaces: []string{"project-1", "project-2"},
-							},
-						},
-						{
-							Name: "input2",
-							Application: &logging.Application{
-								Namespaces: []string{"project-2", "project-3"},
-							},
-						},
-					},
-					Pipelines: []logging.PipelineSpec{
-						{
-							Name:      "pipeline-foo",
-							InputRefs: []string{"input1", logging.InputNameInfrastructure},
-						},
-						{
-							Name:      "pipeline-bar",
-							InputRefs: []string{"input2"},
-						},
-					},
-				},
-			}
-			nsMap := logging.RouteMap{
-				"project-1": sets.NewString("pipeline-foo"),
-				"project-2": sets.NewString("pipeline-foo", "pipeline-bar"),
-				"project-3": sets.NewString("pipeline-bar"),
-			}
-
-			Expect(mapAppNamespacesToPipelines(&forwarder.Spec)).To(BeEquivalentTo(nsMap))
-		})
 	})
 })

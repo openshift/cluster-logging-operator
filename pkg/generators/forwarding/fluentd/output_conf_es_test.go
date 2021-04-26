@@ -47,6 +47,15 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			Expect(err).To(BeNil())
 			Expect(len(results) > 0).To(BeTrue())
 			Expect(results[0]).To(EqualTrimLines(`<label @MY_SECURE_PIPELINE>
+				#flatten labels to prevent field explosion in ES
+				<filter ** >
+					@type record_transformer
+					enable_ruby true
+					<record>
+						kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+					</record>
+					remove_keys $.kubernetes.labels
+				</filter>
 				<match **>
 					@type copy
 					<store>

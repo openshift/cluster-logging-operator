@@ -105,8 +105,13 @@ image:
 		podman build -t $(IMAGE_TAG) . -f Dockerfile.local; \
 	fi
 
-lint: $(GOLANGCI_LINT)
-	$(GOLANGCI_LINT) run -c golangci.yaml
+lint: $(GOLANGCI_LINT) lint-dockerfile
+	@GOLANGCI_LINT_CACHE="$(CURDIR)/.cache" $(GOLANGCI_LINT) run -c golangci.yaml
+.PHONY: lint
+
+lint-dockerfile:
+	@hack/run-linter
+.PHONY: lint-dockerfile
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
@@ -229,6 +234,5 @@ cluster-logging-operator-install:
 cluster-logging-operator-uninstall:
 	olm_deploy/scripts/operator-uninstall.sh
 
-lint:
-	@hack/run-linter
-.PHONY: lint
+gen-dockerfiles:
+	./hack/generate-dockerfile-from-midstream > Dockerfile

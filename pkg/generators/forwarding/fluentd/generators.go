@@ -190,9 +190,9 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 			templateName = "inputSelectorToPipelineTemplate"
 		}
 		data := struct {
-			Source                     string
-			PipelineNames              []string
-			InputSelectors             []string
+			Source         string
+			PipelineNames  []string
+			InputSelectors []string
 		}{
 			sourceType,
 			pipelineNames.Difference(inputSelectorPipelineNames).List(),
@@ -215,8 +215,7 @@ func (engine *ConfigGenerator) generateInputSelectorBlock(sourceType string, fwd
 	for _, pipeline := range fwdspec.Pipelines {
 		for _, inRef := range pipeline.InputRefs {
 			if input, ok := inputs[inRef]; ok {
-				switch sourceType {
-				case logging.InputNameApplication:
+				if sourceType == logging.InputNameApplication {
 					app := input.Application
 					if app == nil || (len(app.Namespaces) == 0 && app.Selector == nil) {
 						// a user defined type without input selector(i.e. built-in input `application`).

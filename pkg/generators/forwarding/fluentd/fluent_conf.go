@@ -2,8 +2,8 @@ package fluentd
 
 import (
 	"fmt"
-	"sort"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -19,9 +19,9 @@ import (
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
 
 type inputSelectorConf struct {
-	Pipeline        string
-	Namespaces      string
-	Labels          string
+	Pipeline   string
+	Namespaces string
+	Labels     string
 }
 
 func newInputSelectorConf(pipeline string, namespaces []string, labelSelector *metav1.LabelSelector) (*inputSelectorConf, error) {
@@ -44,9 +44,9 @@ func newInputSelectorConf(pipeline string, namespaces []string, labelSelector *m
 	}
 
 	return &inputSelectorConf{
-		Pipeline: pipeline,
+		Pipeline:   pipeline,
 		Namespaces: strings.Join(namespaces, ","),
-		Labels: labelList,
+		Labels:     labelList,
 	}, nil
 }
 

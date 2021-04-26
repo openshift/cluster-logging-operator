@@ -1,0 +1,7 @@
+from:
+- source: openshift-golang-builder\:v(?:[\.0-9\-]*).*
+  target: registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
+- source: openshift-ose-cli\:v(?:[\.0-9\-p]*)
+  target: registry.ci.openshift.org/ocp/4.7:cli
+- source: openshift-ose-base\:v(?:[\.0-9\-]*)
+  target: registry.ci.openshift.org/ocp/4.7:base

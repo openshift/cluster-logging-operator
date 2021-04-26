@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"strings"
 )
+
 //E2E test for checking correct reassembly after splitting big logs by CRI-O.
 //LogGenerator container will put into stdout prepared huge Java stacktrace in JSON format.
 //CRI-O will spilt it in to the parts, like:
@@ -56,4 +57,3 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		})
 	})
 })
-

@@ -13,7 +13,6 @@ If you have questions, connect to the coreos.slack.com workspace on slack and ch
 
 ## Index of topics
 
-* [Architecture (Cluster Logging)](architecture/index.adoc)
 * [Configuring and Tuning Cluster Logging](configuration.md)
 * [Deploying Event Router](deploy-event-router.md)
 * [Hacking on the Cluster Logging Operator](HACKING.md)
@@ -21,3 +20,7 @@ If you have questions, connect to the coreos.slack.com workspace on slack and ch
 * [Troubleshooting the cluster logging operator](troubleshooting.md)
 * [Unmanaged Configurations for Cluster Logging](unmanaged_configuration.md)
 * [Using the clusterlogforwarder.output.url field](output_url_field.md)
+
+## Relevant links
+
+* [Overall Architecture](https://viaq.github.io/documentation/)

@@ -580,6 +580,8 @@ var _ = Describe("Generating fluentd config", func() {
         host es.svc.messaging.cluster.local
         port 9654
         verify_es_version_at_startup false
+		user "#{open('/var/run/ocp-collector/secrets/my-es-secret/username','r') do |f|f.read end}"
+		password "#{open('/var/run/ocp-collector/secrets/my-es-secret/password','r') do |f|f.read end}"
         scheme https
         ssl_version TLSv1_2
         target_index_key viaq_index_name
@@ -629,6 +631,8 @@ var _ = Describe("Generating fluentd config", func() {
         host es.svc.messaging.cluster.local
         port 9654
         verify_es_version_at_startup false
+		user "#{open('/var/run/ocp-collector/secrets/my-es-secret/username','r') do |f|f.read end}"
+		password "#{open('/var/run/ocp-collector/secrets/my-es-secret/password','r') do |f|f.read end}"
         scheme https
         ssl_version TLSv1_2
         target_index_key viaq_index_name
@@ -681,6 +685,8 @@ var _ = Describe("Generating fluentd config", func() {
         host es2.svc.messaging.cluster.local
         port 9654
         verify_es_version_at_startup false
+		user "#{open('/var/run/ocp-collector/secrets/my-es-secret/username','r') do |f|f.read end}"
+		password "#{open('/var/run/ocp-collector/secrets/my-es-secret/password','r') do |f|f.read end}"
         scheme https
         ssl_version TLSv1_2
         target_index_key viaq_index_name
@@ -730,6 +736,8 @@ var _ = Describe("Generating fluentd config", func() {
         host es2.svc.messaging.cluster.local
         port 9654
         verify_es_version_at_startup false
+		user "#{open('/var/run/ocp-collector/secrets/my-es-secret/username','r') do |f|f.read end}"
+		password "#{open('/var/run/ocp-collector/secrets/my-es-secret/password','r') do |f|f.read end}"
         scheme https
         ssl_version TLSv1_2
         target_index_key viaq_index_name
@@ -1720,6 +1728,8 @@ var _ = Describe("Generating fluentd config", func() {
 						host es.svc.infra.cluster
 						port 9999
 						verify_es_version_at_startup false
+						user "#{open('/var/run/ocp-collector/secrets/my-infra-secret/username','r') do |f|f.read end}"
+						password "#{open('/var/run/ocp-collector/secrets/my-infra-secret/password','r') do |f|f.read end}"
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1766,6 +1776,8 @@ var _ = Describe("Generating fluentd config", func() {
 						host es.svc.infra.cluster
 						port 9999
 						verify_es_version_at_startup false
+						user "#{open('/var/run/ocp-collector/secrets/my-infra-secret/username','r') do |f|f.read end}"
+						password "#{open('/var/run/ocp-collector/secrets/my-infra-secret/password','r') do |f|f.read end}"
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1815,6 +1827,8 @@ var _ = Describe("Generating fluentd config", func() {
 						host es.svc.messaging.cluster.local
 						port 9654
 						verify_es_version_at_startup false
+						user "#{open('/var/run/ocp-collector/secrets/my-es-secret/username','r') do |f|f.read end}"
+						password "#{open('/var/run/ocp-collector/secrets/my-es-secret/password','r') do |f|f.read end}"
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1861,6 +1875,8 @@ var _ = Describe("Generating fluentd config", func() {
 						host es.svc.messaging.cluster.local
 						port 9654
 						verify_es_version_at_startup false
+						user "#{open('/var/run/ocp-collector/secrets/my-es-secret/username','r') do |f|f.read end}"
+						password "#{open('/var/run/ocp-collector/secrets/my-es-secret/password','r') do |f|f.read end}"
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1910,6 +1926,8 @@ var _ = Describe("Generating fluentd config", func() {
 						host es.svc.messaging.cluster.local2
 						port 9654
 						verify_es_version_at_startup false
+						user "#{open('/var/run/ocp-collector/secrets/my-other-secret/username','r') do |f|f.read end}"
+						password "#{open('/var/run/ocp-collector/secrets/my-other-secret/password','r') do |f|f.read end}"
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -1956,6 +1974,8 @@ var _ = Describe("Generating fluentd config", func() {
 						host es.svc.messaging.cluster.local2
 						port 9654
 						verify_es_version_at_startup false
+						user "#{open('/var/run/ocp-collector/secrets/my-other-secret/username','r') do |f|f.read end}"
+						password "#{open('/var/run/ocp-collector/secrets/my-other-secret/password','r') do |f|f.read end}"
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -2005,6 +2025,8 @@ var _ = Describe("Generating fluentd config", func() {
 						host es.svc.audit.cluster
 						port 9654
 						verify_es_version_at_startup false
+						user "#{open('/var/run/ocp-collector/secrets/my-audit-secret/username','r') do |f|f.read end}"
+						password "#{open('/var/run/ocp-collector/secrets/my-audit-secret/password','r') do |f|f.read end}"
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name
@@ -2051,6 +2073,8 @@ var _ = Describe("Generating fluentd config", func() {
 						host es.svc.audit.cluster
 						port 9654
 						verify_es_version_at_startup false
+						user "#{open('/var/run/ocp-collector/secrets/my-audit-secret/username','r') do |f|f.read end}"
+						password "#{open('/var/run/ocp-collector/secrets/my-audit-secret/password','r') do |f|f.read end}"
 						scheme https
 						ssl_version TLSv1_2
 						target_index_key viaq_index_name

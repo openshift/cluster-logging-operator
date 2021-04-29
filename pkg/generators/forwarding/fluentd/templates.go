@@ -731,6 +731,12 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   port {{.Port}}
   verify_es_version_at_startup false
 {{- if .Target.Secret }}
+{{ with $path := .SecretPath "username" -}}
+  user "#{open('{{ $path }}','r') do |f|f.read end}"
+{{ end -}}
+{{ with $path := .SecretPath "password" -}}
+  password "#{open('{{ $path }}','r') do |f|f.read end}"
+{{ end -}}
   scheme https
   ssl_version TLSv1_2
 {{- else }}
@@ -875,6 +881,12 @@ brokers {{.Brokers}}
 default_topic {{.Topic}}
 use_event_time true
 {{ if .Target.Secret -}}
+{{ with $path := .SecretPath "username" -}}
+username "#{open('{{ $path }}','r') do |f|f.read end}"
+{{ end -}}
+{{ with $path := .SecretPath "password" -}}
+password "#{open('{{ $path }}','r') do |f|f.read end}"
+{{ end -}}
 {{ $tlsCert := .SecretPath "tls.crt" }}
 {{ $tlsKey := .SecretPath "tls.key" }}
 ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'

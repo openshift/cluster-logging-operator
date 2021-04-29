@@ -73,6 +73,8 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			host es.svc.messaging.cluster.local
 			port 9654
             verify_es_version_at_startup false
+			user "#{open('/var/run/ocp-collector/secrets/my-es-secret/username','r') do |f|f.read end}"
+			password "#{open('/var/run/ocp-collector/secrets/my-es-secret/password','r') do |f|f.read end}"
 			scheme https
 			ssl_version TLSv1_2
 			target_index_key viaq_index_name
@@ -119,6 +121,8 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			host es.svc.messaging.cluster.local
 			port 9654
             verify_es_version_at_startup false
+			user "#{open('/var/run/ocp-collector/secrets/my-es-secret/username','r') do |f|f.read end}"
+			password "#{open('/var/run/ocp-collector/secrets/my-es-secret/password','r') do |f|f.read end}"
 			scheme https
 			ssl_version TLSv1_2
 			target_index_key viaq_index_name

@@ -27,6 +27,104 @@ var _ = Describe("Indexmanagement", func() {
 		}
 	})
 
+	Describe("IndexManagemet Policy with 0 minutes, hours, days, weeks, months", func() {
+		It("should correctly parse 0m", func() {
+			retentionPolicy = &logging.RetentionPoliciesSpec{
+				App: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0m"),
+				},
+				Infra: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0m"),
+				},
+				Audit: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0m"),
+				},
+			}
+			spec := NewSpec(retentionPolicy)
+			Expect(len(spec.Policies)).To(Equal(3))
+			Expect(len(spec.Mappings)).To(Equal(3))
+			Expect(spec.Policies[0].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0m")))
+			Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0m")))
+			Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0m")))
+		})
+		It("should correctly parse 0h", func() {
+			retentionPolicy = &logging.RetentionPoliciesSpec{
+				App: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0h"),
+				},
+				Infra: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0h"),
+				},
+				Audit: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0h"),
+				},
+			}
+			spec := NewSpec(retentionPolicy)
+			Expect(len(spec.Policies)).To(Equal(3))
+			Expect(len(spec.Mappings)).To(Equal(3))
+			Expect(spec.Policies[0].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0h")))
+			Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0h")))
+			Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0h")))
+		})
+		It("should correctly parse 0d", func() {
+			retentionPolicy = &logging.RetentionPoliciesSpec{
+				App: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0d"),
+				},
+				Infra: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0d"),
+				},
+				Audit: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0d"),
+				},
+			}
+			spec := NewSpec(retentionPolicy)
+			Expect(len(spec.Policies)).To(Equal(3))
+			Expect(len(spec.Mappings)).To(Equal(3))
+			Expect(spec.Policies[0].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0d")))
+			Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0d")))
+			Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0d")))
+		})
+		It("should correctly parse 0w", func() {
+			retentionPolicy = &logging.RetentionPoliciesSpec{
+				App: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0w"),
+				},
+				Infra: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0w"),
+				},
+				Audit: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0w"),
+				},
+			}
+			spec := NewSpec(retentionPolicy)
+			Expect(len(spec.Policies)).To(Equal(3))
+			Expect(len(spec.Mappings)).To(Equal(3))
+			Expect(spec.Policies[0].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0w")))
+			Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0w")))
+			Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0w")))
+		})
+		It("should correctly parse 0M", func() {
+			retentionPolicy = &logging.RetentionPoliciesSpec{
+				App: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0M"),
+				},
+				Infra: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0M"),
+				},
+				Audit: &logging.RetentionPolicySpec{
+					MaxAge: esapi.TimeUnit("0M"),
+				},
+			}
+			spec := NewSpec(retentionPolicy)
+			Expect(len(spec.Policies)).To(Equal(3))
+			Expect(len(spec.Mappings)).To(Equal(3))
+			Expect(spec.Policies[0].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0M")))
+			Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0M")))
+			Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0M")))
+		})
+	})
+
 	Describe("IndexManagement Policy creation failure", func() {
 		Context("when retention policy is not defined", func() {
 			BeforeEach(func() {

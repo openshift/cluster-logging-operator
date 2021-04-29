@@ -16,7 +16,7 @@ const (
 	FluentdTrustedCAName       = "fluentd-trusted-ca-bundle"
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	// internal elasticsearch FQDN to prevent to connect to the global proxy
-	ElasticsearchFQDN   = "elasticsearch.openshift-logging.svc.cluster.local"
+	ElasticsearchFQDN   = "elasticsearch.openshift-logging.svc"
 	ElasticsearchName   = "elasticsearch"
 	ElasticsearchPort   = "9200"
 	FluentdName         = "fluentd"

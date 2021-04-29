@@ -2,10 +2,11 @@ package k8shandler
 
 import (
 	"fmt"
-	"github.com/openshift/elasticsearch-operator/pkg/logger"
 	"io/ioutil"
 	"path"
 	"sync"
+
+	"github.com/openshift/elasticsearch-operator/pkg/logger"
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"

@@ -163,7 +163,6 @@ var _ = Describe("Reconciling", func() {
 				san := []string{
 					"elasticsearch-cluster",
 					"elasticsearch.openshift-logging.svc",
-					"elasticsearch.cluster.local",
 				}
 				Expect(secret).Should(ContainKeys("elasticsearch.key",
 					"elasticsearch.crt",
@@ -183,7 +182,6 @@ var _ = Describe("Reconciling", func() {
 
 				san := []string{
 					"elasticsearch.openshift-logging.svc",
-					"elasticsearch.cluster.local",
 				}
 				Expect(secret).Should(ContainKeys("elasticsearch.key",
 					"elasticsearch.crt",

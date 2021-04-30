@@ -11,27 +11,16 @@
     "labels":
       "service": "fluentd"
       "severity": "critical"
-  - "alert": "FluentdQueueLengthBurst"
-    "annotations":
-      "message": "In the last minute, fluentd {{ $labels.instance }} buffer queue length increased more than 32. Current value is {{ $value }}."
-      "summary": "Fluentd is overwhelmed"
-    "expr": |
-      delta(fluentd_output_status_buffer_queue_length[1m]) > 32
-    "for": "1m"
-    "labels":
-      "service": "fluentd"
-      "severity": "warning"
   - "alert": "FluentdQueueLengthIncreasing"
     "annotations":
-      "message": "In the last 12h, fluentd {{ $labels.instance }} buffer queue length constantly increased more than 1. Current value is {{ $value }}."
-      "summary": "Fluentd file buffer usage issue"
+      "message": "For the last hour, fluentd {{ $labels.instance }} average buffer queue length has increased continuously."
+      "summary": "Fluentd unable to keep up with traffic over time."
     "expr": |
-      delta(fluentd_output_status_buffer_queue_length[1m]) > 1
-    "for": "12h"
+      deriv(fluentd_output_status_buffer_queue_length[10m]) > 0 and delta(fluentd_output_status_buffer_queue_length[1h]) > 1
+    "for": "1h"
     "labels":
       "service": "fluentd"
-      "severity": "critical"
-
+      "severity": "error"
   - alert: FluentDHighErrorRate
     annotations:
       message: |-

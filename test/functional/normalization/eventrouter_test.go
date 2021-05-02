@@ -22,7 +22,7 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 
 	const timestamp string = "1985-10-21T09:00:00.00000+00:00"
 	var (
-		framework                *functional.FluentdFunctionalFramework
+		framework                *functional.CollectorFunctionalFramework
 		pod                      *corev1.Pod
 		nanoTime, _              = time.Parse(time.RFC3339Nano, timestamp)
 		templateForAnyKubernetes = types.Kubernetes{
@@ -76,7 +76,7 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()

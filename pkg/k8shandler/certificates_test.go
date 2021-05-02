@@ -36,7 +36,7 @@ var _ = Describe("Reconciling", func() {
 	var (
 		cluster = &loggingv1.ClusterLogging{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "instance",
+				Name:      constants.SingletonName,
 				Namespace: constants.OpenshiftNS,
 			},
 			Spec: loggingv1.ClusterLoggingSpec{
@@ -55,9 +55,9 @@ var _ = Describe("Reconciling", func() {
 				Namespace: constants.OpenshiftNS,
 			},
 		}
-		fluentdSecret = &corev1.Secret{
+		collectorSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.FluentdName,
+				Name:      constants.CollectorName,
 				Namespace: constants.OpenshiftNS,
 			},
 		}
@@ -95,7 +95,7 @@ var _ = Describe("Reconciling", func() {
 			client = fake.NewFakeClient(
 				cluster,
 				masterCASecret,
-				fluentdSecret,
+				collectorSecret,
 				elasticsearchSecret,
 				kibanaSecret,
 				kibanaProxySecret,
@@ -232,9 +232,9 @@ var _ = Describe("Reconciling", func() {
 
 		Context("for collector", func() {
 			It("should provide a X509 cert for `CN=system.logging.fluentd`", func() {
-				Expect(clusterRequest.createOrUpdateFluentdSecret()).Should(Succeed())
+				Expect(clusterRequest.createOrUpdateCollectorSecret()).Should(Succeed())
 				secret := &corev1.Secret{}
-				key := types.NamespacedName{Name: constants.FluentdName, Namespace: constants.OpenshiftNS}
+				key := types.NamespacedName{Name: constants.CollectorName, Namespace: constants.OpenshiftNS}
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
 				Expect(secret).Should(ContainKeys("ca-bundle.crt", "tls.crt", "tls.key"))

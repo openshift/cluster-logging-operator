@@ -171,7 +171,7 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
-	return clusterLoggingRequest.RestartFluentd()
+	return clusterLoggingRequest.RestartCollector()
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {

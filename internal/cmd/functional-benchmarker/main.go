@@ -41,7 +41,7 @@ func main() {
 		os.Exit(1)
 	}
 	testclient := client.NewNamesapceClient()
-	framework := functional.NewFluentdFunctionalFrameworkUsing(&testclient.Test, testclient.Close, *verbosity)
+	framework := functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, *verbosity)
 	if *doCleanup {
 		defer framework.Cleanup()
 	}

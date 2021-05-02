@@ -17,11 +17,11 @@ var _ = Describe("[Metrics] Function testing of fluentd metrics", func() {
 	)
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()
@@ -33,7 +33,7 @@ var _ = Describe("[Metrics] Function testing of fluentd metrics", func() {
 
 	Context("when using a service address", func() {
 		It("should return successfully", func() {
-			metrics, _ := framework.RunCommand(constants.FluentdName, "curl", "-ksv", fmt.Sprintf("https://%s.%s:24231/metrics", framework.Name, framework.Namespace))
+			metrics, _ := framework.RunCommand(constants.CollectorName, "curl", "-ksv", fmt.Sprintf("https://%s.%s:24231/metrics", framework.Name, framework.Namespace))
 			Expect(metrics).To(ContainSubstring(sampleMetric))
 		})
 	})

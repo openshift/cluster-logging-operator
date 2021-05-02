@@ -3,24 +3,37 @@ package constants
 const (
 	SingletonName = "instance"
 	OpenshiftNS   = "openshift-logging"
-	// global proxy / trusted ca bundle consts
-	ProxyName                  = "cluster"
-	TrustedCABundleKey         = "ca-bundle.crt"
-	ClientCertKey              = "tls.crt"
-	ClientPrivateKey           = "tls.key"
+    
+	ProxyName = "cluster"
+
+	TrustedCABundleKey    = "ca-bundle.crt"
+	ClientCertKey         = "tls.crt"
+	ClientPrivateKey      = "tls.key"
 	ClientUsername             = "username"
 	ClientPassword             = "password"
+	GeneratedCAFileName   = "ca.crt"
+	GeneratedKeyFileName  = "system.logging.fluentd.key"
+	GeneratedCertFileName = "system.logging.fluentd.crt"
+
 	InjectTrustedCABundleLabel = "config.openshift.io/inject-trusted-cabundle"
 	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
 	TrustedCABundleHashName    = "logging.openshift.io/hash"
 	SecretHashPrefix           = "logging.openshift.io/"
+
+	// global proxy / trusted ca bundle consts
 	FluentdTrustedCAName       = "fluentd-trusted-ca-bundle"
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	// internal elasticsearch FQDN to prevent to connect to the global proxy
 	ElasticsearchFQDN   = "elasticsearch.openshift-logging.svc"
 	ElasticsearchName   = "elasticsearch"
 	ElasticsearchPort   = "9200"
+
+	CollectorName             = "collector"
+	CollectorMetricSecretName = "collector-metrics"
+	CollectorMonitorJobLabel  = "monitor-collector"
+	CollectorTrustedCAName    = "collector-trusted-ca-bundle"
+
 	FluentdName         = "fluentd"
 	KibanaName          = "kibana"
 	KibanaProxyName     = "kibana-proxy"
@@ -40,4 +53,4 @@ const (
 	CertEventName      = "cluster-logging-certs-generate"
 )
 
-var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}
+var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

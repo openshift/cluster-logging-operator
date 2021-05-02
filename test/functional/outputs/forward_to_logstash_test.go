@@ -51,9 +51,9 @@ output {
 `
 	)
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 
-		newVisitor = func(f *functional.FluentdFunctionalFramework) runtime.PodBuilderVisitor {
+		newVisitor = func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
 			return func(b *runtime.PodBuilder) error {
 				log.V(2).Info("Adding forward output to logstash", "name", logging.OutputTypeFluentdForward)
 				configName := "logstash-config"
@@ -88,7 +88,7 @@ output {
 
 	BeforeEach(func() {
 
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		addLogStashContainer := newVisitor(framework)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).

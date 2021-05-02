@@ -251,7 +251,7 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 	podSpec := newFluentdPodSpec(cluster, &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "openshift-logging",
-			Name:      constants.FluentdTrustedCAName,
+			Name:      constants.CollectorTrustedCAName,
 		},
 		Data: map[string]string{
 			constants.TrustedCABundleKey: caBundle,
@@ -266,7 +266,7 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 	checkFluentdProxyEnvVar(t, podSpec, "HTTPS_PROXY", httpproxy)
 	checkFluentdProxyEnvVar(t, podSpec, "NO_PROXY", noproxy)
 
-	checkFluentdProxyVolumesAndVolumeMounts(t, podSpec, constants.FluentdTrustedCAName)
+	checkFluentdProxyVolumesAndVolumeMounts(t, podSpec, constants.CollectorTrustedCAName)
 }
 
 func TestFluentdPodInitContainerWithDefaultForwarding(t *testing.T) {

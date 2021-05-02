@@ -12,7 +12,18 @@ import (
 var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to ElasticSearch", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
+
+		newVisitor = func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
+			return func(b *runtime.PodBuilder) error {
+				log.V(2).Info("Adding ElasticSearch output container", "name", logging.OutputTypeElasticsearch)
+				b.AddContainer(logging.OutputTypeElasticsearch, elasticSearchImage).
+					AddEnvVar("discovery.type", "single-node").
+					AddRunAsUser(2000).
+					End()
+				return nil
+			}
+		}
 
 		// Template expected as output Log
 		outputLogTemplate = functional.NewApplicationLogTemplate()
@@ -20,7 +31,8 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 
 	BeforeEach(func() {
 
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
+		addElasticSearchContainer := newVisitor(framework)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToElasticSearchOutput()

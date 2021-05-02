@@ -16,14 +16,17 @@ import (
 var _ = Describe("[Normalization] Fluentd normalization", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 		pb        *functional.PipelineBuilder
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		pb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication)
+			FromInput(logging.InputNameApplication).
+			ToFluentForwardOutput()
+		Expect(framework.Deploy()).To(BeNil())
+		Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 	})
 	AfterEach(func() {
 		framework.Cleanup()

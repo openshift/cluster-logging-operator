@@ -21,8 +21,8 @@ check_collector_connectivity() {
 
   es_host=$(oc -n $NAMESPACE  get pod $pod  -o jsonpath='{.spec.containers[0].env[?(@.name=="ES_HOST")].value}')
   es_port=$(oc -n $NAMESPACE  get pod $pod  -o jsonpath='{.spec.containers[0].env[?(@.name=="ES_PORT")].value}')
-  collector=fluent
-  container=fluentd
+  collector=collector
+  container=collector
 
   echo "  with ca" >> $collector_folder/$pod
   oc -n $NAMESPACE exec $pod -c $container -- curl -ILvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert --cacert /etc/$collector/keys/ca -XGET https://$es_host:$es_port &>> $collector_folder/$pod
@@ -35,7 +35,7 @@ check_collector_persistence() {
   local pod=$1
   echo "--Persistence stats for pod $pod" >> $collector_folder/$pod
 
-  collector=fluentd
+  collector=collector
   fbstoragePath=$(oc -n $NAMESPACE get daemonset $collector -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[?(@.name=="filebufferstorage")].mountPath}')
 
   if [ -z "$fbstoragePath" ] ; then
@@ -50,15 +50,15 @@ echo "Gathering data for collection component"
 mkdir -p $collector_folder
 
 echo "-- Retrieving configmaps"
-mkdir -p $collector_folder/cm/fluentd
-oc -n $NAMESPACE extract configmap/fluentd --to=$collector_folder/cm/fluentd
+mkdir -p $collector_folder/cm/collector
+oc -n $NAMESPACE extract configmap/collector --to=$collector_folder/cm/collector
 mkdir -p $collector_folder/cm/secure-forward
 oc -n $NAMESPACE extract configmap/secure-forward --to=$collector_folder/cm/secure-forward
 mkdir -p $collector_folder/cm/syslog
 oc -n $NAMESPACE extract configmap/syslog --to=$collector_folder/cm/syslog
 
 echo "-- Checking Collector health"
-pods="$(oc -n $NAMESPACE get pods -l logging-infra=fluentd -o jsonpath='{.items[*].metadata.name}')"
+pods="$(oc -n $NAMESPACE get pods -l logging-infra=collector -o jsonpath='{.items[*].metadata.name}')"
 for pod in $pods
 do
     echo "---- Collector pod: $pod"

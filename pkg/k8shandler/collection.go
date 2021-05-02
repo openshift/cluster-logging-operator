@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"reflect"
 	"strings"
 	"time"
@@ -45,6 +46,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
 	if cluster.Spec.Collection != nil && cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
+
+		//TODO: Remove me once fully migrated to new collector naming
+		clusterRequest.removeCollector(constants.FluentdName)
+
 		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
 			return
 		}
@@ -62,11 +67,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			log.Error(err, "unable to calculate MD5 hash")
 			return
 		}
-		if err = clusterRequest.reconcileFluentdService(); err != nil {
+		if err = clusterRequest.reconcileCollectorService(); err != nil {
 			return
 		}
 
-		if err = clusterRequest.reconcileFluentdServiceMonitor(); err != nil {
+		if err = clusterRequest.reconcileCollectorServiceMonitor(); err != nil {
 			return
 		}
 
@@ -74,19 +79,19 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			log.Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorConfigMap(collectorConfig); err != nil {
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorSecret(); err != nil {
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorDaemonset(collectorConfHash); err != nil {
 			return
 		}
 
-		if err = clusterRequest.UpdateFluentdStatus(); err != nil {
+		if err = clusterRequest.UpdateCollectorStatus(); err != nil {
 			log.Error(err, "unable to update status for fluentd")
 		}
 
@@ -108,7 +113,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.removeFluentd(); err != nil {
+		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
+			return
+		}
+		if err = clusterRequest.removeCollector(constants.CollectorName); err != nil {
 			return
 		}
 	}
@@ -116,18 +124,18 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	return nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
+func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus() (err error) {
 
 	cluster := clusterRequest.Cluster
 
-	fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
+	status, err := clusterRequest.getFluentdCollectorStatus()
 	if err != nil {
 		return fmt.Errorf("Failed to get status of Fluentd: %v", err)
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if !compareFluentdCollectorStatus(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
-			cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
+		if !compareFluentdCollectorStatus(status, cluster.Status.Collection.Logs.FluentdStatus) {
+			cluster.Status.Collection.Logs.FluentdStatus = status
 			return clusterRequest.UpdateStatus(cluster)
 		}
 		return nil

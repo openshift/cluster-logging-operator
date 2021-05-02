@@ -13,7 +13,7 @@ var ElasticIndex = map[string]string{
 	applicationLog: "app-write",
 }
 
-func (f *FluentdFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string) (result string, err error) {
+func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string) (result string, err error) {
 	index, ok := ElasticIndex[outputLogType]
 	if !ok {
 		return "", fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))

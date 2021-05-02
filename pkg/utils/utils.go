@@ -32,9 +32,10 @@ const (
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	"curator":             "CURATOR_IMAGE",
-	constants.FluentdName: constants.FluentdImageEnvVar,
-	"kibana":              "KIBANA_IMAGE",
+	"curator":               "CURATOR_IMAGE",
+	constants.FluentdName:   constants.FluentdImageEnvVar,
+	constants.CollectorName: constants.FluentdImageEnvVar,
+	"kibana":                "KIBANA_IMAGE",
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found

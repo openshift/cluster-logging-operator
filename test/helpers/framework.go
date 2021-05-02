@@ -211,19 +211,19 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 		return tc.waitForDeployment(OpenshiftLoggingNS, "kibana", defaultRetryInterval, defaultTimeout)
 	case ComponentTypeCollector:
 		clolog.V(3).Info("Waiting for ", "component", component)
-		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
+		return tc.waitForCollectorDaemonSet(defaultRetryInterval, defaultTimeout)
 	case ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
 	}
 	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
 }
 
-func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.Duration) error {
+func (tc *E2ETestFramework) waitForCollectorDaemonSet(retryInterval, timeout time.Duration) error {
 	// daemonset should have pods running and available on all the nodes for maxtimes * retryInterval
 	maxtimes := 5
 	times := 0
 	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/fluentd -o jsonpath={.status.NumberUnavailable}").Run()
+		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/collector -o jsonpath={.status.NumberUnavailable}").Run()
 		if err == nil {
 			if numUnavail == "" {
 				numUnavail = "0"
@@ -426,7 +426,7 @@ func (tc *E2ETestFramework) Cleanup() {
 			clolog.V(2).Info("Error during cleanup ", "error", err)
 		}
 	}
-	tc.CleanFluentDBuffers()
+	tc.CleanCollectorBuffers()
 }
 
 func RunCleanupScript() {
@@ -445,7 +445,7 @@ func RunCleanupScript() {
 	}
 }
 
-func (tc *E2ETestFramework) CleanFluentDBuffers() {
+func (tc *E2ETestFramework) CleanCollectorBuffers() {
 	h := corev1.HostPathDirectory
 	p := true
 	spec := &v1.DaemonSet{
@@ -454,19 +454,19 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "clean-fluentd-buffers",
+			Name:      "clean-collector-buffers",
 			Namespace: "default",
 		},
 		Spec: v1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": "clean-fluentd-buffers",
+					"name": "clean-collector-buffers",
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"name": "clean-fluentd-buffers",
+						"name": "clean-collector-buffers",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -478,16 +478,16 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 					},
 					InitContainers: []corev1.Container{
 						{
-							Name:  "clean-fluentd-buffers",
+							Name:  "clean-collector-buffers",
 							Image: "centos:centos7",
-							Args:  []string{"sh", "-c", "rm -rf /fluentd-buffers/** || rm /logs/audit/audit.log.pos || rm /logs/kube-apiserver/audit.log.pos || rm /logs/es-containers.log.pos"},
+							Args:  []string{"sh", "-c", "rm -rf /collector-buffers/** || rm /logs/audit/audit.log.pos || rm /logs/kube-apiserver/audit.log.pos || rm /logs/es-containers.log.pos"},
 							SecurityContext: &corev1.SecurityContext{
 								Privileged: &p,
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name:      "fluentd-buffers",
-									MountPath: "/fluentd-buffers",
+									Name:      "collector-buffers",
+									MountPath: "/collector-buffers",
 								},
 								{
 									Name:      "logs",
@@ -505,7 +505,7 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 					},
 					Volumes: []corev1.Volume{
 						{
-							Name: "fluentd-buffers",
+							Name: "collector-buffers",
 							VolumeSource: corev1.VolumeSource{
 								HostPath: &corev1.HostPathVolumeSource{
 									Path: "/var/lib/fluentd",
@@ -529,17 +529,17 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	}
 	ds, err := tc.KubeClient.AppsV1().DaemonSets("default").Create(context.TODO(), spec, metav1.CreateOptions{})
 	if err != nil {
-		clolog.Error(err, "Could not create DaemonSet for cleaning fluentd buffers.")
+		clolog.Error(err, "Could not create DaemonSet for cleaning collector buffers.")
 		return
 	} else {
 		clolog.Info("DaemonSet to clean fluent buffers created")
 	}
 	_ = wait.PollImmediate(time.Second*10, time.Minute*5, func() (bool, error) {
-		desired, err2 := oc.Get().Resource("daemonset", "clean-fluentd-buffers").WithNamespace("default").OutputJsonpath("{.status.desiredNumberScheduled}").Run()
+		desired, err2 := oc.Get().Resource("daemonset", "clean-collector-buffers").WithNamespace("default").OutputJsonpath("{.status.desiredNumberScheduled}").Run()
 		if err2 != nil {
 			return false, nil
 		}
-		current, err2 := oc.Get().Resource("daemonset", "clean-fluentd-buffers").WithNamespace("default").OutputJsonpath("{.status.currentNumberScheduled}").Run()
+		current, err2 := oc.Get().Resource("daemonset", "clean-collector-buffers").WithNamespace("default").OutputJsonpath("{.status.currentNumberScheduled}").Run()
 		if err2 != nil {
 			return false, nil
 		}
@@ -550,7 +550,7 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	})
 	err = tc.KubeClient.AppsV1().DaemonSets(ds.GetNamespace()).Delete(context.TODO(), ds.GetName(), metav1.DeleteOptions{})
 	if err != nil {
-		clolog.Error(err, "Could not delete DaemonSet for cleaning fluentd buffers.")
+		clolog.Error(err, "Could not delete DaemonSet for cleaning collector buffers.")
 	} else {
 		clolog.Info("DaemonSet to clean fluent buffers deleted")
 	}

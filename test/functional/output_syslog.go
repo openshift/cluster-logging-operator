@@ -14,7 +14,7 @@ const ImageRemoteSyslog = "quay.io/openshift/origin-logging-rsyslog:latest"
 
 const IncreaseRsyslogMaxMessageSize = "$MaxMessageSize 50000"
 
-func (f *FluentdFunctionalFramework) addSyslogOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) addSyslogOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
 	log.V(2).Info("Adding syslog output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 	var baseRsyslogConfig string

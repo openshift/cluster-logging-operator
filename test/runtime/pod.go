@@ -118,3 +118,10 @@ func (builder *PodBuilder) WithLabels(labels map[string]string) *PodBuilder {
 	builder.Pod.Labels = labels
 	return builder
 }
+
+func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
+	for k, v := range labels {
+		builder.Pod.Labels[k] = v
+	}
+	return builder
+}

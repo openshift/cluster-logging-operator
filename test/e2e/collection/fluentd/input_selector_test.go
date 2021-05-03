@@ -144,7 +144,8 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				// verify only appLabels1 logs appear in Application logs
 				for _, msg := range logs {
 					log.Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.FlatLabels).To(ContainElements("name=app1", "env=env1"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env1"))
 				}
 
 				Expect(e2e.LogStores[app.Name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs with ")
@@ -156,7 +157,8 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				// verify only appLabels2 logs appear in Application logs
 				for _, msg := range logs {
 					log.Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.FlatLabels).To(ContainElements("name=app2", "env=env2"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app2"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env2"))
 				}
 			})
 
@@ -254,7 +256,7 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				// verify only appLabels1 logs appear in Application logs
 				for _, msg := range logs {
 					log.Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.FlatLabels).To(ContainElements("name=app1", "env=env1"))
+					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
 					Expect(msg.Kubernetes.NamespaceName).To(Equal(appNamespace1))
 				}
 			})

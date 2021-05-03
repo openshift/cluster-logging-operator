@@ -31,15 +31,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		got, err := configGenerator.generatePipelineToOutputLabels(pipelines)
 		Expect(err).To(BeNil())
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
-  #flatten labels to prevent field explosion in ES
-  <filter ** >
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
-  </filter>
   <match **>
     @type copy
 
@@ -63,15 +54,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		got, err := configGenerator.generatePipelineToOutputLabels(pipelines)
 		Expect(err).To(BeNil())
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
-  #flatten labels to prevent field explosion in ES
-  <filter ** >
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
-  </filter>
   <filter **>
     @type record_transformer
     <record>
@@ -101,15 +83,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		got, err := configGenerator.generatePipelineToOutputLabels(pipelines)
 		Expect(err).To(BeNil())
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
-  #flatten labels to prevent field explosion in ES
-  <filter ** >
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
-  </filter>
   <filter **>
     @type record_transformer
     <record>
@@ -145,15 +118,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		got, err := configGenerator.generatePipelineToOutputLabels(pipelines)
 		Expect(err).To(BeNil())
 		Expect(got).To(BeEquivalentTo([]string{`<label @PIPELINE_1>
-  #flatten labels to prevent field explosion in ES
-  <filter ** >
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
-  </filter>
   <filter **>
     @type record_transformer
     <record>
@@ -168,15 +132,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
     </store>
   </match>
 </label>`, `<label @PIPELINE_2>
-  #flatten labels to prevent field explosion in ES
-  <filter ** >
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
-  </filter>
   <filter **>
     @type record_transformer
     <record>

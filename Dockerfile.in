@@ -1,6 +1,5 @@
-### This is a generated file from Dockerfile.in ###
 #@follow_tag(openshift-golang-builder:1.14)
-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
+FROM openshift-golang-builder:v1.14.4-9 AS builder
 ENV BUILD_VERSION=${CI_CONTAINER_VERSION}
 ENV OS_GIT_MAJOR=${CI_X_VERSION}
 ENV OS_GIT_MINOR=${CI_Y_VERSION}
@@ -9,6 +8,9 @@ ENV SOURCE_GIT_COMMIT=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT}
 ENV SOURCE_GIT_URL=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}
 ENV REMOTE_SOURCE=${REMOTE_SOURCE:-.}
 
+## EXCLUDE BEGIN ##
+ENV REMOTE_SOURCE=${REMOTE_SOURCE}/app
+## EXCLUDE END ##
 
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
 
@@ -29,10 +31,10 @@ RUN make build
 
 
 #@follow_tag(openshift-ose-cli:v4.6)
-FROM registry.ci.openshift.org/ocp/4.7:cli AS origincli
+FROM openshift-ose-cli:v4.6.0-202009152100.p0 AS origincli
 
 #@follow_tag(openshift-ose-base:ubi8)
-FROM registry.ci.openshift.org/ocp/4.7:base
+FROM openshift-ose-base:v4.0-202009120053.11408
 RUN INSTALL_PKGS=" \
       openssl \
       rsync \
@@ -74,5 +76,4 @@ LABEL \
         io.openshift.build.source-location=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL} \
         io.openshift.build.commit.url=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}/commit/${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \
         version=${CI_CONTAINER_VERSION}
-
 

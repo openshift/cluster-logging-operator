@@ -139,13 +139,13 @@ var _ = Describe("Reconciling", func() {
 		})
 
 		It("should recreate the master-cert secret when its missing", func() {
-			//remove secret and validate
+			// remove secret and validate
 			Expect(client.Delete(context.TODO(), masterCASecret)).Should(Succeed())
 			secret := &corev1.Secret{}
 			key := types.NamespacedName{Name: constants.MasterCASecretName, Namespace: constants.OpenshiftNS}
 			Expect(client.Get(context.TODO(), key, secret)).ShouldNot(Succeed())
 
-			//reconcile again
+			// reconcile again
 			Expect(clusterRequest.CreateOrUpdateCertificates()).Should(Succeed())
 			Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
@@ -163,7 +163,6 @@ var _ = Describe("Reconciling", func() {
 				san := []string{
 					"elasticsearch-cluster",
 					"elasticsearch.openshift-logging.svc",
-					"elasticsearch.cluster.local",
 				}
 				Expect(secret).Should(ContainKeys("elasticsearch.key",
 					"elasticsearch.crt",
@@ -183,7 +182,6 @@ var _ = Describe("Reconciling", func() {
 
 				san := []string{
 					"elasticsearch.openshift-logging.svc",
-					"elasticsearch.cluster.local",
 				}
 				Expect(secret).Should(ContainKeys("elasticsearch.key",
 					"elasticsearch.crt",

@@ -491,7 +491,6 @@ var _ = Describe("Generating fluentd config", func() {
   <label @_APPLICATION>
     <match **>
       @type label_router
-      default_route @_APPLICATION_DEFAULT
       <route>
         @label @APPS_PIPELINE
         <match>
@@ -504,9 +503,14 @@ var _ = Describe("Generating fluentd config", func() {
           namespaces dev-apple,project2-namespace
         </match>
       </route>
+      <route>
+        @label @_APPLICATION_ALL
+        <match>
+        </match>
+      </route>
     </match>
   </label>
-  <label @_APPLICATION_DEFAULT>
+  <label @_APPLICATION_ALL>
     <match **>
       @type copy
       <store>
@@ -1218,7 +1222,6 @@ var _ = Describe("Generating fluentd config", func() {
   <label @_APPLICATION>
     <match **>
       @type label_router
-      default_route @_APPLICATION_DEFAULT
       <route>
         @label @APPS_PROD_PIPELINE
         <match>
@@ -1231,9 +1234,14 @@ var _ = Describe("Generating fluentd config", func() {
           labels app:nginx,environment:dev
         </match>
       </route>
+      <route>
+        @label @_APPLICATION_ALL
+        <match>
+        </match>
+      </route>
     </match>
   </label>
-  <label @_APPLICATION_DEFAULT>
+  <label @_APPLICATION_ALL>
     <match **>
       @type copy
       <store>
@@ -1926,7 +1934,6 @@ var _ = Describe("Generating fluentd config", func() {
   <label @_APPLICATION>
     <match **>
       @type label_router
-      default_route @_APPLICATION_DEFAULT
       <route>
         @label @APPS_PROD_PIPELINE
         <match>
@@ -1941,9 +1948,14 @@ var _ = Describe("Generating fluentd config", func() {
           labels app:nginx,environment:dev
         </match>
       </route>
+      <route>
+        @label @_APPLICATION_ALL
+        <match>
+        </match>
+      </route>
     </match>
   </label>
-  <label @_APPLICATION_DEFAULT>
+  <label @_APPLICATION_ALL>
     <match **>
       @type copy
       <store>

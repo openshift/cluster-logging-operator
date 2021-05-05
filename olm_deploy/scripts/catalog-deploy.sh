@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eou pipefail
-LOGGING_VERSION=${LOGGING_VERSION:-5.1}
+LOGGING_VERSION=${LOGGING_VERSION:-5.2}
 LOGGING_IS=${LOGGING_IS:-logging}
 export IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:cluster-logging-operator-registry}
 export IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:cluster-logging-operator}

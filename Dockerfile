@@ -50,8 +50,6 @@ RUN mkdir -p /usr/share/logging/
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/ /usr/share/logging/
 
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
-RUN rm /manifests/art.yaml
-
 
 COPY --from=origincli /usr/bin/oc /usr/bin
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/

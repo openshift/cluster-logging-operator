@@ -3,8 +3,9 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"github.com/ViaQ/logerr/log"
 	"reflect"
+
+	"github.com/ViaQ/logerr/log"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,7 +25,7 @@ import (
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy) (err error) {
 	if clusterRequest.Cluster.Spec.Visualization == nil || clusterRequest.Cluster.Spec.Visualization.Type == "" {
-		return nil
+		return clusterRequest.removeKibana()
 	}
 
 	//TODO: Remove this in the next release after removing old kibana code completely
@@ -249,9 +250,15 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 		}
 	}
 
-	replicas := visSpec.Replicas
-	if replicas == 0 {
-		replicas = 1
+	var replicas int32
+	if visSpec.Replicas != nil {
+		replicas = *visSpec.Replicas
+	} else {
+		if cluster.Spec.LogStore != nil && cluster.Spec.LogStore.ElasticsearchSpec.NodeCount > 0 {
+			replicas = 1
+		} else {
+			replicas = 0
+		}
 	}
 
 	proxyResources := visSpec.ProxySpec.Resources
@@ -284,7 +291,6 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 				Resources: proxyResources,
 			},
 		},
-		Status: []es.KibanaStatus{},
 	}
 
 	utils.AddOwnerRefToObject(cr, utils.AsOwner(cluster))

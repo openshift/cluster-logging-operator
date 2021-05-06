@@ -44,6 +44,7 @@ github.com/emicklei/go-restful/log
 # github.com/evanphx/json-patch v4.5.0+incompatible
 github.com/evanphx/json-patch
 # github.com/go-logr/logr v0.2.1
+## explicit
 github.com/go-logr/logr
 # github.com/go-logr/zapr v0.2.0
 ## explicit

@@ -6,7 +6,7 @@ const (
 	// global proxy / trusted ca bundle consts
 	ProxyName                  = "cluster"
 	TrustedCABundleKey         = "ca-bundle.crt"
-	AWSSecretAccessKey         = "aws_secret_access_key"
+	AWSSecretAccessKey         = "aws_secret_access_key" //nolint:gosec
 	AWSAccessKeyID             = "aws_access_key_id"
 	ClientCertKey              = "tls.crt"
 	ClientPrivateKey           = "tls.key"

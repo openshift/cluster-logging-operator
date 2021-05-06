@@ -161,7 +161,7 @@ test-functional:
 test-unit:
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
-	go test -cover -race ./pkg/...
+	go test -cover -race ./pkg/... ./test ./test/helpers ./test/matchers ./test/runtime
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)

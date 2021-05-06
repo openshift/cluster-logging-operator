@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -90,7 +91,7 @@ func UniqueName(prefix string) string {
 	if len(prefix) > maxPrefix {
 		prefix = prefix[:maxPrefix]
 	}
-	return fmt.Sprintf("%s-%s-%x", timeStamp, prefix, random[:])
+	return fmt.Sprintf("%s-%s-%x", prefix, timeStamp, random[:])
 }
 
 // UniqueNameForTest generates a unique name prefixed with the current
@@ -140,4 +141,21 @@ func WrapError(err error) error {
 		return fmt.Errorf("%w: %v", err, string(exitErr.Stderr))
 	}
 	return err
+}
+
+// GitRoot returns the root of the git repository.
+// Panics if current directory is not inside a git repository.
+func GitRoot() string {
+	dir, err := os.Getwd()
+	Must(err)
+	for {
+		info, err := os.Stat(filepath.Join(dir, ".git"))
+		if err == nil && info.IsDir() {
+			return dir
+		}
+		dir = filepath.Dir(dir)
+		if dir == "/" {
+			panic(fmt.Errorf("not in a git repository: %v", dir))
+		}
+	}
 }

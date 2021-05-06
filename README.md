@@ -2,6 +2,8 @@
 An operator to support OKD aggregated cluster logging.  Cluster logging configuration information
 is found in the [configuration](./docs/configuration.md) documentation.
 
+DO NOT MERGE
+
 ## Overview
 
 The CLO (Cluster Logging Operator) provides a set of APIs to control collection and forwarding of logs from

@@ -151,6 +151,193 @@ var _ = Describe("Generating pipeline to output labels", func() {
 </label>`}))
 	})
 })
+var _ = Describe("Generating source to pipeline label", func() {
+	var (
+		configGenerator *ConfigGenerator
+		err             error
+	)
+	BeforeEach(func() {
+		configGenerator, err = NewConfigGenerator(false, false, false)
+		Expect(err).To(BeNil())
+	})
+
+	It("should generate no namespace filtering routes with a match all route", func() {
+		pipelines := logging.RouteMap{
+			logging.InputNameApplication: sets.NewString("pipeline-1"),
+		}
+		nsMap := logging.RouteMap{
+			"": sets.NewString("pipeline-1"),
+		}
+		got, err := configGenerator.generateSourceToPipelineLabels(pipelines, nsMap)
+		Expect(err).To(BeNil())
+		Expect(got[0]).To(EqualTrimLines(`<label @_APPLICATION>
+  <match **>
+    @type copy
+
+    <store>
+      @type relabel
+      @label @PIPELINE_1
+    </store>
+  </match>
+</label>`))
+	})
+	It("should generate a namespace filtering route without match all routes", func() {
+		pipelines := logging.RouteMap{
+			logging.InputNameApplication: sets.NewString("pipeline-1"),
+		}
+		nsMap := logging.RouteMap{
+			"project-1": sets.NewString("pipeline-1"),
+		}
+		got, err := configGenerator.generateSourceToPipelineLabels(pipelines, nsMap)
+		Expect(err).To(BeNil())
+		Expect(got[0]).To(EqualTrimLines(`<label @_APPLICATION>
+    <match **>
+      @type copy
+
+      <store>
+        @type relabel
+        @label @_APPLICATION_NAMESPACE_FILTERING
+      </store>
+    </match>
+  </label>
+
+  <label @_APPLICATION_NAMESPACE_FILTERING>
+    <match kubernetes.**_project-1_**>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_1
+      </store>
+    </match>
+</label>`))
+	})
+	It("should generate a namespace filtering route with a match all route", func() {
+		pipelines := logging.RouteMap{
+			logging.InputNameApplication: sets.NewString("pipeline-1", "pipeline-2"),
+		}
+		nsMap := logging.RouteMap{
+			"project-1": sets.NewString("pipeline-1"),
+			"": sets.NewString("pipeline-2"),
+		}
+		got, err := configGenerator.generateSourceToPipelineLabels(pipelines, nsMap)
+		Expect(err).To(BeNil())
+		Expect(got[0]).To(EqualTrimLines(`<label @_APPLICATION>
+    <match **>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_2
+      </store>
+
+      <store>
+        @type relabel
+        @label @_APPLICATION_NAMESPACE_FILTERING
+      </store>
+    </match>
+  </label>
+
+  <label @_APPLICATION_NAMESPACE_FILTERING>
+    <match kubernetes.**_project-1_**>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_1
+      </store>
+    </match>
+</label>`))
+	})
+	It("should generate namespace filtering routes with a match all route", func() {
+		pipelines := logging.RouteMap{
+			logging.InputNameApplication: sets.NewString("pipeline-1", "pipeline-2"),
+		}
+		nsMap := logging.RouteMap{
+			"project-1": sets.NewString("pipeline-1"),
+			"project-2": sets.NewString("pipeline-2"),
+			"": sets.NewString("pipeline-2"),
+		}
+		got, err := configGenerator.generateSourceToPipelineLabels(pipelines, nsMap)
+		Expect(err).To(BeNil())
+		Expect(got[0]).To(EqualTrimLines(`<label @_APPLICATION>
+    <match **>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_2
+      </store>
+
+      <store>
+        @type relabel
+        @label @_APPLICATION_NAMESPACE_FILTERING
+      </store>
+    </match>
+  </label>
+
+  <label @_APPLICATION_NAMESPACE_FILTERING>
+    <match kubernetes.**_project-1_**>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_1
+      </store>
+    </match>
+    <match kubernetes.**_project-2_**>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_2
+      </store>
+    </match>
+</label>`))
+	})
+	It("should generate namespace filtering routes with match all routes", func() {
+		pipelines := logging.RouteMap{
+			logging.InputNameApplication: sets.NewString("pipeline-1", "pipeline-2", "pipeline-3"),
+		}
+		nsMap := logging.RouteMap{
+			"project-1": sets.NewString("pipeline-1"),
+			"project-2": sets.NewString("pipeline-2"),
+			"": sets.NewString("pipeline-2", "pipeline-3"),
+		}
+		got, err := configGenerator.generateSourceToPipelineLabels(pipelines, nsMap)
+		Expect(err).To(BeNil())
+		Expect(got[0]).To(EqualTrimLines(`<label @_APPLICATION>
+    <match **>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_2
+      </store>
+      <store>
+        @type relabel
+        @label @PIPELINE_3
+      </store>
+
+      <store>
+        @type relabel
+        @label @_APPLICATION_NAMESPACE_FILTERING
+      </store>
+    </match>
+  </label>
+
+  <label @_APPLICATION_NAMESPACE_FILTERING>
+    <match kubernetes.**_project-1_**>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_1
+      </store>
+    </match>
+    <match kubernetes.**_project-2_**>
+      @type copy
+      <store>
+        @type relabel
+        @label @PIPELINE_2
+      </store>
+    </match>
+</label>`))
+	})
+
+})
 var _ = Describe("mapAppNamespacesToPipelines", func() {
 	var (
 		forwarder *logging.ClusterLogForwarder

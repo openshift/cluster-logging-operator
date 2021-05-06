@@ -533,6 +533,24 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
 
 const namespaceToPipelineTemplate = `{{- define "namespaceToPipelineTemplate" -}}
 <label {{sourceTypelabelName .Source}}>
+  <match **>
+    @type copy
+  {{- range $index, $pipelineName := .AppAllPipelineNames }}
+    <store>
+      @type relabel
+      @label {{labelName $pipelineName}}
+    </store>
+  {{- end }}
+  {{ if .AppNamespaces }}
+    <store>
+      @type relabel
+      @label {{sourceTypelabelName .Source}}_NAMESPACE_FILTERING
+    </store>
+  {{- end }}
+  </match>
+</label>
+  {{ if .AppNamespaces }}
+<label {{sourceTypelabelName .Source}}_NAMESPACE_FILTERING>
   {{- $pipelines := $.PipeLines -}}
   {{- range $nsindex, $ns := .AppNamespaces }}
   <match {{applicationTag $ns}}>
@@ -546,6 +564,7 @@ const namespaceToPipelineTemplate = `{{- define "namespaceToPipelineTemplate" -}
   </match>
   {{- end }}
 </label>
+  {{- end }}
 {{- end}}`
 
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" -}}

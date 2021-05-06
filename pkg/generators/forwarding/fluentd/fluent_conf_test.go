@@ -503,36 +503,44 @@ var _ = Describe("Generating fluentd config", func() {
   
   # Relabel specific sources (e.g. logs.apps) to multiple pipelines
   <label @_APPLICATION>
-     <match kubernetes.**_dev-apple_**>
+    <match **>
       @type copy
       <store>
-	    @type relabel
-	    @label @APPS_PIPELINE2
+        @type relabel
+        @label @MY_DEFAULT_PIPELINE
+      </store>
+
+      <store>
+        @type relabel
+        @label @_APPLICATION_NAMESPACE_FILTERING
+      </store>
+    </match>
+  </label>
+
+  <label @_APPLICATION_NAMESPACE_FILTERING>
+    <match kubernetes.**_dev-apple_**>
+      @type copy
+      <store>
+        @type relabel
+        @label @APPS_PIPELINE2
       </store>
     </match>
     <match kubernetes.**_project1-namespace_**>
       @type copy
       <store>
-		@type relabel
-		@label @APPS_PIPELINE
+        @type relabel
+        @label @APPS_PIPELINE
       </store>
     </match>
     <match kubernetes.**_project2-namespace_**>
       @type copy
       <store>
-		@type relabel
-		@label @APPS_PIPELINE
+        @type relabel
+        @label @APPS_PIPELINE
       </store>
       <store>
-		@type relabel
-		@label @APPS_PIPELINE2
-      </store>
-    </match>
-    <match **>
-      @type copy
-      <store>
-	    @type relabel
-	    @label @MY_DEFAULT_PIPELINE
+        @type relabel
+        @label @APPS_PIPELINE2
       </store>
     </match>
   </label>
@@ -2510,6 +2518,17 @@ var _ = Describe("Generating fluentd config", func() {
     
     # Relabel specific sources (e.g. logs.apps) to multiple pipelines
     <label @_APPLICATION>
+      <match **>
+        @type copy
+
+        <store>
+          @type relabel
+          @label @_APPLICATION_NAMESPACE_FILTERING
+        </store>
+      </match>
+    </label>
+
+    <label @_APPLICATION_NAMESPACE_FILTERING>
       <match kubernetes.**_project1_**>
         @type copy
         <store>

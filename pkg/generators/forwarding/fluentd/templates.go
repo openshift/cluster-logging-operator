@@ -768,6 +768,16 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   port {{.Port}}
   verify_es_version_at_startup false
 {{- if .Target.Secret }}
+{{ if .SecretPathIfFound "username" -}}
+{{ with $path := .SecretPath "username" -}}
+  user "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}}
+{{ end -}}
+{{ if .SecretPathIfFound "password" -}}
+{{ with $path := .SecretPath "password" -}}
+  password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}}
+{{ end -}}
   scheme https
   ssl_version TLSv1_2
 {{- else }}
@@ -912,6 +922,16 @@ brokers {{.Brokers}}
 default_topic {{.Topic}}
 use_event_time true
 {{ if .Target.Secret -}}
+{{ if .SecretPathIfFound "username" -}}
+{{ with $path := .SecretPath "username" -}}
+username "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}}
+{{ end -}}
+{{ if .SecretPathIfFound "password" -}}
+{{ with $path := .SecretPath "password" -}}
+password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}}
+{{ end -}}
 {{ $tlsCert := .SecretPath "tls.crt" }}
 {{ $tlsKey := .SecretPath "tls.key" }}
 ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'

@@ -372,11 +372,11 @@ func (f *FluentdFunctionalFramework) WriteMessagesToOVNAuditLog(msg string, numO
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
-func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs uint64) error {
-	return f.WritesNApplicationLogsOfSize(numOfLogs, uint64(100))
+func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs int) error {
+	return f.WritesNApplicationLogsOfSize(numOfLogs, 100)
 }
 
-func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size uint64) error {
+func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size int) error {
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
 	//podname_ns_containername-containerid.log
 	//functional_testhack-16511862744968_fluentd-90a0f0a7578d254eec640f08dd155cc2184178e793d0289dff4e7772757bb4f8.log

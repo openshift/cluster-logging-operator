@@ -60,9 +60,10 @@ const (
   @type stdout
 </match>`
 
-	unsecureFluentConfBenchmark = `
+	UnsecureFluentConfBenchmark = `
 <system>
   log_level debug
+  workers 4
 </system>
 <source>
   @type forward
@@ -145,5 +146,5 @@ func (f *FluentdFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, out
 }
 
 func (f *FluentdFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	return f.addForwardOutputWithConf(b, output, unsecureFluentConfBenchmark)
+	return f.addForwardOutputWithConf(b, output, UnsecureFluentConfBenchmark)
 }

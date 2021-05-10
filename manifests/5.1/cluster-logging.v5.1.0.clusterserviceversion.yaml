@@ -325,8 +325,6 @@ spec:
                     value: "cluster-logging-operator"
                   - name: FLUENTD_IMAGE
                     value: "quay.io/openshift/origin-logging-fluentd:latest"
-                  - name: CURATOR_IMAGE
-                    value: "quay.io/openshift/origin-logging-curator5:latest"
   customresourcedefinitions:
     owned:
     - name: clusterloggings.logging.openshift.io

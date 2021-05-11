@@ -746,13 +746,13 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by()(rate(es_indices_search_query_time_seconds[5m])) / sum by()(irate(es_indices_search_query_count{context='total'}[5m]))",
+              "expr": "sum by()(rate(es_indices_search_query_time_seconds[5m])) / sum by()(rate(es_indices_search_query_count[5m]))",
               "hide": false,
               "legendFormat": "query time",
               "refId": "A"
             },
             {
-              "expr": "sum by()(rate(es_indices_search_fetch_time_seconds[5m])) / sum by()(irate(es_indices_search_fetch_count{context='total'}[5m]))",
+              "expr": "sum by()(rate(es_indices_search_fetch_time_seconds[5m])) / sum by()(rate(es_indices_search_fetch_count[5m]))",
               "hide": false,
               "legendFormat": "fetch time",
               "refId": "B"

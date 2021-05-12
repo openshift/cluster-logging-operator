@@ -100,11 +100,11 @@ spec:
                   properties:
                     elasticsearch:
                       properties:
-                        indexKey:
-                          description: IndexKey specifies the metadata key to be used as name of elasticsearch index It takes precedence over IndexName
+                        structuredIndexKey:
+                          description: StructuredIndexKey specifies the metadata key to be used as name of elasticsearch index It takes precedence over StructuredIndexName
                           type: string
-                        indexName:
-                          description: IndexName specifies the name of elasticsearch schema
+                        structuredIndexName:
+                          description: StructuredIndexName specifies the name of elasticsearch schema
                           type: string
                       type: object
                     fluentdForward:

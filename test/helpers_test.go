@@ -1,6 +1,7 @@
 package test_test
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
@@ -15,11 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-const (
-	// Match unique name suffix (-HHMMSSxxxxxxxx).
-	suffix    = "-[0-9]{6}-[0-9a-f]{8}"
-	suffixLen = 2 + 6 + 8
-)
+func nameRegexp(name string) string {
+	return fmt.Sprintf("%v-[0-9a-z]{8}", name)
+}
 
 var _ = Describe("Helpers", func() {
 
@@ -162,29 +162,23 @@ var _ = Describe("Helpers", func() {
 			names := map[string]bool{}
 			for i := 0; i < 100; i++ {
 				name := UniqueName("x")
-				Expect(name).To(MatchRegexp("x" + suffix))
+				Expect(name).To(MatchRegexp(nameRegexp("x")))
 				Expect(names).NotTo(HaveKey(name), "not unique")
+				names[name] = true
 			}
 		})
 
 		It("cleans up an illegal name", func() {
 			name := UniqueName("x--y!-@#z--")
 			Expect(validation.IsDNS1123Label(name)).To(BeNil(), name)
-			Expect(name).To(MatchRegexp("x-y-z" + suffix))
+			Expect(name).To(MatchRegexp(nameRegexp("x-y-z")))
 		})
 
 		It("truncates a long prefix", func() {
-			prefix := strings.Repeat("ghijklmnop", 100)
-			name := UniqueName(prefix)
-			Expect(name).To(HaveLen(validation.DNS1123LabelMaxLength))
+			longName := strings.Repeat("ghijklmnop", 100)
+			name := UniqueName(longName)
 			Expect(validation.IsDNS1035Label(name)).To(BeNil())
-			Expect(name).To(MatchRegexp(prefix[:validation.DNS1123LabelMaxLength-suffixLen] + suffix))
-		})
-	})
-
-	Describe("CurrentUniqueName", func() {
-		It("uses test name", func() {
-			Expect(UniqueNameForTest()).To(MatchRegexp("uses-test-name" + suffix))
+			Expect(longName).To(HavePrefix(name[:10]))
 		})
 	})
 
@@ -194,6 +188,58 @@ var _ = Describe("Helpers", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(wd).To(HavePrefix(GitRoot()))
 			Expect(GitRoot("test", "helpers_test.go")).To(BeARegularFile())
+		})
+	})
+
+	Describe("HTMLBodyText", func() {
+		html := `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Go profiling cheat-sheet</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+</head>
+<body class="article">
+<div id="header">
+<h1>Go profiling cheat-sheet</h1>
+</div>
+<div id="content">
+<div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>This is a short list of things I do to profile in go, not an introduction to profiling.</p>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>
+`
+		It("extracts the HTML body text", func() {
+			r := strings.NewReader(html)
+			b, err := test.HTMLBodyText(r)
+			ExpectOK(err)
+			Expect(string(b)).To(Equal("Go profiling cheat-sheet\n\nThis is a short list of things I do to profile in go, not an introduction to profiling."))
+		})
+	})
+
+	Describe("MapIndex", func() {
+		It("indexes into a map[string]interface{}", func() {
+			m := map[string]interface{}{
+				"a": "1",
+				"b": map[string]interface{}{
+					"bb": "2",
+					"c": map[string]interface{}{
+						"cc": "3",
+					},
+				},
+			}
+			Expect(MapIndices(m, "a")).To(Equal("1"))
+			Expect(MapIndices(m, "b", "bb")).To(Equal("2"))
+			Expect(MapIndices(m, "b", "c", "cc")).To(Equal("3"))
 		})
 	})
 })

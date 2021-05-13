@@ -27,7 +27,7 @@ type Client struct {
 	cfg     *rest.Config
 	ctx     context.Context
 	mapper  meta.RESTMapper
-	rests   map[schema.GroupVersion]rest.Interface
+	rests   *sync.Map // map[schema.GroupVersion]rest.Interface
 	timeout time.Duration
 	labels  map[string]string
 }
@@ -46,7 +46,7 @@ func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Cl
 	c := &Client{
 		cfg:     cfg,
 		ctx:     context.Background(),
-		rests:   map[schema.GroupVersion]rest.Interface{},
+		rests:   &sync.Map{},
 		timeout: timeout,
 		labels:  make(map[string]string, len(labels)),
 	}
@@ -213,10 +213,14 @@ func IgnoreAlreadyExists(err error) error {
 
 func (c *Client) rest(gv schema.GroupVersion) (rest.Interface, error) {
 	var err error
-	if c.rests[gv] == nil {
-		c.rests[gv], err = apiutil.RESTClientForGVK(gv.WithKind(""), c.cfg, testrt.Codecs)
+	i, _ := c.rests.Load(gv)
+	r, _ := i.(rest.Interface)
+	if r == nil {
+		if r, err = apiutil.RESTClientForGVK(gv.WithKind(""), c.cfg, testrt.Codecs); err == nil {
+			c.rests.Store(gv, r)
+		}
 	}
-	return c.rests[gv], err
+	return r, err
 }
 
 // GroupVersionResource uses the Client's RESTMapping to find the resource name for o.
@@ -245,6 +249,9 @@ func (c *Client) WithTimeout(timeout time.Duration) *Client {
 }
 
 func (c *Client) Timeout() time.Duration { return c.timeout }
+
+// Host returns the API host or URL used by the client's rest.Config.
+func (c *Client) Host() string { return c.cfg.Host }
 
 var singleton struct {
 	c    *Client

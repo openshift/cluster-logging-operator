@@ -97,7 +97,8 @@ scale-olm:
 .PHONY: scale-olm
 
 clean:
-	rm -rf bin tmp _output .target
+	rm -rf bin tmp _output .target Dockerfile.local
+	find -name .kube | xargs rm -rf
 	go clean -cache -testcache ./...
 
 PATCH?=Dockerfile.patch

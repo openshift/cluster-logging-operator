@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -26,4 +28,9 @@ func (builder *ServiceBuilder) AddServicePort(port int32, targetPort int) *Servi
 		TargetPort: intstr.FromInt(targetPort),
 	})
 	return builder
+}
+
+// SvcClusterLocal returns the svc.cluster.local hostname for name and namespace.
+func SvcClusterLocal(namespace, name string) string {
+	return fmt.Sprintf("%s.%s.svc.cluster.local", name, namespace)
 }

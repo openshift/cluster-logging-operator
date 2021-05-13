@@ -28,6 +28,7 @@ require (
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rogpeppe/go-internal v1.5.2 // indirect
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.5.1
 	go.uber.org/zap v1.16.0 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	k8s.io/api v0.18.8

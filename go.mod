@@ -12,6 +12,7 @@ require (
 	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-openapi/swag v0.19.8 // indirect
 	github.com/gobuffalo/envy v1.9.0 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.4.0
 	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/gophercloud/gophercloud v0.8.0 // indirect
@@ -27,8 +28,8 @@ require (
 	github.com/rogpeppe/go-internal v1.5.2 // indirect
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/zap v1.16.0 // indirect
-	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	gopkg.in/yaml.v2 v2.2.8
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	gopkg.in/yaml.v2 v2.2.8 // indirect
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v12.0.0+incompatible
@@ -37,6 +38,7 @@ require (
 )
 
 replace (
-	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible // Required by OLM
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest/autorest/adal v0.9.12 // Required by OLM
+	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 	k8s.io/client-go => k8s.io/client-go v0.18.3 // Required by prometheus-operator
 )

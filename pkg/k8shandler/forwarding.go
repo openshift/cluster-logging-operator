@@ -36,6 +36,19 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
 
+	if clusterRequest.ForwarderSpec.OutputDefaults != nil {
+		defaultOutputSpecs := clusterRequest.ForwarderSpec.OutputDefaults
+		if defaultOutputSpecs.Elasticsearch != nil {
+			for i, out := range clusterRequest.ForwarderSpec.Outputs {
+				// copy from defaults if output specific spec not present
+				if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {
+					out.Elasticsearch = defaultOutputSpecs.Elasticsearch
+					clusterRequest.ForwarderSpec.Outputs[i] = out
+				}
+			}
+		}
+	}
+
 	generator, err := forwarding.NewConfigGenerator(
 		clusterRequest.Cluster.Spec.Collection.Logs.Type,
 		clusterRequest.includeLegacyForwardConfig(),
@@ -108,8 +121,17 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 	status := &logging.ClusterLogForwarderStatus{}
 
 	clusterRequest.verifyInputs(spec, status)
+	if !status.Inputs.IsAllReady() {
+		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
+	}
 	clusterRequest.verifyOutputs(spec, status)
+	if !status.Outputs.IsAllReady() {
+		log.V(3).Info("Output not Ready", "outputs", status.Outputs)
+	}
 	clusterRequest.verifyPipelines(spec, status)
+	if !status.Pipelines.IsAllReady() {
+		log.V(3).Info("Pipeline not Ready", "pipelines", status.Pipelines)
+	}
 
 	routes := logging.NewRoutes(spec.Pipelines) // Compute used inputs/outputs
 
@@ -299,6 +321,10 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			})
 			status.Outputs.Set(name, condReady)
 		}
+	}
+
+	if clusterRequest.ForwarderSpec.OutputDefaults != nil {
+		spec.OutputDefaults = clusterRequest.ForwarderSpec.OutputDefaults
 	}
 }
 

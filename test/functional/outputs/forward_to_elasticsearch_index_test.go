@@ -18,7 +18,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 	const (
 		elasticSearchTag   = "7.10.1"
 		elasticSearchImage = "elasticsearch:" + elasticSearchTag
-		IndexKey           = "indexkey"
+		StructuredIndexKey = "structuredIndexKey"
 		IndexValue         = "myindex"
 		AppIndex           = "app-write"
 	)
@@ -31,7 +31,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			return func(b *runtime.PodBuilder) error {
 				log.V(2).Info("Adding ElasticSearch output container", "name", logging.OutputTypeElasticsearch)
 				b.AddLabels(map[string]string{
-					IndexKey: IndexValue,
+					StructuredIndexKey: IndexValue,
 				}).
 					AddContainer(logging.OutputTypeElasticsearch, elasticSearchImage).
 					AddEnvVar("discovery.type", "single-node").
@@ -54,18 +54,18 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 	})
 
 	Context("when sending to ElasticSearch "+elasticSearchTag+" protocol", func() {
-		It("should send logs to indexName", func() {
-			IndexName := "myindex"
+		It("should send logs to structuredIndexName", func() {
+			StructuredIndexName := "myindex"
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 					spec.Elasticsearch = &logging.Elasticsearch{
-						IndexName: IndexName,
+						StructuredIndexName: StructuredIndexName,
 					}
 				}, logging.OutputTypeElasticsearch)
 			Expect(framework.DeployWithVisitor(addElasticSearchContainer)).To(BeNil())
 			Expect(framework.WritesApplicationLogs(1)).To(BeNil())
-			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, IndexName)
+			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, StructuredIndexName)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
 
@@ -80,12 +80,12 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 		})
 	})
 	Context("when sending to ElasticSearch "+elasticSearchTag+" protocol", func() {
-		It("should send to k8s label indexKey", func() {
+		It("should send to k8s label structuredIndexKey", func() {
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 					spec.Elasticsearch = &logging.Elasticsearch{
-						IndexKey: fmt.Sprintf("kubernetes.labels.%s", IndexKey),
+						StructuredIndexKey: fmt.Sprintf("kubernetes.labels.%s", StructuredIndexKey),
 					}
 				}, logging.OutputTypeElasticsearch)
 			Expect(framework.DeployWithVisitor(addElasticSearchContainer)).To(BeNil())
@@ -104,16 +104,16 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			outputLogTemplate.ViaqIndexName = ""
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
-		It("should send to openshift label indexKey", func() {
+		It("should send to openshift label structuredIndexKey", func() {
 			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 					spec.Elasticsearch = &logging.Elasticsearch{
-						IndexKey: fmt.Sprintf("openshift.labels.%s", IndexKey),
+						StructuredIndexKey: fmt.Sprintf("openshift.labels.%s", StructuredIndexKey),
 					}
 				}, logging.OutputTypeElasticsearch)
 			clfb.Forwarder.Spec.Pipelines[0].Labels = map[string]string{
-				IndexKey: IndexValue,
+				StructuredIndexKey: IndexValue,
 			}
 			Expect(framework.DeployWithVisitor(addElasticSearchContainer)).To(BeNil())
 
@@ -154,13 +154,13 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 			})
 		})
-		Context("if elasticsearch indexKey wrongly configured", func() {
+		Context("if elasticsearch structuredIndexKey wrongly configured", func() {
 			It("should send logs to app-write", func() {
 				functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 						spec.Elasticsearch = &logging.Elasticsearch{
-							IndexKey: "junk",
+							StructuredIndexKey: "junk",
 						}
 					}, logging.OutputTypeElasticsearch)
 				Expect(framework.DeployWithVisitor(addElasticSearchContainer)).To(BeNil())

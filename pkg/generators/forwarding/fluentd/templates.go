@@ -613,15 +613,15 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
 
 const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
 <label {{.LabelName}}>
-  {{- if (.NeedChangeElasticsearchIndexName)}}
+  {{- if (.NeedChangeElasticsearchStructuredIndexName)}}
   <filter **>
     @type record_modifier
 	<record>
-	  indexFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.IndexKey}})}
-	  hasIndexName     "{{.Target.OutputTypeSpec.Elasticsearch.IndexName}}"
-	  viaq_index_name  ${if !record['indexFromKey'].nil?; record['indexFromKey']; elsif record['hasIndexName'] != ""; record['hasIndexName']; else record['viaq_index_name']; end;}
+	  indexFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.StructuredIndexKey}})}
+	  hasStructuredIndexName     "{{.Target.OutputTypeSpec.Elasticsearch.StructuredIndexName}}"
+	  viaq_index_name  ${if !record['indexFromKey'].nil?; record['indexFromKey']; elsif record['hasStructuredIndexName'] != ""; record['hasStructuredIndexName']; else record['viaq_index_name']; end;}
 	</record>
-	remove_keys indexFromKey, hasIndexName
+	remove_keys indexFromKey, hasStructuredIndexName
   </filter>
   {{- end}}
   {{- if .IsElasticSearchOutput}}

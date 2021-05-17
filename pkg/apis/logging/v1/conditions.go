@@ -54,3 +54,14 @@ func (nc NamedConditions) Set(name string, cond status.Condition) bool {
 func (nc NamedConditions) SetCondition(name string, t status.ConditionType, s corev1.ConditionStatus, r status.ConditionReason, format string, args ...interface{}) bool {
 	return nc.Set(name, NewCondition(t, s, r, format, args...))
 }
+
+func (nc NamedConditions) IsAllReady() bool {
+	for _, conditions := range nc {
+		for _, cond := range conditions {
+			if cond.Type == ConditionReady && cond.IsFalse() {
+				return false
+			}
+		}
+	}
+	return true
+}

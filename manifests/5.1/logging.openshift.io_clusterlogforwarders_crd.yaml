@@ -93,6 +93,20 @@ spec:
                   - name
                   type: object
                 type: array
+              outputDefaults:
+                description: OutputDefaults are used to specify default values for OutputSpec
+                properties:
+                  elasticsearch:
+                    description: "Elasticsearch OutputSpec default values \n Values specified here will be used as default values for Elasticsearch Output spec"
+                    properties:
+                      structuredIndexKey:
+                        description: StructuredIndexKey specifies the metadata key to be used as name of elasticsearch index It takes precedence over StructuredIndexName
+                        type: string
+                      structuredIndexName:
+                        description: StructuredIndexName specifies the name of elasticsearch schema
+                        type: string
+                    type: object
+                type: object
               outputs:
                 description: "Outputs are named destinations for log messages. \n There is a built-in output named `default` which forwards to the default openshift log store. You can define outputs to forward to other stores or log processors, inside or outside the cluster."
                 items:

@@ -310,6 +310,79 @@ var _ = Describe("Normalizing forwarder", func() {
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 				Expect(spec.Outputs).To(HaveLen(3))
 			})
+
+			Context("with outputDefaults specified", func() {
+				It("should accept default output", func() {
+					cluster.Spec = logging.ClusterLoggingSpec{
+						Collection: &logging.CollectionSpec{
+							Logs: logging.LogCollectionSpec{
+								Type: "fluentd",
+							},
+						},
+						LogStore: &logging.LogStoreSpec{
+							Type: logging.LogStoreTypeElasticsearch,
+						},
+					}
+					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
+						OutputDefaults: &logging.OutputDefaults{
+							Elasticsearch: &logging.Elasticsearch{
+								StructuredIndexKey: "kubernetes.labels.mylabel",
+							},
+						},
+						Pipelines: []logging.PipelineSpec{
+							{
+								InputRefs:  []string{"application"},
+								OutputRefs: []string{"default"},
+								Name:       "mypipe",
+							},
+						},
+					}
+					_, _ = request.generateCollectorConfig()
+
+					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredIndexKey).To(Equal("kubernetes.labels.mylabel"))
+
+				})
+				It("should setup values for elasticsearch output", func() {
+					cluster.Spec = logging.ClusterLoggingSpec{
+						Collection: &logging.CollectionSpec{
+							Logs: logging.LogCollectionSpec{
+								Type: "fluentd",
+							},
+						},
+						LogStore: &logging.LogStoreSpec{
+							Type: logging.LogStoreTypeElasticsearch,
+						},
+					}
+					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
+						OutputDefaults: &logging.OutputDefaults{
+							Elasticsearch: &logging.Elasticsearch{
+								StructuredIndexKey: "kubernetes.labels.mylabel",
+							},
+						},
+						Outputs: []logging.OutputSpec{
+							{
+								Type: logging.OutputTypeElasticsearch,
+								Name: "es-out",
+								URL:  "http://some-url",
+							},
+						},
+						Pipelines: []logging.PipelineSpec{
+							{
+								InputRefs:  []string{"application"},
+								OutputRefs: []string{"es-out"},
+								Name:       "mypipe",
+							},
+						},
+					}
+					_, _ = request.generateCollectorConfig()
+
+					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredIndexKey).To(Equal("kubernetes.labels.mylabel"))
+
+				})
+			})
+
 		})
 	})
 

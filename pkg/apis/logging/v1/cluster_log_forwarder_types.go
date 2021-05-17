@@ -57,6 +57,11 @@ type ClusterLogForwarderSpec struct {
 	//
 	// +required
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
+
+	// OutputDefaults are used to specify default values for OutputSpec
+	//
+	// +optional
+	OutputDefaults *OutputDefaults `json:"outputDefaults,omitempty"`
 }
 
 // ClusterLogForwarder represents the current status of ClusterLogForwarder
@@ -209,6 +214,16 @@ type PipelineSpec struct {
 	// +kubebuilder:validation:Enum:=json
 	// +optional
 	Parse string `json:"parse,omitempty"`
+}
+
+type OutputDefaults struct {
+
+	// Elasticsearch OutputSpec default values
+	//
+	// Values specified here will be used as default values for Elasticsearch Output spec
+	//
+	// +optional
+	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 }
 
 // ClusterLogForwarderList is a list of ClusterLogForwarders

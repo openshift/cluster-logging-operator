@@ -64,7 +64,7 @@ Pull secrets are tokens used to pull OCI images from multiple sources, such as q
   PULL_SECRET=~/my-pull-secret
   ```
 
-1. In a browser, visit https://cloud.redhat.com/openshift/install#pull-secret (log in if necessary)
+1. In a browser, visit https://cloud.redhat.com/openshift/install (log in if necessary)
 1. Select your preferred cluster deployment method.
 1. Use the `download pull secret` button, save the file to `$PULL_SECRET`
 
@@ -78,7 +78,7 @@ For development you also need an openshift CI repository token.
    `Logged into "https://api.ci.openshift.org:443" as "<user>" using the token provided.`
 1. Add the CI registry token to your pull-secret file, and log out of the CI system
    ```
-   oc registry login --to $PULL_SECRET
+   oc registry login --skip-check --to $PULL_SECRET
    oc logout
    ```
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -55,11 +56,12 @@ func Must(err error) {
 	}
 }
 
+// Unmarshal JSON or YAML string into a value according to k8s rules.
+// Uses sigs.k8s.io/yaml.
+func Unmarshal(s string, v interface{}) error { return yaml.Unmarshal([]byte(s), v) }
+
 // MustUnmarshal unmarshals JSON or YAML into a value, panic on error.
-func MustUnmarshal(s string, v interface{}) {
-	// Note sigs.k8s.io/yaml can parse JSON or YAML -  JSON is a subset of YAML.
-	Must(yaml.Unmarshal([]byte(s), v))
-}
+func MustUnmarshal(s string, v interface{}) { Must(Unmarshal(s, v)) }
 
 var (
 	uniqueReplace = regexp.MustCompile("[^a-z0-9]+")
@@ -88,15 +90,24 @@ func UniqueName(prefix string) string {
 	if len(prefix) > maxPrefix {
 		prefix = prefix[:maxPrefix]
 	}
-	return fmt.Sprintf("%s-%s-%x", timeStamp, prefix, random[:])
+	return fmt.Sprintf("%s-%s-%x", prefix, timeStamp, random[:])
+}
+
+// GinkgoCurrentTest tries to get the current Ginkgo test description.
+// Returns true if successful, false if not in a ginkgo test.
+func GinkgoCurrentTest() (g ginkgo.GinkgoTestDescription, ok bool) {
+	defer func() { _ = recover() }()
+	g = ginkgo.CurrentGinkgoTestDescription() // May panic if not in a ginkgo test.
+	ok = true
+	return
 }
 
 // UniqueNameForTest generates a unique name prefixed with the current
 // Ginkgo test name, or the string "test" if not in a Ginkgo test.
-func UniqueNameForTest() string {
-	prefix := ginkgo.CurrentGinkgoTestDescription().TestText
-	if prefix == "" {
-		return "test"
+func UniqueNameForTest() (name string) {
+	prefix := "test"
+	if ct, ok := GinkgoCurrentTest(); ok {
+		prefix = ct.TestText
 	}
 	return UniqueName(prefix)
 }
@@ -133,4 +144,21 @@ func Escapelines(logline string) string {
 	logline = strings.ReplaceAll(logline, "\\", "\\\\")
 	logline = strings.ReplaceAll(logline, "\"", "\\\"")
 	return logline
+}
+
+// GitRoot joins paths to the root of the git repository.
+// Panics if current directory is not inside a git repository.
+func GitRoot(paths ...string) string {
+	wd, err := os.Getwd()
+	Must(err)
+	dir := wd
+	for {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
+			return filepath.Join(append([]string{dir}, paths...)...)
+		}
+		dir = filepath.Dir(dir)
+		if dir == "/" {
+			panic(fmt.Errorf("not in a git repository: %v", wd))
+		}
+	}
 }

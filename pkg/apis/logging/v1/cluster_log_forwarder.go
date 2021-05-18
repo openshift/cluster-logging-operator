@@ -54,6 +54,18 @@ func (status ClusterLogForwarderStatus) IsDegraded() bool {
 	return false
 }
 
+// IsInvalid returns true if all of the subordinate conditions are NOT ready.
+func (status ClusterLogForwarderStatus) IsInvalid() bool {
+	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
+		for _, conds := range nc {
+			if conds.IsTrueFor(ConditionReady) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // RouteMap maps input names to connected outputs or vice-versa.
 type RouteMap map[string]sets.String
 

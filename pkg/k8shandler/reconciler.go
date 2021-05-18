@@ -38,17 +38,24 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	if clusterLoggingRequest.IncludesManagedStorage() {
 		// Reconcile certs
 		if err = clusterLoggingRequest.CreateOrUpdateCertificates(); err != nil {
-			return fmt.Errorf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			msg := fmt.Sprintf("Unable to create or update certificates for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
+			log.Error(err, fmt.Sprintf("Cluster Logging transition to Degraded state: %s", msg))
 		}
 
 		// Reconcile Log Store
 		if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
-			return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			msg := fmt.Sprintf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
+			log.Error(err, fmt.Sprintf("Cluster Logging transition to Degraded state: %s", msg))
 		}
 
 		// Reconcile Visualization
 		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
-			return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			msg := fmt.Sprintf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+			log.Error(err, fmt.Sprintf("Cluster Logging transition to Invalid state: %s", msg))
+			return fmt.Errorf(msg)
 		}
 
 	} else {
@@ -68,14 +75,41 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
-		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		msg := fmt.Sprintf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
+		log.Error(err, "Cluster Logging transition to Degraded state: "+msg)
 	}
 
 	// Reconcile Metrics Dashboards
 	if err = clusterLoggingRequest.CreateOrUpdateDashboards(); err != nil {
-		return fmt.Errorf("Unable to create or update metrics dashboards for %q: %w", clusterLoggingRequest.Cluster.Name, err)
+		msg := fmt.Sprintf("Unable to create or update metrics dashboards for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonMissingResource, msg))
+		log.Error(err, "Cluster Logging transition to Degraded state: "+msg)
 	}
 
+	spec := &logging.ClusterLogForwarderSpec{}
+	status := &logging.ClusterLogForwarderStatus{}
+	clusterLoggingRequest.verifyInputs(spec, status)
+	clusterLoggingRequest.verifyOutputs(spec, status)
+	clusterLoggingRequest.verifyPipelines(spec, status)
+
+	if status.IsInvalid() {
+		msg := fmt.Sprintf("All pipelines of %s are NOT ready", clusterLoggingRequest.Cluster.Name)
+		clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+		err := errors.New(msg)
+		log.Error(err, "")
+		return err
+	}
+
+	if status.IsDegraded() {
+		msg := fmt.Sprintf("Some pipelines of %s are degraded or invalid", clusterLoggingRequest.Cluster.Name)
+		clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
+		log.Error(errors.New(msg), "")
+	}
+
+	if err == nil && status.IsReady() {
+		clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(condReady)
+	}
 	return nil
 }
 

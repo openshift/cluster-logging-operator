@@ -22,7 +22,7 @@ metadata:
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
     # The version value is substituted by the ART pipeline
-    olm.skipRange: ">=4.6.0-0 <5.0.0"
+    olm.skipRange: ">=4.6.0-0 <5.1.0"
     alm-examples: |-
         [
           {

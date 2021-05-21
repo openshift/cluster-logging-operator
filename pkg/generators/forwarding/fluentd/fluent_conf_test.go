@@ -560,6 +560,10 @@ var _ = Describe("Generating fluentd config", func() {
 
   # Ship logs to specific outputs
   <label @APPS_ES_1>
+	<filter **>
+	  @type record_modifier
+	  remove_keys structured
+	</filter>
     #flatten labels to prevent field explosion in ES
     <filter ** >
       @type record_transformer
@@ -670,6 +674,10 @@ var _ = Describe("Generating fluentd config", func() {
     </match>
   </label>
   <label @APPS_ES_2>
+	<filter **>
+	  @type record_modifier
+	  remove_keys structured
+	</filter>
     #flatten labels to prevent field explosion in ES
     <filter ** >
       @type record_transformer
@@ -1271,6 +1279,10 @@ var _ = Describe("Generating fluentd config", func() {
 
   # Ship logs to specific outputs
   <label @APPS_ES_1>
+	<filter **>
+	  @type record_modifier
+	  remove_keys structured
+	</filter>
 	#flatten labels to prevent field explosion in ES    
 	<filter ** >       
 		@type record_transformer    
@@ -1373,6 +1385,10 @@ var _ = Describe("Generating fluentd config", func() {
     </match>
   </label>
   <label @APPS_ES_2>
+	<filter **>
+	  @type record_modifier
+	  remove_keys structured
+	</filter>
 	#flatten labels to prevent field explosion in ES    
 	<filter ** >       
 		@type record_transformer    
@@ -1970,6 +1986,10 @@ var _ = Describe("Generating fluentd config", func() {
 
   # Ship logs to specific outputs
   <label @APPS_ES_1>
+	<filter **>
+	  @type record_modifier
+	  remove_keys structured
+	</filter>
 	#flatten labels to prevent field explosion in ES    
 	<filter ** >       
 		@type record_transformer    
@@ -2072,6 +2092,10 @@ var _ = Describe("Generating fluentd config", func() {
     </match>
   </label>
   <label @APPS_ES_2>
+	<filter **>
+	  @type record_modifier
+	  remove_keys structured
+	</filter>
 	#flatten labels to prevent field explosion in ES    
 	<filter ** >       
 		@type record_transformer    
@@ -3093,6 +3117,10 @@ var _ = Describe("Generating fluentd config", func() {
 
 			# Ship logs to specific outputs
 			<label @INFRA_ES>
+				<filter **>
+				  @type record_modifier
+				  remove_keys structured
+				</filter>
 				#flatten labels to prevent field explosion in ES
 				<filter ** >
 					@type record_transformer
@@ -3197,6 +3225,10 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>
 			<label @APPS_ES_1>
+				<filter **>
+				  @type record_modifier
+				  remove_keys structured
+				</filter>
 				#flatten labels to prevent field explosion in ES
 				<filter ** >
 					@type record_transformer
@@ -3301,6 +3333,10 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>
 			<label @APPS_ES_2>
+				<filter **>
+				  @type record_modifier
+				  remove_keys structured
+				</filter>
 				#flatten labels to prevent field explosion in ES
 				<filter ** >
 					@type record_transformer
@@ -3405,6 +3441,10 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>
 			<label @AUDIT_ES>
+				<filter **>
+				  @type record_modifier
+				  remove_keys structured
+				</filter>
 				#flatten labels to prevent field explosion in ES
 				<filter ** >
 					@type record_transformer

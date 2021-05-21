@@ -613,15 +613,20 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
 
 const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
 <label {{.LabelName}}>
-  {{- if (.NeedChangeElasticsearchStructuredIndexName)}}
+  {{- if (.NeedChangeElasticsearchStructuredType)}}
   <filter **>
     @type record_modifier
 	<record>
-	  indexFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.StructuredIndexKey}})}
-	  hasStructuredIndexName     "{{.Target.OutputTypeSpec.Elasticsearch.StructuredIndexName}}"
-	  viaq_index_name  ${if !record['indexFromKey'].nil?; record['indexFromKey']; elsif record['hasStructuredIndexName'] != ""; record['hasStructuredIndexName']; else record['viaq_index_name']; end;}
+	  typeFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.StructuredTypeKey}})}
+	  hasStructuredTypeName     "{{.Target.OutputTypeSpec.Elasticsearch.StructuredTypeName}}"
+	  viaq_index_name  ${ if !record['structured'].nil? && record['structured'] != {}; if !record['typeFromKey'].nil?; "app-"+record['typeFromKey']+"-write"; elsif record['hasStructuredTypeName'] != ""; "app-"+record['hasStructuredTypeName']+"-write"; else record['viaq_index_name']; end; else record['viaq_index_name']; end;}
 	</record>
-	remove_keys indexFromKey, hasStructuredIndexName
+	remove_keys typeFromKey, hasStructuredTypeName
+  </filter>
+  {{- else}}
+  <filter **>
+    @type record_modifier
+	remove_keys structured
   </filter>
   {{- end}}
   {{- if .IsElasticSearchOutput}}

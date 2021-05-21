@@ -60,6 +60,10 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should provide a default buffer configuration", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+		  <filter **>
+		    @type record_modifier
+		    remove_keys structured
+		  </filter>
 		  #flatten labels to prevent field explosion in ES    
 		  <filter ** >       
 			  @type record_transformer    
@@ -182,6 +186,10 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should provide a default buffer configuration", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+		  <filter **>
+		    @type record_modifier
+		    remove_keys structured
+		  </filter>
 		  #flatten labels to prevent field explosion in ES    
 		  <filter ** >       
 			  @type record_transformer    
@@ -287,6 +295,10 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should override buffer configuration for given tuning parameters", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+		<filter **>
+		  @type record_modifier
+		  remove_keys structured
+		</filter>
 		  #flatten labels to prevent field explosion in ES    
 		  <filter ** >       
 			  @type record_transformer    

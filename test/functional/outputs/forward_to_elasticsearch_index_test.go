@@ -2,6 +2,7 @@ package outputs
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ViaQ/logerr/log"
 	. "github.com/onsi/ginkgo"
@@ -164,6 +165,41 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 						}
 					}, logging.OutputTypeElasticsearch)
 				Expect(framework.DeployWithVisitor(addElasticSearchContainer)).To(BeNil())
+
+				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
+				raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, AppIndex)
+				Expect(err).To(BeNil(), "Expected no errors reading the logs")
+				Expect(raw).To(Not(BeEmpty()))
+
+				// Parse log line
+				var logs []types.ApplicationLog
+				err = types.StrictlyParseLogs(raw, &logs)
+				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+				// Compare to expected template
+				outputTestLog := logs[0]
+				outputLogTemplate.ViaqIndexName = ""
+				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+			})
+		})
+		Context("if json parsing failed", func() {
+			FIt("should send logs to app-write", func() {
+				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+					FromInput(logging.InputNameApplication).
+					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+						spec.Elasticsearch = &logging.Elasticsearch{
+							StructuredIndexKey: fmt.Sprintf("kubernetes.labels.%s", StructuredIndexKey),
+						}
+					}, logging.OutputTypeElasticsearch)
+				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+				Expect(framework.DeployWithVisitor(addElasticSearchContainer)).To(BeNil())
+
+				// Write log line as input to fluentd
+				invalidJson := `{"key":"v}`
+				timestamp := "2020-11-04T18:13:59.061892+00:00"
+				//expectedMessage := invalidJson
+				message := strings.ReplaceAll(invalidJson, "\"", "\\\"")
+				applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, message)
+				Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 				raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, AppIndex)

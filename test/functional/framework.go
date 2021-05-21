@@ -80,8 +80,8 @@ type FluentdFunctionalFramework struct {
 }
 
 func init() {
-	maxDuration, _ = time.ParseDuration("60*2m")
-	defaultRetryInterval, _ = time.ParseDuration("1ms")
+	maxDuration, _ = time.ParseDuration("10m")
+	defaultRetryInterval, _ = time.ParseDuration("10s")
 }
 
 func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {

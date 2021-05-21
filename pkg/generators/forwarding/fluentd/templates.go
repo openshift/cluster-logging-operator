@@ -623,7 +623,7 @@ const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
 	<record>
 	  indexFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.StructuredIndexKey}})}
 	  hasStructuredIndexName     "{{.Target.OutputTypeSpec.Elasticsearch.StructuredIndexName}}"
-	  viaq_index_name  ${if !record['indexFromKey'].nil?; record['indexFromKey']; elsif record['hasStructuredIndexName'] != ""; record['hasStructuredIndexName']; else record['viaq_index_name']; end;}
+	  viaq_index_name  ${ if !record['structured'].nil? && record['structured'] != {}; if !record['indexFromKey'].nil?; record['indexFromKey']; elsif record['hasStructuredIndexName'] != ""; record['hasStructuredIndexName']; else record['viaq_index_name']; end; else record['viaq_index_name']; end;}
 	</record>
 	remove_keys indexFromKey, hasStructuredIndexName
   </filter>

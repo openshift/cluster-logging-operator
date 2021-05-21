@@ -3,6 +3,7 @@ package elasticsearchmanaged
 import (
 	"fmt"
 	"runtime"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -11,6 +12,7 @@ import (
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -24,8 +26,18 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 	Describe("ClusterLogging with default store", func() {
 		BeforeEach(func() {
-			if err := e2e.DeployLogGenerator(); err != nil {
+			appLabels := map[string]string{"logFormat": "redhat"}
+			ns, pod, err := e2e.DeployJsonLogGenerator(map[string]string{
+				"level":   "debug",
+				"logtext": "hey, this is a log line",
+			})
+			if err != nil {
 				Fail(fmt.Sprintf("Timed out waiting for the log generator to deploy: %v", err))
+			}
+			for k, v := range appLabels {
+				if _, err := oc.Literal().From("oc -n %s label pods %s %s=%s", ns, pod, k, v).Run(); err != nil {
+					Fail(fmt.Sprintf("Timed out waiting for the log generator to apply labels: %v", err))
+				}
 			}
 
 			components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
@@ -44,7 +56,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		}, helpers.DefaultCleanUpTimeout)
 
 		Context("forwarding logs to default output", func() {
-			Context("with IndexKey set in outputDefaults", func() {
+			Context("with TypeKey set in outputDefaults", func() {
 				BeforeEach(func() {
 					forwarder := &logging.ClusterLogForwarder{
 						TypeMeta: metav1.TypeMeta{
@@ -57,7 +69,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						Spec: logging.ClusterLogForwarderSpec{
 							OutputDefaults: &logging.OutputDefaults{
 								Elasticsearch: &logging.Elasticsearch{
-									StructuredIndexKey: "kubernetes.labels.component",
+									StructuredTypeKey: "kubernetes.labels.logFormat",
 								},
 							},
 							Pipelines: []logging.PipelineSpec{
@@ -65,6 +77,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 									Name:       "test-app",
 									OutputRefs: []string{logging.OutputNameDefault},
 									InputRefs:  []string{logging.InputNameApplication},
+									Parse:      "json",
 								},
 							},
 						},
@@ -91,13 +104,15 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							return false, nil
 						}
 						found := false
+						log.V(2).Info("indices", "indices", indices)
 						for _, index := range indices {
-							if index.Name == "test" {
+							if strings.HasPrefix(index.Name, "app-redhat") {
 								found = true
 							}
 						}
 						return found, nil
 					})
+					log.V(2).Info("error", "error", err)
 					Expect(err).To(BeNil())
 				})
 			})
@@ -115,7 +130,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						Spec: logging.ClusterLogForwarderSpec{
 							OutputDefaults: &logging.OutputDefaults{
 								Elasticsearch: &logging.Elasticsearch{
-									StructuredIndexName: IndexName,
+									StructuredTypeName: IndexName,
 								},
 							},
 							Pipelines: []logging.PipelineSpec{
@@ -123,6 +138,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 									Name:       "test-app",
 									OutputRefs: []string{logging.OutputNameDefault},
 									InputRefs:  []string{logging.InputNameApplication},
+									Parse:      "json",
 								},
 							},
 						},
@@ -150,7 +166,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 						found := false
 						for _, index := range indices {
-							if index.Name == IndexName {
+							if strings.HasPrefix(index.Name, "app-testindex") {
 								found = true
 							}
 						}

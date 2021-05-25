@@ -19,11 +19,13 @@ import (
 const secureMessage = "My life is my top secret message."
 
 var _ = Describe("[ClusterLogForwarder]", func() {
+	const basePort = 24230
 	var (
 		c                                 *client.Test
 		f                                 *Fixture
 		privateCA, serverCert, clientCert *certificate.CertKey
 		sharedKey                         string
+		portOffset                        int
 	)
 
 	BeforeEach(func() {
@@ -31,20 +33,22 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		f = NewFixture(c.NS.Name, secureMessage)
 
 		// Receiver acts as TLS server.
-		privateCA = certificate.NewCA(nil)
-		serverCert = certificate.NewCert(privateCA, f.Receiver.Host()) // Receiver is server.
-		clientCert = certificate.NewCert(privateCA)
+		privateCA = certificate.NewCA(nil, "Root CA")
+		serverCert = certificate.NewCert(privateCA, "Server", f.Receiver.Host()) // Receiver is server.
+		clientCert = certificate.NewCert(privateCA, "Client")
 		sharedKey = "top-secret"
-		// The Receiver Sources act as TLS servers.
-		for i, s := range []*fluentd.Source{
+		sources := []*fluentd.Source{
 			{Name: "no-auth", Type: "forward", Cert: serverCert},
 			{Name: "server-auth", Type: "forward", Cert: serverCert},
 			{Name: "server-auth-shared", Type: "forward", Cert: serverCert, SharedKey: sharedKey},
 			{Name: "mutual-auth", Type: "forward", Cert: serverCert, CA: privateCA},
 			{Name: "mutual-auth-shared", Type: "forward", Cert: serverCert, CA: privateCA, SharedKey: sharedKey},
-		} {
-			s.Port = 24230 + i
+		}
+		// The Receiver Sources act as TLS servers.
+		for _, s := range sources {
+			s.Port = basePort + portOffset
 			f.Receiver.AddSource(s)
+			portOffset++
 		}
 		clf := f.ClusterLogForwarder
 		secrets := []*corev1.Secret{

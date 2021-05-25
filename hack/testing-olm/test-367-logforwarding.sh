@@ -40,7 +40,7 @@ trap cleanup exit
 failed=0
 for dir in $(ls -d $TEST_DIR); do
   if [ -n "${CLF_INCLUDES}" ] ; then
-    if ! echo $dir | grep -P -q "${CLF_INCLUDES}" ; then
+    if ! basename $dir | grep -P -q "${CLF_INCLUDES}" ; then
       os::log::info "==============================================================="
 	    os::log::info "excluding logforwarding $dir "
 	    os::log::info "==============================================================="
@@ -61,7 +61,8 @@ for dir in $(ls -d $TEST_DIR); do
   if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/logforwarding/cleanup.sh $artifact_dir $GENERATOR_NS" \
     artifact_dir=$artifact_dir \
     GENERATOR_NS=$GENERATOR_NS \
-    go test -count=1 -parallel=1 -timeout=60m "$dir" -ginkgo.noColor -ginkgo.trace | tee -a "$artifact_dir/test.log" ; then
+    SUCCESS_TIMEOUT=10m \
+    go test -count=1 -parallel=1 -timeout=90m "$dir" -ginkgo.noColor -ginkgo.trace | tee -a "$artifact_dir/test.log" ; then
     os::log::info "======================================================="
     os::log::info "Logforwarding $dir passed"
     os::log::info "======================================================="

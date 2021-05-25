@@ -16,8 +16,8 @@ import (
 var _ = Describe("Certificate", func() {
 
 	It("enables client-server TLS connection with local CA", func() {
-		ca := certificate.NewCA(nil) // Self-signed CA
-		cert := certificate.NewCert(ca, "localhost", net.IPv4(127, 0, 0, 1), net.IPv6loopback)
+		ca := certificate.NewCA(nil, "Root CA") // Self-signed CA
+		cert := certificate.NewCert(ca, "Server", "localhost", net.IPv4(127, 0, 0, 1), net.IPv6loopback)
 		server := cert.StartServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "success!") }), nil)
 		defer server.Close()
@@ -34,13 +34,13 @@ var _ = Describe("Certificate", func() {
 	})
 
 	It("enables TLS mutual authentication", func() {
-		ca := certificate.NewCA(nil) // Self-signed CA
-		serverCert := certificate.NewCert(ca)
+		ca := certificate.NewCA(nil, "Root CA") // Self-signed CA
+		serverCert := certificate.NewCert(ca, "Server")
 		server := serverCert.StartServer(http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "success!") }), ca)
 		defer server.Close()
 
-		clientCert := certificate.NewClient(ca)
+		clientCert := certificate.NewClient(ca, "Client")
 		client := ca.Client(clientCert)
 		resp, err := client.Get(server.URL)
 		ExpectOK(err)

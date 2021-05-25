@@ -3,10 +3,8 @@ package test
 import (
 	"crypto/rand"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -131,13 +129,8 @@ func LogBeginEnd(l logr.Logger, msg string, errp *error, kv ...interface{}) func
 	}
 }
 
-// WrapError wraps some types of error to provide more informative Error() message.
-// If err is exec.ExitError and has Stderr text, include it in Error()
-// Otherwise return err unchanged.
-func WrapError(err error) error {
-	exitErr := &exec.ExitError{}
-	if errors.As(err, &exitErr) && len(exitErr.Stderr) != 0 {
-		return fmt.Errorf("%w: %v", err, string(exitErr.Stderr))
-	}
-	return err
+func Escapelines(logline string) string {
+	logline = strings.ReplaceAll(logline, "\\", "\\\\")
+	logline = strings.ReplaceAll(logline, "\"", "\\\"")
+	return logline
 }

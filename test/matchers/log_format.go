@@ -115,6 +115,14 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		logger.V(3).Info("CompareLogLogic: Any value for map[*] ", "fieldname", name, "value", value)
 		return true
 	}
+	if templateValueString == "[]" && valueString != "[]" { // Any value, not Nil is ok if template value is an array "[*]"
+		logger.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
+		return true
+	}
+	if templateValueString == "0" && valueString != "" { // Any value, not Nil is ok if template value is an array "[*]"
+		logger.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
+		return true
+	}
 
 	if templateValueString == "0001-01-01 00:00:00 +0000 UTC" && valueString != "" { // Any time value not Nil is ok if template value is empty time
 		logger.V(3).Info("CompareLogLogic: Any value for 'empty time' ", "name", name, "value", valueString)

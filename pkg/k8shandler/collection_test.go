@@ -6,7 +6,6 @@ import (
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	configv1 "github.com/openshift/api/config/v1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	appsv1 "k8s.io/api/apps/v1"
@@ -62,13 +61,6 @@ var _ = Describe("Reconciling", func() {
                 `,
 			},
 		}
-		proxy = &configv1.Proxy{
-			Spec: configv1.ProxySpec{
-				TrustedCA: configv1.ConfigMapNameReference{
-					Name: "custom-ca-bundle",
-				},
-			},
-		}
 	)
 
 	Describe("Collection", func() {
@@ -122,7 +114,7 @@ var _ = Describe("Reconciling", func() {
 			})
 
 			It("should use the default CA bundle in fluentd", func() {
-				Expect(clusterRequest.CreateOrUpdateCollection(proxy)).Should(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
 
 				key := types.NamespacedName{Name: constants.FluentdTrustedCAName, Namespace: cluster.GetNamespace()}
 				fluentdCaBundle := &corev1.ConfigMap{}
@@ -141,7 +133,7 @@ var _ = Describe("Reconciling", func() {
 
 			It("should use the injected custom CA bundle in fluentd", func() {
 				// Reconcile w/o custom CA bundle
-				Expect(clusterRequest.CreateOrUpdateCollection(proxy)).To(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
 
 				// Inject custom CA bundle into fluentd config map
 				injectedCABundle := fluentdCABundle.DeepCopy()
@@ -149,7 +141,7 @@ var _ = Describe("Reconciling", func() {
 				Expect(client.Update(context.TODO(), injectedCABundle)).Should(Succeed())
 
 				// Reconcile with injected custom CA bundle
-				Expect(clusterRequest.CreateOrUpdateCollection(proxy)).Should(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
 
 				key := types.NamespacedName{Name: constants.FluentdName, Namespace: cluster.GetNamespace()}
 				ds := &appsv1.DaemonSet{}

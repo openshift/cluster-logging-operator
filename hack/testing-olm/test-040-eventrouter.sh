@@ -14,11 +14,7 @@ if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
 LOGGING_NS=${LOGGING_NS:-openshift-logging}
-LOGGING_VERSION=${LOGGING_VERSION:-5.1}
-IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"registry.ci.openshift.org/logging/${LOGGING_VERSION}:\${component}"}
-if [ -n "${IMAGE_FORMAT:-}" ] ; then
-  IMAGE_LOGGING_EVENTROUTER=$(echo $IMAGE_FORMAT | sed -e "s,\${component},logging-eventrouter,")
-fi
+IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"registry.ci.openshift.org/logging/${VERSION}:logging-eventrouter"}
 EVENT_ROUTER_TEMPLATE=${repo_dir}/hack/eventrouter-template.yaml
 MAX_DEPLOY_WAIT_SECONDS=${MAX_DEPLOY_WAIT_SECONDS:-120}
 mkdir -p /tmp/artifacts/junit
@@ -113,16 +109,13 @@ os::cmd::try_until_text "oc -n ${LOGGING_NS} get clusterloggings/instance -o jso
 deploy_eventrouter
 
 os::log::info "Checking deployment of elasticsearch..."
-oc -n $LOGGING_NS get all
 espod=$(oc -n $LOGGING_NS get pods -l component=elasticsearch -o jsonpath={.items[0].metadata.name})
 os::log::info "Testing Elasticsearch pod ${espod}..."
 os::cmd::try_until_text "oc -n $LOGGING_NS exec -c elasticsearch ${espod} -- es_util --query=/ --request HEAD --head --output /dev/null --write-out %{response_code}" "200" "$(( 1*$minute ))"
 
 warn_nonformatted 'infra'
 
-oc get events --all-namespaces
 evpod=$(oc -n $LOGGING_NS get pods -l component=eventrouter -o jsonpath={.items[0].metadata.name})
-oc logs -n $LOGGING_NS pod/$evpod
 
 os::log::info "Checking if 1) the doc _id is the same as the kube id 2) there's no duplicates"
 hit_count=10

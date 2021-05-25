@@ -21,3 +21,16 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 	l.Spec.RestartPolicy = corev1.RestartPolicyNever
 	return l
 }
+
+// NewOneLineLogGenerator creates a pod that will print given lines to stdout.
+//Once done printing the pod will be idle but will not exit until deleted.
+func NewOneLineLogGenerator(namespace, containerName, message string) *corev1.Pod {
+	cmd := fmt.Sprintf(`echo "%v"; sleep infinity`, message)
+	l := NewPod(namespace, "log-generator", corev1.Container{
+		Name:    containerName,
+		Image:   "busybox",
+		Command: []string{"sh", "-c", cmd}},
+	)
+	l.Spec.RestartPolicy = corev1.RestartPolicyNever
+	return l
+}

@@ -1,11 +1,11 @@
 #!/bin/sh
 set -eou pipefail
-OPENSHIFT_VERSION=${OPENSHIFT_VERSION:-tech-preview}
+LOGGING_VERSION=${LOGGING_VERSION:-"tech-preview"}
 LOGGING_IS=${LOGGING_IS:-logging}
-export IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY:-registry.ci.openshift.org/${LOGGING_IS}/${OPENSHIFT_VERSION}:cluster-logging-operator-registry}
-export IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.ci.openshift.org/${LOGGING_IS}/${OPENSHIFT_VERSION}:cluster-logging-operator}
-export IMAGE_LOGGING_CURATOR5=${IMAGE_LOGGING_CURATOR5:-registry.ci.openshift.org/${LOGGING_IS}/${OPENSHIFT_VERSION}:logging-curator5}
-export IMAGE_LOGGING_FLUENTD=${IMAGE_LOGGING_FLUENTD:-registry.ci.openshift.org/${LOGGING_IS}/${OPENSHIFT_VERSION}:logging-fluentd}
+export IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:cluster-logging-operator-registry}
+export IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:cluster-logging-operator}
+export IMAGE_LOGGING_CURATOR5=${IMAGE_LOGGING_CURATOR5:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:logging-curator5}
+export IMAGE_LOGGING_FLUENTD=${IMAGE_LOGGING_FLUENTD:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:logging-fluentd}
 
 CLUSTER_LOGGING_OPERATOR_NAMESPACE=${CLUSTER_LOGGING_OPERATOR_NAMESPACE:-openshift-logging}
 

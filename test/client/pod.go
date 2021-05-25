@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/cluster-logging-operator/test/runtime"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -40,3 +41,13 @@ func PodFailed(e watch.Event) (bool, error) { return podInPhase(e.Object, corev1
 // PodRunning returns (true,nil) when e.Object is a Pod with phase PodRunning.
 // Returns an error if pod reaches any other long-lasting state	[failed, succeeded ,running]
 func PodRunning(e watch.Event) (bool, error) { return podInPhase(e.Object, corev1.PodRunning) }
+
+// DaemonSetIsReady returns (true, nil) when the pods of the set are ready on all nodes
+// in the cluster and (false, nil) otherwise.
+func IsDaemonSetReady(e watch.Event) (bool, error) {
+	ds, ok := e.Object.(*appsv1.DaemonSet)
+	if !ok {
+		return false, fmt.Errorf("event is not for a daemonset: %v", e)
+	}
+	return ds.Status.NumberUnavailable == 0, nil
+}

@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -16,7 +17,6 @@ import (
 	"time"
 
 	"github.com/ViaQ/logerr/log"
-	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	v1 "k8s.io/api/core/v1"
@@ -418,40 +418,30 @@ func EnvVarResourceFieldSelectorEqual(resource1, resource2 v1.ResourceFieldSelec
 		resource1.Divisor.Cmp(resource2.Divisor) == 0
 }
 
-func SetProxyEnvVars(proxyConfig *configv1.Proxy) []v1.EnvVar {
+func GetProxyEnvVars() []v1.EnvVar {
 	envVars := []v1.EnvVar{}
-	if proxyConfig == nil {
-		return envVars
-	}
-	if len(proxyConfig.Status.HTTPSProxy) != 0 {
-		envVars = append(envVars, v1.EnvVar{
-			Name:  "HTTPS_PROXY",
-			Value: proxyConfig.Status.HTTPSProxy,
-		},
-			v1.EnvVar{
-				Name:  "https_proxy",
-				Value: proxyConfig.Status.HTTPSProxy,
+	for _, envvar := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"} {
+		if value := os.Getenv(envvar); value != "" {
+			envVars = append(envVars, v1.EnvVar{
+				Name:  envvar,
+				Value: value,
 			})
-	}
-	if len(proxyConfig.Status.HTTPProxy) != 0 {
-		envVars = append(envVars, v1.EnvVar{
-			Name:  "HTTP_PROXY",
-			Value: proxyConfig.Status.HTTPProxy,
-		},
-			v1.EnvVar{
-				Name:  "http_proxy",
-				Value: proxyConfig.Status.HTTPProxy,
-			})
-	}
-	if len(proxyConfig.Status.NoProxy) != 0 {
-		envVars = append(envVars, v1.EnvVar{
-			Name:  "NO_PROXY",
-			Value: proxyConfig.Status.NoProxy,
-		},
-			v1.EnvVar{
-				Name:  "no_proxy",
-				Value: proxyConfig.Status.NoProxy,
-			})
+		}
 	}
 	return envVars
+}
+
+// WrapError wraps some types of error to provide more informative Error() message.
+// If err is exec.ExitError and has Stderr text, include it in Error()
+// Otherwise return err unchanged.
+func WrapError(err error) error {
+	exitErr := &exec.ExitError{}
+	if errors.As(err, &exitErr) && len(exitErr.Stderr) != 0 {
+		return fmt.Errorf("%w: %v", err, string(exitErr.Stderr))
+	}
+	return err
+}
+
+func ToJsonLogs(logs []string) string {
+	return fmt.Sprintf("[%s]", strings.Join(logs, ","))
 }

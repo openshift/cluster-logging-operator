@@ -5,7 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 
-	scheduling "k8s.io/api/scheduling/v1beta1"
+	scheduling "k8s.io/api/scheduling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

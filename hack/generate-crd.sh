@@ -4,7 +4,7 @@ source .bingo/variables.env
 
 set -euo pipefail
 
-MANIFESTS_DIR=${1:-"manifests/${OCP_VERSION}"}
+MANIFESTS_DIR=${1:-"manifests/${LOGGING_VERSION}"}
 CLF_CRD_FILE="logging.openshift.io_clusterlogforwarders_crd.yaml"
 CLO_CRD_FILE="logging.openshift.io_clusterloggings_crd.yaml"
 CLO_PATCH_FILE="crd-v1-clusterloggings-patches.yaml"

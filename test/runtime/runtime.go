@@ -112,7 +112,7 @@ func Exec(o runtime.Object, cmd string, args ...string) *exec.Cmd {
 
 func ExecOc(o runtime.Object, container, cmd string, args ...string) (string, error) {
 	m := Meta(o)
-	return oc.Exec().WithNamespace(m.GetNamespace()).Pod(m.GetName()).Container(container).WithCmd(cmd, args...).Run()
+	return oc.Exec().WithNamespace(m.GetNamespace()).Pod(m.GetName()).Container(strings.ToLower(container)).WithCmd(cmd, args...).Run()
 }
 
 // ExecContainer returns an `oc exec` Cmd to run cmd on o.

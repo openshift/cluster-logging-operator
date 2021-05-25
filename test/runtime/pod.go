@@ -3,6 +3,7 @@ package runtime
 import (
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -40,12 +41,19 @@ func (builder *ContainerBuilder) AddVolumeMount(name, path, subPath string, read
 	})
 	return builder
 }
+
+func (builder *ContainerBuilder) WithCmdArgs(cmdAgrgs []string) *ContainerBuilder {
+	builder.container.Args = cmdAgrgs
+	return builder
+}
+
 func (builder *ContainerBuilder) WithCmd(cmdString string) *ContainerBuilder {
 	cmd := strings.Split(cmdString, " ")
 	builder.container.Command = []string{cmd[0]}
 	builder.container.Args = cmd[1:]
 	return builder
 }
+
 func (builder *ContainerBuilder) AddEnvVar(name, value string) *ContainerBuilder {
 	builder.container.Env = append(builder.container.Env, corev1.EnvVar{
 		Name:  name,
@@ -53,6 +61,7 @@ func (builder *ContainerBuilder) AddEnvVar(name, value string) *ContainerBuilder
 	})
 	return builder
 }
+
 func (builder *ContainerBuilder) AddEnvVarFromFieldRef(name, fieldRef string) *ContainerBuilder {
 	builder.container.Env = append(builder.container.Env, corev1.EnvVar{
 		Name: name,
@@ -65,10 +74,17 @@ func (builder *ContainerBuilder) AddEnvVarFromFieldRef(name, fieldRef string) *C
 	return builder
 }
 
+func (builder *ContainerBuilder) WithPrivilege() *ContainerBuilder {
+	builder.container.SecurityContext = &corev1.SecurityContext{
+		Privileged: utils.GetBool(true),
+	}
+	return builder
+}
+
 func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	containerBuilder := ContainerBuilder{
 		container: corev1.Container{
-			Name:  name,
+			Name:  strings.ToLower(name),
 			Image: image,
 			Env:   []corev1.EnvVar{},
 		},
@@ -91,7 +107,21 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 	return builder
 }
 
+func (builder *ContainerBuilder) AddRunAsUser(uid int64) *ContainerBuilder {
+	builder.container.SecurityContext = &corev1.SecurityContext{
+		RunAsUser: &uid,
+	}
+	return builder
+}
+
 func (builder *PodBuilder) WithLabels(labels map[string]string) *PodBuilder {
 	builder.Pod.Labels = labels
+	return builder
+}
+
+func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
+	for k, v := range labels {
+		builder.Pod.Labels[k] = v
+	}
 	return builder
 }

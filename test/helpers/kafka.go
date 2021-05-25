@@ -176,6 +176,10 @@ func (tc *E2ETestFramework) createKafkaBroker() (*apps.StatefulSet, error) {
 		return nil, err
 	}
 
+	if err := tc.createKafkaBrokerSecret(); err != nil {
+		return nil, err
+	}
+
 	if err := tc.createKafkaBrokerService(); err != nil {
 		return nil, err
 	}
@@ -351,6 +355,25 @@ func (tc *E2ETestFramework) createKafkaBrokerConfigMap() error {
 
 	opts := metav1.CreateOptions{}
 	if _, err := tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), cm, opts); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tc *E2ETestFramework) createKafkaBrokerSecret() error {
+	s := kafka.NewBrokerSecret(OpenshiftLoggingNS)
+
+	tc.AddCleanup(func() error {
+		var zerograce int64
+		opts := metav1.DeleteOptions{
+			GracePeriodSeconds: &zerograce,
+		}
+		return tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Delete(context.TODO(), s.GetName(), opts)
+	})
+
+	opts := metav1.CreateOptions{}
+	if _, err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), s, opts); err != nil {
 		return err
 	}
 

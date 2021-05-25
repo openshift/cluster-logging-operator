@@ -3,10 +3,12 @@ package fluentd
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -15,6 +17,38 @@ import (
 )
 
 var replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
+
+type inputSelectorConf struct {
+	Pipeline   string
+	Namespaces string
+	Labels     string
+}
+
+func newInputSelectorConf(pipeline string, namespaces []string, labelSelector *metav1.LabelSelector) (*inputSelectorConf, error) {
+	labelList := ""
+	var names []string
+
+	labelMap, err := metav1.LabelSelectorAsMap(labelSelector)
+	if err != nil {
+		return nil, fmt.Errorf("LabelSelector: %v", err)
+	}
+	for name := range labelMap {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, k := range names {
+		if labelList != "" {
+			labelList += ","
+		}
+		labelList += fmt.Sprintf("%s:%s", k, labelMap[k])
+	}
+
+	return &inputSelectorConf{
+		Pipeline:   pipeline,
+		Namespaces: strings.Join(namespaces, ","),
+		Labels:     labelList,
+	}, nil
+}
 
 type outputLabelConf struct {
 	Name            string
@@ -132,14 +166,6 @@ func (conf *outputLabelConf) LabelName() string {
 	return labelName(conf.Name)
 }
 
-func labelName(name string) string {
-	return strings.ToUpper(fmt.Sprintf("@%s", replacer.Replace(name)))
-}
-
-func sourceTypeLabelName(name string) string {
-	return strings.ToUpper(fmt.Sprintf("@_%s", replacer.Replace(name)))
-}
-
 func (conf *outputLabelConf) StoreID() string {
 	prefix := ""
 	if conf.Hints().Has("prefix_as_retry") {
@@ -151,6 +177,29 @@ func (conf *outputLabelConf) StoreID() string {
 func (conf *outputLabelConf) RetryTag() string {
 	return "retry_" + strings.ToLower(replacer.Replace(conf.Name))
 }
+
 func (conf *outputLabelConf) Tags() string {
 	return strings.Join(conf.fluentTags.List(), " ")
+}
+
+func (conf *outputLabelConf) IsElasticSearchOutput() bool {
+	return conf.Target.Type == logging.OutputTypeElasticsearch
+}
+
+func (conf *outputLabelConf) NeedChangeElasticsearchStructuredIndexName() bool {
+	return conf.Target.Type == logging.OutputTypeElasticsearch &&
+		conf.Target.OutputTypeSpec.Elasticsearch != nil &&
+		(conf.Target.OutputTypeSpec.Elasticsearch.StructuredIndexKey != "" || conf.Target.OutputTypeSpec.Elasticsearch.StructuredIndexName != "")
+}
+
+func generateRubyDigArgs(path string) string {
+	var args []string
+	for _, s := range strings.Split(path, ".") {
+		args = append(args, fmt.Sprintf("%q", s))
+	}
+	return strings.Join(args, ",")
+}
+
+func (conf *outputLabelConf) GetKeyVal(path string) string {
+	return generateRubyDigArgs(path)
 }

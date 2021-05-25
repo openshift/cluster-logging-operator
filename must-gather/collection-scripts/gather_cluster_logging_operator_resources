@@ -42,3 +42,5 @@ oc -n $NAMESPACE extract secret/elasticsearch --to=${clo_folder}
 oc -n $NAMESPACE extract configmap/fluentd --to=${clo_folder}
 oc -n $NAMESPACE extract configmap/secure-forward --to=${clo_folder}
 oc -n $NAMESPACE extract secret/secure-forward --to=${clo_folder}
+oc -n $NAMESPACE get events --field-selector involvedObject.kind=ClusterLogging -o yaml > ${clo_folder}/clo-events.yaml 2>&1
+oc -n $NAMESPACE get events --field-selector involvedObject.kind=ClusterLogForwarder -o yaml > ${clo_folder}/clf-events.yaml 2>&1

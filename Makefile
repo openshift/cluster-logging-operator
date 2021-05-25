@@ -17,10 +17,10 @@ export GODEBUG=x509ignoreCN=0
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 
-export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -not -name patches -type d))
+export LOGGING_VERSION=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
-FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift/origin-logging-fluentd:latest
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
@@ -38,6 +38,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 #
 check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator bin/functional-benchmarker
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
+	go test ./test/functional/... -exec true > /dev/null # Build but don't run test functional tests.
 	go test ./test/helpers/... -exec true > /dev/null # Build but don't run test helpers tests.
 	$(MAKE) lint				  # Only lint if all code builds.
 
@@ -75,7 +76,7 @@ run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -104,16 +105,21 @@ image:
 		podman build -t $(IMAGE_TAG) . -f Dockerfile.local; \
 	fi
 
-lint: $(GOLANGCI_LINT)
-	$(GOLANGCI_LINT) run -c golangci.yaml
+lint: $(GOLANGCI_LINT) lint-dockerfile
+	@GOLANGCI_LINT_CACHE="$(CURDIR)/.cache" $(GOLANGCI_LINT) run -c golangci.yaml
+.PHONY: lint
+
+lint-dockerfile:
+	@hack/run-linter
+.PHONY: lint-dockerfile
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	find pkg cmd test -name '*.go' | xargs gofmt -s -l -w
+	find pkg cmd test internal -name '*.go' | xargs gofmt -s -l -w
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
-MANIFESTS=manifests/$(OCP_VERSION)
+MANIFESTS=manifests/$(LOGGING_VERSION)
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
 	@echo generating code
@@ -150,36 +156,42 @@ undeploy-elasticsearch-operator:
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-functional:
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+test-functional: test-functional-benchmarker
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
-	go test -race ./test/functional/...
+	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
-test-unit:
+test-forwarder-generator: bin/forwarder-generator
+	@bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null 2>&1
+.PHONY: test-forwarder-generator
+
+test-functional-benchmarker: bin/functional-benchmarker
+	@bin/functional-benchmarker > /dev/null 2>&1
+.PHONY: test-functional-benchmarker
+
+test-unit: test-forwarder-generator
 	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	go test -cover -race ./pkg/...
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
-MANIFEST_VERSION?="5.2.0_preview.1"
 generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=${MANIFEST_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} hack/generate-bundle.sh
-
+	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} hack/generate-bundle.sh
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	INCLUDES=$(E2E_TEST_INCLUDES) CLF_INCLUDES=$(CLF_TEST_INCLUDES) hack/test-e2e-olm.sh
+	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
-    CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
-    INCLUDES=$(E2E_TEST_INCLUDES) \
+	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
+	INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh
@@ -221,3 +233,6 @@ cluster-logging-operator-install:
 # uninstalls the cluster-logging operator
 cluster-logging-operator-uninstall:
 	olm_deploy/scripts/operator-uninstall.sh
+
+gen-dockerfiles:
+	./hack/generate-dockerfile-from-midstream > Dockerfile

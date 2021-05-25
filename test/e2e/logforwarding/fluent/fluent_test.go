@@ -3,6 +3,7 @@ package fluent_test
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,18 +16,22 @@ import (
 const message = "My life is my message"
 
 var _ = Describe("[ClusterLogForwarder]", func() {
+	const basePort = 24224
 	var (
-		c *client.Test
-		f *Fixture
+		c          *client.Test
+		f          *Fixture
+		portOffset int
+		logTypes   = loggingv1.ReservedInputNames.UnsortedList()
 	)
 	BeforeEach(func() { c = client.NewTest(); f = NewFixture(c.NS.Name, message) })
 	AfterEach(func() { c.Close() })
 
 	Context("with app/infra/audit receiver", func() {
 		BeforeEach(func() {
-			f.Receiver.AddSource(&fluentd.Source{Name: "application", Type: "forward", Port: 24224})
-			f.Receiver.AddSource(&fluentd.Source{Name: "infrastructure", Type: "forward", Port: 24225})
-			f.Receiver.AddSource(&fluentd.Source{Name: "audit", Type: "forward", Port: 24226})
+			for _, logType := range logTypes {
+				f.Receiver.AddSource(&fluentd.Source{Name: logType, Type: "forward", Port: basePort + portOffset})
+				portOffset++
+			}
 		})
 
 		It("forwards application logs only", func() {
@@ -59,7 +64,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 
 		It("forwards different types to different outputs with labels", func() {
 			clf := f.ClusterLogForwarder
-			for _, name := range []string{"application", "infrastructure", "audit"} {
+			for _, name := range logTypes {
 				s := f.Receiver.Sources[name]
 				clf.Spec.Outputs = append(clf.Spec.Outputs, loggingv1.OutputSpec{
 					Name: s.Name,
@@ -73,10 +78,11 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 				})
 			}
 			f.Create(c.Client)
-			for _, name := range []string{"application", "infrastructure", "audit"} {
+			time.Sleep(30 * time.Second)
+			for _, name := range logTypes {
 				name := name // Don't bind to range variable
 				r := f.Receiver.Sources[name].TailReader()
-				Expect(r.ReadLine()).To(ContainSubstring(fmt.Sprintf(`"log-type":%q`, name)))
+				Expect(r.ReadLine()).To(SatisfyAny(Equal(""), ContainSubstring(fmt.Sprintf(`"log-type":%q`, name))))
 			}
 		})
 	})

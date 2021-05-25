@@ -60,6 +60,15 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should provide a default buffer configuration", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+		  #flatten labels to prevent field explosion in ES    
+		  <filter ** >       
+			  @type record_transformer    
+			  enable_ruby true    
+			  <record>    
+				  kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }    
+			  </record>        
+			  remove_keys $.kubernetes.labels    
+		  </filter>		
           <match retry_other_elasticsearch>
             @type copy
             <store>
@@ -173,6 +182,15 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should provide a default buffer configuration", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+		  #flatten labels to prevent field explosion in ES    
+		  <filter ** >       
+			  @type record_transformer    
+			  enable_ruby true    
+			  <record>    
+				  kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }    
+			  </record>        
+			  remove_keys $.kubernetes.labels    
+		  </filter>		  
           <match retry_other_elasticsearch>
             @type copy
             <store>
@@ -269,6 +287,16 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should override buffer configuration for given tuning parameters", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+		  #flatten labels to prevent field explosion in ES    
+		  <filter ** >       
+			  @type record_transformer    
+			  enable_ruby true    
+			  <record>    
+				  kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }    
+			  </record>        
+			  remove_keys $.kubernetes.labels    
+		  </filter> 		
+
           <match retry_other_elasticsearch>
             @type copy
             <store>
@@ -386,6 +414,7 @@ var _ = Describe("Generating fluentd config", func() {
             # https://docs.fluentd.org/v1.0/articles/in_forward
             @type forward
             heartbeat_type none
+            keepalive true
 
             <buffer>
             @type file
@@ -427,6 +456,7 @@ var _ = Describe("Generating fluentd config", func() {
           # https://docs.fluentd.org/v1.0/articles/in_forward
           @type forward
           heartbeat_type none
+          keepalive true
 
           <buffer>
           @type file
@@ -482,10 +512,10 @@ var _ = Describe("Generating fluentd config", func() {
 			syslogConf := `
         <label @SYSLOG_RECEIVER>
           <filter **>
-          @type parse_json_field
-          json_fields  message
-          merge_json_log false
-          replace_json_log true
+			@type parse_json_field
+			json_fields  message
+			merge_json_log false
+			replace_json_log true
           </filter>
           <match **>
             @type copy
@@ -536,10 +566,10 @@ var _ = Describe("Generating fluentd config", func() {
 			syslogConf := `
         <label @SYSLOG_RECEIVER>
           <filter **>
-          @type parse_json_field
-          json_fields  message
-          merge_json_log false
-          replace_json_log true
+			  @type parse_json_field
+			  json_fields  message
+			  merge_json_log false
+			  replace_json_log true
           </filter>
           <match **>
             @type copy

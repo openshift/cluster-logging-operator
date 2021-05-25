@@ -14,3 +14,14 @@ assert_kibana_instance_exists() {
 	# verify kibana crd
 	os::cmd::try_until_success "oc -n $NAMESPACE get kibana kibana" ${TIMEOUT_MIN}
 }
+
+assert_resources_does_not_exist(){
+	os::cmd::try_until_failure "oc -n $NAMESPACE get cronjob curator"
+	os::cmd::try_until_failure "oc -n $NAMESPACE get ds fluentd"
+	os::cmd::try_until_failure "oc -n $NAMESPACE get elasticsearch elasticsearch"
+
+}
+
+assert_kibana_instance_does_not_exists() {
+	os::cmd::try_until_failure "oc -n $NAMESPACE get kibana kibana"
+}

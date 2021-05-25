@@ -326,8 +326,8 @@ generate_certs 'system.admin'
 
 # TODO: get es SAN DNS, IP values from es service names
 generate_certs 'kibana-internal' "$(generate_extensions false false kibana)"
-generate_certs 'elasticsearch' "$(generate_extensions true true $LOG_STORE{,-cluster}{,.${NAMESPACE}.svc}{,.cluster.local})"
-generate_certs 'logging-es' "$(generate_extensions false true $LOG_STORE{,.${NAMESPACE}.svc}{,.cluster.local})"
+generate_certs 'elasticsearch' "$(generate_extensions true true $LOG_STORE{,-cluster}{,.${NAMESPACE}.svc})"
+generate_certs 'logging-es' "$(generate_extensions false true $LOG_STORE{,.${NAMESPACE}.svc})"
 
 if [ ! -s "${WORKING_DIR}/kibana-session-secret" ] ; then
   info "Generating kibana session secret"

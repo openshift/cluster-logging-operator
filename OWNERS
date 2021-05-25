@@ -1,15 +1,22 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
-approvers:
-  - jcantrill
-  - ewolinetz
-  - alanconway
-reviewers:
-  - jcantrill
-  - ewolinetz
-  - lukas-vlcek
-  - alanconway
-  - igor-karpukhin
-  - vimalk78
-  - syedriko
-  - periklis
+filters:
+  ".*":
+    approvers:
+      - jcantrill
+      - ewolinetz
+      - alanconway
+      - vimalk78
+    reviewers:
+      - jcantrill
+      - alanconway
+      - igor-karpukhin
+      - vimalk78
+      - syedriko
+      - vparfonov
+      - eranra
+      - pmoogi-redhat
+      - ajaygupta978
+  "Dockerfile(?:\\.in)?$":   # matches Dockerfile, Dockerfile.in
+    labels:
+      - midstream/Dockerfile
 component: "Logging"

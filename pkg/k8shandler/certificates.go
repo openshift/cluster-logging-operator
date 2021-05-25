@@ -88,13 +88,22 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCertificates() (err e
 
 		scriptsDir := utils.GetScriptsDir()
 		updated := false
-		if err, updated = certificates.GenerateCertificates(clusterRequest.Cluster.Namespace, scriptsDir, "elasticsearch", utils.GetWorkingDir()); err != nil {
+		var result []interface{}
+		if err, updated, result = certificates.GenerateCertificates(clusterRequest.Cluster.Namespace, scriptsDir, "elasticsearch", utils.GetWorkingDir()); err != nil {
 			return fmt.Errorf("Error running script: %v", err)
 		}
 		log.V(3).Info("Writing secret", "updated", updated)
 		if !extracted || updated {
 			if err = clusterRequest.writeSecret(); err != nil {
 				return err
+			}
+		}
+		for _, r := range result {
+			strs := r.([]interface{})
+			for _, s := range strs {
+				if s == "reason" {
+					clusterRequest.EventRecorder.Event(clusterRequest.Cluster, "Normal", "Updated", fmt.Sprint(strs))
+				}
 			}
 		}
 

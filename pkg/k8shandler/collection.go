@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
-	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -36,7 +35,7 @@ var (
 var serviceAccountLogCollectorUID types.UID
 
 //CreateOrUpdateCollection component of the cluster
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfig *configv1.Proxy) (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
 	cluster := clusterRequest.Cluster
 	collectorConfig := ""
 	collectorConfHash := ""
@@ -72,7 +71,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdPrometheusRule(); err != nil {
-			return
+			log.Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
@@ -83,7 +82,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(proxyConfi
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash, proxyConfig); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash); err != nil {
 			return
 		}
 

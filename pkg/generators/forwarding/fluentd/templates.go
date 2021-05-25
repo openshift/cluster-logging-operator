@@ -10,6 +10,8 @@ var templateRegistry = []string{
 	fluentConfTemplate,
 	pipelineToOutputCopyTemplate,
 	sourceToPipelineCopyTemplate,
+	inputSelectorToPipelineTemplate,
+	inputSelectorBlockTemplate,
 	outputLabelConfCloudwatch,
 	outputLabelConfTemplate,
 	outputLabelConfNocopyTemplate,
@@ -347,16 +349,6 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
 
-  #flatten labels to prevent field explosion in ES
-  <filter ** >
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
-  </filter>
-
   # Relabel specific source tags to specific intermediary labels for copy processing
   # Earlier matchers remove logs so they don't fall through to later ones.
   # A log source matcher may be null if no pipeline wants that type of log.
@@ -368,26 +360,14 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @type null
 {{- end}}
   </match>
+  <match kubernetes.**>
 {{- if .CollectAppLogs}}
-	{{- if .AppNamespaces}}
-  <match {{range $ns := .AppNamespaces}}kubernetes.**_{{$ns}}_** {{end}}>
     @type relabel
     @label @_APPLICATION
-  </match>
-  <match kubernetes.** >
-    @type null
-  </match>
-	{{- else}}
-  <match kubernetes.**>
-    @type relabel
-    @label @_APPLICATION
-  </match>
-	{{- end}}
 {{- else}}
-  <match kubernetes.**>
     @type null
-  </match>
 {{- end}}
+  </match>
   <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
 {{- if .CollectAuditLogs }}
     @type relabel
@@ -482,7 +462,7 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
     </pattern>
     <pattern>
       format regexp
-      expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
       time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
       keep_time_key true
     </pattern>
@@ -547,26 +527,59 @@ const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" 
 <label {{sourceTypelabelName .Source}}>
   <match **>
     @type copy
-{{ range $index, $pipelineLabel := .PipelineNames }}
+{{- range $index, $pipelineLabel := .PipelineNames }}
     <store>
       @type relabel
       @label {{labelName $pipelineLabel}}
     </store>
 {{- end }}
-{{ if .IncludeLegacySecureForward }}
-    <store>
-      @type relabel
-      @label @_LEGACY_SECUREFORWARD
-    </store>
+  </match>
+</label>
+{{- end}}`
+
+const inputSelectorToPipelineTemplate = `{{- define "inputSelectorToPipelineTemplate" -}}
+<label {{sourceTypelabelName .Source}}>
+  <match **>
+    @type label_router
+    {{- range .InputSelectors }}
+    {{ . }}
+    {{- end}}
+{{- if .PipelineNames }}
+    <route>
+      @label {{sourceTypelabelName .Source}}_ALL
+      <match>
+      </match>
+    </route>
 {{- end }}
-{{ if .IncludeLegacySyslog }}
+  </match>
+</label>
+{{ if .PipelineNames -}}
+<label {{sourceTypelabelName .Source}}_ALL>
+  <match **>
+    @type copy
+{{- range $index, $pipelineLabel := .PipelineNames }}
     <store>
       @type relabel
-      @label @_LEGACY_SYSLOG
+      @label {{labelName $pipelineLabel}}
     </store>
 {{- end }}
   </match>
 </label>
+{{- end }}
+{{- end}}`
+
+const inputSelectorBlockTemplate = `{{- define "inputSelectorBlockTemplate" -}}
+    <route>
+      @label {{labelName .Pipeline}}
+      <match>
+{{- if .Namespaces }}
+        namespaces {{ .Namespaces }}
+{{- end}}
+{{- if .Labels }}
+        labels {{ .Labels }}
+{{- end}}
+      </match>
+    </route>
 {{- end}}`
 
 const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" -}}
@@ -579,9 +592,21 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
     </record>
   </filter>
   {{ end -}}
+  {{ if (eq .Parse "json") -}}
+  <filter **>
+    @type parser
+    key_name message
+    reserve_data yes
+    hash_value_field structured
+    <parse>
+      @type json
+	  json_parser oj
+    </parse>
+  </filter>
+  {{ end -}}
   <match **>
     @type copy
-{{ range $index, $target := .Outputs }}
+{{- range $index, $target := .Outputs }}
     <store>
       @type relabel
       @label {{labelName $target}}
@@ -641,6 +666,28 @@ const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
 
 const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
 <label {{.LabelName}}>
+  {{- if (.NeedChangeElasticsearchStructuredIndexName)}}
+  <filter **>
+    @type record_modifier
+	<record>
+	  indexFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.StructuredIndexKey}})}
+	  hasStructuredIndexName     "{{.Target.OutputTypeSpec.Elasticsearch.StructuredIndexName}}"
+	  viaq_index_name  ${if !record['indexFromKey'].nil?; record['indexFromKey']; elsif record['hasStructuredIndexName'] != ""; record['hasStructuredIndexName']; else record['viaq_index_name']; end;}
+	</record>
+	remove_keys indexFromKey, hasStructuredIndexName
+  </filter>
+  {{- end}}
+  {{- if .IsElasticSearchOutput}}
+  #flatten labels to prevent field explosion in ES
+  <filter ** >
+    @type record_transformer
+    enable_ruby true
+    <record>
+      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+    </record>
+    remove_keys $.kubernetes.labels
+  </filter>
+  {{- end}}
   <match {{.RetryTag}}>
     @type copy
 {{ include .StoreTemplate . "prefix_as_retry" | indent 4}}
@@ -703,6 +750,7 @@ const forwardTemplate = `{{- define "forward" -}}
 # https://docs.fluentd.org/v1.0/articles/in_forward
 @type forward
 heartbeat_type none
+keepalive true
 {{- with $sharedKey := .GetSecret "shared_key" }}
 <security>
   self_hostname "#{ENV['NODE_NAME']}"
@@ -773,6 +821,16 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   port {{.Port}}
   verify_es_version_at_startup false
 {{- if .Target.Secret }}
+{{ if .SecretPathIfFound "username" -}}
+{{ with $path := .SecretPath "username" -}}
+  user "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}}
+{{ end -}}
+{{ if .SecretPathIfFound "password" -}}
+{{ with $path := .SecretPath "password" -}}
+  password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}}
+{{ end -}}
   scheme https
   ssl_version TLSv1_2
 {{- else }}
@@ -917,6 +975,16 @@ brokers {{.Brokers}}
 default_topic {{.Topic}}
 use_event_time true
 {{ if .Target.Secret -}}
+{{ if .SecretPathIfFound "username" -}}
+{{ with $path := .SecretPath "username" -}}
+username "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}}
+{{ end -}}
+{{ if .SecretPathIfFound "password" -}}
+{{ with $path := .SecretPath "password" -}}
+password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}}
+{{ end -}}
 {{ $tlsCert := .SecretPath "tls.crt" }}
 {{ $tlsKey := .SecretPath "tls.key" }}
 ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'

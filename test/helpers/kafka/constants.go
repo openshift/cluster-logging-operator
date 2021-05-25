@@ -13,6 +13,10 @@ const (
 	InfraLogsTopic         = "clo-infra-topic"
 	DeploymentName         = "kafka"
 	ConsumerDeploymentName = "kafka-consumer"
+	kafkaImageRepoOrg      = "quay.io/openshift-logging/"
+	kafkaImageTag          = "2.7.0"
+	KafkaImage             = kafkaImageRepoOrg + "kafka:" + kafkaImageTag
+	KafkaInitUtilsImage    = kafkaImageRepoOrg + "kafka-initutils:" + kafkaImageTag
 )
 
 var (

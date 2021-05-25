@@ -1,12 +1,12 @@
 FROM quay.io/operator-framework/upstream-registry-builder AS registry-builder
 
-FROM registry.svc.ci.openshift.org/ocp/4.7:base
+FROM registry.ci.openshift.org/ocp/4.7:base
 
 WORKDIR /
 COPY manifests/ /manifests
 
 RUN chmod -R g+w /manifests && \
-  rm /manifests/art.yaml /manifests/*/image-references /manifests/*/kustomization.yaml /manifests/*/crd-v1-singleton-patch.yaml /manifests/*/crd-v1-clusterloggings-patches.yaml
+  rm /manifests/*/image-references /manifests/*/kustomization.yaml /manifests/*/crd-v1-singleton-patch.yaml /manifests/*/crd-v1-clusterloggings-patches.yaml
 
 COPY olm_deploy/scripts/registry-init.sh /scripts/
 

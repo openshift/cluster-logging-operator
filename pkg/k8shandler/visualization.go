@@ -13,7 +13,6 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
@@ -21,9 +20,9 @@ import (
 )
 
 // CreateOrUpdateVisualization reconciles visualization component for cluster logging
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization(proxyConfig *configv1.Proxy) (err error) {
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err error) {
 	if clusterRequest.Cluster.Spec.Visualization == nil || clusterRequest.Cluster.Spec.Visualization.Type == "" {
-		return nil
+		return clusterRequest.removeKibana()
 	}
 
 	if err = clusterRequest.createOrUpdateKibanaCR(); err != nil {
@@ -195,9 +194,15 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 		}
 	}
 
-	replicas := visSpec.Replicas
-	if replicas == 0 && (cluster.Spec.LogStore != nil && cluster.Spec.LogStore.ElasticsearchSpec.NodeCount > 0) {
-		replicas = 1
+	var replicas int32
+	if visSpec.Replicas != nil {
+		replicas = *visSpec.Replicas
+	} else {
+		if cluster.Spec.LogStore != nil && cluster.Spec.LogStore.ElasticsearchSpec.NodeCount > 0 {
+			replicas = 1
+		} else {
+			replicas = 0
+		}
 	}
 
 	proxyResources := visSpec.ProxySpec.Resources
@@ -230,7 +235,6 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 				Resources: proxyResources,
 			},
 		},
-		Status: []es.KibanaStatus{},
 	}
 
 	utils.AddOwnerRefToObject(cr, utils.AsOwner(cluster))

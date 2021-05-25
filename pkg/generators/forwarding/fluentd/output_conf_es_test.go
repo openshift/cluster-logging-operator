@@ -65,6 +65,15 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @ONCLUSTER_ELASTICSEARCH>
+	#flatten labels to prevent field explosion in ES    
+	<filter ** >       
+		@type record_transformer    
+		enable_ruby true    
+		<record>    
+			kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }    
+		</record>        
+		remove_keys $.kubernetes.labels    
+	</filter>
 	<match retry_oncluster_elasticsearch>
 		@type copy
 		<store>
@@ -177,6 +186,15 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @OTHER_ELASTICSEARCH>
+	#flatten labels to prevent field explosion in ES
+	<filter ** >
+		@type record_transformer
+		enable_ruby true
+		<record>
+			kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
+		</record>
+		remove_keys $.kubernetes.labels
+	</filter>
 	<match retry_other_elasticsearch>
 		@type copy
 		<store>

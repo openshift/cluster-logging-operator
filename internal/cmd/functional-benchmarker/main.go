@@ -1,21 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/ViaQ/logerr/log"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 // HACK - This command is for development use only
@@ -47,7 +49,12 @@ func main() {
 	functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 		FromInput(logging.InputNameApplication).
 		ToFluentForwardOutput()
-	if err := framework.Deploy(); err != nil {
+	err := framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+		func(b *runtime.PodBuilder) error {
+			return framework.AddBenchmarkForwardOutput(b, framework.Forwarder.Spec.Outputs[0])
+		},
+	})
+	if err != nil {
 		log.Error(err, "Error deploying test pod")
 		os.Exit(1)
 	}
@@ -73,35 +80,36 @@ func main() {
 		os.Exit(1)
 	}
 	log.V(4).Info("Read logs", "raw", logs)
-	jsonlogs, err := types.ParseLogs(fmt.Sprintf("[%s]", strings.Join(logs, ",")))
+	perflogs := types.PerfLogs{}
+	err = json.Unmarshal([]byte(utils.ToJsonLogs(logs)), &perflogs)
 	if err != nil {
 		log.Error(err, "Error parsing logs")
 		os.Exit(1)
 	}
-	log.V(4).Info("Read logs", "parsed", jsonlogs)
+	log.V(4).Info("Read logs", "parsed", perflogs)
 	if *sample {
-		fmt.Printf("Sample:\n%s\n", test.JSONString(jsonlogs[0]))
+		fmt.Printf("Sample:\n%s\n", test.JSONString(perflogs[0]))
 	}
-	timeDiffs := sortLogsByTimeDiff(jsonlogs)
+	timeDiffs := sortLogsByTimeDiff(perflogs)
 	fmt.Printf("  Total Msg: %d\n", *totalMessages)
 	fmt.Printf("Size(bytes): %d\n", *msgSize)
 	fmt.Printf(" Elapsed(s): %s\n", endTime.Sub(startTime))
-	fmt.Printf("    Mean(s): %f\n", mean(jsonlogs))
+	fmt.Printf("    Mean(s): %f\n", mean(perflogs))
 	fmt.Printf("     Min(s): %f\n", min(timeDiffs))
 	fmt.Printf("     Max(s): %f\n", max(timeDiffs))
 	fmt.Printf("  Median(s): %f\n", median(timeDiffs))
-	fmt.Printf(" Mean Bloat: %f\n", meanBloat(jsonlogs))
+	fmt.Printf(" Mean Bloat: %f\n", meanBloat(perflogs))
 }
 
-func meanBloat(logs types.Logs) float64 {
-	return genericMean(logs, (*types.AllLog).Bloat)
+func meanBloat(logs types.PerfLogs) float64 {
+	return genericMean(logs, (*types.PerfLog).Bloat)
 }
 
-func mean(logs types.Logs) float64 {
-	return genericMean(logs, (*types.AllLog).ElapsedEpoc)
+func mean(logs types.PerfLogs) float64 {
+	return genericMean(logs, (*types.PerfLog).ElapsedEpoc)
 }
 
-func genericMean(logs types.Logs, f func(l *types.AllLog) float64) float64 {
+func genericMean(logs types.PerfLogs, f func(l *types.PerfLog) float64) float64 {
 	if len(logs) == 0 {
 		return 0
 	}
@@ -133,7 +141,7 @@ func max(diffs []float64) float64 {
 	return diffs[len(diffs)-1]
 }
 
-func sortLogsByTimeDiff(logs types.Logs) []float64 {
+func sortLogsByTimeDiff(logs types.PerfLogs) []float64 {
 	diffs := make([]float64, len(logs))
 	for i := range logs {
 		diffs[i] = logs[i].ElapsedEpoc()

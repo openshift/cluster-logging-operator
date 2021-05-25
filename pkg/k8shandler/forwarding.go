@@ -39,6 +39,19 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
 
+	if clusterRequest.ForwarderSpec.OutputDefaults != nil {
+		defaultOutputSpecs := clusterRequest.ForwarderSpec.OutputDefaults
+		if defaultOutputSpecs.Elasticsearch != nil {
+			for i, out := range clusterRequest.ForwarderSpec.Outputs {
+				// copy from defaults if output specific spec not present
+				if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {
+					out.Elasticsearch = defaultOutputSpecs.Elasticsearch
+					clusterRequest.ForwarderSpec.Outputs[i] = out
+				}
+			}
+		}
+	}
+
 	generator, err := forwarding.NewConfigGenerator(
 		clusterRequest.Cluster.Spec.Collection.Logs.Type,
 		clusterRequest.includeLegacyForwardConfig(),
@@ -102,11 +115,16 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
 		if clusterRequest.Cluster.Spec.LogStore != nil && clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 			log.V(2).Info("ClusterLogForwarder forwarding to default store")
-			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
-				{
-					InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
-					OutputRefs: []string{logging.OutputNameDefault},
-				},
+			defaultPipeline := logging.PipelineSpec{
+				InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
+				OutputRefs: []string{logging.OutputNameDefault},
+			}
+			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{defaultPipeline}
+			if clusterRequest.includeLegacySyslogConfig() {
+				defaultPipeline.OutputRefs = append(defaultPipeline.OutputRefs, constants.LegacySyslog)
+			}
+			if clusterRequest.includeLegacyForwardConfig() {
+				defaultPipeline.OutputRefs = append(defaultPipeline.OutputRefs, constants.LegacySecureforward)
 			}
 			// Continue with normalization to fill out spec and status.
 		} else if clusterRequest.ForwarderRequest == nil {
@@ -119,8 +137,17 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 	status := &logging.ClusterLogForwarderStatus{}
 
 	clusterRequest.verifyInputs(spec, status)
+	if !status.Inputs.IsAllReady() {
+		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
+	}
 	clusterRequest.verifyOutputs(spec, status)
+	if !status.Outputs.IsAllReady() {
+		log.V(3).Info("Output not Ready", "outputs", status.Outputs)
+	}
 	clusterRequest.verifyPipelines(spec, status)
+	if !status.Pipelines.IsAllReady() {
+		log.V(3).Info("Pipeline not Ready", "pipelines", status.Pipelines)
+	}
 
 	routes := logging.NewRoutes(spec.Pipelines) // Compute used inputs/outputs
 
@@ -143,6 +170,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 		}
 	}
 	if len(unready) == len(status.Pipelines) {
+		log.V(3).Info("NormalizeForwarder. All pipelines invalid", "ForwarderSpec", clusterRequest.ForwarderSpec)
 		status.Conditions.SetCondition(condInvalid("all pipelines invalid: %v", unready))
 	} else {
 		if len(unready)+len(degraded) > 0 {
@@ -231,6 +259,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 			InputRefs:  goodIn.List(),
 			OutputRefs: goodOut.List(),
 			Labels:     pipeline.Labels,
+			Parse:      pipeline.Parse,
 		})
 	}
 }
@@ -272,17 +301,22 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		log.V(3).Info("Verifying", "outputs", output)
 		switch {
 		case output.Name == "":
+			log.V(3).Info("verifyOutputs failed", "reason", "output must have a name")
 			badName("output must have a name")
 		case logging.IsReservedOutputName(output.Name):
+			log.V(3).Info("verifyOutputs failed", "reason", "output name is reserved", "output name", output.Name)
 			badName("output name %q is reserved", output.Name)
 		case names.Has(output.Name):
+			log.V(3).Info("verifyOutputs failed", "reason", "output name is duplicated", "output name", output.Name)
 			badName("duplicate name: %q", output.Name)
 		case !logging.IsOutputTypeName(output.Type):
+			log.V(3).Info("verifyOutputs failed", "reason", "output type is invalid", "output name", output.Name, "output type", output.Type)
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
 		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
-			break
+			log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
 		case !clusterRequest.CLFVerifier.VerifyOutputSecret(&output, status.Outputs):
-			break
+		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
+			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
 		default:
 			status.Outputs.Set(output.Name, condReady)
 			spec.Outputs = append(spec.Outputs, output)
@@ -315,6 +349,10 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			})
 			status.Outputs.Set(name, condReady)
 		}
+	}
+
+	if clusterRequest.ForwarderSpec.OutputDefaults != nil {
+		spec.OutputDefaults = clusterRequest.ForwarderSpec.OutputDefaults
 	}
 }
 
@@ -378,11 +416,17 @@ func verifySecretKeysForTLS(output *logging.OutputSpec, conds logging.NamedCondi
 	// Make sure we have secrets for a valid TLS configuration.
 	haveCert := len(secret.Data[constants.ClientCertKey]) > 0
 	haveKey := len(secret.Data[constants.ClientPrivateKey]) > 0
+	haveUsername := len(secret.Data[constants.ClientUsername]) > 0
+	havePassword := len(secret.Data[constants.ClientPassword]) > 0
 	switch {
 	case haveCert && !haveKey:
 		return fail(condMissing("cannot have %v without %v", constants.ClientCertKey, constants.ClientPrivateKey))
 	case !haveCert && haveKey:
 		return fail(condMissing("cannot have %v without %v", constants.ClientPrivateKey, constants.ClientCertKey))
+	case haveUsername && !havePassword:
+		return fail(condMissing("cannot have %v without %v", constants.ClientUsername, constants.ClientPassword))
+	case !haveUsername && havePassword:
+		return fail(condMissing("cannot have %v without %v", constants.ClientPassword, constants.ClientUsername))
 	}
 	return true
 }

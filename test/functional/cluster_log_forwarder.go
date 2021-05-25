@@ -34,20 +34,44 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 }
 
 func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
-	return p.ToFluentForwardOutputWithVisitor(func(output *logging.OutputSpec) {})
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeFluentdForward)
 }
 
-func (p *PipelineBuilder) ToFluentForwardOutputWithVisitor(visit OutputSpecVisiter) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToElasticSearchOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeElasticsearch)
+}
+
+func (p *PipelineBuilder) ToSyslogOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeSyslog)
+}
+
+func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, forwardOutputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
 	var output *logging.OutputSpec
 	var found bool
 	if output, found = outputs[logging.OutputTypeFluentdForward]; !found {
-		output = &logging.OutputSpec{
-			Name: logging.OutputTypeFluentdForward,
-			Type: logging.OutputTypeFluentdForward,
-			URL:  "tcp://0.0.0.0:24224",
+		switch forwardOutputName {
+		case logging.OutputTypeFluentdForward:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeFluentdForward,
+				Type: logging.OutputTypeFluentdForward,
+				URL:  "tcp://0.0.0.0:24224",
+			}
+		case logging.OutputTypeElasticsearch:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeElasticsearch,
+				Type: logging.OutputTypeElasticsearch,
+				URL:  "https://0.0.0.0:9200",
+			}
+		case logging.OutputTypeSyslog:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeSyslog,
+				Type: logging.OutputTypeSyslog,
+				URL:  "tcp://0.0.0.0:24224",
+			}
 		}
+
 		visit(output)
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}

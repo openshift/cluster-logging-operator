@@ -167,7 +167,7 @@ test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
-MANIFEST_VERSION?="5.1.preview.1"
+MANIFEST_VERSION?="5.2.0_preview.1"
 generate-bundle: regenerate $(OPM)
 	MANIFEST_VERSION=${MANIFEST_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} hack/generate-bundle.sh
 

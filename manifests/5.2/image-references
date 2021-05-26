@@ -5,8 +5,8 @@ spec:
   - name: cluster-logging-operator
     from:
       kind: DockerImage
-      name: quay.io/openshift/origin-cluster-logging-operator:latest
+      name: quay.io/openshift-logging/cluster-logging-operator:latest
   - name: logging-fluentd
     from:
       kind: DockerImage
-      name: quay.io/openshift/origin-logging-fluentd:latest
+      name: quay.io/openshift-logging/fluentd:latest

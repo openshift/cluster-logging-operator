@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -273,7 +274,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	}
 	container := corev1.Container{
 		Name:            receiverName,
-		Image:           "quay.io/openshift/origin-logging-fluentd:latest",
+		Image:           "quay.io/openshift-logging/fluentd:latest",
 		ImagePullPolicy: corev1.PullAlways,
 		Args:            []string{"fluentd", "-c", "/fluentd/etc/fluent.conf"},
 		VolumeMounts: []corev1.VolumeMount{

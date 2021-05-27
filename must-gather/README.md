@@ -6,7 +6,7 @@ that expands its capabilities to gather Openshift Cluster Logging information.
 
 ### Usage
 ```sh
-oc adm must-gather --image=quay.io/openshift/origin-cluster-logging-operator -- /usr/bin/gather
+oc adm must-gather --image=quay.io/openshift-logging/cluster-logging-operator:latest -- /usr/bin/gather
 ```
 
 The command above will create a local directory with a dump of the cluster-logging state.

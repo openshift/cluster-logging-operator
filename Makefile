@@ -12,6 +12,7 @@ include .bingo/Variables.mk
 export GOROOT=$(shell go env GOROOT)
 export GOFLAGS=-mod=vendor
 export GO111MODULE=on
+export GODEBUG=x509ignoreCN=0
 
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
@@ -159,7 +160,7 @@ test-cluster:
 MANIFEST_VERSION?="4.6"
 generate-bundle: regenerate $(OPM)
 	MANIFEST_VERSION=${MANIFEST_VERSION} hack/generate-bundle.sh
-	
+
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.

@@ -7,9 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	v1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/ViaQ/logerr/log"
+	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	apps "k8s.io/api/apps/v1"
@@ -61,6 +60,9 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 									e2e.LogStores[app.Name].ClusterLocalEndpoint(),
 									kafka.DefaultTopic,
 								),
+								Secret: &loggingv1.OutputSecretSpec{
+									Name: kafka.DeploymentName,
+								},
 							},
 						},
 						Pipelines: []loggingv1.PipelineSpec{
@@ -133,9 +135,12 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 								Type: loggingv1.OutputTypeKafka,
 								URL:  fmt.Sprintf("tls://%s", e2e.LogStores[app.Name].ClusterLocalEndpoint()),
 								OutputTypeSpec: loggingv1.OutputTypeSpec{
-									Kafka: &v1.Kafka{
+									Kafka: &loggingv1.Kafka{
 										Topic: kafka.AppLogsTopic,
 									},
+								},
+								Secret: &loggingv1.OutputSecretSpec{
+									Name: kafka.DeploymentName,
 								},
 							},
 							{
@@ -143,9 +148,12 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 								Type: loggingv1.OutputTypeKafka,
 								URL:  fmt.Sprintf("tls://%s", e2e.LogStores[app.Name].ClusterLocalEndpoint()),
 								OutputTypeSpec: loggingv1.OutputTypeSpec{
-									Kafka: &v1.Kafka{
+									Kafka: &loggingv1.Kafka{
 										Topic: kafka.AuditLogsTopic,
 									},
+								},
+								Secret: &loggingv1.OutputSecretSpec{
+									Name: kafka.DeploymentName,
 								},
 							},
 							{
@@ -153,9 +161,12 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 								Type: loggingv1.OutputTypeKafka,
 								URL:  fmt.Sprintf("tls://%s", e2e.LogStores[app.Name].ClusterLocalEndpoint()),
 								OutputTypeSpec: loggingv1.OutputTypeSpec{
-									Kafka: &v1.Kafka{
+									Kafka: &loggingv1.Kafka{
 										Topic: kafka.InfraLogsTopic,
 									},
+								},
+								Secret: &loggingv1.OutputSecretSpec{
+									Name: kafka.DeploymentName,
 								},
 							},
 						},

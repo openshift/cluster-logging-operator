@@ -15,7 +15,9 @@ export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
 export APP_NAME=cluster-logging-operator
-export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
+export REGISTRY_PUBLIC=$(shell oc registry info --public)
+export REGISTRY_INTERNAL=$(shell oc registry info --internal)
+export IMAGE_TAG?=$(REGISTRY_PUBLIC)/openshift/origin-$(APP_NAME):latest
 
 export LOGGING_VERSION=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
@@ -50,6 +52,9 @@ ci-check: check
 		exit 1 ; \
 	}
 
+# .target is used to hold timestamp files to avoid un-necessary rebuilds. Do NOT check in.
+.target:
+	mkdir -p .target
 
 # Note: Go has built-in build caching, so always run `go build`.
 # It will do a better job than using source dependencies to decide if we need to build.
@@ -94,15 +99,15 @@ scale-olm:
 .PHONY: scale-olm
 
 clean:
-	@rm -rf bin tmp _output
+	rm -rf bin tmp _output .target
 	go clean -cache -testcache ./...
 
 PATCH?=Dockerfile.patch
-image:
-	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		patch -o Dockerfile.local Dockerfile $(PATCH) && \
-		podman build -t $(IMAGE_TAG) . -f Dockerfile.local; \
-	fi
+image: .target/image
+.target/image: .target $(shell find cmd must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum
+	patch -o Dockerfile.local Dockerfile $(PATCH)
+	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
+	touch $@
 
 lint: $(GOLANGCI_LINT) lint-dockerfile
 	@GOLANGCI_LINT_CACHE="$(CURDIR)/.cache" $(GOLANGCI_LINT) run -c golangci.yaml
@@ -116,11 +121,11 @@ fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
 	find pkg cmd test internal -name '*.go' | xargs gofmt -s -l -w
 
-# Do all code/CRD generation at once, with timestamp file to check out-of-date.
-GEN_TIMESTAMP=.zz_generate_timestamp
 MANIFESTS=manifests/$(LOGGING_VERSION)
-generate: $(GEN_TIMESTAMP)
-$(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
+
+# Do all code/CRD generation at once, with timestamp file to check out-of-date.
+generate: .target/generate
+.target/generate: .target $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
 	@echo generating code
 	@$(MAKE) openshift-client
 	@bash ./hack/generate-crd.sh
@@ -132,19 +137,20 @@ regenerate:
 	@$(MAKE) generate
 
 deploy-image: image
-	hack/deploy-image.sh
+	oc registry login --skip-check
+	podman push --tls-verify=false ${IMAGE_TAG}
 
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
 
 install:
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
 	$(MAKE) cluster-logging-operator-install
 
 deploy-catalog:
-	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/cluster-logging-operator-registry \
+	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_PUBLIC)/openshift/cluster-logging-operator-registry \
 	$(MAKE) cluster-logging-catalog-build
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
 	$(MAKE) cluster-logging-catalog-deploy
 
 deploy-elasticsearch-operator:
@@ -173,7 +179,7 @@ test-functional-benchmarker: bin/functional-benchmarker
 
 test-unit: test-forwarder-generator
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	go test -cover -race ./pkg/...
+	go test -cover -race ./pkg/... ./test ./test/helpers ./test/matchers ./test/runtime
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
@@ -190,8 +196,8 @@ test-e2e-olm: $(JUNITREPORT)
 test-e2e-local: $(JUNITREPORT) deploy-image
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh
 
 test-svt:
@@ -211,13 +217,14 @@ cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-d
 cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-catalog-uninstall
 
 # builds an operator-registry image containing the cluster-logging operator
-cluster-logging-catalog-build:
-	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		olm_deploy/scripts/catalog-build.sh ; \
-	fi
+cluster-logging-catalog-build: .target/cluster-logging-catalog-build
+.target/cluster-logging-catalog-build: $(shell find olm_deploy -type f)
+	olm_deploy/scripts/catalog-build.sh
+	touch $@
 
 # deploys the operator registry image and creates a catalogsource referencing it
-cluster-logging-catalog-deploy:
+cluster-logging-catalog-deploy: .target/cluster-logging-catalog-deploy
+.target/cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
 	olm_deploy/scripts/catalog-deploy.sh
 
 # deletes the catalogsource and catalog namespace

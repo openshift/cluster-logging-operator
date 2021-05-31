@@ -31,7 +31,7 @@ func NewTest() *Test {
 
 // Close removes the test namespace unless called from a failed test.
 func (t *Test) Close() {
-	if !ginkgo.CurrentGinkgoTestDescription().Failed {
+	if g, ok := test.GinkgoCurrentTest(); ok && !g.Failed {
 		_ = t.Remove(t.NS)
 	} else {
 		fmt.Printf("\n\n============\n")

@@ -1,6 +1,7 @@
 package test_test
 
 import (
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -16,8 +17,8 @@ import (
 
 const (
 	// Match unique name suffix (-HHMMSSxxxxxxxx).
-	suffix    = "-[0-9]{6}[0-9a-f]{8}"
-	suffixLen = 1 + 6 + 8
+	suffix    = "-[0-9]{6}-[0-9a-f]{8}"
+	suffixLen = 2 + 6 + 8
 )
 
 var _ = Describe("Helpers", func() {
@@ -173,15 +174,26 @@ var _ = Describe("Helpers", func() {
 		})
 
 		It("truncates a long prefix", func() {
-			name := UniqueName(strings.Repeat("ghijklmnop", 100))
+			prefix := strings.Repeat("ghijklmnop", 100)
+			name := UniqueName(prefix)
+			Expect(name).To(HaveLen(validation.DNS1123LabelMaxLength))
 			Expect(validation.IsDNS1035Label(name)).To(BeNil())
-			Expect(name).To(MatchRegexp(name[:validation.DNS1123LabelMaxLength-suffixLen] + suffix))
+			Expect(name).To(MatchRegexp(prefix[:validation.DNS1123LabelMaxLength-suffixLen] + suffix))
 		})
 	})
 
 	Describe("CurrentUniqueName", func() {
 		It("uses test name", func() {
 			Expect(UniqueNameForTest()).To(MatchRegexp("uses-test-name" + suffix))
+		})
+	})
+
+	Describe("GitRoot", func() {
+		It("finds the repository root", func() {
+			wd, err := os.Getwd()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(wd).To(HavePrefix(GitRoot()))
+			Expect(GitRoot("test", "helpers_test.go")).To(BeARegularFile())
 		})
 	})
 })

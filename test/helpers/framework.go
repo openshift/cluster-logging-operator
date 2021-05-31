@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	v1 "k8s.io/api/apps/v1"
@@ -24,7 +25,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	clolog "github.com/ViaQ/logerr/log"
-	"github.com/onsi/ginkgo"
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"
@@ -409,7 +409,7 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 }
 
 func (tc *E2ETestFramework) Cleanup() {
-	if ginkgo.CurrentGinkgoTestDescription().Failed {
+	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
 		//allow caller to cleanup if unset (e.g script cleanup())
 		clolog.Info("Running Cleanup script ....")
 		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))

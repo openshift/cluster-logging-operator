@@ -95,7 +95,10 @@ func (conf *outputLabelConf) Hints() sets.String {
 func (conf *outputLabelConf) Template() *template.Template {
 	return conf.TemplateContext
 }
-func (conf *outputLabelConf) Host() string { return conf.URL.Hostname() }
+
+//Scheme returns the scheme defined in the URL for an output
+func (conf *outputLabelConf) Scheme() string { return conf.URL.Scheme }
+func (conf *outputLabelConf) Host() string   { return conf.URL.Hostname() }
 
 func (conf *outputLabelConf) Port() string {
 	p := conf.URL.Port()

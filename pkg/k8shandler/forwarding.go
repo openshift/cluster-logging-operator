@@ -372,11 +372,17 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.
 	// Make sure we have secrets for a valid TLS configuration.
 	haveCert := len(secret.Data[constants.ClientCertKey]) > 0
 	haveKey := len(secret.Data[constants.ClientPrivateKey]) > 0
+	haveUsername := len(secret.Data[constants.ClientUsername]) > 0
+	havePassword := len(secret.Data[constants.ClientPassword]) > 0
 	switch {
 	case haveCert && !haveKey:
 		return fail(condMissing("cannot have %v without %v", constants.ClientCertKey, constants.ClientPrivateKey))
 	case !haveCert && haveKey:
 		return fail(condMissing("cannot have %v without %v", constants.ClientPrivateKey, constants.ClientCertKey))
+	case haveUsername && !havePassword:
+		return fail(condMissing("cannot have %v without %v", constants.ClientUsername, constants.ClientPassword))
+	case !haveUsername && havePassword:
+		return fail(condMissing("cannot have %v without %v", constants.ClientPassword, constants.ClientUsername))
 	}
 	clusterRequest.OutputSecrets[output.Name] = secret
 	return true

@@ -579,12 +579,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         http_backend typhoeus
         write_operation create
@@ -628,12 +628,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         retry_tag retry_apps_es_1
         http_backend typhoeus
@@ -689,12 +689,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         http_backend typhoeus
         write_operation create
@@ -738,12 +738,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         retry_tag retry_apps_es_2
         http_backend typhoeus
@@ -1290,12 +1290,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         http_backend typhoeus
         write_operation create
@@ -1335,12 +1335,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         retry_tag retry_apps_es_1
         http_backend typhoeus
@@ -1392,12 +1392,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         http_backend typhoeus
         write_operation create
@@ -1435,14 +1435,14 @@ var _ = Describe("Generating fluentd config", func() {
         host es.svc.messaging.cluster.local2
         port 9654
         verify_es_version_at_startup false
-        scheme https
+	scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         retry_tag retry_apps_es_2
         http_backend typhoeus
@@ -1989,12 +1989,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         http_backend typhoeus
         write_operation create
@@ -2034,12 +2034,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         retry_tag retry_apps_es_1
         http_backend typhoeus
@@ -2091,12 +2091,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         http_backend typhoeus
         write_operation create
@@ -2136,12 +2136,12 @@ var _ = Describe("Generating fluentd config", func() {
         verify_es_version_at_startup false
         scheme https
         ssl_version TLSv1_2
-        target_index_key viaq_index_name
-        id_key viaq_msg_id
-        remove_keys viaq_index_name
         client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
         client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
         ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
+        target_index_key viaq_index_name
+        id_key viaq_msg_id
+        remove_keys viaq_index_name
         type_name _doc
         retry_tag retry_apps_es_2
         http_backend typhoeus
@@ -3112,13 +3112,13 @@ var _ = Describe("Generating fluentd config", func() {
 						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
+						client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt'
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
 
-						client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
-						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
-						ca_file '/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt'
 						type_name _doc
                         http_backend typhoeus
 						write_operation create
@@ -3158,13 +3158,13 @@ var _ = Describe("Generating fluentd config", func() {
 						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
+						client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt'
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
 
-						client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
-						client_cert '/var/run/ocp-collector/secrets/my-infra-secret/tls.crt'
-						ca_file '/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_infra_es
                         http_backend typhoeus
@@ -3216,13 +3216,13 @@ var _ = Describe("Generating fluentd config", func() {
 						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
+						client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
 
-						client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
-						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
-						ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 						type_name _doc
                         http_backend typhoeus
 						write_operation create
@@ -3262,13 +3262,13 @@ var _ = Describe("Generating fluentd config", func() {
 						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
+						client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
 
-						client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
-						client_cert '/var/run/ocp-collector/secrets/my-es-secret/tls.crt'
-						ca_file '/var/run/ocp-collector/secrets/my-es-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_apps_es_1
                         http_backend typhoeus
@@ -3320,13 +3320,13 @@ var _ = Describe("Generating fluentd config", func() {
 						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
+						client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
 
-						client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
-						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
-						ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
 						type_name _doc
                         http_backend typhoeus
 						write_operation create
@@ -3366,13 +3366,13 @@ var _ = Describe("Generating fluentd config", func() {
 						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
+						client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
 
-						client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
-						client_cert '/var/run/ocp-collector/secrets/my-other-secret/tls.crt'
-						ca_file '/var/run/ocp-collector/secrets/my-other-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_apps_es_2
                         http_backend typhoeus
@@ -3424,13 +3424,13 @@ var _ = Describe("Generating fluentd config", func() {
 						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
+						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
 
-						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
-						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
-						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
 						type_name _doc
                         http_backend typhoeus
 						write_operation create
@@ -3470,13 +3470,13 @@ var _ = Describe("Generating fluentd config", func() {
 						verify_es_version_at_startup false
 						scheme https
 						ssl_version TLSv1_2
+						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
+						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
+						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
 						target_index_key viaq_index_name
 						id_key viaq_msg_id
 						remove_keys viaq_index_name
 
-						client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
-						client_cert '/var/run/ocp-collector/secrets/my-audit-secret/tls.crt'
-						ca_file '/var/run/ocp-collector/secrets/my-audit-secret/ca-bundle.crt'
 						type_name _doc
 						retry_tag retry_audit_es
                         http_backend typhoeus

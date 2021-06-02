@@ -772,29 +772,31 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   port {{.Port}}
   verify_es_version_at_startup false
 {{- if .Target.Secret }}
-{{ if .SecretPathIfFound "username" -}}
+{{ if and (.SecretPathIfFound "username") (.SecretPathIfFound "password") -}}
+{{ if and (.SecretPathIfFound "tls.key") (.SecretPathIfFound "tls.crt") -}}
+  scheme https
+{{ else -}}
+  scheme http
+{{ end -}}
 {{ with $path := .SecretPath "username" -}}
   user "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
 {{ end -}}
-{{ end -}}
-{{ if .SecretPathIfFound "password" -}}
 {{ with $path := .SecretPath "password" -}}
   password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
 {{ end -}}
-{{ end -}}
+{{ else -}}
   scheme https
   ssl_version TLSv1_2
-{{- else }}
+  client_key '{{ .SecretPath "tls.key"}}'
+  client_cert '{{ .SecretPath "tls.crt"}}'
+  ca_file '{{ .SecretPath "ca-bundle.crt"}}'
+{{ end -}}
+{{- else}}
   scheme http
 {{- end }}
   target_index_key viaq_index_name
   id_key viaq_msg_id
   remove_keys viaq_index_name
-{{- if .Target.Secret }}
-  client_key '{{ .SecretPath "tls.key"}}'
-  client_cert '{{ .SecretPath "tls.crt"}}'
-  ca_file '{{ .SecretPath "ca-bundle.crt"}}'
-{{- end }}
   type_name _doc
 {{- if .Hints.Has "include_retry_tag" }}
   retry_tag {{.RetryTag}}
@@ -926,21 +928,28 @@ brokers {{.Brokers}}
 default_topic {{.Topic}}
 use_event_time true
 {{ if .Target.Secret -}}
-{{ if .SecretPathIfFound "username" -}}
+{{ if and (.SecretPathIfFound "username") (.SecretPathIfFound "password") -}}
 {{ with $path := .SecretPath "username" -}}
-username "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+sasl_plain_username "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
 {{ end -}}
-{{ end -}}
-{{ if .SecretPathIfFound "password" -}}
 {{ with $path := .SecretPath "password" -}}
-password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+sasl_plain_password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
 {{ end -}}
 {{ end -}}
+{{ if not (.SecretPathIfFound "sasl_over_ssl") -}}
+sasl_over_ssl false
+{{ else }}
+sasl_over_ssl true
+{{ end -}}
+{{ if and (.SecretPathIfFound "tls.crt") (.SecretPathIfFound "tls.key") -}}
 {{ $tlsCert := .SecretPath "tls.crt" }}
 {{ $tlsKey := .SecretPath "tls.key" }}
-ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
 ssl_client_cert "#{File.exist?('{{ $tlsCert }}') ? '{{ $tlsCert }}' : nil}"
 ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : nil}"
+{{ end -}}
+{{ if .SecretPathIfFound "ca-bundle.crt" -}}
+ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
+{{ end -}}
 {{ end -}}
 <format>
   @type json

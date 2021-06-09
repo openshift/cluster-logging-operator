@@ -44,6 +44,9 @@ func NewDeployment(deploymentName string, namespace string, loggingComponent str
 						"component":     component,
 						"logging-infra": loggingComponent,
 					},
+					Annotations: map[string]string{
+						"target.workload.openshift.io/management": `{"effect": "PreferredDuringScheduling"}`,
+					},
 				},
 				Spec: podSpec,
 			},

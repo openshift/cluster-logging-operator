@@ -9,6 +9,8 @@ spec:
       registry.operator.cluster-logging: "true"
   template:
     metadata:
+      annotations:
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
         registry.operator.cluster-logging: "true"
       name: cluster-logging-operator-registry

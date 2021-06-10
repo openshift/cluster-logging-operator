@@ -14,9 +14,11 @@ export GOFLAGS=-mod=vendor
 export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
+# Use shell expansion to expand these after the registry route is active.
+REGISTRY_INTERNAL = $$(oc registry info --internal)
+REGISTRY_PUBLIC = $$(oc registry info --public)
+
 export APP_NAME=cluster-logging-operator
-export REGISTRY_PUBLIC=$(shell oc registry info --public)
-export REGISTRY_INTERNAL=$(shell oc registry info --internal)
 export IMAGE_TAG?=$(REGISTRY_PUBLIC)/openshift/origin-$(APP_NAME):latest
 
 export LOGGING_VERSION=$(shell basename $(shell ls -d manifests/[0-9]*))
@@ -52,9 +54,9 @@ ci-check: check
 		exit 1 ; \
 	}
 
-# .target is used to hold timestamp files to avoid un-necessary rebuilds. Do NOT check in.
-.target:
-	mkdir -p .target
+# .make is used to hold timestamp files to avoid un-necessary rebuilds. Do NOT check in.
+.make:
+	mkdir -p .make
 
 # Note: Go has built-in build caching, so always run `go build`.
 # It will do a better job than using source dependencies to decide if we need to build.
@@ -99,12 +101,12 @@ scale-olm:
 .PHONY: scale-olm
 
 clean:
-	rm -rf bin tmp _output .target
+	rm -rf bin tmp _output .make
 	go clean -cache -testcache ./...
 
 PATCH?=Dockerfile.patch
-image: .target/image
-.target/image: .target $(shell find cmd must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum
+image: .make/image
+.make/image: .make $(shell find cmd must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum registry
 	patch -o Dockerfile.local Dockerfile $(PATCH)
 	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
 	touch $@
@@ -124,8 +126,8 @@ fmt:
 MANIFESTS=manifests/$(LOGGING_VERSION)
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
-generate: .target/generate
-.target/generate: .target $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
+generate: .make/generate
+.make/generate: .make $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
 	@echo generating code
 	@$(MAKE) openshift-client
 	@bash ./hack/generate-crd.sh
@@ -137,16 +139,15 @@ regenerate:
 	@$(MAKE) generate
 
 deploy-image: image
-	oc registry login --skip-check
-	podman push --tls-verify=false ${IMAGE_TAG}
+	podman push --tls-verify=false $(IMAGE_TAG)
 
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
 
-install:
+install: registry
 	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
 	$(MAKE) cluster-logging-operator-install
 
-deploy-catalog:
+deploy-catalog: registry
 	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_PUBLIC)/openshift/cluster-logging-operator-registry \
 	$(MAKE) cluster-logging-catalog-build
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry \
@@ -186,7 +187,7 @@ test-cluster:
 
 OPENSHIFT_VERSIONS?="v4.7"
 generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} hack/generate-bundle.sh
+	MANIFEST_VERSION=$(LOGGING_VERSION) OPENSHIFT_VERSIONS=$(OPENSHIFT_VERSIONS) hack/generate-bundle.sh
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
@@ -217,14 +218,14 @@ cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-d
 cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-catalog-uninstall
 
 # builds an operator-registry image containing the cluster-logging operator
-cluster-logging-catalog-build: .target/cluster-logging-catalog-build
-.target/cluster-logging-catalog-build: $(shell find olm_deploy -type f)
+cluster-logging-catalog-build: .make/cluster-logging-catalog-build
+.make/cluster-logging-catalog-build: $(shell find olm_deploy -type f)
 	olm_deploy/scripts/catalog-build.sh
 	touch $@
 
 # deploys the operator registry image and creates a catalogsource referencing it
-cluster-logging-catalog-deploy: .target/cluster-logging-catalog-deploy
-.target/cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
+cluster-logging-catalog-deploy: .make/cluster-logging-catalog-deploy
+.make/cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
 	olm_deploy/scripts/catalog-deploy.sh
 
 # deletes the catalogsource and catalog namespace
@@ -239,5 +240,14 @@ cluster-logging-operator-install:
 cluster-logging-operator-uninstall:
 	olm_deploy/scripts/operator-uninstall.sh
 
-gen-dockerfiles:
+gen-dockerfile:
 	./hack/generate-dockerfile-from-midstream > Dockerfile
+
+# Expose and log in to cluster registry.
+registry:
+	@oc registry login --insecure || { \
+	  echo "Activate public registry route" ; \
+	  oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge ; \
+	  timeout 10m bash -c "until oc registry info --public; do sleep 5; done" | ts ; \
+	  oc registry login --insecure --registry=$(REGISTRY_PUBLIC) ; \
+	}

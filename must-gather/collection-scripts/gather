@@ -3,7 +3,7 @@ BASE_COLLECTION_PATH="${1:-/must-gather}"
 mkdir -p "${BASE_COLLECTION_PATH}"
 
 # resource list
-resources=()
+resources=(ns/openshift-operator-lifecycle-manager)
 
 # cluster logging operator namespace
 resources+=(ns/openshift-logging)

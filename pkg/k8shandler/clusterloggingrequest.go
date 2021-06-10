@@ -7,6 +7,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -14,9 +15,9 @@ import (
 )
 
 type ClusterLoggingRequest struct {
-	Client  client.Client
-	Cluster *logging.ClusterLogging
-
+	Client        client.Client
+	Cluster       *logging.ClusterLogging
+	EventRecorder record.EventRecorder
 	// ForwarderRequest is a logforwarder instance
 	ForwarderRequest *logging.ClusterLogForwarder
 
@@ -26,21 +27,21 @@ type ClusterLoggingRequest struct {
 	// OutputSecrets are retrieved during validation and used for generation.
 	OutputSecrets map[string]*corev1.Secret
 
-	//CLFVerifier is a collection of functions to control verification
-	//of ClusterLogForwarding
-	CLFVerifier ClusterLogForwarderVerifier
-}
+	//FnIncludeLegacyForward function to allow override for internal use
+	FnIncludeLegacyForward func() bool
 
-type ClusterLogForwarderVerifier struct {
-	VerifyOutputSecret func(output *logging.OutputSpec, conds logging.NamedConditions) bool
+	//fnIncludeLegacySyslog function to allow override for internal use
+	FnIncludeLegacySyslog func() bool
 }
 
 func (clusterRequest *ClusterLoggingRequest) IncludesManagedStorage() bool {
 	return clusterRequest.Cluster != nil && clusterRequest.Cluster.Spec.LogStore != nil
 }
 
+//true if equals "Managed" or empty
 func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
-	return clusterRequest.Cluster.Spec.ManagementState == logging.ManagementStateManaged
+	return clusterRequest.Cluster.Spec.ManagementState == logging.ManagementStateManaged ||
+		clusterRequest.Cluster.Spec.ManagementState == ""
 }
 
 func (clusterRequest *ClusterLoggingRequest) Create(object runtime.Object) error {

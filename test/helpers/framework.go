@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	v1 "k8s.io/api/apps/v1"
@@ -24,7 +25,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	clolog "github.com/ViaQ/logerr/log"
-	"github.com/onsi/ginkgo"
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"
@@ -114,6 +114,19 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) er
 		return tc.KubeClient.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, opts)
 	})
 	return tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
+}
+
+func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace string, labels map[string]string) error {
+	err := tc.DeployLogGeneratorWithNamespace(namespace)
+	if err != nil {
+		return err
+	}
+	for k, v := range labels {
+		if _, err2 := oc.Literal().From("oc label pod -n %s --all %s=%s", namespace, k, v).Run(); err != nil {
+			return err2
+		}
+	}
+	return err
 }
 
 func (tc *E2ETestFramework) DeployJsonLogGenerator(vals map[string]string) (string, string, error) {
@@ -206,18 +219,21 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 }
 
 func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.Duration) error {
-	// daemonset should have non-zero number of instances for maxtimes consecutive retryInterval to detect a CrashLoopBackOff pod
+	// daemonset should have pods running and available on all the nodes for maxtimes * retryInterval
 	maxtimes := 5
 	times := 0
 	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		numReady, err := oc.Literal().From("oc -n openshift-logging get daemonset/fluentd -o jsonpath={.status.numberReady}").Run()
+		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/fluentd -o jsonpath={.status.NumberUnavailable}").Run()
 		if err == nil {
-			value, err := strconv.Atoi(strings.TrimSpace(numReady))
+			if numUnavail == "" {
+				numUnavail = "0"
+			}
+			value, err := strconv.Atoi(strings.TrimSpace(numUnavail))
 			if err != nil {
 				times = 0
 				return false, err
 			}
-			if value > 0 {
+			if value == 0 {
 				times++
 			} else {
 				times = 0
@@ -393,7 +409,7 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 }
 
 func (tc *E2ETestFramework) Cleanup() {
-	if ginkgo.CurrentGinkgoTestDescription().Failed {
+	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
 		//allow caller to cleanup if unset (e.g script cleanup())
 		clolog.Info("Running Cleanup script ....")
 		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
@@ -576,7 +592,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		return nil, err
 	}
 	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
-	if err, _ := certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
+	if err, _, _ := certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
 		return nil, err
 	}
 	data := map[string][]byte{

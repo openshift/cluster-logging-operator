@@ -57,6 +57,11 @@ type ClusterLogForwarderSpec struct {
 	//
 	// +required
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
+
+	// OutputDefaults are used to specify default values for OutputSpec
+	//
+	// +optional
+	OutputDefaults *OutputDefaults `json:"outputDefaults,omitempty"`
 }
 
 // ClusterLogForwarder represents the current status of ClusterLogForwarder
@@ -104,6 +109,10 @@ type Application struct {
 	//
 	// +optional
 	Namespaces []string `json:"namespaces"`
+	// Selector selects logs from all pods with matching labels.
+	// For testing purpose, MatchLabels is only supported.
+	// +optional
+	Selector *metav1.LabelSelector `json:"selector,omitempty"`
 }
 
 // Infrastructure enables infrastructure logs. Filtering may be added in future.
@@ -197,6 +206,24 @@ type PipelineSpec struct {
 	//
 	// +optional
 	Name string `json:"name,omitempty"`
+
+	// Parse enables parsing of log entries into structured logs
+	//
+	// Logs are parsed according to parse value, only `json` is supported as of now.
+	//
+	// +kubebuilder:validation:Enum:=json
+	// +optional
+	Parse string `json:"parse,omitempty"`
+}
+
+type OutputDefaults struct {
+
+	// Elasticsearch OutputSpec default values
+	//
+	// Values specified here will be used as default values for Elasticsearch Output spec
+	//
+	// +optional
+	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 }
 
 // ClusterLogForwarderList is a list of ClusterLogForwarders

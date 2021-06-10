@@ -2,7 +2,6 @@ package forwarder
 
 import (
 	"fmt"
-	"github.com/openshift/elasticsearch-operator/pkg/utils"
 
 	yaml "sigs.k8s.io/yaml"
 
@@ -43,20 +42,17 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool)
 		Cluster: &logging.ClusterLogging{
 			Spec: logging.ClusterLoggingSpec{},
 		},
-		CLFVerifier: k8shandler.ClusterLogForwarderVerifier{
-			VerifyOutputSecret: func(output *logging.OutputSpec, conds logging.NamedConditions) bool { return true },
-		},
+		FnIncludeLegacyForward: func() bool { return includeLegacyForward },
+		FnIncludeLegacySyslog:  func() bool { return includeLegacySyslog },
 	}
 	if includeDefaultLogStore {
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{
 			Type: logging.LogStoreTypeElasticsearch,
 		}
 	}
-
 	spec, status := clRequest.NormalizeForwarder()
-	utils.ToJson(status)
+	log.V(2).Info("Normalization", "spec", spec)
 	log.V(2).Info("Normalization", "status", status)
-
 	tunings := &logging.ForwarderSpec{}
 
 	generatedConfig, err := generator.Generate(spec, nil, tunings)

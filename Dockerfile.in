@@ -1,0 +1,77 @@
+#@follow_tag(openshift-golang-builder:1.14)
+FROM openshift-golang-builder:v1.14.4-9 AS builder
+ENV BUILD_VERSION=${CI_CONTAINER_VERSION}
+ENV OS_GIT_MAJOR=${CI_X_VERSION}
+ENV OS_GIT_MINOR=${CI_Y_VERSION}
+ENV OS_GIT_PATCH=${CI_Z_VERSION}
+ENV SOURCE_GIT_COMMIT=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT}
+ENV SOURCE_GIT_URL=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}
+ENV REMOTE_SOURCE=${REMOTE_SOURCE:-.}
+
+## EXCLUDE BEGIN ##
+ENV REMOTE_SOURCE=${REMOTE_SOURCE}/app
+## EXCLUDE END ##
+
+WORKDIR /go/src/github.com/openshift/cluster-logging-operator
+
+COPY ${REMOTE_SOURCE}/cmd ./cmd
+COPY ${REMOTE_SOURCE}/must-gather ./must-gather
+COPY ${REMOTE_SOURCE}/version ./version
+COPY ${REMOTE_SOURCE}/scripts ./scripts
+COPY ${REMOTE_SOURCE}/files ./files
+COPY ${REMOTE_SOURCE}/go.mod .
+COPY ${REMOTE_SOURCE}/go.sum .
+COPY ${REMOTE_SOURCE}/vendor ./vendor
+COPY ${REMOTE_SOURCE}/manifests ./manifests
+COPY ${REMOTE_SOURCE}/.bingo .bingo
+COPY ${REMOTE_SOURCE}/Makefile ./Makefile
+COPY ${REMOTE_SOURCE}/pkg ./pkg
+
+RUN make build
+
+
+#@follow_tag(openshift-ose-cli:v4.6)
+FROM openshift-ose-cli:v4.6.0-202009152100.p0 AS origincli
+
+#@follow_tag(openshift-ose-base:ubi8)
+FROM openshift-ose-base:v4.0-202009120053.11408
+RUN INSTALL_PKGS=" \
+      openssl \
+      rsync \
+      file \
+      xz \
+      " && \
+    yum install -y $INSTALL_PKGS && \
+    rpm -V $INSTALL_PKGS && \
+    yum clean all && \
+    mkdir /tmp/ocp-clo && \
+    chmod og+w /tmp/ocp-clo
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/bin/cluster-logging-operator /usr/bin/
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/scripts/* /usr/bin/scripts/
+RUN mkdir -p /usr/share/logging/
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/ /usr/share/logging/
+
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
+
+COPY --from=origincli /usr/bin/oc /usr/bin
+COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/
+
+# this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
+WORKDIR /usr/bin
+CMD ["/usr/bin/cluster-logging-operator"]
+
+LABEL \
+        io.k8s.display-name="Cluster Logging Operator" \
+        io.k8s.description="This is a component of OpenShift Container Platform that manages the lifecycle of the Aggregated logging stack." \
+        io.openshift.tags="openshift,logging" \
+        com.redhat.delivery.appregistry="false" \
+        maintainer="AOS Logging <aos-logging@redhat.com>" \
+        License="GPLv2+" \
+        name="openshift/ose-cluster-logging-operator" \
+        com.redhat.component="cluster-logging-operator-container" \
+        io.openshift.maintainer.product="OpenShift Container Platform" \
+        io.openshift.build.commit.id=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \
+        io.openshift.build.source-location=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL} \
+        io.openshift.build.commit.url=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}/commit/${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \
+        version=${CI_CONTAINER_VERSION}
+

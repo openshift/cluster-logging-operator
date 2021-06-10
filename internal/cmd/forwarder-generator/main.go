@@ -39,18 +39,21 @@ func main() {
 		pflag.Usage()
 		os.Exit(1)
 	}
-	log.V(1).Info("Args: %v", os.Args)
+	log.V(1).Info("Forwarder Generator Main", "Args", os.Args)
 
 	var reader func() ([]byte, error)
 	switch *yamlFile {
 	case "-":
+		log.Info("Reading from stdin")
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
 			return ioutil.ReadAll(stdin)
 		}
 	case "":
+		log.Info("received empty yamlfile")
 		reader = func() ([]byte, error) { return []byte{}, nil }
 	default:
+		log.Info("reading log forwarder from yaml file", "filename", *yamlFile)
 		reader = func() ([]byte, error) { return ioutil.ReadFile(*yamlFile) }
 	}
 
@@ -59,6 +62,8 @@ func main() {
 		log.Error(err, "Error Unmarshalling file ", "file", yamlFile)
 		os.Exit(1)
 	}
+
+	log.Info("Finished reading yaml", "content", string(content))
 
 	generatedConfig, err := forwarder.Generate(string(content), *includeDefaultLogStore, *includeLegacyForward)
 	if err != nil {

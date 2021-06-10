@@ -51,7 +51,6 @@ func HaveCondition(t logging.ConditionType, s bool, r logging.ConditionReason, m
 }
 
 var _ = Describe("Normalizing forwarder", func() {
-
 	var (
 		cluster     *logging.ClusterLogging
 		output      logging.OutputSpec
@@ -87,7 +86,6 @@ var _ = Describe("Normalizing forwarder", func() {
 	})
 
 	Context("while validating ", func() {
-
 		BeforeEach(func() {
 			request.ForwarderSpec = logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
@@ -105,7 +103,6 @@ var _ = Describe("Normalizing forwarder", func() {
 		})
 
 		Context("pipelines", func() {
-
 			It("should only include inputs if there is at least one valid pipeline", func() {
 				request.ForwarderSpec.Pipelines = []logging.PipelineSpec{
 					{
@@ -151,7 +148,8 @@ var _ = Describe("Normalizing forwarder", func() {
 						Name:       "someDefinedPipeline",
 						OutputRefs: []string{output.Name, otherOutput.Name},
 						InputRefs:  []string{"foo"},
-					}}
+					},
+				}
 				spec, status := request.NormalizeForwarder()
 				conds := status.Pipelines["someDefinedPipeline"]
 				Expect(spec.Pipelines).To(BeEmpty(), "Exp. all pipelines to be dropped")
@@ -188,18 +186,16 @@ var _ = Describe("Normalizing forwarder", func() {
 				Expect(conds).To(HaveCondition(logging.ConditionDegraded, true, "Invalid", "aMissingOutput"), YAMLString(status))
 				Expect(conds).To(HaveCondition(logging.ConditionReady, true, "", ""))
 			})
-
 		})
 
 		Context("outputs", func() {
-
 			It("should drop outputs that do not have unique names", func() {
 				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs, logging.OutputSpec{
 					Name: "myOutput",
 					Type: "elasticsearch",
 					URL:  "http://here",
 				})
-				//sanity check
+				// sanity check
 				Expect(request.ForwarderSpec.Outputs).To(HaveLen(3))
 				spec, status := request.NormalizeForwarder()
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. non-unique outputs to be dropped")
@@ -467,6 +463,79 @@ var _ = Describe("Normalizing forwarder", func() {
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""), fmt.Sprintf("status: %+v", status))
 				Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)), fmt.Sprintf("status: %+v", status))
 			})
+
+			Context("with outputDefaults specified", func() {
+				It("should accept default output", func() {
+					cluster.Spec = logging.ClusterLoggingSpec{
+						Collection: &logging.CollectionSpec{
+							Logs: logging.LogCollectionSpec{
+								Type: "fluentd",
+							},
+						},
+						LogStore: &logging.LogStoreSpec{
+							Type: logging.LogStoreTypeElasticsearch,
+						},
+					}
+					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
+						OutputDefaults: &logging.OutputDefaults{
+							Elasticsearch: &logging.Elasticsearch{
+								StructuredIndexKey: "kubernetes.labels.mylabel",
+							},
+						},
+						Pipelines: []logging.PipelineSpec{
+							{
+								InputRefs:  []string{"application"},
+								OutputRefs: []string{"default"},
+								Name:       "mypipe",
+							},
+						},
+					}
+					_, _ = request.generateCollectorConfig()
+
+					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredIndexKey).To(Equal("kubernetes.labels.mylabel"))
+
+				})
+				It("should setup values for elasticsearch output", func() {
+					cluster.Spec = logging.ClusterLoggingSpec{
+						Collection: &logging.CollectionSpec{
+							Logs: logging.LogCollectionSpec{
+								Type: "fluentd",
+							},
+						},
+						LogStore: &logging.LogStoreSpec{
+							Type: logging.LogStoreTypeElasticsearch,
+						},
+					}
+					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
+						OutputDefaults: &logging.OutputDefaults{
+							Elasticsearch: &logging.Elasticsearch{
+								StructuredIndexKey: "kubernetes.labels.mylabel",
+							},
+						},
+						Outputs: []logging.OutputSpec{
+							{
+								Type: logging.OutputTypeElasticsearch,
+								Name: "es-out",
+								URL:  "http://some-url",
+							},
+						},
+						Pipelines: []logging.PipelineSpec{
+							{
+								InputRefs:  []string{"application"},
+								OutputRefs: []string{"es-out"},
+								Name:       "mypipe",
+							},
+						},
+					}
+					_, _ = request.generateCollectorConfig()
+
+					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredIndexKey).To(Equal("kubernetes.labels.mylabel"))
+
+				})
+			})
+
 		})
 	})
 
@@ -495,7 +564,7 @@ outputs:
 	secret:
 		name: fluentd
 	type: elasticsearch
-	url: https://elasticsearch.openshift-logging.svc.cluster.local:9200
+	url: https://elasticsearch.openshift-logging.svc:9200
 pipelines:
 - inputRefs:
 	- application
@@ -526,7 +595,7 @@ pipelines:
 			spec, status := request.NormalizeForwarder()
 			Expect(spec.Outputs).To(HaveLen(1))
 			Expect(spec.Outputs[0].Name).To(Equal("default"))
-			Expect(spec.Outputs[0].URL).To(Equal("https://elasticsearch.openshift-logging.svc.cluster.local:9200"))
+			Expect(spec.Outputs[0].URL).To(Equal("https://elasticsearch.openshift-logging.svc:9200"))
 			Expect(spec.Outputs[0].Secret.Name).To(Equal("fluentd"))
 			Expect(spec.Outputs[0].Type).To(Equal("elasticsearch"))
 

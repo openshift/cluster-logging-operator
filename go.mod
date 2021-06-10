@@ -8,10 +8,12 @@ require (
 	github.com/ViaQ/logerr v1.0.10-0.20201221223143-2916c7f40dfc
 	github.com/coreos/prometheus-operator v0.38.1-0.20200424145508-7e176fda06cc
 	github.com/emicklei/go-restful v2.12.0+incompatible // indirect
+	github.com/go-logr/logr v0.2.1
 	github.com/go-logr/zapr v0.2.0 // indirect
 	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-openapi/swag v0.19.8 // indirect
 	github.com/gobuffalo/envy v1.9.0 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.4.0
 	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/gophercloud/gophercloud v0.8.0 // indirect
@@ -22,13 +24,13 @@ require (
 	github.com/openshift/api v0.0.0-20200602204738-768b7001fe69
 	github.com/openshift/elasticsearch-operator v0.0.0-20200722044541-14fae5dcddfd
 	github.com/operator-framework/operator-sdk v0.18.1
+	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rogpeppe/go-internal v1.5.2 // indirect
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/zap v1.16.0 // indirect
-	golang.org/x/crypto v0.0.0-20200602180216-279210d13fed // indirect
-	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	gopkg.in/yaml.v2 v2.2.8
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	gopkg.in/yaml.v2 v2.2.8 // indirect
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v12.0.0+incompatible
@@ -37,6 +39,7 @@ require (
 )
 
 replace (
-	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible // Required by OLM
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest/autorest/adal v0.9.12 // Required by OLM
+	github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 	k8s.io/client-go => k8s.io/client-go v0.18.3 // Required by prometheus-operator
 )

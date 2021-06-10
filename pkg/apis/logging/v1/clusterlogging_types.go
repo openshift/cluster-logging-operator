@@ -90,7 +90,7 @@ type KibanaSpec struct {
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 
 	// Number of instances to deploy for a Kibana deployment
-	Replicas int32 `json:"replicas"`
+	Replicas *int32 `json:"replicas"`
 
 	// Specification of the Kibana Proxy component
 	ProxySpec `json:"proxy,omitempty"`

@@ -1,29 +1,33 @@
 diff --git a/Dockerfile b/Dockerfile.local
-index 9212266f..489ce024 100644
+index 3a538899..01197257 100644
 --- a/Dockerfile
 +++ b/Dockerfile.local
-@@ -1,4 +1,4 @@
--FROM registry.svc.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
-+FROM registry.svc.ci.openshift.org/openshift/release:golang-1.15 as builder
- WORKDIR /go/src/github.com/openshift/cluster-logging-operator
- 
- # COPY steps are in the reverse order of frequency of change
-@@ -17,9 +17,7 @@ COPY pkg ./pkg
- 
+@@ -1,6 +1,5 @@
+ ### This is a generated file from Dockerfile.in ###
+-#@follow_tag(openshift-golang-builder:1.14)
+-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.15-openshift-4.7 AS builder
++FROM registry.ci.openshift.org/openshift/release:golang-1.15 as builder
+ ENV BUILD_VERSION=${CI_CONTAINER_VERSION}
+ ENV OS_GIT_MAJOR=${CI_X_VERSION}
+ ENV OS_GIT_MINOR=${CI_Y_VERSION}
+@@ -28,11 +27,7 @@ COPY ${REMOTE_SOURCE}/pkg ./pkg
  RUN make build
  
--FROM registry.svc.ci.openshift.org/ocp/4.7:cli as origincli
+ 
+-#@follow_tag(openshift-ose-cli:v4.6)
+-FROM registry.ci.openshift.org/ocp/4.7:cli AS origincli
 -
--FROM registry.svc.ci.openshift.org/ocp/4.7:base
+-#@follow_tag(openshift-ose-base:ubi8)
+-FROM registry.ci.openshift.org/ocp/4.7:base
 +FROM centos:centos8 AS centos
  RUN INSTALL_PKGS=" \
        openssl \
-       file \
-@@ -40,7 +38,6 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/
- COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
+       rsync \
+@@ -53,7 +48,6 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manife
  RUN rm /manifests/art.yaml
  
--COPY --from=origincli /usr/bin/oc /usr/bin/
+ 
+-COPY --from=origincli /usr/bin/oc /usr/bin
  COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/
  
  # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`

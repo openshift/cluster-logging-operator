@@ -14,13 +14,17 @@ export GOFLAGS=-mod=vendor
 export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
-export APP_NAME=cluster-logging-operator
-export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
+# Use shell expansion to expand these after the registry route is active.
+REGISTRY_INTERNAL = $$(oc registry info --internal)
+REGISTRY_PUBLIC = $$(oc registry info --public)
 
-export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -not -name patches -type d))
+export APP_NAME=cluster-logging-operator
+export IMAGE_TAG?=$(REGISTRY_PUBLIC)/openshift/origin-$(APP_NAME):latest
+
+export LOGGING_VERSION=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
-FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:latest
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
@@ -38,6 +42,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
 #
 check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator bin/functional-benchmarker
 	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
+	go test ./test/functional/... -exec true > /dev/null # Build but don't run test functional tests.
 	go test ./test/helpers/... -exec true > /dev/null # Build but don't run test helpers tests.
 	$(MAKE) lint				  # Only lint if all code builds.
 
@@ -49,6 +54,9 @@ ci-check: check
 		exit 1 ; \
 	}
 
+# .make is used to hold timestamp files to avoid un-necessary rebuilds. Do NOT check in.
+.make:
+	mkdir -p .make
 
 # Note: Go has built-in build caching, so always run `go build`.
 # It will do a better job than using source dependencies to decide if we need to build.
@@ -74,8 +82,7 @@ RUN_CMD?=go run
 run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
-	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -94,28 +101,33 @@ scale-olm:
 .PHONY: scale-olm
 
 clean:
-	@rm -rf bin tmp _output
+	rm -rf bin tmp _output .make
 	go clean -cache -testcache ./...
 
 PATCH?=Dockerfile.patch
-image:
-	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		patch -o Dockerfile.local Dockerfile $(PATCH) && \
-		podman build -t $(IMAGE_TAG) . -f Dockerfile.local; \
-	fi
+image: .make/image
+.make/image: .make $(shell find cmd must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum registry
+	patch -o Dockerfile.local Dockerfile $(PATCH)
+	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
+	touch $@
 
-lint: $(GOLANGCI_LINT)
-	$(GOLANGCI_LINT) run -c golangci.yaml
+lint: $(GOLANGCI_LINT) lint-dockerfile
+	@GOLANGCI_LINT_CACHE="$(CURDIR)/.cache" $(GOLANGCI_LINT) run -c golangci.yaml
+.PHONY: lint
+
+lint-dockerfile:
+	@hack/run-linter
+.PHONY: lint-dockerfile
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	find pkg cmd test -name '*.go' | xargs gofmt -s -l -w
+	find pkg cmd test internal -name '*.go' | xargs gofmt -s -l -w
+
+MANIFESTS=manifests/$(LOGGING_VERSION)
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
-GEN_TIMESTAMP=.zz_generate_timestamp
-MANIFESTS=manifests/$(OCP_VERSION)
-generate: $(GEN_TIMESTAMP)
-$(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
+generate: .make/generate
+.make/generate: .make $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
 	@echo generating code
 	@$(MAKE) openshift-client
 	@bash ./hack/generate-crd.sh
@@ -127,19 +139,19 @@ regenerate:
 	@$(MAKE) generate
 
 deploy-image: image
-	hack/deploy-image.sh
+	podman push --tls-verify=false $(IMAGE_TAG)
 
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
 
-install:
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+install: registry
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
 	$(MAKE) cluster-logging-operator-install
 
-deploy-catalog:
-	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/cluster-logging-operator-registry \
+deploy-catalog: registry
+	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_PUBLIC)/openshift/cluster-logging-operator-registry \
 	$(MAKE) cluster-logging-catalog-build
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
 	$(MAKE) cluster-logging-catalog-deploy
 
 deploy-elasticsearch-operator:
@@ -150,38 +162,43 @@ undeploy-elasticsearch-operator:
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-functional:
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
+test-functional: test-functional-benchmarker
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
-	go test -race ./test/functional/...
+	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
-test-unit:
-	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
-	FLUENTD_IMAGE=$(FLUENTD_IMAGE) \
-	go test -cover -race ./pkg/...
+test-forwarder-generator: bin/forwarder-generator
+	@bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null 2>&1
+.PHONY: test-forwarder-generator
+
+test-functional-benchmarker: bin/functional-benchmarker
+	@bin/functional-benchmarker > /dev/null 2>&1
+.PHONY: test-functional-benchmarker
+
+test-unit: test-forwarder-generator
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	go test -cover -race ./pkg/... ./test ./test/helpers ./test/matchers ./test/runtime
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
-MANIFEST_VERSION?="5.2.0_preview.1"
 generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=${MANIFEST_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} hack/generate-bundle.sh
-
+	MANIFEST_VERSION=$(LOGGING_VERSION) OPENSHIFT_VERSIONS=$(OPENSHIFT_VERSIONS) hack/generate-bundle.sh
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	INCLUDES=$(E2E_TEST_INCLUDES) CLF_INCLUDES=$(CLF_TEST_INCLUDES) hack/test-e2e-olm.sh
+	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
-    CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
-    INCLUDES=$(E2E_TEST_INCLUDES) \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
+	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
+	INCLUDES=$(E2E_TEST_INCLUDES) \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh
 
 test-svt:
@@ -201,13 +218,14 @@ cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-d
 cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-catalog-uninstall
 
 # builds an operator-registry image containing the cluster-logging operator
-cluster-logging-catalog-build:
-	@if [ $${SKIP_BUILD:-false} = false ] ; then \
-		olm_deploy/scripts/catalog-build.sh ; \
-	fi
+cluster-logging-catalog-build: .make/cluster-logging-catalog-build
+.make/cluster-logging-catalog-build: $(shell find olm_deploy -type f)
+	olm_deploy/scripts/catalog-build.sh
+	touch $@
 
 # deploys the operator registry image and creates a catalogsource referencing it
-cluster-logging-catalog-deploy:
+cluster-logging-catalog-deploy: .make/cluster-logging-catalog-deploy
+.make/cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
 	olm_deploy/scripts/catalog-deploy.sh
 
 # deletes the catalogsource and catalog namespace
@@ -221,3 +239,15 @@ cluster-logging-operator-install:
 # uninstalls the cluster-logging operator
 cluster-logging-operator-uninstall:
 	olm_deploy/scripts/operator-uninstall.sh
+
+gen-dockerfile:
+	./hack/generate-dockerfile-from-midstream > Dockerfile
+
+# Expose and log in to cluster registry.
+registry:
+	@oc registry login --insecure || { \
+	  echo "Activate public registry route" ; \
+	  oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge ; \
+	  timeout 10m bash -c "until oc registry info --public; do sleep 5; done" | ts ; \
+	  oc registry login --insecure --registry=$(REGISTRY_PUBLIC) ; \
+	}

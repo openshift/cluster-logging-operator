@@ -3,7 +3,6 @@ kind: "ClusterLogging"
 metadata:
   name: "instance"
 spec:
-  managementState: "Managed"
   logStore:
     type: "elasticsearch"
     elasticsearch:

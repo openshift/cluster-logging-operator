@@ -19,10 +19,12 @@ echo "Gathering data for install info"
 mkdir -p "$install_folder"
 
 echo "-- Subscription"
-oc get -n ${NAMESPACE} subscriptions.operators.coreos.com -o yaml > "$install_folder/subscription"
+oc get -n ${NAMESPACE} subscriptions.operators.coreos.com -o yaml > "$install_folder/subscription-clo"
+oc get -n openshift-operators-redhat subscriptions.operators.coreos.com -o yaml > "$install_folder/subscription-eo"
 
 echo "-- Install Plan"
-oc get -n ${NAMESPACE} installplans.operators.coreos.com -o yaml > "$install_folder/install_plan"
+oc get -n ${NAMESPACE} installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-clo"
+oc get -n openshift-operators-redhat installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-eo""
 
 echo "-- Catalog Operator logs"
 oc logs -n openshift-operator-lifecycle-manager -l app=catalog-operator > "$install_folder/co_logs"

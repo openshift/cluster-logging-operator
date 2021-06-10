@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/retry"
 
-	configv1 "github.com/openshift/api/config/v1"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 )
@@ -234,6 +233,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 // includeLegacyForwardConfig to address Bug 1782566.
 // To be removed when legacy forwarding is unsupported
 func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
+	if clusterRequest.FnIncludeLegacyForward != nil {
+		return clusterRequest.FnIncludeLegacySyslog()
+	}
 	config := &v1.ConfigMap{
 		Data: map[string]string{},
 	}
@@ -250,6 +252,9 @@ func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
 // includeLegacySyslogConfig to address Bug 1799024.
 // To be removed when legacy syslog is no longer supported.
 func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
+	if clusterRequest.FnIncludeLegacySyslog != nil {
+		return clusterRequest.FnIncludeLegacySyslog()
+	}
 	config := &v1.ConfigMap{
 		Data: map[string]string{},
 	}
@@ -332,7 +337,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 	return nil
 }
 
-func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Proxy, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {
+func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {
 	collectionSpec := logging.CollectionSpec{}
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
@@ -375,7 +380,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 		}
 	}
 
-	proxyEnv := utils.SetProxyEnvVars(proxyConfig)
+	proxyEnv := utils.GetProxyEnvVars()
 	fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
 
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{
@@ -561,20 +566,18 @@ func newFluentdInitContainer(cluster *logging.ClusterLogging) v1.Container {
 	return initContainer
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string, proxyConfig *configv1.Proxy) (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string) (err error) {
 
 	cluster := clusterRequest.Cluster
 
-	fluentdTrustBundle := &v1.ConfigMap{}
+	var fluentdTrustBundle *v1.ConfigMap
 	// Create or update cluster proxy trusted CA bundle.
-	if proxyConfig != nil {
-		fluentdTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
-		if err != nil {
-			return
-		}
+	fluentdTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.FluentdTrustedCAName)
+	if err != nil {
+		return
 	}
 
-	fluentdPodSpec := newFluentdPodSpec(cluster, proxyConfig, fluentdTrustBundle, clusterRequest.ForwarderSpec)
+	fluentdPodSpec := newFluentdPodSpec(cluster, fluentdTrustBundle, clusterRequest.ForwarderSpec)
 
 	fluentdDaemonset := NewDaemonSet("fluentd", cluster.Namespace, "fluentd", "fluentd", fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
@@ -677,7 +680,7 @@ func (clusterRequest *ClusterLoggingRequest) getTrustedCABundleHash() (string, e
 	return trustedCAHashValue, nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) RestartFluentd(proxyConfig *configv1.Proxy) (err error) {
+func (clusterRequest *ClusterLoggingRequest) RestartFluentd() (err error) {
 
 	collectorConfig, err := clusterRequest.generateCollectorConfig()
 	if err != nil {
@@ -691,7 +694,7 @@ func (clusterRequest *ClusterLoggingRequest) RestartFluentd(proxyConfig *configv
 		return
 	}
 
-	if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash, proxyConfig); err != nil {
+	if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash); err != nil {
 		return
 	}
 

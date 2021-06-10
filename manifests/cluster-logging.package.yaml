@@ -1,4 +1,4 @@
-#! package-manifest: ./deploy/chart/catalog_resources/rh-operators/clusterlogging.v4.7.0.clusterserviceversion.yaml
+#! package-manifest: ./deploy/chart/catalog_resources/rh-operators/clusterlogging.v5.2.0.clusterserviceversion.yaml
 packageName: cluster-logging
 channels:
 - name: "tech-preview"

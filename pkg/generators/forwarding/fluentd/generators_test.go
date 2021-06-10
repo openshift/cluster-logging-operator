@@ -1,38 +1,22 @@
 package fluentd
 
 import (
-	"text/template"
-
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/generators"
 )
 
 var _ = Describe("Generating pipeline to output labels", func() {
 	var (
 		configGenerator *ConfigGenerator
+		err             error
 	)
 	BeforeEach(func() {
-		engn, err := generators.New("OutputLabelConf",
-			&template.FuncMap{
-				"labelName":           labelName,
-				"sourceTypelabelName": sourceTypeLabelName,
-			},
-			templateRegistry...)
+		configGenerator, err = NewConfigGenerator(false, false, false)
 		Expect(err).To(BeNil())
-
-		configGenerator = &ConfigGenerator{
-			Generator:                  engn,
-			includeLegacyForwardConfig: false,
-			includeLegacySyslogConfig:  false,
-			useOldRemoteSyslogPlugin:   false,
-			storeTemplate:              "storeElasticsearch",
-			outputTemplate:             "outputLabelConf",
-		}
 	})
 
 	It("should generate no labels for a single pipeline", func() {
@@ -142,7 +126,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </filter>
   <match **>
     @type copy
-
     <store>
       @type relabel
       @label @INFRA_ES
@@ -157,7 +140,6 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </filter>
   <match **>
     @type copy
-
     <store>
       @type relabel
       @label @INFRA_ES

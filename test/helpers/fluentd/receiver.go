@@ -7,6 +7,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
@@ -74,7 +75,7 @@ func (s *Source) HasOutput() (bool, error) {
 	script := fmt.Sprintf("if test -s %q; then echo yes; fi", s.OutFile())
 	out, err := runtime.Exec(s.receiver.Pod, "sh", "-c", script).Output()
 	if err != nil {
-		return false, test.WrapError(err)
+		return false, utils.WrapError(err)
 	}
 	return len(out) > 0, nil
 }
@@ -93,7 +94,7 @@ func NewReceiver(ns, name string) *Receiver {
 	runtime.Labels(r.Pod)[appName] = name
 	r.Pod.Spec.Containers = []corev1.Container{{
 		Name:  name,
-		Image: "quay.io/openshift/origin-logging-fluentd:latest",
+		Image: "quay.io/openshift-logging/fluentd:latest",
 		Args:  []string{"fluentd", "-c", filepath.Join(configDir, "fluent.conf")},
 		VolumeMounts: []corev1.VolumeMount{
 			{

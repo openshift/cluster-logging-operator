@@ -64,7 +64,7 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	cmdargs := strings.Join(r.args, " ")
 	err := r.Cmd.Start()
 	if err != nil {
-		log.Error(err, "could not start oc command", "arguments", cmdargs)
+		log.V(1).Error(err, "could not start oc command", "arguments", cmdargs)
 		return "", err
 	}
 	// Wait for the process to finish or kill it after a timeout (whichever happens first):
@@ -75,11 +75,11 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	select {
 	case <-timeoutCh:
 		if err = r.Cmd.Process.Kill(); err != nil {
-			log.Error(err, "failed to kill process: ")
+			log.V(1).Error(err, "failed to kill process: ")
 		}
 	case err = <-done:
 		if err != nil {
-			log.Error(err, "oc finished with error = %v")
+			log.V(1).Error(err, "oc finished with error = %v")
 		}
 	}
 	if err != nil {
@@ -87,7 +87,7 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 			return "", err
 		}
 		errout := strings.TrimSpace(errbuf.String())
-		log.Info("command result", "arguments", cmdargs, "output", errout, "error", err)
+		log.V(2).Info("command result", "arguments", cmdargs, "output", errout, "error", err)
 		return errout, err
 	}
 	if r.tostdout {
@@ -95,9 +95,9 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	}
 	out := strings.TrimSpace(outbuf.String())
 	if len(out) > 500 {
-		log.Info("output(truncated 500/length)", "arguments", cmdargs, "length", len(out), "result", truncateString(out, 500))
+		log.V(2).Info("output(truncated 500/length)", "arguments", cmdargs, "length", len(out), "result", truncateString(out, 500))
 	} else {
-		log.Info("command output", "arguments", cmdargs, "output", out)
+		log.V(2).Info("command output", "arguments", cmdargs, "output", out)
 	}
 	return out, nil
 }

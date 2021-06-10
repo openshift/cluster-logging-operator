@@ -64,7 +64,7 @@ Pull secrets are tokens used to pull OCI images from multiple sources, such as q
   PULL_SECRET=~/my-pull-secret
   ```
 
-1. In a browser, visit https://cloud.redhat.com/openshift/install#pull-secret (log in if necessary)
+1. In a browser, visit https://cloud.redhat.com/openshift/install (log in if necessary)
 1. Select your preferred cluster deployment method.
 1. Use the `download pull secret` button, save the file to `$PULL_SECRET`
 
@@ -78,7 +78,7 @@ For development you also need an openshift CI repository token.
    `Logged into "https://api.ci.openshift.org:443" as "<user>" using the token provided.`
 1. Add the CI registry token to your pull-secret file, and log out of the CI system
    ```
-   oc registry login --to $PULL_SECRET
+   oc registry login --skip-check --to $PULL_SECRET
    oc logout
    ```
 
@@ -190,3 +190,19 @@ will attempt to clone them to a temporary directory.
 
 Bumping the release and manifest versions typically require updating the `elasticsearch-operator` as well.
 * `dep ensure -update github.com/openshift/elasticsearch-operator`
+
+## Deploying without OLM
+Production relies upon OLM to manage and control the operator deployment, permissions, etc. The manifest defines all the resources needed by OLM.  We can use this same manifest to generate a list of resources to deploy without using OLM.
+```
+make deploy-image
+```
+will produce output that should give you the pullspec on the cluster like:
+```
+image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest
+```
+
+which will allow you to use the script like:
+```                                                                                                                                                                                                                                                                               
+CLO_IMAGE=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+./hack/gen-olm-artifacts.py manifests/5.1/cluster-logging.v5.1.0.clusterserviceversion.yaml  $CLO_IMAGE | oc create -f -
+```

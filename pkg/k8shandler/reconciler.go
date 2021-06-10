@@ -11,16 +11,22 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/status"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/tools/record"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client) (err error) {
+func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client, r record.EventRecorder) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
-		Client:  requestClient,
-		Cluster: requestCluster,
+		Client:        requestClient,
+		Cluster:       requestCluster,
+		EventRecorder: r,
+	}
+
+	if !clusterLoggingRequest.isManaged() {
+		return nil
 	}
 
 	forwarder := clusterLoggingRequest.getLogForwarder()
@@ -28,8 +34,6 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		clusterLoggingRequest.ForwarderRequest = forwarder
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
-
-	proxyConfig := clusterLoggingRequest.getProxyConfig()
 
 	if clusterLoggingRequest.IncludesManagedStorage() {
 		// Reconcile certs
@@ -43,7 +47,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		}
 
 		// Reconcile Visualization
-		if err = clusterLoggingRequest.CreateOrUpdateVisualization(proxyConfig); err != nil {
+		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
 			return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
@@ -63,7 +67,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	})
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
@@ -103,10 +107,8 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 		return nil
 	}
 
-	proxyConfig := clusterLoggingRequest.getProxyConfig()
-
 	// Reconcile Collection
-	err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig)
+	err = clusterLoggingRequest.CreateOrUpdateCollection()
 	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
@@ -140,7 +142,7 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(proxyConfig); err != nil {
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
 		return fmt.Errorf("Unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
@@ -169,9 +171,7 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
-	proxyConfig := clusterLoggingRequest.getProxyConfig()
-
-	return clusterLoggingRequest.RestartFluentd(proxyConfig)
+	return clusterLoggingRequest.RestartFluentd()
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {
@@ -180,7 +180,7 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.Cluste
 
 	if err := clusterRequest.Client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
 		if !apierrors.IsNotFound(err) {
-			fmt.Printf("Encountered unexpected error getting %v", clusterLoggingNamespacedName)
+			log.Error(err, "Encountered unexpected error getting", "NamespacedName", clusterLoggingNamespacedName)
 		}
 		return nil
 	}
@@ -188,26 +188,12 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.Cluste
 	return clusterLogging
 }
 
-func (clusterRequest *ClusterLoggingRequest) getProxyConfig() *configv1.Proxy {
-	// we need to see if we have the proxy available so we
-	// don't blank out any proxy configured changes...
-	proxyNamespacedName := types.NamespacedName{Name: constants.ProxyName}
-	proxyConfig := &configv1.Proxy{}
-	if err := clusterRequest.Client.Get(context.TODO(), proxyNamespacedName, proxyConfig); err != nil {
-		if !apierrors.IsNotFound(err) {
-			fmt.Printf("Encountered unexpected error getting %v", proxyNamespacedName)
-		}
-	}
-
-	return proxyConfig
-}
-
 func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {
 	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	forwarder := &logging.ClusterLogForwarder{}
 	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
 		if !apierrors.IsNotFound(err) {
-			fmt.Printf("Encountered unexpected error getting %v", nsname)
+			log.Error(err, "Encountered unexpected error getting", "forwarder", nsname)
 		}
 	}
 

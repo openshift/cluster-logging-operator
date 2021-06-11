@@ -20,7 +20,7 @@ export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 export OCP_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
-IMAGE_LOGGING_FLUENTD?=quay.io/openshift/origin-logging-fluentd:latest
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:latest
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
@@ -75,7 +75,6 @@ RUN_CMD?=go run
 run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
-	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
@@ -173,7 +172,6 @@ test-functional-benchmarker: bin/functional-benchmarker
 .PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator
-	CURATOR_IMAGE=quay.io/openshift/origin-logging-curator:latest \
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	go test -cover -race ./pkg/...
 

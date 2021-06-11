@@ -1748,9 +1748,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, round(rate(log_logged_bytes_total[5m])))",
+          "expr": "topk(10, round(rate(log_logged_bytes_total[1h])))",
           "interval": "",
-          "legendFormat": "{{path}} namespace:{{namespace}}",
+          "legendFormat": "namespace: {{namespace}}  podname: {{podname}}",
           "refId": "A"
         }
       ],
@@ -1758,7 +1758,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Logs produced (top 10 containers) - Bytes/Second",
+      "title": "Logs produced (top containers) - Bytes/Second",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1837,7 +1837,7 @@
               "type": "hidden"
             },
             {
-              "alias": "Total Bytes",
+              "alias": "total bytes produced",
               "colorMode": null,
               "colors": [],
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -1851,7 +1851,7 @@
               "unit": "short"
             },
             {
-              "alias": "Pod",
+              "alias": "namespace",
               "colorMode": null,
               "colors": [],
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -1859,7 +1859,35 @@
               "link": true,
               "linkTooltip": "Drill down to pods",
               "linkUrl": "",
-              "pattern": "path",
+              "pattern": "znamespace",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "pod",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "podname",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "container hash",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "zcontainer",
               "thresholds": [],
               "type": "number",
               "unit": "short"
@@ -1867,7 +1895,7 @@
           ],
           "targets": [
             {
-              "expr": "topk(10,sum(increase(log_logged_bytes_total[$__interval])) by (path))",
+              "expr": "topk(10, label_replace(label_replace(sum(increase(log_logged_bytes_total[1h])) by (path,  podname), \"znamespace\", \"$1\", \"path\", \".*_(.*)_.*\"), \"zcontainer\", \"$1\", \"path\", \".*_.*_(.*).log\"))",
               "format": "table",
               "instant": true,
               "intervalFactor": 2,
@@ -1879,7 +1907,7 @@
           "thresholds": [],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Logs produced (top 10 containers) - Bytes",
+          "title": "Logs produced (top containers) - Bytes",
           "tooltip": {
             "shared": false,
             "sort": 0,
@@ -1918,7 +1946,7 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": true,
-      "title": "Total Bytes",
+      "title": "total bytes produced",
       "type": "row",
       "titleSize": "h6"
     },
@@ -1961,9 +1989,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "topk(10, round(rate(log_collected_bytes_total[5m])))",
+          "expr": "topk(10, round(rate(log_collected_bytes_total[1h])))",
           "interval": "",
-          "legendFormat": "{{path}} namespace:{{namespace}}",
+          "legendFormat": "namespace: {{namespace}}   podname: {{podname}}",
           "refId": "A"
         }
       ],
@@ -1971,7 +1999,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Logs collected (top 10 containers) - Bytes/Second",
+      "title": "Logs collected (top containers) - Bytes/Second",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2050,7 +2078,7 @@
               "type": "hidden"
             },
             {
-              "alias": "Total Bytes",
+              "alias": "total bytes collected",
               "colorMode": null,
               "colors": [],
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -2064,7 +2092,7 @@
               "unit": "short"
             },
             {
-              "alias": "Pod",
+              "alias": "namespace",
               "colorMode": null,
               "colors": [],
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -2072,7 +2100,35 @@
               "link": true,
               "linkTooltip": "Drill down to pods",
               "linkUrl": "",
-              "pattern": "path",
+              "pattern": "znamespace",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "pod",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "podname",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "container hash",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "zcontainer",
               "thresholds": [],
               "type": "number",
               "unit": "short"
@@ -2080,7 +2136,7 @@
           ],
           "targets": [
             {
-              "expr": "topk(10,sum(increase(log_collected_bytes_total[$__interval])) by (path))",
+              "expr": "topk(10, label_replace(label_replace(sum(increase(log_collected_bytes_total[1h])) by (path,  podname), \"znamespace\", \"$1\", \"path\", \".*_(.*)_.*\"), \"zcontainer\", \"$1\", \"path\", \".*_.*_(.*).log\"))",
               "format": "table",
               "instant": true,
               "intervalFactor": 2,
@@ -2092,7 +2148,7 @@
           "thresholds": [],
           "timeFrom": null,
           "timeShift": null,
-          "title": "Logs collected (top 10 containers) - Bytes",
+          "title": "Logs collected (top containers) - Bytes",
           "tooltip": {
             "shared": false,
             "sort": 0,
@@ -2131,7 +2187,7 @@
       "repeatIteration": null,
       "repeatRowId": null,
       "showTitle": true,
-      "title": "Total Bytes",
+      "title": "total bytes collected",
       "type": "row",
       "titleSize": "h6"
     }

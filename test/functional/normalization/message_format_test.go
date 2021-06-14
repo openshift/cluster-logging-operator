@@ -34,9 +34,9 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 
 	It("should parse k8s audit log format correctly", func() {
 		// Log message data
-		timestamp := "2013-03-28T14:36:03.243000+00:00"
-		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
-		kind := fmt.Sprintf("audit(%.3f:24287)", float64(nanoTime.UnixNano())/float64(time.Second))
+		//timestamp := "2013-03-28T14:36:03.243000+00:00"
+		//nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
+		kind := "Event" //fmt.Sprintf("audit(%.3f:24287)", float64(nanoTime.UnixNano())/float64(time.Second))
 
 		// Define a template for test format (used for input, and expected output)
 		var outputLogTemplate = types.K8sAuditLog{
@@ -50,7 +50,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 			},
 		}
 		// Template expected as output Log
-		k8sAuditLogLine := "{\\\"kind\\\":\\\"" + kind + "\\\"}"
+		k8sAuditLogLine := "<133>Oct 21 10:37:55 test.example.com k8s-audit: {\\\"kind\\\":\\\"" + kind + "\\\"}"
 		Expect(framework.WriteMessagesTok8sAuditLog(k8sAuditLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
 		raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeFluentdForward)

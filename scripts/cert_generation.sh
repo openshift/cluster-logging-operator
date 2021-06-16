@@ -332,7 +332,7 @@ generate_certs 'logging-es' "$(generate_extensions false true $LOG_STORE{,.${NAM
 
 if [ ! -s "${WORKING_DIR}/kibana-session-secret" ] ; then
   info "Generating kibana session secret"
-  dd if=/dev/urandom count=1 ibs=16 status=none | hexdump -e '"%02X"' >  "${WORKING_DIR}/kibana-session-secret"
+  head -c 16 < /dev/urandom | hexdump -v -e '1/1 "%02X"' > "${WORKING_DIR}/kibana-session-secret"
 fi
 
 if [ -f ${WORKING_DIR}/action.log ] ; then

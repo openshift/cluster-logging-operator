@@ -6,7 +6,7 @@ set -euo pipefail
 
 mkdir -p bundle
 
-$OPM alpha bundle generate --directory manifests/${MANIFEST_VERSION} --package cluster-logging-operator --channels ${MANIFEST_VERSION} --default ${MANIFEST_VERSION} --output-dir bundle/
+$OPM alpha bundle generate --directory manifests/${MANIFEST_VERSION} --package cluster-logging-operator --channels ${CHANNELS} --default ${DEFAULT_CHANNEL} --output-dir bundle/
 
 cat >> bundle.Dockerfile <<EOF
 

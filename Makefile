@@ -220,12 +220,15 @@ cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-cata
 # builds an operator-registry image containing the cluster-logging operator
 cluster-logging-catalog-build: .make/cluster-logging-catalog-build
 .make/cluster-logging-catalog-build: $(shell find olm_deploy -type f)
+	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_PUBLIC)/openshift/cluster-logging-operator-registry \
 	olm_deploy/scripts/catalog-build.sh
 	touch $@
 
 # deploys the operator registry image and creates a catalogsource referencing it
 cluster-logging-catalog-deploy: .make/cluster-logging-catalog-deploy
 .make/cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
 	olm_deploy/scripts/catalog-deploy.sh
 
 # deletes the catalogsource and catalog namespace

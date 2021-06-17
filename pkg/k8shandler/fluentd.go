@@ -108,7 +108,9 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
 					// recreate it on the next time through if necessary
 					return nil
 				}
-				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
+				msg := fmt.Sprintf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name)
+				clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+				return fmt.Errorf(msg, err)
 			}
 			if services.AreSame(current, desired) {
 				log.V(3).Info("Services are the same skipping update")
@@ -121,8 +123,10 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
 			return clusterRequest.Update(current)
 		})
 		log.V(3).Error(retryErr, "Reconcile Service retry error")
+		clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(retryErr.Error()))
 		return retryErr
 	}
+	clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(err.Error()))
 	return err
 }
 
@@ -173,7 +177,9 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdServiceMonitor() er
 					// recreate it on the next time through if necessary
 					return nil
 				}
-				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
+				msg := fmt.Sprintf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name)
+				clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+				return fmt.Errorf(msg, err)
 			}
 			if servicemonitor.AreSame(current, desired) {
 				log.V(3).Info("ServiceMonitor are the same skipping update")
@@ -186,8 +192,10 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdServiceMonitor() er
 			return clusterRequest.Update(current)
 		})
 		log.V(3).Error(retryErr, "Reconcile ServiceMonitor retry error")
+		clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(retryErr.Error()))
 		return retryErr
 	}
+	clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(err.Error()))
 	return err
 }
 
@@ -199,7 +207,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 
 	spec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + fluentdAlertsFile)
 	if err != nil {
-		return fmt.Errorf("failure creating the fluentd PrometheusRule: %w", err)
+		msg := fmt.Sprintf("failure creating the fluentd PrometheusRule: %w", err)
+		clusterRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
+		return fmt.Errorf(msg)
 	}
 
 	rule.Spec = *spec
@@ -211,18 +221,22 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 		return nil
 	}
 	if !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("failure creating the fluentd PrometheusRule: %w", err)
+		msg := fmt.Sprintf("failure creating the fluentd PrometheusRule: %w", err)
+		clusterRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
+		return fmt.Errorf(msg)
 	}
 
 	current := &monitoringv1.PrometheusRule{}
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		err = clusterRequest.Client.Get(ctx, types.NamespacedName{Name: rule.Name, Namespace: rule.Namespace}, current)
 		if err != nil {
+			clusterRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, "could not get prometheus rule", rule.Name, err))
 			log.V(2).Info("could not get prometheus rule", rule.Name, err)
 			return err
 		}
 		current.Spec = rule.Spec
 		if err = clusterRequest.Client.Update(ctx, current); err != nil {
+			clusterRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, err.Error()))
 			return err
 		}
 		log.V(3).Info("updated prometheus rules")
@@ -300,7 +314,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 				log.V(2).Info("Returning nil. The configmap was not found even though create previously failed.  Was it culled?", "configmap name", fluentdConfigMap.Name)
 				return nil
 			}
-			return fmt.Errorf("Failed to get %v configmap for %q: %v", fluentdConfigMap.Name, clusterRequest.Cluster.Name, err)
+			msg := fmt.Sprintf("Failed to get %v configmap for %q: %v", fluentdConfigMap.Name, clusterRequest.Cluster.Name, err)
+			clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+			return fmt.Errorf(msg, err)
 		}
 		if reflect.DeepEqual(fluentdConfigMap.Data, current.Data) {
 			return nil
@@ -308,7 +324,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdConfigMap(flue
 		current.Data = fluentdConfigMap.Data
 		return clusterRequest.Update(current)
 	})
-
+	clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(retryErr.Error()))
 	return retryErr
 }
 
@@ -331,6 +347,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdSecret() error
 
 	err := clusterRequest.CreateOrUpdateSecret(fluentdSecret)
 	if err != nil {
+		clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(err.Error()))
 		return err
 	}
 
@@ -599,7 +616,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 
 	err = clusterRequest.Create(fluentdDaemonset)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Fluentd Daemonset %v", err)
+		msg := fmt.Sprintf("Failure creating Fluentd Daemonset %v", err)
+		clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+		return fmt.Errorf(msg)
 	}
 
 	if clusterRequest.isManaged() {
@@ -607,6 +626,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset)
 		})
 		if retryErr != nil {
+			clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(retryErr.Error()))
 			return retryErr
 		}
 	}

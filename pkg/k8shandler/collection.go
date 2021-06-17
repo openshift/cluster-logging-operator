@@ -186,7 +186,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityCla
 
 	err := clusterRequest.Create(collectionPriorityClass)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Collection priority class: %v", err)
+		msg := fmt.Sprintf("Failure creating Collection priority class: %v", err)
+		clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+		return fmt.Errorf(msg)
 	}
 
 	return nil
@@ -208,7 +210,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 		}
 		err := clusterRequest.Create(collectorServiceAccount)
 		if err != nil && !errors.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("Failure creating Log Collector service account: %v", err)
+			msg := fmt.Sprintf("Failure creating Log Collector service account: %v", err)
+			clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+			return nil, fmt.Errorf(msg)
 		}
 		if len(collectorServiceAccount.ObjectMeta.UID) != 0 {
 			serviceAccountLogCollectorUID = collectorServiceAccount.ObjectMeta.UID
@@ -237,7 +241,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	err := clusterRequest.Create(collectorRole)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating Log collector privileged role: %v", err)
+		msg := fmt.Sprintf("Failure creating Log collector privileged role: %v", err)
+		clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
+		return nil, fmt.Errorf(msg)
 	}
 
 	subject := NewSubject(

@@ -18,11 +18,15 @@ metadata:
     certified: "false"
     description: |-
       The Cluster Logging Operator for OCP provides a means for configuring and managing your aggregated logging stack.
-    containerImage: quay.io/openshift/origin-cluster-logging-operator:latest
+    containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
     # The version value is substituted by the ART pipeline
     olm.skipRange: ">=4.6.0-0 <5.2.0"
+    # This annotation injection is a workaround for BZ-1950047, since the associated
+    # annotation in spec.install.spec.deployments.template.metadata is presently ignored.
+    # TODO: remove the next line after BZ-1950047 is resolved.
+    target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
     alm-examples: |-
         [
           {
@@ -308,7 +312,7 @@ spec:
               serviceAccountName: cluster-logging-operator
               containers:
               - name: cluster-logging-operator
-                image: quay.io/openshift/origin-cluster-logging-operator:latest
+                image: quay.io/openshift-logging/cluster-logging-operator:latest
                 imagePullPolicy: IfNotPresent
                 command:
                 - cluster-logging-operator
@@ -324,7 +328,7 @@ spec:
                   - name: OPERATOR_NAME
                     value: "cluster-logging-operator"
                   - name: FLUENTD_IMAGE
-                    value: "quay.io/openshift/origin-logging-fluentd:latest"
+                    value: "quay.io/openshift-logging/fluentd:latest"
   customresourcedefinitions:
     owned:
     - name: clusterloggings.logging.openshift.io

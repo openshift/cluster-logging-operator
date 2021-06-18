@@ -499,6 +499,7 @@ var _ = Describe("Generating fluentd config", func() {
                 severity debug
               protocol tcp
               packet_size 4096
+			  hostname "#{ENV['NODE_NAME']}"
             timeout 60
             timeout_exception true
               keep_alive true
@@ -552,6 +553,7 @@ var _ = Describe("Generating fluentd config", func() {
                 severity debug
               protocol tcp
               packet_size 4096
+			  hostname "#{ENV['NODE_NAME']}"
             timeout 60
             timeout_exception true
               keep_alive true

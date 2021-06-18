@@ -586,6 +586,67 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					})
 				})
 			})
+			Describe("syslog payload", func() {
+				Context("with addLogSourceToMessage flag", func() {
+					BeforeEach(func() {
+						generatorPayload["tag_key"] = "rec_tag"
+					})
+					It("should add namespace, pod, container name to log message", func() {
+						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
+							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
+						}
+						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+						forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+						forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
+						forwarder.Spec.Outputs[0].Syslog.AddLogSource = true
+						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+							Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+						}
+						components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
+						for _, component := range components {
+							if err := e2e.WaitFor(component); err != nil {
+								Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
+							}
+						}
+						logStore := e2e.LogStores[syslogDeployment.GetName()]
+						Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "namespace_name")
+						_, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+						Expect(err).To(BeNil())
+					})
+				})
+				Context("with addLogSourceToMessage flag", func() {
+					Context("for audit logs", func() {
+						BeforeEach(func() {
+							generatorPayload["tag_key"] = "rec_tag"
+							forwarder.Spec.Pipelines[0].InputRefs = []string{"audit"}
+						})
+						It("should send log message successfully", func() {
+							if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
+								Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
+							}
+							forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+							forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+							forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
+							forwarder.Spec.Outputs[0].Syslog.AddLogSource = true
+							if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+								Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+							}
+							components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
+							for _, component := range components {
+								if err := e2e.WaitFor(component); err != nil {
+									Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
+								}
+							}
+							logStore := e2e.LogStores[syslogDeployment.GetName()]
+							Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+							grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_tag")
+							_, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+							Expect(err).To(BeNil())
+						})
+					})
+				})
+			})
 		})
 		AfterEach(func() {
 			e2e.Cleanup()

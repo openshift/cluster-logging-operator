@@ -108,9 +108,9 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
 					// recreate it on the next time through if necessary
 					return nil
 				}
-				msg := fmt.Sprintf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name)
+				msg := fmt.Sprintf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
 				clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
-				return fmt.Errorf(msg, err)
+				return fmt.Errorf(msg)
 			}
 			if services.AreSame(current, desired) {
 				log.V(3).Info("Services are the same skipping update")
@@ -177,7 +177,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdServiceMonitor() er
 					// recreate it on the next time through if necessary
 					return nil
 				}
-				msg := fmt.Sprintf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name)
+				msg := fmt.Sprintf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
 				clusterRequest.Cluster.Status.Conditions.SetCondition(condInvalid(msg))
 				return fmt.Errorf(msg, err)
 			}
@@ -207,7 +207,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 
 	spec, err := NewPrometheusRuleSpecFrom(utils.GetShareDir() + "/" + fluentdAlertsFile)
 	if err != nil {
-		msg := fmt.Sprintf("failure creating the fluentd PrometheusRule: %w", err)
+		msg := fmt.Sprintf("failure creating the fluentd PrometheusRule: %v", err)
 		clusterRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
 		return fmt.Errorf(msg)
 	}
@@ -221,7 +221,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 		return nil
 	}
 	if !errors.IsAlreadyExists(err) {
-		msg := fmt.Sprintf("failure creating the fluentd PrometheusRule: %w", err)
+		msg := fmt.Sprintf("failure creating the fluentd PrometheusRule: %v", err)
 		clusterRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
 		return fmt.Errorf(msg)
 	}
@@ -230,8 +230,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		err = clusterRequest.Client.Get(ctx, types.NamespacedName{Name: rule.Name, Namespace: rule.Namespace}, current)
 		if err != nil {
-			clusterRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, "could not get prometheus rule", rule.Name, err))
-			log.V(2).Info("could not get prometheus rule", rule.Name, err)
+			msg := fmt.Sprintf("could not get prometheus rule %q: %v", rule.Name, err)
+			clusterRequest.Cluster.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg))
+			log.V(2).Info(msg)
 			return err
 		}
 		current.Spec = rule.Spec

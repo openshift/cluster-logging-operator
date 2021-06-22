@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 const (
@@ -193,10 +194,11 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		Expect(logs[0].Structured).To(BeNil(), "expected nil structured field")
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
+
 	It("should not parse invalid json message into structured", func() {
 		// This test case is disabled to fix the behavior of invalid json parsing
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
-		Expect(framework.Deploy()).To(BeNil())
+		ExpectOK(framework.Deploy())
 
 		// Log message data
 		invalidJson := `{"key":"v}`
@@ -206,22 +208,16 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		expectedMessage := invalidJson
 		message := strings.ReplaceAll(invalidJson, "\"", "\\\"")
 		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, message)
-		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
+		ExpectOK(framework.WriteMessagesToApplicationLog(applicationLogLine, 10))
 
 		// Read line from Log Forward output
 		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
-		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		ExpectOK(err)
 
 		// Parse log line
 		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		same := cmp.Equal(logs[0].Structured, empty)
-		if !same {
-			diff := cmp.Diff(logs[0].Structured, empty)
-			log.V(3).Info("Parsed json not as expected", "diff", diff)
-		}
+		ExpectOK(types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs), "Invalid JSON: %q", raw)
+		Expect(logs[0].Structured).To(EqualDiff(empty), "structured field not empty")
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
-
 })

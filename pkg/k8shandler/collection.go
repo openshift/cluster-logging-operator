@@ -53,15 +53,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
-			return
-		}
-		log.V(3).Info("Generated collector config", "config", collectorConfig)
-		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
-		if err != nil {
-			log.Error(err, "unable to calculate MD5 hash")
-			return
-		}
 		if err = clusterRequest.reconcileFluentdService(); err != nil {
 			return
 		}
@@ -74,11 +65,21 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			log.Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
+		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
+		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
+			return
+		}
+		log.V(3).Info("Generated collector config", "config", collectorConfig)
+		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
+		if err != nil {
+			log.Error(err, "unable to calculate MD5 hash")
+			return
+		}
+
+		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
 			return
 		}
 

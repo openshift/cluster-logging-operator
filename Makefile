@@ -17,7 +17,7 @@ export GODEBUG=x509ignoreCN=0
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 
-export OCP_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
+export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:latest
@@ -118,7 +118,7 @@ fmt:
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
-MANIFESTS=manifests/$(OCP_VERSION)
+MANIFESTS=manifests/$(LOGGING_VERSION)
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
 	@echo generating code
@@ -179,8 +179,10 @@ test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
+CHANNELS="stable,stable-${LOGGING_VERSION}"
+DEFAULT_CHANNEL="stable"
 generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=${OCP_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} hack/generate-bundle.sh
+	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
 .PHONY: generate-bundle
 
 # NOTE: This is the CI e2e entry point.

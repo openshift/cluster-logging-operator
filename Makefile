@@ -14,9 +14,8 @@ export GOFLAGS=-mod=vendor
 export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
-# Use shell expansion to expand these after the registry route is active.
-REGISTRY_INTERNAL = $$(oc registry info --internal)
-REGISTRY_PUBLIC = $$(oc registry info --public)
+REGISTRY_INTERNAL = $(shell hack/registry.sh --internal)
+REGISTRY_PUBLIC = $(shell hack/registry.sh --public)
 
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=$(REGISTRY_PUBLIC)/openshift/origin-$(APP_NAME):latest
@@ -106,7 +105,7 @@ clean:
 
 PATCH?=Dockerfile.patch
 image: .make/image
-.make/image: .make $(shell find cmd must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum registry
+.make/image: .make $(shell find cmd must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum
 	patch -o Dockerfile.local Dockerfile $(PATCH)
 	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
 	touch $@
@@ -143,11 +142,11 @@ deploy-image: image
 
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
 
-install: registry
+install:
 	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
 	$(MAKE) cluster-logging-operator-install
 
-deploy-catalog: registry
+deploy-catalog:
 	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_PUBLIC)/openshift/cluster-logging-operator-registry \
 	$(MAKE) cluster-logging-catalog-build
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry \
@@ -243,11 +242,3 @@ cluster-logging-operator-uninstall:
 gen-dockerfile:
 	./hack/generate-dockerfile-from-midstream > Dockerfile
 
-# Expose and log in to cluster registry.
-registry:
-	@oc registry login --insecure || { \
-	  echo "Activate public registry route" ; \
-	  oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge ; \
-	  timeout 10m bash -c "until oc registry info --public; do sleep 5; done" | ts ; \
-	  oc registry login --insecure --registry=$(REGISTRY_PUBLIC) ; \
-	}

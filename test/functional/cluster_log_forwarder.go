@@ -45,13 +45,13 @@ func (p *PipelineBuilder) ToSyslogOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeSyslog)
 }
 
-func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, forwardOutputName string) *ClusterLogForwarderBuilder {
+func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
 	var output *logging.OutputSpec
 	var found bool
-	if output, found = outputs[logging.OutputTypeFluentdForward]; !found {
-		switch forwardOutputName {
+	if output, found = outputs[outputName]; !found {
+		switch outputName {
 		case logging.OutputTypeFluentdForward:
 			output = &logging.OutputSpec{
 				Name: logging.OutputTypeFluentdForward,

@@ -111,13 +111,8 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		Expect(framework.Deploy()).To(BeNil())
 
 		// Log message data
-		jsonMsg := strings.ReplaceAll(Json, "\n", "")
-		expectedMessage := jsonMsg
-		jsonMsg = strings.ReplaceAll(jsonMsg, "\"", "\\\"")
-		timestamp := "2020-11-04T18:13:59.061892+00:00"
-
-		// Write log line as input to fluentd
-		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, jsonMsg)
+		expectedMessage := strings.ReplaceAll(Json, "\n", "")
+		applicationLogLine := functional.CreateAppLogFromJson(Json)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output
@@ -172,14 +167,9 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		// Pipeline.Parse is not set
 		Expect(framework.Deploy()).To(BeNil())
 
-		// Log message data
-		jsonMsg := strings.ReplaceAll(Json, "\n", "")
-		expectedMessage := jsonMsg
-		jsonMsg = strings.ReplaceAll(jsonMsg, "\"", "\\\"")
-		timestamp := "2020-11-04T18:13:59.061892+00:00"
+		expectedMessage := strings.ReplaceAll(Json, "\n", "")
 
-		// Write log line as input to fluentd
-		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, jsonMsg)
+		applicationLogLine := functional.CreateAppLogFromJson(Json)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output

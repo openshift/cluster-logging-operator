@@ -125,14 +125,14 @@ type Kafka struct {
 
 type FluentdForward struct{}
 type Elasticsearch struct {
-	// StructuredIndexKey specifies the metadata key to be used as name of elasticsearch index
-	// It takes precedence over StructuredIndexName
+	// StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index
+	// It takes precedence over StructuredTypeName
 	//
 	// +optional
-	StructuredIndexKey string `json:"structuredIndexKey,omitempty"`
+	StructuredTypeKey string `json:"structuredTypeKey,omitempty"`
 
-	// StructuredIndexName specifies the name of elasticsearch schema
+	// StructuredTypeName specifies the name of elasticsearch schema
 	//
 	// +optional
-	StructuredIndexName string `json:"structuredIndexName,omitempty"`
+	StructuredTypeName string `json:"structuredTypeName,omitempty"`
 }

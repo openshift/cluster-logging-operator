@@ -163,10 +163,10 @@ func (conf *outputLabelConf) IsElasticSearchOutput() bool {
 	return conf.Target.Type == logging.OutputTypeElasticsearch
 }
 
-func (conf *outputLabelConf) NeedChangeElasticsearchStructuredIndexName() bool {
+func (conf *outputLabelConf) NeedChangeElasticsearchStructuredType() bool {
 	return conf.Target.Type == logging.OutputTypeElasticsearch &&
 		conf.Target.OutputTypeSpec.Elasticsearch != nil &&
-		(conf.Target.OutputTypeSpec.Elasticsearch.StructuredIndexKey != "" || conf.Target.OutputTypeSpec.Elasticsearch.StructuredIndexName != "")
+		(conf.Target.OutputTypeSpec.Elasticsearch.StructuredTypeKey != "" || conf.Target.OutputTypeSpec.Elasticsearch.StructuredTypeName != "")
 }
 
 func generateRubyDigArgs(path string) string {

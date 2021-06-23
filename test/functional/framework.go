@@ -80,8 +80,8 @@ type FluentdFunctionalFramework struct {
 }
 
 func init() {
-	maxDuration, _ = time.ParseDuration("60*2m")
-	defaultRetryInterval, _ = time.ParseDuration("1ms")
+	maxDuration, _ = time.ParseDuration("10m")
+	defaultRetryInterval, _ = time.ParseDuration("10s")
 }
 
 func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
@@ -142,15 +142,20 @@ func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string)
 	return out, err
 }
 
-//Deploy the objects needed to functional Test
-func (f *FluentdFunctionalFramework) Deploy() (err error) {
+func (f *FluentdFunctionalFramework) AddOutputContainersVisitors() []runtime.PodBuilderVisitor {
 	visitors := []runtime.PodBuilderVisitor{
 		func(b *runtime.PodBuilder) error {
 			return f.addOutputContainers(b, f.Forwarder.Spec.Outputs)
 		},
 	}
-	return f.DeployWithVisitors(visitors)
+	return visitors
 }
+
+//Deploy the objects needed to functional Test
+func (f *FluentdFunctionalFramework) Deploy() (err error) {
+	return f.DeployWithVisitors(f.AddOutputContainersVisitors())
+}
+
 func (f *FluentdFunctionalFramework) DeployWithVisitor(visitor runtime.PodBuilderVisitor) (err error) {
 	visitors := []runtime.PodBuilderVisitor{
 		visitor,
@@ -175,7 +180,8 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	configmap := runtime.NewConfigMap(f.Test.NS.Name, f.Name, map[string]string{})
 	runtime.NewConfigMapBuilder(configmap).
 		Add("fluent.conf", f.Conf).
-		Add("run.sh", fluentd.RunScript)
+		Add("run.sh", fluentd.RunScript).
+		Add("clfyaml", string(clfYaml))
 	if err = f.Test.Client.Create(configmap); err != nil {
 		return err
 	}
@@ -317,7 +323,15 @@ func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, 
 }
 
 func (f *FluentdFunctionalFramework) WaitForPodToBeReady() error {
-	return oc.Literal().From(fmt.Sprintf("oc wait -n %s pod/%s --timeout=60s --for=condition=Ready", f.Test.NS.Name, f.Name)).Output()
+	return oc.Literal().From("oc wait -n %s pod/%s --timeout=60s --for=condition=Ready", f.Test.NS.Name, f.Name).Output()
+}
+
+func CreateAppLogFromJson(jsonstr string) string {
+	jsonMsg := strings.ReplaceAll(jsonstr, "\n", "")
+	jsonMsg = strings.ReplaceAll(jsonMsg, "\"", "\\\"")
+	timestamp := "2020-11-04T18:13:59.061892+00:00"
+
+	return fmt.Sprintf("%s stdout F %s", timestamp, jsonMsg)
 }
 
 func (f *FluentdFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {

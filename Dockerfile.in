@@ -1,5 +1,5 @@
-#@follow_tag(openshift-golang-builder:1.14)
-FROM openshift-golang-builder:v1.14.4-9 AS builder
+#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:v1.15)
+FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:v1.15.7-202103192003.el7 AS builder
 ENV BUILD_VERSION=${CI_CONTAINER_VERSION}
 ENV OS_GIT_MAJOR=${CI_X_VERSION}
 ENV OS_GIT_MINOR=${CI_Y_VERSION}
@@ -30,11 +30,11 @@ COPY ${REMOTE_SOURCE}/pkg ./pkg
 RUN make build
 
 
-#@follow_tag(openshift-ose-cli:v4.6)
-FROM openshift-ose-cli:v4.6.0-202009152100.p0 AS origincli
+#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.7)
+FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.7.0-202104250659.p0 AS origincli
 
-#@follow_tag(openshift-ose-base:ubi8)
-FROM openshift-ose-base:v4.0-202009120053.11408
+#@follow_tag(registry.redhat.io/ubi8:latest)
+FROM registry.redhat.io/ubi8:8.3-297.1618432833
 RUN INSTALL_PKGS=" \
       openssl \
       rsync \
@@ -75,3 +75,6 @@ LABEL \
         io.openshift.build.commit.url=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}/commit/${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \
         version=${CI_CONTAINER_VERSION}
 
+## EXCLUDE BEGIN ##
+LABEL name="openshift-logging/cluster-logging-rhel8-operator"
+## EXCLUDE END ##

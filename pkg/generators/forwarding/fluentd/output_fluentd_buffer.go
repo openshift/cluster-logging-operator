@@ -19,6 +19,7 @@ const (
 	defaultRetryWait        = "1s"
 	defaultRetryType        = "exponential_backoff"
 	defaultRetryMaxInterval = "60s"
+	defaultRetryTimeout     = "60m"
 
 	// Output fluentdForward default
 	fluentdForwardOverflowAction = "block"
@@ -133,6 +134,14 @@ func (olc *outputLabelConf) RetryMaxInterval() string {
 	}
 
 	return defaultRetryMaxInterval
+}
+func (olc *outputLabelConf) RetryTimeout() string {
+	value := defaultRetryTimeout
+	if hasBufferConfig(olc.forwarder) && string(olc.forwarder.Fluentd.Buffer.RetryTimeout) != "" {
+		value = string(olc.forwarder.Fluentd.Buffer.RetryTimeout)
+	}
+
+	return fmt.Sprintf("retry_timeout %s", value)
 }
 
 func hasBufferConfig(config *loggingv1.ForwarderSpec) bool {

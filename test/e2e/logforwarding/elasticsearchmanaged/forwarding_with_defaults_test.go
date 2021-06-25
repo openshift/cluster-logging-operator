@@ -35,8 +35,8 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				Fail(fmt.Sprintf("Timed out waiting for the log generator to deploy: %v", err))
 			}
 			for k, v := range appLabels {
-				if _, err := oc.Literal().From("oc -n %s label pods %s %s=%s", ns, pod, k, v).Run(); err != nil {
-					Fail(fmt.Sprintf("Timed out waiting for the log generator to apply labels: %v", err))
+				if _, err := oc.Literal().From("oc -n %s label pods %s %s=%s --overwrite=true", ns, pod, k, v).Run(); err != nil {
+					Fail(fmt.Sprintf("Failed to apply labels to log generator. err: %v", err))
 				}
 			}
 

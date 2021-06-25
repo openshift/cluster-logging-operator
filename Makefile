@@ -21,7 +21,7 @@ REGISTRY_PUBLIC = $$(oc registry info --public)
 export APP_NAME=cluster-logging-operator
 export IMAGE_TAG?=$(REGISTRY_PUBLIC)/openshift/origin-$(APP_NAME):latest
 
-export LOGGING_VERSION=$(shell basename $(shell ls -d manifests/[0-9]*))
+export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:latest
@@ -186,9 +186,14 @@ test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
+CHANNELS="stable,stable-${LOGGING_VERSION}"
+DEFAULT_CHANNEL="stable"
 generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=$(LOGGING_VERSION) OPENSHIFT_VERSIONS=$(OPENSHIFT_VERSIONS) hack/generate-bundle.sh
+	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
 .PHONY: generate-bundle
+
+bundle: generate-bundle
+.PHONY: bundle
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)

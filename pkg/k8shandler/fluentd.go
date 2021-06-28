@@ -35,6 +35,8 @@ const (
 	fluentdName              = "fluentd"
 	syslogName               = "syslog"
 	fluentdRequiredESVersion = "6"
+	logVolumeMountName       = "varlog"
+	logVolumePath            = "/var/log"
 )
 
 func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
@@ -150,7 +152,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdServiceMonitor() er
 	logMetricExporterEndpoint := monitoringv1.Endpoint{
 		Port:   exporterPortName,
 		Path:   "/metrics",
-		Scheme: "http",
+		Scheme: "https",
 		TLSConfig: &monitoringv1.TLSConfig{
 			CAFile:     prometheusCAFile,
 			ServerName: fmt.Sprintf("%s.%s.svc", fluentdName, cluster.Namespace),
@@ -368,11 +370,23 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 		}
 	}
 	fluentdContainer := NewContainer("fluentd", "fluentd", v1.PullIfNotPresent, *resources)
+	// deliberately not passing any resources for running the below container process, let it have cpu and memory as the process requires
+	exporterresources := &v1.ResourceRequirements{}
+
+	exporterContainer := NewContainer("logfilesmetricexporter", "logfilesmetricexporter", v1.PullIfNotPresent, *exporterresources)
 
 	fluentdContainer.Ports = []v1.ContainerPort{
 		{
 			Name:          metricsPortName,
 			ContainerPort: metricsPort,
+			Protocol:      v1.ProtocolTCP,
+		},
+	}
+
+	exporterContainer.Ports = []v1.ContainerPort{
+		{
+			Name:          exporterPortName,
+			ContainerPort: exporterPort,
 			Protocol:      v1.ProtocolTCP,
 		},
 	}
@@ -419,6 +433,13 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 		{Name: "tmp", MountPath: "/tmp"},
 	}
 
+	exporterContainer.VolumeMounts = []v1.VolumeMount{
+		{Name: logVolumeMountName, MountPath: logVolumePath},
+		{Name: metricsVolumeName, MountPath: "/etc/fluent/metrics"},
+	}
+	// Setting up CMD for log-file-metric-exporter
+	exporterContainer.Command = []string{"/usr/local/bin/log-file-metric-exporter", "  -verbosity=2", " -dir=/var/log/containers", " -http=:2112", " -keyFile=/etc/fluent/metrics/tls.key", " -crtFile=/etc/fluent/metrics/tls.crt"}
+
 	// List of _unique_ output secret names, several outputs may use the same secret.
 	unique := sets.NewString()
 	for _, o := range pipelineSpec.Outputs {
@@ -452,6 +473,13 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 		ReadOnlyRootFilesystem:   utils.GetBool(true),
 		AllowPrivilegeEscalation: utils.GetBool(false),
 	}
+	exporterContainer.SecurityContext = &v1.SecurityContext{
+		SELinuxOptions: &v1.SELinuxOptions{
+			Type: "spc_t",
+		},
+		ReadOnlyRootFilesystem:   utils.GetBool(true),
+		AllowPrivilegeEscalation: utils.GetBool(false),
+	}
 
 	tolerations := utils.AppendTolerations(
 		collectionSpec.Logs.FluentdSpec.Tolerations,
@@ -471,8 +499,9 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 
 	fluentdPodSpec := NewPodSpec(
 		"logcollector",
-		[]v1.Container{fluentdContainer},
+		[]v1.Container{fluentdContainer, exporterContainer},
 		[]v1.Volume{
+			{Name: logVolumeMountName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logVolumePath}}},
 			{Name: "varlogcontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/containers"}}},
 			{Name: "varlogpods", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/pods"}}},
 			{Name: "varlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/journal"}}},

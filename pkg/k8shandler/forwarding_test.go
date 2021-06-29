@@ -326,7 +326,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
 						OutputDefaults: &logging.OutputDefaults{
 							Elasticsearch: &logging.Elasticsearch{
-								StructuredIndexKey: "kubernetes.labels.mylabel",
+								StructuredTypeKey: "kubernetes.labels.mylabel",
 							},
 						},
 						Pipelines: []logging.PipelineSpec{
@@ -340,7 +340,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					_, _ = request.generateCollectorConfig()
 
 					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredIndexKey).To(Equal("kubernetes.labels.mylabel"))
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
 
 				})
 				It("should setup values for elasticsearch output", func() {
@@ -357,7 +357,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
 						OutputDefaults: &logging.OutputDefaults{
 							Elasticsearch: &logging.Elasticsearch{
-								StructuredIndexKey: "kubernetes.labels.mylabel",
+								StructuredTypeKey: "kubernetes.labels.mylabel",
 							},
 						},
 						Outputs: []logging.OutputSpec{
@@ -378,7 +378,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					_, _ = request.generateCollectorConfig()
 
 					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredIndexKey).To(Equal("kubernetes.labels.mylabel"))
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
 
 				})
 			})

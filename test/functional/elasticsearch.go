@@ -41,18 +41,22 @@ func (f *FluentdFunctionalFramework) GetLogsFromElasticSearchIndex(outputName st
 					resultHits := elasticResult["hits"].(map[string]interface{})
 					total := resultHits["total"].(map[string]interface{})
 					hits := resultHits["hits"].([]interface{})
-					if int(total["value"].(float64)) == 1 {
+					if int(total["value"].(float64)) >= 1 {
 						hit := hits[0].(map[string]interface{})
 						jsonHit, err := json.Marshal(hit["_source"])
 						if err == nil {
 							result = string(jsonHit)
 							return true, nil
+						} else {
+							log.V(4).Info("Marshall failed", "err", err)
 						}
 					}
 				}
+			} else {
+				log.V(4).Info("Unmarshall failed", "err", err)
 			}
 		}
-		log.V(4).Error(err, "Polling from ElasticSearch")
+		log.V(4).Info("Polling from ElasticSearch", "err", err, "result", result)
 		return false, nil
 	})
 	if err == nil {

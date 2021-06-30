@@ -933,28 +933,11 @@ brokers {{.Brokers}}
 default_topic {{.Topic}}
 use_event_time true
 {{ if .Target.Secret -}}
-{{ if and (.SecretPathIfFound "username") (.SecretPathIfFound "password") -}}
-{{ with $path := .SecretPath "username" -}}
-sasl_plain_username "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
-{{ end -}}
-{{ with $path := .SecretPath "password" -}}
-sasl_plain_password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
-{{ end -}}
-{{ end -}}
-{{ if not (.SecretPathIfFound "sasl_over_ssl") -}}
-sasl_over_ssl false
-{{ else }}
-sasl_over_ssl true
-{{ end -}}
-{{ if and (.SecretPathIfFound "tls.crt") (.SecretPathIfFound "tls.key") -}}
 {{ $tlsCert := .SecretPath "tls.crt" }}
 {{ $tlsKey := .SecretPath "tls.key" }}
+ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
 ssl_client_cert "#{File.exist?('{{ $tlsCert }}') ? '{{ $tlsCert }}' : nil}"
 ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : nil}"
-{{ end -}}
-{{ if .SecretPathIfFound "ca-bundle.crt" -}}
-ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
-{{ end -}}
 {{ end -}}
 <format>
   @type json

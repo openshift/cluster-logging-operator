@@ -775,9 +775,10 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
 {{- if .Target.Secret }}
 {{- if .IsTLS }}
   scheme https
-{{- else}}
+  ssl_version TLSv1_2
+{{- else }}
   scheme http
-{{- end}}
+{{- end }}
 
 {{- if .HasUsernamePassword }}
 {{ with $path := .SecretPath "username" -}}
@@ -789,7 +790,6 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
 {{- end}}
 
 {{- if .HasTLSKeyAndCrt }}
-  ssl_version TLSv1_2
   client_key '{{ .SecretPath "tls.key"}}'
   client_cert '{{ .SecretPath "tls.crt"}}'
 {{- end }}

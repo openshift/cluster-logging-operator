@@ -25,7 +25,7 @@ var _ = Describe("Generating fluentd config", func() {
 		Expect(err).To(BeNil())
 		Expect(generator).ToNot(BeNil())
 		secrets = map[string]*corev1.Secret{
-			"infra-es": &corev1.Secret{
+			"infra-es": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-infra-secret",
 				},
@@ -35,7 +35,7 @@ var _ = Describe("Generating fluentd config", func() {
 					"ca-bundle.crt": []byte("test-bundle"),
 				},
 			},
-			"apps-es-1": &corev1.Secret{
+			"apps-es-1": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-es-secret",
 				},
@@ -45,7 +45,7 @@ var _ = Describe("Generating fluentd config", func() {
 					"ca-bundle.crt": []byte("test-bundle"),
 				},
 			},
-			"apps-es-2": &corev1.Secret{
+			"apps-es-2": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-other-secret",
 				},
@@ -55,7 +55,7 @@ var _ = Describe("Generating fluentd config", func() {
 					"ca-bundle.crt": []byte("test-bundle"),
 				},
 			},
-			"audit-es": &corev1.Secret{
+			"audit-es": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-audit-secret",
 				},
@@ -170,7 +170,7 @@ var _ = Describe("Generating fluentd config", func() {
 			},
 		}
 		secrets = map[string]*corev1.Secret{
-			"apps-es-1": &corev1.Secret{
+			"apps-es-1": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-es-secret",
 				},
@@ -180,7 +180,7 @@ var _ = Describe("Generating fluentd config", func() {
 					"ca-bundle.crt": []byte("test-bundle"),
 				},
 			},
-			"apps-es-2": &corev1.Secret{
+			"apps-es-2": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-es-secret",
 				},
@@ -916,7 +916,7 @@ var _ = Describe("Generating fluentd config", func() {
 			},
 		}
 		secrets = map[string]*corev1.Secret{
-			"apps-es-1": &corev1.Secret{
+			"apps-es-1": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-es-secret",
 				},
@@ -926,7 +926,7 @@ var _ = Describe("Generating fluentd config", func() {
 					"ca-bundle.crt": []byte("test-bundle"),
 				},
 			},
-			"apps-es-2": &corev1.Secret{
+			"apps-es-2": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-other-secret",
 				},
@@ -1643,7 +1643,7 @@ var _ = Describe("Generating fluentd config", func() {
 			},
 		}
 		secrets = map[string]*corev1.Secret{
-			"apps-es-1": &corev1.Secret{
+			"apps-es-1": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-es-secret",
 				},
@@ -1653,7 +1653,7 @@ var _ = Describe("Generating fluentd config", func() {
 					"ca-bundle.crt": []byte("test-bundle"),
 				},
 			},
-			"apps-es-2": &corev1.Secret{
+			"apps-es-2": {
 				ObjectMeta: v1.ObjectMeta{
 					Name: "my-other-secret",
 				},

@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Generating fluentd config blocks", func() {
@@ -14,6 +16,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 		forwarderSpec *logging.ForwarderSpec
 		generator     *ConfigGenerator
 		pipeline      logging.PipelineSpec
+		secrets       map[string]*corev1.Secret
 	)
 	BeforeEach(func() {
 		var err error
@@ -37,6 +40,18 @@ var _ = Describe("Generating fluentd config blocks", func() {
 				Name:       "my-secure-pipeline",
 				InputRefs:  []string{logging.InputNameApplication},
 				OutputRefs: []string{"oncluster-elasticsearch"},
+			}
+			secrets = map[string]*corev1.Secret{
+				"oncluster-elasticsearch": &corev1.Secret{
+					ObjectMeta: v1.ObjectMeta{
+						Name: "my-es-secret",
+					},
+					Data: map[string][]byte{
+						"tls.key":       []byte("test-key"),
+						"tls.crt":       []byte("test-crt"),
+						"ca-bundle.crt": []byte("test-bundle"),
+					},
+				},
 			}
 		})
 
@@ -62,7 +77,9 @@ var _ = Describe("Generating fluentd config blocks", func() {
 		})
 
 		It("should produce well formed output label config", func() {
-			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
+			results, err := generator.generateOutputLabelBlocks(outputs,
+				secrets,
+				forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @ONCLUSTER_ELASTICSEARCH>
 	<filter **>

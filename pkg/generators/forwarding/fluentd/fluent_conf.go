@@ -116,6 +116,45 @@ func (conf *outputLabelConf) IsTLS() bool {
 	return url.IsTLSScheme(conf.URL.Scheme) || conf.Secret != nil
 }
 
+func (conf *outputLabelConf) HasUsernamePassword() bool {
+	if conf.Secret == nil {
+		return false
+	}
+
+	if _, ok := conf.Secret.Data["username"]; !ok {
+		return false
+	}
+	if _, ok := conf.Secret.Data["password"]; !ok {
+		return false
+	}
+	return true
+}
+
+func (conf *outputLabelConf) HasTLSKeyAndCrt() bool {
+	if conf.Secret == nil {
+		return false
+	}
+
+	if _, ok := conf.Secret.Data["tls.key"]; !ok {
+		return false
+	}
+	if _, ok := conf.Secret.Data["tls.crt"]; !ok {
+		return false
+	}
+	return true
+}
+
+func (conf *outputLabelConf) HasCABundle() bool {
+	if conf.Secret == nil {
+		return false
+	}
+
+	if _, ok := conf.Secret.Data["ca-bundle.crt"]; !ok {
+		return false
+	}
+	return true
+}
+
 func (conf *outputLabelConf) SecretPath(file string) string {
 	if conf.Target.Secret != nil {
 		return filepath.Join(constants.CollectorSecretsDir, conf.Target.Secret.Name, file)

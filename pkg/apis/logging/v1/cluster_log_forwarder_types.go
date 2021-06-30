@@ -224,6 +224,17 @@ type OutputDefaults struct {
 	//
 	// +optional
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
+	// Secret for authentication.
+	// Name of a secret in the same namespace as the cluster logging operator.
+	//
+	// For client authentication, set secret keys `tls.crt` and `tls.key` to the client certificate and private key.
+	//
+	// To use your own certificate authority, set secret key `ca-bundle.crt`.
+	//
+	// Depending on the `type` there may be other secret keys that have meaning.
+	//
+	// +optional
+	Secret *OutputSecretSpec `json:"secret,omitempty"`
 }
 
 // ClusterLogForwarderList is a list of ClusterLogForwarders

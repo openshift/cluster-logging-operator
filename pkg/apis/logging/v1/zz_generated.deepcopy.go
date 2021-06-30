@@ -1234,6 +1234,11 @@ func (in *OutputDefaults) DeepCopyInto(out *OutputDefaults) {
 		*out = new(Elasticsearch)
 		**out = **in
 	}
+	if in.Secret != nil {
+		in, out := &in.Secret, &out.Secret
+		*out = new(OutputSecretSpec)
+		**out = **in
+	}
 	return
 }
 

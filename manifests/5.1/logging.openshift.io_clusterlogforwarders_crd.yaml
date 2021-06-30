@@ -147,6 +147,21 @@ spec:
                           schema
                         type: string
                     type: object
+                  secret:
+                    description: "Secret for authentication. Name of a secret in the
+                      same namespace as the cluster logging operator. \n For client
+                      authentication, set secret keys `tls.crt` and `tls.key` to the
+                      client certificate and private key. \n To use your own certificate
+                      authority, set secret key `ca-bundle.crt`. \n Depending on the
+                      `type` there may be other secret keys that have meaning."
+                    properties:
+                      name:
+                        description: Name of a secret in the namespace configured
+                          for log forwarder secrets.
+                        type: string
+                    required:
+                    - name
+                    type: object
                 type: object
               outputs:
                 description: "Outputs are named destinations for log messages. \n

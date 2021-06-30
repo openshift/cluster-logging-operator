@@ -1750,7 +1750,7 @@
         {
           "expr": "topk(10, round(rate(log_logged_bytes_total[5m])))",
           "interval": "",
-          "legendFormat": "{{path}} namespace:{{namespace}}",
+          "legendFormat": "namespace: {{namespace}}  podname: {{podname}}",
           "refId": "A"
         }
       ],
@@ -1758,7 +1758,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Logs produced (top 10 containers) - Bytes/Second",
+      "title": "Logs produced(top containers) - Bytes/Second",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1794,6 +1794,161 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "collapse": false,
+      "height": "250px",
+      "panels": [
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$datasource",
+          "fill": 1,
+          "id": 8,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null as zero",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "span": 12,
+          "stack": false,
+          "steppedLine": false,
+          "styles": [
+            {
+              "alias": "Time",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "hidden"
+            },
+            {
+              "alias": "total bytes produced",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down",
+              "linkUrl": "",
+              "pattern": "Value #A",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "namespace",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "znamespace",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "pod",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "podname",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "container hash",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "zcontainer",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "topk(10, label_replace(label_replace(sum(increase(log_logged_bytes_total[24h])) by (path,  podname), \"znamespace\", \"$1\", \"path\", \".*_(.*)_.*\"), \"zcontainer\", \"$1\", \"path\", \".*_.*_(.*).log\"))",
+              "format": "table",
+              "instant": true,
+              "intervalFactor": 2,
+              "legendFormat": "",
+              "refId": "A",
+              "step": 10
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Logs produced(top containers) - Bytes",
+          "tooltip": {
+            "shared": false,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "transform": "table",
+          "type": "table",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": 0,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ]
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "total bytes produced",
+      "type": "row",
+      "titleSize": "h6"
     },
     {
       "aliasColors": {},
@@ -1836,7 +1991,7 @@
         {
           "expr": "topk(10, round(rate(log_collected_bytes_total[5m])))",
           "interval": "",
-          "legendFormat": "{{path}} namespace:{{namespace}}",
+          "legendFormat": "namespace: {{namespace}}   podname: {{podname}}",
           "refId": "A"
         }
       ],
@@ -1844,7 +1999,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Logs collected (top 10 containers) - Bytes/Second",
+      "title": "Logs collected(top containers) - Bytes/Second",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1880,6 +2035,161 @@
         "align": false,
         "alignLevel": null
       }
+    },
+    {
+      "collapse": false,
+      "height": "250px",
+      "panels": [
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$datasource",
+          "fill": 1,
+          "id": 8,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null as zero",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "span": 12,
+          "stack": false,
+          "steppedLine": false,
+          "styles": [
+            {
+              "alias": "Time",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "hidden"
+            },
+            {
+              "alias": "total bytes collected",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down",
+              "linkUrl": "",
+              "pattern": "Value #A",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "namespace",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "znamespace",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "pod",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "podname",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            },
+            {
+              "alias": "container hash",
+              "colorMode": null,
+              "colors": [],
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "decimals": 0,
+              "link": true,
+              "linkTooltip": "Drill down to pods",
+              "linkUrl": "",
+              "pattern": "zcontainer",
+              "thresholds": [],
+              "type": "number",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "topk(10, label_replace(label_replace(sum(increase(log_collected_bytes_total[24h])) by (path,  podname), \"znamespace\", \"$1\", \"path\", \".*_(.*)_.*\"), \"zcontainer\", \"$1\", \"path\", \".*_.*_(.*).log\"))",
+              "format": "table",
+              "instant": true,
+              "intervalFactor": 2,
+              "legendFormat": "",
+              "refId": "A",
+              "step": 10
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Logs collected(top containers) - Bytes",
+          "tooltip": {
+            "shared": false,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "transform": "table",
+          "type": "table",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": 0,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": false
+            }
+          ]
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "total bytes collected",
+      "type": "row",
+      "titleSize": "h6"
     }
   ],
   "refresh": "30s",

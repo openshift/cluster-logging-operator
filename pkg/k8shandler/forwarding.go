@@ -46,6 +46,14 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 				// copy from defaults if output specific spec not present
 				if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {
 					out.Elasticsearch = defaultOutputSpecs.Elasticsearch
+					out.Secret = &logging.OutputSecretSpec{
+						Name: constants.CollectorSecretName,
+					}
+					secret, err := clusterRequest.GetSecret(constants.CollectorSecretName)
+					if err != nil {
+						log.V(2).Info("no secret for default output type")
+					}
+					clusterRequest.OutputSecrets[constants.CollectorSecretName] = secret
 					clusterRequest.ForwarderSpec.Outputs[i] = out
 				}
 			}

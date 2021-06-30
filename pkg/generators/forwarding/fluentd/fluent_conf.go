@@ -136,7 +136,50 @@ func (conf *outputLabelConf) BufferPath() string {
 }
 
 func (conf *outputLabelConf) IsTLS() bool {
-	return url.IsTLSScheme(conf.URL.Scheme) || conf.Secret != nil
+	return url.IsTLSScheme(conf.URL.Scheme)
+}
+
+func (conf *outputLabelConf) HasUsernamePassword() bool {
+	if conf.Secret == nil {
+		return false
+	}
+
+	if _, ok := conf.Secret.Data[constants.ClientUsername]; !ok {
+		return false
+	}
+	if _, ok := conf.Secret.Data[constants.ClientPassword]; !ok {
+		return false
+	}
+	return true
+}
+
+func (conf *outputLabelConf) HasTLSKeyAndCrt() bool {
+	fmt.Println("!!!>>> DEBUG TLS.KEY TLS.CERT: NO SECRET")
+	if conf.Secret == nil {
+		return false
+	}
+
+	fmt.Println("!!!>>> DEBUG TLS.KEY TLS.CERT", conf.Secret.Name, conf.Secret.Data)
+	if _, ok := conf.Secret.Data[constants.ClientCertKey]; !ok {
+		return false
+	}
+	if _, ok := conf.Secret.Data[constants.ClientPrivateKey]; !ok {
+		return false
+	}
+	return true
+}
+
+func (conf *outputLabelConf) HasCABundle() bool {
+	fmt.Println("!!!>>> DEBUG CA-BUNDLE: NO SECRET")
+	if conf.Secret == nil {
+		return false
+	}
+
+	fmt.Println("!!!>>> DEBUG CA-BUNDLE", conf.Secret.Name, conf.Secret.Data)
+	if _, ok := conf.Secret.Data[constants.TrustedCABundleKey]; !ok {
+		return false
+	}
+	return true
 }
 
 func (conf *outputLabelConf) SecretPath(file string) string {

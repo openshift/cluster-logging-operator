@@ -21,6 +21,8 @@ import (
 
 const (
 	clusterLoggingPriorityClassName = "cluster-logging"
+	exporterPort                    = int32(2112)
+	exporterPortName                = "logfile-metrics"
 	metricsPort                     = int32(24231)
 	metricsPortName                 = "metrics"
 	metricsVolumeName               = "collector-metrics"

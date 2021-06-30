@@ -87,6 +87,11 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
 				TargetPort: intstr.FromString(metricsPortName),
 				Name:       metricsPortName,
 			},
+			{
+				Port:       exporterPort,
+				TargetPort: intstr.FromString(exporterPortName),
+				Name:       exporterPortName,
+			},
 		},
 	)
 
@@ -142,6 +147,16 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdServiceMonitor() er
 			// ServerName can be e.g. fluentd.openshift-logging.svc
 		},
 	}
+	logMetricExporterEndpoint := monitoringv1.Endpoint{
+		Port:   exporterPortName,
+		Path:   "/metrics",
+		Scheme: "http",
+		TLSConfig: &monitoringv1.TLSConfig{
+			CAFile:     prometheusCAFile,
+			ServerName: fmt.Sprintf("%s.%s.svc", fluentdName, cluster.Namespace),
+			// ServerName can be e.g. fluentd.openshift-logging.svc
+		},
+	}
 
 	labelSelector := metav1.LabelSelector{
 		MatchLabels: map[string]string{
@@ -151,7 +166,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileFluentdServiceMonitor() er
 
 	desired.Spec = monitoringv1.ServiceMonitorSpec{
 		JobLabel:  "monitor-fluentd",
-		Endpoints: []monitoringv1.Endpoint{endpoint},
+		Endpoints: []monitoringv1.Endpoint{endpoint, logMetricExporterEndpoint},
 		Selector:  labelSelector,
 		NamespaceSelector: monitoringv1.NamespaceSelector{
 			MatchNames: []string{cluster.Namespace},

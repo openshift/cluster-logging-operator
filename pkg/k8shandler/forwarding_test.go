@@ -81,6 +81,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					Namespace: aNamespace,
 				},
 			},
+			OutputSecrets: map[string]*corev1.Secret{},
 		}
 		cluster = request.Cluster
 	})

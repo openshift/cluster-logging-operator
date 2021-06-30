@@ -136,7 +136,21 @@ func (conf *outputLabelConf) BufferPath() string {
 }
 
 func (conf *outputLabelConf) IsTLS() bool {
-	return url.IsTLSScheme(conf.URL.Scheme) || conf.Secret != nil
+	return url.IsTLSScheme(conf.URL.Scheme)
+}
+
+func (conf *outputLabelConf) HasUsernamePassword() bool {
+	if conf.Secret == nil {
+		return false
+	}
+
+	if _, ok := conf.Secret.Data[constants.ClientUsername]; !ok {
+		return false
+	}
+	if _, ok := conf.Secret.Data[constants.ClientPassword]; !ok {
+		return false
+	}
+	return true
 }
 
 func (conf *outputLabelConf) SecretPath(file string) string {

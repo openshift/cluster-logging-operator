@@ -87,7 +87,9 @@ var _ = Describe("Generating external kafka server output store config block", f
 	       brokers broker1-kafka.svc.messaging.cluster.local:9092
 	       default_topic topic
 	       use_event_time true
-	       sasl_over_ssl false
+	       ssl_ca_cert '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
+              ssl_client_cert "#{File.exist?('/var/run/ocp-collector/secrets/some-secret/tls.crt') ? '/var/run/ocp-collector/secrets/some-secret/tls.crt' : nil}"
+              ssl_client_cert_key "#{File.exist?('/var/run/ocp-collector/secrets/some-secret/tls.key') ? '/var/run/ocp-collector/secrets/some-secret/tls.key' : nil}"
 	       <format>
 	           @type json
 	       </format>

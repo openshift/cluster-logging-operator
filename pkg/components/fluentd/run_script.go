@@ -96,10 +96,28 @@ if type -p jemalloc-config > /dev/null 2>&1 ; then
     export LD_PRELOAD=$( jemalloc-config --libdir )/libjemalloc.so.$( jemalloc-config --revision )
     export LD_BIND_NOW=1 # workaround for https://bugzilla.redhat.com/show_bug.cgi?id=1544815
 fi
-if [ -f /var/log/openshift-apiserver/audit.log.pos ] ; then
-  #https://bugzilla.redhat.com/show_bug.cgi?id=1867687
-  mv /var/log/openshift-apiserver/audit.log.pos /var/log/oauth-apiserver.audit.log
+
+# In case of an update to secure fluentd container, copy the fluentd pos files to their new
+# locations under /var/lib/fluentd/pos. Moving old pos files is not possible since /var/log
+# is mounted read-only in the secure fluentd container.
+#
+POS_FILES_DIR=${FILE_BUFFER_PATH}/pos
+mkdir -p $POS_FILES_DIR
+if [ -f /var/log/openshift-apiserver/audit.log.pos -a ! -f ${POS_FILES_DIR}/oauth-apiserver.audit.log ] ; then
+    cp /var/log/openshift-apiserver/audit.log.pos ${POS_FILES_DIR}/oauth-apiserver.audit.log
 fi
+declare -A POS_FILES_FROM_TO=( [/var/log/audit/audit.log.pos]=${POS_FILES_DIR}/audit.log.pos [/var/log/kube-apiserver/audit.log.pos]=${POS_FILES_DIR}/kube-apiserver.audit.log.pos )
+for POS_FILE in es-containers.log.pos journal_pos.json oauth-apiserver.audit.log
+do
+  POS_FILES_FROM_TO["/var/log/$pos_file"]="${POS_FILES_DIR}/$pos_file"
+done
+for FROM in "${!POS_FILES_FROM_TO[@]}"
+do
+    TO=${POS_FILES_FROM_TO[$FROM]}
+    if [ -f "$FROM" -a ! -f "$TO" ] ; then
+      cp "$FROM" "$TO"
+    fi
+done
 
 exec fluentd $fluentdargs
 

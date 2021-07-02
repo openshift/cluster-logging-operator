@@ -34,6 +34,7 @@ import (
 	consolev1 "github.com/openshift/api/console/v1"
 	oauth "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis"
 )
 
@@ -133,6 +134,11 @@ func main() {
 
 	if err := configv1.AddToScheme(mgr.GetScheme()); err != nil {
 		log.Error(err, "failed to add resources to scheme", "resource", "configv1")
+		os.Exit(1)
+	}
+
+	if err := securityv1.AddToScheme(mgr.GetScheme()); err != nil {
+		log.Error(err, "failed to add resources to scheme", "resource", "securityv1")
 		os.Exit(1)
 	}
 

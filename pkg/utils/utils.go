@@ -329,6 +329,12 @@ func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
 				}
 				continue
 			}
+			if lhsVol.EmptyDir != nil && rhsVol.EmptyDir != nil {
+				if lhsVol.EmptyDir.Medium != rhsVol.EmptyDir.Medium {
+					return false
+				}
+				continue
+			}
 
 			return false
 		} else {

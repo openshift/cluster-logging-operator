@@ -399,8 +399,13 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
 
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{
-		{Name: "varlog", MountPath: "/var/log"},
-		{Name: "varlibdockercontainers", ReadOnly: true, MountPath: "/var/lib/docker"},
+		{Name: "varlogcontainers", ReadOnly: true, MountPath: "/var/log/containers"},
+		{Name: "varlogpods", ReadOnly: true, MountPath: "/var/log/pods"},
+		{Name: "varlogjournal", ReadOnly: true, MountPath: "/var/log/journal"},
+		{Name: "varlogaudit", ReadOnly: true, MountPath: "/var/log/audit"},
+		{Name: "varlogoauthapiserver", ReadOnly: true, MountPath: "/var/log/oauth-apiserver"},
+		{Name: "varlogopenshiftapiserver", ReadOnly: true, MountPath: "/var/log/openshift-apiserver"},
+		{Name: "varlogkubeapiserver", ReadOnly: true, MountPath: "/var/log/kube-apiserver"},
 		{Name: "config", ReadOnly: true, MountPath: "/etc/fluent/configs.d/user"},
 		{Name: "secureforwardconfig", ReadOnly: true, MountPath: "/etc/fluent/configs.d/secure-forward"},
 		{Name: "secureforwardcerts", ReadOnly: true, MountPath: "/etc/ocp-forward"},
@@ -409,10 +414,9 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 		{Name: "entrypoint", ReadOnly: true, MountPath: "/opt/app-root/src/run.sh", SubPath: "run.sh"},
 		{Name: "certs", ReadOnly: true, MountPath: "/etc/fluent/keys"},
 		{Name: "localtime", ReadOnly: true, MountPath: "/etc/localtime"},
-		{Name: "dockercfg", ReadOnly: true, MountPath: "/etc/sysconfig/docker"},
-		{Name: "dockerdaemoncfg", ReadOnly: true, MountPath: "/etc/docker"},
 		{Name: "filebufferstorage", MountPath: "/var/lib/fluentd"},
-		{Name: metricsVolumeName, MountPath: "/etc/fluent/metrics"},
+		{Name: metricsVolumeName, ReadOnly: true, MountPath: "/etc/fluent/metrics"},
+		{Name: "tmp", MountPath: "/tmp"},
 	}
 
 	// List of _unique_ output secret names, several outputs may use the same secret.
@@ -426,7 +430,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 
 	for _, name := range secretNames {
 		path := fmt.Sprintf("/var/run/ocp-collector/secrets/%s", name)
-		fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts, v1.VolumeMount{Name: name, MountPath: path})
+		fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path})
 	}
 
 	addTrustedCAVolume := false
@@ -442,7 +446,11 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	}
 
 	fluentdContainer.SecurityContext = &v1.SecurityContext{
-		Privileged: utils.GetBool(true),
+		SELinuxOptions: &v1.SELinuxOptions{
+			Type: "spc_t",
+		},
+		ReadOnlyRootFilesystem:   utils.GetBool(true),
+		AllowPrivilegeEscalation: utils.GetBool(false),
 	}
 
 	tolerations := utils.AppendTolerations(
@@ -465,8 +473,13 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 		"logcollector",
 		[]v1.Container{fluentdContainer},
 		[]v1.Volume{
-			{Name: "varlog", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log"}}},
-			{Name: "varlibdockercontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/docker"}}},
+			{Name: "varlogcontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/containers"}}},
+			{Name: "varlogpods", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/pods"}}},
+			{Name: "varlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/journal"}}},
+			{Name: "varlogaudit", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/audit"}}},
+			{Name: "varlogoauthapiserver", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/oauth-apiserver"}}},
+			{Name: "varlogopenshiftapiserver", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/openshift-apiserver"}}},
+			{Name: "varlogkubeapiserver", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/kube-apiserver"}}},
 			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
 			{Name: "secureforwardconfig", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "secure-forward"}, Optional: utils.GetBool(true)}}},
 			{Name: "secureforwardcerts", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "secure-forward", Optional: utils.GetBool(true)}}},
@@ -475,10 +488,9 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 			{Name: "entrypoint", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
 			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd", Optional: utils.GetBool(true)}}},
 			{Name: "localtime", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/localtime"}}},
-			{Name: "dockercfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/sysconfig/docker"}}},
-			{Name: "dockerdaemoncfg", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/docker"}}},
 			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/fluentd"}}},
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd-metrics"}}},
+			{Name: "tmp", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
 		collectionSpec.Logs.FluentdSpec.NodeSelector,
 		tolerations,

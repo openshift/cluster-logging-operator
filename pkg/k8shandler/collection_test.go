@@ -6,6 +6,7 @@ import (
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	securityv1 "github.com/openshift/api/security/v1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	appsv1 "k8s.io/api/apps/v1"
@@ -22,6 +23,7 @@ var _ = Describe("Reconciling", func() {
 
 	_ = loggingv1.SchemeBuilder.AddToScheme(scheme.Scheme)
 	_ = monitoringv1.AddToScheme(scheme.Scheme)
+	_ = securityv1.AddToScheme(scheme.Scheme)
 
 	var (
 		cluster = &loggingv1.ClusterLogging{

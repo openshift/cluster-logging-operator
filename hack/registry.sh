@@ -3,18 +3,20 @@
 
 set -e
 
-oc registry info $* && exit 0
+oc registry info $* && exit 0	# Already works
 
 if [ "$1" = --public ]; then
     echo "activate public registry route and log in, may take several retries" 1>&2
     oc patch configs.imageregistry.operator.openshift.io/cluster --patch '{"spec":{"defaultRoute":true}}' --type=merge 1>&2
     RETRY=0
-    until [ $(( RETRY++ )) -eq 50 ] || oc registry info --public ; do
-	echo "retry.." 1>&2
+    until [ $(( RETRY++ )) -eq 50 ]; do
+	REGISTRY=$(oc registry info --public) &&
+	    test -n "$REGISTRY" &&
+	    oc registry login --insecure --registry $REGISTRY 1>&2 &&
+	    echo $REGISTRY &&
+	    exit 0
+	echo "retry registry login.." 1>&2
 	sleep 6
     done
-    [ $(( RETRY++ )) -eq 50 ] && exit 1
-    oc registry login --insecure --registry $(oc registry info --public) 1>&2
-else
-    exit 1
 fi
+exit 1

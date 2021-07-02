@@ -370,8 +370,8 @@ func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, siz
 
 func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs int, filename string) error {
 	logPath := filepath.Dir(filename)
-	cmd := fmt.Sprintf("bash -c 'mkdir -p %s;for n in {1..%d};do echo \"%s\" >> %s;done'", logPath, numOfLogs, msg, filename)
-	log.V(3).Info("Writing mesages to log with command", "cmd", cmd)
+	cmd := fmt.Sprintf("bash -c 'mkdir -p %s;for n in {1..%d};do echo \"%s\" >> %s;sleep 1s;done'", logPath, numOfLogs, msg, filename)
+	log.V(3).Info("Writing messages to log with command", "cmd", cmd)
 	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", cmd)
 	log.V(3).Info("FluentdFunctionalFramework.WriteMessagesToLog", "result", result, "err", err)
 	return err

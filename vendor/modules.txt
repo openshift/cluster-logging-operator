@@ -182,6 +182,7 @@ github.com/openshift/api/config/v1
 github.com/openshift/api/console/v1
 github.com/openshift/api/oauth/v1
 github.com/openshift/api/route/v1
+github.com/openshift/api/security/v1
 # github.com/openshift/elasticsearch-operator v0.0.0-20200722044541-14fae5dcddfd
 ## explicit
 github.com/openshift/elasticsearch-operator/pkg/apis

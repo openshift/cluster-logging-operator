@@ -773,35 +773,19 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   port {{.Port}}
   verify_es_version_at_startup false
 {{- if .Target.Secret }}
-{{ if and (.SecretPathIfFound "username") (.SecretPathIfFound "password") -}}
-{{ if and (.SecretPathIfFound "tls.key") (.SecretPathIfFound "tls.crt") -}}
   scheme https
   ssl_version TLSv1_2
-  client_key '{{ .SecretPath "tls.key"}}'
-  client_cert '{{ .SecretPath "tls.crt"}}'
-  ca_file '{{ .SecretPath "ca-bundle.crt"}}'
-{{ else -}}
-  scheme http
-{{ end -}}
-{{ with $path := .SecretPath "username" -}}
-  user "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
-{{ end -}}
-{{ with $path := .SecretPath "password" -}}
-  password "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
-{{ end -}}
-{{ else -}}
-  scheme https
-  ssl_version TLSv1_2
-  client_key '{{ .SecretPath "tls.key"}}'
-  client_cert '{{ .SecretPath "tls.crt"}}'
-  ca_file '{{ .SecretPath "ca-bundle.crt"}}'
-{{ end -}}
-{{- else}}
+{{- else }}
   scheme http
 {{- end }}
   target_index_key viaq_index_name
   id_key viaq_msg_id
   remove_keys viaq_index_name
+{{- if .Target.Secret }}
+  client_key '{{ .SecretPath "tls.key"}}'
+  client_cert '{{ .SecretPath "tls.crt"}}'
+  ca_file '{{ .SecretPath "ca-bundle.crt"}}'
+{{- end }}
   type_name _doc
 {{- if .Hints.Has "include_retry_tag" }}
   retry_tag {{.RetryTag}}

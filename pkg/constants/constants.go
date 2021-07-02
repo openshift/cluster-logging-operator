@@ -8,8 +8,6 @@ const (
 	TrustedCABundleKey         = "ca-bundle.crt"
 	ClientCertKey              = "tls.crt"
 	ClientPrivateKey           = "tls.key"
-	ClientUsername             = "username"
-	ClientPassword             = "password"
 	InjectTrustedCABundleLabel = "config.openshift.io/inject-trusted-cabundle"
 	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"

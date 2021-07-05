@@ -4,7 +4,7 @@
 set -e
 
 # This flag is set during CI runs.
-if [[ "${OPENSHIFT_CI:-}" == "true" ]]; then
+if [[ "${OPENSHIFT_CI:-}" == "false" ]]; then
     oc registry info $* && exit 0	# Already works
 
     if [ "$1" = --public ]; then

@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -583,7 +584,7 @@ var _ = Describe("Normalizing forwarder", func() {
 outputs:
 - name: default
 	secret:
-		name: fluentd
+		name: collector
 	type: elasticsearch
 	url: https://elasticsearch.openshift-logging.svc:9200
 pipelines:
@@ -617,7 +618,7 @@ pipelines:
 			Expect(spec.Outputs).To(HaveLen(1))
 			Expect(spec.Outputs[0].Name).To(Equal("default"))
 			Expect(spec.Outputs[0].URL).To(Equal("https://elasticsearch.openshift-logging.svc:9200"))
-			Expect(spec.Outputs[0].Secret.Name).To(Equal("fluentd"))
+			Expect(spec.Outputs[0].Secret.Name).To(Equal(constants.CollectorSecretName))
 			Expect(spec.Outputs[0].Type).To(Equal("elasticsearch"))
 
 			Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""))

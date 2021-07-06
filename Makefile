@@ -172,7 +172,7 @@ test-forwarder-generator: bin/forwarder-generator
 .PHONY: test-forwarder-generator
 
 test-functional-benchmarker: bin/functional-benchmarker
-	@bin/functional-benchmarker > /dev/null
+	@out=$$(bin/functional-benchmarker 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 .PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator

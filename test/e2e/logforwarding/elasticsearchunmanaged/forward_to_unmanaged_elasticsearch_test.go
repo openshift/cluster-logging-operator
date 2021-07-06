@@ -2,6 +2,7 @@ package elasticsearchunmanaged
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"path/filepath"
 	"runtime"
 
@@ -97,7 +98,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{constants.CollectorName, "elasticsearch"})
 		})
 
 		It("should send logs to the forward.Output logstore", func() {

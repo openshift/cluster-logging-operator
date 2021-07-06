@@ -3,6 +3,7 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -689,7 +690,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		AfterEach(func() {
 			e2e.Cleanup()
 			e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "syslog-receiver"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{constants.CollectorName, "syslog-receiver"})
 			generatorPayload = map[string]string{}
 		})
 	})

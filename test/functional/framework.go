@@ -280,7 +280,7 @@ done
 		AddConfigMapVolume("config", f.Name).
 		AddConfigMapVolume("entrypoint", f.Name).
 		AddConfigMapVolume("certs", certsName).
-		AddContainer(constants.FluentdName, f.image).
+		AddContainer(constants.CollectorName, f.image).
 		AddEnvVar("LOG_LEVEL", "debug").
 		AddEnvVarFromFieldRef("POD_IP", "status.podIP").
 		AddEnvVar("NODE_NAME", FunctionalNodeName).
@@ -322,7 +322,7 @@ done
 	}
 	log.V(2).Info("waiting for fluentd to be ready")
 	err = wait.PollImmediate(time.Second*2, time.Second*30, func() (bool, error) {
-		output, err := oc.Literal().From("oc logs -n %s pod/%s %s", f.Test.NS.Name, f.Name, constants.FluentdName).Run()
+		output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", f.Test.NS.Name, f.Name, constants.CollectorName).Run()
 		if err != nil {
 			return false, nil
 		}
@@ -337,7 +337,7 @@ done
 		return fmt.Errorf("fluentd did not start in the container")
 	}
 	for _, cs := range f.Pod.Status.ContainerStatuses {
-		if cs.Name == constants.FluentdName {
+		if cs.Name == constants.CollectorName {
 			f.fluentContainerId = strings.TrimPrefix(cs.ContainerID, "cri-o://")
 			break
 		}
@@ -378,7 +378,7 @@ func CreateAppLogFromJson(jsonstr string) string {
 }
 
 func (f *FluentdFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
-	filename := fmt.Sprintf("%s/%s_%s_%s-%s.log", fluentdLogPath[applicationLog], f.Pod.Name, f.Pod.Namespace, constants.FluentdName, f.fluentContainerId)
+	filename := fmt.Sprintf("%s/%s_%s_%s-%s.log", fluentdLogPath[applicationLog], f.Pod.Name, f.Pod.Namespace, constants.CollectorName, f.fluentContainerId)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
@@ -450,8 +450,8 @@ func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, siz
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
 	//podname_ns_containername-containerid.log
 	//functional_testhack-16511862744968_fluentd-90a0f0a7578d254eec640f08dd155cc2184178e793d0289dff4e7772757bb4f8.log
-	filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", f.Pod.Name, f.Pod.Namespace, constants.FluentdName, f.fluentContainerId)
-	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", fmt.Sprintf("mkdir -p /var/log/containers;echo > %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done", filepath, size, numOfLogs, msg, filepath))
+	filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", f.Pod.Name, f.Pod.Namespace, constants.CollectorName, f.fluentContainerId)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p /var/log/containers;echo > %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", filepath, size, numOfLogs, msg, filepath))
 	log.V(3).Info("FluentdFunctionalFramework.WritesNApplicationLogsOfSize", "result", result, "err", err)
 	return err
 }
@@ -461,7 +461,7 @@ func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs in
 	encoded := base64.StdEncoding.EncodeToString([]byte(msg))
 	cmd := fmt.Sprintf("mkdir -p %s;for n in {1..%d};do echo \"$(echo %s|base64 -d)\" >> %s;sleep 1s;done", logPath, numOfLogs, encoded, filename)
 	log.V(3).Info("Writing messages to log with command", "cmd", cmd)
-	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", cmd)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
 	log.V(3).Info("FluentdFunctionalFramework.WriteMessagesToLog", "result", result, "err", err)
 	return err
 }

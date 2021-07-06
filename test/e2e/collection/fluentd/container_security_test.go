@@ -4,13 +4,14 @@ import (
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
 func runInFluentdContainer(command string, args ...string) (string, error) {
-	return oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).Pod("service/fluentd").
-		Container("fluentd").WithCmd(command, args...).Run()
+	return oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).Pod("service/collector").
+		Container(constants.CollectorName).WithCmd(command, args...).Run()
 }
 
 func checkMountReadOnly(mount string) {
@@ -20,7 +21,7 @@ func checkMountReadOnly(mount string) {
 	Expect(err).To(MatchError("exit status 1"))
 }
 
-var _ = Describe("Tests of fluentd container security stance", func() {
+var _ = Describe("Tests of collector container security stance", func() {
 	e2e := helpers.NewE2ETestFramework()
 
 	BeforeEach(func() {
@@ -35,10 +36,10 @@ var _ = Describe("Tests of fluentd container security stance", func() {
 
 	AfterEach(func() {
 		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd"})
+		e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{constants.CollectorName})
 	}, helpers.DefaultCleanUpTimeout)
 
-	It("fluentd containers should have tight security settings", func() {
+	It("collector containers should have tight security settings", func() {
 		By("having all Linux capabilities disabled")
 		result, err := runInFluentdContainer("bash", "-c", "getpcaps 1 2>&1")
 		Expect(result).To(Equal("Capabilities for `1': ="))
@@ -63,7 +64,7 @@ var _ = Describe("Tests of fluentd container security stance", func() {
 		}
 
 		By("not running as a privileged container")
-		result, err = oc.Get().WithNamespace(helpers.OpenshiftLoggingNS).Pod().Selector("component=fluentd").
+		result, err = oc.Get().WithNamespace(helpers.OpenshiftLoggingNS).Pod().Selector("component=collector").
 			OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 		Expect(result).To(BeEmpty())
 		Expect(err).NotTo(HaveOccurred())

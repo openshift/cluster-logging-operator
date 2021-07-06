@@ -15,9 +15,7 @@ export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
 export APP_NAME=cluster-logging-operator
-export REGISTRY_PUBLIC=$(shell oc registry info --public)
-export REGISTRY_INTERNAL=$(shell oc registry info --internal)
-export IMAGE_TAG?=$(REGISTRY_PUBLIC)/openshift/origin-$(APP_NAME):latest
+export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 
 export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
@@ -137,20 +135,19 @@ regenerate:
 	@$(MAKE) generate
 
 deploy-image: image
-	oc registry login --skip-check
-	podman push --tls-verify=false ${IMAGE_TAG}
+	hack/deploy-image.sh
 
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
 
 install:
-	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
 	$(MAKE) cluster-logging-operator-install
 
 deploy-catalog:
-	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_PUBLIC)/openshift/cluster-logging-operator-registry \
+	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/cluster-logging-operator-registry \
 	$(MAKE) cluster-logging-catalog-build
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
 	$(MAKE) cluster-logging-catalog-deploy
 
 deploy-elasticsearch-operator:
@@ -201,8 +198,8 @@ test-e2e-olm: $(JUNITREPORT)
 test-e2e-local: $(JUNITREPORT) deploy-image
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=$(REGISTRY_INTERNAL)/openshift/origin-cluster-logging-operator:latest \
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=$(REGISTRY_INTERNAL)/openshift/cluster-logging-operator-registry:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
 	hack/test-e2e-olm.sh
 
 test-svt:

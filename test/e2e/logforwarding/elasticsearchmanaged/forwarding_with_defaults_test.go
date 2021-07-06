@@ -2,6 +2,7 @@ package elasticsearchmanaged
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"runtime"
 	"strings"
 	"time"
@@ -21,13 +22,16 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	log.Info("Running ", "filename", filename)
 	var (
-		e2e = helpers.NewE2ETestFramework()
+		e2e          = helpers.NewE2ETestFramework()
+		generatorNS  string
+		generatorPod string
+		err          error
 	)
 
 	Describe("ClusterLogging with default store", func() {
 		BeforeEach(func() {
 			appLabels := map[string]string{"logFormat": "redhat"}
-			ns, pod, err := e2e.DeployJsonLogGenerator(map[string]string{
+			generatorNS, generatorPod, err = e2e.DeployJsonLogGenerator(map[string]string{
 				"level":   "debug",
 				"logtext": "hey, this is a log line",
 			})
@@ -35,7 +39,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				Fail(fmt.Sprintf("Timed out waiting for the log generator to deploy: %v", err))
 			}
 			for k, v := range appLabels {
-				if _, err := oc.Literal().From("oc -n %s label pods %s %s=%s --overwrite=true", ns, pod, k, v).Run(); err != nil {
+				if _, err := oc.Literal().From("oc -n %s label pods %s %s=%s --overwrite=true", generatorNS, generatorPod, k, v).Run(); err != nil {
 					Fail(fmt.Sprintf("Failed to apply labels to log generator. err: %v", err))
 				}
 			}
@@ -52,7 +56,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		})
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{constants.CollectorName, "elasticsearch"})
 		}, helpers.DefaultCleanUpTimeout)
 
 		Context("forwarding logs to default output", func() {
@@ -128,6 +132,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							Name: "instance",
 						},
 						Spec: logging.ClusterLogForwarderSpec{
+							Inputs: []logging.InputSpec{
+								{
+									Name: "my-service",
+									Application: &logging.Application{
+										Namespaces: []string{generatorNS},
+									},
+								},
+							},
 							OutputDefaults: &logging.OutputDefaults{
 								Elasticsearch: &logging.Elasticsearch{
 									StructuredTypeName: IndexName,
@@ -137,7 +149,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 								{
 									Name:       "test-app",
 									OutputRefs: []string{logging.OutputNameDefault},
-									InputRefs:  []string{logging.InputNameApplication},
+									InputRefs:  []string{"my-service"},
 									Parse:      "json",
 								},
 							},

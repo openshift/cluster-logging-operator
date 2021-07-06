@@ -3,6 +3,7 @@ package fluentlegacy
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -107,7 +108,7 @@ var _ = Describe("[ClusterLogging] Forwards logs", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", constants.CollectorName, "elasticsearch"})
 		})
 	})
 

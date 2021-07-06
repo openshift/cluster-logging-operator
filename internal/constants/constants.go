@@ -20,7 +20,6 @@ const (
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
 	TrustedCABundleHashName    = "logging.openshift.io/hash"
 	SecretHashPrefix           = "logging.openshift.io/"
-	FluentdTrustedCAName       = "fluentd-trusted-ca-bundle"
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	// internal elasticsearch FQDN to prevent to connect to the global proxy
 	ElasticsearchFQDN          = "elasticsearch.openshift-logging.svc"
@@ -33,10 +32,15 @@ const (
 	LogfilesmetricexporterName = "logfilesmetricexporter"
 	LogStoreURL                = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
 	MasterCASecretName         = "master-certs"
-	CollectorSecretName        = "fluentd"
+	CollectorSecretName        = "collector"
 	// Disable gosec linter, complains "possible hard-coded secret"
 	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
+
+	CollectorName             = "collector"
+	CollectorMetricSecretName = "collector-metrics"
+	CollectorMonitorJobLabel  = "monitor-collector"
+	CollectorTrustedCAName    = "collector-trusted-ca-bundle"
 
 	LegacySecureforward = "_LEGACY_SECUREFORWARD"
 	LegacySyslog        = "_LEGACY_SYSLOG"
@@ -47,4 +51,4 @@ const (
 	ClusterInfrastructureInstance = "cluster"
 )
 
-var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}
+var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

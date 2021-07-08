@@ -756,7 +756,7 @@ tls_cert_path "{{$path}}"
   retry_type {{.RetryType}}
   retry_wait {{.RetryWait}}
   retry_max_interval {{.RetryMaxInterval}}
-  retry_forever true
+  {{.RetryTimeout}}
   # the systemd journald 0.0.8 input plugin will just throw away records if the buffer
   # queue limit is hit - 'block' will halt further reads and keep retrying to flush the
   # buffer to the remote - default is 'block' because in_tail handles that case
@@ -830,7 +830,7 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
     retry_type {{.RetryType}}
     retry_wait {{.RetryWait}}
     retry_max_interval {{.RetryMaxInterval}}
-    retry_forever true
+    {{.RetryTimeout}}
     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 {{- if .TotalLimitSize }}
     total_limit_size {{.TotalLimitSize}}
@@ -914,7 +914,7 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
     retry_type {{.RetryType}}
     retry_wait {{.RetryWait}}
     retry_max_interval {{.RetryMaxInterval}}
-    retry_forever true
+    {{.RetryTimeout}}
     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 {{- if .TotalLimitSize }}
     total_limit_size {{.TotalLimitSize}}
@@ -973,7 +973,7 @@ ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
   retry_type {{.RetryType}}
   retry_wait {{.RetryWait}}
   retry_max_interval {{.RetryMaxInterval}}
-  retry_forever true
+  {{.RetryTimeout}}
   queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 {{- if .TotalLimitSize }}
   total_limit_size {{.TotalLimitSize}}

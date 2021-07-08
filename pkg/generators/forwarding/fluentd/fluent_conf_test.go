@@ -614,7 +614,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -664,7 +664,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -728,7 +728,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -778,7 +778,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
@@ -1337,7 +1337,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -1383,7 +1383,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -1443,7 +1443,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -1489,7 +1489,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -2048,7 +2048,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -2094,7 +2094,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -2154,7 +2154,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -2200,7 +2200,7 @@ var _ = Describe("Generating fluentd config", func() {
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
-          retry_forever true
+          retry_timeout 60m
           queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
           total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
           chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -2628,7 +2628,7 @@ var _ = Describe("Generating fluentd config", func() {
 					retry_type exponential_backoff
 					retry_wait 1s
 					retry_max_interval 60s
-					retry_forever true
+					retry_timeout 60m
 					# the systemd journald 0.0.8 input plugin will just throw away records if the buffer
 					# queue limit is hit - 'block' will halt further reads and keep retrying to flush the
 					# buffer to the remote - default is 'block' because in_tail handles that case
@@ -3180,7 +3180,7 @@ var _ = Describe("Generating fluentd config", func() {
               retry_type exponential_backoff
               retry_wait 1s
               retry_max_interval 60s
-							retry_forever true
+							retry_timeout 60m
               queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 						  total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -3227,7 +3227,7 @@ var _ = Describe("Generating fluentd config", func() {
               retry_type exponential_backoff
               retry_wait 1s
  							retry_max_interval 60s
-							retry_forever true
+							retry_timeout 60m
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -3288,7 +3288,7 @@ var _ = Describe("Generating fluentd config", func() {
               retry_type exponential_backoff
               retry_wait 1s
               retry_max_interval 60s
-							retry_forever true
+							retry_timeout 60m
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -3335,7 +3335,7 @@ var _ = Describe("Generating fluentd config", func() {
               retry_type exponential_backoff
               retry_wait 1s
               retry_max_interval 60s
-							retry_forever true
+							retry_timeout 60m
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -3396,7 +3396,7 @@ var _ = Describe("Generating fluentd config", func() {
               retry_type exponential_backoff
               retry_wait 1s
               retry_max_interval 60s
-							retry_forever true
+							retry_timeout 60m
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -3443,7 +3443,7 @@ var _ = Describe("Generating fluentd config", func() {
               retry_type exponential_backoff
               retry_wait 1s
               retry_max_interval 60s
-							retry_forever true
+							retry_timeout 60m
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -3504,7 +3504,7 @@ var _ = Describe("Generating fluentd config", func() {
               retry_type exponential_backoff
               retry_wait 1s
               retry_max_interval 60s
-							retry_forever true
+							retry_timeout 60m
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
@@ -3551,7 +3551,7 @@ var _ = Describe("Generating fluentd config", func() {
               retry_type exponential_backoff
               retry_wait 1s
               retry_max_interval 60s
-							retry_forever true
+							retry_timeout 60m
 							queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
 							total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
 							chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"

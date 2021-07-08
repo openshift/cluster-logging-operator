@@ -356,6 +356,12 @@ type FluentdBufferSpec struct {
 	//
 	// +optional
 	RetryMaxInterval FluentdTimeUnit `json:"retryMaxInterval"`
+
+	// RetryTimeout represents the maxixum time interval to attempt retries before giving up
+	// and the record is disguarded.  If unspecified, the default will be used
+	//
+	// +optional
+	RetryTimeout FluentdTimeUnit `json:"retryTimeout"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

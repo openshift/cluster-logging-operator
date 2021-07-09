@@ -8,10 +8,14 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
+func runInFluentdContainer(command string, args ...string) (string, error) {
+	return oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).Pod("service/fluentd").
+		Container("fluentd").WithCmd(command, args...).Run()
+}
+
 func checkMountReadOnly(mount string) {
 	touchFile := mount + "/1"
-	result, err := oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).Pod("service/fluentd").
-		WithCmd("bash", "-c", "touch "+touchFile).Run()
+	result, err := runInFluentdContainer("bash", "-c", "touch "+touchFile)
 	Expect(result).To(HavePrefix("touch: cannot touch '" + touchFile + "': Read-only file system"))
 	Expect(err).To(MatchError("exit status 1"))
 }
@@ -36,20 +40,17 @@ var _ = Describe("Tests of fluentd container security stance", func() {
 
 	It("fluentd containers should have tight security settings", func() {
 		By("having all Linux capabilities disabled")
-		result, err := oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).Pod("service/fluentd").
-			WithCmd("bash", "-c", "getpcaps 1 2>&1").Run()
+		result, err := runInFluentdContainer("bash", "-c", "getpcaps 1 2>&1")
 		Expect(result).To(Equal("Capabilities for `1': ="))
 		Expect(err).NotTo(HaveOccurred())
 
 		By("having all sysctls disabled")
-		result, err = oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).Pod("service/fluentd").
-			WithCmd("/usr/sbin/sysctl", "net.ipv4.ip_local_port_range=0").Run()
+		result, err = runInFluentdContainer("/usr/sbin/sysctl", "net.ipv4.ip_local_port_range=0")
 		Expect(result).To(HavePrefix("sysctl: setting key \"net.ipv4.ip_local_port_range\": Read-only file system"))
 		Expect(err).To(MatchError("exit status 255"))
 
 		By("disabling privilege escalation")
-		result, err = oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).Pod("service/fluentd").
-			WithCmd("bash", "-c", "cat /proc/1/status | grep NoNewPrivs").Run()
+		result, err = runInFluentdContainer("bash", "-c", "cat /proc/1/status | grep NoNewPrivs")
 		Expect(result).To(Equal("NoNewPrivs:\t1"))
 		Expect(err).NotTo(HaveOccurred())
 

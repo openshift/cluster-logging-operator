@@ -56,8 +56,8 @@ const (
   append true
   path /tmp/app.logs
   symlink_path /tmp/app-logs
-  </match>
-  <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+</match>
+<match linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
   @type file
   append true
   path /tmp/audit.logs
@@ -85,8 +85,8 @@ const (
   append true
   path /tmp/app.logs
   symlink_path /tmp/app-logs
-  </match>
-  <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+</match>
+<match linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
   @type file
   append true
   path /tmp/audit.logs

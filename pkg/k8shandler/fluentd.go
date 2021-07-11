@@ -37,6 +37,44 @@ const (
 	fluentdRequiredESVersion = "6"
 	logVolumeMountName       = "varlog"
 	logVolumePath            = "/var/log"
+	logContainers            = "varlogcontainers"
+	logContainersValue       = "/var/log/containers"
+	logPods                  = "varlogpods"
+	logPodsValue             = "/var/log/pods"
+	logJournal               = "varlogjournal"
+	logJournalValue          = "/var/log/journal"
+	logAudit                 = "varlogaudit"
+	logAuditValue            = "/var/log/audit"
+	logOvn                   = "varlogovn"
+	logOvnValue              = "/var/log/ovn"
+	logOauthapiserver        = "varlogoauthapiserver"
+	logOauthapiserverValue   = "/var/log/oauth-apiserver"
+	logOpenshiftapiserver    = "varlogopenshiftapiserver"
+
+	logOpenshiftapiserverValue = "/var/log/openshift-apiserver"
+	logKubeapiserver           = "varlogkubeapiserver"
+	logKubeapiserverValue      = "/var/log/kube-apiserver"
+	config                     = "config"
+	configValue                = "/etc/fluent/configs.d/user"
+	secureforwardconfig        = "secureforwardconfig"
+	secureforwardconfigValue   = "/etc/fluent/configs.d/secure-forward"
+	secureforwardcerts         = "secureforwardcerts"
+	secureforwardcertsValue    = "/etc/ocp-forward"
+	syslogconfig               = "syslogconfig"
+	syslogconfigValue          = "/etc/fluent/configs.d/syslog"
+	syslogcerts                = "syslogcerts"
+	syslogcertsValue           = "/etc/ocp-syslog"
+	entrypoint                 = "entrypoint"
+	entrypointValue            = "/opt/app-root/src/run.sh"
+	certs                      = "certs"
+	certsValue                 = "/etc/fluent/keys"
+	localtime                  = "localtime"
+	localtimeValue             = "/etc/localtime"
+	filebufferstorage          = "filebufferstorage"
+	filebufferstorageValue     = "/var/lib/fluentd"
+	metricsVolumeValue         = "/etc/fluent/metrics"
+	tmp                        = "tmp"
+	tmpValue                   = "/tmp"
 )
 
 func (clusterRequest *ClusterLoggingRequest) removeFluentd() (err error) {
@@ -413,29 +451,30 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	fluentdContainer.Env = append(fluentdContainer.Env, proxyEnv...)
 
 	fluentdContainer.VolumeMounts = []v1.VolumeMount{
-		{Name: "varlogcontainers", ReadOnly: true, MountPath: "/var/log/containers"},
-		{Name: "varlogpods", ReadOnly: true, MountPath: "/var/log/pods"},
-		{Name: "varlogjournal", ReadOnly: true, MountPath: "/var/log/journal"},
-		{Name: "varlogaudit", ReadOnly: true, MountPath: "/var/log/audit"},
-		{Name: "varlogoauthapiserver", ReadOnly: true, MountPath: "/var/log/oauth-apiserver"},
-		{Name: "varlogopenshiftapiserver", ReadOnly: true, MountPath: "/var/log/openshift-apiserver"},
-		{Name: "varlogkubeapiserver", ReadOnly: true, MountPath: "/var/log/kube-apiserver"},
-		{Name: "config", ReadOnly: true, MountPath: "/etc/fluent/configs.d/user"},
-		{Name: "secureforwardconfig", ReadOnly: true, MountPath: "/etc/fluent/configs.d/secure-forward"},
-		{Name: "secureforwardcerts", ReadOnly: true, MountPath: "/etc/ocp-forward"},
-		{Name: "syslogconfig", ReadOnly: true, MountPath: "/etc/fluent/configs.d/syslog"},
-		{Name: "syslogcerts", ReadOnly: true, MountPath: "/etc/ocp-syslog"},
-		{Name: "entrypoint", ReadOnly: true, MountPath: "/opt/app-root/src/run.sh", SubPath: "run.sh"},
-		{Name: "certs", ReadOnly: true, MountPath: "/etc/fluent/keys"},
-		{Name: "localtime", ReadOnly: true, MountPath: "/etc/localtime"},
-		{Name: "filebufferstorage", MountPath: "/var/lib/fluentd"},
-		{Name: metricsVolumeName, ReadOnly: true, MountPath: "/etc/fluent/metrics"},
-		{Name: "tmp", MountPath: "/tmp"},
+		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
+		{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
+		{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
+		{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
+		{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
+		{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+		{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
+		{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
+		{Name: config, ReadOnly: true, MountPath: configValue},
+		{Name: secureforwardconfig, ReadOnly: true, MountPath: secureforwardconfigValue},
+		{Name: secureforwardcerts, ReadOnly: true, MountPath: secureforwardcertsValue},
+		{Name: syslogconfig, ReadOnly: true, MountPath: syslogconfigValue},
+		{Name: syslogcerts, ReadOnly: true, MountPath: syslogcertsValue},
+		{Name: entrypoint, ReadOnly: true, MountPath: entrypointValue, SubPath: "run.sh"},
+		{Name: certs, ReadOnly: true, MountPath: certsValue},
+		{Name: localtime, ReadOnly: true, MountPath: localtimeValue},
+		{Name: filebufferstorage, MountPath: filebufferstorageValue},
+		{Name: metricsVolumeName, ReadOnly: true, MountPath: metricsVolumeValue},
+		{Name: tmp, MountPath: tmpValue},
 	}
 
 	exporterContainer.VolumeMounts = []v1.VolumeMount{
 		{Name: logVolumeMountName, MountPath: logVolumePath},
-		{Name: metricsVolumeName, MountPath: "/etc/fluent/metrics"},
+		{Name: metricsVolumeName, MountPath: metricsVolumeValue},
 	}
 	// Setting up CMD for log-file-metric-exporter
 	exporterContainer.Command = []string{"/usr/local/bin/log-file-metric-exporter", "  -verbosity=2", " -dir=/var/log/containers", " -http=:2112", " -keyFile=/etc/fluent/metrics/tls.key", " -crtFile=/etc/fluent/metrics/tls.crt"}
@@ -502,24 +541,25 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 		[]v1.Container{fluentdContainer, exporterContainer},
 		[]v1.Volume{
 			{Name: logVolumeMountName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logVolumePath}}},
-			{Name: "varlogcontainers", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/containers"}}},
-			{Name: "varlogpods", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/pods"}}},
-			{Name: "varlogjournal", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/journal"}}},
-			{Name: "varlogaudit", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/audit"}}},
-			{Name: "varlogoauthapiserver", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/oauth-apiserver"}}},
-			{Name: "varlogopenshiftapiserver", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/openshift-apiserver"}}},
-			{Name: "varlogkubeapiserver", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/log/kube-apiserver"}}},
-			{Name: "config", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
-			{Name: "secureforwardconfig", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "secure-forward"}, Optional: utils.GetBool(true)}}},
-			{Name: "secureforwardcerts", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "secure-forward", Optional: utils.GetBool(true)}}},
-			{Name: "syslogconfig", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: syslogName}, Optional: utils.GetBool(true)}}},
-			{Name: "syslogcerts", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: syslogName, Optional: utils.GetBool(true)}}},
-			{Name: "entrypoint", VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
-			{Name: "certs", VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd", Optional: utils.GetBool(true)}}},
-			{Name: "localtime", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/etc/localtime"}}},
-			{Name: "filebufferstorage", VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: "/var/lib/fluentd"}}},
+			{Name: logContainers, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logContainersValue}}},
+			{Name: logPods, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logPodsValue}}},
+			{Name: logJournal, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logJournalValue}}},
+			{Name: logAudit, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logAuditValue}}},
+			{Name: logOvn, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOvnValue}}},
+			{Name: logOauthapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthapiserverValue}}},
+			{Name: logOpenshiftapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
+			{Name: logKubeapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
+			{Name: config, VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
+			{Name: secureforwardconfig, VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "secure-forward"}, Optional: utils.GetBool(true)}}},
+			{Name: secureforwardcerts, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "secure-forward", Optional: utils.GetBool(true)}}},
+			{Name: syslogconfig, VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: syslogName}, Optional: utils.GetBool(true)}}},
+			{Name: syslogcerts, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: syslogName, Optional: utils.GetBool(true)}}},
+			{Name: entrypoint, VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: "fluentd"}}}},
+			{Name: certs, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd", Optional: utils.GetBool(true)}}},
+			{Name: localtime, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: localtimeValue}}},
+			{Name: filebufferstorage, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: filebufferstorageValue}}},
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: "fluentd-metrics"}}},
-			{Name: "tmp", VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
+			{Name: tmp, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
 		collectionSpec.Logs.FluentdSpec.NodeSelector,
 		tolerations,

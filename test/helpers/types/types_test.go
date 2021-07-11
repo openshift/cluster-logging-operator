@@ -266,6 +266,25 @@ const (
   "kubernetes": {}
 }
 `
+	OVNAuditLogStr = `
+{
+  "hostname": "crc-j55b9-master-0",
+  "message": "2021-07-06T08:26:58.687Z|00004|acl_log(ovn_pinctrl0)|INFO|name=verify-audit-logging_deny-all, verdict=drop",
+  "pipeline_metadata": {
+    "collector": {
+      "ipaddr4": "192.168.126.11",
+      "inputname": "fluent-plugin-systemd",
+      "name": "fluentd",
+      "received_at": "2020-11-29T13:16:49.021493+00:00",
+      "version": "1.7.4 1.6.0"
+    }
+  },
+  "@timestamp": "2021-07-06T08:26:58.687000+00:00",
+  "viaq_index_name": "audit-write",
+  "viaq_msg_id": "Y2M1NThmYzUtODYxYS00MzY5LWJmZDQtN2FkYjk4ZDlmYjE3",
+  "kubernetes": {}
+}
+   `
 )
 
 func join(log ...string) string {
@@ -327,6 +346,19 @@ func TestDecodeInfraLogs(t *testing.T) {
 func TestDecodeLinuxAuditLogs(t *testing.T) {
 	var logs []LinuxAuditLog
 	in := join(LinuxAuditLogStr)
+	dec := json.NewDecoder(strings.NewReader(in))
+	dec.DisallowUnknownFields()
+	err := dec.Decode(&logs)
+	if err != nil {
+		fmt.Printf("%#v", err)
+		t.Fail()
+	}
+}
+
+// Decode Ovn Audit logs
+func TestDecodeOvnAuditLogs(t *testing.T) {
+	var logs []OVNAuditLog
+	in := join(OVNAuditLogStr)
 	dec := json.NewDecoder(strings.NewReader(in))
 	dec.DisallowUnknownFields()
 	err := dec.Decode(&logs)

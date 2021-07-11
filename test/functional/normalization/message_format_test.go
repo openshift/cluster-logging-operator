@@ -151,4 +151,32 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 	})
 
+	It("should parse ovn audit log correctly", func() {
+		// Log message data
+		level := "info"
+		ovnLogLine := "2021-07-06T08:26:58.687Z|00004|acl_log(ovn_pinctrl0)|INFO|name=verify-audit-logging_deny-all, verdict=drop"
+
+		// Template expected as output Log
+		var outputLogTemplate = types.OVNAuditLog{
+			Message:          ovnLogLine,
+			Level:            level,
+			Timestamp:        time.Time{},
+			ViaqIndexName:    "audit-write",
+			ViaqMsgID:        "*",
+			PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+		}
+		outputLogTemplate.PipelineMetadata.Collector.ReceivedAt = time.Time{}
+		// Write log line as input to fluentd
+		Expect(framework.WriteMessagesToOVNAuditLog(ovnLogLine, 10)).To(BeNil())
+		// Read line from Log Forward output
+		raw, err := framework.ReadOvnAuditLogsFrom(logging.OutputTypeFluentdForward)
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		var logs []types.OVNAuditLog
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
+		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+		// Compare to expected template
+		outputTestLog := logs[0]
+		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+	})
+
 })

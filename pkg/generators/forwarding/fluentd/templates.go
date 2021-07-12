@@ -138,13 +138,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 #syslog input config here
 
 <label @INGRESS>
-
   ## filters
-  <filter **>
-    @type record_modifier
-    char_encoding utf-8
-  </filter>
-
   <filter journal>
     @type grep
     <exclude>
@@ -634,6 +628,10 @@ const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
   </filter>
   {{- end}}
   {{- if .IsElasticSearchOutput}}
+  <filter **>
+    @type record_modifier
+    char_encoding ascii-8bit:utf-8
+  </filter>
   #flatten labels to prevent field explosion in ES
   <filter ** >
     @type record_transformer

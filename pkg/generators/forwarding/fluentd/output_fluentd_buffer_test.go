@@ -60,6 +60,10 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should provide a default buffer configuration", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+			<filter **>
+			  @type record_modifier
+			  char_encoding ascii-8bit:utf-8
+			</filter>
           <match retry_other_elasticsearch>
             @type copy
             <store>
@@ -173,6 +177,10 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should provide a default buffer configuration", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+			<filter **>
+			  @type record_modifier
+			  char_encoding ascii-8bit:utf-8
+			</filter>
           <match retry_other_elasticsearch>
             @type copy
             <store>
@@ -269,6 +277,10 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should override buffer configuration for given tuning parameters", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+			<filter **>
+			  @type record_modifier
+			  char_encoding ascii-8bit:utf-8
+			</filter>
           <match retry_other_elasticsearch>
             @type copy
             <store>

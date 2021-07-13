@@ -225,11 +225,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <label @INGRESS>
 
           ## filters
-          <filter **>
-            @type record_modifier
-            char_encoding utf-8
-          </filter>
-
           <filter journal>
             @type grep
             <exclude>
@@ -719,13 +714,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         #syslog input config here
 
         <label @INGRESS>
-
-          ## filters
-          <filter **>
-            @type record_modifier
-            char_encoding utf-8
-          </filter>
-
+			## filters
           <filter journal>
             @type grep
             <exclude>
@@ -1228,11 +1217,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         <label @INGRESS>
 
           ## filters
-          <filter **>
-            @type record_modifier
-            char_encoding utf-8
-          </filter>
-
           <filter journal>
             @type grep
             <exclude>

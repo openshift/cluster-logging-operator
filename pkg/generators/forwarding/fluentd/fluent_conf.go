@@ -78,6 +78,10 @@ func (conf *outputLabelConf) BufferPath() string {
 	return fmt.Sprintf("/var/lib/fluentd/%s", conf.StoreID())
 }
 
+func (conf *outputLabelConf) IsElasticSearchOutput() bool {
+	return conf.Target.Type == logging.OutputTypeElasticsearch
+}
+
 func (conf *outputLabelConf) IsTLS() bool {
 	return url.IsTLSScheme(conf.URL.Scheme) || conf.Secret != nil
 }

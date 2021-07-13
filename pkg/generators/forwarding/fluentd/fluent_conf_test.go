@@ -263,11 +263,6 @@ var _ = Describe("Generating fluentd config", func() {
   <label @INGRESS>
   
     ## filters
-    <filter **>
-      @type record_modifier
-      char_encoding utf-8
-    </filter>
-  
     <filter journal>
       @type grep
       <exclude>
@@ -572,6 +567,10 @@ var _ = Describe("Generating fluentd config", func() {
   
   # Ship logs to specific outputs
   <label @APPS_ES_1>
+    <filter **>
+      @type record_modifier
+      char_encoding ascii-8bit:utf-8
+    </filter>
     <match retry_apps_es_1>
       @type copy
       <store>
@@ -673,6 +672,10 @@ var _ = Describe("Generating fluentd config", func() {
     </match>
   </label>
   <label @APPS_ES_2>
+    <filter **>
+      @type record_modifier
+      char_encoding ascii-8bit:utf-8
+    </filter>
     <match retry_apps_es_2>
       @type copy
       <store>
@@ -933,10 +936,6 @@ var _ = Describe("Generating fluentd config", func() {
 
 			<label @INGRESS>
 				## filters
-				<filter **>
-					@type record_modifier
-					char_encoding utf-8
-				</filter>
 				<filter journal>
 					@type grep
 					<exclude>
@@ -1423,10 +1422,6 @@ var _ = Describe("Generating fluentd config", func() {
 
 			<label @INGRESS>
 				## filters
-				<filter **>
-					@type record_modifier
-					char_encoding utf-8
-				</filter>
 				<filter journal>
 					@type grep
 					<exclude>
@@ -1711,6 +1706,10 @@ var _ = Describe("Generating fluentd config", func() {
 
 			# Ship logs to specific outputs
 			<label @INFRA_ES>
+				<filter **>
+					@type record_modifier
+					char_encoding ascii-8bit:utf-8
+				</filter>
 				<match retry_infra_es>
 					@type copy
 					<store>
@@ -1806,6 +1805,10 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>
 			<label @APPS_ES_1>
+				<filter **>
+					@type record_modifier
+					char_encoding ascii-8bit:utf-8
+				</filter>
 				<match retry_apps_es_1>
 					@type copy
 					<store>
@@ -1901,6 +1904,10 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>
 			<label @APPS_ES_2>
+				<filter **>
+					@type record_modifier
+					char_encoding ascii-8bit:utf-8
+				</filter>
 				<match retry_apps_es_2>
 					@type copy
 					<store>
@@ -1996,6 +2003,10 @@ var _ = Describe("Generating fluentd config", func() {
 				</match>
 			</label>
 			<label @AUDIT_ES>
+				<filter **>
+					@type record_modifier
+					char_encoding ascii-8bit:utf-8
+				</filter>
 				<match retry_audit_es>
 					@type copy
 					<store>
@@ -2268,11 +2279,6 @@ var _ = Describe("Generating fluentd config", func() {
     <label @INGRESS>
     
       ## filters
-      <filter **>
-        @type record_modifier
-        char_encoding utf-8
-      </filter>
-    
       <filter journal>
         @type grep
         <exclude>

@@ -139,11 +139,6 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 <label @INGRESS>
 
   ## filters
-  <filter **>
-    @type record_modifier
-    char_encoding utf-8
-  </filter>
-
   <filter journal>
     @type grep
     <exclude>
@@ -586,6 +581,12 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
 
 const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
 <label {{.LabelName}}>
+  {{- if .IsElasticSearchOutput}}
+  <filter **>
+    @type record_modifier
+    char_encoding ascii-8bit:utf-8
+  </filter>
+  {{- end}}
   <match {{.RetryTag}}>
     @type copy
 {{ include .StoreTemplate . "prefix_as_retry" | indent 4}}

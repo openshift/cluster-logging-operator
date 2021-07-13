@@ -65,6 +65,10 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @ONCLUSTER_ELASTICSEARCH>
+    <filter **>
+		@type record_modifier
+		char_encoding ascii-8bit:utf-8
+    </filter>
 	<match retry_oncluster_elasticsearch>
 		@type copy
 		<store>
@@ -177,6 +181,10 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			results, err := generator.generateOutputLabelBlocks(outputs, nil, forwarderSpec)
 			Expect(err).To(BeNil())
 			Expect(results[0]).To(EqualTrimLines(`<label @OTHER_ELASTICSEARCH>
+    <filter **>
+		@type record_modifier
+		char_encoding ascii-8bit:utf-8
+    </filter>
 	<match retry_other_elasticsearch>
 		@type copy
 		<store>

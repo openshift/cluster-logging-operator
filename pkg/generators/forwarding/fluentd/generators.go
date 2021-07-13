@@ -217,13 +217,18 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 	for sourceType, pipelineNames := range sourcesToPipelines {
 		templateName := "sourceToPipelineCopyTemplate"
 		namespaces := []string{}
+		applicationAll := sets.NewString()
 		if sourceType == logging.InputNameApplication {
 			templateName = "namespaceToPipelineTemplate"
 			namespaces = appNSToPipelines.Keys()
 			sort.Strings(namespaces)
 			// empty means ALL which MUST come last
-			if len(namespaces) >= 2 && namespaces[0] == "" {
-				namespaces = append(namespaces[1:], "")
+			if len(namespaces) == 1 && namespaces[0] == "" {
+				applicationAll = appNSToPipelines[namespaces[0]]
+				namespaces = []string{}
+			} else if len(namespaces) >= 2 && namespaces[0] == "" {
+				applicationAll = appNSToPipelines[namespaces[0]]
+				namespaces = namespaces[1:]
 			}
 		}
 		data := struct {
@@ -233,6 +238,7 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 			PipelineNames              []string
 			AppNamespaces              []string
 			PipeLines                  logging.RouteMap
+			AppAllPipelineNames        []string
 		}{
 			engine.includeLegacyForwardConfig,
 			engine.includeLegacySyslogConfig,
@@ -240,6 +246,7 @@ func (engine *ConfigGenerator) generateSourceToPipelineLabels(sourcesToPipelines
 			pipelineNames.List(),
 			namespaces,
 			appNSToPipelines,
+			applicationAll.List(),
 		}
 		result, err := engine.Execute(templateName, data)
 		if err != nil {

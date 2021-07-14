@@ -264,6 +264,11 @@ var _ = Describe("Generating fluentd config", func() {
   <label @INGRESS>
 
     ## filters
+    <filter **>
+      @type record_modifier
+      char_encoding utf-8
+    </filter>
+
     <filter journal>
       @type grep
       <exclude>
@@ -559,10 +564,6 @@ var _ = Describe("Generating fluentd config", func() {
 	  @type record_modifier
 	  remove_keys structured
 	</filter>
-	<filter **>
-		@type record_modifier
-		char_encoding ascii-8bit:utf-8
-	</filter>
     #flatten labels to prevent field explosion in ES
     <filter ** >
       @type record_transformer
@@ -676,10 +677,6 @@ var _ = Describe("Generating fluentd config", func() {
 	<filter **>
 	  @type record_modifier
 	  remove_keys structured
-	</filter>
-	<filter **>
-		@type record_modifier
-		char_encoding ascii-8bit:utf-8
 	</filter>
     #flatten labels to prevent field explosion in ES
     <filter ** >
@@ -991,6 +988,11 @@ var _ = Describe("Generating fluentd config", func() {
   <label @INGRESS>
 
     ## filters
+    <filter **>
+      @type record_modifier
+      char_encoding utf-8
+    </filter>
+
     <filter journal>
       @type grep
       <exclude>
@@ -1281,10 +1283,6 @@ var _ = Describe("Generating fluentd config", func() {
 	  @type record_modifier
 	  remove_keys structured
 	</filter>
-	<filter **>
-		@type record_modifier
-		char_encoding ascii-8bit:utf-8
-	</filter>
 	#flatten labels to prevent field explosion in ES    
 	<filter ** >       
 		@type record_transformer    
@@ -1390,10 +1388,6 @@ var _ = Describe("Generating fluentd config", func() {
 	<filter **>
 	  @type record_modifier
 	  remove_keys structured
-	</filter>
-	<filter **>
-		@type record_modifier
-		char_encoding ascii-8bit:utf-8
 	</filter>
 	#flatten labels to prevent field explosion in ES    
 	<filter ** >       
@@ -1699,6 +1693,11 @@ var _ = Describe("Generating fluentd config", func() {
   <label @INGRESS>
 
     ## filters
+    <filter **>
+      @type record_modifier
+      char_encoding utf-8
+    </filter>
+
     <filter journal>
       @type grep
       <exclude>
@@ -1991,10 +1990,6 @@ var _ = Describe("Generating fluentd config", func() {
 	  @type record_modifier
 	  remove_keys structured
 	</filter>
-	<filter **>
-		@type record_modifier
-		char_encoding ascii-8bit:utf-8
-	</filter>
 	#flatten labels to prevent field explosion in ES    
 	<filter ** >       
 		@type record_transformer    
@@ -2100,10 +2095,6 @@ var _ = Describe("Generating fluentd config", func() {
 	<filter **>
 	  @type record_modifier
 	  remove_keys structured
-	</filter>
-	<filter **>
-		@type record_modifier
-		char_encoding ascii-8bit:utf-8
 	</filter>
 	#flatten labels to prevent field explosion in ES    
 	<filter ** >       
@@ -2366,6 +2357,10 @@ var _ = Describe("Generating fluentd config", func() {
 
 			<label @INGRESS>
 				## filters
+				<filter **>
+					@type record_modifier
+					char_encoding utf-8
+				</filter>
 				<filter journal>
 					@type grep
 					<exclude>
@@ -2843,6 +2838,10 @@ var _ = Describe("Generating fluentd config", func() {
 
 			<label @INGRESS>
 				## filters
+				<filter **>
+					@type record_modifier
+					char_encoding utf-8
+				</filter>
 				<filter journal>
 					@type grep
 					<exclude>
@@ -3122,10 +3121,6 @@ var _ = Describe("Generating fluentd config", func() {
 				  @type record_modifier
 				  remove_keys structured
 				</filter>
-          		<filter **>
-            		@type record_modifier
-            		char_encoding ascii-8bit:utf-8
-          		</filter>
 				#flatten labels to prevent field explosion in ES
 				<filter ** >
 					@type record_transformer
@@ -3234,10 +3229,6 @@ var _ = Describe("Generating fluentd config", func() {
 				  @type record_modifier
 				  remove_keys structured
 				</filter>
-          		<filter **>
-            		@type record_modifier
-            		char_encoding ascii-8bit:utf-8
-          		</filter>
 				#flatten labels to prevent field explosion in ES
 				<filter ** >
 					@type record_transformer
@@ -3346,10 +3337,6 @@ var _ = Describe("Generating fluentd config", func() {
 				  @type record_modifier
 				  remove_keys structured
 				</filter>
-          		<filter **>
-            		@type record_modifier
-            		char_encoding ascii-8bit:utf-8
-          		</filter>
 				#flatten labels to prevent field explosion in ES
 				<filter ** >
 					@type record_transformer
@@ -3458,10 +3445,6 @@ var _ = Describe("Generating fluentd config", func() {
 				  @type record_modifier
 				  remove_keys structured
 				</filter>
-          		<filter **>
-            		@type record_modifier
-            		char_encoding ascii-8bit:utf-8
-          		</filter>
 				#flatten labels to prevent field explosion in ES
 				<filter ** >
 					@type record_transformer
@@ -3796,6 +3779,11 @@ var _ = Describe("Generating fluentd config", func() {
     <label @INGRESS>
 
       ## filters
+      <filter **>
+        @type record_modifier
+        char_encoding utf-8
+      </filter>
+
       <filter journal>
         @type grep
         <exclude>

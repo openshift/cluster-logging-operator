@@ -534,16 +534,20 @@ const inputSelectorToPipelineTemplate = `{{- define "inputSelectorToPipelineTemp
 <label {{sourceTypelabelName .Source}}>
   <match **>
     @type label_router
-{{- if .PipelineNames }}
-    default_route {{sourceTypelabelName .Source}}_DEFAULT
-{{- end }}
     {{- range .InputSelectors }}
     {{ . }}
     {{- end}}
+{{- if .PipelineNames }}
+    <route>
+      @label {{sourceTypelabelName .Source}}_ALL
+      <match>
+      </match>
+    </route>
+{{- end }}
   </match>
 </label>
 {{ if .PipelineNames -}}
-<label {{sourceTypelabelName .Source}}_DEFAULT>
+<label {{sourceTypelabelName .Source}}_ALL>
   <match **>
     @type copy
 {{- range $index, $pipelineLabel := .PipelineNames }}

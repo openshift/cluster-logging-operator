@@ -41,6 +41,8 @@ spec:
           value: ${IMAGE_ELASTICSEARCH6}
         - name: IMAGE_LOGGING_KIBANA6
           value: ${IMAGE_LOGGING_KIBANA6}
+        - name: IMAGE_LOG_FILE_METRIC_EXPORTER
+          value: ${IMAGE_LOG_FILE_METRIC_EXPORTER}
 
       containers:
       - name: cluster-logging-operator-registry

@@ -6,6 +6,7 @@ export IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=${IMAGE_CLUSTER_LOGGING_OPERATOR_
 export IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:cluster-logging-operator}
 export IMAGE_LOGGING_CURATOR5=${IMAGE_LOGGING_CURATOR5:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:logging-curator5}
 export IMAGE_LOGGING_FLUENTD=${IMAGE_LOGGING_FLUENTD:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:logging-fluentd}
+export IMAGE_LOG_FILE_METRIC_EXPORTER=${IMAGE_LOG_FILE_METRIC_EXPORTER:-registry.ci.openshift.org/${LOGGING_IS}/${LOGGING_VERSION}:log-file-metric-exporter}
 
 CLUSTER_LOGGING_OPERATOR_NAMESPACE=${CLUSTER_LOGGING_OPERATOR_NAMESPACE:-openshift-logging}
 
@@ -14,6 +15,7 @@ echo "cluster logging operator registry: ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGIST
 echo "cluster logging operator: ${IMAGE_CLUSTER_LOGGING_OPERATOR}"
 echo "curator5: ${IMAGE_LOGGING_CURATOR5}"
 echo "fluentd: ${IMAGE_LOGGING_FLUENTD}"
+echo "log-file-metric-exporter: ${IMAGE_LOG_FILE_METRIC_EXPORTER}"
 
 echo "In namespace: ${CLUSTER_LOGGING_OPERATOR_NAMESPACE}"
 

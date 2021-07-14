@@ -140,11 +140,6 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 <label @INGRESS>
 
   ## filters
-  <filter **>
-    @type record_modifier
-    char_encoding utf-8
-  </filter>
-
   <filter journal>
     @type grep
     <exclude>

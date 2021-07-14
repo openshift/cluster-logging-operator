@@ -18,16 +18,17 @@ const (
 	FluentdTrustedCAName       = "fluentd-trusted-ca-bundle"
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	// internal elasticsearch FQDN to prevent to connect to the global proxy
-	ElasticsearchFQDN   = "elasticsearch.openshift-logging.svc"
-	ElasticsearchName   = "elasticsearch"
-	ElasticsearchPort   = "9200"
-	FluentdName         = "fluentd"
-	KibanaName          = "kibana"
-	KibanaProxyName     = "kibana-proxy"
-	CuratorName         = "curator"
-	LogStoreURL         = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
-	MasterCASecretName  = "master-certs"
-	CollectorSecretName = "fluentd"
+	ElasticsearchFQDN          = "elasticsearch.openshift-logging.svc"
+	ElasticsearchName          = "elasticsearch"
+	ElasticsearchPort          = "9200"
+	FluentdName                = "fluentd"
+	KibanaName                 = "kibana"
+	KibanaProxyName            = "kibana-proxy"
+	CuratorName                = "curator"
+	LogfilesmetricexporterName = "logfilesmetricexporter"
+	LogStoreURL                = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
+	MasterCASecretName         = "master-certs"
+	CollectorSecretName        = "fluentd"
 	// Disable gosec linter, complains "possible hard-coded secret"
 	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
@@ -35,8 +36,9 @@ const (
 	LegacySecureforward = "_LEGACY_SECUREFORWARD"
 	LegacySyslog        = "_LEGACY_SYSLOG"
 
-	FluentdImageEnvVar = "FLUENTD_IMAGE"
-	CertEventName      = "cluster-logging-certs-generate"
+	FluentdImageEnvVar        = "FLUENTD_IMAGE"
+	LogfilesmetricImageEnvVar = "LOGFILEMETRICEXPORTER_IMAGE"
+	CertEventName             = "cluster-logging-certs-generate"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

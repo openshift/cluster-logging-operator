@@ -264,12 +264,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @INGRESS>
 
     ## filters
-    <filter **>
-      @type record_modifier
-      char_encoding utf-8
-    </filter>
-
-    <filter journal>
+   <filter journal>
       @type grep
       <exclude>
         key PRIORITY
@@ -992,11 +987,6 @@ var _ = Describe("Generating fluentd config", func() {
   <label @INGRESS>
 
     ## filters
-    <filter **>
-      @type record_modifier
-      char_encoding utf-8
-    </filter>
-
     <filter journal>
       @type grep
       <exclude>
@@ -1701,11 +1691,6 @@ var _ = Describe("Generating fluentd config", func() {
   <label @INGRESS>
 
     ## filters
-    <filter **>
-      @type record_modifier
-      char_encoding utf-8
-    </filter>
-
     <filter journal>
       @type grep
       <exclude>
@@ -2369,10 +2354,6 @@ var _ = Describe("Generating fluentd config", func() {
 
 			<label @INGRESS>
 				## filters
-				<filter **>
-					@type record_modifier
-					char_encoding utf-8
-				</filter>
 				<filter journal>
 					@type grep
 					<exclude>
@@ -2850,10 +2831,6 @@ var _ = Describe("Generating fluentd config", func() {
 
 			<label @INGRESS>
 				## filters
-				<filter **>
-					@type record_modifier
-					char_encoding utf-8
-				</filter>
 				<filter journal>
 					@type grep
 					<exclude>
@@ -3791,11 +3768,6 @@ var _ = Describe("Generating fluentd config", func() {
     <label @INGRESS>
 
       ## filters
-      <filter **>
-        @type record_modifier
-        char_encoding utf-8
-      </filter>
-
       <filter journal>
         @type grep
         <exclude>

@@ -67,6 +67,8 @@ type Syslog struct {
 
 	// AddLogSource adds log's source information to the log message
 	// If the logs are collected from a process; namespace_name, pod_name, container_name is added to the log
+	// In addition, it picks the originating process name and id(known as the `pid`) from the record
+	// and injects them into the header field."
 	//
 	// +optional
 	AddLogSource bool `json:"addLogSource,omitempty"`

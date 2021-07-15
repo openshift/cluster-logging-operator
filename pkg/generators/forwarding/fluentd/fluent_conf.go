@@ -145,10 +145,14 @@ func (conf *outputLabelConf) LabelName() string {
 
 func (conf *outputLabelConf) StoreID() string {
 	prefix := ""
+	suffix := ""
 	if conf.Hints().Has("prefix_as_retry") {
 		prefix = "retry_"
 	}
-	return strings.ToLower(fmt.Sprintf("%v%v", prefix, replacer.Replace(conf.Name)))
+	if conf.Hints().Has("journal_log") {
+		suffix = "_journal"
+	}
+	return strings.ToLower(fmt.Sprintf("%v%v%v", prefix, replacer.Replace(conf.Name), suffix))
 }
 
 func (conf *outputLabelConf) RetryTag() string {

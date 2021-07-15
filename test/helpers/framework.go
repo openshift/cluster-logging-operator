@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -463,7 +462,7 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:     name,
-			Namespace: constants.OpenshiftNS,
+			Namespace: "default",
 		},
 		Spec: v1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{

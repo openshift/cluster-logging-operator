@@ -38,6 +38,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	spec, status := clusterRequest.NormalizeForwarder()
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
+	fmt.Printf("!!! DEBUG FORWARDER SPEC AFTER NORMALIZER: %+v\r\n", *spec)
 
 	if clusterRequest.ForwarderSpec.OutputDefaults != nil {
 		defaultOutputSpecs := clusterRequest.ForwarderSpec.OutputDefaults
@@ -80,6 +81,8 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 
 	clfSpec := &clusterRequest.ForwarderSpec
 	fwSpec := clusterRequest.Cluster.Spec.Forwarder
+
+	fmt.Printf("!!! DEBUG OUTPUT SECRETS: %+v\r\n", clusterRequest.OutputSecrets)
 	generatedConfig, err := generator.Generate(clfSpec, clusterRequest.OutputSecrets, fwSpec)
 
 	if err != nil {

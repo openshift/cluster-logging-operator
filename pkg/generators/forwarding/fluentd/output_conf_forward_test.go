@@ -42,6 +42,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 						"tls.crt":       []byte("my-tls"),
 						"tls.key":       []byte("my-tls-key"),
 						"ca-bundle.crt": []byte("my-bundle"),
+						"passphrase":    []byte("my-tls-passphrase"),
 					},
 				},
 			}
@@ -51,6 +52,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 			data := secrets["secureforward-receiver"].Data
 			delete(data, "shared_key")
 			delete(data, "tls.key")
+			delete(data, "passphrase")
 			results, err := generator.generateOutputLabelBlocks(outputs, secrets, nil)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(1))
@@ -162,6 +164,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
      tls_client_private_key_path "/var/run/ocp-collector/secrets/my-infra-secret/tls.key"
      tls_client_cert_path "/var/run/ocp-collector/secrets/my-infra-secret/tls.crt"
      tls_cert_path "/var/run/ocp-collector/secrets/my-infra-secret/ca-bundle.crt"
+     tls_client_private_key_passphrase "#{File.exists?('/var/run/ocp-collector/secrets/my-infra-secret/passphrase') ? open('/var/run/ocp-collector/secrets/my-infra-secret/passphrase','r') do |f|f.read end : ''}"
 
      <buffer>
        @type file

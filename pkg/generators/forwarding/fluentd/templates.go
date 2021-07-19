@@ -727,6 +727,9 @@ tls_client_cert_path "{{$path}}"
 {{- with $path := .SecretPathIfFound "ca-bundle.crt"}}
 tls_cert_path "{{$path}}"
 {{- end}}
+{{ with $path := .SecretPathIfFound "passphrase" -}}
+tls_client_private_key_passphrase "#{File.exists?('{{ $path }}') ? open('{{ $path }}','r') do |f|f.read end : ''}"
+{{ end -}} 
 
 {{- end}}
 
@@ -793,7 +796,7 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
   ssl_version TLSv1_2
   client_key '{{ .SecretPath "tls.key"}}'
   client_cert '{{ .SecretPath "tls.crt"}}'
-  ca_file '{{ .SecretPath "ca-bundle.crt"}}'
+  ca_file '{{ .SecretPath "ca-bundle.crt"}}' 
 {{ end -}}
 {{- else}}
   scheme http

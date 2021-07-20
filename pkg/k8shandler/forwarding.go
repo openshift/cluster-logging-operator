@@ -23,7 +23,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
 		return "", nil
 	}
-
+	fmt.Println("cluster is not nil")
 	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
 	case logging.LogCollectionTypeFluentd:
 		break
@@ -31,11 +31,13 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Logs.Type)
 	}
 
+	fmt.Println("type is fluentd")
 	if clusterRequest.ForwarderRequest == nil {
 		clusterRequest.ForwarderRequest = &logging.ClusterLogForwarder{}
 	}
 
 	spec, status := clusterRequest.NormalizeForwarder()
+	fmt.Println("forwarder normalized", spec)
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
 	fmt.Printf("!!! DEBUG FORWARDER SPEC AFTER NORMALIZER: %+v\r\n", *spec)
@@ -68,6 +70,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		clusterRequest.useOldRemoteSyslogPlugin(),
 	)
 
+	fmt.Printf("generator result %+v\r\n", generator)
 	if err != nil {
 		log.Error(err, "Unable to create collector config generator")
 		return "",

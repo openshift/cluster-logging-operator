@@ -56,7 +56,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 					if err != nil {
 						log.V(2).Info("no secret for default output type")
 					}
-					clusterRequest.OutputSecrets[constants.CollectorSecretName] = secret
+					clusterRequest.OutputSecrets[out.Name] = secret
 					clusterRequest.ForwarderSpec.Outputs[i] = out
 				}
 			}

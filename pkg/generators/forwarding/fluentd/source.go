@@ -25,6 +25,7 @@ func (engine *ConfigGenerator) generateSource(sources sets.String) (results []st
 		templates = append(templates, "inputSourceHostAuditTemplate")
 		templates = append(templates, "inputSourceK8sAuditTemplate")
 		templates = append(templates, "inputSourceOpenShiftAuditTemplate")
+		templates = append(templates, "inputSourceOVNAuditTemplate")
 	}
 	if len(templates) == 0 {
 		return results, fmt.Errorf("No recognized input types: %v", sources.List())

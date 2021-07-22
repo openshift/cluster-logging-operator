@@ -46,7 +46,7 @@ const (
   </parse>
 </filter>
 
-<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+<match linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
 	@type file
 	path /tmp/audit.logs
 	append true
@@ -105,7 +105,7 @@ const (
   </parse>
 </filter>
 
-<match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+<match linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
 	@type file
 	path /tmp/audit.logs
 	append true

@@ -7,6 +7,7 @@ var templateRegistry = []string{
 	inputSourceHostAuditTemplate,
 	inputSourceK8sAuditTemplate,
 	inputSourceOpenShiftAuditTemplate,
+	inputSourceOVNAuditTemplate,
 	fluentConfTemplate,
 	pipelineToOutputCopyTemplate,
 	sourceToPipelineCopyTemplate,
@@ -142,11 +143,19 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
 
   ## filters
   <filter journal>
-    @type grep
-    <exclude>
+   @type grep
+   <exclude>
       key PRIORITY
       pattern ^7$
-    </exclude>
+   </exclude>
+  </filter>
+
+  <filter ovn-audit.log**>
+    @type record_modifier
+    <record>
+      @timestamp ${DateTime.parse(record['message'].split('|')[0]).rfc3339(6)}
+      level ${record['message'].split('|')[3].downcase}
+    </record>
   </filter>
 
   <match journal>
@@ -307,7 +316,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
       remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log**"
+      tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
       process_kubernetes_events 'true'
@@ -325,7 +334,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     </elasticsearch_index_name>
     <elasticsearch_index_name>
       enabled 'true'
-      tag "linux-audit.log** k8s-audit.log** openshift-audit.log**"
+      tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       name_type static
       static_index_name audit-write
     </elasticsearch_index_name>
@@ -363,7 +372,7 @@ const fluentConfTemplate = `{{- define "fluentConf" -}}
     @type null
 {{- end}}
   </match>
-  <match linux-audit.log** k8s-audit.log** openshift-audit.log**>
+  <match linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
 {{- if .CollectAuditLogs }}
     @type relabel
     @label @_AUDIT
@@ -514,6 +523,24 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
     # In case folks want to parse based on the requestReceivedTimestamp key
     keep_time_key true
     time_format %Y-%m-%dT%H:%M:%S.%N%z
+  </parse>
+</source>
+{{- end}}`
+
+const inputSourceOVNAuditTemplate = `{{- define "inputSourceOVNAuditTemplate" }}
+# Openshift Virtual Network (OVN) audit logs
+<source>
+  @type tail
+  @id ovn-audit-input
+  @label @MEASURE
+  path "/var/log/ovn/acl-audit-log.log"
+  pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
+  tag ovn-audit.log
+  refresh_interval 5
+  rotate_wait 5
+  read_from_head true
+  <parse>
+    @type none
   </parse>
 </source>
 {{- end}}`

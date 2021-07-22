@@ -32,6 +32,7 @@ import (
 const (
 	applicationLog     = "application"
 	auditLog           = "audit"
+	ovnAuditLog        = "ovn"
 	k8sAuditLog        = "k8s"
 	OpenshiftAuditLog  = "openshift-audit-logs"
 	ApplicationLogFile = "/tmp/app-logs"
@@ -40,6 +41,7 @@ const (
 var fluentdLogPath = map[string]string{
 	applicationLog:    "/var/log/containers",
 	auditLog:          "/var/log/audit",
+	ovnAuditLog:       "/var/log/ovn",
 	OpenshiftAuditLog: "/var/log/oauth-apiserver",
 	k8sAuditLog:       "/var/log/kube-apiserver",
 }
@@ -48,12 +50,14 @@ var outputLogFile = map[string]map[string]string{
 	logging.OutputTypeFluentdForward: {
 		applicationLog: ApplicationLogFile,
 		auditLog:       "/tmp/audit-logs",
+		ovnAuditLog:    "/tmp/audit-logs",
 		k8sAuditLog:    "/tmp/audit-logs",
 	},
 	logging.OutputTypeSyslog: {
 		applicationLog: "/var/log/infra.log",
 		auditLog:       "/var/log/infra.log",
 		k8sAuditLog:    "/var/log/infra.log",
+		ovnAuditLog:    "/var/log/infra.log",
 	},
 }
 
@@ -354,6 +358,12 @@ func (f *FluentdFunctionalFramework) WriteMessagesToOpenshiftAuditLog(msg string
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
+func (f *FluentdFunctionalFramework) WriteMessagesToOVNAuditLog(msg string, numOfLogs int) error {
+
+	filename := fmt.Sprintf("%s/acl-audit-log.log", fluentdLogPath[ovnAuditLog])
+	return f.WriteMessagesToLog(msg, numOfLogs, filename)
+}
+
 func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs uint64) error {
 	return f.WritesNApplicationLogsOfSize(numOfLogs, uint64(100))
 }
@@ -387,6 +397,10 @@ func (f *FluentdFunctionalFramework) ReadAuditLogsFrom(outputName string) ([]str
 
 func (f *FluentdFunctionalFramework) Readk8sAuditLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, k8sAuditLog)
+}
+
+func (f *FluentdFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) ([]string, error) {
+	return f.ReadLogsFrom(outputName, ovnAuditLog)
 }
 
 func (f *FluentdFunctionalFramework) ReadLogsFrom(outputName string, outputLogType string) (results []string, err error) {

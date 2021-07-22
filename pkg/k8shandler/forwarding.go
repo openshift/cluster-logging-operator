@@ -87,6 +87,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 
 	fmt.Printf("!!! DEBUG OUTPUT SECRETS: %+v\r\n", clusterRequest.OutputSecrets)
 	generatedConfig, err := generator.Generate(clfSpec, clusterRequest.OutputSecrets, fwSpec)
+	fmt.Printf("!!! DEBUG OUTPUT GENERATOR RESULT: %s\r\n", generatedConfig)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

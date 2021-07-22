@@ -154,8 +154,8 @@ func (conf *outputLabelConf) HasUsernamePassword() bool {
 }
 
 func (conf *outputLabelConf) HasTLSKeyAndCrt() bool {
-	fmt.Println("!!!>>> DEBUG TLS.KEY TLS.CERT: NO SECRET")
 	if conf.Secret == nil {
+		fmt.Println("!!!>>> DEBUG TLS.KEY TLS.CERT: NO SECRET")
 		return false
 	}
 
@@ -170,8 +170,8 @@ func (conf *outputLabelConf) HasTLSKeyAndCrt() bool {
 }
 
 func (conf *outputLabelConf) HasCABundle() bool {
-	fmt.Println("!!!>>> DEBUG CA-BUNDLE: NO SECRET")
 	if conf.Secret == nil {
+		fmt.Println("!!!>>> DEBUG CA-BUNDLE: NO SECRET")
 		return false
 	}
 

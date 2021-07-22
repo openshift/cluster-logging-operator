@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -265,6 +266,23 @@ var _ = Describe("Normalizing forwarder", func() {
 				Expect(status.Outputs["bName"]).To(HaveCondition("Ready", false, "Invalid", ":invalid"))
 			})
 
+			It("should allow specific outputs that do not require URL", func() {
+				request.ForwarderSpec.Outputs = []logging.OutputSpec{
+					{
+						Name: "aKafka",
+						Type: logging.OutputTypeKafka,
+					},
+					{
+						Name: "aCloudwatch",
+						Type: logging.OutputTypeCloudwatch,
+					},
+				}
+				spec, status := request.NormalizeForwarder()
+				Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
+				Expect(status.Outputs["aKafka"]).To(HaveCondition("Ready", true, "", ""))
+				Expect(status.Outputs["aCloudwatch"]).To(HaveCondition("Ready", true, "", ""))
+			})
+
 			It("should drop outputs that have secrets with no names", func() {
 				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs, logging.OutputSpec{
 					Name:   "aName",
@@ -289,26 +307,163 @@ var _ = Describe("Normalizing forwarder", func() {
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "secret.*not found"))
 			})
 
+			Context("when validating secrets", func() {
+				var secret *corev1.Secret
+				BeforeEach(func() {
+					secret = &corev1.Secret{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Secret",
+							APIVersion: corev1.SchemeGroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "mytestsecret",
+							Namespace: aNamespace,
+						},
+						Data: map[string][]byte{},
+					}
+				})
+
+				Context("for writing to Cloudwatch", func() {
+					const missingMessage = "aws_access_key_id and aws_secret_access_key are required"
+					BeforeEach(func() {
+						output = logging.OutputSpec{
+							Name:   "aName",
+							Type:   logging.OutputTypeCloudwatch,
+							Secret: &logging.OutputSecretSpec{Name: secret.Name},
+						}
+						request.ForwarderSpec.Outputs = []logging.OutputSpec{output}
+					})
+					It("should drop outputs with secrets that are missing aws_access_key_id and aws_secret_access_key", func() {
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
+					})
+					It("should drop outputs with secrets that is missing aws_secret_access_id", func() {
+						secret.Data["aws_secret_access_key"] = []byte{0, 1, 2}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
+					})
+					It("should drop outputs with secrets that has empty aws_secret_access_key", func() {
+						secret.Data["aws_secret_access_key"] = []byte{}
+						secret.Data["aws_access_key_id"] = []byte{1, 2, 3}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
+					})
+					It("should drop outputs with secrets that is missing aws_secret_access_key", func() {
+						secret.Data["aws_access_key_id"] = []byte{0, 1, 2}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
+					})
+					It("should drop outputs with secrets that have empty aws_access_key_id", func() {
+						secret.Data["aws_access_key_id"] = []byte{}
+						secret.Data["aws_secret_access_key"] = []byte{1, 2, 3}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
+					})
+					It("should accept outputs with secrets that have aws_secret_access_key and aws_access_key_id", func() {
+						secret.Data["aws_secret_access_key"] = []byte{0, 1, 2}
+						secret.Data["aws_access_key_id"] = []byte{0, 1, 2}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
+					})
+				})
+
+				Context("with certs", func() {
+					BeforeEach(func() {
+						output = logging.OutputSpec{
+							Name:   "aName",
+							Type:   "elasticsearch",
+							URL:    "https://somewhere",
+							Secret: &logging.OutputSecretSpec{Name: secret.Name},
+						}
+						request.ForwarderSpec.Outputs = []logging.OutputSpec{output}
+					})
+					It("should drop outputs with secrets that have missing tls.key", func() {
+						secret.Data["tls.crt"] = []byte{0, 1, 2}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
+					})
+					It("should drop outputs with secrets that have empty tls.crt", func() {
+						secret.Data["tls.crt"] = []byte{}
+						secret.Data["tls.key"] = []byte{1, 2, 3}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
+					})
+					It("should drop outputs with secrets that have missing tls.crt", func() {
+						secret.Data["tls.key"] = []byte{0, 1, 2}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
+					})
+					It("should drop outputs with secrets that have empty tls.key", func() {
+						secret.Data["tls.key"] = []byte{}
+						secret.Data["tls.crt"] = []byte{1, 2, 3}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
+					})
+					It("should accept outputs with secrets that have tls.key and tls.cert", func() {
+						secret.Data["tls.key"] = []byte{0, 1, 2}
+						secret.Data["tls.crt"] = []byte{0, 1, 2}
+						request.Client = fake.NewFakeClient(secret)
+						spec, status := request.NormalizeForwarder()
+						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
+					})
+				})
+			})
+
 			It("should accept well formed outputs", func() {
-				request.Client = fake.NewFakeClient(&corev1.Secret{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "Secret",
-						APIVersion: corev1.SchemeGroupVersion.String(),
+				request.Client = fake.NewFakeClient(
+					&corev1.Secret{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Secret",
+							APIVersion: corev1.SchemeGroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "mysecret",
+							Namespace: aNamespace,
+						},
 					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "mysecret",
-						Namespace: aNamespace,
+					&corev1.Secret{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "Secret",
+							APIVersion: corev1.SchemeGroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "mycloudwatchsecret",
+							Namespace: aNamespace,
+						},
 					},
-				})
-				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs, logging.OutputSpec{
-					Name:   "aName",
-					Type:   "elasticsearch",
-					URL:    "https://somewhere",
-					Secret: &logging.OutputSecretSpec{Name: "mysecret"},
-				})
+				)
+				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs,
+					logging.OutputSpec{
+						Name:   "aName",
+						Type:   "elasticsearch",
+						URL:    "https://somewhere",
+						Secret: &logging.OutputSecretSpec{Name: "mysecret"},
+					},
+				)
 				spec, status := request.NormalizeForwarder()
-				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
-				Expect(spec.Outputs).To(HaveLen(3))
+				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""), fmt.Sprintf("status: %+v", status))
+				Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)), fmt.Sprintf("status: %+v", status))
 			})
 
 			Context("with outputDefaults specified", func() {

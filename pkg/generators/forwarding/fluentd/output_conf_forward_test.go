@@ -36,7 +36,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 				},
 			}
 			secrets = map[string]*corev1.Secret{
-				"secureforward-receiver": {
+				outputs[0].Name: {
 					Data: map[string][]byte{
 						"shared_key":    []byte("my-key"),
 						"tls.crt":       []byte("my-tls"),
@@ -49,7 +49,7 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 		})
 
 		It("should skip missing secrets in the config", func() {
-			data := secrets["secureforward-receiver"].Data
+			data := secrets[outputs[0].Name].Data
 			delete(data, "shared_key")
 			delete(data, "tls.key")
 			delete(data, "passphrase")

@@ -44,15 +44,20 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool)
 		},
 		FnIncludeLegacyForward: func() bool { return includeLegacyForward },
 		FnIncludeLegacySyslog:  func() bool { return includeLegacySyslog },
+		CLFVerifier: k8shandler.ClusterLogForwarderVerifier{
+			VerifyOutputSecret: func(output *logging.OutputSpec, conds logging.NamedConditions) bool { return true },
+		},
 	}
 	if includeDefaultLogStore {
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{
 			Type: logging.LogStoreTypeElasticsearch,
 		}
 	}
+
 	spec, status := clRequest.NormalizeForwarder()
 	log.V(2).Info("Normalization", "spec", spec)
 	log.V(2).Info("Normalization", "status", status)
+
 	tunings := &logging.ForwarderSpec{}
 
 	generatedConfig, err := generator.Generate(spec, nil, tunings)

@@ -1,6 +1,9 @@
-// +build modhack
+package adal
 
-package date
+import (
+	"fmt"
+	"runtime"
+)
 
 // Copyright 2017 Microsoft Corporation
 //
@@ -16,9 +19,27 @@ package date
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-// This file, and the github.com/Azure/go-autorest import, won't actually become part of
-// the resultant binary.
+const number = "v1.0.0"
 
-// Necessary for safely adding multi-module repo.
-// See: https://github.com/golang/go/wiki/Modules#is-it-possible-to-add-a-module-to-a-multi-module-repository
-import _ "github.com/Azure/go-autorest"
+var (
+	ua = fmt.Sprintf("Go/%s (%s-%s) go-autorest/adal/%s",
+		runtime.Version(),
+		runtime.GOARCH,
+		runtime.GOOS,
+		number,
+	)
+)
+
+// UserAgent returns a string containing the Go version, system architecture and OS, and the adal version.
+func UserAgent() string {
+	return ua
+}
+
+// AddToUserAgent adds an extension to the current user agent
+func AddToUserAgent(extension string) error {
+	if extension != "" {
+		ua = fmt.Sprintf("%s %s", ua, extension)
+		return nil
+	}
+	return fmt.Errorf("Extension was empty, User Agent remained as '%s'", ua)
+}

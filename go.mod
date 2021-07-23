@@ -5,10 +5,9 @@ go 1.14
 // Pinned to kubernetes-1.18.3
 require (
 	cloud.google.com/go v0.54.0 // indirect
-	github.com/ViaQ/logerr v1.0.9
+	github.com/ViaQ/logerr v1.0.10
 	github.com/coreos/prometheus-operator v0.38.1-0.20200424145508-7e176fda06cc
 	github.com/emicklei/go-restful v2.12.0+incompatible // indirect
-	github.com/go-logr/logr v0.2.1 // indirect
 	github.com/go-logr/zapr v0.2.0 // indirect
 	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-openapi/swag v0.19.8 // indirect
@@ -26,8 +25,6 @@ require (
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rogpeppe/go-internal v1.5.2 // indirect
-	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/pflag v1.0.5 // indirect
 	go.uber.org/zap v1.16.0 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.8

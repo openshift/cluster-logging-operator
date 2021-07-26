@@ -9,7 +9,9 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
+	"github.com/openshift/cluster-logging-operator/pkg/generator"
+	"github.com/openshift/cluster-logging-operator/pkg/generator/fluentd"
+	"github.com/openshift/cluster-logging-operator/pkg/generator/vector"
 	"github.com/openshift/cluster-logging-operator/pkg/status"
 	"github.com/openshift/cluster-logging-operator/pkg/url"
 	corev1 "k8s.io/api/core/v1"
@@ -59,28 +61,40 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		}
 	}
 
-	generator, err := forwarding.NewConfigGenerator(
-		clusterRequest.Cluster.Spec.Collection.Logs.Type,
-		clusterRequest.includeLegacyForwardConfig(),
-		clusterRequest.includeLegacySyslogConfig(),
-		clusterRequest.useOldRemoteSyslogPlugin(),
-	)
+	op := generator.Options{}
+	if clusterRequest.includeLegacyForwardConfig() {
+		op[generator.IncludeLegacyForwardConfig] = ""
+	}
+	if clusterRequest.includeLegacySyslogConfig() {
+		op[generator.IncludeLegacySyslogConfig] = ""
+	}
+	if clusterRequest.useOldRemoteSyslogPlugin() {
+		op[generator.UseOldRemoteSyslogPlugin] = ""
+	}
 
+	err = fluentd.Verify(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 	if err != nil {
-		log.Error(err, "Unable to create collector config generator")
+		log.Error(err, "Unable to generate log configuration")
 		return "",
 			clusterRequest.UpdateCondition(
 				logging.CollectorDeadEnd,
-				"Unable to generate collector configuration",
-				"No defined logstore destination",
+				"ClusterLogForwarder input validation error",
+				"ClusterLogForwarder input validation error",
 				corev1.ConditionTrue,
 			)
 	}
 
-	clfSpec := &clusterRequest.ForwarderSpec
-	fwSpec := clusterRequest.Cluster.Spec.Forwarder
-
-	generatedConfig, err := generator.Generate(clfSpec, clusterRequest.OutputSecrets, fwSpec)
+	g := generator.MakeGenerator()
+	var collector = clusterRequest.Cluster.Spec.Collection.Logs.Type
+	var confSections []generator.Section
+	switch collector {
+	case logging.LogCollectionTypeFluentd:
+		confSections = fluentd.Conf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
+	case "vector":
+		confSections = vector.Conf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
+	case "fluent-bit":
+	}
+	generatedConfig, err := g.GenerateConf(generator.MergeSections(confSections)...)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

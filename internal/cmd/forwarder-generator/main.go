@@ -32,6 +32,7 @@ func main() {
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
 	includeDefaultLogStore := flag.Bool("include-default-store", true, "Include the default storage when generating the config")
 	includeLegacyForward := flag.Bool("include-legacy-forward", false, "Include the legacy forward when generating the config")
+	debugOutput := flag.Bool("debug-output", false, "Generate config normally, but replace output plugins with @stdout plugin, so that records can be printed in collector logs.")
 	help := flag.Bool("help", false, "This message")
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
@@ -65,7 +66,7 @@ func main() {
 
 	log.Info("Finished reading yaml", "content", string(content))
 
-	generatedConfig, err := forwarder.Generate(string(content), *includeDefaultLogStore, *includeLegacyForward)
+	generatedConfig, err := forwarder.Generate(string(content), *includeDefaultLogStore, *includeLegacyForward, *debugOutput)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		os.Exit(1)

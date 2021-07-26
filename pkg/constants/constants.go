@@ -5,7 +5,10 @@ const (
 	OpenshiftNS   = "openshift-logging"
 	// global proxy / trusted ca bundle consts
 	ProxyName                  = "cluster"
+	SharedKey                  = "shared_key"
+	Passphrase                 = "passphrase"
 	TrustedCABundleKey         = "ca-bundle.crt"
+	SaslOverSSL                = "sasl_over_ssl"
 	AWSSecretAccessKey         = "aws_secret_access_key" //nolint:gosec
 	AWSAccessKeyID             = "aws_access_key_id"
 	ClientCertKey              = "tls.crt"

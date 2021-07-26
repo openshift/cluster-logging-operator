@@ -296,6 +296,13 @@ spec:
                               exponential_backoff`.'
                             pattern: ^([0-9]+)([smhd]{0,1})$
                             type: string
+                          retryTimeout:
+                            description: RetryTimeout represents the maxixum time
+                              interval to attempt retries before giving up and the
+                              record is disguarded.  If unspecified, the default will
+                              be used
+                            pattern: ^([0-9]+)([smhd]{0,1})$
+                            type: string
                           retryType:
                             description: RetryType represents the type of retrying
                               flush operations. Flush operations can be retried either

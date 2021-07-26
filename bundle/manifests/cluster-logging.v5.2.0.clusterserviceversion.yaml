@@ -219,14 +219,6 @@ spec:
           verbs:
           - "*"
         - apiGroups:
-          - security.openshift.io
-          resources:
-          - securitycontextconstraints
-          resourceNames:
-          - privileged
-          verbs:
-          - use
-        - apiGroups:
           - monitoring.coreos.com
           resources:
           - servicemonitors
@@ -283,6 +275,12 @@ spec:
           - get
           - list
           - watch
+        - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - create
         - apiGroups:
           - ""
           resources:

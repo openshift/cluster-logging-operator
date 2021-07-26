@@ -416,6 +416,34 @@ func TestNewFluentdPodWhenChunkLimitSizeExists(t *testing.T) {
 	checkFluentdForwarderEnvVar(t, podSpec, "BUFFER_SIZE_LIMIT", strconv.FormatInt(chunkLimitSize.Value(), 10))
 }
 
+func TestNewFluentdPodWhenTotalLimitSizeExists(t *testing.T) {
+	totalLimitSize, _ := utils.ParseQuantity("1g")
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			Forwarder: &logging.ForwarderSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					Buffer: &logging.FluentdBufferSpec{
+						TotalLimitSize: "1g",
+					},
+				},
+			},
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
+					Type:        "fluentd",
+					FluentdSpec: logging.FluentdSpec{},
+				},
+			},
+		},
+	}
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+
+	if len(podSpec.Containers) != 2 {
+		t.Error("Exp. there to be 2 fluentd container")
+	}
+
+	checkFluentdForwarderEnvVar(t, podSpec, "TOTAL_LIMIT_SIZE", strconv.FormatInt(totalLimitSize.Value(), 10))
+}
+
 func checkFluentdForwarderEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {
 	env := podSpec.Containers[0].Env
 	found := false

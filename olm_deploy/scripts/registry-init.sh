@@ -1,25 +1,15 @@
 #!/bin/bash
 
 set -eou pipefail
+source $(dirname "${BASH_SOURCE[0]}")/env.sh
 
 echo -e "Dumping IMAGE env vars\n"
 env | grep IMAGE
 echo -e "\n\n"
 
-
-IMAGE_CLUSTER_LOGGING_OPERATOR=${IMAGE_CLUSTER_LOGGING_OPERATOR:-quay.io/openshift-logging/cluster-logging-operator:5.2}
-IMAGE_OAUTH_PROXY=${IMAGE_OAUTH_PROXY:-quay.io/openshift/origin-oauth-proxy:latest}
-IMAGE_LOGGING_FLUENTD=${IMAGE_LOGGING_FLUENTD:-quay.io/openshift-logging/fluentd:5.2}
-IMAGE_ELASTICSEARCH6=${IMAGE_ELASTICSEARCH6:-quay.io/openshift-logging/elasticsearch6:5.2}
-IMAGE_LOGGING_KIBANA6=${IMAGE_LOGGING_KIBANA6:-quay.io/openshift-logging/kibana6:5.2}
-IMAGE_LOG_FILE_METRIC_EXPORTER=${IMAGE_LOG_FILE_METRIC_EXPORTER:-quay.io/openshift-logging/log-file-metric-exporter:5.2}
-
 # update the manifest with the image built by ci
 sed -i "s,quay.io/openshift-logging/cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," /manifests/*/*clusterserviceversion.yaml
-sed -i "s,quay.io/openshift/origin-oauth-proxy:latest,${IMAGE_OAUTH_PROXY}," /manifests/*/*clusterserviceversion.yaml
 sed -i "s,quay.io/openshift-logging/fluentd:latest,${IMAGE_LOGGING_FLUENTD}," /manifests/*/*clusterserviceversion.yaml
-sed -i "s,quay.io/openshift-logging/elasticsearch6:latest,${IMAGE_ELASTICSEARCH6}," /manifests/*/*clusterserviceversion.yaml
-sed -i "s,quay.io/openshift-logging/kibana6:latest,${IMAGE_LOGGING_KIBANA6}," /manifests/*/*clusterserviceversion.yaml
 sed -i "s,quay.io/openshift-logging/log-file-metric-exporter:latest,${IMAGE_LOG_FILE_METRIC_EXPORTER}," /manifests/*/*clusterserviceversion.yaml
 
 # update the manifest to pull always the operator image for non-CI environments

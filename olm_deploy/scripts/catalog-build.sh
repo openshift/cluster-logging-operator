@@ -5,7 +5,7 @@ IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTR
 echo "Building operator registry image ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY}"
 podman build -f olm_deploy/operatorregistry/Dockerfile -t ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY} .
 
-if [ -n ${LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY} ] ; then
+if [ -n "${LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY}" ] ; then
     coproc oc -n openshift-image-registry port-forward service/image-registry 5000:5000
     trap "kill -15 $COPROC_PID" EXIT
     read PORT_FORWARD_STDOUT <&"${COPROC[0]}"

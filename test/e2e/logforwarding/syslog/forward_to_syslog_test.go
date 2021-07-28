@@ -650,6 +650,40 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						})
 					})
 				})
+				Context("with addLogSourceToMessage flag", func() {
+					Context("for infra logs", func() {
+						BeforeEach(func() {
+							forwarder.Spec.Pipelines[0].InputRefs = []string{"infrastructure"}
+						})
+						It("should add the originating process name and id to journal log message", func() {
+							if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
+								Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
+							}
+							forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
+							forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+							forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
+							forwarder.Spec.Outputs[0].Syslog.AddLogSource = true
+							if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+								Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
+							}
+							components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
+							for _, component := range components {
+								if err := e2e.WaitFor(component); err != nil {
+									Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
+								}
+							}
+							logStore := e2e.LogStores[syslogDeployment.GetName()]
+							Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+							_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+							grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ print $4; }'`, logGenPod)
+							Expect(logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)).To(Equal("mytag"), "Expected: mytag")
+							waitjournallogs := `[ $(grep -v pod_name %s | wc -l) -gt 0 ]`
+							_, _ = logStore.GrepLogs(waitjournallogs, helpers.DefaultWaitForLogsTimeout)
+							grepMsgContent = `grep -v pod_name %s | tail -n 1 | awk -F' ' '{ print $4; }'`
+							Expect(logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)).To(Not(Equal("mytag")), "Expected: not mytag")
+						})
+					})
+				})
 			})
 		})
 		AfterEach(func() {

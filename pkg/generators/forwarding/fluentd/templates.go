@@ -767,11 +767,18 @@ const outputLabelConfJsonParseNoretryTemplate = `{{- define "outputLabelConfJson
 	  pod_info        ${if record['kubernetes_info'] != nil && record['kubernetes_info'] != {}; "pod_name=" + record['kubernetes_info']['pod_name']; else nil; end}
 	  container_info  ${if record['kubernetes_info'] != nil && record['kubernetes_info'] != {}; "container_name=" + record['kubernetes_info']['container_name']; else nil; end}
 	  msg_key         ${if record.has_key?('message') && record['message'] != nil; record['message']; else nil; end}
-      msg_info        ${if record['msg_key'] != nil && record['msg_key'].is_a?(Hash); require 'json'; "message="+record['message'].to_json; elsif record['msg_key'] != nil; "message="+record['message']; else nil; end}
-      message         ${if record['msg_key'] != nil && record['kubernetes_info'] != nil && record['kubernetes_info'] != {}; record['namespace_info'] + ", " + record['container_info'] + ", " + record['pod_info'] + ", " + record['msg_info']; else record['message']; end}
+	  msg_info        ${if record['msg_key'] != nil && record['msg_key'].is_a?(Hash); require 'json'; "message="+record['message'].to_json; elsif record['msg_key'] != nil; "message="+record['message']; else nil; end}
+	  message         ${if record['msg_key'] != nil && record['kubernetes_info'] != nil && record['kubernetes_info'] != {}; record['namespace_info'] + ", " + record['container_info'] + ", " + record['pod_info'] + ", " + record['msg_info']; else record['message']; end}
+	  systemd_info    ${if record.has_key?('systemd') && record['systemd']['t'].has_key?('PID'); record['systemd']['u']['SYSLOG_IDENTIFIER'] += "[" + record['systemd']['t']['PID'] + "]"; else {}; end}
 	</record>
-	remove_keys kubernetes_info, namespace_info, pod_info, container_info, msg_key, msg_info
+	remove_keys kubernetes_info, namespace_info, pod_info, container_info, msg_key, msg_info, systemd_info
   </filter>
+  # The "infrastructure" stream is splitted into the pod logs and the journal logs.
+  # This match section is for the journal logs to inject the daemon name info into the journal logs only.
+  <match journal.** system.var.log**>
+    @type copy
+{{include .StoreTemplate . "journal_log" | indent 4}}
+  </match>
 {{end -}}
   <match **>
     @type copy
@@ -950,7 +957,7 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 	rfc {{.Rfc}}
 	facility {{.Facility}}
     severity {{.Severity}}
-	{{if .Target.Syslog.AppName -}}
+	{{if .HasAppName -}}
 	appname {{.AppName}}
 	{{end -}}
 	{{if .Target.Syslog.MsgID -}}
@@ -959,7 +966,7 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 	{{if .Target.Syslog.ProcID -}}
 	procid {{.ProcID}}
 	{{end -}}
-	{{if .Target.Syslog.Tag -}}
+	{{if .HasTag -}}
 	program {{.Tag}}
 	{{end -}}
 	protocol {{.Protocol}}

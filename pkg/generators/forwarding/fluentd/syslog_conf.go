@@ -55,8 +55,19 @@ func (conf *outputLabelConf) TrimPrefix() string {
 	return conf.Target.Syslog.TrimPrefix
 }
 
+func (conf *outputLabelConf) HasTag() bool {
+	if conf.Target.Syslog.Tag != "" || conf.Hints().Has("journal_log") && conf.Rfc() == "rfc3164" {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (conf *outputLabelConf) Tag() string {
 	tag := conf.Target.Syslog.Tag
+	if conf.Hints().Has("journal_log") {
+		return "${$.systemd.u.SYSLOG_IDENTIFIER}"
+	}
 	if tag == "" {
 		return "-"
 	}
@@ -80,8 +91,19 @@ func (conf *outputLabelConf) AddLogSource() bool {
 	return conf.Target.Syslog.AddLogSource
 }
 
+func (conf *outputLabelConf) HasAppName() bool {
+	if conf.Target.Syslog.AppName != "" || conf.Hints().Has("journal_log") && conf.Rfc() == "rfc5424" {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (conf *outputLabelConf) AppName() string {
 	appname := conf.Target.Syslog.AppName
+	if conf.Hints().Has("journal_log") {
+		return "${$.systemd.u.SYSLOG_IDENTIFIER}"
+	}
 	if appname == "" {
 		return "-"
 	}
@@ -122,6 +144,9 @@ func (conf *outputLabelConf) ProcID() string {
 func (conf *outputLabelConf) ChunkKeys() string {
 	keys := []string{}
 	tagAdded := false
+	if conf.Hints().Has("journal_log") {
+		keys = append(keys, "$.systemd.u.SYSLOG_IDENTIFIER")
+	}
 	if conf.isTagKeyExpr() {
 		keys = append(keys, conf.Target.Syslog.Tag)
 	}

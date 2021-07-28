@@ -59,6 +59,13 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         # excluding prometheus_tail_monitor
         # since it leaks namespace/pod info
         # via file paths
+        # including new plugin which publishes log_collected_bytes_total
+        <source>
+          @type collected_tail_monitor
+          <labels>
+            hostname ${hostname}
+          </labels>
+        </source>
 
         # This is considered experimental by the repo
         <source>
@@ -561,6 +568,13 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         # excluding prometheus_tail_monitor
         # since it leaks namespace/pod info
         # via file paths
+        # including new plugin which publishes log_collected_bytes_total
+        <source>
+          @type collected_tail_monitor
+          <labels>
+            hostname ${hostname}
+          </labels>
+        </source>
 
         # This is considered experimental by the repo
         <source>
@@ -1063,6 +1077,13 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
         # excluding prometheus_tail_monitor
         # since it leaks namespace/pod info
         # via file paths
+        # including new plugin which publishes log_collected_bytes_total
+        <source>
+          @type collected_tail_monitor
+          <labels>
+            hostname ${hostname}
+          </labels>
+        </source>
 
         # This is considered experimental by the repo
         <source>

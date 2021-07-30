@@ -266,6 +266,18 @@ var _ = Describe("Normalizing forwarder", func() {
 				Expect(status.Outputs["bName"]).To(HaveCondition("Ready", false, "Invalid", ":invalid"))
 			})
 
+			It("should drop Cloudwatch output without OutputTypeSpec", func() {
+				request.ForwarderSpec.Outputs = []logging.OutputSpec{
+					{
+						Name: "cw",
+						Type: logging.OutputTypeCloudwatch,
+					},
+				}
+				spec, status := request.NormalizeForwarder()
+				Expect(spec.Outputs).To(BeEmpty(), "Expected Cloudwatch output without OutputTypeSpec to be dropped")
+				Expect(status.Outputs["cw"]).To(HaveCondition("Ready", false, "Invalid", "Cloudwatch output requires type spec"))
+			})
+
 			It("should allow specific outputs that do not require URL", func() {
 				request.ForwarderSpec.Outputs = []logging.OutputSpec{
 					{
@@ -275,6 +287,9 @@ var _ = Describe("Normalizing forwarder", func() {
 					{
 						Name: "aCloudwatch",
 						Type: logging.OutputTypeCloudwatch,
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Cloudwatch: &logging.Cloudwatch{},
+						},
 					},
 				}
 				spec, status := request.NormalizeForwarder()
@@ -327,8 +342,11 @@ var _ = Describe("Normalizing forwarder", func() {
 					const missingMessage = "aws_access_key_id and aws_secret_access_key are required"
 					BeforeEach(func() {
 						output = logging.OutputSpec{
-							Name:   "aName",
-							Type:   logging.OutputTypeCloudwatch,
+							Name: "aName",
+							Type: logging.OutputTypeCloudwatch,
+							OutputTypeSpec: logging.OutputTypeSpec{
+								Cloudwatch: &logging.Cloudwatch{},
+							},
 							Secret: &logging.OutputSecretSpec{Name: secret.Name},
 						}
 						request.ForwarderSpec.Outputs = []logging.OutputSpec{output}

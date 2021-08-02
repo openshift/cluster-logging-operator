@@ -97,8 +97,7 @@ scale-olm:
 .PHONY: scale-olm
 
 clean:
-	rm -rf bin tmp _output .target Dockerfile.local
-	find -name .kube | xargs rm -rf
+	rm -rf bin tmp _output .target
 	go clean -cache -testcache ./...
 
 PATCH?=Dockerfile.patch
@@ -168,11 +167,11 @@ test-functional: test-functional-benchmarker
 .PHONY: test-functional
 
 test-forwarder-generator: bin/forwarder-generator
-	@bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null 2>&1
+	@bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null
 .PHONY: test-forwarder-generator
 
 test-functional-benchmarker: bin/functional-benchmarker
-	@bin/functional-benchmarker > /dev/null 2>&1
+	@bin/functional-benchmarker > /dev/null
 .PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator

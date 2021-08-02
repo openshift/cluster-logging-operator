@@ -8,7 +8,13 @@ import (
 
 var _ = Describe("OutputSpec", func() {
 	It("recognizes valid type names", func() {
-		for _, s := range []string{OutputTypeElasticsearch, OutputTypeFluentdForward, OutputTypeSyslog, OutputTypeCloudwatch} {
+		for _, s := range []string{
+			OutputTypeElasticsearch,
+			OutputTypeFluentdForward,
+			OutputTypeSyslog,
+			OutputTypeCloudwatch,
+			OutputTypeLoki,
+		} {
 			Expect(IsOutputTypeName(s)).To(BeTrue(), "expect recognize %s", s)
 		}
 	})

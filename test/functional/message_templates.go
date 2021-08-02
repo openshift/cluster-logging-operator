@@ -1,8 +1,9 @@
 package functional
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
 var (
@@ -34,6 +35,7 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
 		Timestamp:        time.Time{},
 		Message:          "*",
+		LogType:          "application",
 		ViaqIndexName:    "app-write",
 		Level:            "unknown",
 		Hostname:         "*",

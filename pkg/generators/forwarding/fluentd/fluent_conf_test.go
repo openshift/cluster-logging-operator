@@ -126,6 +126,7 @@ var _ = Describe("Generating fluentd config", func() {
 		}
 		results, err := generator.Generate(forwarder, nil, forwarderSpec)
 		Expect(err).To(BeNil())
+
 		Expect(results).To(EqualTrimLines(`
   ## CLO GENERATED CONFIGURATION ###
   # This file is a copy of the fluentd configuration entrypoint
@@ -503,24 +504,24 @@ var _ = Describe("Generating fluentd config", func() {
   # Relabel specific sources (e.g. logs.apps) to multiple pipelines
   <label @_APPLICATION>
     <match **>
-     @type label_router
-     <route>
-       @label @APPS_PIPELINE
-       <match>
-         namespaces project1-namespace,project2-namespace
-       </match>
-     </route>
-     <route>
-       @label @APPS_PIPELINE2
-       <match>
-         namespaces dev-apple,project2-namespace
-       </match>
-     </route>
-     <route>
-       @label @_APPLICATION_ALL
-       <match>
-       </match>
-     </route>
+      @type label_router
+      <route>
+        @label @APPS_PIPELINE
+        <match>
+          namespaces project1-namespace,project2-namespace
+        </match>
+      </route>
+      <route>
+        @label @APPS_PIPELINE2
+        <match>
+          namespaces dev-apple,project2-namespace
+        </match>
+      </route>
+      <route>
+        @label @_APPLICATION_ALL
+        <match>
+        </match>
+      </route>
     </match>
   </label>
   <label @_APPLICATION_ALL>
@@ -2238,6 +2239,7 @@ var _ = Describe("Generating fluentd config", func() {
 		}
 		results, err := generator.Generate(forwarder, nil, forwarderSpec)
 		Expect(err).To(BeNil())
+
 		Expect(results).To(EqualTrimLines(`
    ## CLO GENERATED CONFIGURATION ###
    # This file is a copy of the fluentd configuration entrypoint
@@ -2605,6 +2607,12 @@ var _ = Describe("Generating fluentd config", func() {
 
    # Relabel specific sources (e.g. logs.apps) to multiple pipelines
    <label @_APPLICATION>
+		<filter **>
+			@type record_modifier
+			<record>
+				log_type application
+			</record>
+		</filter>
     <match **>
      @type copy
      <store>
@@ -3109,6 +3117,12 @@ var _ = Describe("Generating fluentd config", func() {
 
    # Relabel specific sources (e.g. logs.apps) to multiple pipelines
    <label @_APPLICATION>
+		<filter **>
+			@type record_modifier
+			<record>
+				log_type application
+			</record>
+		</filter>
     <match **>
      @type copy
      <store>
@@ -3118,6 +3132,12 @@ var _ = Describe("Generating fluentd config", func() {
     </match>
    </label>
    <label @_AUDIT>
+		<filter **>
+			@type record_modifier
+			<record>
+				log_type audit
+			</record>
+		</filter>
     <match **>
      @type copy
      <store>
@@ -3127,6 +3147,12 @@ var _ = Describe("Generating fluentd config", func() {
     </match>
    </label>
    <label @_INFRASTRUCTURE>
+		<filter **>
+			@type record_modifier
+			<record>
+				log_type infrastructure
+			</record>
+		</filter>
     <match **>
      @type copy
      <store>
@@ -4052,7 +4078,7 @@ var _ = Describe("Generating fluentd config", func() {
        @type relabel
        @label @_APPLICATION
      </match>
- 
+
      <match linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
        @type null
      </match>

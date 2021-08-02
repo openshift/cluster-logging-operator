@@ -206,6 +206,15 @@ spec:
                             to.
                           type: string
                       type: object
+                    loki:
+                      description: 'Loki provides optional extra properties for `type:
+                        loki`'
+                      properties:
+                        tenantId:
+                          description: Tenant is the name of the tenant of the log
+                            records.
+                          type: string
+                      type: object
                     name:
                       description: Name used to refer to the output from a `pipeline`.
                       type: string

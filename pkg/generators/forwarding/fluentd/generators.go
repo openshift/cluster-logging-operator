@@ -3,8 +3,9 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"sort"
+
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -312,6 +313,9 @@ func (engine *ConfigGenerator) generateOutputLabelBlocks(outputs []logging.Outpu
 		case logging.OutputTypeKafka:
 			engine.storeTemplate = "storeKafka"
 			engine.outputTemplate = "outputLabelConfNoCopy"
+		case logging.OutputTypeLoki:
+			engine.outputTemplate = "outputLabelLokiTemplate"
+			// loki output does not have a separate store template.
 		default:
 			return nil, fmt.Errorf("Unknown output type: %v", output.Type)
 		}

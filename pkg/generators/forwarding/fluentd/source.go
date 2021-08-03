@@ -8,10 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-// FIXME(alanconway) generateSource scrapes files for all requested namespaces.
-// We need to also filter them per-user-SourceSpec since different SourceSpecs
-// might request different namespaces.
-
 func (engine *ConfigGenerator) generateSource(sources sets.String) (results []string, err error) {
 	// Order of templates matters.
 	var templates []string

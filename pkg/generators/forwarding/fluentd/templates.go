@@ -23,6 +23,7 @@ var templateRegistry = []string{
 	storeSyslogTemplateOld,
 	storeSyslogTemplate,
 	storeKafkaTemplate,
+	outputLabelLokiTemplate,
 }
 
 const fluentConfTemplate = `{{- define "fluentConf" -}}
@@ -554,6 +555,12 @@ const inputSourceOVNAuditTemplate = `{{- define "inputSourceOVNAuditTemplate" }}
 
 const sourceToPipelineCopyTemplate = `{{- define "sourceToPipelineCopyTemplate" -}}
 <label {{sourceTypelabelName .Source}}>
+  <filter **>
+    @type record_modifier
+    <record>
+      log_type {{.Source}}
+    </record>
+  </filter>
   <match **>
     @type copy
 {{- range $index, $pipelineLabel := .PipelineNames }}
@@ -629,7 +636,7 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
     hash_value_field structured
     <parse>
       @type json
-	  json_parser oj
+    json_parser oj
     </parse>
   </filter>
   {{ end -}}
@@ -698,17 +705,17 @@ const outputLabelConfTemplate = `{{- define "outputLabelConf" -}}
   {{- if (.NeedChangeElasticsearchStructuredType)}}
   <filter **>
     @type record_modifier
-	<record>
-	  typeFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.StructuredTypeKey}})}
-	  hasStructuredTypeName     "{{.Target.OutputTypeSpec.Elasticsearch.StructuredTypeName}}"
-	  viaq_index_name  ${ if !record['structured'].nil? && record['structured'] != {}; if !record['typeFromKey'].nil?; "app-"+record['typeFromKey']+"-write"; elsif record['hasStructuredTypeName'] != ""; "app-"+record['hasStructuredTypeName']+"-write"; else record['viaq_index_name']; end; else record['viaq_index_name']; end;}
-	</record>
-	remove_keys typeFromKey, hasStructuredTypeName
+  <record>
+    typeFromKey     ${record.dig({{.GetKeyVal .Target.OutputTypeSpec.Elasticsearch.StructuredTypeKey}})}
+    hasStructuredTypeName     "{{.Target.OutputTypeSpec.Elasticsearch.StructuredTypeName}}"
+    viaq_index_name  ${ if !record['structured'].nil? && record['structured'] != {}; if !record['typeFromKey'].nil?; "app-"+record['typeFromKey']+"-write"; elsif record['hasStructuredTypeName'] != ""; "app-"+record['hasStructuredTypeName']+"-write"; else record['viaq_index_name']; end; else record['viaq_index_name']; end;}
+  </record>
+  remove_keys typeFromKey, hasStructuredTypeName
   </filter>
   {{- else}}
   <filter **>
     @type record_modifier
-	remove_keys structured
+  remove_keys structured
   </filter>
   {{- end}}
   {{- if .IsElasticSearchOutput}}
@@ -753,10 +760,10 @@ const outputLabelConfNoretryTemplate = `{{- define "outputLabelConfNoRetry" -}}
 const outputLabelConfJsonParseNoretryTemplate = `{{- define "outputLabelConfJsonParseNoRetry" -}}
 <label {{.LabelName}}>
   <filter **>
-	@type parse_json_field
-	json_fields  message
-	merge_json_log false
-	replace_json_log true
+  @type parse_json_field
+  json_fields  message
+  merge_json_log false
+  replace_json_log true
   </filter>
 {{ if .Target.Syslog.AddLogSource }}
   <filter **>
@@ -950,12 +957,12 @@ const storeSyslogTemplateOld = `{{- define "storeSyslogOld" -}}
 //      hostname ${hostname}
 const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 <store>
-	@type remote_syslog
-	@id {{.StoreID}}
-	host {{.Host}}
-	port {{.Port}}
-	rfc {{.Rfc}}
-	facility {{.Facility}}
+  @type remote_syslog
+  @id {{.StoreID}}
+  host {{.Host}}
+  port {{.Port}}
+  rfc {{.Rfc}}
+  facility {{.Facility}}
     severity {{.Severity}}
 	{{if .HasAppName -}}
 	appname {{.AppName}}
@@ -987,10 +994,10 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 {{ end -}}
 
 {{if .PayloadKey -}}
-	<format>
-	  @type single_value
-	  message_key {{.PayloadKey}}
-	</format>
+  <format>
+    @type single_value
+    message_key {{.PayloadKey}}
+  </format>
 {{end -}}
   <buffer {{.ChunkKeys}}>
     @type file
@@ -1075,5 +1082,66 @@ ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
 {{- end }}
   overflow_action {{.OverflowAction}}
 </buffer>
+{{- end}}
+`
+
+const outputLabelLokiTemplate = `{{- define "outputLabelLokiTemplate" -}}
+<label {{.LabelName}}>
+  <filter>
+    @type record_modifier
+    <record>{{.LokiLabelFilter}}
+    </record>
+  </filter>
+
+  <match **>
+    @type loki
+    line_format json
+    url {{.URLBase}}
+{{ with .LokiTenantKeys -}}
+     tenant ${record.dig("{{stringsJoin . "\",\""}}")}
+{{ end -}}
+{{ with.SecretPath "username" -}}
+    username "#{File.read('{{ . }}') rescue nil}"
+{{ end -}}
+{{ with .SecretPath "password" -}}
+    password "#{File.read('{{ . }}') rescue nil}"
+{{ end -}}
+{{ with .SecretPathIfFound "tls.key" -}}
+    key "{{ . }}"
+{{ end -}}
+{{ with .SecretPathIfFound "tls.crt" -}}
+    cert "{{ . }}"
+{{ end -}}
+{{ with .SecretPathIfFound "ca-bundle.crt" -}}
+    ca_cert "{{ . }}"
+{{ end -}}
+    <label>{{.LokiLabel}}
+    </label>
+		<buffer>
+      @type file
+			path '{{.BufferPath}}'
+			flush_mode {{.FlushMode}}
+			flush_interval {{.FlushInterval}}
+			flush_thread_count {{.FlushThreadCount}}
+			flush_at_shutdown true
+			retry_type {{.RetryType}}
+			retry_wait {{.RetryWait}}
+			retry_max_interval {{.RetryMaxInterval}}
+			{{.RetryTimeout}}
+			queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+		{{- if .TotalLimitSize }}
+			total_limit_size {{.TotalLimitSize}}
+		{{- else }}
+			total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+		{{- end }}
+		{{- if .ChunkLimitSize }}
+			chunk_limit_size {{.ChunkLimitSize}}
+		{{- else }}
+			chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+		{{- end }}
+			overflow_action {{.OverflowAction}}
+		</buffer>
+  </match>
+</label>
 {{- end}}
 `

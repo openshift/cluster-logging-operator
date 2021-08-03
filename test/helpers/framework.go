@@ -13,6 +13,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -22,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 
 	clolog "github.com/ViaQ/logerr/log"
 	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -558,16 +558,9 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 
 //NewKubeClient returns a client using the KUBECONFIG env var or incluster settings
 func NewKubeClient() (*kubernetes.Clientset, *rest.Config) {
-
-	var config *rest.Config
-	var err error
-	if kubeconfig := os.Getenv("KUBECONFIG"); kubeconfig != "" {
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-	} else {
-		config, err = rest.InClusterConfig()
-	}
+	config, err := config.GetConfig()
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {

@@ -1,11 +1,18 @@
 package test
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/base32"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,6 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/format"
+	"golang.org/x/net/html"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 )
@@ -65,32 +73,34 @@ func MustUnmarshal(s string, v interface{}) { Must(Unmarshal(s, v)) }
 
 var (
 	uniqueReplace = regexp.MustCompile("[^a-z0-9]+")
-	uniqueTrim    = regexp.MustCompile("(^[^a-z]+)|(-+$)")
 )
 
 // UniqueName generates a unique DNS label string starting with prefix.
 // Illegal character sequences in prefix are replaced with "-".
-// Suffix starts with a time-stamp so names sort by time of creation.
+// Suffix sorts by time of creation if < 12h apart.
 func UniqueName(prefix string) string {
-	// Make prefix into a valid DNS Label that can be used to name resources.
-	prefix = strings.ToLower(prefix)
-	prefix = uniqueReplace.ReplaceAllLiteralString(prefix, "-")
-	prefix = uniqueTrim.ReplaceAllLiteralString(prefix, "")
+	pre := strings.ToLower(prefix)
+	pre = uniqueReplace.ReplaceAllLiteralString(pre, "-")
+	pre = strings.Trim(pre, "-")
 
-	// Timestamp for time ordering
-	timeStamp := time.Now().Format("150405")
+	// NOTE: Short names are important. A namespace name may be
+	// concatenated with service names in route host names, if they
+	// exceed the limit of 63 chars things will fail.
 
-	// Random data for uniqueness, use crypto/rand for real randomness.
-	random := [4]byte{}
-	_, err := rand.Read(random[:])
-	Must(err)
-
-	// Don't exceed max label length, truncate prefix and keep time+random suffix.
-	maxPrefix := validation.DNS1123LabelMaxLength - (len(timeStamp) + len(random)*2 + 2)
-	if len(prefix) > maxPrefix {
-		prefix = prefix[:maxPrefix]
+	if len(pre) > 16 {
+		pre = pre[:16]
 	}
-	return fmt.Sprintf("%s-%s-%x", prefix, timeStamp, random[:])
+	var unique [5]byte
+	secs := time.Now().Unix() % (12 * 60 * 60) // Keep 12 hours, 2 bytes.
+	binary.BigEndian.PutUint16(unique[0:3], uint16(secs))
+	_, err := rand.Read(unique[3:])
+	Must(err)
+	uniqueStr := strings.ToLower(base32.StdEncoding.EncodeToString(unique[:]))
+	name := fmt.Sprintf("%s-%s", pre, uniqueStr)
+	if len(validation.IsDNS1123Label(name)) != 0 {
+		panic(fmt.Errorf("invalid DNS label %q cannot use prefix %q", name, pre))
+	}
+	return name
 }
 
 // GinkgoCurrentTest tries to get the current Ginkgo test description.
@@ -102,15 +112,8 @@ func GinkgoCurrentTest() (g ginkgo.GinkgoTestDescription, ok bool) {
 	return
 }
 
-// UniqueNameForTest generates a unique name prefixed with the current
-// Ginkgo test name, or the string "test" if not in a Ginkgo test.
-func UniqueNameForTest() (name string) {
-	prefix := "test"
-	if ct, ok := GinkgoCurrentTest(); ok {
-		prefix = ct.TestText
-	}
-	return UniqueName(prefix)
-}
+// UniqueNameForTest generates a unique name for a test.
+func UniqueNameForTest() string { return UniqueName("test") }
 
 // LoggingNamespace returns env-var NAMESPACE or "openshift-logging".
 func LoggingNamespace() string {
@@ -161,4 +164,87 @@ func GitRoot(paths ...string) string {
 			panic(fmt.Errorf("not in a git repository: %v", wd))
 		}
 	}
+}
+
+// HTTPError returns an error constructed from resp.Body if resp.Status is not 2xx.
+// Returns nil otherwise.
+func HTTPError(resp *http.Response) error {
+	if resp.Status[0] == '2' {
+		return nil
+	}
+	msg, _ := ioutil.ReadAll(resp.Body)
+	_ = resp.Body.Close()
+	if txt, err := HTMLBodyText(bytes.NewReader(msg)); err == nil {
+		msg = txt
+	}
+	return fmt.Errorf("%v: %v", resp.Status, string(msg))
+}
+
+// HTMLBodyText extracts text from the <body> of a HTML document.
+// Useful for test error messages, not for much else.
+func HTMLBodyText(r io.Reader) ([]byte, error) {
+	var txt []byte
+	z := html.NewTokenizer(r)
+	inBody := false
+	isBody := func(tag []byte, _ bool) bool { return bytes.Equal(tag, []byte("body")) }
+	for {
+		tt := z.Next()
+		switch tt {
+		case html.ErrorToken:
+			return nil, z.Err()
+		case html.TextToken:
+			if inBody {
+				txt = append(txt, z.Text()...)
+			}
+		case html.StartTagToken:
+			if isBody(z.TagName()) {
+				inBody = true
+			}
+		case html.EndTagToken:
+			if isBody(z.TagName()) {
+				return bytes.TrimSpace(regexpNNN.ReplaceAllLiteral(txt, []byte{'\n', '\n'})), nil
+			}
+		}
+	}
+}
+
+var regexpNNN = regexp.MustCompile("\n\n(\n*)")
+
+// MapIndices indexes into a multi-level map[string]interface{} unmarshalled from JSON.
+// Result is like `m[index1][index2]..`
+// Returns nil if an index is not found.
+func MapIndices(m interface{}, index ...interface{}) (value interface{}) {
+	defer func() {
+		// Convert reflect panics to errors.
+		if r := recover(); r != nil {
+			value = fmt.Errorf("%v", r)
+		}
+	}()
+	v := reflect.ValueOf(m)
+	for _, i := range index {
+		v = v.MapIndex(reflect.ValueOf(i))
+		if v.Kind() == reflect.Interface {
+			v = v.Elem()
+		}
+		if !v.IsValid() {
+			return nil
+		}
+		if v.Kind() != reflect.Map {
+			return v.Interface()
+		}
+	}
+	return v.Interface()
+}
+
+// TrimLines trims leading and trailing whitespace from every line in lines.
+// Useful for comparing configuration snippets with varied indenting.
+func TrimLines(lines string) string {
+	b := &strings.Builder{}
+	for _, line := range strings.Split(lines, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			fmt.Fprintln(b, line)
+		}
+	}
+	return b.String()
 }

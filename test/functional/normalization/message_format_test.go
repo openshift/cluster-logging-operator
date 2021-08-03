@@ -42,6 +42,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		var outputLogTemplate = types.K8sAuditLog{
 			AuditLogCommon: types.AuditLogCommon{
 				Kind:             kind,
+				LogType:          "audit",
 				ViaqIndexName:    "audit-write",
 				Level:            "info",
 				Timestamp:        time.Time{},
@@ -73,6 +74,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		// Template expected as output Log
 		var outputLogTemplate = types.LinuxAuditLog{
 			Message:       auditLogLine,
+			LogType:       "audit",
 			ViaqIndexName: "audit-write",
 			AuditLinux: types.AuditLinux{
 				Type:     msgType,
@@ -161,6 +163,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 			Message:          ovnLogLine,
 			Level:            level,
 			Timestamp:        time.Time{},
+			LogType:          "audit",
 			ViaqIndexName:    "audit-write",
 			ViaqMsgID:        "*",
 			PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
@@ -173,7 +176,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		var logs []types.OVNAuditLog
 		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+		ExpectOK(err)
 		// Compare to expected template
 		outputTestLog := logs[0]
 		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))

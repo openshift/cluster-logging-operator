@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/onsi/ginkgo"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -22,10 +23,12 @@ type Test struct {
 func NewTest() *Test {
 	t := &Test{
 		Client: Get(),
-		NS:     runtime.NewUniqueNamespace(),
+		NS:     runtime.NewNamespace(test.UniqueNameForTest()),
 	}
 	test.Must(t.Create(t.NS))
-	fmt.Fprintf(ginkgo.GinkgoWriter, "test namespace: %v\n", t.NS.Name)
+	if _, ok := test.GinkgoCurrentTest(); ok {
+		fmt.Fprintf(ginkgo.GinkgoWriter, "test namespace: %v\n", t.NS.Name)
+	}
 	return t
 }
 
@@ -60,4 +63,18 @@ func NewNamesapceClient() *NamespaceClient {
 }
 func (t *NamespaceClient) Close() {
 	_ = t.Remove(t.NS)
+}
+
+// ForTest returns a Test for a testing.T.
+// The client.Test is closed when the test ends.
+func ForTest(t *testing.T) *Test {
+	// UniqueName is a lowercase DNS label, add "-" separator to make camelCase readable.
+	c := NewTest()
+	t.Cleanup(func() {
+		if !t.Failed() {
+			_ = c.Delete(c.NS)
+		}
+	})
+	t.Logf("test namespace: %v", c.NS.Name)
+	return c
 }

@@ -10,12 +10,13 @@ import (
 
 var (
 	funcMap = template.FuncMap{
-		"indent":  indent,
-		"include": include,
+		"indent":      indent,
+		"include":     include,
+		"stringsJoin": strings.Join,
 	}
 )
 
-//IncludeTemplate allows root templates to include partials by reusing
+//Includetemplate allows root templates to include partials by reusing
 //the root template object.  Callers can provide hints for use in temporarily changing
 //behavior of the included template
 type IncludeTemplate interface {

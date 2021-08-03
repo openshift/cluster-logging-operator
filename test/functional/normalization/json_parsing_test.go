@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 const (
@@ -108,7 +109,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 
 	It("should parse json message into structured", func() {
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
-		Expect(framework.Deploy()).To(BeNil())
+		ExpectOK(framework.Deploy())
 
 		// Log message data
 		expectedMessage := strings.ReplaceAll(Json, "\n", "")
@@ -165,7 +166,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 	})
 	It("should not parse json if not configured", func() {
 		// Pipeline.Parse is not set
-		Expect(framework.Deploy()).To(BeNil())
+		ExpectOK(framework.Deploy())
 
 		expectedMessage := strings.ReplaceAll(Json, "\n", "")
 

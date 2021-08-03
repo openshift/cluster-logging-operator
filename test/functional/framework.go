@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/pkg/certificates"
@@ -77,7 +78,7 @@ type FluentdFunctionalFramework struct {
 	labels            map[string]string
 	Forwarder         *logging.ClusterLogForwarder
 	Test              *client.Test
-	pod               *corev1.Pod
+	Pod               *corev1.Pod
 	fluentContainerId string
 	receiverBuilders  []receiverBuilder
 	closeClient       func()
@@ -91,6 +92,10 @@ func init() {
 func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
 	test := client.NewTest()
 	return NewFluentdFunctionalFrameworkUsing(test, test.Close, 0)
+}
+
+func NewFluentdFunctionalFrameworkForTest(t *testing.T) *FluentdFunctionalFramework {
+	return NewFluentdFunctionalFrameworkUsing(client.ForTest(t), func() {}, 0)
 }
 
 func NewFluentdFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosity int) *FluentdFunctionalFramework {
@@ -135,13 +140,16 @@ func NewCRIOLogMessage(timestamp, message string, partial bool) string {
 	return fmt.Sprintf("%s stdout %s %s", timestamp, fullOrPartial, message)
 }
 
+// CRIOTime returns the CRIO string format of time t.
+func CRIOTime(t time.Time) string { return time.Now().UTC().Format(time.RFC3339Nano) }
+
 func (f *FluentdFunctionalFramework) Cleanup() {
 	f.closeClient()
 }
 
 func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string) (string, error) {
 	log.V(2).Info("Running", "container", container, "cmd", cmd)
-	out, err := runtime.ExecOc(f.pod, strings.ToLower(container), cmd[0], cmd[1:]...)
+	out, err := runtime.ExecOc(f.Pod, strings.ToLower(container), cmd[0], cmd[1:]...)
 	log.V(2).Info("Exec'd", "out", out, "err", err)
 	return out, err
 }
@@ -235,8 +243,8 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	}
 
 	log.V(2).Info("Defining pod...")
-	f.pod = runtime.NewPod(f.Test.NS.Name, f.Name)
-	b := runtime.NewPodBuilder(f.pod).
+	f.Pod = runtime.NewPod(f.Test.NS.Name, f.Name)
+	b := runtime.NewPodBuilder(f.Pod).
 		WithLabels(f.labels).
 		AddConfigMapVolume("config", f.Name).
 		AddConfigMapVolume("entrypoint", f.Name).
@@ -253,8 +261,8 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 			return err
 		}
 	}
-	log.V(2).Info("Creating pod", "pod", f.pod)
-	if err = f.Test.Client.Create(f.pod); err != nil {
+	log.V(2).Info("Creating pod", "pod", f.Pod)
+	if err = f.Test.Client.Create(f.Pod); err != nil {
 		return err
 	}
 
@@ -262,7 +270,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	if err = oc.Literal().From("oc wait -n %s pod/%s --timeout=120s --for=condition=Ready", f.Test.NS.Name, f.Name).Output(); err != nil {
 		return err
 	}
-	if err = f.Test.Client.Get(f.pod); err != nil {
+	if err = f.Test.Client.Get(f.Pod); err != nil {
 		return err
 	}
 	log.V(2).Info("waiting for service endpoints to be ready")
@@ -296,7 +304,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	if err != nil {
 		return fmt.Errorf("fluentd did not start in the container")
 	}
-	for _, cs := range f.pod.Status.ContainerStatuses {
+	for _, cs := range f.Pod.Status.ContainerStatuses {
 		if cs.Name == constants.FluentdName {
 			f.fluentContainerId = strings.TrimPrefix(cs.ContainerID, "cri-o://")
 			break
@@ -339,7 +347,7 @@ func CreateAppLogFromJson(jsonstr string) string {
 }
 
 func (f *FluentdFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
-	filename := fmt.Sprintf("%s/%s_%s_%s-%s.log", fluentdLogPath[applicationLog], f.pod.Name, f.pod.Namespace, constants.FluentdName, f.fluentContainerId)
+	filename := fmt.Sprintf("%s/%s_%s_%s-%s.log", fluentdLogPath[applicationLog], f.Pod.Name, f.Pod.Namespace, constants.FluentdName, f.fluentContainerId)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
@@ -372,7 +380,7 @@ func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, siz
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
 	//podname_ns_containername-containerid.log
 	//functional_testhack-16511862744968_fluentd-90a0f0a7578d254eec640f08dd155cc2184178e793d0289dff4e7772757bb4f8.log
-	filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", f.pod.Name, f.pod.Namespace, constants.FluentdName, f.fluentContainerId)
+	filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", f.Pod.Name, f.Pod.Namespace, constants.FluentdName, f.fluentContainerId)
 	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p /var/log/containers;echo > %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", filepath, size, numOfLogs, msg, filepath))
 	log.V(3).Info("FluentdFunctionalFramework.WritesNApplicationLogsOfSize", "result", result, "err", err)
 	return err
@@ -432,7 +440,7 @@ func (f *FluentdFunctionalFramework) ReadNApplicationLogsFrom(n uint64, outputNa
 	lines := []string{}
 	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
 	defer cancel()
-	reader, err := cmd.TailReaderForContainer(f.pod, outputName, ApplicationLogFile)
+	reader, err := cmd.TailReaderForContainer(f.Pod, outputName, ApplicationLogFile)
 	if err != nil {
 		log.V(3).Error(err, "Error creating tail reader")
 		return nil, err

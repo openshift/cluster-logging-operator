@@ -30,6 +30,7 @@ type ContainerLog struct {
 	Level            string                 `json:"level"`
 	Hostname         string                 `json:"hostname"`
 	PipelineMetadata PipelineMetadata       `json:"pipeline_metadata"`
+	LogType          string                 `json:"log_type,omitempty"`
 	ViaqIndexName    string                 `json:"viaq_index_name"`
 	ViaqMsgID        string                 `json:"viaq_msg_id"`
 	OpenshiftLabels  OpenshiftMeta          `json:"openshift"`
@@ -101,6 +102,7 @@ type JournalLog struct {
 	Hostname            string           `json:"hostname,omitempty"`
 	PipelineMetadata    PipelineMetadata `json:"pipeline_metadata,omitempty"`
 	Timestamp           time.Time        `json:"@timestamp,omitempty"`
+	LogType             string           `json:"log_type,omitempty"`
 	ViaqIndexName       string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID           string           `json:"viaq_msg_id,omitempty"`
 	Kubernetes          Kubernetes       `json:"kubernetes,omitempty"`
@@ -143,6 +145,7 @@ type InfraLog struct {
 	Hostname            string           `json:"hostname,omitempty"`
 	PipelineMetadata    PipelineMetadata `json:"pipeline_metadata,omitempty"`
 	Timestamp           time.Time        `json:"@timestamp,omitempty"`
+	LogType             string           `json:"log_type,omitempty"`
 	ViaqIndexName       string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID           string           `json:"viaq_msg_id,omitempty"`
 	STREAMID            string           `json:"_STREAM_ID,omitempty"`
@@ -166,6 +169,7 @@ type LinuxAuditLog struct {
 	Message          string           `json:"message"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
 	Timestamp        time.Time        `json:"@timestamp"`
+	LogType          string           `json:"log_type,omitempty"`
 	ViaqIndexName    string           `json:"viaq_index_name"`
 	ViaqMsgID        string           `json:"viaq_msg_id"`
 	Kubernetes       Kubernetes       `json:"kubernetes"`
@@ -185,6 +189,7 @@ type OVNAuditLog struct {
 	Message          string           `json:"message"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
 	Timestamp        time.Time        `json:"@timestamp"`
+	LogType          string           `json:"log_type,omitempty"`
 	ViaqIndexName    string           `json:"viaq_index_name"`
 	ViaqMsgID        string           `json:"viaq_msg_id"`
 	Kubernetes       Kubernetes       `json:"kubernetes"`
@@ -212,6 +217,7 @@ type AuditLogCommon struct {
 	Hostname                 string           `json:"hostname,omitempty"`
 	PipelineMetadata         PipelineMetadata `json:"pipeline_metadata,omitempty"`
 	Timestamp                time.Time        `json:"@timestamp,omitempty"`
+	LogType                  string           `json:"log_type,omitempty"`
 	ViaqIndexName            string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID                string           `json:"viaq_msg_id,omitempty"`
 	Kubernetes               Kubernetes       `json:"kubernetes,omitempty"`
@@ -228,6 +234,7 @@ type EventRouterLog struct {
 	Hostname         string           `json:"hostname,omitempty"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
 	Timestamp        time.Time        `json:"@timestamp"`
+	LogType          string           `json:"log_type,omitempty"`
 	ViaqIndexName    string           `json:"viaq_index_name"`
 	ViaqMsgID        string           `json:"viaq_msg_id"`
 	OpenshiftLabels  OpenshiftMeta    `json:"openshift"`
@@ -275,6 +282,7 @@ type AuditLog struct {
 	Message                  string           `json:"message,omitempty"`
 	PipelineMetadata         PipelineMetadata `json:"pipeline_metadata"`
 	Timestamp                time.Time        `json:"@timestamp,omitempty"`
+	LogType                  string           `json:"log_type,omitempty"`
 	ViaqIndexName            string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID                string           `json:"viaq_msg_id,omitempty"`
 	Kubernetes               Kubernetes       `json:"kubernetes,omitempty"`
@@ -306,6 +314,7 @@ type AllLog struct {
 	Hostname                 string           `json:"hostname,omitempty"`
 	PipelineMetadata         PipelineMetadata `json:"pipeline_metadata,omitempty"`
 	Timestamp                time.Time        `json:"@timestamp,omitempty"`
+	LogType                  string           `json:"log_type,omitempty"`
 	ViaqIndexName            string           `json:"viaq_index_name,omitempty"`
 	ViaqMsgID                string           `json:"viaq_msg_id,omitempty"`
 	STREAMID                 string           `json:"_STREAM_ID,omitempty"`

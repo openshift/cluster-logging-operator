@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"github.com/openshift/cluster-logging-operator/test"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -12,11 +11,6 @@ func NewNamespace(name string) *corev1.Namespace {
 	ns := &corev1.Namespace{}
 	Initialize(ns, "", name)
 	return ns
-}
-
-// NewUniqueNamespace returns a corev1.Namespace with unique name.
-func NewUniqueNamespace() *corev1.Namespace {
-	return NewNamespace(test.UniqueNameForTest())
 }
 
 // NewConfigMap returns a corev1.ConfigMap with namespace, name and data.

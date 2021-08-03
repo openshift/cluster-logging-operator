@@ -97,6 +97,16 @@ func (conf *outputLabelConf) Template() *template.Template {
 }
 func (conf *outputLabelConf) Host() string { return conf.URL.Hostname() }
 
+// URLBase returns only the scheme://host-port part of the URL.
+func (conf *outputLabelConf) URLBase() string {
+	return fmt.Sprintf("%v://%v", conf.URL.Scheme, conf.URL.Host)
+}
+
+// LPath returns the path of the URL stripped of leading and trailing "/"
+func (conf *outputLabelConf) Path() string {
+	return strings.Trim(conf.URL.Path, "/")
+}
+
 func (conf *outputLabelConf) Port() string {
 	p := conf.URL.Port()
 	if p == "" {

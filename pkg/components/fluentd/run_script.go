@@ -73,7 +73,10 @@ fi
 ALLOWED_DF_LIMIT=$(expr $DF_LIMIT \* $ALLOWED_PERCENT_OF_DISK / 100) || :
 
 # TOTAL_LIMIT_SIZE per buffer
-TOTAL_LIMIT_SIZE=$(expr $ALLOWED_DF_LIMIT / $NUM_OUTPUTS) || :
+TOTAL_LIMIT_SIZE=$(echo ${TOTAL_LIMIT_SIZE:-0})
+if [ $TOTAL_LIMIT_SIZE -eq 0 ]; then
+    TOTAL_LIMIT_SIZE=$(expr $ALLOWED_DF_LIMIT / $NUM_OUTPUTS) || :
+fi
 echo "Setting each total_size_limit for $NUM_OUTPUTS buffers to $TOTAL_LIMIT_SIZE bytes"
 export TOTAL_LIMIT_SIZE
 

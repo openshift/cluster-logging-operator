@@ -55,9 +55,14 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
+		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
+			return
+		}
+
 		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
 			return
 		}
+
 		log.V(3).Info("Generated collector config", "config", collectorConfig)
 		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 		if err != nil {
@@ -77,10 +82,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		}
 
 		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
 			return
 		}
 

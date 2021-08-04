@@ -23,7 +23,6 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
 		return "", nil
 	}
-
 	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
 	case logging.LogCollectionTypeFluentd:
 		break
@@ -46,6 +45,14 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 				// copy from defaults if output specific spec not present
 				if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {
 					out.Elasticsearch = defaultOutputSpecs.Elasticsearch
+					out.Secret = &logging.OutputSecretSpec{
+						Name: constants.CollectorSecretName,
+					}
+					secret, err := clusterRequest.GetSecret(constants.CollectorSecretName)
+					if err != nil {
+						log.V(2).Info("no secret for default output type")
+					}
+					clusterRequest.OutputSecrets[out.Name] = secret
 					clusterRequest.ForwarderSpec.Outputs[i] = out
 				}
 			}
@@ -72,6 +79,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 
 	clfSpec := &clusterRequest.ForwarderSpec
 	fwSpec := clusterRequest.Cluster.Spec.Forwarder
+
 	generatedConfig, err := generator.Generate(clfSpec, clusterRequest.OutputSecrets, fwSpec)
 
 	if err != nil {

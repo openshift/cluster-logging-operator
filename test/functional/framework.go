@@ -60,6 +60,11 @@ var outputLogFile = map[string]map[string]string{
 		k8sAuditLog:    "/var/log/infra.log",
 		ovnAuditLog:    "/var/log/infra.log",
 	},
+	logging.OutputTypeKafka: {
+		applicationLog: "/var/log/infra.log",
+		auditLog:       "/var/log/infra.log",
+		k8sAuditLog:    "/var/log/infra.log",
+	},
 }
 
 var (
@@ -323,6 +328,10 @@ func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, 
 			}
 		case logging.OutputTypeSyslog:
 			if err := f.addSyslogOutput(b, output); err != nil {
+				return err
+			}
+		case logging.OutputTypeKafka:
+			if err := f.addKafkaOutput(b, output); err != nil {
 				return err
 			}
 		case logging.OutputTypeElasticsearch:

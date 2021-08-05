@@ -1,4 +1,4 @@
-package kafka
+package helpers
 
 const (
 	initKafkaScript = `
@@ -295,11 +295,4 @@ const (
       log4j.logger.org.apache.zookeeper.server.NIOServerCnxnFactory=WARN
       log4j.logger.org.apache.zookeeper.server.NIOServerCnxn=WARN
     `
-
-	InitKafkaScript     = initKafkaScript
-	ClientProperties    = clientProperties
-	ServerProperties    = serverProperties
-	Log4jProperties     = log4jProperties
-	InitZookeeperScript = initZookeeperScript
-	ZookeeperProperties = zookeeperProperties
 )

@@ -125,3 +125,17 @@ func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
 	}
 	return builder
 }
+
+func (builder *ContainerBuilder) AddContainerPort(name string, port int32) *ContainerBuilder {
+	containerBuilder := ContainerBuilder{
+		container: corev1.Container{
+			Ports: []corev1.ContainerPort{
+				{
+					ContainerPort: port,
+					Name:          name,
+				},
+			},
+		},
+	}
+	return &containerBuilder
+}

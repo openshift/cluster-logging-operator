@@ -689,10 +689,10 @@ const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
     auto_create_stream true
     concurrency 2
 {{- with $path := .SecretPath "aws_access_key_id"}}
-    aws_key_id "#{open('{{ $path }}','r') do |f|f.read end}"
+    aws_key_id "#{open('{{ $path }}','r') do |f|f.read.strip end}"
 {{- end}}
 {{- with $path := .SecretPath "aws_secret_access_key"}}
-    aws_sec_key "#{open('{{ $path }}','r') do |f|f.read end}"
+    aws_sec_key "#{open('{{ $path }}','r') do |f|f.read.strip end}"
 {{- end}}
     include_time_key true
     log_rejected_request true

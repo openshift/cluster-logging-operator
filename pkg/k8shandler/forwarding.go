@@ -326,6 +326,9 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
 		case !clusterRequest.CLFVerifier.VerifyOutputSecret(&output, status.Outputs):
 			break
+		case output.Type == logging.OutputTypeCloudwatch && output.Cloudwatch == nil:
+			log.V(3).Info("verifyOutputs failed", "reason", "Cloudwatch output requires type spec", "output name", output.Name)
+			status.Outputs.Set(output.Name, condInvalid("output %q: Cloudwatch output requires type spec", output.Name))
 		default:
 			status.Outputs.Set(output.Name, condReady)
 			spec.Outputs = append(spec.Outputs, output)

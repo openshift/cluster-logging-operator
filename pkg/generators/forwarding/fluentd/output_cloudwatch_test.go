@@ -87,8 +87,8 @@ var _ = Describe("Generating fluentd config", func() {
 					remove_log_group_name_key true
 					auto_create_stream true
 					concurrency 2
-					aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r') do |f|f.read end}"
-					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read end}"
+					aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r') do |f|f.read.strip end}"
+					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
 					include_time_key true
 					log_rejected_request true
 				</match>
@@ -140,8 +140,8 @@ var _ = Describe("Generating fluentd config", func() {
 					remove_log_group_name_key true
 					auto_create_stream true
 					concurrency 2
-					aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r') do |f|f.read end}"
-					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read end}"
+					aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r') do |f|f.read.strip end}"
+					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
 					include_time_key true
 					log_rejected_request true
 				</match>
@@ -196,8 +196,8 @@ var _ = Describe("Generating fluentd config", func() {
 					remove_log_group_name_key true
 					auto_create_stream true
 					concurrency 2
-					aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r') do |f|f.read end}"
-					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read end}"
+					aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r') do |f|f.read.strip end}"
+					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
 					include_time_key true
 					log_rejected_request true
 				</match>

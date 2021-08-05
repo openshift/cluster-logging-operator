@@ -48,6 +48,11 @@ list_es_storage() {
   echo "-- Persistence files" >> $es_folder/$pod
 
   oc -n $NAMESPACE exec -c elasticsearch $pod -- ls -lR $mountPath >> $es_folder/$pod
+  
+  echo "-- Persistence  storage size " >> $es_folder/$pod-storage
+
+  oc -n $NAMESPACE exec -c elasticsearch $pod -- df -h $mountPath >> $es_folder/$pod-storage
+
 }
 
 get_elasticsearch_status() {

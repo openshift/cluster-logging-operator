@@ -1,8 +1,6 @@
 #!/bin/sh
 set -eou pipefail
-
-export CLUSTER_LOGGING_OPERATOR_NAMESPACE=${CLUSTER_LOGGING_OPERATOR_NAMESPACE:-openshift-logging}
-
+source $(dirname "${BASH_SOURCE[0]}")/env.sh
 
 if oc get project ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} > /dev/null 2>&1 ; then
   echo using existing project ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} for operator installation

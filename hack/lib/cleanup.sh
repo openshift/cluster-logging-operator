@@ -258,7 +258,9 @@ function os::cleanup::dump_events() {
 	if [[ -n "${ADMIN_KUBECONFIG:-}" ]]; then
 		kubeconfig="--config=${ADMIN_KUBECONFIG}"
 	fi
-	oc login -u system:admin ${kubeconfig:-}
+	# Run oc login without a TTY to prevent it from prompting for user/pass.
+	# If it fails, carry on only certain environment require this login.
+	{ oc login -u system:admin ${kubeconfig:-} < /dev/null |& cat; } || echo "contining without sytem:admin login"
 	oc get events --all-namespaces ${kubeconfig:-} > "${ARTIFACT_DIR}/events.txt" 2>&1
 }
 readonly -f os::cleanup::dump_events

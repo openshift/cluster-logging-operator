@@ -14,7 +14,7 @@ if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
 LOGGING_NS=${LOGGING_NS:-openshift-logging}
-IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"registry.ci.openshift.org/logging/${VERSION}:logging-eventrouter"}
+IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"quay.io/openshift-logging/eventrouter:${VERSION}"}
 EVENT_ROUTER_TEMPLATE=${repo_dir}/hack/eventrouter-template.yaml
 MAX_DEPLOY_WAIT_SECONDS=${MAX_DEPLOY_WAIT_SECONDS:-120}
 mkdir -p /tmp/artifacts/junit
@@ -45,22 +45,25 @@ cleanup() {
     local return_code="$?"
     local test_name=$(basename $0)
 
-    os::test::junit::declare_suite_end
 
-    set +e
-    if [ "$return_code" != "0" ] ; then
-	gather_logging_resources ${LOGGING_NS} $test_artifactdir
+    if [ "true" == "${DO_CLEANUP:-"true"}" ] ; then
+      os::test::junit::declare_suite_end
+      set +e
+      if [ "$return_code" != "0" ] ; then
+	      gather_logging_resources ${LOGGING_NS} $test_artifactdir
 
         mkdir -p $ARTIFACT_DIR/$test_name
         oc -n $LOGGING_NS get configmap fluentd -o jsonpath={.data} --ignore-not-found > $ARTIFACT_DIR/$test_name/fluent-configmap.log ||:
+      fi
+
+      oc process -p NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
+         -f $EVENT_ROUTER_TEMPLATE | oc delete -f -
+
+      ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
+      ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
+
+      os::cleanup::all "${return_code}"
     fi
-
-    oc process -p NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
-       -f $EVENT_ROUTER_TEMPLATE | oc delete -f -
-
-    ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
-    ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
-    os::cleanup::all "${return_code}"
 
     exit $return_code
 }

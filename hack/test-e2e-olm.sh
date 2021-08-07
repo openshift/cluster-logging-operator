@@ -27,12 +27,14 @@ cleanup(){
 }
 trap cleanup exit
 
-pushd ../elasticsearch-operator
-# install the catalog containing the elasticsearch operator csv
-ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/catalog-deploy.sh
-# install the elasticsearch operator from that catalog
-ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
-popd
+if [ "${DO_EO_SETUP:-true}" == "true" ] ; then
+    pushd ../elasticsearch-operator
+    # install the catalog containing the elasticsearch operator csv
+    ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/catalog-deploy.sh
+    # install the elasticsearch operator from that catalog
+    ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
+    popd
+fi
 
 get_setup_artifacts=false
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"

@@ -95,6 +95,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
+		  skip_refresh_on_startup true
           @label @MEASURE
           <parse>
             @type multi_format
@@ -591,6 +592,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
+		  skip_refresh_on_startup true
           @label @MEASURE
           <parse>
             @type multi_format
@@ -1098,6 +1100,7 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           rotate_wait 5
           tag kubernetes.*
           read_from_head "true"
+		  skip_refresh_on_startup true
           @label @MEASURE
           <parse>
             @type multi_format

@@ -40,6 +40,7 @@ var _ = Describe("generating source", func() {
 			rotate_wait 5
 			tag kubernetes.*
 			read_from_head "true"
+			skip_refresh_on_startup true
 			@label @MEASURE
 			<parse>
 			  @type multi_format
@@ -107,6 +108,7 @@ var _ = Describe("generating source", func() {
 			  rotate_wait 5
 			  tag kubernetes.*
 			  read_from_head "true"
+			  skip_refresh_on_startup true
 			  @label @MEASURE
 			  <parse>
 				@type multi_format
@@ -233,6 +235,7 @@ var _ = Describe("generating source", func() {
 				rotate_wait 5
 				tag kubernetes.*
 				read_from_head "true"
+				skip_refresh_on_startup true
 				@label @MEASURE
 				<parse>
 				  @type multi_format

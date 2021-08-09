@@ -464,6 +464,7 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
+  skip_refresh_on_startup true
   @label @MEASURE
   <parse>
     @type multi_format

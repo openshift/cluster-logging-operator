@@ -2,10 +2,32 @@
 
 set -euo pipefail
 
+md5hash(){
+  md5sum $1 | cut -d ' ' -f1
+}
+
+rc=0
+
 # check dockerfile changes
 change=$(./hack/generate-dockerfile-from-midstream | md5sum | cut -d ' ' -f1)
-if [ "$change" != "$(md5sum Dockerfile | cut -d ' ' -f1)" ] ; then
+if [ "$change" != "$(md5hash Dockerfile)" ] ; then
+    rc=1
     echo "A change was found in CI file Dockerfile that was not sourced from the midstream file Dockerfile.in (or vice versa)."
     echo "Please reset the CI file (e.g. Dockerfile), update Dockerfile.in, run make gen-dockerfiles and commit the results"
-  exit 1
+    echo ""
 fi
+
+bundleDir="./bundle/manifests"
+manifestDir="./manifests/$(ls ./manifests/ | sort | head -1)"
+for f in $(ls $bundleDir); do
+  bundleFile="$bundleDir/$f"
+  manifestFile="$manifestDir/$f"
+  if [ "$(md5hash $bundleFile)" != "$(md5hash $manifestFile)" ] ; then
+    rc=1
+    echo "A change was found in $manifestFile that was not sourced from $bundleFile."
+    echo "Please reset $manifestFile, update bundle/metadata/annotations.yaml if necessary, run make  generate-bundle and commit the results"
+    echo ""
+  fi
+done
+
+exit $rc

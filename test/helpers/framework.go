@@ -76,9 +76,10 @@ type E2ETestFramework struct {
 func NewE2ETestFramework() *E2ETestFramework {
 	client, config := NewKubeClient()
 	framework := &E2ETestFramework{
-		RestConfig: config,
-		KubeClient: client,
-		LogStores:  make(map[string]LogStore, 4),
+		RestConfig:     config,
+		KubeClient:     client,
+		LogStores:      make(map[string]LogStore, 4),
+		ClusterLogging: &cl.ClusterLogging{ObjectMeta: metav1.ObjectMeta{Annotations: map[string]string{"api-enabled": "true"}}},
 	}
 	return framework
 }
@@ -214,6 +215,8 @@ func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
 		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
+	case ComponentLogAPI:
+		return tc.waitForDeployment(OpenshiftLoggingNS, "logexplorationapi", defaultRetryInterval, defaultTimeout)
 	}
 	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
 }

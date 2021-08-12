@@ -16,6 +16,7 @@ const (
 	ComponentTypeStore         LogComponentType = "LogStore"
 	ComponentTypeVisualization LogComponentType = "Visualization"
 	ComponentTypeCollector     LogComponentType = "Collector"
+	ComponentLogAPI            LogComponentType = "Api"
 )
 
 func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
@@ -72,6 +73,18 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 					},
 				},
 			}
+			//case ComponentLogAPI:
+			//	instance.Spec.Api = &cl.ApiSpec{
+			//		LoggingAPISpec: cl.LoggingAPISpec{
+			//			Resources: &v1.ResourceRequirements{
+			//				Requests: v1.ResourceList{
+			//					v1.ResourceMemory: resource.MustParse("500Mi"),
+			//					v1.ResourceCPU:    resource.MustParse("200m"),
+			//				},
+			//			},
+			//		},
+			//		Enabled: true,
+			//	}
 		}
 	}
 	return instance

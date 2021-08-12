@@ -46,6 +46,10 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 			return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
+		if err = clusterLoggingRequest.CreateOrDeleteLogExplorationApi(); err != nil {
+			return fmt.Errorf("Unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		}
+
 		// Reconcile Visualization
 		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
 			return fmt.Errorf("Unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)

@@ -75,9 +75,9 @@ get_elasticsearch_status() {
   done
 
   oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/indices?v\&bytes=m &> $cluster_folder/indices
+  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/indices?h=i,creation.date,creation.date.string,store.size,pri.store.size > $cluster_folder/indices_size
   oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_search?sort=@timestamp:desc\&pretty > $cluster_folder/latest_documents.json
   oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_nodes/stats?pretty > $cluster_folder/nodes_stats.json
-
   local health=$(oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/health?h=status)
   if [ -z "$health" ]
   then

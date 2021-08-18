@@ -68,4 +68,7 @@ do
     check_collector_persistence $pod
     oc -n openshift-logging exec -- ls -l /var/lib/fluentd/clo_default_output_es > $collector_folder/$pod.es-buffers.txt
     oc -n openshift-logging exec -- ls -l /var/lib/fluentd/retry_clo_default_output_es > $outdir/$pod.buffers.es-retry.txt
+    echo "$pod" >> $collector_folder/output-buffer-size.txt
+    echo "---------------" >> $collector_folder/output-buffer-size.txt
+    oc -n openshift-logging exec $pod -- bash -c ' du -sh /var/lib/fluentd/*' >> $collector_folder/output-buffer-size.txt
 done

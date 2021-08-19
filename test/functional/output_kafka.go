@@ -11,17 +11,20 @@ import (
 
 const (
 	// Kafka deployment definitions
-	ImageRemoteKafka         = kafka.KafkaImage
-	ImageRemoteKafkaInit     = kafka.KafkaInitUtilsImage
-	OpenshiftLoggingNS       = "openshift-logging"
-	kafkaBrokerContainerName = "broker"
-	kafkaBrokerComponent     = "kafka"
-	kafkaBrokerProvider      = "openshift"
-	kafkaNodeReader          = "kafka-node-reader"
-	kafkaNodeReaderBinding   = "kafka-node-reader-binding"
-	kafkaInsidePort          = int32(9093)
-	kafkaOutsidePort         = int32(9094)
-	kafkaJMXPort             = int32(5555)
+	ImageRemoteKafka            = kafka.KafkaImage
+	ImageRemoteKafkaInit        = kafka.KafkaInitUtilsImage
+	OpenshiftLoggingNS          = "openshift-logging"
+	kafkaBrokerContainerName    = "broker"
+	kafkaBrokerComponent        = "kafka"
+	kafkaBrokerProvider         = "openshift"
+	kafkaNodeReader             = "kafka-node-reader"
+	kafkaNodeReaderBinding      = "kafka-node-reader-binding"
+	kafkaInsidePort             = int32(9093)
+	kafkaOutsidePort            = int32(9094)
+	kafkaJMXPort                = int32(5555)
+	zookeeperClientPort         = int32(2181)
+	zookeeperPeerPort           = int32(2888)
+	zookeeperLeaderElectionPort = int32(3888)
 )
 
 func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
@@ -45,16 +48,14 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		AddVolumeMount("configmap", "/etc/kafka-configmap", "", false).
 		AddVolumeMount("config", "/etc/kafka", "", false).
 		AddVolumeMount("data", "/var/lib/zookeeper", "", false).
+		AddContainerPort("client", zookeeperClientPort).
+		AddContainerPort("peer", zookeeperPeerPort).
+		AddContainerPort("leader-election", zookeeperLeaderElectionPort).
 		WithCmdArgs([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
 		WithPrivilege().
 		End().
 		AddConfigMapVolume(zookeepercm.Name, zookeepercm.Name)
 
-	zookeepersvc := kafka.NewZookeeperService(OpenshiftLoggingNS)
-	log.V(2).Info("Creating zookeeper ZookeeperService", "namespace", zookeepersvc.Namespace, "name", zookeepersvc.Name)
-	if err := f.Test.Client.Create(zookeepersvc); err != nil {
-		return err
-	}
 	///////////////////////////////////
 
 	//step b
@@ -83,12 +84,6 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		WithPrivilege().
 		End().
 		AddConfigMapVolume(brokercm.Name, brokercm.Name)
-
-	brokersvc := kafka.NewBrokerService(OpenshiftLoggingNS)
-	log.V(2).Info("Creating Broker broker service", "namespace", brokersvc.Namespace, "name", brokersvc.Name)
-	if err := f.Test.Client.Create(brokersvc); err != nil {
-		return err
-	}
 
 	/////////////////////////////////////////////
 	//step c

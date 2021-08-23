@@ -26,19 +26,26 @@ const (
 )
 
 func (olc *outputLabelConf) ChunkLimitSize() string {
-	if hasBufferConfig(olc.forwarder) {
+	if hasBufferConfig(olc.forwarder) && olc.forwarder.Fluentd.Buffer.ChunkLimitSize != "" {
 		return string(olc.forwarder.Fluentd.Buffer.ChunkLimitSize)
+	} else {
+		size := ""
+		switch olc.Target.Type {
+		case loggingv1.OutputTypeFluentdForward:
+			size = "1m"
+		default:
+			size = "8m"
+		}
+		return fmt.Sprintf("\"#{ENV['BUFFER_SIZE_LIMIT'] || '%s'}\"", size)
 	}
-
-	return ""
 }
 
 func (olc *outputLabelConf) TotalLimitSize() string {
-	if hasBufferConfig(olc.forwarder) {
+	if hasBufferConfig(olc.forwarder) && olc.forwarder.Fluentd.Buffer.TotalLimitSize != "" {
 		return string(olc.forwarder.Fluentd.Buffer.TotalLimitSize)
+	} else {
+		return "\"#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] ||  8589934592 }\" #8G"
 	}
-
-	return ""
 }
 
 func (olc *outputLabelConf) OverflowAction() string {

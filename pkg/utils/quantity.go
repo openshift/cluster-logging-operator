@@ -86,5 +86,6 @@ func ParseQuantity(str string) (resource.Quantity, error) {
 	}
 	//newString is the value compatible with k8s "resource" package
 	newString := value + transformSuffix[suffix]
+
 	return resource.ParseQuantity(newString)
 }

@@ -1,8 +1,9 @@
 package utils
 
 import (
-	v1 "k8s.io/api/core/v1"
 	"testing"
+
+	v1 "k8s.io/api/core/v1"
 )
 
 func TestAreMapsSameWhenBothAreEmpty(t *testing.T) {
@@ -132,5 +133,25 @@ func TestEnvVarEqualNotEqual2(t *testing.T) {
 
 	if EnvValueEqual(currentenv, desiredenv) {
 		t.Errorf("EnvVarEqual returned true when the desired is longer than the current")
+	}
+}
+
+func TestTransformNeeded(t *testing.T) {
+	expected := "10Gi"
+	value := "10G"
+	result := Transform(value)
+
+	if result != expected {
+		t.Errorf("Value is not transform as expected actual_result: %v, expected: %v", result, expected)
+	}
+}
+
+func TestTransformNotNeeded(t *testing.T) {
+	expected := "10Gi"
+	value := "10Gi"
+	result := Transform(value)
+
+	if result != expected {
+		t.Errorf("Value is not transform as expected actual_result: %v, expected: %v", result, expected)
 	}
 }

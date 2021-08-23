@@ -2,21 +2,27 @@ package fluentd
 
 import (
 	"fmt"
-	"strings"
-
 	"k8s.io/apimachinery/pkg/util/sets"
+	"strings"
+)
+
+const (
+	lokiLabelKubernetesHost = "kubernetes.host"
+	lokiLabelTag            = "tag"
 )
 
 var (
-	defaultLokiLabelKeys = []string{
+	defaultLabelKeys = []string{
 		"log_type",
+
+		//container labels
 		"kubernetes.namespace_name",
 		"kubernetes.pod_name",
 		"kubernetes.container_name",
 	}
 	requiredLokiLabelKeys = []string{
-		"kubernetes.host",
-		"tag",
+		lokiLabelKubernetesHost,
+		lokiLabelTag,
 	}
 )
 
@@ -25,7 +31,7 @@ func (conf *outputLabelConf) lokiLabelKeys() []string {
 	if conf.Target.Loki != nil && len(conf.Target.Loki.LabelKeys) != 0 {
 		keys = sets.NewString(conf.Target.Loki.LabelKeys...)
 	} else {
-		keys = sets.NewString(defaultLokiLabelKeys...)
+		keys = sets.NewString(defaultLabelKeys...)
 	}
 	// Ensure required tags for serialization
 	keys.Insert(requiredLokiLabelKeys...)
@@ -39,7 +45,14 @@ func (conf *outputLabelConf) LokiLabelFilter() string {
 	for _, k := range conf.lokiLabelKeys() {
 		tempName := strings.Replace(k, ".", "_", -1)
 		recordKeys := strings.Replace(k, ".", `","`, -1)
-		fmt.Fprintf(b, "\n    _%v ${record.dig(\"%v\")}", tempName, recordKeys)
+		switch k {
+		case lokiLabelTag:
+			fmt.Fprintf(b, "\n	_tag ${tag}")
+		case lokiLabelKubernetesHost:
+			fmt.Fprintf(b, "\n    _%v \"#{ENV['NODE_NAME']}\"", tempName)
+		default:
+			fmt.Fprintf(b, "\n    _%v ${record.dig(\"%v\")}", tempName, recordKeys)
+		}
 	}
 	return b.String()
 }

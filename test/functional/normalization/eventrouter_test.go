@@ -3,7 +3,6 @@ package normalization
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -96,7 +95,7 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 			newEventData := NewEventDataBuilder(verb, podRef)
 			jsonBytes, _ := json.Marshal(newEventData)
 			jsonStr := string(jsonBytes)
-			msg := strings.ReplaceAll(fmt.Sprintf("%s stdout F %s", timestamp, jsonStr), "\"", "\\\"")
+			msg := functional.NewCRIOLogMessage(timestamp, jsonStr, false)
 			err = framework.WriteMessagesToApplicationLog(msg, 1)
 			Expect(err).To(BeNil())
 

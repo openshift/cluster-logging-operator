@@ -18,7 +18,7 @@ type lokiConfig struct {
 func (c *lokiConfig) String() string {
 	return fmt.Sprintf(`
 <label @LOKI_RECEIVER>
-  <filter>
+  <filter **>
     @type record_modifier
     <record>
       %v
@@ -53,11 +53,11 @@ func TestLokiOutput(t *testing.T) {
 			config = lokiConfig{ // config with defaults
 				filter: `
          _kubernetes_container_name ${record.dig("kubernetes","container_name")}
-         _kubernetes_host ${record.dig("kubernetes","host")}
+         _kubernetes_host "#{ENV['NODE_NAME']}"
          _kubernetes_namespace_name ${record.dig("kubernetes","namespace_name")}
          _kubernetes_pod_name ${record.dig("kubernetes","pod_name")}
          _log_type ${record.dig("log_type")}
-         _tag ${record.dig("tag")}
+         _tag ${tag}
 `,
 				label: `
        kubernetes_container_name _kubernetes_container_name
@@ -149,9 +149,9 @@ func TestLokiOutput(t *testing.T) {
 		// NOTE: kubernetes.host should be added automatically if not present.
 		config.filter = `
       _kubernetes_container_name ${record.dig("kubernetes","container_name")}
-      _kubernetes_host ${record.dig("kubernetes","host")}
+      _kubernetes_host "#{ENV['NODE_NAME']}"
       _kubernetes_labels_app ${record.dig("kubernetes","labels","app")}
-      _tag ${record.dig("tag")}
+      _tag ${tag}
 `
 		config.label = `
       kubernetes_container_name _kubernetes_container_name

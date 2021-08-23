@@ -1058,7 +1058,7 @@ ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
 
 const outputLabelLokiTemplate = `{{- define "outputLabelLokiTemplate" -}}
 <label {{.LabelName}}>
-  <filter>
+  <filter **>
     @type record_modifier
     <record>{{.LokiLabelFilter}}
     </record>

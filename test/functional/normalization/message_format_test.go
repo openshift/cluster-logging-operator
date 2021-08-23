@@ -36,12 +36,12 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		// Log message data
 		timestamp := "2013-03-28T14:36:03.243000+00:00"
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
-		kind := fmt.Sprintf("audit(%.3f:24287)", float64(nanoTime.UnixNano())/float64(time.Second))
 
 		// Define a template for test format (used for input, and expected output)
 		var outputLogTemplate = types.K8sAuditLog{
 			AuditLogCommon: types.AuditLogCommon{
-				Kind:             kind,
+				Kind:             "Event",
+				Hostname:         functional.FunctionalNodeName,
 				LogType:          "audit",
 				ViaqIndexName:    "audit-write",
 				Level:            "info",
@@ -51,7 +51,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 			},
 		}
 		// Template expected as output Log
-		k8sAuditLogLine := "{\\\"kind\\\":\\\"" + kind + "\\\"}"
+		k8sAuditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s"}`, functional.CRIOTime(nanoTime))
 		Expect(framework.WriteMessagesTok8sAuditLog(k8sAuditLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
 		raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeFluentdForward)
@@ -66,21 +66,20 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 
 	It("should parse linux audit log format correctly", func() {
 		// Log message data
-		msgType := "CWD"
 		timestamp := "2013-03-28T14:36:03.243000+00:00"
-		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
-		msg := fmt.Sprintf("audit(%.3f:24287)", float64(nanoTime.UnixNano())/float64(time.Second))
-		auditLogLine := fmt.Sprintf("type=%s msg=%s:", msgType, msg)
+		testTime, _ := time.Parse(time.RFC3339Nano, timestamp)
+		auditLogLine := functional.NewAuditHostLog(testTime)
 		// Template expected as output Log
 		var outputLogTemplate = types.LinuxAuditLog{
 			Message:       auditLogLine,
 			LogType:       "audit",
+			Hostname:      functional.FunctionalNodeName,
 			ViaqIndexName: "audit-write",
 			AuditLinux: types.AuditLinux{
-				Type:     msgType,
+				Type:     "DAEMON_START",
 				RecordID: "*",
 			},
-			Timestamp:        nanoTime,
+			Timestamp:        testTime,
 			ViaqMsgID:        "*",
 			PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 		}
@@ -156,12 +155,13 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 	It("should parse ovn audit log correctly", func() {
 		// Log message data
 		level := "info"
-		ovnLogLine := "2021-07-06T08:26:58.687Z|00004|acl_log(ovn_pinctrl0)|INFO|name=verify-audit-logging_deny-all, verdict=drop"
+		ovnLogLine := functional.NewOVNAuditLog(time.Now())
 
 		// Template expected as output Log
 		var outputLogTemplate = types.OVNAuditLog{
 			Message:          ovnLogLine,
 			Level:            level,
+			Hostname:         functional.FunctionalNodeName,
 			Timestamp:        time.Time{},
 			LogType:          "audit",
 			ViaqIndexName:    "audit-write",

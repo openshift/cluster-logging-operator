@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
@@ -93,6 +94,93 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	return &containerBuilder
 }
 
+
+
+func (builder *PodBuilder) AddInitContainerzookeeper(name, image string) *PodBuilder {
+	builder.Pod.Spec.InitContainers =  []corev1.Container {
+		{
+			Name:  strings.ToLower(name),
+			Image: image,
+			Command: []string{
+				"/bin/bash",
+				"/etc/kafka-configmap/init.sh",
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "configmap",
+					MountPath: "/etc/kafka-configmap",
+				},
+				{
+					Name:      "configkafka",
+					MountPath: "/etc/kafka",
+				},
+				{
+					Name:      "datazookeeper",
+					MountPath: "/var/lib/zookeeper",
+				},
+			},
+		},
+	}
+	return builder
+}
+
+func (builder *PodBuilder) AddInitContainerbroker(name, image string, namespace string, DeploymentName string) *PodBuilder {
+	builder.Pod.Spec.InitContainers = append(builder.Pod.Spec.InitContainers, corev1.Container{
+			Name:  name,
+			Image: image,
+			Env: []corev1.EnvVar{
+				{
+					Name: "NODE_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: "spec.nodeName",
+						},
+					},
+				},
+				{
+					Name: "POD_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: "metadata.name",
+						},
+					},
+				},
+				{
+					Name: "POD_NAMESPACE",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: "metadata.namespace",
+						},
+					},
+				},
+				{
+					Name:  "ADVERTISE_ADDR",
+					Value: fmt.Sprintf("%s.%s.svc.cluster.local", DeploymentName, namespace),
+				},
+			},
+			Command: []string{
+				"/bin/bash",
+				"/etc/kafka-configmap/init.sh",
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "brokerconfig",
+					MountPath: "/etc/kafka-configmap",
+				},
+				{
+					Name:      "configkafka",
+					MountPath: "/etc/kafka",
+				},
+				{
+					Name:      "extensions",
+					MountPath: "/opt/kafka/libs/extensions",
+				},
+			},
+		},
+	)
+	return builder
+}
+
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
 	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
 		Name: name,
@@ -104,6 +192,29 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 			},
 		},
 	})
+	return builder
+}
+
+func (builder *PodBuilder) AddSecretVolume(name, secretName string) *PodBuilder {
+	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
+		Name: name,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+					SecretName: secretName,
+				},
+			},
+		},
+	)
+	return builder
+}
+
+func (builder *PodBuilder) AddEmptyDirVolume(name string) *PodBuilder {
+	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
+		Name: name,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
 	return builder
 }
 
@@ -127,15 +238,12 @@ func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
 }
 
 func (builder *ContainerBuilder) AddContainerPort(name string, port int32) *ContainerBuilder {
-	containerBuilder := ContainerBuilder{
-		container: corev1.Container{
-			Ports: []corev1.ContainerPort{
-				{
-					ContainerPort: port,
-					Name:          name,
-				},
-			},
-		},
-	}
-	return &containerBuilder
+
+	builder.container.Ports = append(builder.container.Ports, corev1.ContainerPort{
+		Name:      name,
+		ContainerPort: port,
+	})
+	return builder
 }
+
+

@@ -302,4 +302,5 @@ const (
 	Log4jProperties     = log4jProperties
 	InitZookeeperScript = initZookeeperScript
 	ZookeeperProperties = zookeeperProperties
+        ZookeeperLog4JProperties = zookeeperLog4JProperties
 )

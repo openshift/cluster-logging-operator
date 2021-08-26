@@ -1,16 +1,14 @@
 package outputs
 
 import (
-	"fmt"
-	"strings"
-	"time"
-
+//        "fmt"
+//       "strings"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
         "github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test"
-	//. "github.com/openshift/cluster-logging-operator/test/matchers"
+//	"github.com/openshift/cluster-logging-operator/test"
+        "github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 )
 
 var _ = Describe("[LogForwarding][Kafka] Functional tests", func() {
@@ -34,84 +32,57 @@ var _ = Describe("[LogForwarding][Kafka] Functional tests", func() {
 	}
 
 
-	timestamp := "2013-03-28T14:36:03.243000+00:00"
+        join := func(
+                f1 func(spec *logging.OutputSpec),
+                f2 func(spec *logging.OutputSpec)) func(*logging.OutputSpec) {
+                return func(s *logging.OutputSpec) {
+                        f1(s)
+                        f2(s)
+                }
+        }
+
+       // getAppName := func(fields []string) string {
+        //        return fields[3]
+       // }
+       // getProcID := func(fields []string) string {
+        //        return fields[4]
+       // }
+        //getMsgID := func(fields []string) string {
+         //       return fields[5]
+       // }
+
+
+	//timestamp := "2013-03-28T14:36:03.243000+00:00"
 
 	Context("Application Logs", func() {
-		It("should send large message over Kafa", func() {
+		FIt("should send large message over Kafka", func() {
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(join(setKafkaSpecValues, func(spec *logging.OutputSpec) {
-					spec.URL = "udp://0.0.0.0:9094"
+					spec.URL = "http://0.0.0.0:9094"
 				}), logging.OutputTypeKafka)
 			Expect(framework.Deploy()).To(BeNil())
 
-			var MaxLen uint64 = 40000
-			Expect(framework.WritesNApplicationLogsOfSize(1, MaxLen)).To(BeNil())
-			// Read line from Kafka output
-			outputlogs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeKafka)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(outputlogs).ToNot(BeEmpty())
-			fields := strings.Split(outputlogs[0], "#011")
-			msg := fields[2]
-			// adjust for "message:" prefix in the received message
-			ReceivedLen := uint64(len(msg[8:]))
-			Expect(ReceivedLen).To(Equal(MaxLen))
+                        var MaxLen uint64 = 40000
+                        Expect(framework.WritesNApplicationLogsOfSize(1, MaxLen)).To(BeNil())
+                        outputlogs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeKafka)
+                        Expect(err).To(BeNil(), "Expected no errors reading the logs")
+                        Expect(outputlogs).ToNot(BeEmpty())
+                        //fields := strings.Split(outputlogs[0], "#011")
+                        //msg := fields[2]
+                        //fmt.Printf("msg value %v\n",msg)
+                        // adjust for "message:" prefix in the received message
+                        //ReceivedLen := uint64(len(msg[8:]))
+                        //Expect(ReceivedLen).To(Equal(MaxLen))
+
+
 		})
 	})
-	Context("Audit logs", func() {
-		It("should send kubernetes audit logs", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameAudit).
-				ToOutputWithVisitor(setKafkaSpecValues, logging.OutputTypeKafka)
-			Expect(framework.Deploy()).To(BeNil())
-
-			// Log message data
-			for _, log := range K8sAuditLogs {
-				log = test.Escapelines(log)
-				//log = functional.NewFullCRIOLogMessage(timestamp, log)
-				Expect(framework.WriteMessagesTok8sAuditLog(log, 1)).To(BeNil())
-			}
-
-			time.Sleep(time.Minute * 5)
-			// Read line from Kafka output
-			outputlogs, err := framework.ReadAuditLogsFrom(logging.OutputTypeKafka)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(outputlogs).ToNot(BeEmpty())
-			for _, o := range outputlogs {
-				fmt.Printf("log received %s\n", o)
-			}
-			fields := strings.Split(outputlogs[0], " ")
-			Expect(getAppName(fields)).To(Equal("myapp"))
-			Expect(getProcID(fields)).To(Equal("myproc"))
-			Expect(getMsgID(fields)).To(Equal("mymsg"))
-		})
-		It("should send openshift audit logs", func() {
-			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-				FromInput(logging.InputNameAudit).
-				ToOutputWithVisitor(setKafkaSpecValues, logging.OutputTypeKafka)
-			Expect(framework.Deploy()).To(BeNil())
-
-			// Log message data
-			for _, log := range OpenshiftAuditLogs {
-				log = test.Escapelines(log)
-				//log = functional.NewFullCRIOLogMessage(timestamp, log)
-				Expect(framework.WriteMessagesToOpenshiftAuditLog(log, 1)).To(BeNil())
-			}
-
-			// Read line from Kafka output
-			outputlogs, err := framework.ReadAuditLogsFrom(logging.OutputTypeKafka)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(outputlogs).ToNot(BeEmpty())
-			fields := strings.Split(outputlogs[0], " ")
-			Expect(getAppName(fields)).To(Equal("myapp"))
-			Expect(getProcID(fields)).To(Equal("myproc"))
-			Expect(getMsgID(fields)).To(Equal("mymsg"))
-		})
 	})
-})
+
 
 var (
-	JSONApplicationLogs = []string{
+	kafkaJSONApplicationLogs = []string{
 		`{"appname_key":"rec_appname","msgcontent":"My life is my message","msgid_key":"rec_msgid","procid_key":"rec_procid","timestamp":"2021-02-16 18:54:52"}`,
 		/**/
 		`{"appname_key":"rec_appname","msgcontent":"My life is my message","msgid_key":"rec_msgid","procid_key":"rec_procid","timestamp":"2021-02-16 18:54:53"}`,
@@ -125,7 +96,7 @@ var (
 		`{"appname_key":"rec_appname","msgcontent":"My life is my message","msgid_key":"rec_msgid","procid_key":"rec_procid","timestamp":"2021-02-16 18:55:01"}`,
 	}
 
-	NonJsonAppLogs = []string{
+	kafkaNonJsonAppLogs = []string{
 		`2021-02-17 17:46:27 "hello world"`,
 		`2021-02-17 17:46:28 "hello world"`,
 		`2021-02-17 17:46:29 "hello world"`,
@@ -138,7 +109,7 @@ var (
 		`2021-02-17 17:46:36 "hello world"`,
 	}
 
-	K8sAuditLogs = []string{
+	kafkaK8sAuditLogs = []string{
 		`{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"45ad7c9f-486d-46c7-b29f-8fdf46784ea9","stage":"ResponseComplete","requestURI":"/apis/monitoring.coreos.com/v1/namespaces/openshift-logging/prometheusrules","verb":"create","user":{"username":"system:serviceaccount:openshift-operators-redhat:elasticsearch-operator","uid":"ba1589ec-be2b-4d61-9946-c1e3b6f635d2","groups":["system:serviceaccounts","system:serviceaccounts:openshift-operators-redhat","system:authenticated"]},"sourceIPs":["63.29.116.39"],"userAgent":"elasticsearch-operator/v0.0.0 (linux/amd64) kubernetes/$Format","objectRef":{"resource":"prometheusrules","namespace":"openshift-logging","name":"elasticsearch-prometheus-rules","apiGroup":"monitoring.coreos.com","apiVersion":"v1"},"responseStatus":{"metadata":{},"status":"Failure","reason":"AlreadyExists","code":409},"requestReceivedTimestamp":"2021-03-12T15:11:04.610686Z","stageTimestamp":"2021-03-12T15:11:04.625042Z","annotations":{"authentication.k8s.io/legacy-token":"system:serviceaccount:openshift-operators-redhat:elasticsearch-operator","authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"elasticsearch-operator.4.6.0-202102130420.p0-6c59c9c74d\" of ClusterRole \"elasticsearch-operator.4.6.0-202102130420.p0-6c59c9c74d\" to ServiceAccount \"elasticsearch-operator/openshift-operators-redhat\""}}`,
 		`{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"847f784a-fca5-43c8-84da-7518efa4f2eb","stage":"ResponseComplete","requestURI":"/api/v1/namespaces/openshift-kube-apiserver/pods?labelSelector=apiserver%3Dtrue","verb":"list","user":{"username":"system:serviceaccount:openshift-kube-apiserver-operator:kube-apiserver-operator","uid":"88dab0d1-833a-4e19-8a57-9f8719e02359","groups":["system:serviceaccounts","system:serviceaccounts:openshift-kube-apiserver-operator","system:authenticated"]},"sourceIPs":["10.128.0.24"],"userAgent":"cluster-kube-apiserver-operator/v0.0.0 (linux/amd64) kubernetes/$Format","objectRef":{"resource":"pods","namespace":"openshift-kube-apiserver","apiVersion":"v1"},"responseStatus":{"metadata":{},"code":200},"requestReceivedTimestamp":"2021-03-12T15:11:04.621761Z","stageTimestamp":"2021-03-12T15:11:04.626590Z","annotations":{"authentication.k8s.io/legacy-token":"system:serviceaccount:openshift-kube-apiserver-operator:kube-apiserver-operator","authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"system:openshift:operator:kube-apiserver-operator\" of ClusterRole \"cluster-admin\" to ServiceAccount \"kube-apiserver-operator/openshift-kube-apiserver-operator\""}}`,
 		`{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"f777f446-6432-4194-80c3-d10ef62c85be","stage":"ResponseComplete","requestURI":"/apis/monitoring.coreos.com/v1/namespaces/openshift-logging/prometheusrules/elasticsearch-prometheus-rules","verb":"update","user":{"username":"system:serviceaccount:openshift-operators-redhat:elasticsearch-operator","uid":"ba1589ec-be2b-4d61-9946-c1e3b6f635d2","groups":["system:serviceaccounts","system:serviceaccounts:openshift-operators-redhat","system:authenticated"]},"sourceIPs":["63.29.116.39"],"userAgent":"elasticsearch-operator/v0.0.0 (linux/amd64) kubernetes/$Format","objectRef":{"resource":"prometheusrules","namespace":"openshift-logging","name":"elasticsearch-prometheus-rules","uid":"9dae364b-67c5-43d6-8dc6-9f9f369b2534","apiGroup":"monitoring.coreos.com","apiVersion":"v1","resourceVersion":"7842583"},"responseStatus":{"metadata":{},"code":200},"requestReceivedTimestamp":"2021-03-12T15:11:04.626526Z","stageTimestamp":"2021-03-12T15:11:04.637990Z","annotations":{"authentication.k8s.io/legacy-token":"system:serviceaccount:openshift-operators-redhat:elasticsearch-operator","authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"elasticsearch-operator.4.6.0-202102130420.p0-6c59c9c74d\" of ClusterRole \"elasticsearch-operator.4.6.0-202102130420.p0-6c59c9c74d\" to ServiceAccount \"elasticsearch-operator/openshift-operators-redhat\""}}`,
@@ -151,7 +122,7 @@ var (
 		`{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"8efacc26-cca6-46e3-9610-bd2df5a88b4e","stage":"ResponseComplete","requestURI":"/api/v1/namespaces/openshift-kube-controller-manager-operator/services?resourceVersion=25701453","verb":"list","user":{"username":"system:serviceaccount:openshift-monitoring:prometheus-k8s","uid":"4e515dd7-0617-4696-8e71-86ffd082801e","groups":["system:serviceaccounts","system:serviceaccounts:openshift-monitoring","system:authenticated"]},"sourceIPs":["63.29.116.44"],"userAgent":"Prometheus/2.21.0","objectRef":{"resource":"services","namespace":"openshift-kube-controller-manager-operator","apiVersion":"v1"},"responseStatus":{"metadata":{},"code":200},"requestReceivedTimestamp":"2021-03-12T15:11:04.753641Z","stageTimestamp":"2021-03-12T15:11:04.754328Z","annotations":{"authentication.k8s.io/legacy-token":"system:serviceaccount:openshift-monitoring:prometheus-k8s","authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"elasticsearch-metrics\" of ClusterRole \"elasticsearch-metrics\" to ServiceAccount \"prometheus-k8s/openshift-monitoring\""}}`,
 	}
 
-	OpenshiftAuditLogs = []string{
+	kafkaOpenshiftAuditLogs = []string{
 		`{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"c1842bd8-535f-4f0b-b301-a516aea529a5","stage":"ResponseComplete","requestURI":"/openapi/v2","verb":"get","user":{"username":"system:aggregator","groups":["system:authenticated"]},"sourceIPs":["10.217.0.1"],"responseStatus":{"metadata":{},"code":304},"requestReceivedTimestamp":"2021-03-17T10:38:17.838892Z","stageTimestamp":"2021-03-17T10:38:17.841481Z","annotations":{"authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"system:discovery\" of ClusterRole \"system:discovery\" to Group \"system:authenticated\""}}`,
 		`{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"17a26963-7c8b-43db-a168-d7595169202e","stage":"ResponseComplete","requestURI":"/openapi/v2","verb":"get","user":{"username":"system:aggregator","groups":["system:authenticated"]},"sourceIPs":["10.217.0.1"],"responseStatus":{"metadata":{},"code":304},"requestReceivedTimestamp":"2021-03-17T10:38:17.842021Z","stageTimestamp":"2021-03-17T10:38:17.842274Z","annotations":{"authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"system:discovery\" of ClusterRole \"system:discovery\" to Group \"system:authenticated\""}}`,
 		`{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"f4a22397-c644-48e6-9db6-5008b69e5302","stage":"ResponseComplete","requestURI":"/openapi/v2","verb":"get","user":{"username":"system:aggregator","groups":["system:authenticated"]},"sourceIPs":["10.217.0.1"],"responseStatus":{"metadata":{},"code":304},"requestReceivedTimestamp":"2021-03-17T10:38:17.842677Z","stageTimestamp":"2021-03-17T10:38:17.842878Z","annotations":{"authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"system:discovery\" of ClusterRole \"system:discovery\" to Group \"system:authenticated\""}}`,

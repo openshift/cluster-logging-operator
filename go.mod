@@ -6,6 +6,9 @@ go 1.14
 require (
 	cloud.google.com/go v0.54.0 // indirect
 	github.com/ViaQ/logerr v1.0.10
+	github.com/aws/aws-sdk-go-v2 v1.9.0
+	github.com/aws/aws-sdk-go-v2/config v1.7.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.7.0
 	github.com/coreos/prometheus-operator v0.38.1-0.20200424145508-7e176fda06cc
 	github.com/emicklei/go-restful v2.12.0+incompatible // indirect
 	github.com/go-logr/logr v0.2.1
@@ -13,7 +16,7 @@ require (
 	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/go-openapi/swag v0.19.8 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/go-cmp v0.5.0
+	github.com/google/go-cmp v0.5.6
 	github.com/googleapis/gnostic v0.4.0 // indirect
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/onsi/ginkgo v1.12.1

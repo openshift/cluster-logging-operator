@@ -23,12 +23,12 @@ func NewPodBuilder(pod *corev1.Pod) *PodBuilder {
 }
 
 type ContainerBuilder struct {
-	container  corev1.Container
+	container  *corev1.Container
 	podBuilder *PodBuilder
 }
 
 func (builder *ContainerBuilder) End() *PodBuilder {
-	builder.podBuilder.Pod.Spec.Containers = append(builder.podBuilder.Pod.Spec.Containers, builder.container)
+	builder.podBuilder.Pod.Spec.Containers = append(builder.podBuilder.Pod.Spec.Containers, *builder.container)
 	return builder.podBuilder
 }
 
@@ -83,7 +83,7 @@ func (builder *ContainerBuilder) WithPrivilege() *ContainerBuilder {
 
 func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	containerBuilder := ContainerBuilder{
-		container: corev1.Container{
+		container: &corev1.Container{
 			Name:  strings.ToLower(name),
 			Image: image,
 			Env:   []corev1.EnvVar{},
@@ -105,6 +105,31 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 		},
 	})
 	return builder
+}
+
+func (builder *PodBuilder) AddSecretVolume(name, secretName string) *PodBuilder {
+	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
+		Name: name,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: secretName,
+			},
+		},
+	})
+	return builder
+}
+
+func (builder *PodBuilder) GetContainer(name string) *ContainerBuilder {
+	lowerCaseName := strings.ToLower(name)
+	for i := range builder.Pod.Spec.Containers {
+		if builder.Pod.Spec.Containers[i].Name == lowerCaseName {
+			return &ContainerBuilder{
+				container:  &builder.Pod.Spec.Containers[i],
+				podBuilder: builder,
+			}
+		}
+	}
+	return nil
 }
 
 func (builder *ContainerBuilder) AddRunAsUser(uid int64) *ContainerBuilder {

@@ -253,6 +253,9 @@ func (c *Client) Timeout() time.Duration { return c.timeout }
 // Host returns the API host or URL used by the client's rest.Config.
 func (c *Client) Host() string { return c.cfg.Host }
 
+// ControllerRuntimeClient returns the underlying controller runtime Client
+func (c *Client) ControllerRuntimeClient() crclient.Client { return c.c }
+
 var singleton struct {
 	c    *Client
 	err  error

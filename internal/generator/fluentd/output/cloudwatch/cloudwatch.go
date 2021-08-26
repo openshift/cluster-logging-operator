@@ -14,9 +14,28 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+type Endpoint struct {
+	URL string
+}
+
+func (e Endpoint) Name() string {
+	return "awsEndpointTemplate"
+}
+
+func (e Endpoint) Template() (ret string) {
+	ret = `{{define "` + e.Name() + `" -}}`
+	if e.URL != "" {
+		ret += `endpoint {{ .URL }}
+ssl_verify_peer false`
+	}
+	ret += `{{end}}`
+	return
+}
+
 type CloudWatch struct {
 	Region         string
 	SecurityConfig Element
+	EndpointConfig Element
 }
 
 func (cw CloudWatch) Name() string {
@@ -37,6 +56,7 @@ concurrency 2
 {{compose_one .SecurityConfig}}
 include_time_key true
 log_rejected_request true
+{{compose_one .EndpointConfig}}
 {{end}}`
 }
 
@@ -71,6 +91,7 @@ func OutputConf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o log
 		MatchElement: CloudWatch{
 			Region:         o.Cloudwatch.Region,
 			SecurityConfig: SecurityConfig(o, secret),
+			EndpointConfig: EndpointConfig(o),
 		},
 	}
 }
@@ -79,6 +100,12 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) Element {
 	return AWSKey{
 		KeyIDPath: security.SecretPath(o.Secret.Name, "aws_access_key_id"),
 		KeyPath:   security.SecretPath(o.Secret.Name, "aws_secret_access_key"),
+	}
+}
+
+func EndpointConfig(o logging.OutputSpec) Element {
+	return Endpoint{
+		URL: o.URL,
 	}
 }
 

@@ -4,9 +4,12 @@ import (
 	"errors"
 	"fmt"
 	fluentd2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
-	yaml "sigs.k8s.io/yaml"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
+	client "sigs.k8s.io/controller-runtime/pkg/client"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
@@ -19,7 +22,7 @@ const (
 	useOldRemoteSyslogPlugin = false
 )
 
-func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debugOutput bool) (string, error) {
+func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debugOutput bool, client *client.Client) (string, error) {
 
 	var err error
 	g := generator.MakeGenerator()
@@ -48,6 +51,9 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debu
 	clRequest := &k8shandler.ClusterLoggingRequest{
 		ForwarderSpec: forwarder.Spec,
 		Cluster: &logging.ClusterLogging{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: forwarder.GetNamespace(),
+			},
 			Spec: logging.ClusterLoggingSpec{},
 		},
 		FnIncludeLegacyForward: func() bool { return includeLegacyForward },
@@ -55,6 +61,9 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debu
 		CLFVerifier: k8shandler.ClusterLogForwarderVerifier{
 			VerifyOutputSecret: func(output *logging.OutputSpec, conds logging.NamedConditions) bool { return true },
 		},
+	}
+	if client != nil {
+		clRequest.Client = *client
 	}
 	if includeDefaultLogStore {
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{
@@ -79,7 +88,6 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debu
 		if err != nil {
 			return "", fmt.Errorf("Unable to generate log configuration: %v", err)
 		}
-
 		return generatedConfig, nil
 	} else {
 		return "", errors.New("Only fluentd Log Collector supported")

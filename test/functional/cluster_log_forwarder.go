@@ -45,6 +45,10 @@ func (p *PipelineBuilder) ToSyslogOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeSyslog)
 }
 
+func (p *PipelineBuilder) ToCloudwatchOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeCloudwatch)
+}
+
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
@@ -69,6 +73,23 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				Name: logging.OutputTypeSyslog,
 				Type: logging.OutputTypeSyslog,
 				URL:  "tcp://0.0.0.0:24224",
+			}
+		case logging.OutputTypeCloudwatch:
+			groupPrefix := "group-prefix"
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeCloudwatch,
+				Type: logging.OutputTypeCloudwatch,
+				URL:  "https://localhost:5000",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Cloudwatch: &logging.Cloudwatch{
+						Region:      "us-east-1",
+						GroupBy:     logging.LogGroupByLogType,
+						GroupPrefix: &groupPrefix,
+					},
+				},
+				Secret: &logging.OutputSecretSpec{
+					Name: "cloudwatch",
+				},
 			}
 		}
 

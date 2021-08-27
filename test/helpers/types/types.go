@@ -48,6 +48,7 @@ type Kubernetes struct {
 	ContainerImage    string            `json:"container_image,omitempty"`
 	ContainerImageID  string            `json:"container_image_id,omitempty"`
 	PodID             string            `json:"pod_id,omitempty"`
+	PodIP             string            `json:"pod_ip,omitempty"`
 	Host              string            `json:"host,omitempty"`
 	MasterURL         string            `json:"master_url,omitempty"`
 	NamespaceID       string            `json:"namespace_id,omitempty"`

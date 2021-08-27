@@ -102,6 +102,10 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		logger.V(3).Info("CompareLogLogic: Same value for", "name", name, "value", valueString)
 		return true
 	}
+	if templateValueString == "**optional**" {
+		logger.V(3).Info("CompareLogLogic: Optional value for **optional** ", "fieldname", name, "value", value)
+		return true
+	}
 	if templateValueString == "*" && valueString != "" { // Any value, not Nil is ok if template value is "*"
 		logger.V(3).Info("CompareLogLogic: Any value for * ", "fieldname", name, "value", value)
 		return true

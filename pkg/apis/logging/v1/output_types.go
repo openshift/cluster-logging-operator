@@ -193,13 +193,9 @@ type Loki struct {
 	// Illegal characters in meta-data keys are replaced with "_" to form the label name.
 	// For example meta-data key "kubernetes.labels.foo" becomes Loki label "kubernetes_labels_foo".
 	//
-	// If LabelKeys is not set, the default labels are:
-	// [log_type, kubernetes_namespace_name, kubernetes_pod_name, kubernetes_host]
-	//
-	// Note: the label kubernetes_host is always included, even if not requested.
-	// Loki requires log streams to be correctly ordered by timestamp.
-	// Including kubernetes_host in the label set ensures each stream originates from a single host,
-	// and timestamps cannot become disordered due to clock differences on different hosts.
+	// If LabelKeys is not set, the default keys are `[log_type, kubernetes.namespace_name, kubernetes.pod_name, kubernetes_host]`
+	// These keys are translated to Loki labels by replacing '.' with '_' as: `log_type`, `kubernetes_namespace_name`, `kubernetes_pod_name`, `kubernetes_host`
+	// Note that not all logs will include all of these keys: audit logs and infrastructure journal logs do not have namespace or pod name.
 	//
 	// Note: the set of labels should be small, Loki imposes limits on the size and number of labels allowed.
 	// See https://grafana.com/docs/loki/latest/configuration/#limits_config for more.

@@ -3,8 +3,6 @@ package normalization
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/ViaQ/logerr/log"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo"
@@ -14,6 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"strings"
 )
 
 const (
@@ -90,11 +89,18 @@ const (
 
 var _ = Describe("[LogForwarding] Json log parsing", func() {
 	var (
-		framework *functional.FluentdFunctionalFramework
-		clfb      *functional.ClusterLogForwarderBuilder
-		expected  map[string]interface{}
-		empty     map[string]interface{}
+		framework       *functional.FluentdFunctionalFramework
+		clfb            *functional.ClusterLogForwarderBuilder
+		expected        map[string]interface{}
+		empty           map[string]interface{}
+		expectedMessage string
+		normalizeJson   = func(json string) string {
+			json = strings.TrimSpace(strings.ReplaceAll(json, "\n", ""))
+			json = strings.ReplaceAll(json, "\t", "")
+			return strings.ReplaceAll(json, " ", "")
+		}
 	)
+
 	BeforeEach(func() {
 		_ = json.Unmarshal([]byte(Json), &expected)
 		empty = map[string]interface{}{}
@@ -102,6 +108,8 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()
+
+		expectedMessage = normalizeJson(Json)
 	})
 	AfterEach(func() {
 		framework.Cleanup()
@@ -112,7 +120,6 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		ExpectOK(framework.Deploy())
 
 		// Log message data
-		expectedMessage := strings.ReplaceAll(Json, "\n", "")
 		applicationLogLine := functional.CreateAppLogFromJson(Json)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
@@ -131,10 +138,10 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 			fmt.Printf("diff %s\n", diff)
 		}
 		Expect(same).To(BeTrue(), "parsed json message not matching")
-		fmt.Printf("Message: %s\n", logs[0].Message)
+		log.V(2).Info("Received", "Message", logs[0].Message)
 		diff := cmp.Diff(logs[0].Message, expectedMessage)
-		fmt.Printf("diff %s\n", diff)
-		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
+		log.V(2).Info("Received", "Diff", diff)
+		Expect(normalizeJson(logs[0].Message)).To(Equal(expectedMessage), "received message not matching")
 	})
 	It("should not parse non json message into structured", func() {
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
@@ -168,9 +175,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		// Pipeline.Parse is not set
 		ExpectOK(framework.Deploy())
 
-		expectedMessage := strings.ReplaceAll(Json, "\n", "")
-
-		applicationLogLine := functional.CreateAppLogFromJson(Json)
+		applicationLogLine := functional.CreateAppLogFromJson(expectedMessage)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output
@@ -195,8 +200,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 
 		// Write log line as input to fluentd
 		expectedMessage := invalidJson
-		message := strings.ReplaceAll(invalidJson, "\"", "\\\"")
-		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, message)
+		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, expectedMessage)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output

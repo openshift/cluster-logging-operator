@@ -509,10 +509,6 @@ const inputSourceK8sAuditTemplate = `{{- define "inputSourceK8sAuditTemplate" -}
   tag k8s-audit.log
   <parse>
     @type json
-    time_key requestReceivedTimestamp
-    # In case folks want to parse based on the requestReceivedTimestamp key
-    keep_time_key true
-    time_format %Y-%m-%dT%H:%M:%S.%N%z
   </parse>
 </source>
 {{- end}}`
@@ -528,10 +524,6 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
   tag openshift-audit.log
   <parse>
     @type json
-    time_key requestReceivedTimestamp
-    # In case folks want to parse based on the requestReceivedTimestamp key
-    keep_time_key true
-    time_format %Y-%m-%dT%H:%M:%S.%N%z
   </parse>
 </source>
 {{- end}}`
@@ -1058,7 +1050,7 @@ ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
 
 const outputLabelLokiTemplate = `{{- define "outputLabelLokiTemplate" -}}
 <label {{.LabelName}}>
-  <filter>
+  <filter **>
     @type record_modifier
     <record>{{.LokiLabelFilter}}
     </record>

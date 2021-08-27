@@ -2,8 +2,6 @@ package outputs
 
 import (
 	"fmt"
-	"strings"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -207,8 +205,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 				invalidJson := `{"key":"v}`
 				timestamp := "2020-11-04T18:13:59.061892+00:00"
 				//expectedMessage := invalidJson
-				message := strings.ReplaceAll(invalidJson, "\"", "\\\"")
-				applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, message)
+				applicationLogLine := functional.NewCRIOLogMessage(timestamp, invalidJson, false)
 				Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 				Expect(framework.WritesApplicationLogs(1)).To(BeNil())

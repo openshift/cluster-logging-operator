@@ -141,10 +141,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           tag k8s-audit.log
           <parse>
             @type json
-            time_key requestReceivedTimestamp
-            # In case folks want to parse based on the requestReceivedTimestamp key
-            keep_time_key true
-            time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
 
@@ -158,10 +154,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           tag openshift-audit.log
           <parse>
             @type json
-            time_key requestReceivedTimestamp
-            # In case folks want to parse based on the requestReceivedTimestamp key
-            keep_time_key true
-            time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
         # Openshift Virtual Network (OVN) audit logs
@@ -669,10 +661,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           tag k8s-audit.log
           <parse>
             @type json
-            time_key requestReceivedTimestamp
-            # In case folks want to parse based on the requestReceivedTimestamp key
-            keep_time_key true
-            time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
 
@@ -686,10 +674,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           tag openshift-audit.log
           <parse>
             @type json
-            time_key requestReceivedTimestamp
-            # In case folks want to parse based on the requestReceivedTimestamp key
-            keep_time_key true
-            time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
         # Openshift Virtual Network (OVN) audit logs
@@ -1197,10 +1181,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           tag k8s-audit.log
           <parse>
             @type json
-            time_key requestReceivedTimestamp
-            # In case folks want to parse based on the requestReceivedTimestamp key
-            keep_time_key true
-            time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
 
@@ -1214,10 +1194,6 @@ var _ = Describe("Generating fluentd legacy output store config blocks", func() 
           tag openshift-audit.log
           <parse>
             @type json
-            time_key requestReceivedTimestamp
-            # In case folks want to parse based on the requestReceivedTimestamp key
-            keep_time_key true
-            time_format %Y-%m-%dT%H:%M:%S.%N%z
           </parse>
         </source>
 

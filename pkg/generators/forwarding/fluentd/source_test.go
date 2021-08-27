@@ -162,10 +162,6 @@ var _ = Describe("generating source", func() {
      tag k8s-audit.log
      <parse>
        @type json
-       time_key requestReceivedTimestamp
-       # In case folks want to parse based on the requestReceivedTimestamp key
-       keep_time_key true
-       time_format %Y-%m-%dT%H:%M:%S.%N%z
      </parse>
    </source>
     `))
@@ -180,10 +176,6 @@ var _ = Describe("generating source", func() {
      tag openshift-audit.log
      <parse>
        @type json
-       time_key requestReceivedTimestamp
-       # In case folks want to parse based on the requestReceivedTimestamp key
-       keep_time_key true
-       time_format %Y-%m-%dT%H:%M:%S.%N%z
      </parse>
    </source>
     `))
@@ -301,10 +293,6 @@ var _ = Describe("generating source", func() {
        tag k8s-audit.log
        <parse>
          @type json
-         time_key requestReceivedTimestamp
-         # In case folks want to parse based on the requestReceivedTimestamp key
-         keep_time_key true
-         time_format %Y-%m-%dT%H:%M:%S.%N%z
        </parse>
      </source>
       `))
@@ -319,10 +307,6 @@ var _ = Describe("generating source", func() {
        tag openshift-audit.log
        <parse>
          @type json
-         time_key requestReceivedTimestamp
-         # In case folks want to parse based on the requestReceivedTimestamp key
-         keep_time_key true
-         time_format %Y-%m-%dT%H:%M:%S.%N%z
        </parse>
      </source>
       `))

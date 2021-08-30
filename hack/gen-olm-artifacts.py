@@ -164,7 +164,7 @@ def generateCRDs(csv):
     name = crdDef['name']
     segments = name.split('.')
     crd = {
-        "apiVersion": "apiextensions.k8s.io/v1beta1",
+        "apiVersion": "apiextensions.k8s.io/v1",
         "kind" : "CustomResourceDefinition",
         "metadata" : {
           "name" : name

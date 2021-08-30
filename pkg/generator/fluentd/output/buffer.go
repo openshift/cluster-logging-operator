@@ -13,7 +13,7 @@ const (
 
 	// Flush buffer defaults
 	defaultFlushThreadCount = "2"
-	defaultFlushMode        = "interval"
+	defaultFlushMode        = flushModeInterval
 	defaultFlushInterval    = "1s"
 
 	// Retry buffer to output defaults
@@ -28,6 +28,8 @@ const (
 	// Output fluentdForward default
 	fluentdForwardOverflowAction = "block"
 	fluentdForwardFlushInterval  = "5s"
+
+	flushModeInterval = "interval"
 )
 
 var NOKEYS = []string{}
@@ -118,19 +120,26 @@ func FlushMode(bufspec *logging.FluentdBufferSpec) string {
 }
 
 func FlushInterval(os *logging.OutputSpec, bufspec *logging.FluentdBufferSpec) string {
+	//https://issues.redhat.com/browse/LOG-1392
+	//flush_interval only supported for 'flush_mode:interval
+	if FlushMode(bufspec) != flushModeInterval {
+		return ""
+	}
+	template := "flush_interval %s"
 	if bufspec != nil {
+
 		fi := string(bufspec.FlushInterval)
 
 		if fi != "" {
-			return fi
+			return fmt.Sprintf(template, fi)
 		}
 	}
 
 	switch os.Type {
 	case logging.OutputTypeFluentdForward:
-		return fluentdForwardFlushInterval
+		return fmt.Sprintf(template, fluentdForwardFlushInterval)
 	default:
-		return defaultFlushInterval
+		return fmt.Sprintf(template, defaultFlushInterval)
 	}
 }
 

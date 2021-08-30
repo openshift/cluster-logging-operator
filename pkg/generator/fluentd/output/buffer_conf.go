@@ -30,7 +30,7 @@ func (bc BufferConfig) Template() string {
   @type file
   path '{{.BufferPath}}'
   flush_mode {{.FlushMode}}
-  flush_interval {{.FlushInterval}}
+  {{.FlushInterval}}
   flush_thread_count {{.FlushThreadCount}}
   flush_at_shutdown true
   retry_type {{.RetryType}}

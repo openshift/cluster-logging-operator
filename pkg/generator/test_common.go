@@ -28,9 +28,12 @@ func TestGenerateConfWith(gf GenerateFunc) func(ConfGenerateTest) {
 		e := gf(testcase.CLSpec, testcase.Secrets, testcase.CLFSpec, testcase.Options)
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
+		block := func(entry string) bool {
+			return  strings.TrimSpace(entry) != ""
+		}
 		diff := cmp.Diff(
-			strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"),
-			strings.Split(strings.TrimSpace(conf), "\n"))
+			collect(strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"), block),
+			collect(strings.Split(strings.TrimSpace(conf), "\n"), block))
 		if diff != "" {
 			//b, _ := json.MarshalIndent(e, "", " ")
 			//fmt.Printf("elements:\n%s\n", string(b))
@@ -39,4 +42,15 @@ func TestGenerateConfWith(gf GenerateFunc) func(ConfGenerateTest) {
 		}
 		Expect(diff).To(Equal(""))
 	}
+}
+
+//collect returns a filtered array of elements where elements evaluating to 'true' for block are returned
+func collect(in []string, block func(string)bool) []string{
+	collected := []string{}
+	for _, s := range in {
+		if block(s) {
+			collected = append(collected, s)
+		}
+	}
+	return collected
 }

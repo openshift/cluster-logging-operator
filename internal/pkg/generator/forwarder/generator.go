@@ -1,13 +1,15 @@
 package forwarder
 
 import (
+	"errors"
 	"fmt"
 
 	yaml "sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/generators/forwarding"
+	"github.com/openshift/cluster-logging-operator/pkg/generator"
+	"github.com/openshift/cluster-logging-operator/pkg/generator/fluentd"
 	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
 )
 
@@ -18,15 +20,22 @@ const (
 	useOldRemoteSyslogPlugin = false
 )
 
-func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool) (string, error) {
+func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debugOutput bool) (string, error) {
 
-	generator, err := forwarding.NewConfigGenerator(
-		logCollectorType,
-		includeLegacyForward,
-		includeLegacySyslog,
-		useOldRemoteSyslogPlugin)
-	if err != nil {
-		return "", fmt.Errorf("Unable to create collector config generator: %v", err)
+	var err error
+	g := generator.MakeGenerator()
+	op := generator.Options{}
+	if includeLegacyForward {
+		op[generator.IncludeLegacyForwardConfig] = ""
+	}
+	if includeLegacySyslog {
+		op[generator.IncludeLegacySyslogConfig] = ""
+	}
+	if useOldRemoteSyslogPlugin {
+		op[generator.UseOldRemoteSyslogPlugin] = ""
+	}
+	if debugOutput {
+		op["debug_output"] = ""
 	}
 
 	forwarder := &logging.ClusterLogForwarder{}
@@ -59,10 +68,21 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool)
 	log.V(2).Info("Normalization", "status", status)
 
 	tunings := &logging.ForwarderSpec{}
-
-	generatedConfig, err := generator.Generate(spec, nil, tunings)
-	if err != nil {
-		return "", fmt.Errorf("Unable to generate log configuration: %v", err)
+	clspec := logging.ClusterLoggingSpec{
+		Forwarder: tunings,
 	}
-	return generatedConfig, nil
+	if logCollectorType == logging.LogCollectionTypeFluentd {
+
+		sections := fluentd.Conf(&clspec, nil, spec, op)
+		es := generator.MergeSections(sections)
+
+		generatedConfig, err := g.GenerateConf(es...)
+		if err != nil {
+			return "", fmt.Errorf("Unable to generate log configuration: %v", err)
+		}
+
+		return generatedConfig, nil
+	} else {
+		return "", errors.New("Only fluentd Log Collector supported")
+	}
 }

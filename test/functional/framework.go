@@ -200,7 +200,8 @@ func (f *FluentdFunctionalFramework) DeployWithVisitor(visitor runtime.PodBuilde
 func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBuilderVisitor) (err error) {
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
-	if f.Conf, err = forwarder.Generate(string(clfYaml), false, false); err != nil {
+	debug_output := false
+	if f.Conf, err = forwarder.Generate(string(clfYaml), false, false, debug_output); err != nil {
 		return err
 	}
 	log.V(2).Info("Generating Certificates")
@@ -327,7 +328,7 @@ done
 		}
 
 		// if fluentd started successfully return success
-		if strings.Contains(output, "flush_thread actually running") {
+		if strings.Contains(output, "flush_thread actually running") || debug_output {
 			return true, nil
 		}
 		return false, nil

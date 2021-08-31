@@ -830,7 +830,9 @@ tls_client_private_key_passphrase "#{File.exists?('{{ $path }}') ? open('{{ $pat
   total_limit_size {{.TotalLimitSize}}
   chunk_limit_size {{.ChunkLimitSize}}
   flush_mode {{.FlushMode}}
+  {{- if (eq .FlushMode "interval")}}
   flush_interval {{.FlushInterval}}
+  {{- end}}
   flush_at_shutdown true
   flush_thread_count {{.FlushThreadCount}}
   retry_type {{.RetryType}}
@@ -906,7 +908,9 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
     @type file
     path '{{.BufferPath}}'
     flush_mode {{.FlushMode}}
+    {{- if (eq .FlushMode "interval")}}
     flush_interval {{.FlushInterval}}
+    {{- end}}
     flush_thread_count {{.FlushThreadCount}}
     flush_at_shutdown true
     retry_type {{.RetryType}}
@@ -982,7 +986,9 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
     @type file
     path '{{.BufferPath}}'
     flush_mode {{.FlushMode}}
+    {{- if (eq .FlushMode "interval")}}
     flush_interval {{.FlushInterval}}
+    {{- end}}
     flush_thread_count {{.FlushThreadCount}}
     flush_at_shutdown true
     retry_type {{.RetryType}}
@@ -1033,7 +1039,9 @@ ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
   @type file
   path '{{.BufferPath}}'
   flush_mode {{.FlushMode}}
+  {{- if (eq .FlushMode "interval")}}
   flush_interval {{.FlushInterval}}
+  {{- end}}
   flush_thread_count {{.FlushThreadCount}}
   flush_at_shutdown true
   retry_type {{.RetryType}}
@@ -1084,7 +1092,9 @@ const outputLabelLokiTemplate = `{{- define "outputLabelLokiTemplate" -}}
       @type file
 			path '{{.BufferPath}}'
 			flush_mode {{.FlushMode}}
-			flush_interval {{.FlushInterval}}
+            {{- if (eq .FlushMode "interval")}}
+            flush_interval {{.FlushInterval}}
+            {{- end}}
 			flush_thread_count {{.FlushThreadCount}}
 			flush_at_shutdown true
 			retry_type {{.RetryType}}

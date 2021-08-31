@@ -4,21 +4,19 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/generator"
 	"github.com/openshift/cluster-logging-operator/pkg/generator/fluentd/output"
 	"github.com/openshift/cluster-logging-operator/pkg/generator/fluentd/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/pkg/generator/fluentd/output/fluentdforward"
 	"github.com/openshift/cluster-logging-operator/pkg/generator/fluentd/output/kafka"
+	"github.com/openshift/cluster-logging-operator/pkg/generator/fluentd/output/syslog"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 var _ = Describe("outputLabelConf buffer tuning", func() {
 	var (
 		forwarderSpec *loggingv1.ForwarderSpec
-		b             output.BufferConfig
-		o             *logging.OutputSpec
 	)
 	BeforeEach(func() {
 		forwarderSpec = &loggingv1.ForwarderSpec{
@@ -26,21 +24,15 @@ var _ = Describe("outputLabelConf buffer tuning", func() {
 				Buffer: &loggingv1.FluentdBufferSpec{},
 			},
 		}
-		o = &logging.OutputSpec{
-			Type: logging.OutputTypeFluentdForward,
-		}
 	})
 	Context("#RetryTimeout", func() {
 		It("should return the default when not configured", func() {
-			b = output.MakeBuffer(output.NOKEYS, forwarderSpec.Fluentd.Buffer, "path", o)
-			Expect(b.RetryTimeout).To(Equal("60m"))
+			Expect(output.RetryTimeout(forwarderSpec.Fluentd.Buffer)).To(Equal("60m"))
 		})
 		It("should use the spec'd value when configured", func() {
 			forwarderSpec.Fluentd.Buffer.RetryTimeout = "72h"
-			b = output.MakeBuffer(output.NOKEYS, forwarderSpec.Fluentd.Buffer, "path", o)
-			Expect(b.RetryTimeout).To(Equal("72h"))
+			Expect(output.RetryTimeout(forwarderSpec.Fluentd.Buffer)).To(Equal("72h"))
 		})
-
 	})
 
 })
@@ -509,22 +501,21 @@ var _ = Describe("Generating fluentd config", func() {
 		})
 	})
 
-	/*
-			Context("for output syslog", func() {
-				JustBeforeEach(func() {
-					g = generator.MakeGenerator()
+	Context("for output syslog", func() {
+		JustBeforeEach(func() {
+			g = generator.MakeGenerator()
 
-					outputs = []loggingv1.OutputSpec{
-						{
-							Type: loggingv1.OutputTypeSyslog,
-							Name: "syslog-receiver",
-							URL:  "tcp://sl.svc.messaging.cluster.local:9654",
-						},
-					}
-				})
+			outputs = []loggingv1.OutputSpec{
+				{
+					Type: loggingv1.OutputTypeSyslog,
+					Name: "syslog-receiver",
+					URL:  "tcp://sl.svc.messaging.cluster.local:9654",
+				},
+			}
+		})
 
-				It("should provide a default buffer configuration", func() {
-					syslogConf := `
+		It("should provide a default buffer configuration", func() {
+			syslogConf := `
 		        <label @SYSLOG_RECEIVER>
 		          <filter **>
 					@type parse_json_field
@@ -533,8 +524,6 @@ var _ = Describe("Generating fluentd config", func() {
 					replace_json_log true
 		          </filter>
 		          <match **>
-		            @type copy
-		            <store>
 		              @type remote_syslog
 		              @id syslog_receiver
 		              host sl.svc.messaging.cluster.local
@@ -551,7 +540,7 @@ var _ = Describe("Generating fluentd config", func() {
 		                keep_alive_idle 75
 		                keep_alive_cnt 9
 		                keep_alive_intvl 7200
-		            <buffer >
+		            <buffer>
 		                @type file
 		                path '/var/lib/fluentd/syslog_receiver'
 		                flush_mode interval
@@ -562,23 +551,22 @@ var _ = Describe("Generating fluentd config", func() {
 		                retry_wait 1s
 		                retry_max_interval 60s
 		                retry_timeout 60m
-		                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-		                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
+		                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
+		                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
 		                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
 		                overflow_action block
 		              </buffer>
-		            </store>
 		          </match>
 		        </label>`
 
-					e := fluentdforward.Conf(customForwarderSpec.Fluentd.Buffer, nil, outputs[0], nil)
-					results, err := g.GenerateConf(e...)
-					Expect(err).To(BeNil())
-					Expect(results).To(EqualTrimLines(syslogConf))
-				})
+			e := syslog.Conf(nil, nil, outputs[0], nil)
+			results, err := g.GenerateConf(e...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(syslogConf))
+		})
 
-				It("should override buffer configuration for given tuning parameters", func() {
-					syslogConf := `
+		It("should override buffer configuration for given tuning parameters", func() {
+			syslogConf := `
 		        <label @SYSLOG_RECEIVER>
 		          <filter **>
 					  @type parse_json_field
@@ -587,8 +575,6 @@ var _ = Describe("Generating fluentd config", func() {
 					  replace_json_log true
 		          </filter>
 		          <match **>
-		            @type copy
-		            <store>
 		              @type remote_syslog
 		              @id syslog_receiver
 		              host sl.svc.messaging.cluster.local
@@ -605,33 +591,30 @@ var _ = Describe("Generating fluentd config", func() {
 		                keep_alive_idle 75
 		                keep_alive_cnt 9
 		                keep_alive_intvl 7200
-		            <buffer >
+		            <buffer>
 		                @type file
 		                path '/var/lib/fluentd/syslog_receiver'
 		                flush_mode immediate
-		                flush_interval 2s
 		                flush_thread_count 4
 		                flush_at_shutdown true
 		                retry_type periodic
 		                retry_wait 2s
 		                retry_max_interval 600s
 		                retry_timeout 60m
-		                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
+		                queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
 		                total_limit_size 512m
 		                chunk_limit_size 256m
 		                overflow_action drop_oldest_chunk
 		              </buffer>
-		            </store>
 		          </match>
 		        </label>`
 
-					results, err := generator.generateOutputLabelBlocks(outputs, nil, customForwarderSpec)
-					Expect(err).To(BeNil())
-					Expect(len(results)).To(Equal(1))
-					Expect(results[0]).To(EqualTrimLines(syslogConf))
-				})
-			})
-	*/
+			e := syslog.Conf(customForwarderSpec.Fluentd.Buffer, nil, outputs[0], nil)
+			results, err := g.GenerateConf(e...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(syslogConf))
+		})
+	})
 
 	Context("for output kafka", func() {
 		JustBeforeEach(func() {

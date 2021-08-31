@@ -56,7 +56,7 @@ func (g Generator) generate(es []Element) (string, error) {
 		return "", nil
 	}
 	t := template.New("generate")
-	t.Funcs(template.FuncMap{
+	f := template.FuncMap{
 		"compose": g.generate,
 		"compose_one": func(e Element) (string, error) {
 			return g.generate([]Element{e})
@@ -72,7 +72,9 @@ func (g Generator) generate(es []Element) (string, error) {
 		"comma_separated": func(arr []string) string {
 			return strings.Join(arr, ", ")
 		},
-	})
+	}
+	f["optional"] = f["kv"]
+	t.Funcs(f)
 	b := &bytes.Buffer{}
 	for i, e := range es {
 		if e == nil || e == Nil {

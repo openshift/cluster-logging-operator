@@ -24,3 +24,9 @@ func KV(k, v string) KeyVal {
 		Val: v,
 	}
 }
+
+type OptElement = KeyVal
+
+func Optional(k, v string) KeyVal {
+	return KV(k, v)
+}

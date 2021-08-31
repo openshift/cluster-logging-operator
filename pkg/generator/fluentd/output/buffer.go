@@ -13,7 +13,7 @@ const (
 
 	// Flush buffer defaults
 	defaultFlushThreadCount = "2"
-	defaultFlushMode        = "interval"
+	defaultFlushMode        = flushModeInterval
 	defaultFlushInterval    = "1s"
 
 	// Retry buffer to output defaults
@@ -28,6 +28,7 @@ const (
 	// Output fluentdForward default
 	fluentdForwardOverflowAction = "block"
 	fluentdForwardFlushInterval  = "5s"
+	flushModeInterval            = "interval"
 )
 
 var NOKEYS = []string{}
@@ -43,10 +44,15 @@ func Buffer(bufkeys []string, bufspec *logging.FluentdBufferSpec, bufpath string
 
 func MakeBuffer(bufkeys []string, bufspec *logging.FluentdBufferSpec, bufpath string, os *logging.OutputSpec) BufferConfData {
 	return BufferConfData{
-		BufferPath:           BufferPath(bufpath),
-		FlushMode:            Optional("flush_mode", FlushMode(bufspec)),
-		FlushThreadCount:     Optional("flush_thread_count", FlushThreadCount(bufspec)),
-		FlushInterval:        Optional("flush_interval", FlushInterval(os, bufspec)),
+		BufferPath:       BufferPath(bufpath),
+		FlushMode:        Optional("flush_mode", FlushMode(bufspec)),
+		FlushThreadCount: Optional("flush_thread_count", FlushThreadCount(bufspec)),
+		FlushInterval: func(os *logging.OutputSpec, bufspec *logging.FluentdBufferSpec) Element {
+			if FlushMode(bufspec) != flushModeInterval {
+				return Nil
+			}
+			return Optional("flush_interval", FlushInterval(os, bufspec))
+		}(os, bufspec),
 		RetryType:            Optional("retry_type", RetryType(bufspec)),
 		RetryWait:            Optional("retry_wait", RetryWait(bufspec)),
 		RetryMaxInterval:     Optional("retry_max_interval", RetryMaxInterval(bufspec)),

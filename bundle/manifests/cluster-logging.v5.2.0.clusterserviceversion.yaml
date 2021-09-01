@@ -328,9 +328,9 @@ spec:
                   - name: OPERATOR_NAME
                     value: "cluster-logging-operator"
                   - name: FLUENTD_IMAGE
-                    value: "quay.io/openshift-logging/fluentd:latest"
+                    value: "quay.io/openshift-logging/fluentd:1.7.4"
                   - name: LOGFILEMETRICEXPORTER_IMAGE
-                    value: "quay.io/openshift-logging/log-file-metric-exporter:latest"
+                    value: "quay.io/openshift-logging/log-file-metric-exporter:1.0"
   customresourcedefinitions:
     owned:
     - name: clusterloggings.logging.openshift.io

@@ -83,7 +83,7 @@ objects:
 parameters:
   - name: IMAGE
     displayName: Image
-    value: "quay.io/openshift-logging/eventrouter:latest"
+    value: "quay.io/openshift-logging/eventrouter:0.3"
   - name: CPU
     displayName: CPU
     value: "100m"

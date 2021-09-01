@@ -90,7 +90,7 @@ objects:
 parameters:
   - name: IMAGE
     displayName: Image
-    value: "quay.io/openshift-logging/eventrouter:latest"
+    value: "quay.io/openshift-logging/eventrouter:0.3"
   - name: MEMORY
     displayName: Memory
     value: "20Mi"

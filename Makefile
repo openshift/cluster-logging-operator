@@ -20,7 +20,7 @@ export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
 export OCP_VERSION?=$(shell basename $(shell find manifests/  -maxdepth 1  -not -name manifests -not -name patches -type d))
 export NAMESPACE?=openshift-logging
 
-FLUENTD_IMAGE?=quay.io/openshift/origin-logging-fluentd:latest
+FLUENTD_IMAGE?=quay.io/openshift-logging/fluentd:1.7.4
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=

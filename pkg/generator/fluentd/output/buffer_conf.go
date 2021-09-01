@@ -1,47 +1,65 @@
 package output
 
-type BufferConfig struct {
-	BufferKeys           []string
-	BufferPath           string
-	FlushMode            string
-	FlushInterval        string
-	FlushThreadCount     string
-	RetryType            string
-	RetryWait            string
-	RetryMaxInterval     string
-	RetryTimeout         string
-	QueuedChunkLimitSize string
-	TotalLimitSize       string
-	ChunkLimitSize       string
-	OverflowAction       string
+import (
+	. "github.com/openshift/cluster-logging-operator/pkg/generator"
+)
+
+type BufferConf struct {
+	BufferKeys     []string
+	BufferConfData Element
 }
 
-func (bc BufferConfig) Name() string {
-	return "bufferConfigTemplate"
+func (bc BufferConf) Name() string {
+	return "bufferConfTemplate"
 }
 
-func (bc BufferConfig) Template() string {
+func (bc BufferConf) Template() string {
 	return `{{define "` + bc.Name() + `" -}}
 {{if .BufferKeys -}}
 <buffer {{comma_separated .BufferKeys}}>
 {{- else -}}
 <buffer>
 {{- end}}
-  @type file
-  path '{{.BufferPath}}'
-  flush_mode {{.FlushMode}}
-  flush_interval {{.FlushInterval}}
-  flush_thread_count {{.FlushThreadCount}}
-  flush_at_shutdown true
-  retry_type {{.RetryType}}
-  retry_wait {{.RetryWait}}
-  retry_max_interval {{.RetryMaxInterval}}
-  retry_timeout {{.RetryTimeout}}
-  queued_chunks_limit_size {{.QueuedChunkLimitSize}}
-  total_limit_size {{.TotalLimitSize}}
-  chunk_limit_size {{.ChunkLimitSize}}
-  overflow_action {{.OverflowAction}}
+{{compose_one .BufferConfData | indent 2}}
 </buffer>
-{{- end}}
+{{end}}`
+}
+
+type BufferConfData struct {
+	BufferPath           string
+	FlushMode            Element
+	FlushInterval        Element
+	FlushThreadCount     Element
+	RetryType            Element
+	RetryWait            Element
+	RetryMaxInterval     Element
+	RetryTimeout         Element
+	QueuedChunkLimitSize Element
+	TotalLimitSize       Element
+	ChunkLimitSize       Element
+	OverflowAction       Element
+}
+
+func (bc BufferConfData) Name() string {
+	return "bufferConfDataTemplate"
+}
+
+func (bc BufferConfData) Template() string {
+	return `{{define "` + bc.Name() + `" -}}
+@type file
+path '{{.BufferPath}}'
+{{optional .FlushMode -}}
+{{optional .FlushInterval -}}
+{{optional .FlushThreadCount -}}
+flush_at_shutdown true
+{{optional .RetryType -}}
+{{optional .RetryWait -}}
+{{optional .RetryMaxInterval -}}
+{{optional .RetryTimeout -}}
+{{optional .QueuedChunkLimitSize -}}
+{{optional .TotalLimitSize -}}
+{{optional .ChunkLimitSize -}}
+{{optional .OverflowAction -}}
+{{end}}
 `
 }

@@ -51,10 +51,10 @@ port {{.Port}}
 rfc {{.Rfc}}
 facility {{.Facility}}
 severity {{.Severity}}
-{{kv .AppName -}}
-{{kv .MsgID -}}
-{{kv .ProcID -}}
-{{kv .Tag -}}
+{{optional .AppName -}}
+{{optional .MsgID -}}
+{{optional .ProcID -}}
+{{optional .Tag -}}
 protocol {{.Protocol}}
 packet_size 4096
 hostname "#{ENV['NODE_NAME']}"

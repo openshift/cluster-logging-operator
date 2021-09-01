@@ -13,7 +13,7 @@ const (
 
 	// Flush buffer defaults
 	defaultFlushThreadCount = "2"
-	defaultFlushMode        = "interval"
+	defaultFlushMode        = flushModeInterval
 	defaultFlushInterval    = "1s"
 
 	// Retry buffer to output defaults
@@ -28,31 +28,39 @@ const (
 	// Output fluentdForward default
 	fluentdForwardOverflowAction = "block"
 	fluentdForwardFlushInterval  = "5s"
+	flushModeInterval            = "interval"
 )
 
 var NOKEYS = []string{}
 
 func Buffer(bufkeys []string, bufspec *logging.FluentdBufferSpec, bufpath string, os *logging.OutputSpec) []Element {
 	return []Element{
-		MakeBuffer(bufkeys, bufspec, bufpath, os),
+		BufferConf{
+			BufferKeys:     bufkeys,
+			BufferConfData: MakeBuffer(bufkeys, bufspec, bufpath, os),
+		},
 	}
 }
 
-func MakeBuffer(bufkeys []string, bufspec *logging.FluentdBufferSpec, bufpath string, os *logging.OutputSpec) BufferConfig {
-	return BufferConfig{
-		BufferKeys:           bufkeys,
-		BufferPath:           BufferPath(bufpath),
-		FlushMode:            FlushMode(bufspec),
-		FlushThreadCount:     FlushThreadCount(bufspec),
-		FlushInterval:        FlushInterval(os, bufspec),
-		RetryType:            RetryType(bufspec),
-		RetryWait:            RetryWait(bufspec),
-		RetryMaxInterval:     RetryMaxInterval(bufspec),
-		RetryTimeout:         RetryTimeout(bufspec),
-		QueuedChunkLimitSize: QueuedChunkLimitSize(bufspec),
-		TotalLimitSize:       TotalLimitSize(bufspec),
-		ChunkLimitSize:       ChunkLimitSize(bufspec),
-		OverflowAction:       OverflowAction(os, bufspec),
+func MakeBuffer(bufkeys []string, bufspec *logging.FluentdBufferSpec, bufpath string, os *logging.OutputSpec) BufferConfData {
+	return BufferConfData{
+		BufferPath:       BufferPath(bufpath),
+		FlushMode:        Optional("flush_mode", FlushMode(bufspec)),
+		FlushThreadCount: Optional("flush_thread_count", FlushThreadCount(bufspec)),
+		FlushInterval: func(os *logging.OutputSpec, bufspec *logging.FluentdBufferSpec) Element {
+			if FlushMode(bufspec) != flushModeInterval {
+				return Nil
+			}
+			return Optional("flush_interval", FlushInterval(os, bufspec))
+		}(os, bufspec),
+		RetryType:            Optional("retry_type", RetryType(bufspec)),
+		RetryWait:            Optional("retry_wait", RetryWait(bufspec)),
+		RetryMaxInterval:     Optional("retry_max_interval", RetryMaxInterval(bufspec)),
+		RetryTimeout:         Optional("retry_timeout", RetryTimeout(bufspec)),
+		QueuedChunkLimitSize: Optional("queued_chunks_limit_size", QueuedChunkLimitSize(bufspec)),
+		TotalLimitSize:       Optional("total_limit_size", TotalLimitSize(bufspec)),
+		ChunkLimitSize:       Optional("chunk_limit_size", ChunkLimitSize(bufspec)),
+		OverflowAction:       Optional("overflow_action", OverflowAction(os, bufspec)),
 	}
 }
 

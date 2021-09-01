@@ -9,8 +9,8 @@ echo -e "\n\n"
 
 # update the manifest with the image built by ci
 sed -i "s,quay.io/openshift-logging/cluster-logging-operator:latest,${IMAGE_CLUSTER_LOGGING_OPERATOR}," /manifests/*/*clusterserviceversion.yaml
-sed -i "s,quay.io/openshift-logging/fluentd:latest,${IMAGE_LOGGING_FLUENTD}," /manifests/*/*clusterserviceversion.yaml
-sed -i "s,quay.io/openshift-logging/log-file-metric-exporter:latest,${IMAGE_LOG_FILE_METRIC_EXPORTER}," /manifests/*/*clusterserviceversion.yaml
+sed -i "s,quay.io/openshift-logging/fluentd:1.7.4,${IMAGE_LOGGING_FLUENTD}," /manifests/*/*clusterserviceversion.yaml
+sed -i "s,quay.io/openshift-logging/log-file-metric-exporter:1.0,${IMAGE_LOG_FILE_METRIC_EXPORTER}," /manifests/*/*clusterserviceversion.yaml
 
 # update the manifest to pull always the operator image for non-CI environments
 if [ "${OPENSHIFT_CI:-false}" == "false" ] ; then

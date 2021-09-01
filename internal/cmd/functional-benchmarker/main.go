@@ -22,8 +22,7 @@ import (
 
 // HACK - This command is for development use only
 func main() {
-
-	image := flag.String("image", "quay.io/openshift-logging/fluentd:latest", "The image to use to run the benchmark")
+	image := flag.String("image", "quay.io/openshift-logging/fluentd:1.7.4", "The image to use to run the benchmark")
 	totalMessages := flag.Uint64("totMessages", 10000, "The number of messages to write")
 	msgSize := flag.Uint64("size", 1024, "The message size in bytes")
 	verbosity := flag.Int("verbosity", 0, "")
@@ -68,7 +67,7 @@ func main() {
 		logs, readErr = framework.ReadNApplicationLogsFrom(*totalMessages, logging.OutputTypeFluentdForward)
 		done <- true
 	}()
-	//defer reader to get logs
+	// defer reader to get logs
 	if err := framework.WritesNApplicationLogsOfSize(*totalMessages, *msgSize); err != nil {
 		log.Error(err, "Error writing logs to test pod")
 		os.Exit(1)

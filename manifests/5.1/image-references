@@ -9,4 +9,4 @@ spec:
   - name: logging-fluentd
     from:
       kind: DockerImage
-      name: quay.io/openshift-logging/fluentd:latest
+      name: quay.io/openshift-logging/fluentd:1.7.4

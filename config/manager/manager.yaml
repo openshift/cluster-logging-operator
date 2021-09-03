@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-logging-operator
+  labels:
+spec:
+  selector:
+    matchLabels:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      serviceAccountName: cluster-logging-operator
+      containers:
+      - name: cluster-logging-operator
+        image: quay.io/openshift-logging/cluster-logging-operator:latest
+        imagePullPolicy: IfNotPresent
+        command:
+          - cluster-logging-operator
+        env:
+          - name: WATCH_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.annotations['olm.targetNamespaces']
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: OPERATOR_NAME
+            value: "cluster-logging-operator"
+          - name: FLUENTD_IMAGE
+            value: "quay.io/openshift-logging/fluentd:latest"
+          - name: LOGFILEMETRICEXPORTER_IMAGE
+            value: "quay.io/openshift-logging/log-file-metric-exporter:latest"

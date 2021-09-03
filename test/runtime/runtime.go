@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

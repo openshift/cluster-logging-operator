@@ -1,7 +1,7 @@
 package functional
 
 import (
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
 const (

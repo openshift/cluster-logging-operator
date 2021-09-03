@@ -3,11 +3,11 @@ package normalization
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 )
 

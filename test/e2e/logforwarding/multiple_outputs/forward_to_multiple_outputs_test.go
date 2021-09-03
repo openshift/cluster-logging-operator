@@ -11,8 +11,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/ViaQ/logerr/log"
-	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/helpers"
 	eologgingv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
@@ -161,7 +161,7 @@ func newClusterLogForwarder(fluentRcv *apps.Deployment, elasticsearch *eologging
 	return &loggingv1.ClusterLogForwarder{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       loggingv1.ClusterLogForwarderKind,
-			APIVersion: loggingv1.SchemeGroupVersion.String(),
+			APIVersion: loggingv1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "instance",

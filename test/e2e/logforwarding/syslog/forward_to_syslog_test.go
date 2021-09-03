@@ -15,8 +15,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/ViaQ/logerr/log"
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -74,7 +74,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				forwarder = &logging.ClusterLogForwarder{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       logging.ClusterLogForwarderKind,
-						APIVersion: logging.SchemeGroupVersion.String(),
+						APIVersion: logging.GroupVersion.String(),
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "instance",
@@ -358,7 +358,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				forwarder = &logging.ClusterLogForwarder{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       logging.ClusterLogForwarderKind,
-						APIVersion: logging.SchemeGroupVersion.String(),
+						APIVersion: logging.GroupVersion.String(),
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "instance",

@@ -11,16 +11,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/pkg/certificates"
+	"github.com/openshift/cluster-logging-operator/internal/certificates"
 
 	yaml "sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/components/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/components/fluentd"
-	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"

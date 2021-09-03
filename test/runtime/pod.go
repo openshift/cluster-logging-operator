@@ -3,7 +3,7 @@ package runtime
 import (
 	"strings"
 
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 )
 

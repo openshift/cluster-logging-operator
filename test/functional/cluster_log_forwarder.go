@@ -78,7 +78,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 			output = &logging.OutputSpec{
 				Name: logging.OutputTypeKafka,
 				Type: logging.OutputTypeKafka,
-				URL:  "http://0.0.0.0:9093",
+				URL:  "tcp://0.0.0.0:9093",
 			}
 		}
 

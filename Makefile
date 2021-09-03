@@ -27,7 +27,7 @@ export CLF_TEST_INCLUDES?=
 
 .PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
-tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM)
+tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE)
 
 # check health of the code:
 # - Update generated code
@@ -63,7 +63,7 @@ bin/forwarder-generator: force
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator
 
 bin/cluster-logging-operator: force
-	go build $(BUILD_OPTS) -o $@ ./cmd/manager
+	go build $(BUILD_OPTS) -o $@
 
 openshift-client:
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh
@@ -83,7 +83,7 @@ run:
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
-	$(RUN_CMD) cmd/manager/main.go
+	$(RUN_CMD) main.go
 
 run-debug:
 	$(MAKE) run RUN_CMD='dlv debug'
@@ -102,7 +102,7 @@ clean:
 
 PATCH?=Dockerfile.patch
 image: .target/image
-.target/image: .target $(shell find cmd must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum
+.target/image: .target $(shell find must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum
 	patch -o Dockerfile.local Dockerfile $(PATCH)
 	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
 	touch $@
@@ -117,21 +117,22 @@ lint-dockerfile:
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	find pkg cmd test internal -name '*.go' | xargs gofmt -s -l -w
+	find pkg test internal -name '*.go' | xargs gofmt -s -l -w
 
 MANIFESTS=manifests/$(LOGGING_VERSION)
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
-generate: .target/generate
-.target/generate: .target $(shell find pkg/apis -name '*.go') $(OPERATOR_SDK)
-	@echo generating code
-	@$(MAKE) openshift-client
+GEN_TIMESTAMP=.zz_generate_timestamp
+generate: $(GEN_TIMESTAMP) $(OPERATOR_SDK) $(CONTROLLER_GEN)
+$(GEN_TIMESTAMP): $(shell find apis -name '*.go')
+	@$(CONTROLLER_GEN) object paths="./apis/..."
+	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
 	@bash ./hack/generate-crd.sh
 	@$(MAKE) fmt
 	@touch $@
 
-regenerate:
-	@rm -f $(GEN_TIMESTAMP) $(shell find pkg -name zz_generated_*.go)
+regenerate: $(OPERATOR_SDK) $(CONTROLLER_GEN)
+	@rm -f $(GEN_TIMESTAMP)
 	@$(MAKE) generate
 
 deploy-image: image

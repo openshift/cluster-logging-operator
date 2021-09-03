@@ -25,11 +25,11 @@ import (
 	"k8s.io/client-go/rest"
 
 	clolog "github.com/ViaQ/logerr/log"
-	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/certificates"
-	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/certificates"
+	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 

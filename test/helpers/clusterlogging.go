@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clolog "github.com/ViaQ/logerr/log"
-	cl "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 
@@ -23,7 +23,7 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 	instance := &cl.ClusterLogging{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterLogging",
-			APIVersion: cl.SchemeGroupVersion.String(),
+			APIVersion: cl.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ClusterLoggingName,

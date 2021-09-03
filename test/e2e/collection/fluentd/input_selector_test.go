@@ -8,7 +8,7 @@ import (
 	"github.com/ViaQ/logerr/log"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
@@ -61,7 +61,7 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				forwarder := &logging.ClusterLogForwarder{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       logging.ClusterLogForwarderKind,
-						APIVersion: logging.SchemeGroupVersion.String(),
+						APIVersion: logging.GroupVersion.String(),
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "instance",
@@ -200,7 +200,7 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				forwarder := &logging.ClusterLogForwarder{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       logging.ClusterLogForwarderKind,
-						APIVersion: logging.SchemeGroupVersion.String(),
+						APIVersion: logging.GroupVersion.String(),
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "instance",

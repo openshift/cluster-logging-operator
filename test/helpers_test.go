@@ -8,8 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
@@ -220,7 +219,7 @@ var _ = Describe("Helpers", func() {
 `
 		It("extracts the HTML body text", func() {
 			r := strings.NewReader(html)
-			b, err := test.HTMLBodyText(r)
+			b, err := HTMLBodyText(r)
 			ExpectOK(err)
 			Expect(string(b)).To(Equal("Go profiling cheat-sheet\n\nThis is a short list of things I do to profile in go, not an introduction to profiling."))
 		})

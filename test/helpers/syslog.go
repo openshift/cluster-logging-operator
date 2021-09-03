@@ -19,9 +19,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clolog "github.com/ViaQ/logerr/log"
-	"github.com/openshift/cluster-logging-operator/pkg/factory"
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 type syslogReceiverLogStore struct {

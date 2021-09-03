@@ -14,7 +14,9 @@ ENV REMOTE_SOURCE=${REMOTE_SOURCE}/app
 
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
 
-COPY ${REMOTE_SOURCE}/cmd ./cmd
+COPY ${REMOTE_SOURCE}/main.go .
+COPY ${REMOTE_SOURCE}/apis ./apis
+COPY ${REMOTE_SOURCE}/internal ./internal
 COPY ${REMOTE_SOURCE}/must-gather ./must-gather
 COPY ${REMOTE_SOURCE}/version ./version
 COPY ${REMOTE_SOURCE}/scripts ./scripts

@@ -3,14 +3,13 @@ package forwarder
 import (
 	"errors"
 	"fmt"
-
+	fluentd2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
 	yaml "sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
-	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/pkg/generator"
-	"github.com/openshift/cluster-logging-operator/pkg/generator/fluentd"
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 )
 
 const (
@@ -73,7 +72,7 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debu
 	}
 	if logCollectorType == logging.LogCollectionTypeFluentd {
 
-		sections := fluentd.Conf(&clspec, nil, spec, op)
+		sections := fluentd2.Conf(&clspec, nil, spec, op)
 		es := generator.MergeSections(sections)
 
 		generatedConfig, err := g.GenerateConf(es...)

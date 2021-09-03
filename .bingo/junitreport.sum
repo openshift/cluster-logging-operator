@@ -1,2 +1,5 @@
+github.com/openshift/origin v1.5.1 h1:tdF73ZNwXL86rWaovT/H+kxHCg40kmBVX9mEkTni23o=
 github.com/openshift/origin v4.1.0+incompatible h1:sdf+1/92CKR24IqOR/o4IBsJCku8/ddu/bAesnnh1Nw=
 github.com/openshift/origin v4.1.0+incompatible/go.mod h1:0Rox5r9C8aQn6j1oAOQ0c1uC86mYbUFObzjBRvUKHII=
+github.com/openshift/release v0.0.0-20201103150245-a5287ef1495b h1:KNChnzZbuEQNUytnkWn7E36pfYz5Y7X1niWfvf71FAU=
+github.com/openshift/release v0.0.0-20201103150245-a5287ef1495b/go.mod h1:BbszAfAbRsw+lZvDi5xxQlQCgzF3/DyRmocnobVHAak=

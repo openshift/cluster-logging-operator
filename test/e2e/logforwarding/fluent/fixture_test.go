@@ -1,7 +1,7 @@
 package fluent_test
 
 import (
-	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"

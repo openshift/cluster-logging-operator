@@ -1,8 +1,8 @@
 package kafka
 
 import (
-	"github.com/openshift/cluster-logging-operator/pkg/factory"
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

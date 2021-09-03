@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/ViaQ/logerr/log"
-	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	apps "k8s.io/api/apps/v1"
@@ -47,7 +47,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				forwarder := &loggingv1.ClusterLogForwarder{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       loggingv1.ClusterLogForwarderKind,
-						APIVersion: loggingv1.SchemeGroupVersion.String(),
+						APIVersion: loggingv1.GroupVersion.String(),
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "instance",
@@ -142,7 +142,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				forwarder := &loggingv1.ClusterLogForwarder{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       loggingv1.ClusterLogForwarderKind,
-						APIVersion: loggingv1.SchemeGroupVersion.String(),
+						APIVersion: loggingv1.GroupVersion.String(),
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "instance",

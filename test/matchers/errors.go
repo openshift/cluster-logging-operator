@@ -2,7 +2,7 @@ package matchers
 
 import (
 	"github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
 // ExpectOK is shorthand for these annoyingly long ginkgo forms:

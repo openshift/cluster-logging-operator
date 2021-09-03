@@ -1,0 +1,4 @@
+## This file is auto-generated, do not modify ##
+resources:
+- logging_v1_clusterlogforwarder.yaml
+- logging_v1_clusterlogging.yaml

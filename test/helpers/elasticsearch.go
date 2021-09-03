@@ -18,9 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clolog "github.com/ViaQ/logerr/log"
-	k8shandler "github.com/openshift/cluster-logging-operator/pkg/k8shandler"
-	"github.com/openshift/cluster-logging-operator/pkg/k8shandler/indexmanagement"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
+	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 )
 

@@ -1,0 +1,184 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "logging.openshift.io/v1",
+          "kind": "ClusterLogging",
+          "metadata": {
+            "name": "instance",
+            "namespace": "openshift-logging"
+          },
+          "spec": {
+            "managementState": "Managed",
+            "logStore": {
+              "type": "elasticsearch",
+              "elasticsearch": {
+                "nodeCount": 3,
+                "redundancyPolicy": "SingleRedundancy",
+                "storage": {
+                  "storageClassName": "gp2",
+                  "size": "200G"
+                }
+              },
+              "retentionPolicy":{
+                "application":{
+                  "maxAge":"7d"
+                }
+              }
+            },
+            "visualization": {
+              "type": "kibana",
+              "kibana": {
+                "replicas": 1
+              }
+            },
+            "collection": {
+              "logs": {
+                "type": "fluentd",
+                "fluentd": {}
+              }
+            }
+          }
+        },
+        {
+          "apiVersion": "logging.openshift.io/v1",
+          "kind": "ClusterLogForwarder",
+          "metadata": {
+            "name": "instance",
+            "namespace": "openshift-logging"
+          },
+          "spec": {
+            "outputs": [
+              {
+                "name": "remote-elasticsearch",
+                "type": "elasticsearch",
+                "url": "remote.example.org:9200",
+                "secret": {
+                  "name": "elasticsearch"
+                }
+              }
+            ],
+            "pipelines": [
+              {
+                "name": "enable-default-log-store",
+                "inputRefs": ["application", "infrastructure", "audit"],
+                "outputRefs": ["default"]
+              },
+              {
+                "name": "forward-to-remote",
+                "inputRefs": ["application"],
+                "outputRefs": ["remote-elasticsearch"]
+              }
+            ]
+          }
+        }
+      ]
+    capabilities: Seamless Upgrades
+    categories: OpenShift Optional, Logging & Tracing
+    certified: "false"
+    containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
+    createdAt: "2018-08-01T08:00:00Z"
+    description: The Red Hat OpenShift Logging Operator for OCP provides a means for
+      configuring and managing your aggregated logging stack.
+    olm.skipRange: '>=4.6.0-0 <5.2.0'
+    operatorframework.io/cluster-monitoring: "true"
+    operatorframework.io/suggested-namespace: openshift-logging
+    operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
+    operators.operatorframework.io/builder: operator-sdk-unknown
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v2
+    support: AOS Logging
+    target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+  labels:
+    operatorframework.io/arch.amd64: supported
+    operatorframework.io/arch.ppc64le: supported
+    operatorframework.io/arch.s390x: supported
+  name: clusterlogging.vX.Y.Z
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: ClusterLogForwarder is an API to configure forwarding logs. You
+        configure forwarding by specifying a list of `pipelines`, which forward from
+        a set of named inputs to a set of named outputs. There are built-in input
+        names for common log categories, and you can define custom inputs to do additional
+        filtering. There is a built-in output name for the default openshift log store,
+        but you can define your own outputs with a URL and other connection information
+        to forward logs to other stores or processors, inside or outside the cluster.
+        For more details see the documentation on the API fields.
+      kind: ClusterLogForwarder
+      name: clusterlogforwarders.logging.openshift.io
+      version: v1
+    - description: ClusterLogging is the Schema for the clusterloggings API
+      kind: ClusterLogging
+      name: clusterloggings.logging.openshift.io
+      version: v1
+  description: |
+    # Red Hat OpenShift Logging
+    The Red Hat OpenShift Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.
+
+    ##Features
+    * **Create/Destroy**: Launch and create an aggregated logging stack to support the entire OCP cluster.
+    * **Simplified Configuration**: Configure your aggregated logging cluster's structure like components and end points easily.
+
+    ## Prerequisites and Requirements
+    ### Red Hat OpenShift Logging Namespace
+    Cluster logging and the Red Hat OpenShift Logging Operator is only deployable to the **openshift-logging** namespace. This namespace
+    must be explicitly created by a cluster administrator (e.g. `oc create ns openshift-logging`). To enable metrics
+    service discovery add namespace label `openshift.io/cluster-monitoring: "true"`.
+
+    For additional installation documentation see [Deploying cluster logging](https://docs.openshift.com/container-platform/latest/logging/cluster-logging-deploying.html)
+    in the OpenShift product documentation.
+
+    ### Elasticsearch Operator
+    The Elasticsearch Operator is responsible for orchestrating and managing cluster logging's Elasticsearch cluster.  This
+    operator must be deployed to the global operator group namespace
+    ### Memory Considerations
+    Elasticsearch is a memory intensive application.  Red Hat OpenShift Logging will specify that each Elasticsearch node needs
+    16G of memory for both request and limit unless otherwise defined in the ClusterLogging custom resource. The initial
+    set of OCP nodes may not be large enough to support the Elasticsearch cluster.  Additional OCP nodes must be added
+    to the OCP cluster if you desire to run with the recommended(or better) memory. Each ES node can operate with a
+    lower memory setting though this is not recommended for production deployments.
+  displayName: Red Hat OpenShift Logging
+  icon:
+  - base64data: PHN2ZyBpZD0iYWZiNDE1NDktYzU3MC00OWI3LTg1Y2QtNjU3NjAwZWRmMmUxIiBkYXRhLW5hbWU9IkxheWVyIDEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgdmlld0JveD0iMCAwIDcyMS4xNSA3MjEuMTUiPgogIDxkZWZzPgogICAgPHN0eWxlPgogICAgICAuYTQ0OGZkZWEtNGE0Yy00Njc4LTk3NmEtYzM3ODUzMDhhZTA2IHsKICAgICAgICBmaWxsOiAjZGIzOTI3OwogICAgICB9CgogICAgICAuZTEzMzA4YjgtNzQ4NS00Y2IwLTk3NjUtOGE1N2I5M2Y5MWE2IHsKICAgICAgICBmaWxsOiAjY2IzNzI4OwogICAgICB9CgogICAgICAuZTc3Mjg2ZjEtMjJkYS00NGQxLThlZmItMWQxNGIwY2NhZTYyIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CgogICAgICAuYTA0MjBjYWMtZWJlNi00YzE4LWI5ODEtYWJiYTBiYTliMzY1IHsKICAgICAgICBmaWxsOiAjZTVlNWU0OwogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8Y2lyY2xlIGNsYXNzPSJhNDQ4ZmRlYS00YTRjLTQ2NzgtOTc2YS1jMzc4NTMwOGFlMDYiIGN4PSIzNjAuNTgiIGN5PSIzNjAuNTgiIHI9IjM1OC4yOCIvPgogIDxwYXRoIGNsYXNzPSJlMTMzMDhiOC03NDg1LTRjYjAtOTc2NS04YTU3YjkzZjkxYTYiIGQ9Ik02MTMuNTQsMTA3LjMsMTA2Ljg4LDYxNGMxNDAsMTM4LjUxLDM2NS44MiwxMzguMDYsNTA1LjI2LTEuMzlTNzUyLDI0Ny4zMyw2MTMuNTQsMTA3LjNaIi8+CiAgPGc+CiAgICA8Y2lyY2xlIGNsYXNzPSJlNzcyODZmMS0yMmRhLTQ0ZDEtOGVmYi0xZDE0YjBjY2FlNjIiIGN4PSIyMzQuNyIgY3k9IjM1Ny4zIiByPSI0Ny43MiIvPgogICAgPGNpcmNsZSBjbGFzcz0iZTc3Mjg2ZjEtMjJkYS00NGQxLThlZmItMWQxNGIwY2NhZTYyIiBjeD0iMjM0LjciIGN5PSIxODIuOTQiIHI9IjQ3LjcyIi8+CiAgICA8Y2lyY2xlIGNsYXNzPSJlNzcyODZmMS0yMmRhLTQ0ZDEtOGVmYi0xZDE0YjBjY2FlNjIiIGN4PSIyMzQuNyIgY3k9IjUzOC4yMSIgcj0iNDcuNzIiLz4KICA8L2c+CiAgPHBvbHlnb24gY2xhc3M9ImU3NzI4NmYxLTIyZGEtNDRkMS04ZWZiLTFkMTRiMGNjYWU2MiIgcG9pbnRzPSI0MzUuMTkgMzQ3LjMgMzkwLjU0IDM0Ny4zIDM5MC41NCAxNzIuOTQgMzE2LjE2IDE3Mi45NCAzMTYuMTYgMTkyLjk0IDM3MC41NCAxOTIuOTQgMzcwLjU0IDM0Ny4zIDMxNi4xNiAzNDcuMyAzMTYuMTYgMzY3LjMgMzcwLjU0IDM2Ny4zIDM3MC41NCA1MjEuNjcgMzE2LjE2IDUyMS42NyAzMTYuMTYgNTQxLjY3IDM5MC41NCA1NDEuNjcgMzkwLjU0IDM2Ny4zIDQzNS4xOSAzNjcuMyA0MzUuMTkgMzQ3LjMiLz4KICA8cG9seWdvbiBjbGFzcz0iZTc3Mjg2ZjEtMjJkYS00NGQxLThlZmItMWQxNGIwY2NhZTYyIiBwb2ludHM9IjU5OS43NCAzMTcuMDMgNTU3Ljk3IDMxNy4wMyA1NTAuOTcgMzE3LjAzIDU1MC45NyAzMTAuMDMgNTUwLjk3IDI2OC4yNiA1NTAuOTcgMjY4LjI2IDQ2NC4zNiAyNjguMjYgNDY0LjM2IDQ0Ni4zNCA1OTkuNzQgNDQ2LjM0IDU5OS43NCAzMTcuMDMgNTk5Ljc0IDMxNy4wMyIvPgogIDxwb2x5Z29uIGNsYXNzPSJhMDQyMGNhYy1lYmU2LTRjMTgtYjk4MS1hYmJhMGJhOWIzNjUiIHBvaW50cz0iNTk5Ljc0IDMxMC4wMyA1NTcuOTcgMjY4LjI2IDU1Ny45NyAzMTAuMDMgNTk5Ljc0IDMxMC4wMyIvPgo8L3N2Zz4K
+    mediatype: image/svg+xml
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: false
+    type: AllNamespaces
+  keywords:
+  - elasticsearch
+  - kibana
+  - fluentd
+  - logging
+  - aggregated
+  - efk
+  links:
+  - name: Elastic
+    url: https://www.elastic.co/
+  - name: Fluentd
+    url: https://www.fluentd.org/
+  - name: Documentation
+    url: https://github.com/openshift/cluster-logging-operator/blob/master/README.md
+  - name: Red Hat OpenShift Logging Operator
+    url: https://github.com/openshift/cluster-logging-operator
+  maintainers:
+  - email: aos-logging@redhat.com
+    name: Red Hat
+  minKubeVersion: 1.18.3
+  provider:
+    name: Red Hat
+  version: 5.2.0

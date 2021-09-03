@@ -1,0 +1,14 @@
+domain: openshift.io
+layout: go.kubebuilder.io/v2
+repo: github.com/openshift/cluster-logging-operator
+resources:
+- group: logging
+  kind: ClusterLogForwarder
+  version: v1
+- group: logging
+  kind: ClusterLogging
+  version: v1
+multigroup: true
+version: 3-alpha
+plugins:
+  go.operator-sdk.io/v2-alpha: {}

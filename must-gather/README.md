@@ -44,13 +44,20 @@ Example must-gather for cluster-logging output:
 │  │  └── elasticsearch-operator-7dc7d97b9d-jb4r4
 │  ├── es
 │  │  ├── cluster-elasticsearch
-│  │  │  ├── aliases
-│  │  │  ├── health
-│  │  │  ├── indices
+│  │  │  ├── aliases.cat
+│  │  │  ├── health.cat
+│  │  │  ├── hot_threads.txt
+│  │  │  ├── indices.cat
+│  │  │  ├── indices_size.cat
 │  │  │  ├── latest_documents.json
-│  │  │  ├── nodes
+│  │  │  ├── nodes.cat
+│  │  │  ├── nodes_state.json
 │  │  │  ├── nodes_stats.json
-│  │  │  └── thread_pool
+│  │  │  ├── pending_tasks.cat      (iff cluster health not green)
+│  │  │  ├── recovery.cat           (iff cluster health not green)
+│  │  │  ├── shards.cat             (iff cluster health not green)
+│  │  │  ├── thread_pool.cat
+│  │  │  └── unassigned_shards.cat  (iff cluster health not green)
 │  │  ├── cr
 │  │  ├── elasticsearch-cdm-lp8l38m0-1-794d6dd989-4jxms
 │  │  └── logs

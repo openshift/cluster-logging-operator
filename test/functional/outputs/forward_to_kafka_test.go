@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-        "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/test/functional"
 	//. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -26,13 +26,12 @@ var _ = Describe("[LogForwarding][Kafka] Functional tests", func() {
 		framework.Cleanup()
 	})
 
-//What would be other Kafka specific values ?
+	//What would be other Kafka specific values ?
 	setKafkaSpecValues := func(outspec *logging.OutputSpec) {
 		outspec.Kafka = &logging.Kafka{
-			Topic:  kafka.AppLogsTopic,
+			Topic: kafka.AppLogsTopic,
 		}
 	}
-
 
 	timestamp := "2013-03-28T14:36:03.243000+00:00"
 

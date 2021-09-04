@@ -24,6 +24,7 @@ func NewPodBuilder(pod *corev1.Pod) *PodBuilder {
 
 type ContainerBuilder struct {
 	container  corev1.Container
+	initcontainer  corev1.Container
 	podBuilder *PodBuilder
 }
 
@@ -41,9 +42,22 @@ func (builder *ContainerBuilder) AddVolumeMount(name, path, subPath string, read
 	})
 	return builder
 }
+func (builder *ContainerBuilder) AddVolumeMountToInitContainer(name, path, subPath string, readonly bool) *ContainerBuilder {
+	builder.initcontainer.VolumeMounts = append(builder.initcontainer.VolumeMounts, corev1.VolumeMount{
+		Name:      name,
+		ReadOnly:  readonly,
+		MountPath: path,
+		SubPath:   subPath,
+	})
+	return builder
+}
 
 func (builder *ContainerBuilder) WithCmdArgs(cmdAgrgs []string) *ContainerBuilder {
 	builder.container.Args = cmdAgrgs
+	return builder
+}
+func (builder *ContainerBuilder) WithCmdArgsToInitContainer(cmdAgrgs []string) *ContainerBuilder {
+	builder.initcontainer.Args = cmdAgrgs
 	return builder
 }
 
@@ -93,12 +107,20 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	return &containerBuilder
 }
 
-func (builder *PodBuilder) AddInitContainer(name, image string) *PodBuilder {
-        builder.Pod.Spec.InitContainers = append(builder.Pod.Spec.InitContainers, corev1.Container {
+func (builder *PodBuilder) AddInitContainer(name, image string) *ContainerBuilder {
+	containerBuilder := ContainerBuilder{
+		initcontainer: corev1.Container{
+		},
+		podBuilder: builder,
+	}
+        builder.Pod.Spec.InitContainers = []corev1.Container{
+                   {
                         Name:  strings.ToLower(name),
                         Image: image,
-                })
-        return builder
+                   },
+                }
+
+	return &containerBuilder
 }
 
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
@@ -115,7 +137,7 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 	return builder
 }
 
-func (builder *PodBuilder) AddEmptyDirVolume(name, configMapName string) *PodBuilder {
+func (builder *PodBuilder) AddEmptyDirVolume(name string) *PodBuilder {
         builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
                 Name: name,
                 VolumeSource: corev1.VolumeSource{
@@ -170,7 +192,7 @@ func (builder *ContainerBuilder) AddContainerPort(name string, port int32) *Cont
 	return &containerBuilder
 }
 
-func (builder *PodBuilder)  AddEnvVarFromEnvVarSourceNode(name string) *PodBuilder {
+func (builder *ContainerBuilder)  AddEnvVarFromEnvVarSourceNode(name string) *ContainerBuilder {
               
      builder.container.Env = append(builder.container.Env, corev1.EnvVar{
 		Name:  name,
@@ -185,7 +207,7 @@ func (builder *PodBuilder)  AddEnvVarFromEnvVarSourceNode(name string) *PodBuild
 }
 
 
-func (builder *PodBuilder)  AddEnvVarFromEnvVarSourcePod(name string) *PodBuilder {
+func (builder *ContainerBuilder)  AddEnvVarFromEnvVarSourcePod(name string) *ContainerBuilder {
               
      builder.container.Env = append(builder.container.Env, corev1.EnvVar{
 		Name:  name,
@@ -199,7 +221,7 @@ func (builder *PodBuilder)  AddEnvVarFromEnvVarSourcePod(name string) *PodBuilde
    return builder
 }
 
-func (builder *PodBuilder)  AddEnvVarFromEnvVarSourceNamespace(name string) *PodBuilder {
+func (builder *ContainerBuilder)  AddEnvVarFromEnvVarSourceNamespace(name string) *ContainerBuilder {
               
      builder.container.Env = append(builder.container.Env, corev1.EnvVar{
 		Name:  name,

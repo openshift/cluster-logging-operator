@@ -1,6 +1,7 @@
 package functional
 
 import (
+        "fmt"
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
@@ -48,25 +49,25 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 	}
 
         //init container for zookeep
-        b.AddInitContainerZookeeper("init-config",RemoteImageKafkaInit).
-               AddVolumeMount("configmapkafka", "/etc/kafka-configmap").
-               AddVolumeMount("configkafka","/etc/kafka").
-               AddVolumeMount("datazookeeper","/var/lib/zookeeper").
-               WithCmdArgs([]string{"/bin/bash","/etc/kafka-configmap/init.sh"})
+        b.AddInitContainer("init-config",ImageRemoteKafkaInit).
+               AddVolumeMountToInitContainer("configmapkafka", "/etc/kafka-configmap","",false).
+               AddVolumeMountToInitContainer("configkafka","/etc/kafka","",false).
+               AddVolumeMountToInitContainer("datazookeeper","/var/lib/zookeeper","",false).
+               WithCmdArgsToInitContainer([]string{"/bin/bash","/etc/kafka-configmap/init.sh"})
                
 	//standup container running zookeeper
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer("zookeeper", ImageRemoteKafka).
-                AddEnvVar("KAFKA_LOG4J_OPTS","-Dlog4j.configuration=file:/etc/kafka/log4j.properties")
+                AddEnvVar("KAFKA_LOG4J_OPTS","-Dlog4j.configuration=file:/etc/kafka/log4j.properties").
 		AddVolumeMount("configmap", "/etc/kafka-configmap", "", false).
 		AddVolumeMount("config", "/etc/kafka", "", false).
 		AddVolumeMount("data", "/var/lib/zookeeper", "", false).
 		AddContainerPort("client", zookeeperClientPort).
 		AddContainerPort("peer", zookeeperPeerPort).
 		AddContainerPort("leader-election", zookeeperLeaderElectionPort).
-                AddVolumeMount("configmapkafka", "/etc/kafka-configmap").
-                AddVolumeMount("configkafka","/etc/kafka").
-                AddVolumeMount("datazookeeper","/var/lib/zookeeper").
+                AddVolumeMount("configmapkafka", "/etc/kafka-configmap","",false).
+                AddVolumeMount("configkafka","/etc/kafka","",false).
+                AddVolumeMount("datazookeeper","/var/lib/zookeeper","",false).
 		WithCmdArgs([]string{"./bin/zookeeper-server-start.sh", "/etc/kafka/zookeeper.properties"}).
 		End().
 		AddConfigMapVolume("configmapkafka", zookeeperDeploymentName).
@@ -92,22 +93,22 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		return err
 	}
 	//standup pod with container running broker
-        b.AddInitContainerBroker("init-config",RemoteImageKafkaInit).
+        b.AddInitContainer("init-config",ImageRemoteKafkaInit).
                AddEnvVarFromEnvVarSourceNode("NODE_NAME").
                AddEnvVarFromEnvVarSourcePod("POD_NAME").
                AddEnvVarFromEnvVarSourceNamespace("POD_NAMESPACE").
-               AddEnvVar("ADVERTISE_ADDR",fmt.Sprintf("%s.%s.svc.cluster.local", DeploymentName, namespace)).
+               AddEnvVar("ADVERTISE_ADDR",fmt.Sprintf("%s.%s.svc.cluster.local", kafka.DeploymentName, b.Pod.Namespace)).
                WithCmdArgs([]string{"/bin/bash","/etc/kafka-configmap/init.sh"}).
-               AddVolumeMount("brokerconfig", "/etc/kafka-configmap").
-               AddVolumeMount("configkafka","/etc/kafka").
-               AddVolumeMount("extensions","/opt/kafka/libs/extensions").
+               AddVolumeMount("brokerconfig", "/etc/kafka-configmap","",false).
+               AddVolumeMount("configkafka","/etc/kafka","",false).
+               AddVolumeMount("extensions","/opt/kafka/libs/extensions","",false)
 
 
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer(kafkaBrokerContainerName, ImageRemoteKafka).
-                AddEnvVar("CLASSPATH","/opt/kafka/libs/extensions/*")
-                AddEnvVar("KAFKA_LOG4J_OPTS","-Dlog4j.configuration=file:/etc/kafka/log4j.properties")
-                AddEnvVar("JMX_PORT",strconv.Itoa(kafkaJMXPort))
+                AddEnvVar("CLASSPATH","/opt/kafka/libs/extensions/*").
+                AddEnvVar("KAFKA_LOG4J_OPTS","-Dlog4j.configuration=file:/etc/kafka/log4j.properties").
+                AddEnvVar("JMX_PORT",strconv.Itoa(int(kafkaJMXPort))).
 		AddContainerPort("inside", kafkaInsidePort).
 		AddContainerPort("outside", kafkaOutsidePort).
 		AddContainerPort("inside", kafkaJMXPort).
@@ -118,8 +119,8 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		AddEnvVar("extensions", "/opt/kafka/libs/extensions").
 		AddEnvVar("data", "/var/lib/kafka/data").
 		End().
-		AddConfigMapVolume("brokerconfig",DeploymentName).
-                AddSecretVolume("brokercerts",DeploymentName).
+		AddConfigMapVolume("brokerconfig",kafka.DeploymentName).
+                AddSecretVolume("brokercerts",kafka.DeploymentName).
                 AddEmptyDirVolume("brokerlogs").
                 AddEmptyDirVolume("configkafka").
                 AddEmptyDirVolume("extensions")
@@ -134,8 +135,9 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		// Deploy consumer
 		//consumerapp := kafka.NewKafkaConsumerDeployment(OpenshiftLoggingNS, topic)
 
+		log.V(2).Info("Creating Broker Consumer app") 
                 b.AddInitContainer("topic-create",ImageRemoteKafka).
-                    WithCmdArgs([]string{"./bin/kafka-topics.sh",
+                    WithCmdArgsToInitContainer([]string{"./bin/kafka-topics.sh",
 					"--zookeeper",
 					"zookeeper.openshift-logging.svc.cluster.local:2181",
 					"--create",
@@ -147,26 +149,26 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 					"--replication-factor",
 					"1",
 				})
+
                 b.AddContainer(containername, ImageRemoteKafka).
-                     WithCmdArg([]string{"/bin/bash","-ce",fmt.Sprintf(
+                     WithCmdArgs([]string{"/bin/bash","-ce",fmt.Sprintf(
 						`./bin/kafka-console-consumer.sh --bootstrap-server %s --topic %s --from-beginning --consumer.config /etc/kafka-configmap/client.properties > /shared/consumed.logs`,
-						ClusterLocalEndpoint(namespace),
+						kafka.ClusterLocalEndpoint(b.Pod.Namespace),
 						topic,
 					)}).
-                     AddVolumeMount("brokerconfig", "/etc/kafka-configmap").
-                     AddVolumeMount("brokercert", "/etc/kafka-certs").
-                     AddVolumeMount("shared", "/shared").
-                     End.
-                     AddConfigMapVolume("brokerconfig",DeploymentName).
-                     AddSecretNameVolume("brokercert", DeploymentName).
+                     AddVolumeMount("brokerconfig", "/etc/kafka-configmap","",false).
+                     AddVolumeMount("brokercert", "/etc/kafka-certs","",false).
+                     AddVolumeMount("shared", "/shared","",false).
+                     End().
+                     AddConfigMapVolume("brokerconfig",kafka.DeploymentName).
+                     AddSecretVolume("brokercert", kafka.DeploymentName).
                      AddEmptyDirVolume("shared")
                 
 
 
-		log.V(2).Info("Creating Broker Consumer app", "namespace", consumerapp.Namespace, "name", consumerapp.Name)
-		if err := f.Test.Client.Create(consumerapp); err != nil {
-			return err
-		}
+	//	if err := f.Test.Client.Create(consumerapp); err != nil {
+	//		return err
+	//	}
 	}
 
 	return nil

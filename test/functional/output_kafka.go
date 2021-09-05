@@ -93,14 +93,14 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 	}
 	//standup pod with container running broker
 	b.AddInitContainer("init-config", ImageRemoteKafkaInit).
-		AddEnvVarFromEnvVarSourceNode("NODE_NAME").
-		AddEnvVarFromEnvVarSourcePod("POD_NAME").
-		AddEnvVarFromEnvVarSourceNamespace("POD_NAMESPACE").
-		AddEnvVar("ADVERTISE_ADDR", fmt.Sprintf("%s.%s.svc.cluster.local", kafka.DeploymentName, b.Pod.Namespace)).
-		WithCmdArgs([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
-		AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
-		AddVolumeMount("configkafka", "/etc/kafka", "", false).
-		AddVolumeMount("extensions", "/opt/kafka/libs/extensions", "", false)
+		AddEnvVarFromEnvVarSourceNodeToInitContainer("NODE_NAME").
+		AddEnvVarFromEnvVarSourcePodToInitContainer("POD_NAME").
+		AddEnvVarFromEnvVarSourceNamespaceToInitContainer("POD_NAMESPACE").
+		AddEnvVarToInitContainer("ADVERTISE_ADDR", fmt.Sprintf("%s.%s.svc.cluster.local", kafka.DeploymentName, b.Pod.Namespace)).
+		WithCmdArgsToInitContainer([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
+		AddVolumeMountToInitContainer("brokerconfig", "/etc/kafka-configmap", "", false).
+		AddVolumeMountToInitContainer("configkafka", "/etc/kafka", "", false).
+		AddVolumeMountToInitContainer("extensions", "/opt/kafka/libs/extensions", "", false)
 
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer(kafkaBrokerContainerName, ImageRemoteKafka).

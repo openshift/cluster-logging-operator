@@ -50,18 +50,15 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 
 	//init container for zookeep
 	b.AddInitContainer("init-config", ImageRemoteKafkaInit).
-		AddVolumeMountToInitContainer("configmapkafka", "/etc/kafka-configmap", "", false).
-		AddVolumeMountToInitContainer("configkafka", "/etc/kafka", "", false).
-		AddVolumeMountToInitContainer("datazookeeper", "/var/lib/zookeeper", "", false).
-		WithCmdArgsToInitContainer([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"})
+		AddVolumeMountToInitContainer("configmapkafka", "/etc/kafka-configmap", "", false,0).
+		AddVolumeMountToInitContainer("configkafka", "/etc/kafka", "", false,0).
+		AddVolumeMountToInitContainer("datazookeeper", "/var/lib/zookeeper", "", false,0).
+		WithCmdArgsToInitContainer([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}, 0)
 
 	//standup container running zookeeper
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer("zookeeper", ImageRemoteKafka).
 		AddEnvVar("KAFKA_LOG4J_OPTS", "-Dlog4j.configuration=file:/etc/kafka/log4j.properties").
-		AddVolumeMount("configmap", "/etc/kafka-configmap", "", false).
-		AddVolumeMount("config", "/etc/kafka", "", false).
-		AddVolumeMount("data", "/var/lib/zookeeper", "", false).
 		AddContainerPort("client", zookeeperClientPort).
 		AddContainerPort("peer", zookeeperPeerPort).
 		AddContainerPort("leader-election", zookeeperLeaderElectionPort).
@@ -73,7 +70,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		AddConfigMapVolume("configmapkafka", zookeeperDeploymentName).
 		AddEmptyDirVolume("configkafka").
 		AddEmptyDirVolume("zookeeperlogs").
-		AddEmptyDirVolume("data")
+		AddEmptyDirVolume("datazookeeper")
 
 	///////////////////////////////////
 
@@ -93,14 +90,14 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 	}
 	//standup pod with container running broker
 	b.AddInitContainer("init-config", ImageRemoteKafkaInit).
-		AddEnvVarFromEnvVarSourceNodeToInitContainer("NODE_NAME").
-		AddEnvVarFromEnvVarSourcePodToInitContainer("POD_NAME").
-		AddEnvVarFromEnvVarSourceNamespaceToInitContainer("POD_NAMESPACE").
-		AddEnvVarToInitContainer("ADVERTISE_ADDR", fmt.Sprintf("%s.%s.svc.cluster.local", kafka.DeploymentName, b.Pod.Namespace)).
-		WithCmdArgsToInitContainer([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
-		AddVolumeMountToInitContainer("brokerconfig", "/etc/kafka-configmap", "", false).
-		AddVolumeMountToInitContainer("configkafka", "/etc/kafka", "", false).
-		AddVolumeMountToInitContainer("extensions", "/opt/kafka/libs/extensions", "", false)
+		AddEnvVarFromEnvVarSourceNodeToInitContainer("NODE_NAME",1).
+		AddEnvVarFromEnvVarSourcePodToInitContainer("POD_NAME",1).
+		AddEnvVarFromEnvVarSourceNamespaceToInitContainer("POD_NAMESPACE",1).
+		AddEnvVarToInitContainer("ADVERTISE_ADDR", fmt.Sprintf("%s.%s.svc.cluster.local", kafka.DeploymentName, b.Pod.Namespace),1).
+		WithCmdArgsToInitContainer([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"},1).
+		AddVolumeMountToInitContainer("brokerconfig", "/etc/kafka-configmap", "", false,1).
+		AddVolumeMountToInitContainer("configkafka", "/etc/kafka", "", false,1).
+		AddVolumeMountToInitContainer("extensions", "/opt/kafka/libs/extensions", "", false,1)
 
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer(kafkaBrokerContainerName, ImageRemoteKafka).
@@ -120,7 +117,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		AddConfigMapVolume("brokerconfig", kafka.DeploymentName).
 		AddSecretVolume("brokercerts", kafka.DeploymentName).
 		AddEmptyDirVolume("brokerlogs").
-		AddEmptyDirVolume("configkafka").
+	//	AddEmptyDirVolume("configkafka").
 		AddEmptyDirVolume("extensions")
 
 	/////////////////////////////////////////////
@@ -145,7 +142,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 				"1",
 				"--replication-factor",
 				"1",
-			})
+			},2)
 
 		b.AddContainer(containername, ImageRemoteKafka).
 			WithCmdArgs([]string{"/bin/bash", "-ce", fmt.Sprintf(
@@ -157,7 +154,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 			AddVolumeMount("brokercert", "/etc/kafka-certs", "", false).
 			AddVolumeMount("shared", "/shared", "", false).
 			End().
-			AddConfigMapVolume("brokerconfig", kafka.DeploymentName).
+		//	AddConfigMapVolume("brokerconfig", kafka.DeploymentName).
 			AddSecretVolume("brokercert", kafka.DeploymentName).
 			AddEmptyDirVolume("shared")
 

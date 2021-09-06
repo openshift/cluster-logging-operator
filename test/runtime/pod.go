@@ -181,7 +181,7 @@ func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
 }
 
 func (builder *ContainerBuilder) AddContainerPort(name string, port int32) *ContainerBuilder {
-	builder.container.Ports = append(builder.container.Ports,corev1.ContainerPort{Name : name, HostPort: port})
+	builder.container.Ports = append(builder.container.Ports,corev1.ContainerPort{Name : name, ContainerPort: port})
 	return builder
 }
 

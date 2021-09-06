@@ -49,7 +49,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 	}
 
 	//init container for zookeep
-	b.AddInitContainer("init-config", ImageRemoteKafkaInit).
+	b.AddInitContainer("init-config0", ImageRemoteKafkaInit).
 		AddVolumeMountToInitContainer("configmapkafka", "/etc/kafka-configmap", "", false,0).
 		AddVolumeMountToInitContainer("configkafka", "/etc/kafka", "", false,0).
 		AddVolumeMountToInitContainer("datazookeeper", "/var/lib/zookeeper", "", false,0).
@@ -89,7 +89,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		return err
 	}
 	//standup pod with container running broker
-	b.AddInitContainer("init-config", ImageRemoteKafkaInit).
+	b.AddInitContainer("init-config1", ImageRemoteKafkaInit).
 		AddEnvVarFromEnvVarSourceNodeToInitContainer("NODE_NAME",1).
 		AddEnvVarFromEnvVarSourcePodToInitContainer("POD_NAME",1).
 		AddEnvVarFromEnvVarSourceNamespaceToInitContainer("POD_NAMESPACE",1).
@@ -106,7 +106,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		AddEnvVar("JMX_PORT", strconv.Itoa(int(kafkaJMXPort))).
 		AddContainerPort("inside", kafkaInsidePort).
 		AddContainerPort("outside", kafkaOutsidePort).
-		AddContainerPort("inside", kafkaJMXPort).
+		AddContainerPort("jmx", kafkaJMXPort).
 		WithCmdArgs([]string{"./bin/kafka-server-start.sh", "/etc/kafka/server.properties"}).
 		AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
 		AddVolumeMount("configkafka", "/etc/kafka", "", false).

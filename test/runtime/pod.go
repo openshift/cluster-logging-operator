@@ -23,8 +23,8 @@ func NewPodBuilder(pod *corev1.Pod) *PodBuilder {
 }
 
 type ContainerBuilder struct {
-	container     corev1.Container
-	podBuilder    *PodBuilder
+	container  corev1.Container
+	podBuilder *PodBuilder
 }
 
 func (builder *ContainerBuilder) End() *PodBuilder {
@@ -55,8 +55,9 @@ func (builder *ContainerBuilder) WithCmdArgs(cmdAgrgs []string) *ContainerBuilde
 	builder.container.Args = cmdAgrgs
 	return builder
 }
-func (builder *ContainerBuilder) WithCmdArgsToInitContainer(cmdAgrgs []string, initContainerno int ) *ContainerBuilder {
-	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Args = cmdAgrgs
+func (builder *ContainerBuilder) WithCmdArgsToInitContainer(cmdAgrgs []string, initContainerno int) *ContainerBuilder {
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Command = []string{cmdAgrgs[0]}
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Args = cmdAgrgs[1:]
 	return builder
 }
 
@@ -64,6 +65,12 @@ func (builder *ContainerBuilder) WithCmd(cmdString string) *ContainerBuilder {
 	cmd := strings.Split(cmdString, " ")
 	builder.container.Command = []string{cmd[0]}
 	builder.container.Args = cmd[1:]
+	return builder
+}
+
+func (builder *ContainerBuilder) WithCmdStringSlice(cmdAgrgs []string) *ContainerBuilder {
+	builder.container.Command = []string{cmdAgrgs[0]}
+	builder.container.Args = cmdAgrgs[1:]
 	return builder
 }
 
@@ -113,9 +120,9 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 }
 
 func (builder *PodBuilder) AddInitContainer(name, image string) *ContainerBuilder {
-	containerBuilder := ContainerBuilder {
-		container: corev1.Container{},
-		podBuilder:   builder,
+	containerBuilder := ContainerBuilder{
+		container:  corev1.Container{},
+		podBuilder: builder,
 	}
 	builder.Pod.Spec.InitContainers = append(builder.Pod.Spec.InitContainers, corev1.Container{
 		Name:  strings.ToLower(name),
@@ -181,7 +188,7 @@ func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
 }
 
 func (builder *ContainerBuilder) AddContainerPort(name string, port int32) *ContainerBuilder {
-	builder.container.Ports = append(builder.container.Ports,corev1.ContainerPort{Name : name, ContainerPort: port})
+	builder.container.Ports = append(builder.container.Ports, corev1.ContainerPort{Name: name, ContainerPort: port})
 	return builder
 }
 

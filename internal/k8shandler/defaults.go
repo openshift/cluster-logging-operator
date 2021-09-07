@@ -19,4 +19,7 @@ var (
 
 	defaultFluentdMemory     resource.Quantity = resource.MustParse("736Mi")
 	defaultFluentdCpuRequest resource.Quantity = resource.MustParse("100m")
+
+	defaultLoggingApiMemory     resource.Quantity = resource.MustParse("736Mi")
+	defaultLoggingApiCpuRequest resource.Quantity = resource.MustParse("100m")
 )

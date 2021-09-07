@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/go-logr/logr"
@@ -90,10 +91,11 @@ func UniqueName(prefix string) string {
 	if len(pre) > 16 {
 		pre = pre[:16]
 	}
-	var unique [5]byte
-	secs := time.Now().Unix() % (12 * 60 * 60) // Keep 12 hours, 2 bytes.
-	binary.BigEndian.PutUint16(unique[0:3], uint16(secs))
-	_, err := rand.Read(unique[3:])
+
+	secs := uint16(time.Now().Unix() % (12 * 60 * 60)) // Keep 12 hours == 43200 secs, 2 bytes.
+	var unique [unsafe.Sizeof(secs) + 3]byte
+	binary.BigEndian.PutUint16(unique[0:], secs)
+	_, err := rand.Read(unique[unsafe.Sizeof(secs):])
 	Must(err)
 	uniqueStr := strings.ToLower(base32.StdEncoding.EncodeToString(unique[:]))
 	name := fmt.Sprintf("%s-%s", pre, uniqueStr)

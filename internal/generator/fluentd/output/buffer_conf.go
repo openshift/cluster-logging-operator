@@ -51,7 +51,6 @@ path '{{.BufferPath}}'
 {{optional .FlushMode -}}
 {{optional .FlushInterval -}}
 {{optional .FlushThreadCount -}}
-flush_at_shutdown true
 {{optional .RetryType -}}
 {{optional .RetryWait -}}
 {{optional .RetryMaxInterval -}}

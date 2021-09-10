@@ -553,7 +553,6 @@ const (
 type ClusterConditions []Condition
 type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=logging,shortName=cl
@@ -570,7 +569,6 @@ type ClusterLogging struct {
 	Status ClusterLoggingStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // ClusterLoggingList contains a list of ClusterLogging
 type ClusterLoggingList struct {

@@ -16,7 +16,7 @@ import (
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/apis"
-	"github.com/openshift/cluster-logging-operator/pkg/controller"
+	"github.com/openshift/cluster-logging-operator/controllers"
 	"github.com/openshift/cluster-logging-operator/version"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
@@ -143,7 +143,7 @@ func main() {
 	}
 
 	// Setup all Controllers
-	if err := controller.AddToManager(mgr); err != nil {
+	if err := controllers.AddToManager(mgr); err != nil {
 		log.Error(err, "failed to add controller to manager")
 		os.Exit(1)
 	}

@@ -27,7 +27,7 @@ export CLF_TEST_INCLUDES?=
 
 .PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
-tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE)
+tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN)
 
 # check health of the code:
 # - Update generated code
@@ -102,7 +102,7 @@ clean:
 
 PATCH?=Dockerfile.patch
 image: .target/image
-.target/image: .target $(shell find must-gather version scripts files vendor manifests .bingo pkg -type f) Makefile Dockerfile  go.mod go.sum
+.target/image: .target $(shell find must-gather version scripts files vendor manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
 	patch -o Dockerfile.local Dockerfile $(PATCH)
 	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
 	touch $@
@@ -117,7 +117,7 @@ lint-dockerfile:
 
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	find pkg test internal -name '*.go' | xargs gofmt -s -l -w
+	find test internal controllers apis -name '*.go' | xargs gofmt -s -l -w
 
 MANIFESTS=manifests/$(LOGGING_VERSION)
 
@@ -177,7 +177,7 @@ test-functional-benchmarker: bin/functional-benchmarker
 
 test-unit: test-forwarder-generator
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	go test -cover -race ./internal/... ./pkg/... ./test ./test/helpers ./test/matchers ./test/runtime
+	go test -cover -race ./internal/... ./test ./test/helpers ./test/matchers ./test/runtime
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)

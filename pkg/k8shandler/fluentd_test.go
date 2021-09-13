@@ -441,7 +441,7 @@ func TestNewFluentdPodWhenTotalLimitSizeExists(t *testing.T) {
 		t.Error("Exp. there to be 2 fluentd container")
 	}
 
-	checkFluentdForwarderEnvVar(t, podSpec, "TOTAL_LIMIT_SIZE", strconv.FormatInt(totalLimitSize.Value(), 10))
+	checkFluentdForwarderEnvVar(t, podSpec, "TOTAL_LIMIT_SIZE_PER_BUFFER", strconv.FormatInt(totalLimitSize.Value(), 10))
 }
 
 func checkFluentdForwarderEnvVar(t *testing.T, podSpec v1.PodSpec, name string, value string) {

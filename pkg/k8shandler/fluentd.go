@@ -446,7 +446,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 			}
 			if cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize != "" {
 				if totalLimitSize, err := utils.ParseQuantity(string(cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize)); err == nil {
-					fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE", Value: strconv.FormatInt(totalLimitSize.Value(), 10)})
+					fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE_PER_BUFFER", Value: strconv.FormatInt(totalLimitSize.Value(), 10)})
 				}
 			}
 

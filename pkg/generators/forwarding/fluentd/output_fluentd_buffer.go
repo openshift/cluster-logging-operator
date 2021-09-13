@@ -45,7 +45,7 @@ func (olc *outputLabelConf) TotalLimitSize() string {
 	if hasBufferConfig(olc.forwarder) && olc.forwarder.Fluentd.Buffer.TotalLimitSize != "" {
 		return string(olc.forwarder.Fluentd.Buffer.TotalLimitSize)
 	} else {
-		return "\"#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }\" #8G"
+		return "\"#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] ||  8589934592 }\" #8G"
 	}
 }
 

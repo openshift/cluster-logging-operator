@@ -833,7 +833,7 @@ tls_client_private_key_passphrase "#{File.exists?('{{ $path }}') ? open('{{ $pat
   {{- if (eq .FlushMode "interval")}}
   flush_interval {{.FlushInterval}}
   {{- end}}
-  flush_at_shutdown true
+
   flush_thread_count {{.FlushThreadCount}}
   retry_type {{.RetryType}}
   retry_wait {{.RetryWait}}
@@ -912,7 +912,7 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
     flush_interval {{.FlushInterval}}
     {{- end}}
     flush_thread_count {{.FlushThreadCount}}
-    flush_at_shutdown true
+
     retry_type {{.RetryType}}
     retry_wait {{.RetryWait}}
     retry_max_interval {{.RetryMaxInterval}}
@@ -990,7 +990,7 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
     flush_interval {{.FlushInterval}}
     {{- end}}
     flush_thread_count {{.FlushThreadCount}}
-    flush_at_shutdown true
+
     retry_type {{.RetryType}}
     retry_wait {{.RetryWait}}
     retry_max_interval {{.RetryMaxInterval}}
@@ -1043,7 +1043,7 @@ ssl_ca_cert '{{ .SecretPath "ca-bundle.crt"}}'
   flush_interval {{.FlushInterval}}
   {{- end}}
   flush_thread_count {{.FlushThreadCount}}
-  flush_at_shutdown true
+
   retry_type {{.RetryType}}
   retry_wait {{.RetryWait}}
   retry_max_interval {{.RetryMaxInterval}}
@@ -1096,7 +1096,7 @@ const outputLabelLokiTemplate = `{{- define "outputLabelLokiTemplate" -}}
             flush_interval {{.FlushInterval}}
             {{- end}}
 			flush_thread_count {{.FlushThreadCount}}
-			flush_at_shutdown true
+
 			retry_type {{.RetryType}}
 			retry_wait {{.RetryWait}}
 			retry_max_interval {{.RetryMaxInterval}}

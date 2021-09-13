@@ -1,6 +1,7 @@
 domain: openshift.io
 layout: go.kubebuilder.io/v2
 repo: github.com/openshift/cluster-logging-operator
+projectName: cluster-logging-operator
 resources:
 - group: logging
   kind: ClusterLogForwarder

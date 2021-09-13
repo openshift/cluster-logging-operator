@@ -216,7 +216,6 @@ type OutputDefaults struct {
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=logging,shortName=clf
@@ -242,7 +241,6 @@ type ClusterLogForwarder struct {
 	Status ClusterLogForwarderStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
 // ClusterLogForwarderList contains a list of ClusterLogForwarder
 type ClusterLogForwarderList struct {

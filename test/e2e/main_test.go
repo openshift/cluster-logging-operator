@@ -1,11 +1,5 @@
 package e2e
 
-import (
-	"testing"
-
-	framework "github.com/operator-framework/operator-sdk/pkg/test"
+const (
+	TestOperatorNamespaceEnv = "TEST_OPERATOR_NAMESPACE"
 )
-
-func TestMain(m *testing.M) {
-	framework.MainEntry(m)
-}

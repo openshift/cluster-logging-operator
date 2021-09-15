@@ -1,6 +1,8 @@
 package trustedcabundle
 
 import (
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -88,4 +90,11 @@ func (r *ReconcileTrustedCABundle) Reconcile(request reconcile.Request) (reconci
 // handleConfigMap returns true if meta namespace is "openshift-logging".
 func handleConfigMap(meta metav1.Object) bool {
 	return meta.GetNamespace() == constants.OpenshiftNS && utils.ContainsString(constants.ReconcileForGlobalProxyList, meta.GetName())
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *ReconcileTrustedCABundle) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&loggingv1.ClusterLogging{}).
+		Complete(r)
 }

@@ -123,7 +123,7 @@ MANIFESTS=manifests/$(LOGGING_VERSION)
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
-generate: $(GEN_TIMESTAMP) $(OPERATOR_SDK) $(CONTROLLER_GEN)
+generate: $(GEN_TIMESTAMP) $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE)
 $(GEN_TIMESTAMP): $(shell find apis -name '*.go')
 	@$(CONTROLLER_GEN) object paths="./apis/..."
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -131,7 +131,7 @@ $(GEN_TIMESTAMP): $(shell find apis -name '*.go')
 	@$(MAKE) fmt
 	@touch $@
 
-regenerate: $(OPERATOR_SDK) $(CONTROLLER_GEN)
+regenerate: $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE)
 	@rm -f $(GEN_TIMESTAMP)
 	@$(MAKE) generate
 
@@ -182,7 +182,7 @@ test-unit: test-forwarder-generator
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-OPENSHIFT_VERSIONS?="v4.7"
+OPENSHIFT_VERSIONS?="v4.8"
 CHANNELS="stable,stable-${LOGGING_VERSION}"
 DEFAULT_CHANNEL="stable"
 generate-bundle: regenerate $(OPM)

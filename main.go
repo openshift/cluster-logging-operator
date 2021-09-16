@@ -1,32 +1,22 @@
 package main
 
 import (
-	"context"
-	"errors"
+	"flag"
 	"fmt"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"os"
 	"runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"strconv"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/apis"
-	"github.com/openshift/cluster-logging-operator/controllers"
 	"github.com/openshift/cluster-logging-operator/version"
+	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
-	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
-	"github.com/operator-framework/operator-sdk/pkg/leader"
-	"github.com/operator-framework/operator-sdk/pkg/metrics"
-	sdkVersion "github.com/operator-framework/operator-sdk/version"
-
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -35,17 +25,41 @@ import (
 	oauth "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
+	"github.com/openshift/cluster-logging-operator/controllers/clusterlogging"
+	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
 	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis"
 )
 
 // Change below variables to serve metrics on different host or port.
 var (
-	metricsHost               = "0.0.0.0"
-	metricsPort         int32 = 8383
-	operatorMetricsPort int32 = 8686
+	scheme   = apiruntime.NewScheme()
+	setupLog = ctrl.Log.WithName("setup")
 )
 
+func init() {
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+
+	utilruntime.Must(apis.AddToScheme(scheme))
+	utilruntime.Must(elasticsearch.AddToScheme(scheme))
+	utilruntime.Must(routev1.AddToScheme(scheme))
+	utilruntime.Must(consolev1.AddToScheme(scheme))
+	utilruntime.Must(oauth.AddToScheme(scheme))
+	utilruntime.Must(monitoringv1.AddToScheme(scheme))
+	utilruntime.Must(configv1.AddToScheme(scheme))
+	utilruntime.Must(securityv1.AddToScheme(scheme))
+
+	utilruntime.Must(loggingv1.AddToScheme(scheme))
+	//+kubebuilder:scaffold:scheme
+}
+
 func main() {
+	var metricsAddr string
+	var enableLeaderElection bool
+	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	flag.Parse()
 	logLevel, present := os.LookupEnv("LOG_LEVEL")
 	if present {
 		verbosity, err := strconv.Atoi(logLevel)
@@ -63,93 +77,48 @@ func main() {
 		"go_version", runtime.Version(),
 		"go_os", runtime.GOOS,
 		"go_arch", runtime.GOARCH,
-		"operator-sdk_version", sdkVersion.Version,
 	)
 
-	namespace, err := k8sutil.GetWatchNamespace()
+	namespace, err := getWatchNamespace()
 	if err != nil {
 		log.Error(err, "Failed to get watch namespace")
 		os.Exit(1)
 	}
 
-	// Get a config to talk to the apiserver
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Error(err, "failed to get config")
-		os.Exit(1)
-	}
-
-	ctx := context.TODO()
-
-	// Become the leader before proceeding
-	err = leader.Become(ctx, "cluster-logging-operator-lock")
-	if err != nil {
-		log.Error(err, "failed to become leader")
-		os.Exit(1)
-	}
-
-	// Create a new Cmd to provide shared dependencies and start components
-	mgr, err := manager.New(cfg, manager.Options{
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:             scheme,
 		Namespace:          namespace,
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+		MetricsBindAddress: metricsAddr,
+		Port:               9443,
+		LeaderElection:     enableLeaderElection,
+		LeaderElectionID:   "b430cc2e.openshift.io",
 	})
 	if err != nil {
-		log.Error(err, "failed to create a new manager")
+		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
 	log.Info("Registering Components.")
 
-	// Setup Scheme for all resources
-	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "failed to add resources to scheme", "resource", "apis")
+	if err = (&clusterlogging.ReconcileClusterLogging{
+		Client: mgr.GetClient(),
+		//Log:    ctrl.Log.WithName("controllers").WithName("ClusterLogForwarder"),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
 		os.Exit(1)
 	}
-
-	if err := elasticsearch.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "failed to add resources to scheme", "resource", "elasticsearch")
+	if err = (&forwarding.ReconcileForwarder{
+		Client: mgr.GetClient(),
+		//Log:    ctrl.Log.WithName("controllers").WithName("ClusterLogging"),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
 		os.Exit(1)
 	}
-
-	if err := routev1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "failed to add resources to scheme", "resource", "routev1")
-		os.Exit(1)
-	}
-
-	// consolev1.AddToScheme() is deprecated, is there a better way of doing it?
-	if err := consolev1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "failed to add resources to scheme", "resource", "consolev1")
-		os.Exit(1)
-	}
-
-	if err := oauth.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "failed to add resources to scheme", "resource", "oauth")
-		os.Exit(1)
-	}
-
-	if err := monitoringv1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "failed to add resources to scheme", "resource", "monitoringv1")
-		os.Exit(1)
-	}
-
-	if err := configv1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "failed to add resources to scheme", "resource", "configv1")
-		os.Exit(1)
-	}
-
-	if err := securityv1.AddToScheme(mgr.GetScheme()); err != nil {
-		log.Error(err, "failed to add resources to scheme", "resource", "securityv1")
-		os.Exit(1)
-	}
-
-	// Setup all Controllers
-	if err := controllers.AddToManager(mgr); err != nil {
-		log.Error(err, "failed to add controller to manager")
-		os.Exit(1)
-	}
-
-	// Add the Metrics Service
-	addMetrics(ctx, cfg)
+	//+kubebuilder:scaffold:builder
 
 	log.Info("Starting the Cmd.")
 
@@ -160,72 +129,13 @@ func main() {
 	}
 }
 
-// addMetrics will create the Services and Service Monitors to allow the operator export the metrics by using
-// the Prometheus operator
-func addMetrics(ctx context.Context, cfg *rest.Config) {
-	// Get the namespace the operator is currently deployed in.
-	operatorNs, err := k8sutil.GetOperatorNamespace()
-	if err != nil {
-		if errors.Is(err, k8sutil.ErrRunLocal) {
-			log.Info("Skipping CR metrics server creation; not running in a cluster.")
-			return
-		}
+// getWatchNamespace get the namespace name of the scoped operator
+// - https://sdk.operatorframework.io/docs/building-operators/golang/operator-scope/#configuring-namespace-scoped-operators
+func getWatchNamespace() (string, error) {
+	watchNamespaceEnvVar := "WATCH_NAMESPACE"
+	ns, found := os.LookupEnv(watchNamespaceEnvVar)
+	if !found {
+		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
 	}
-
-	if err := serveCRMetrics(cfg, operatorNs); err != nil {
-		log.Info("Could not generate and serve custom resource metrics", "error", err)
-	}
-
-	// Add to the below struct any other metrics ports you want to expose.
-	servicePorts := []v1.ServicePort{
-		{Port: metricsPort, Name: metrics.OperatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: metricsPort}},
-		{Port: operatorMetricsPort, Name: metrics.CRPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: operatorMetricsPort}},
-	}
-
-	// Create Service object to expose the metrics port(s).
-	service, err := metrics.CreateMetricsService(ctx, cfg, servicePorts)
-	if err != nil {
-		log.Info("Could not create metrics Service", "error", err)
-	}
-
-	// CreateServiceMonitors will automatically create the prometheus-operator ServiceMonitor resources
-	// necessary to configure Prometheus to scrape metrics from this operator.
-	services := []*v1.Service{service}
-
-	// The ServiceMonitor is created in the same namespace where the operator is deployed
-	_, err = metrics.CreateServiceMonitors(cfg, operatorNs, services)
-	if err != nil {
-		log.Info("Could not create ServiceMonitor object", "error", err)
-		// If this operator is deployed to a cluster without the prometheus-operator running, it will return
-		// ErrServiceMonitorNotPresent, which can be used to safely skip ServiceMonitor creation.
-		if err == metrics.ErrServiceMonitorNotPresent {
-			log.Info("Install prometheus-operator in your cluster to create ServiceMonitor objects", "error", err)
-		}
-	}
-}
-
-// serveCRMetrics gets the Operator/CustomResource GVKs and generates metrics based on those types.
-// It serves those metrics on "http://metricsHost:operatorMetricsPort".
-func serveCRMetrics(cfg *rest.Config, operatorNs string) error {
-	// The function below returns a list of filtered operator/CR specific GVKs. For more control, override the GVK list below
-	// with your own custom logic. Note that if you are adding third party API schemas, probably you will need to
-	// customize this implementation to avoid permissions issues.
-	filteredGVK, err := k8sutil.GetGVKsFromAddToScheme(apis.AddToScheme)
-	if err != nil {
-		return err
-	}
-
-	// The metrics will be generated from the namespaces which are returned here.
-	// NOTE that passing nil or an empty list of namespaces in GenerateAndServeCRMetrics will result in an error.
-	ns, err := kubemetrics.GetNamespacesForMetrics(operatorNs)
-	if err != nil {
-		return err
-	}
-
-	// Generate and serve custom resource specific metrics.
-	err = kubemetrics.GenerateAndServeCRMetrics(cfg, ns, filteredGVK, metricsHost, operatorMetricsPort)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ns, nil
 }

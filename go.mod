@@ -20,7 +20,7 @@ require (
 	github.com/onsi/gomega v1.10.1
 	github.com/openshift/api v0.0.0-20200602204738-768b7001fe69
 	github.com/openshift/elasticsearch-operator v0.0.0-20200722044541-14fae5dcddfd
-	github.com/operator-framework/operator-sdk v0.19.4
+	github.com/operator-framework/operator-sdk v0.19.4 // indirect
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5

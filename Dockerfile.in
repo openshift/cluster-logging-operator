@@ -69,7 +69,7 @@ LABEL \
         com.redhat.delivery.appregistry="false" \
         maintainer="AOS Logging <aos-logging@redhat.com>" \
         License="GPLv2+" \
-        name="openshift-logging/cluster-logging-rhel8-operator" \
+        name="openshift/ose-cluster-logging-operator" \
         com.redhat.component="cluster-logging-operator-container" \
         io.openshift.maintainer.product="OpenShift Container Platform" \
         io.openshift.build.commit.id=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \

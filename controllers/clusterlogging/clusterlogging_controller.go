@@ -2,6 +2,7 @@ package clusterlogging
 
 import (
 	"context"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
 
 	"github.com/ViaQ/logerr/log"
@@ -28,9 +29,9 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileClusterLogging{
-		client:   mgr.GetClient(),
-		scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
 	}
 }
 
@@ -55,11 +56,11 @@ var _ reconcile.Reconciler = &ReconcileClusterLogging{}
 
 // ReconcileClusterLogging reconciles a ClusterLogging object
 type ReconcileClusterLogging struct {
-	// This client, initialized using mgr.Client() above, is a split client
+	// This Client, initialized using mgr.Client() above, is a split Client
 	// that reads objects from the cache and writes to the apiserver
-	client   client.Client
-	scheme   *runtime.Scheme
-	recorder record.EventRecorder
+	Client   client.Client
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 var (
@@ -76,7 +77,7 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
-	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	err := r.Client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -92,7 +93,7 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, nil
 	}
 
-	if err = k8shandler.Reconcile(instance, r.client, r.recorder); err != nil {
+	if err = k8shandler.Reconcile(instance, r.Client, r.Recorder); err != nil {
 		log.Error(err, "Error reconciling clusterlogging instance")
 	}
 
@@ -104,10 +105,17 @@ func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcil
 }
 
 func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (reconcile.Result, error) {
-	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
 		log.Error(err, "clusterlogging-controller error updating status")
 		return reconcileResult, err
 	}
 
 	return reconcile.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&loggingv1.ClusterLogging{}).
+		Complete(r)
 }

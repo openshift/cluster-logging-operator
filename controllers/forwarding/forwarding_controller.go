@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -30,9 +31,9 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileForwarder{
-		client:   mgr.GetClient(),
-		scheme:   mgr.GetScheme(),
-		recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
 	}
 }
 
@@ -57,11 +58,11 @@ var _ reconcile.Reconciler = &ReconcileForwarder{}
 
 // ReconcileForwarder reconciles a ClusterLogForwarder object
 type ReconcileForwarder struct {
-	// This client, initialized using mgr.Client() above, is a split client
+	// This Client, initialized using mgr.Client() above, is a split Client
 	// that reads objects from the cache and writes to the apiserver
-	client   client.Client
-	scheme   *runtime.Scheme
-	recorder record.EventRecorder
+	Client   client.Client
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 var (
@@ -92,7 +93,7 @@ func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// Fetch the ClusterLogForwarder instance
 	instance := &logging.ClusterLogForwarder{}
-	if err := r.client.Get(context.TODO(), request.NamespacedName, instance); err != nil {
+	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil {
 		log.V(2).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err)
 		if !errors.IsNotFound(err) {
 			// Error reading - requeue the request.
@@ -104,7 +105,7 @@ func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Res
 
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
 
-	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.client)
+	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client)
 	if reconcileErr != nil {
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
 	}
@@ -117,14 +118,14 @@ func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Res
 
 	if instance.Status.IsReady() {
 		if instance.Status.Conditions.SetCondition(condReady) {
-			r.recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
+			r.Recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
 		}
 	}
 
 	if instance.Status.IsDegraded() {
 		msg := "Some pipelines are degraded or invalid"
 		if instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg)) {
-			r.recorder.Event(instance, "Error", string(logging.ReasonInvalid), msg)
+			r.Recorder.Event(instance, "Error", string(logging.ReasonInvalid), msg)
 		}
 	}
 
@@ -136,10 +137,17 @@ func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Res
 }
 
 func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (reconcile.Result, error) {
-	if err := r.client.Status().Update(context.TODO(), instance); err != nil {
+	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
 		log.Error(err, "clusterlogforwarder-controller error updating status")
 		return reconcileResult, err
 	}
 
 	return reconcile.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *ReconcileForwarder) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&logging.ClusterLogForwarder{}).
+		Complete(r)
 }

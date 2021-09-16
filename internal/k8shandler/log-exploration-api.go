@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	logAPIPort = 8080
-	logAPIService = "logexplorationapi-service"
+	logAPIPort            = 8080
+	logAPIService         = "logexplorationapi-service"
 	logAPIMetricsPortName = "prom-metrics"
 )
 
-func (clusterRequest *ClusterLoggingRequest)  createLogExplorationAPIServiceMonitor() error {
+func (clusterRequest *ClusterLoggingRequest) createLogExplorationAPIServiceMonitor() error {
 
 	cluster := clusterRequest.Cluster
 
@@ -53,7 +53,6 @@ func (clusterRequest *ClusterLoggingRequest)  createLogExplorationAPIServiceMoni
 	return nil
 }
 
-
 func newLogExplorationAPIRoute(routeName, namespace, serviceName, componentName, loggingComponent string) *route.Route {
 	return &route.Route{
 		TypeMeta: metav1.TypeMeta{
@@ -86,14 +85,14 @@ func (clusterRequest *ClusterLoggingRequest) createLogExplorationAPIService() er
 			{
 				Port:       logAPIPort,
 				TargetPort: intstr.FromInt(logAPIPort),
-				Name: logAPIMetricsPortName,
+				Name:       logAPIMetricsPortName,
 			},
 		},
 	)
 
 	// Override the label from factory.NewService
 	desired.Labels = map[string]string{
-		"component" : logAPIService,
+		"component": logAPIService,
 	}
 
 	utils.AddOwnerRefToObject(desired, utils.AsOwner(clusterRequest.Cluster))

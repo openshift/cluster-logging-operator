@@ -4,17 +4,21 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"reflect"
+	"strconv"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/ViaQ/logerr/log"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/daemonsets"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -318,6 +322,19 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, proxyConfig *configv1.Pr
 		{Name: "METRICS_KEY", Value: "/etc/fluent/metrics/tls.key"},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
+	}
+
+	if cluster.Spec.Forwarder != nil {
+		if cluster.Spec.Forwarder.Fluentd.Buffer != nil {
+			if cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize != "" {
+				chunkLimitSize := resource.MustParse(utils.Transform(string(cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize)))
+				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: strconv.FormatInt(chunkLimitSize.Value(), 10)})
+			}
+			if cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize != "" {
+				totalLimitSize := resource.MustParse(utils.Transform(string(cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize)))
+				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE_PER_BUFFER", Value: strconv.FormatInt(totalLimitSize.Value(), 10)})
+			}
+		}
 	}
 
 	proxyEnv := utils.SetProxyEnvVars(proxyConfig)

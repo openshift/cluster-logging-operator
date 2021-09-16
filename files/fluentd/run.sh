@@ -44,10 +44,9 @@ fi
 # Calculate the max allowed for each output buffer given the number of
 # buffer file paths
 ###
-
 NUM_OUTPUTS=$(grep "path.*'$FILE_BUFFER_PATH" $FLUENT_CONF | wc -l)
 if [ $NUM_OUTPUTS -eq 0 ]; then
-    # Reset to default single output if log forwarding outputs all invalid
+    # Reset to default single output if log forwarding outputs all invalid.
     NUM_OUTPUTS=1
 fi
 
@@ -68,17 +67,32 @@ fi
 # Determine allowed total given the number of outputs we have.
 ALLOWED_DF_LIMIT=$(expr $DF_LIMIT \* $ALLOWED_PERCENT_OF_DISK / 100) || :
 
-# TOTAL_LIMIT_SIZE per buffer
-TOTAL_LIMIT_SIZE=$(expr $ALLOWED_DF_LIMIT / $NUM_OUTPUTS) || :
-echo "Setting each total_size_limit for $NUM_OUTPUTS buffers to $TOTAL_LIMIT_SIZE bytes"
-export TOTAL_LIMIT_SIZE
+# total limit size allowed  per buffer
+TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER=$(expr $ALLOWED_DF_LIMIT / $NUM_OUTPUTS) || :
+TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER=${TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER:-0}
+
+TOTAL_LIMIT_SIZE_PER_BUFFER=${TOTAL_LIMIT_SIZE_PER_BUFFER:-0}
+TOTAL_LIMIT_SIZE_PER_BUFFER=$(echo $TOTAL_LIMIT_SIZE_PER_BUFFER |  sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc) || :
+
+if [[ $TOTAL_LIMIT_SIZE_PER_BUFFER -lt $TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER ]];
+then
+   if [[ $TOTAL_LIMIT_SIZE_PER_BUFFER -eq 0 ]]; then
+       TOTAL_LIMIT_SIZE_PER_BUFFER=$TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER
+   fi
+else
+    echo "Requested buffer size per output $TOTAL_LIMIT_SIZE_PER_BUFFER for $NUM_OUTPUTS buffers exceeds maximum available size  $TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER bytes per output"
+    TOTAL_LIMIT_SIZE_PER_BUFFER=$TOTAL_LIMIT_SIZE_ALLOWED_PER_BUFFER
+fi
+
+echo "Setting each total_size_limit for $NUM_OUTPUTS buffers to $TOTAL_LIMIT_SIZE_PER_BUFFER bytes"
+export TOTAL_LIMIT_SIZE_PER_BUFFER
 
 ##
 # Calculate the max number of queued chunks given the size of each chunk
 # and the max allowed space per buffer
 ##
 BUFFER_SIZE_LIMIT=$(echo ${BUFFER_SIZE_LIMIT:-8m} |  sed -e "s/[Kk]/*1024/g;s/[Mm]/*1024*1024/g;s/[Gg]/*1024*1024*1024/g;s/i//g" | bc)
-BUFFER_QUEUE_LIMIT=$(expr $TOTAL_LIMIT_SIZE / $BUFFER_SIZE_LIMIT)
+BUFFER_QUEUE_LIMIT=$(expr $TOTAL_LIMIT_SIZE_PER_BUFFER / $BUFFER_SIZE_LIMIT)
 echo "Setting queued_chunks_limit_size for each buffer to $BUFFER_QUEUE_LIMIT"
 export BUFFER_QUEUE_LIMIT
 echo "Setting chunk_limit_size for each buffer to $BUFFER_SIZE_LIMIT"

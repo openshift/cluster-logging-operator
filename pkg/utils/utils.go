@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/ViaQ/logerr/log"
+
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	v1 "k8s.io/api/core/v1"
@@ -444,4 +445,13 @@ func WrapError(err error) error {
 
 func ToJsonLogs(logs []string) string {
 	return fmt.Sprintf("[%s]", strings.Join(logs, ","))
+}
+
+// Transforming input value to binary notation
+func Transform(value string) string {
+	if !strings.HasSuffix(value, "i") {
+		value = strings.ToUpper(value)
+		value += "i"
+	}
+	return value
 }

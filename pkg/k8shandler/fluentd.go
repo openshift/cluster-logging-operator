@@ -17,9 +17,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"github.com/openshift/cluster-logging-operator/pkg/factory"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
+
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/daemonsets"
 	"github.com/openshift/cluster-logging-operator/pkg/utils/comparators/services"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -373,9 +375,12 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	if cluster.Spec.Forwarder != nil {
 		if cluster.Spec.Forwarder.Fluentd.Buffer != nil {
 			if cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize != "" {
-				if chunkLimitSize, err := utils.ParseQuantity(string(cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize)); err == nil {
-					fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: strconv.FormatInt(chunkLimitSize.Value(), 10)})
-				}
+				chunkLimitSize := resource.MustParse(utils.Transform(string(cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize)))
+				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: strconv.FormatInt(chunkLimitSize.Value(), 10)})
+			}
+			if cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize != "" {
+				totalLimitSize := resource.MustParse(utils.Transform(string(cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize)))
+				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE_PER_BUFFER", Value: strconv.FormatInt(totalLimitSize.Value(), 10)})
 			}
 		}
 	}

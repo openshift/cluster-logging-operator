@@ -41,9 +41,23 @@ func (builder *ContainerBuilder) AddVolumeMount(name, path, subPath string, read
 	})
 	return builder
 }
+func (builder *ContainerBuilder) AddVolumeMountToInitContainer(name, path, subPath string, readonly bool, initContainerno int) *ContainerBuilder {
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].VolumeMounts = append(builder.podBuilder.Pod.Spec.InitContainers[initContainerno].VolumeMounts, corev1.VolumeMount{
+		Name:      name,
+		ReadOnly:  readonly,
+		MountPath: path,
+		SubPath:   subPath,
+	})
+	return builder
+}
 
 func (builder *ContainerBuilder) WithCmdArgs(cmdAgrgs []string) *ContainerBuilder {
 	builder.container.Args = cmdAgrgs
+	return builder
+}
+func (builder *ContainerBuilder) WithCmdArgsToInitContainer(cmdAgrgs []string, initContainerno int) *ContainerBuilder {
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Command = []string{cmdAgrgs[0]}
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Args = cmdAgrgs[1:]
 	return builder
 }
 
@@ -54,6 +68,12 @@ func (builder *ContainerBuilder) WithCmd(cmdString string) *ContainerBuilder {
 	return builder
 }
 
+func (builder *ContainerBuilder) WithCmdStringSlice(cmdAgrgs []string) *ContainerBuilder {
+	builder.container.Command = []string{cmdAgrgs[0]}
+	builder.container.Args = cmdAgrgs[1:]
+	return builder
+}
+
 func (builder *ContainerBuilder) AddEnvVar(name, value string) *ContainerBuilder {
 	builder.container.Env = append(builder.container.Env, corev1.EnvVar{
 		Name:  name,
@@ -61,7 +81,13 @@ func (builder *ContainerBuilder) AddEnvVar(name, value string) *ContainerBuilder
 	})
 	return builder
 }
-
+func (builder *ContainerBuilder) AddEnvVarToInitContainer(name, value string, initContainerno int) *ContainerBuilder {
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Env = append(builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Env, corev1.EnvVar{
+		Name:  name,
+		Value: value,
+	})
+	return builder
+}
 func (builder *ContainerBuilder) AddEnvVarFromFieldRef(name, fieldRef string) *ContainerBuilder {
 	builder.container.Env = append(builder.container.Env, corev1.EnvVar{
 		Name: name,
@@ -93,6 +119,19 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	return &containerBuilder
 }
 
+func (builder *PodBuilder) AddInitContainer(name, image string) *ContainerBuilder {
+	containerBuilder := ContainerBuilder{
+		container:  corev1.Container{},
+		podBuilder: builder,
+	}
+	builder.Pod.Spec.InitContainers = append(builder.Pod.Spec.InitContainers, corev1.Container{
+		Name:  strings.ToLower(name),
+		Image: image,
+	})
+
+	return &containerBuilder
+}
+
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
 	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
 		Name: name,
@@ -101,6 +140,28 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: configMapName,
 				},
+			},
+		},
+	})
+	return builder
+}
+
+func (builder *PodBuilder) AddEmptyDirVolume(name string) *PodBuilder {
+	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
+		Name: name,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
+	return builder
+}
+
+func (builder *PodBuilder) AddSecretVolume(name, secretDeploymentName string) *PodBuilder {
+	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
+		Name: name,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: secretDeploymentName,
 			},
 		},
 	})
@@ -123,5 +184,52 @@ func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
 	for k, v := range labels {
 		builder.Pod.Labels[k] = v
 	}
+	return builder
+}
+
+func (builder *ContainerBuilder) AddContainerPort(name string, port int32) *ContainerBuilder {
+	builder.container.Ports = append(builder.container.Ports, corev1.ContainerPort{Name: name, ContainerPort: port})
+	return builder
+}
+
+func (builder *ContainerBuilder) AddEnvVarFromEnvVarSourceNodeToInitContainer(name string, initContainerno int) *ContainerBuilder {
+
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Env = append(builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Env, corev1.EnvVar{
+		Name: name,
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				FieldPath: "spec.nodeName",
+			},
+		},
+	})
+
+	return builder
+}
+
+func (builder *ContainerBuilder) AddEnvVarFromEnvVarSourcePodToInitContainer(name string, initContainerno int) *ContainerBuilder {
+
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Env = append(builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Env, corev1.EnvVar{
+		Name: name,
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				FieldPath: "metadata.name",
+			},
+		},
+	})
+
+	return builder
+}
+
+func (builder *ContainerBuilder) AddEnvVarFromEnvVarSourceNamespaceToInitContainer(name string, initContainerno int) *ContainerBuilder {
+
+	builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Env = append(builder.podBuilder.Pod.Spec.InitContainers[initContainerno].Env, corev1.EnvVar{
+		Name: name,
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				FieldPath: "metadata.namespace",
+			},
+		},
+	})
+
 	return builder
 }

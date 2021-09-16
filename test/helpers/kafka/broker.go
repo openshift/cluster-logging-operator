@@ -338,10 +338,39 @@ func NewBrokerConfigMap(namespace string) *v1.ConfigMap {
 	return k8shandler.NewConfigMap(DeploymentName, namespace, data)
 }
 
+func NewBrokerConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
+	data := map[string]string{
+		"init.sh":           functionalpodinitKafkaScript,
+		"server.properties": functionalpodserverProperties,
+		"client.properties": functionalpodclientProperties,
+		"log4j.properties":  functionalpodlog4jProperties,
+	}
+	return k8shandler.NewConfigMap(DeploymentName, namespace, data)
+}
+
 func NewBrokerSecret(namespace string) *v1.Secret {
 	rootCA := certificate.NewCA(nil, "Root CA")
 	intermediateCA := certificate.NewCA(rootCA, "Intermediate CA")
-	serverCert := certificate.NewCert(intermediateCA, "Server", fmt.Sprintf("%s.%s.svc.cluster.local", DeploymentName, namespace))
+	serverCert := certificate.NewCert(intermediateCA, "Server")
+
+	data := map[string][]byte{
+		"server.jks":    certificate.JKSKeyStore(serverCert, "server"),
+		"ca-bundle.jks": certificate.JKSTrustStore([]*certificate.CertKey{rootCA, intermediateCA}, "ca-bundle"),
+		"ca-bundle.crt": bytes.Join([][]byte{rootCA.CertificatePEM(), intermediateCA.CertificatePEM()}, []byte{}),
+	}
+
+	secret := k8shandler.NewSecret(
+		DeploymentName,
+		namespace,
+		data,
+	)
+	return secret
+}
+
+func NewBrokerSecretFunctionalTestPod(namespace string) *v1.Secret {
+	rootCA := certificate.NewCA(nil, "Root CA")
+	intermediateCA := certificate.NewCA(rootCA, "Intermediate CA")
+	serverCert := certificate.NewCert(intermediateCA, "Server")
 
 	data := map[string][]byte{
 		"server.jks":    certificate.JKSKeyStore(serverCert, "server"),

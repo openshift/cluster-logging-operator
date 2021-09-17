@@ -53,14 +53,20 @@ var outputLogFile = map[string]map[string]string{
 	logging.OutputTypeFluentdForward: {
 		applicationLog: ApplicationLogFile,
 		auditLog:       "/tmp/audit-logs",
-		ovnAuditLog:    "/tmp/audit-logs",
-		k8sAuditLog:    "/tmp/audit-logs",
+		ovnAuditLog:    "/tmp/ovnaudit-logs",
+		k8sAuditLog:    "/tmp/k8audit-logs",
 	},
 	logging.OutputTypeSyslog: {
-		applicationLog: "/var/log/infra.log",
-		auditLog:       "/var/log/infra.log",
-		k8sAuditLog:    "/var/log/infra.log",
-		ovnAuditLog:    "/var/log/infra.log",
+		applicationLog: "/var/log/app.log",
+		auditLog:       "/var/log/audit.log",
+		k8sAuditLog:    "/var/log/k8audit.log",
+		ovnAuditLog:    "/var/log/ovnaudit.log",
+	},
+	logging.OutputTypeKafka: {
+		applicationLog: "/var/log/app.log",
+		auditLog:       "/var/log/audit.log",
+		k8sAuditLog:    "/var/log/k8audit.log",
+		ovnAuditLog:    "/var/log/ovnaudit.log",
 	},
 }
 
@@ -251,7 +257,7 @@ done
 	role := runtime.NewRole(f.Test.NS.Name, f.Name,
 		v1.PolicyRule{
 			Verbs:     []string{"list", "get"},
-			Resources: []string{"pods", "namespaces"},
+			Resources: []string{"nodes", "pods", "namespaces"},
 			APIGroups: []string{""},
 		},
 	)
@@ -355,6 +361,10 @@ func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, 
 			}
 		case logging.OutputTypeSyslog:
 			if err := f.addSyslogOutput(b, output); err != nil {
+				return err
+			}
+		case logging.OutputTypeKafka:
+			if err := f.addKafkaOutput(b, output); err != nil {
 				return err
 			}
 		case logging.OutputTypeElasticsearch:
@@ -469,7 +479,11 @@ func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs in
 func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, applicationLog)
 }
-
+func (f *FluentdFunctionalFramework) ReadApplicationLogsFromKafka(topic string, brokerlistener string, consumercontainername string) (string, error) {
+	cmd := fmt.Sprintf(`./bin/kafka-verifiable-consumer.sh --topic %s --group-id 0  --broker-list %s`, topic, brokerlistener)
+	results, err := f.RunCommand(consumercontainername, "bash", "-c", cmd)
+	return results, err
+}
 func (f *FluentdFunctionalFramework) ReadAuditLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, auditLog)
 }

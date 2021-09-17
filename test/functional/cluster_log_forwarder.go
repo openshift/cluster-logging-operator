@@ -45,6 +45,10 @@ func (p *PipelineBuilder) ToSyslogOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeSyslog)
 }
 
+func (p *PipelineBuilder) ToKafkaOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeKafka)
+}
+
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
@@ -69,6 +73,12 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				Name: logging.OutputTypeSyslog,
 				Type: logging.OutputTypeSyslog,
 				URL:  "tcp://0.0.0.0:24224",
+			}
+		case logging.OutputTypeKafka:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeKafka,
+				Type: logging.OutputTypeKafka,
+				URL:  "tcp://0.0.0.0:9093",
 			}
 		}
 

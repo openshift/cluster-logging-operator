@@ -1,13 +1,15 @@
 package outputs
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/functional"
-	"strings"
 	//. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -71,10 +73,15 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 			outputlogs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeSyslog)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
-			fields := strings.Split(outputlogs[0], "#011")
-			msg := fields[2]
-			// adjust for "message:" prefix in the received message
-			ReceivedLen := uint64(len(msg[8:]))
+			fields := strings.Split(outputlogs[0], " - ")
+			payload := strings.TrimSpace(fields[1])
+			record := map[string]interface{}{}
+			Expect(json.Unmarshal([]byte(payload), &record)).To(BeNil())
+			msg := record["message"]
+			var message string
+			message, ok := msg.(string)
+			Expect(ok).To(BeTrue())
+			ReceivedLen := uint64(len(message))
 			Expect(ReceivedLen).To(Equal(MaxLen))
 		})
 		It("should send NonJson App logs to syslog", func() {
@@ -84,9 +91,7 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			// Log message data
-			//Expect(framework.WriteMessagesToApplicationLog("hello world", 10)).To(BeNil())
 			for _, log := range NonJsonAppLogs {
-				//log = test.Escapelines(log)
 				log = functional.NewFullCRIOLogMessage(timestamp, log)
 				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
 			}
@@ -191,7 +196,6 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 var (
 	JSONApplicationLogs = []string{
 		`{"appname_key":"rec_appname","msgcontent":"My life is my message","msgid_key":"rec_msgid","procid_key":"rec_procid","timestamp":"2021-02-16 18:54:52"}`,
-		/**/
 		`{"appname_key":"rec_appname","msgcontent":"My life is my message","msgid_key":"rec_msgid","procid_key":"rec_procid","timestamp":"2021-02-16 18:54:53"}`,
 		`{"appname_key":"rec_appname","msgcontent":"My life is my message","msgid_key":"rec_msgid","procid_key":"rec_procid","timestamp":"2021-02-16 18:54:54"}`,
 		`{"appname_key":"rec_appname","msgcontent":"My life is my message","msgid_key":"rec_msgid","procid_key":"rec_procid","timestamp":"2021-02-16 18:54:55"}`,

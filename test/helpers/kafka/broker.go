@@ -351,7 +351,7 @@ func NewBrokerConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
 func NewBrokerSecret(namespace string) *v1.Secret {
 	rootCA := certificate.NewCA(nil, "Root CA")
 	intermediateCA := certificate.NewCA(rootCA, "Intermediate CA")
-	serverCert := certificate.NewCert(intermediateCA, "Server")
+	serverCert := certificate.NewCert(intermediateCA, "Server", fmt.Sprintf("%s.%s.svc.cluster.local", DeploymentName, namespace))
 
 	data := map[string][]byte{
 		"server.jks":    certificate.JKSKeyStore(serverCert, "server"),

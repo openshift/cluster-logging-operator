@@ -53,20 +53,20 @@ var outputLogFile = map[string]map[string]string{
 	logging.OutputTypeFluentdForward: {
 		applicationLog: ApplicationLogFile,
 		auditLog:       "/tmp/audit-logs",
-		ovnAuditLog:    "/tmp/ovnaudit-logs",
-		k8sAuditLog:    "/tmp/k8audit-logs",
+		ovnAuditLog:    "/tmp/audit-logs",
+		k8sAuditLog:    "/tmp/audit-logs",
 	},
 	logging.OutputTypeSyslog: {
-		applicationLog: "/var/log/app.log",
-		auditLog:       "/var/log/audit.log",
-		k8sAuditLog:    "/var/log/k8audit.log",
-		ovnAuditLog:    "/var/log/ovnaudit.log",
+		applicationLog: "/var/log/infra.log",
+		auditLog:       "/var/log/infra.log",
+		k8sAuditLog:    "/var/log/infra.log",
+		ovnAuditLog:    "/var/log/infra.log",
 	},
 	logging.OutputTypeKafka: {
 		applicationLog: "/var/log/app.log",
-		auditLog:       "/var/log/audit.log",
-		k8sAuditLog:    "/var/log/k8audit.log",
-		ovnAuditLog:    "/var/log/ovnaudit.log",
+		auditLog:       "/var/log/infra.log",
+		k8sAuditLog:    "/var/log/audit.log",
+		ovnAuditLog:    "/var/log/ovnaudit-log.log",
 	},
 }
 

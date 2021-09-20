@@ -3,7 +3,7 @@ source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/utils"
 assert_resources_exist(){
 
 	# verify DS
-	os::cmd::try_until_success "oc -n $NAMESPACE get ds fluentd" ${TIMEOUT_MIN}
+	os::cmd::try_until_success "oc -n $NAMESPACE get ds collector" ${TIMEOUT_MIN}
 
 	# verify ER
 	os::cmd::try_until_success "oc -n $NAMESPACE get elasticsearch elasticsearch" ${TIMEOUT_MIN}
@@ -17,7 +17,7 @@ assert_kibana_instance_exists() {
 
 assert_resources_does_not_exist(){
 	os::cmd::try_until_failure "oc -n $NAMESPACE get cronjob curator"
-	os::cmd::try_until_failure "oc -n $NAMESPACE get ds fluentd"
+	os::cmd::try_until_failure "oc -n $NAMESPACE get ds collector"
 	os::cmd::try_until_failure "oc -n $NAMESPACE get elasticsearch elasticsearch"
 
 }

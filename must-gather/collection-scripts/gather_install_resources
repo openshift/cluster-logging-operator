@@ -24,7 +24,7 @@ oc get -n openshift-operators-redhat subscriptions.operators.coreos.com -o yaml 
 
 echo "-- Install Plan"
 oc get -n ${NAMESPACE} installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-clo"
-oc get -n openshift-operators-redhat installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-eo""
+oc get -n openshift-operators-redhat installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-eo"
 
 echo "-- Catalog Operator logs"
 oc logs -n openshift-operator-lifecycle-manager -l app=catalog-operator > "$install_folder/co_logs"

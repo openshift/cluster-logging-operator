@@ -31,7 +31,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		fluentRcv      *apps.Deployment
 		elasticsearch  *eologgingv1.Elasticsearch
 		pipelineSecret *corev1.Secret
-		selectors      = []string{"elasticsearch", "fluent-receiver", "fluentd"}
+		selectors      = []string{"elasticsearch", "fluent-receiver", constants.CollectorName}
 	)
 
 	BeforeEach(func() {

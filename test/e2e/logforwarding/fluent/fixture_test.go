@@ -2,6 +2,7 @@ package fluent_test
 
 import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -42,7 +43,7 @@ func (f *Fixture) Create(c *client.Client) {
 			APIVersion: "apps/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fluentd",
+			Name:      constants.CollectorName,
 			Namespace: f.ClusterLogging.Namespace,
 		},
 	}))
@@ -57,7 +58,7 @@ func (f *Fixture) Create(c *client.Client) {
 				APIVersion: "apps/v1",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "fluentd",
+				Name:      constants.CollectorName,
 				Namespace: f.ClusterLogging.Namespace,
 			},
 		},

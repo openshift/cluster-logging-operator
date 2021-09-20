@@ -43,13 +43,13 @@ var _ = Describe("Reconciling", func() {
 		}
 		fluentdSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "fluentd",
+				Name:      constants.CollectorName,
 				Namespace: cluster.GetNamespace(),
 			},
 		}
 		fluentdCABundle = &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      constants.FluentdTrustedCAName,
+				Name:      constants.CollectorTrustedCAName,
 				Namespace: cluster.GetNamespace(),
 				Labels: map[string]string{
 					constants.InjectTrustedCABundleLabel: "true",
@@ -82,11 +82,11 @@ var _ = Describe("Reconciling", func() {
                   -----END CERTIFICATE-------
                 `
 				trustedCABundleVolume = corev1.Volume{
-					Name: constants.FluentdTrustedCAName,
+					Name: constants.CollectorTrustedCAName,
 					VolumeSource: corev1.VolumeSource{
 						ConfigMap: &corev1.ConfigMapVolumeSource{
 							LocalObjectReference: corev1.LocalObjectReference{
-								Name: constants.FluentdTrustedCAName,
+								Name: constants.CollectorTrustedCAName,
 							},
 							Items: []corev1.KeyToPath{
 								{
@@ -98,7 +98,7 @@ var _ = Describe("Reconciling", func() {
 					},
 				}
 				trustedCABundleVolumeMount = corev1.VolumeMount{
-					Name:      constants.FluentdTrustedCAName,
+					Name:      constants.CollectorTrustedCAName,
 					ReadOnly:  true,
 					MountPath: constants.TrustedCABundleMountDir,
 				}
@@ -118,12 +118,12 @@ var _ = Describe("Reconciling", func() {
 			It("should use the default CA bundle in fluentd", func() {
 				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
 
-				key := types.NamespacedName{Name: constants.FluentdTrustedCAName, Namespace: cluster.GetNamespace()}
+				key := types.NamespacedName{Name: constants.CollectorTrustedCAName, Namespace: cluster.GetNamespace()}
 				fluentdCaBundle := &corev1.ConfigMap{}
 				Expect(client.Get(context.TODO(), key, fluentdCaBundle)).Should(Succeed())
 				Expect(fluentdCABundle.Data).To(Equal(fluentdCaBundle.Data))
 
-				key = types.NamespacedName{Name: constants.FluentdName, Namespace: cluster.GetNamespace()}
+				key = types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
 				ds := &appsv1.DaemonSet{}
 				Expect(client.Get(context.TODO(), key, ds)).Should(Succeed())
 
@@ -145,7 +145,7 @@ var _ = Describe("Reconciling", func() {
 				// Reconcile with injected custom CA bundle
 				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
 
-				key := types.NamespacedName{Name: constants.FluentdName, Namespace: cluster.GetNamespace()}
+				key := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
 				ds := &appsv1.DaemonSet{}
 				Expect(client.Get(context.TODO(), key, ds)).Should(Succeed())
 
@@ -167,13 +167,13 @@ var _ = Describe("compareFluentdCollectorStatus", func() {
 
 	BeforeEach(func() {
 		lhs = loggingv1.FluentdCollectorStatus{
-			DaemonSet:  constants.FluentdName,
+			DaemonSet:  constants.CollectorName,
 			Conditions: map[string]loggingv1.ClusterConditions{},
 			Nodes:      map[string]string{},
 			Pods:       map[loggingv1.PodStateType][]string{},
 		}
 		rhs = loggingv1.FluentdCollectorStatus{
-			DaemonSet:  constants.FluentdName,
+			DaemonSet:  constants.CollectorName,
 			Conditions: map[string]loggingv1.ClusterConditions{},
 			Nodes:      map[string]string{},
 			Pods:       map[loggingv1.PodStateType][]string{},

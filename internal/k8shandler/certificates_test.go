@@ -234,7 +234,7 @@ var _ = Describe("Reconciling", func() {
 			It("should provide a X509 cert for `CN=system.logging.fluentd`", func() {
 				Expect(clusterRequest.createOrUpdateFluentdSecret()).Should(Succeed())
 				secret := &corev1.Secret{}
-				key := types.NamespacedName{Name: constants.FluentdName, Namespace: constants.OpenshiftNS}
+				key := types.NamespacedName{Name: constants.CollectorName, Namespace: constants.OpenshiftNS}
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())
 
 				Expect(secret).Should(ContainKeys("ca-bundle.crt", "tls.crt", "tls.key"))

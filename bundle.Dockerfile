@@ -22,7 +22,7 @@ LABEL \
     com.redhat.component="cluster-logging-operator" \
     version="v1.1" \
     name="cluster-logging-operator" \
-    License="ASL 2.0" \
+    License="Apache-2.0" \
     io.k8s.display-name="cluster-logging-operator bundle" \
     io.k8s.description="bundle for the cluster-logging-operator" \
     summary="This is the bundle for the cluster-logging-operator" \

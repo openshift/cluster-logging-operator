@@ -182,7 +182,7 @@ test-unit: test-forwarder-generator
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-OPENSHIFT_VERSIONS?="v4.8"
+OPENSHIFT_VERSIONS?="v4.7"
 CHANNELS="stable,stable-${LOGGING_VERSION}"
 DEFAULT_CHANNEL="stable"
 generate-bundle: regenerate $(OPM)

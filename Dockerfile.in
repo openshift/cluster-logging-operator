@@ -68,7 +68,7 @@ LABEL \
         io.openshift.tags="openshift,logging" \
         com.redhat.delivery.appregistry="false" \
         maintainer="AOS Logging <aos-logging@redhat.com>" \
-        License="GPLv2+" \
+        License="Apache-2.0" \
         name="openshift-logging/cluster-logging-rhel8-operator" \
         com.redhat.component="cluster-logging-operator-container" \
         io.openshift.maintainer.product="OpenShift Container Platform" \

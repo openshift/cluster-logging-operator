@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"reflect"
 	"strings"
 	"time"
@@ -47,6 +48,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
 	if cluster.Spec.Collection != nil && cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
+
+		//TODO: Remove me once fully migrated to new collector naming
+		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
+			log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
+		}
+
 		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
 			return
 		}
@@ -90,7 +97,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		}
 
 		if err = clusterRequest.UpdateFluentdStatus(); err != nil {
-			log.Error(err, "unable to update status for fluentd")
+			log.Error(err, "unable to update status for the collector")
 		}
 
 		if collectorServiceAccount != nil {
@@ -111,7 +118,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.removeFluentd(); err != nil {
+		if err = clusterRequest.removeCollector(constants.CollectorName); err != nil {
 			return
 		}
 	}
@@ -125,7 +132,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 
 	fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
 	if err != nil {
-		return fmt.Errorf("Failed to get status of Fluentd: %v", err)
+		return fmt.Errorf("Failed to get status of the collector: %v", err)
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -136,7 +143,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 		return nil
 	})
 	if retryErr != nil {
-		return fmt.Errorf("Failed to update Cluster Logging Fluentd status: %v", retryErr)
+		return fmt.Errorf("Failed to update Cluster Logging Collector status: %v", retryErr)
 	}
 
 	return nil

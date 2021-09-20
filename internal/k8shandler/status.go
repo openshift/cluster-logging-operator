@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"sort"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -15,7 +16,7 @@ func (clusterRequest *ClusterLoggingRequest) getFluentdCollectorStatus() (loggin
 
 	fluentdStatus := logging.FluentdCollectorStatus{}
 	selector := map[string]string{
-		"logging-infra": "fluentd",
+		"logging-infra": constants.CollectorName,
 	}
 
 	fluentdDaemonsetList, err := clusterRequest.GetDaemonSetList(selector)
@@ -39,7 +40,7 @@ func (clusterRequest *ClusterLoggingRequest) getFluentdCollectorStatus() (loggin
 		fluentdStatus.Pods = podStateMap(podList.Items)
 		fluentdStatus.Nodes = podNodeMap
 
-		fluentdStatus.Conditions, err = clusterRequest.getPodConditions("fluentd")
+		fluentdStatus.Conditions, err = clusterRequest.getPodConditions(constants.CollectorName)
 		if err != nil {
 			return fluentdStatus, fmt.Errorf("unable to get pod conditions. E: %s", err.Error())
 		}

@@ -28,7 +28,7 @@ func TestLokiOutput(t *testing.T) {
 
 		containerTag = func(f *functional.FluentdFunctionalFramework) string {
 			for _, s := range f.Pod.Status.ContainerStatuses {
-				if s.Name == constants.FluentdName {
+				if s.Name == constants.CollectorName {
 					containerId := s.ContainerID[len("cri-o://"):]
 					return fmt.Sprintf("kubernetes.var.log.containers.%s_%s_%s-%s.log", f.Pod.Name, f.Pod.Namespace, f.Pod.Spec.Containers[0].Name, containerId)
 				}

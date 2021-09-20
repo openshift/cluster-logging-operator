@@ -131,7 +131,6 @@ var _ = Describe("Generating fluentd config", func() {
                 flush_mode interval
                 flush_interval 1s
                 flush_thread_count 2
-                flush_at_shutdown true
                 retry_type exponential_backoff
                 retry_wait 1s
                 retry_max_interval 60s
@@ -174,7 +173,6 @@ var _ = Describe("Generating fluentd config", func() {
                 flush_mode interval
                 flush_interval 1s
                 flush_thread_count 2
-                flush_at_shutdown true
                 retry_type exponential_backoff
                 retry_wait 1s
                 retry_max_interval 60s
@@ -257,7 +255,6 @@ var _ = Describe("Generating fluentd config", func() {
                 flush_mode interval
                 flush_interval 1s
                 flush_thread_count 2
-                flush_at_shutdown true
                 retry_type exponential_backoff
                 retry_wait 1s
                 retry_max_interval 60s
@@ -300,7 +297,6 @@ var _ = Describe("Generating fluentd config", func() {
                 flush_mode interval
                 flush_interval 1s
                 flush_thread_count 2
-                flush_at_shutdown true
                 retry_type exponential_backoff
                 retry_wait 1s
                 retry_max_interval 60s
@@ -366,7 +362,6 @@ var _ = Describe("Generating fluentd config", func() {
                 path '/var/lib/fluentd/retry_other_elasticsearch'
                 flush_mode immediate
                 flush_thread_count 4
-                flush_at_shutdown true
                 retry_type periodic
                 retry_wait 2s
                 retry_max_interval 600s
@@ -408,7 +403,6 @@ var _ = Describe("Generating fluentd config", func() {
                 path '/var/lib/fluentd/other_elasticsearch'
                 flush_mode immediate
                 flush_thread_count 4
-                flush_at_shutdown true
                 retry_type periodic
                 retry_wait 2s
                 retry_max_interval 600s
@@ -462,9 +456,8 @@ var _ = Describe("Generating fluentd config", func() {
             chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
             flush_mode interval
             flush_interval 5s
-            flush_at_shutdown true
-            flush_thread_count 2
-            retry_type exponential_backoff
+            flush_thread_count 2            
+			retry_type exponential_backoff
             retry_wait 1s
             retry_max_interval 60s
             retry_timeout 60m
@@ -503,7 +496,6 @@ var _ = Describe("Generating fluentd config", func() {
           total_limit_size 512m
           chunk_limit_size 256m
           flush_mode immediate
-          flush_at_shutdown true
           flush_thread_count 4
           retry_type periodic
           retry_wait 2s
@@ -579,7 +571,6 @@ var _ = Describe("Generating fluentd config", func() {
                 flush_mode interval
                 flush_interval 1s
                 flush_thread_count 2
-                flush_at_shutdown true
                 retry_type exponential_backoff
                 retry_wait 1s
                 retry_max_interval 60s
@@ -632,7 +623,6 @@ var _ = Describe("Generating fluentd config", func() {
                 path '/var/lib/fluentd/syslog_receiver'
                 flush_mode immediate
                 flush_thread_count 4
-                flush_at_shutdown true
                 retry_type periodic
                 retry_wait 2s
                 retry_max_interval 600s
@@ -685,7 +675,6 @@ var _ = Describe("Generating fluentd config", func() {
                flush_mode interval
                flush_interval 1s
                flush_thread_count 2
-               flush_at_shutdown true
                retry_type exponential_backoff
                retry_wait 1s
                retry_max_interval 60s
@@ -719,7 +708,6 @@ var _ = Describe("Generating fluentd config", func() {
                path '/var/lib/fluentd/kafka_receiver'
                flush_mode immediate
                flush_thread_count 4
-               flush_at_shutdown true
                retry_type periodic
                retry_wait 2s
                retry_max_interval 600s

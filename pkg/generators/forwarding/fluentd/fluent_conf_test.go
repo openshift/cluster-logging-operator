@@ -668,7 +668,6 @@ var _ = Describe("Generating fluentd config", func() {
       flush_mode interval
       flush_interval 1s
       flush_thread_count 2
-      flush_at_shutdown true
       retry_type exponential_backoff
       retry_wait 1s
       retry_max_interval 60s
@@ -714,7 +713,6 @@ var _ = Describe("Generating fluentd config", func() {
      flush_mode interval
      flush_interval 1s
      flush_thread_count 2
-     flush_at_shutdown true
      retry_type exponential_backoff
      retry_wait 1s
      retry_max_interval 60s
@@ -774,7 +772,6 @@ var _ = Describe("Generating fluentd config", func() {
       flush_mode interval
       flush_interval 1s
       flush_thread_count 2
-      flush_at_shutdown true
       retry_type exponential_backoff
       retry_wait 1s
       retry_max_interval 60s
@@ -820,7 +817,6 @@ var _ = Describe("Generating fluentd config", func() {
       flush_mode interval
       flush_interval 1s
       flush_thread_count 2
-      flush_at_shutdown true
       retry_type exponential_backoff
       retry_wait 1s
       retry_max_interval 60s
@@ -1395,7 +1391,6 @@ var _ = Describe("Generating fluentd config", func() {
           flush_mode interval
           flush_interval 1s
           flush_thread_count 2
-          flush_at_shutdown true
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
@@ -1441,7 +1436,6 @@ var _ = Describe("Generating fluentd config", func() {
           flush_mode interval
           flush_interval 1s
           flush_thread_count 2
-          flush_at_shutdown true
           retry_type exponential_backoff
           retry_wait 1s
           retry_max_interval 60s
@@ -1501,7 +1495,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -1547,7 +1540,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -2131,7 +2123,6 @@ var _ = Describe("Generating fluentd config", func() {
         flush_mode interval
         flush_interval 1s
         flush_thread_count 2
-        flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
         retry_max_interval 60s
@@ -2177,7 +2168,6 @@ var _ = Describe("Generating fluentd config", func() {
          flush_mode interval
          flush_interval 1s
          flush_thread_count 2
-         flush_at_shutdown true
          retry_type exponential_backoff
          retry_wait 1s
          retry_max_interval 60s
@@ -2237,7 +2227,6 @@ var _ = Describe("Generating fluentd config", func() {
         flush_mode interval
         flush_interval 1s
         flush_thread_count 2
-        flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
         retry_max_interval 60s
@@ -2283,7 +2272,6 @@ var _ = Describe("Generating fluentd config", func() {
         flush_mode interval
         flush_interval 1s
         flush_thread_count 2
-        flush_at_shutdown true
         retry_type exponential_backoff
         retry_wait 1s
         retry_max_interval 60s
@@ -2727,9 +2715,8 @@ var _ = Describe("Generating fluentd config", func() {
      chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '1m'}"
      flush_mode interval
      flush_interval 5s
-     flush_at_shutdown true
-     flush_thread_count 2
-     retry_type exponential_backoff
+     flush_thread_count 2     
+	 retry_type exponential_backoff
      retry_wait 1s
      retry_max_interval 60s
      retry_timeout 60m
@@ -3315,7 +3302,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -3361,7 +3347,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -3421,7 +3406,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -3467,7 +3451,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -3528,7 +3511,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -3575,7 +3557,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -3635,7 +3616,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s
@@ -3681,7 +3661,6 @@ var _ = Describe("Generating fluentd config", func() {
        flush_mode interval
        flush_interval 1s
        flush_thread_count 2
-       flush_at_shutdown true
        retry_type exponential_backoff
        retry_wait 1s
        retry_max_interval 60s

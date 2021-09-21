@@ -701,7 +701,9 @@ tls_cert_path "{{$path}}"
   total_limit_size {{.TotalLimitSize}}
   chunk_limit_size {{.ChunkLimitSize}}
   flush_mode {{.FlushMode}}
+  {{- if (eq .FlushMode "interval")}}
   flush_interval {{.FlushInterval}}
+  {{- end}}
   flush_at_shutdown true
   flush_thread_count {{.FlushThreadCount}}
   retry_type {{.RetryType}}
@@ -759,7 +761,9 @@ const storeElasticsearchTemplate = `{{ define "storeElasticsearch" -}}
     @type file
     path '{{.BufferPath}}'
     flush_mode {{.FlushMode}}
+    {{- if (eq .FlushMode "interval")}}
     flush_interval {{.FlushInterval}}
+    {{- end}}
     flush_thread_count {{.FlushThreadCount}}
     flush_at_shutdown true
     retry_type {{.RetryType}}
@@ -835,7 +839,9 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
     @type file
     path '{{.BufferPath}}'
     flush_mode {{.FlushMode}}
+    {{- if (eq .FlushMode "interval")}}
     flush_interval {{.FlushInterval}}
+    {{- end}}
     flush_thread_count {{.FlushThreadCount}}
     flush_at_shutdown true
     retry_type {{.RetryType}}
@@ -869,7 +875,9 @@ ssl_client_cert_key "#{File.exist?('{{ $tlsKey }}') ? '{{ $tlsKey }}' : nil}"
   @type file
   path '{{.BufferPath}}'
   flush_mode {{.FlushMode}}
+  {{- if (eq .FlushMode "interval")}}
   flush_interval {{.FlushInterval}}
+  {{- end}}
   flush_thread_count {{.FlushThreadCount}}
   flush_at_shutdown true
   retry_type {{.RetryType}}

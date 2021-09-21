@@ -297,7 +297,6 @@ var _ = Describe("Generating fluentd config", func() {
                 @type file
                 path '/var/lib/fluentd/retry_other_elasticsearch'
                 flush_mode immediate
-                flush_interval 2s
                 flush_thread_count 4
                 flush_at_shutdown true
                 retry_type periodic
@@ -340,7 +339,6 @@ var _ = Describe("Generating fluentd config", func() {
                 @type file
                 path '/var/lib/fluentd/other_elasticsearch'
                 flush_mode immediate
-                flush_interval 2s
                 flush_thread_count 4
                 flush_at_shutdown true
                 retry_type periodic
@@ -435,7 +433,6 @@ var _ = Describe("Generating fluentd config", func() {
           total_limit_size 512m
           chunk_limit_size 256m
           flush_mode immediate
-          flush_interval 2s
           flush_at_shutdown true
           flush_thread_count 4
           retry_type periodic
@@ -564,7 +561,6 @@ var _ = Describe("Generating fluentd config", func() {
                 @type file
                 path '/var/lib/fluentd/syslog_receiver'
                 flush_mode immediate
-                flush_interval 2s
                 flush_thread_count 4
                 flush_at_shutdown true
                 retry_type periodic
@@ -652,7 +648,6 @@ var _ = Describe("Generating fluentd config", func() {
                @type file
                path '/var/lib/fluentd/kafka_receiver'
                flush_mode immediate
-               flush_interval 2s
                flush_thread_count 4
                flush_at_shutdown true
                retry_type periodic

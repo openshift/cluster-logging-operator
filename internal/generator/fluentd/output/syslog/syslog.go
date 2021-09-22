@@ -71,8 +71,12 @@ keep_alive_intvl 7200
 {{end -}}
 {{if .PayloadKey -}}
 <format>
-  @type single_value
+  @type single_json_value
   message_key {{.PayloadKey}}
+</format>
+{{else -}}
+<format>
+  @type json
 </format>
 {{end -}}
 {{compose .BufferConfig}}

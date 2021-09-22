@@ -312,7 +312,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_appname")
 					str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
 					Expect(err).To(BeNil())
-					str = strings.ReplaceAll(str, "=>", ":")
 					msg := map[string]interface{}{}
 					err = json.Unmarshal([]byte(str), &msg)
 					Expect(err).To(BeNil())
@@ -581,7 +580,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_tag")
 						str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
 						Expect(err).To(BeNil())
-						str = strings.ReplaceAll(str, "=>", ":")
 						msg := map[string]interface{}{}
 						err = json.Unmarshal([]byte(str), &msg)
 						Expect(err).To(BeNil())

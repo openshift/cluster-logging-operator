@@ -58,6 +58,9 @@ This is a private key.
 	if err := clusterLoggingRequest.CreateOrUpdateSecret(firstSecret); err != nil {
 		t.Errorf("CreateOrUpdateSecret failed 2 [%v]", err)
 	}
+	//note: https://github.com/kubernetes-sigs/controller-runtime/pull/919
+	//set version manually
+	firstSecret.ObjectMeta.ResourceVersion = "1"
 
 	secondSecret, err := clusterLoggingRequest.GetSecret("test-secret")
 	if err != nil {

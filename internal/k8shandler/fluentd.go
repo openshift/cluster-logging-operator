@@ -698,20 +698,28 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipe
 		utils.AddOwnerRefToObject(fluentdDaemonset, NewLogCollectorServiceAccountRef(uid))
 	}
 
-	err = clusterRequest.Create(fluentdDaemonset)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating collector Daemonset %v", err)
+	//With this PR: https://github.com/kubernetes-sigs/controller-runtime/pull/919
+	//we have got new behaviour: Reset resource version if fake client Create call failed.
+	//So if object already exist version will be reset, going to get before try to create.
+	ds := &apps.DaemonSet{}
+	err = clusterRequest.Get(fluentdDaemonset.Name, ds)
+	if errors.IsNotFound(err) {
+		err = clusterRequest.Create(fluentdDaemonset)
+		if err != nil {
+			return fmt.Errorf("Failure creating collector Daemonset %v", err)
+		}
+		return nil
 	}
 
 	if clusterRequest.isManaged() {
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			fluentdDaemonset.ResourceVersion = ds.GetResourceVersion()
 			return clusterRequest.updateFluentdDaemonsetIfRequired(fluentdDaemonset)
 		})
 		if retryErr != nil {
 			return retryErr
 		}
 	}
-
 	return nil
 }
 

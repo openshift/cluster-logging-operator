@@ -66,7 +66,7 @@ func main() {
 
 	log.Info("Finished reading yaml", "content", string(content))
 
-	generatedConfig, err := forwarder.Generate(string(content), *includeDefaultLogStore, *includeLegacyForward, *debugOutput)
+	generatedConfig, err := forwarder.Generate(string(content), *includeDefaultLogStore, *includeLegacyForward, *debugOutput, nil)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		os.Exit(1)

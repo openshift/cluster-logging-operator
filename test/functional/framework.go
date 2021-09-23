@@ -142,6 +142,7 @@ func NewFluentdFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosit
 		receiverBuilders: []receiverBuilder{},
 		closeClient:      fnClose,
 	}
+	framework.Forwarder.SetNamespace(t.NS.Name)
 	return framework
 }
 
@@ -201,7 +202,8 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debug_output := false
-	if f.Conf, err = forwarder.Generate(string(clfYaml), false, false, debug_output); err != nil {
+	testClient := client.Get().ControllerRuntimeClient()
+	if f.Conf, err = forwarder.Generate(string(clfYaml), false, false, debug_output, &testClient); err != nil {
 		return err
 	}
 	log.V(2).Info("Generating Certificates")

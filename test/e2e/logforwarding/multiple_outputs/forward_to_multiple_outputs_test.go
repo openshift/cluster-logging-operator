@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/helpers"
-	eologgingv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	eologgingv1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

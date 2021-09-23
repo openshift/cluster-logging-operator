@@ -7,7 +7,7 @@ import (
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	esapi "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	esapi "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 
 const (

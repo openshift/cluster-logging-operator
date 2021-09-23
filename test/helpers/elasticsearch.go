@@ -21,7 +21,7 @@ import (
 	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 
 const (
@@ -212,7 +212,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
-			APIVersion: elasticsearch.SchemeGroupVersion.String(),
+			APIVersion: elasticsearch.GroupVersion.String(),
 		},
 		Spec: elasticsearch.ElasticsearchSpec{
 			Spec: elasticsearch.ElasticsearchNodeSpec{

@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -178,7 +178,7 @@ func (cr *ClusterLoggingRequest) emptyElasticsearchCR(elasticsearchName string) 
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
-			APIVersion: elasticsearch.SchemeGroupVersion.String(),
+			APIVersion: elasticsearch.GroupVersion.String(),
 		},
 		Spec: elasticsearch.ElasticsearchSpec{},
 	}

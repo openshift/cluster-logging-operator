@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	es "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -219,7 +219,7 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 	cr := &es.Kibana{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Kibana",
-			APIVersion: es.SchemeGroupVersion.String(),
+			APIVersion: es.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kibanaName,
@@ -245,7 +245,7 @@ func (clusterRequest *ClusterLoggingRequest) getKibanaCR() (*es.Kibana, error) {
 	var kb = &es.Kibana{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Kibana",
-			APIVersion: es.SchemeGroupVersion.String(),
+			APIVersion: es.GroupVersion.String(),
 		},
 	}
 

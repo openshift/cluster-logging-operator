@@ -7,7 +7,7 @@ import (
 
 	clolog "github.com/ViaQ/logerr/log"
 	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 
 type LogComponentType string

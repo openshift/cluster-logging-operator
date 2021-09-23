@@ -1,6 +1,8 @@
 package syslog
 
 import (
+	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 )
 
@@ -11,13 +13,26 @@ func (t TLS) Name() string {
 }
 
 func (t TLS) Template() string {
-	if t {
-		return `{{define "syslogTLSTemplate" -}}
-tls true
-verify_mode true
-{{- end}}`
+	return fmt.Sprintf(`{{define "syslogTLSTemplate" -}}
+tls %t
+{{- end}}`, t)
+}
+
+type HostnameVerify security.HostnameVerify
+
+func (h HostnameVerify) Name() string {
+	return "syslogHostNameVerify"
+}
+
+func (h HostnameVerify) Template() string {
+	if h {
+		return `{{define "` + h.Name() + `" -}}
+verify_mode 1 #VERIFY_NONE:0, VERIFY_PEER:1
+{{- end}}
+`
 	}
-	return `{{define "syslogTLSTemplate" -}}
-tls false
-{{end}}`
+	return `{{define "` + h.Name() + `" -}}
+verify_mode 0 #VERIFY_NONE:0, VERIFY_PEER:1
+{{- end}}
+`
 }

@@ -20,6 +20,8 @@ import (
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 )
 
+const SyslogHostnameVerify = "syslog_hostname_verify"
+
 type Syslog struct {
 	Desc           string
 	StoreID        string
@@ -373,6 +375,16 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		conf := []Element{
 			TLS(true),
 		}
+		verify, ok := security.TryKeys(secret, SyslogHostnameVerify)
+		if ok {
+			if strings.ToLower(string(verify)) == "true" {
+				conf = append(conf, HostnameVerify(true))
+			} else {
+				conf = append(conf, HostnameVerify(false))
+			}
+		}
+		// if secret does not contain "hostname_verify" key, default behavior is expected
+
 		if secret != nil && security.HasCABundle(secret) {
 			ca := CAFile{
 				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),

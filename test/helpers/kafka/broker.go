@@ -3,9 +3,9 @@ package kafka
 import (
 	"bytes"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strconv"
 
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	apps "k8s.io/api/apps/v1"
@@ -285,7 +285,15 @@ func NewBrokerService(namespace string) *v1.Service {
 			Port: 9093,
 		},
 	}
-	return factory.NewService(DeploymentName, namespace, kafkaBrokerComponent, ports)
+	return runtime.NewServiceBuilder(namespace, DeploymentName).
+		WithServicePorts(ports).
+		WithSelector(
+			map[string]string{
+				"component": kafkaBrokerComponent,
+				"provider":  "openshift",
+			},
+		).
+		Service
 }
 
 func NewBrokerRBAC(namespace string) (*rbacv1.ClusterRole, *rbacv1.ClusterRoleBinding) {

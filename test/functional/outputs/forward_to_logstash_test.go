@@ -1,6 +1,7 @@
 package outputs
 
 import (
+	runtime2 "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"path"
 
 	"github.com/ViaQ/logerr/log"
@@ -11,7 +12,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 var _ = Describe("[Functional][Outputs][Logstash] FluentdForward Output to Logstash", func() {
@@ -53,12 +53,12 @@ output {
 	var (
 		framework *functional.FluentdFunctionalFramework
 
-		newVisitor = func(f *functional.FluentdFunctionalFramework) runtime.PodBuilderVisitor {
-			return func(b *runtime.PodBuilder) error {
+		newVisitor = func(f *functional.FluentdFunctionalFramework) runtime2.PodBuilderVisitor {
+			return func(b *runtime2.PodBuilder) error {
 				log.V(2).Info("Adding forward output to logstash", "name", logging.OutputTypeFluentdForward)
 				configName := "logstash-config"
 				log.V(2).Info("Creating configmap", "name", configName)
-				config := runtime.NewConfigMap(b.Pod.Namespace, configName, map[string]string{
+				config := runtime2.NewConfigMap(b.Pod.Namespace, configName, map[string]string{
 					pipelineConfFileName: pipelineConf,
 					logstashConfFileName: logstashConf,
 				})

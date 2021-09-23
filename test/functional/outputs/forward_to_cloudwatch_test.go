@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	runtime2 "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"net/http"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to CloudWatch", func() {
@@ -38,7 +38,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to Clo
 	var (
 		framework *functional.FluentdFunctionalFramework
 
-		addMotoContainerVisitor = func(b *runtime.PodBuilder) error {
+		addMotoContainerVisitor = func(b *runtime2.PodBuilder) error {
 			log.V(2).Info("Adding AWS CloudWatch Logs mock container")
 			b.AddContainer("moto", "quay.io/openshift-logging/moto:2.2.3.dev0").
 				WithCmdArgs([]string{"-s"}).
@@ -46,7 +46,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to Clo
 			return nil
 		}
 
-		mountCloudwatchSecretVisitor = func(b *runtime.PodBuilder) error {
+		mountCloudwatchSecretVisitor = func(b *runtime2.PodBuilder) error {
 			log.V(2).Info("Mounting cloudwatch secret to the fluentd container")
 			b.AddSecretVolume("cloudwatch", "cloudwatch").
 				GetContainer(constants.CollectorName).
@@ -64,14 +64,14 @@ var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to Clo
 		framework = functional.NewFluentdFunctionalFramework()
 
 		log.V(2).Info("Creating service moto")
-		service := runtime.NewService(framework.Namespace, "moto")
-		runtime.NewServiceBuilder(service).
+		service := runtime2.NewService(framework.Namespace, "moto")
+		runtime2.NewServiceBuilderFor(service).
 			AddServicePort(5000, 5000).
 			WithSelector(map[string]string{"testname": "functional"})
 		if err := framework.Test.Client.Create(service); err != nil {
 			panic(err)
 		}
-		route := runtime.NewRoute(framework.Namespace, "moto", "moto", "5000")
+		route := runtime2.NewRoute(framework.Namespace, "moto", "moto", "5000")
 		route.Spec.TLS = &openshiftv1.TLSConfig{
 			Termination:                   openshiftv1.TLSTerminationPassthrough,
 			InsecureEdgeTerminationPolicy: openshiftv1.InsecureEdgeTerminationPolicyNone,
@@ -106,7 +106,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to Clo
 			})
 
 		log.V(2).Info("Creating secret cloudwatch with AWS example credentials")
-		secret := runtime.NewSecret(framework.Namespace, "cloudwatch",
+		secret := runtime2.NewSecret(framework.Namespace, "cloudwatch",
 			map[string][]byte{
 				"aws_access_key_id":     []byte(awsAccessKeyID),
 				"aws_secret_access_key": []byte(awsSecretAccessKey),
@@ -120,7 +120,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to Clo
 			FromInput(logging.InputNameApplication).
 			ToCloudwatchOutput()
 
-		Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+		Expect(framework.DeployWithVisitors([]runtime2.PodBuilderVisitor{
 			addMotoContainerVisitor,
 			mountCloudwatchSecretVisitor,
 		})).To(BeNil())

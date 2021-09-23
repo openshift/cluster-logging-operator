@@ -1,13 +1,13 @@
 package functional
 
 import (
+	runtime2 "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 const (
@@ -120,10 +120,10 @@ const (
 </match>`
 )
 
-func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuilder, output logging.OutputSpec, conf string) error {
+func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime2.PodBuilder, output logging.OutputSpec, conf string) error {
 	log.V(2).Info("Adding forward output", "name", output.Name)
 	name := strings.ToLower(output.Name)
-	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
+	config := runtime2.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"fluent.conf": conf,
 	})
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "fluent.conf", unsecureFluentConf)
@@ -140,10 +140,10 @@ func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuil
 	return nil
 }
 
-func (f *FluentdFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *FluentdFunctionalFramework) AddForwardOutput(b *runtime2.PodBuilder, output logging.OutputSpec) error {
 	return f.addForwardOutputWithConf(b, output, unsecureFluentConf)
 }
 
-func (f *FluentdFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *FluentdFunctionalFramework) AddBenchmarkForwardOutput(b *runtime2.PodBuilder, output logging.OutputSpec) error {
 	return f.addForwardOutputWithConf(b, output, unsecureFluentConfBenchmark)
 }

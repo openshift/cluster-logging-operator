@@ -2,6 +2,7 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,6 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 func TestLogForwardingToLoki(t *testing.T) {

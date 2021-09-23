@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"io/ioutil"
 	"path"
 	"reflect"
@@ -16,7 +17,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/components/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/services"
@@ -117,24 +117,44 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err e
 	return nil
 }
 
+func newCollectorService(namespace string) *v1.Service {
+	service := runtime.NewService(namespace, constants.CollectorName)
+	runtime.NewServiceBuilderFor(service).
+		WithAnnotations(
+			map[string]string{
+				"service.alpha.openshift.io/serving-cert-secret-name": constants.CollectorMetricSecretName,
+			},
+		).
+		WithLabels(
+			map[string]string{
+				"logging-infra": "support",
+			},
+		).
+		WithSelector(
+			map[string]string{
+				"component": constants.CollectorName,
+				"provider":  "openshift",
+			},
+		).
+		WithServicePorts(
+			[]v1.ServicePort{
+				{
+					Port:       metricsPort,
+					TargetPort: intstr.FromString(metricsPortName),
+					Name:       metricsPortName,
+				},
+				{
+					Port:       exporterPort,
+					TargetPort: intstr.FromString(exporterPortName),
+					Name:       exporterPortName,
+				},
+			},
+		)
+	return service
+}
+
 func (clusterRequest *ClusterLoggingRequest) reconcileFluentdService() error {
-	desired := factory.NewService(
-		constants.CollectorName,
-		clusterRequest.Cluster.Namespace,
-		constants.CollectorName,
-		[]v1.ServicePort{
-			{
-				Port:       metricsPort,
-				TargetPort: intstr.FromString(metricsPortName),
-				Name:       metricsPortName,
-			},
-			{
-				Port:       exporterPort,
-				TargetPort: intstr.FromString(exporterPortName),
-				Name:       exporterPortName,
-			},
-		},
-	)
+	desired := newCollectorService(clusterRequest.Cluster.Namespace)
 
 	desired.Annotations = map[string]string{
 		"service.alpha.openshift.io/serving-cert-secret-name": constants.CollectorMetricSecretName,

@@ -1,20 +1,20 @@
 package functional
 
 import (
+	runtime2 "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"net/url"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 const ImageRemoteSyslog = "quay.io/openshift/origin-logging-rsyslog:latest"
 
 const IncreaseRsyslogMaxMessageSize = "$MaxMessageSize 50000"
 
-func (f *FluentdFunctionalFramework) addSyslogOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *FluentdFunctionalFramework) addSyslogOutput(b *runtime2.PodBuilder, output logging.OutputSpec) error {
 	log.V(2).Info("Adding syslog output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 	var baseRsyslogConfig string
@@ -27,7 +27,7 @@ func (f *FluentdFunctionalFramework) addSyslogOutput(b *runtime.PodBuilder, outp
 	// using unsecure rsyslog conf
 	rsyslogConf := helpers.GenerateRsyslogConf(baseRsyslogConfig, helpers.RFC5424)
 	rsyslogConf = strings.Join([]string{IncreaseRsyslogMaxMessageSize, rsyslogConf}, "\n")
-	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
+	config := runtime2.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"rsyslog.conf": rsyslogConf,
 	})
 	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "rsyslog.conf", rsyslogConf)

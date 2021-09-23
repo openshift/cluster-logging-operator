@@ -30,13 +30,6 @@ func NewPod(namespace, name string, containers ...corev1.Container) *corev1.Pod 
 	return pod
 }
 
-// NewService returns a corev1.Service with namespace and name.
-func NewService(namespace, name string) *corev1.Service {
-	svc := &corev1.Service{}
-	Initialize(svc, namespace, name)
-	return svc
-}
-
 // NewSecret returns a corev1.Secret with namespace and name.
 func NewSecret(namespace, name string, data map[string][]byte) *corev1.Secret {
 	if data == nil {

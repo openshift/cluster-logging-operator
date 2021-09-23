@@ -2,8 +2,8 @@ package client
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"

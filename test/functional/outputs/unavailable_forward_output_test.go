@@ -1,16 +1,15 @@
 package outputs
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"time"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 var _ = Describe("[Functional][Outputs] FluentdForward Output", func() {

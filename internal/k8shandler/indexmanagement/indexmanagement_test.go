@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	esapi "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	esapi "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 
 var _ = Describe("Indexmanagement", func() {

@@ -27,7 +27,7 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/controllers/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 
 // Change below variables to serve metrics on different host or port.

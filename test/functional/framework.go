@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -25,7 +27,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -138,7 +139,7 @@ func NewFluentdFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosit
 			"testname": testName,
 		},
 		Test:             t,
-		Forwarder:        runtime.NewClusterLogForwarder(),
+		Forwarder:        testruntime.NewClusterLogForwarder(),
 		receiverBuilders: []receiverBuilder{},
 		closeClient:      fnClose,
 	}
@@ -171,7 +172,7 @@ func (f *FluentdFunctionalFramework) Cleanup() {
 
 func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string) (string, error) {
 	log.V(2).Info("Running", "container", container, "cmd", cmd)
-	out, err := runtime.ExecOc(f.Pod, strings.ToLower(container), cmd[0], cmd[1:]...)
+	out, err := testruntime.ExecOc(f.Pod, strings.ToLower(container), cmd[0], cmd[1:]...)
 	log.V(2).Info("Exec'd", "out", out, "err", err)
 	return out, err
 }
@@ -243,7 +244,7 @@ done
 
 	log.V(2).Info("Creating service")
 	service := runtime.NewService(f.Test.NS.Name, f.Name)
-	runtime.NewServiceBuilder(service).
+	runtime.NewServiceBuilderFor(service).
 		AddServicePort(24231, 24231).
 		WithSelector(f.labels)
 	if err = f.Test.Client.Create(service); err != nil {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clolog "github.com/ViaQ/logerr/log"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
@@ -365,16 +365,14 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	if err != nil {
 		return nil, err
 	}
-	service := factory.NewService(
-		serviceAccount.Name,
-		OpenshiftLoggingNS,
-		serviceAccount.Name,
-		[]corev1.ServicePort{
-			{
-				Port: 24224,
+	service := runtime.NewServiceBuilder(OpenshiftLoggingNS, serviceAccount.Name).
+		WithServicePorts(
+			[]corev1.ServicePort{
+				{
+					Port: 24224,
+				},
 			},
-		},
-	)
+		).Service
 
 	tc.AddCleanup(func() error {
 		_, err := oc.Exec().

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"net/http"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to CloudWatch", func() {
@@ -65,7 +65,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to Clo
 
 		log.V(2).Info("Creating service moto")
 		service := runtime.NewService(framework.Namespace, "moto")
-		runtime.NewServiceBuilder(service).
+		runtime.NewServiceBuilderFor(service).
 			AddServicePort(5000, 5000).
 			WithSelector(map[string]string{"testname": "functional"})
 		if err := framework.Test.Client.Create(service); err != nil {

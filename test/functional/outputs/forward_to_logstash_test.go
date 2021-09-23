@@ -1,6 +1,7 @@
 package outputs
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"path"
 
 	"github.com/ViaQ/logerr/log"
@@ -11,7 +12,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 var _ = Describe("[Functional][Outputs][Logstash] FluentdForward Output to Logstash", func() {

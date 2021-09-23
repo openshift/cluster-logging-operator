@@ -2,13 +2,14 @@ package runtime
 
 import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test"
 )
 
 // NewClusterLogForwarder returns a ClusterLogForwarder with default name and namespace.
 func NewClusterLogForwarder() *loggingv1.ClusterLogForwarder {
 	clf := &loggingv1.ClusterLogForwarder{}
-	Initialize(clf, test.OpenshiftLoggingNS, test.InstanceName)
+	runtime.Initialize(clf, test.OpenshiftLoggingNS, test.InstanceName)
 	return clf
 }
 
@@ -17,7 +18,7 @@ func NewClusterLogForwarder() *loggingv1.ClusterLogForwarder {
 // see ClusterLoggingDefaultXXX to add them.
 func NewClusterLogging() *loggingv1.ClusterLogging {
 	cl := &loggingv1.ClusterLogging{}
-	Initialize(cl, test.OpenshiftLoggingNS, test.InstanceName)
+	runtime.Initialize(cl, test.OpenshiftLoggingNS, test.InstanceName)
 	test.MustUnmarshal(`
     collection:
       logs:

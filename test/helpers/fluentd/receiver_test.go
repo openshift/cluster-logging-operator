@@ -2,6 +2,7 @@ package fluentd_test
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"strconv"
 	"strings"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 var _ = Describe("Receiver", func() {

@@ -3,6 +3,8 @@ package fluentd
 
 import (
 	"fmt"
+	runtime "github.com/openshift/cluster-logging-operator/internal/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -12,7 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -73,7 +74,7 @@ func (s *Source) TailReader() *cmd.Reader {
 // HasOutput returns true if the source's output file exists and is non empty.
 func (s *Source) HasOutput() (bool, error) {
 	script := fmt.Sprintf("if test -s %q; then echo yes; fi", s.OutFile())
-	out, err := runtime.Exec(s.receiver.Pod, "sh", "-c", script).Output()
+	out, err := testruntime.Exec(s.receiver.Pod, "sh", "-c", script).Output()
 	if err != nil {
 		return false, utils.WrapError(err)
 	}

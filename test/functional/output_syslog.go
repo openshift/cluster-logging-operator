@@ -1,13 +1,13 @@
 package functional
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"net/url"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 const ImageRemoteSyslog = "quay.io/openshift/origin-logging-rsyslog:latest"

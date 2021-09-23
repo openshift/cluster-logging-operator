@@ -10,6 +10,8 @@ import (
 
 type TLS bool
 
+type HostnameVerify bool
+
 type TLSCertKey struct {
 	CertPath string
 	KeyPath  string

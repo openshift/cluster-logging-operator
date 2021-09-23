@@ -23,6 +23,7 @@ var (
 		ContainerImage:   "*",
 		ContainerImageID: "*",
 		PodID:            "*",
+		PodIP:            "**optional**",
 		Host:             "*",
 		MasterURL:        "*",
 		FlatLabels:       []string{"*"},

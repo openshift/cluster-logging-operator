@@ -1,5 +1,5 @@
 # Define the target to run if make is called with no arguments.
-default: check
+default: pre-commit
 
 export LOG_LEVEL?=9
 export KUBECONFIG?=$(HOME)/.kube/config
@@ -28,6 +28,9 @@ export CLF_TEST_INCLUDES?=
 .PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN)
+
+# Should pass when run before commit.
+pre-commit: regenerate generate-bundle check
 
 # check health of the code:
 # - Update generated code
@@ -123,8 +126,8 @@ MANIFESTS=manifests/$(LOGGING_VERSION)
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.zz_generate_timestamp
-generate: $(GEN_TIMESTAMP) $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE)
-$(GEN_TIMESTAMP): $(shell find apis -name '*.go')
+generate: $(GEN_TIMESTAMP)
+$(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE)
 	@$(CONTROLLER_GEN) object paths="./apis/..."
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
 	@bash ./hack/generate-crd.sh

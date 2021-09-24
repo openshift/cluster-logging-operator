@@ -62,12 +62,6 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	}
 
 	op := generator.Options{}
-	if clusterRequest.includeLegacyForwardConfig() {
-		op[generator.IncludeLegacyForwardConfig] = ""
-	}
-	if clusterRequest.includeLegacySyslogConfig() {
-		op[generator.IncludeLegacySyslogConfig] = ""
-	}
 	if clusterRequest.useOldRemoteSyslogPlugin() {
 		op[generator.UseOldRemoteSyslogPlugin] = ""
 	}
@@ -142,12 +136,6 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 				OutputRefs: []string{logging.OutputNameDefault},
 			}
 			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{defaultPipeline}
-			if clusterRequest.includeLegacySyslogConfig() {
-				defaultPipeline.OutputRefs = append(defaultPipeline.OutputRefs, constants.LegacySyslog)
-			}
-			if clusterRequest.includeLegacyForwardConfig() {
-				defaultPipeline.OutputRefs = append(defaultPipeline.OutputRefs, constants.LegacySecureforward)
-			}
 			// Continue with normalization to fill out spec and status.
 		} else if clusterRequest.ForwarderRequest == nil {
 			log.V(3).Info("ClusterLogForwarder disabled")

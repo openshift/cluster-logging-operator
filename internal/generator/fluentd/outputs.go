@@ -7,7 +7,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/fluentdforward"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/kafka"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/legacy"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/syslog"
 	corev1 "k8s.io/api/core/v1"
@@ -41,17 +40,6 @@ func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secr
 			outputs = MergeElements(outputs, loki.Conf(bufspec, secret, o, op))
 		}
 	}
-	if IsIncludeLegacyForwardConfig(op) {
-		outputs = append(outputs, ConfLiteral{
-			TemplateName: "legacySecureForward",
-			TemplateStr:  legacy.LegacySecureForwardTemplate,
-		})
-	}
-	if IsIncludeLegacySyslogConfig(op) {
-		outputs = append(outputs, ConfLiteral{
-			TemplateName: "legacySyslog",
-			TemplateStr:  legacy.LegacySyslogForwardTemplate,
-		})
-	}
+
 	return outputs
 }

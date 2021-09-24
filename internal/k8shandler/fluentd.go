@@ -284,44 +284,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdPrometheusRule
 	})
 }
 
-// includeLegacyForwardConfig to address Bug 1782566.
-// To be removed when legacy forwarding is unsupported
-func (clusterRequest *ClusterLoggingRequest) includeLegacyForwardConfig() bool {
-	if clusterRequest.FnIncludeLegacyForward != nil {
-		return clusterRequest.FnIncludeLegacySyslog()
-	}
-	config := &v1.ConfigMap{
-		Data: map[string]string{},
-	}
-	if err := clusterRequest.Get("secure-forward", config); err != nil {
-		if errors.IsNotFound(err) {
-			return false
-		}
-		log.Info("There was a non-critical error trying to fetch the secure-forward configmap", "error", err.Error())
-	}
-	_, found := config.Data["secure-forward.conf"]
-	return found
-}
-
-// includeLegacySyslogConfig to address Bug 1799024.
-// To be removed when legacy syslog is no longer supported.
-func (clusterRequest *ClusterLoggingRequest) includeLegacySyslogConfig() bool {
-	if clusterRequest.FnIncludeLegacySyslog != nil {
-		return clusterRequest.FnIncludeLegacySyslog()
-	}
-	config := &v1.ConfigMap{
-		Data: map[string]string{},
-	}
-	if err := clusterRequest.Get(syslogName, config); err != nil {
-		if errors.IsNotFound(err) {
-			return false
-		}
-		log.Info("There was a non-critical error trying to fetch the configmap", "error", err.Error())
-	}
-	_, found := config.Data["syslog.conf"]
-	return found
-}
-
 // useOldRemoteSyslogPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
 func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 	if clusterRequest.ForwarderRequest == nil {

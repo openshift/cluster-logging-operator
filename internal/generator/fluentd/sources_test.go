@@ -210,60 +210,6 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: AllSources,
 		}),
-		Entry("Legacy Log Sources", generator.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{},
-			Options: generator.Options{
-				generator.IncludeLegacyForwardConfig: "",
-			},
-			ExpectedConf: `
-# Logs from linux journal
-<source>
-  @type systemd
-  @id systemd-input
-  @label @MEASURE
-  path '/var/log/journal'
-  <storage>
-    @type local
-    persistent true
-    # NOTE: if this does not end in .json, fluentd will think it
-    # is the name of a directory - see fluentd storage_local.rb
-    path '/var/lib/fluentd/pos/journal_pos.json'
-  </storage>
-  matches "#{ENV['JOURNAL_FILTERS_JSON'] || '[]'}"
-  tag journal
-  read_from_head "#{if (val = ENV.fetch('JOURNAL_READ_FROM_HEAD','')) && (val.length > 0); val; else 'false'; end}"
-</source>
-
-# Logs from containers (including openshift containers)
-<source>
-  @type tail
-  @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
-  pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
-  refresh_interval 5
-  rotate_wait 5
-  tag kubernetes.*
-  read_from_head "true"
-  skip_refresh_on_startup true
-  @label @MEASURE
-  <parse>
-    @type multi_format
-    <pattern>
-      format json
-      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
-      keep_time_key true
-    </pattern>
-    <pattern>
-      format regexp
-      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
-      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
-      keep_time_key true
-    </pattern>
-  </parse>
-</source>
-`,
-		}),
 	)
 })
 

@@ -29,7 +29,6 @@ func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) [
 func LogSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
 	var el []generator.Element = make([]generator.Element, 0)
 	types := generator.GatherSources(spec, o)
-	types = generator.AddLegacySources(types, o)
 	if types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
 			source2.JournalLog{

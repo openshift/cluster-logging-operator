@@ -1,20 +1,42 @@
 package constants
 
 const (
+	// Keys used in ClusterLogForwarder.Output Secrets keys.
+	// Documented with OutputSpec.Secret in /apis/logging/v1/cluster_log_forwarder_types.go
+	//
+	// WARNING: changing or removing values here is a breaking API change.
+
+	// TLS keys, used by any output that supports TLS.
+
+	ClientCertKey      = "tls.crt"
+	ClientPrivateKey   = "tls.key"
+	TrustedCABundleKey = "ca-bundle.crt"
+	Passphrase         = "passphrase"
+
+	// Username/Password keys, used by any output with username/password authentication.
+
+	ClientUsername = "username"
+	ClientPassword = "password"
+
+	// SASL keys, used by any output that supports SASL.
+
+	SASLEnable        = "sasl.enable"
+	SASLMechanisms    = "sasl.mechanisms"
+	SASLAllowInsecure = "sasl.allow-insecure"
+
+	// Output-specific keys
+
+	SharedKey             = "shared_key"            // fluent forward
+	DeprecatedSaslOverSSL = "sasl_over_ssl"         // Kafka
+	AWSSecretAccessKey    = "aws_secret_access_key" //nolint:gosec
+	AWSAccessKeyID        = "aws_access_key_id"
+)
+const (
 	SingletonName = "instance"
 	OpenshiftNS   = "openshift-logging"
 	// global proxy / trusted ca bundle consts
-	ProxyName                  = "cluster"
-	SharedKey                  = "shared_key"
-	Passphrase                 = "passphrase"
-	TrustedCABundleKey         = "ca-bundle.crt"
-	SaslOverSSL                = "sasl_over_ssl"
-	AWSSecretAccessKey         = "aws_secret_access_key" //nolint:gosec
-	AWSAccessKeyID             = "aws_access_key_id"
-	ClientCertKey              = "tls.crt"
-	ClientPrivateKey           = "tls.key"
-	ClientUsername             = "username"
-	ClientPassword             = "password"
+	ProxyName = "cluster"
+
 	InjectTrustedCABundleLabel = "config.openshift.io/inject-trusted-cabundle"
 	TrustedCABundleMountFile   = "tls-ca-bundle.pem"
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"

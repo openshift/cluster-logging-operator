@@ -147,11 +147,39 @@ type OutputSpec struct {
 	// Secret for authentication.
 	// Name of a secret in the same namespace as the cluster logging operator.
 	//
-	// For client authentication, set secret keys `tls.crt` and `tls.key` to the client certificate and private key.
+	// All sensitive authentication information is provided via a kubernetes Secret object.
+	// A Secret is a key:value map, common keys are described here.
+	// Some output types support additional specialized keys, documented with the output-specific configuration field.
+	// All secret keys are optional, enable the security features you want by setting the relevant keys.
 	//
-	// To use your own certificate authority, set secret key `ca-bundle.crt`.
+	// Transport Layer Security (TLS)
 	//
-	// Depending on the `type` there may be other secret keys that have meaning.
+	// Using a TLS URL ('https://...' or 'ssl://...') without any secret enables basic TLS:
+	// client authenticates server using system default certificate authority.
+	//
+	// Additional TLS features are enabled by including a Secret and setting the following optional fields:
+	//
+	//   `tls.crt`: (string) File name containing a client certificate.
+	//     Enables mutual authentication. Requires `tls.key`.
+	//   `tls.key`: (string) File name containing the private key to unlock the client certificate.
+	//     Requires `tls.crt`
+	//   `passphrase`: (string) Passphrase to decode an encoded TLS private key.
+	//     Requires tls.key.
+	//   `ca-bundle.crt`: (string) File name of a custom CA for server authentication.
+	//
+	// Username and Password
+	//
+	//   `username`: (string) Authentication user name. Requires `password`.
+	//   `password`: (string) Authentication password. Requires `username`.
+	//
+	// Simple Authentication Security Layer (SASL)
+	//
+	//   `sasl.enable`: (boolean) Explicitly enable or disable SASL.
+	//     If missing, SASL is automatically enabled when any of the other `sasl.` keys are set.
+	//   `sasl.mechanisms`: (array) List of allowed SASL mechanism names.
+	//     If missing or empty, the system defaults are used.
+	//   `sasl.allow-insecure`: (boolean) Allow mechanisms that send clear-text passwords.
+	//     Default false.
 	//
 	// +optional
 	Secret *OutputSecretSpec `json:"secret,omitempty"`

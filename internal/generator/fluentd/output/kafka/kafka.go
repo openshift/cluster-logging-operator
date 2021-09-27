@@ -160,15 +160,9 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			}
 			conf = append(conf, ca)
 		}
-		if secret != nil {
-			if _, ok := secret.Data[constants.SaslOverSSL]; ok {
-				s := SaslOverSSL(true)
-				conf = append(conf, s)
-			} else {
-				s := SaslOverSSL(false)
-				conf = append(conf, s)
-			}
-		}
+		// Try the preferred and deprecated names.
+		_, ok := security.TryKeys(secret, constants.SASLEnable, constants.DeprecatedSaslOverSSL)
+		conf = append(conf, SaslOverSSL(ok))
 	}
 	return conf
 }

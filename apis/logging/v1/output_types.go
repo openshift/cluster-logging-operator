@@ -31,6 +31,12 @@ type OutputTypeSpec struct {
 }
 
 // Cloudwatch provides configuration for the output type `cloudwatch`
+//
+// Note: the cloudwatch output recognizes the following additional keys in the Secret:
+//
+//	`aws_secret_access_key`: AWS secret access key.
+// 	`aws_access_key_id`:AWS secret access key ID.
+//
 type Cloudwatch struct {
 	// +required
 	Region string `json:"region,omitempty"`
@@ -163,6 +169,10 @@ type Kafka struct {
 	Brokers []string `json:"brokers,omitempty"`
 }
 
+// FluentdForward does not provide additional fields, but note that
+// the fluentforward output allows this additional keys in the Secret:
+//
+//   `shared_key`: (string) Key to enable fluent-forward shared-key authentication.
 type FluentdForward struct{}
 
 type Elasticsearch struct {

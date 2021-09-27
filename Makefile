@@ -30,7 +30,7 @@ export CLF_TEST_INCLUDES?=
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN)
 
 # Should pass when run before commit.
-pre-commit: regenerate generate-bundle check
+pre-commit: clean generate-bundle check
 
 # check health of the code:
 # - Update generated code
@@ -100,7 +100,8 @@ scale-olm:
 .PHONY: scale-olm
 
 clean:
-	rm -rf bin tmp _output .target
+	rm -rf bin tmp _output .target .cache
+	find -name .kube | xargs rm -rf
 	go clean -cache -testcache ./...
 
 PATCH?=Dockerfile.patch
@@ -125,9 +126,9 @@ fmt:
 MANIFESTS=manifests/$(LOGGING_VERSION)
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
-GEN_TIMESTAMP=.zz_generate_timestamp
+GEN_TIMESTAMP=.target/codegen
 generate: $(GEN_TIMESTAMP)
-$(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE)
+$(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE) .target
 	@$(CONTROLLER_GEN) object paths="./apis/..."
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
 	@bash ./hack/generate-crd.sh

@@ -2,6 +2,8 @@ package kafka_test
 
 import (
 	"errors"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/kafka"
 
@@ -129,6 +131,24 @@ var _ = Describe("Generating external kafka server output store config block", f
 				Data: map[string][]byte{},
 			}
 
+			results, err := g.GenerateConf(kafka.Conf(nil, secret, outputs[0], nil)...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(kafkaConf))
+		})
+		It("should enable Kafka if configured", func() {
+			kafkaConf = strings.Replace(kafkaConf, "sasl_over_ssl false", "sasl_over_ssl true", 1)
+			secret := &corev1.Secret{
+				Data: map[string][]byte{"sasl.enable": nil},
+			}
+			results, err := g.GenerateConf(kafka.Conf(nil, secret, outputs[0], nil)...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(kafkaConf))
+		})
+		It("should recognize deprecated SASL key", func() {
+			kafkaConf = strings.Replace(kafkaConf, "sasl_over_ssl false", "sasl_over_ssl true", 1)
+			secret := &corev1.Secret{
+				Data: map[string][]byte{"sasl_over_ssl": nil},
+			}
 			results, err := g.GenerateConf(kafka.Conf(nil, secret, outputs[0], nil)...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(kafkaConf))

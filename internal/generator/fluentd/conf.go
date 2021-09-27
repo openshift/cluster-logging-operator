@@ -37,8 +37,11 @@ func Conf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret,
 		},
 		{
 			Concat(clfspec, op),
-			`Concat pipeline 
-			section`,
+			`Concat pipeline section`,
+		},
+		{
+			MultilineDetectExceptions(clfspec, op),
+			`Multiline detect exception sections`,
 		},
 		{
 			Ingress(clfspec, op),

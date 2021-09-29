@@ -63,12 +63,6 @@ func SourceTypeToPipeline(sourceType string, spec *logging.ClusterLogForwarderSp
 			}
 		}
 	}
-	if IsIncludeLegacyForwardConfig(op) && sourceType != logging.InputNameAudit {
-		srcTypePipeline = append(srcTypePipeline, LegacySecureforward)
-	}
-	if IsIncludeLegacySyslogConfig(op) {
-		srcTypePipeline = append(srcTypePipeline, LegacySyslog)
-	}
 	switch len(srcTypePipeline) {
 	case 0:
 		return Nil
@@ -151,12 +145,7 @@ func AppToPipeline1(spec *logging.ClusterLogForwarderSpec, op Options) []Element
 			SourceTypeToPipeline(logging.InputNameApplication, spec, op),
 		}
 	}
-	if IsIncludeLegacyForwardConfig(op) {
-		unRoutedPipelines = append(unRoutedPipelines, LegacySecureforward)
-	}
-	if IsIncludeLegacySyslogConfig(op) {
-		unRoutedPipelines = append(unRoutedPipelines, LegacySyslog)
-	}
+
 	switch len(unRoutedPipelines) {
 	case 0:
 		return []Element{
@@ -285,12 +274,7 @@ func AppToPipeline(spec *logging.ClusterLogForwarderSpec, op Options) []Element 
 			SourceTypeToPipeline(logging.InputNameApplication, spec, op),
 		}
 	}
-	if IsIncludeLegacyForwardConfig(op) {
-		unRoutedPipelines = append(unRoutedPipelines, LegacySecureforward)
-	}
-	if IsIncludeLegacySyslogConfig(op) {
-		unRoutedPipelines = append(unRoutedPipelines, LegacySyslog)
-	}
+
 	switch len(unRoutedPipelines) {
 	case 0:
 		return []Element{

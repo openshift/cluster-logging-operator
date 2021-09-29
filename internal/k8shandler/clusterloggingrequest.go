@@ -27,12 +27,6 @@ type ClusterLoggingRequest struct {
 	// OutputSecrets are retrieved during validation and used for generation.
 	OutputSecrets map[string]*corev1.Secret
 
-	//FnIncludeLegacyForward function to allow override for internal use
-	FnIncludeLegacyForward func() bool
-
-	//fnIncludeLegacySyslog function to allow override for internal use
-	FnIncludeLegacySyslog func() bool
-
 	//CLFVerifier is a collection of functions to control verification
 	//of ClusterLogForwarding
 	CLFVerifier ClusterLogForwarderVerifier

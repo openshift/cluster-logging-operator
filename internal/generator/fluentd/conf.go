@@ -89,13 +89,10 @@ func Header(op generator.Options) []generator.Element {
 func Verify(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) error {
 	var err error
 	types := generator.GatherSources(clfspec, op)
-	types = generator.AddLegacySources(types, op)
 	if !types.HasAny(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit) {
 		return ErrNoValidInputs
 	}
-	if len(clfspec.Outputs) == 0 &&
-		!generator.IsIncludeLegacyForwardConfig(op) &&
-		!generator.IsIncludeLegacySyslogConfig(op) {
+	if len(clfspec.Outputs) == 0 {
 		return ErrNoOutputs
 	}
 	for _, p := range clfspec.Pipelines {

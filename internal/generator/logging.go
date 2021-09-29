@@ -64,29 +64,6 @@ func InputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMa
 	return result
 }
 
-func AddLegacySources(types sets.String, op Options) sets.String {
-	if IsIncludeLegacyForwardConfig(op) {
-		types.Insert(logging.InputNameApplication)
-		types.Insert(logging.InputNameInfrastructure)
-	}
-	if IsIncludeLegacySyslogConfig(op) {
-		types.Insert(logging.InputNameApplication)
-		types.Insert(logging.InputNameInfrastructure)
-		types.Insert(logging.InputNameAudit)
-	}
-	return types
-}
-
-func IsIncludeLegacyForwardConfig(op Options) bool {
-	_, ok := op[IncludeLegacyForwardConfig]
-	return ok
-}
-
-func IsIncludeLegacySyslogConfig(op Options) bool {
-	_, ok := op[IncludeLegacySyslogConfig]
-	return ok
-}
-
 func CollectorLogsPath() string {
 	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", LoggingNamespace)
 }

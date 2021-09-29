@@ -203,7 +203,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debug_output := false
 	testClient := client.Get().ControllerRuntimeClient()
-	if f.Conf, err = forwarder.Generate(string(clfYaml), false, false, debug_output, &testClient); err != nil {
+	if f.Conf, err = forwarder.Generate(string(clfYaml), false, debug_output, &testClient); err != nil {
 		return err
 	}
 	log.V(2).Info("Generating Certificates")

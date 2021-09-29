@@ -18,21 +18,14 @@ import (
 const (
 	//these are fixed at the moment
 	logCollectorType         = logging.LogCollectionTypeFluentd
-	includeLegacySyslog      = false
 	useOldRemoteSyslogPlugin = false
 )
 
-func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debugOutput bool, client *client.Client) (string, error) {
+func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client *client.Client) (string, error) {
 
 	var err error
 	g := generator.MakeGenerator()
 	op := generator.Options{}
-	if includeLegacyForward {
-		op[generator.IncludeLegacyForwardConfig] = ""
-	}
-	if includeLegacySyslog {
-		op[generator.IncludeLegacySyslogConfig] = ""
-	}
 	if useOldRemoteSyslogPlugin {
 		op[generator.UseOldRemoteSyslogPlugin] = ""
 	}
@@ -56,8 +49,6 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward, debu
 			},
 			Spec: logging.ClusterLoggingSpec{},
 		},
-		FnIncludeLegacyForward: func() bool { return includeLegacyForward },
-		FnIncludeLegacySyslog:  func() bool { return includeLegacySyslog },
 		CLFVerifier: k8shandler.ClusterLogForwarderVerifier{
 			VerifyOutputSecret: func(output *logging.OutputSpec, conds logging.NamedConditions) bool { return true },
 		},

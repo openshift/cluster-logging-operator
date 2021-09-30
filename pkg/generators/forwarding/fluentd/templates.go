@@ -1102,16 +1102,8 @@ const outputLabelLokiTemplate = `{{- define "outputLabelLokiTemplate" -}}
 			retry_max_interval {{.RetryMaxInterval}}
 			{{.RetryTimeout}}
 			queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32' }"
-		{{- if .TotalLimitSize }}
 			total_limit_size {{.TotalLimitSize}}
-		{{- else }}
-			total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] ||  8589934592 }" #8G
-		{{- end }}
-		{{- if .ChunkLimitSize }}
 			chunk_limit_size {{.ChunkLimitSize}}
-		{{- else }}
-			chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
-		{{- end }}
 			overflow_action {{.OverflowAction}}
 		</buffer>
   </match>

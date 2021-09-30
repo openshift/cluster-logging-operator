@@ -1,8 +1,9 @@
 package syslog
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -170,7 +171,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -211,7 +212,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -261,7 +262,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -305,7 +306,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -416,7 +417,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -456,7 +457,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -553,7 +554,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -594,7 +595,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -692,7 +693,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>
@@ -732,7 +733,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
       retry_max_interval 60s
       retry_timeout 60m
       queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
-      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE'] || '8589934592'}"
+      total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
     </buffer>

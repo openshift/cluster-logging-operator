@@ -83,7 +83,7 @@ func TotalLimitSize(bufspec *logging.FluentdBufferSpec) string {
 	if bufspec != nil && bufspec.TotalLimitSize != "" {
 		return string(bufspec.TotalLimitSize)
 	}
-	return FromEnv("TOTAL_LIMIT_SIZE", defaultTotalLimitSize)
+	return FromEnv("TOTAL_LIMIT_SIZE_PER_BUFFER", defaultTotalLimitSize)
 }
 
 func OverflowAction(os *logging.OutputSpec, bufspec *logging.FluentdBufferSpec) string {

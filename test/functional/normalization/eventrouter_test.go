@@ -32,6 +32,7 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 			ContainerImage:   "*",
 			ContainerImageID: "*",
 			PodID:            "*",
+			PodIP:            "**optional**",
 			Host:             "*",
 			MasterURL:        "*",
 			NamespaceID:      "*",

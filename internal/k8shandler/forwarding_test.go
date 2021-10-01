@@ -2,8 +2,9 @@ package k8shandler
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -490,9 +491,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				It("should accept default output", func() {
 					cluster.Spec = logging.ClusterLoggingSpec{
 						Collection: &logging.CollectionSpec{
-							Logs: logging.LogCollectionSpec{
-								Type: "fluentd",
-							},
+							Type: "fluentd",
 						},
 						LogStore: &logging.LogStoreSpec{
 							Type: logging.LogStoreTypeElasticsearch,
@@ -521,9 +520,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				It("should setup values for elasticsearch output", func() {
 					cluster.Spec = logging.ClusterLoggingSpec{
 						Collection: &logging.CollectionSpec{
-							Logs: logging.LogCollectionSpec{
-								Type: "fluentd",
-							},
+							Type: "fluentd",
 						},
 						LogStore: &logging.LogStoreSpec{
 							Type: logging.LogStoreTypeElasticsearch,
@@ -682,20 +679,16 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 					Spec: logging.ClusterLoggingSpec{
 						LogStore: nil,
 						Collection: &logging.CollectionSpec{
-							Logs: logging.LogCollectionSpec{
-								Type: "fluentd",
-								FluentdSpec: logging.FluentdSpec{
-									Resources: &core.ResourceRequirements{
-										Limits: core.ResourceList{
-											"Memory": defaultFluentdMemory,
-										},
-										Requests: core.ResourceList{
-											"Memory": defaultFluentdMemory,
-										},
-									},
-									NodeSelector: map[string]string{"123": "123"},
+							Type: "fluentd",
+							Resources: &core.ResourceRequirements{
+								Limits: core.ResourceList{
+									"Memory": defaultFluentdMemory,
+								},
+								Requests: core.ResourceList{
+									"Memory": defaultFluentdMemory,
 								},
 							},
+							NodeSelector: map[string]string{"123": "123"},
 						},
 					},
 				},

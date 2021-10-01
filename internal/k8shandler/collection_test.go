@@ -34,10 +34,7 @@ var _ = Describe("Reconciling", func() {
 			Spec: loggingv1.ClusterLoggingSpec{
 				ManagementState: loggingv1.ManagementStateManaged,
 				Collection: &loggingv1.CollectionSpec{
-					Logs: loggingv1.LogCollectionSpec{
-						Type:        loggingv1.LogCollectionTypeFluentd,
-						FluentdSpec: loggingv1.FluentdSpec{},
-					},
+					Type: loggingv1.LogCollectionTypeFluentd,
 				},
 			},
 		}

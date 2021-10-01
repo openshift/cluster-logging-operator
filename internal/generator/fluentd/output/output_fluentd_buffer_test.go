@@ -16,22 +16,22 @@ import (
 
 var _ = Describe("outputLabelConf buffer tuning", func() {
 	var (
-		forwarderSpec *loggingv1.ForwarderSpec
+		fluentdSpec *loggingv1.FluentdSpec
 	)
 	BeforeEach(func() {
-		forwarderSpec = &loggingv1.ForwarderSpec{
-			Fluentd: &loggingv1.FluentdForwarderSpec{
+		fluentdSpec = &loggingv1.FluentdSpec{
+			Tuning: &loggingv1.FluentdTuningSpec{
 				Buffer: &loggingv1.FluentdBufferSpec{},
 			},
 		}
 	})
 	Context("#RetryTimeout", func() {
 		It("should return the default when not configured", func() {
-			Expect(output.RetryTimeout(forwarderSpec.Fluentd.Buffer)).To(Equal("60m"))
+			Expect(output.RetryTimeout(fluentdSpec.Tuning.Buffer)).To(Equal("60m"))
 		})
 		It("should use the spec'd value when configured", func() {
-			forwarderSpec.Fluentd.Buffer.RetryTimeout = "72h"
-			Expect(output.RetryTimeout(forwarderSpec.Fluentd.Buffer)).To(Equal("72h"))
+			fluentdSpec.Tuning.Buffer.RetryTimeout = "72h"
+			Expect(output.RetryTimeout(fluentdSpec.Tuning.Buffer)).To(Equal("72h"))
 		})
 	})
 
@@ -41,13 +41,13 @@ var _ = Describe("Generating fluentd config", func() {
 	var (
 		outputs []loggingv1.OutputSpec
 		//defaultForwarderSpec *loggingv1.ForwarderSpec
-		customForwarderSpec *loggingv1.ForwarderSpec
-		g                   generator.Generator
+		customFluentdSpec *loggingv1.FluentdSpec
+		g                 generator.Generator
 	)
 
 	BeforeEach(func() {
-		customForwarderSpec = &loggingv1.ForwarderSpec{
-			Fluentd: &loggingv1.FluentdForwarderSpec{
+		customFluentdSpec = &loggingv1.FluentdSpec{
+			Tuning: &loggingv1.FluentdTuningSpec{
 				Buffer: &loggingv1.FluentdBufferSpec{
 					ChunkLimitSize:   "256m",
 					TotalLimitSize:   "512m",
@@ -67,8 +67,8 @@ var _ = Describe("Generating fluentd config", func() {
 		JustBeforeEach(func() {
 			g = generator.MakeGenerator()
 
-			customForwarderSpec = &loggingv1.ForwarderSpec{
-				Fluentd: &loggingv1.FluentdForwarderSpec{
+			customFluentdSpec = &loggingv1.FluentdSpec{
+				Tuning: &loggingv1.FluentdTuningSpec{
 					Buffer: &loggingv1.FluentdBufferSpec{},
 				},
 			}
@@ -395,7 +395,7 @@ var _ = Describe("Generating fluentd config", func() {
           </match>
         </label>`
 
-			e := elasticsearch.Conf(customForwarderSpec.Fluentd.Buffer, nil, outputs[0], nil)
+			e := elasticsearch.Conf(customFluentdSpec.Tuning.Buffer, nil, outputs[0], nil)
 			results, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(esConf))
@@ -483,7 +483,7 @@ var _ = Describe("Generating fluentd config", func() {
         </match>
       </label>`
 
-			e := fluentdforward.Conf(customForwarderSpec.Fluentd.Buffer, nil, outputs[0], nil)
+			e := fluentdforward.Conf(customFluentdSpec.Tuning.Buffer, nil, outputs[0], nil)
 			results, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(fluentdForwardConf))
@@ -602,7 +602,7 @@ var _ = Describe("Generating fluentd config", func() {
 		          </match>
 		        </label>`
 
-			e := syslog.Conf(customForwarderSpec.Fluentd.Buffer, nil, outputs[0], nil)
+			e := syslog.Conf(customFluentdSpec.Tuning.Buffer, nil, outputs[0], nil)
 			results, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(syslogConf))
@@ -686,7 +686,7 @@ var _ = Describe("Generating fluentd config", func() {
         </match>
         </label>`
 
-			e := kafka.Conf(customForwarderSpec.Fluentd.Buffer, nil, outputs[0], nil)
+			e := kafka.Conf(customFluentdSpec.Tuning.Buffer, nil, outputs[0], nil)
 			results, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(kafkaConf))

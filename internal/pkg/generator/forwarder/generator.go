@@ -3,7 +3,8 @@ package forwarder
 import (
 	"errors"
 	"fmt"
-	fluentd2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -66,13 +67,9 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client *
 	log.V(2).Info("Normalization", "spec", spec)
 	log.V(2).Info("Normalization", "status", status)
 
-	tunings := &logging.ForwarderSpec{}
-	clspec := logging.ClusterLoggingSpec{
-		Forwarder: tunings,
-	}
 	if logCollectorType == logging.LogCollectionTypeFluentd {
 
-		sections := fluentd2.Conf(&clspec, nil, spec, op)
+		sections := fluentd.Conf(nil, nil, spec, op)
 		es := generator.MergeSections(sections)
 
 		generatedConfig, err := g.GenerateConf(es...)

@@ -18,10 +18,11 @@ func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secr
 	}
 	var bufspec *logging.FluentdBufferSpec = nil
 	if clspec != nil &&
-		clspec.Forwarder != nil &&
-		clspec.Forwarder.Fluentd != nil &&
-		clspec.Forwarder.Fluentd.Buffer != nil {
-		bufspec = clspec.Forwarder.Fluentd.Buffer
+		clspec.Collection != nil &&
+		clspec.Collection.FluentdSpec != nil &&
+		clspec.Collection.FluentdSpec.Tuning != nil &&
+		clspec.Collection.FluentdSpec.Tuning.Buffer != nil {
+		bufspec = clspec.Collection.FluentdSpec.Tuning.Buffer
 	}
 	for _, o := range clfspec.Outputs {
 		secret := secrets[o.Name]

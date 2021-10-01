@@ -70,12 +70,8 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
 			Collection: &logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					Type: "fluentd",
-					FluentdSpec: logging.FluentdSpec{
-						Resources: newResourceRequirements("120Gi", "", "100Gi", "500m"),
-					},
-				},
+				Resources: newResourceRequirements("120Gi", "", "100Gi", "500m"),
+				Type:      "fluentd",
 			},
 		},
 	}
@@ -115,9 +111,7 @@ func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
 			Collection: &logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					Type: "fluentd",
-				},
+				Type: "fluentd",
 			},
 		},
 	}
@@ -135,12 +129,8 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
 			Collection: &logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					Type: "fluentd",
-					FluentdSpec: logging.FluentdSpec{
-						NodeSelector: expSelector,
-					},
-				},
+				Type:         "fluentd",
+				NodeSelector: expSelector,
 			},
 		},
 	}
@@ -168,10 +158,7 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
 			Collection: &logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					Type:        "fluentd",
-					FluentdSpec: logging.FluentdSpec{},
-				},
+				Type: "fluentd",
 			},
 		},
 	}
@@ -209,13 +196,9 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
 			Collection: &logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					Type: "fluentd",
-					FluentdSpec: logging.FluentdSpec{
-						Tolerations: []v1.Toleration{
-							providedToleration,
-						},
-					},
+				Type: "fluentd",
+				Tolerations: []v1.Toleration{
+					providedToleration,
 				},
 			},
 		},
@@ -319,17 +302,14 @@ func TestNewFluentdPodWhenChunkLimitSizeExists(t *testing.T) {
 	chunkLimitSize, _ := utils.ParseQuantity("750k")
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Forwarder: &logging.ForwarderSpec{
-				Fluentd: &logging.FluentdForwarderSpec{
-					Buffer: &logging.FluentdBufferSpec{
-						ChunkLimitSize: "750k",
-					},
-				},
-			},
 			Collection: &logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					Type:        "fluentd",
-					FluentdSpec: logging.FluentdSpec{},
+				Type: "fluentd",
+				FluentdSpec: &logging.FluentdSpec{
+					Tuning: &logging.FluentdTuningSpec{
+						Buffer: &logging.FluentdBufferSpec{
+							ChunkLimitSize: "750k",
+						},
+					},
 				},
 			},
 		},
@@ -347,17 +327,14 @@ func TestNewFluentdPodWhenTotalLimitSizeExists(t *testing.T) {
 	totalLimitSize, _ := utils.ParseQuantity("1g")
 	cluster := &logging.ClusterLogging{
 		Spec: logging.ClusterLoggingSpec{
-			Forwarder: &logging.ForwarderSpec{
-				Fluentd: &logging.FluentdForwarderSpec{
-					Buffer: &logging.FluentdBufferSpec{
-						TotalLimitSize: "1g",
-					},
-				},
-			},
 			Collection: &logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					Type:        "fluentd",
-					FluentdSpec: logging.FluentdSpec{},
+				Type: "fluentd",
+				FluentdSpec: &logging.FluentdSpec{
+					Tuning: &logging.FluentdTuningSpec{
+						Buffer: &logging.FluentdBufferSpec{
+							TotalLimitSize: "1g",
+						},
+					},
 				},
 			},
 		},

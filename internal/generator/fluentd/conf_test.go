@@ -3,8 +3,9 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator"
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo"
@@ -35,12 +36,14 @@ var _ = Describe("Testing Complete Config Generation", func() {
 	DescribeTable("Generate full fluent.conf", f,
 		Entry("with complex spec", generator.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
-				Forwarder: &logging.ForwarderSpec{
-					Fluentd: &logging.FluentdForwarderSpec{
-						Buffer: &logging.FluentdBufferSpec{
-							ChunkLimitSize: "8m",
-							TotalLimitSize: "800000000",
-							OverflowAction: "throw_exception",
+				Collection: &logging.CollectionSpec{
+					FluentdSpec: &logging.FluentdSpec{
+						Tuning: &logging.FluentdTuningSpec{
+							Buffer: &logging.FluentdBufferSpec{
+								ChunkLimitSize: "8m",
+								TotalLimitSize: "800000000",
+								OverflowAction: "throw_exception",
+							},
 						},
 					},
 				},

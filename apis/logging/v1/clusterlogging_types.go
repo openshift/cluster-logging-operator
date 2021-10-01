@@ -54,11 +54,6 @@ type ClusterLoggingSpec struct {
 	//
 	// +nullable
 	Curation *CurationSpec `json:"curation,omitempty"`
-
-	// Specification for Forwarder component for the cluster
-	//
-	// +nullable
-	Forwarder *ForwarderSpec `json:"forwarder,omitempty"`
 }
 
 // ClusterLoggingStatus defines the observed state of ClusterLogging
@@ -178,16 +173,33 @@ type ElasticsearchSpec struct {
 
 // This is the struct that will contain information pertinent to Log and event collection
 type CollectionSpec struct {
-	// Specification of Log Collection for the cluster
-	Logs LogCollectionSpec `json:"logs,omitempty"`
-}
 
-type LogCollectionSpec struct {
 	// The type of Log Collection to configure
 	Type LogCollectionType `json:"type"`
 
+	// The resource requirements for Collector
+	//
+	// +nullable
+	// +optional
+	Resources *v1.ResourceRequirements `json:"resources"`
+
+	// Define which Nodes the Collector Pods are scheduled on.
+	//
+	// +nullable
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
+
 	// Specification of the Fluentd Log Collection component
-	FluentdSpec `json:"fluentd,omitempty"`
+	//
+	// +nullable
+	// +optional
+	FluentdSpec *FluentdSpec `json:"fluentd,omitempty"`
+
+	// Specification of the Vector Log Collection component
+	//
+	// +nullable
+	// +optional
+	VectorSpec *VectorSpec `json:"vector,omitempty"`
 }
 
 type EventCollectionSpec struct {
@@ -195,17 +207,33 @@ type EventCollectionSpec struct {
 }
 
 type FluentdSpec struct {
-	// The resource requirements for Fluentd
+	// Specification for Forwarder component for the cluster
 	//
-	// +nullable
 	// +optional
-	Resources *v1.ResourceRequirements `json:"resources"`
-
-	// Define which Nodes the Pods are scheduled on.
-	//
 	// +nullable
-	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
+	Tuning *FluentdTuningSpec `json:"tuning,omitempty"`
+}
+
+type VectorSpec struct {
+	//DataDir is the directory used for persisting Vector state
+	// +optional
+	DataDir string `json:"data_dir"`
+
+	//HostKey sets the event key to use for the event host field.
+	// +optional
+	HostKey string `json:"host_key"`
+
+	//MessageKey sets the event key to use for the event message field.
+	// +optional
+	MessageKey string `json:"message_key"`
+
+	//SourceType sets the event key to use for the event source type field that is set by some sources.
+	// +optional
+	SourceTypeKey string `json:"source_type_key"`
+
+	//TimestampKey sets the event key to use for the event timestamp field.
+	// +optional
+	TimestampKey string `json:"timestamp_key"`
 }
 
 // This is the struct that will contain information pertinent to Log curation (Curator)
@@ -234,16 +262,10 @@ type CuratorSpec struct {
 	Schedule string `json:"schedule"`
 }
 
-// ForwarderSpec contains global tuning parameters for specific forwarder implementations.
+// FluentdTuningSpec contains global tuning parameters for specific forwarder implementations.
 // This field is not required for general use, it allows performance tuning by users
-// familiar with the underlying forwarder technology.
-// Currently supported: `fluentd`.
-type ForwarderSpec struct {
-	Fluentd *FluentdForwarderSpec `json:"fluentd,omitempty"`
-}
-
-// FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
-type FluentdForwarderSpec struct {
+// familiar with the underlying collector technology.
+type FluentdTuningSpec struct {
 	Buffer *FluentdBufferSpec `json:"buffer,omitempty"`
 }
 

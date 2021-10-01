@@ -78,7 +78,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
 	}
-	resources := collectionSpec.Logs.FluentdSpec.Resources
+	resources := collectionSpec.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: defaultFluentdMemory},
@@ -118,20 +118,22 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 	}
 
-	if cluster.Spec.Forwarder != nil {
-		if cluster.Spec.Forwarder.Fluentd.Buffer != nil {
-			if cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize != "" {
-				if chunkLimitSize, err := utils.ParseQuantity(string(cluster.Spec.Forwarder.Fluentd.Buffer.ChunkLimitSize)); err == nil {
-					fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: strconv.FormatInt(chunkLimitSize.Value(), 10)})
-				}
+	if cluster.Spec.Collection != nil &&
+		cluster.Spec.Collection.FluentdSpec != nil &&
+		cluster.Spec.Collection.FluentdSpec.Tuning != nil &&
+		cluster.Spec.Collection.FluentdSpec.Tuning.Buffer != nil {
+		bufSpec := cluster.Spec.Collection.FluentdSpec.Tuning.Buffer
+		if bufSpec.ChunkLimitSize != "" {
+			if chunkLimitSize, err := utils.ParseQuantity(string(bufSpec.ChunkLimitSize)); err == nil {
+				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "BUFFER_SIZE_LIMIT", Value: strconv.FormatInt(chunkLimitSize.Value(), 10)})
 			}
-			if cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize != "" {
-				if totalLimitSize, err := utils.ParseQuantity(string(cluster.Spec.Forwarder.Fluentd.Buffer.TotalLimitSize)); err == nil {
-					fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE_PER_BUFFER", Value: strconv.FormatInt(totalLimitSize.Value(), 10)})
-				}
-			}
-
 		}
+		if bufSpec.TotalLimitSize != "" {
+			if totalLimitSize, err := utils.ParseQuantity(string(bufSpec.TotalLimitSize)); err == nil {
+				fluentdContainer.Env = append(fluentdContainer.Env, v1.EnvVar{Name: "TOTAL_LIMIT_SIZE_PER_BUFFER", Value: strconv.FormatInt(totalLimitSize.Value(), 10)})
+			}
+		}
+
 	}
 
 	proxyEnv := utils.GetProxyEnvVars()
@@ -208,7 +210,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	}
 
 	tolerations := utils.AppendTolerations(
-		collectionSpec.Logs.FluentdSpec.Tolerations,
+		collectionSpec.Tolerations,
 		[]v1.Toleration{
 			{
 				Key:      "node-role.kubernetes.io/master",
@@ -248,7 +250,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: constants.CollectorMetricSecretName}}},
 			{Name: tmp, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
-		collectionSpec.Logs.FluentdSpec.NodeSelector,
+		collectionSpec.NodeSelector,
 		tolerations,
 	)
 	for _, name := range secretNames {
@@ -281,7 +283,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	return fluentdPodSpec
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(fluentdTrustBundle *v1.ConfigMap, pipelineConfHash string) (err error) {
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(pipelineConfHash string) (err error) {
 
 	cluster := clusterRequest.Cluster
 

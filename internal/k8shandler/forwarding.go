@@ -25,13 +25,13 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in the CLO's CR")
 		return "", nil
 	}
-	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
+	switch clusterRequest.Cluster.Spec.Collection.Type {
 	case logging.LogCollectionTypeFluentd:
 		break
 	case logging.LogCollectionTypeVector:
 		break
 	default:
-		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Logs.Type)
+		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Type)
 	}
 
 	if clusterRequest.ForwarderRequest == nil {

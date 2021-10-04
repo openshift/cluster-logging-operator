@@ -138,7 +138,7 @@ func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuil
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer(name, utils.GetComponentImage(constants.FluentdName)).
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
-		WithCmd("fluentd -c /tmp/config/fluent.conf").
+		WithCmd([]string{"fluentd", "-c", "/tmp/config/fluent.conf"}).
 		End().
 		AddConfigMapVolume(config.Name, config.Name)
 	return nil

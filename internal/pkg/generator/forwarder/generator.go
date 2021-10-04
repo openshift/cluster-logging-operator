@@ -3,7 +3,7 @@ package forwarder
 import (
 	"errors"
 	"fmt"
-	fluentd2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -58,9 +58,11 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client c
 			Spec: logging.ClusterLoggingSpec{},
 		},
 	}
+
 	if client != nil {
 		clRequest.Client = client
 	}
+
 	if includeDefaultLogStore {
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{
 			Type: logging.LogStoreTypeElasticsearch,
@@ -77,14 +79,14 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client c
 	}
 	if logCollectorType == logging.LogCollectionTypeFluentd {
 
-		sections := fluentd2.Conf(&clspec, clRequest.OutputSecrets, spec, op)
+		sections := fluentd.Conf(&clspec, clRequest.OutputSecrets, spec, op)
 		es := generator.MergeSections(sections)
-
 		generatedConfig, err := g.GenerateConf(es...)
 		if err != nil {
 			return "", fmt.Errorf("Unable to generate log configuration: %v", err)
 		}
 		return generatedConfig, nil
+
 	} else {
 		return "", errors.New("Only fluentd Log Collector supported")
 	}

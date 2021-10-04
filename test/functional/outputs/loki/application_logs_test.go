@@ -1,4 +1,4 @@
-package outputs
+package loki
 
 import (
 	"fmt"

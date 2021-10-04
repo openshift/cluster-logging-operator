@@ -2,6 +2,7 @@ package functional
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -14,11 +15,15 @@ type ClusterLogForwarderBuilder struct {
 }
 
 type PipelineBuilder struct {
-	clfb      *ClusterLogForwarderBuilder
-	inputName string
+	clfb         *ClusterLogForwarderBuilder
+	inputName    string
+	input        *logging.InputSpec
+	pipelineName string
 }
 
+type InputSpecVisitor func(spec *logging.InputSpec)
 type OutputSpecVisiter func(spec *logging.OutputSpec)
+type PipelineSpecVisitor func(spec *logging.PipelineSpec)
 
 func NewClusterLogForwarderBuilder(clf *logging.ClusterLogForwarder) *ClusterLogForwarderBuilder {
 	return &ClusterLogForwarderBuilder{
@@ -30,8 +35,19 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 	pipelineBuilder := &PipelineBuilder{
 		clfb:      b,
 		inputName: inputName,
+		input:     &logging.InputSpec{Name: inputName},
 	}
 	return pipelineBuilder
+}
+func (b *ClusterLogForwarderBuilder) FromInputWithVisitor(inputName string, visit InputSpecVisitor) *PipelineBuilder {
+	pipelineBuilder := b.FromInput(inputName)
+	visit(pipelineBuilder.input)
+	return pipelineBuilder
+}
+
+func (p *PipelineBuilder) Named(name string) *PipelineBuilder {
+	p.pipelineName = name
+	return p
 }
 
 func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
@@ -44,6 +60,14 @@ func (p *PipelineBuilder) ToElasticSearchOutput() *ClusterLogForwarderBuilder {
 
 func (p *PipelineBuilder) ToSyslogOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeSyslog)
+}
+
+func (p *PipelineBuilder) ToCloudwatchOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeCloudwatch)
+}
+
+func (p *PipelineBuilder) ToKafkaOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeKafka)
 }
 
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputName string) *ClusterLogForwarderBuilder {
@@ -63,7 +87,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 			output = &logging.OutputSpec{
 				Name: logging.OutputTypeElasticsearch,
 				Type: logging.OutputTypeElasticsearch,
-				URL:  "https://0.0.0.0:9200",
+				URL:  "http://0.0.0.0:9200",
 			}
 		case logging.OutputTypeSyslog:
 			output = &logging.OutputSpec{
@@ -74,16 +98,60 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 					Syslog: &logging.Syslog{},
 				},
 			}
+		case logging.OutputTypeCloudwatch:
+			groupPrefix := "group-prefix"
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeCloudwatch,
+				Type: logging.OutputTypeCloudwatch,
+				URL:  "https://localhost:5000",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Cloudwatch: &logging.Cloudwatch{
+						Region:      "us-east-1",
+						GroupBy:     logging.LogGroupByLogType,
+						GroupPrefix: &groupPrefix,
+					},
+				},
+				Secret: &logging.OutputSecretSpec{
+					Name: "cloudwatch",
+				},
+			}
+		case logging.OutputTypeKafka:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeKafka,
+				Type: logging.OutputTypeKafka,
+				URL:  "https://localhost:9092",
+				Secret: &logging.OutputSecretSpec{
+					Name: "kafka",
+				},
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Kafka: &logging.Kafka{
+						Topic: kafka.AppLogsTopic,
+					},
+				},
+			}
+		default:
+			output = &logging.OutputSpec{
+				Name: outputName,
+			}
 		}
-
 		visit(output)
+
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}
+
+	if p.input != nil {
+		clf.Spec.Inputs = append(clf.Spec.Inputs, *p.input)
+	}
+
 	added := false
-	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, forwardPipelineName, clf.Spec.Pipelines)
+	pipelineName := forwardPipelineName
+	if p.pipelineName != "" {
+		pipelineName = p.pipelineName
+	}
+	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, pipelineName, clf.Spec.Pipelines)
 	if !added {
 		clf.Spec.Pipelines = append(clf.Spec.Pipelines, logging.PipelineSpec{
-			Name:       forwardPipelineName,
+			Name:       pipelineName,
 			InputRefs:  []string{p.inputName},
 			OutputRefs: []string{output.Name},
 		})

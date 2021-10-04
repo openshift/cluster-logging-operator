@@ -64,6 +64,12 @@ var outputLogFile = map[string]map[string]string{
 		ovnAuditLog:    "/var/log/infra.log",
 		infraLog:       "/var/log/infra.logs",
 	},
+	logging.OutputTypeKafka: {
+		applicationLog: "/var/log/app.log",
+		auditLog:       "/var/log/infra.log",
+		k8sAuditLog:    "/var/log/audit.log",
+		ovnAuditLog:    "/var/log/ovnaudit.log",
+	},
 }
 
 var (
@@ -211,7 +217,8 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debugOutput := false
-	if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput); err != nil {
+	testClient := client.Get().ControllerRuntimeClient()
+	if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, testClient); err != nil {
 		return err
 	}
 	//remove journal for now since we can not mimic it
@@ -301,6 +308,7 @@ done
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
 		AddVolumeMount("certs", "/etc/fluent/metrics", "", true).
 		End()
+
 	for _, visit := range visitors {
 		if err = visit(b); err != nil {
 			return err
@@ -368,6 +376,10 @@ func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, 
 			}
 		case logging.OutputTypeSyslog:
 			if err := f.addSyslogOutput(b, output); err != nil {
+				return err
+			}
+		case logging.OutputTypeKafka:
+			if err := f.addKafkaOutput(b, output); err != nil {
 				return err
 			}
 		case logging.OutputTypeElasticsearch:

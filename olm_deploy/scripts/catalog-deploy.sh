@@ -15,6 +15,9 @@ if oc get project ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} > /dev/null 2>&1 ; then
 else
   oc create namespace ${CLUSTER_LOGGING_OPERATOR_NAMESPACE}
 fi
+# sleep helps to solve 'unauthorized: authentication required' for imagestream images
+# if deployment is created immediately after the namespace is created, we get auth errors in cluster image registry
+sleep 2
 
 # substitute image names into the catalog deployment yaml and deploy it
 envsubst < olm_deploy/operatorregistry/registry-deployment.yaml | oc create -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -

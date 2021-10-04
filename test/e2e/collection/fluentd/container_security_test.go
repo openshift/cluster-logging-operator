@@ -2,6 +2,7 @@ package fluentd
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -11,8 +12,7 @@ import (
 )
 
 func runInFluentdContainer(command string, args ...string) (string, error) {
-	return oc.Exec().WithNamespace(constants.OpenshiftNS).Pod("service/collector").
-		Container(constants.CollectorName).WithCmd(command, args...).Run()
+	return oc.Exec().WithNamespace(constants.OpenshiftNS).WithPodGetter(oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").OutputJsonpath("{.items[0].metadata.name}")).Container(constants.CollectorName).WithCmd(command, args...).Run()
 }
 
 func checkMountReadOnly(mount string) {

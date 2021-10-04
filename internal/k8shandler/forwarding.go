@@ -28,6 +28,8 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
 	case logging.LogCollectionTypeFluentd:
 		break
+	case logging.LogCollectionTypeVector:
+		break
 	default:
 		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Logs.Type)
 	}
@@ -79,14 +81,13 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	}
 
 	g := generator.MakeGenerator()
-	var collector = clusterRequest.Cluster.Spec.Collection.Logs.Type
+	var collectorType = clusterRequest.Cluster.Spec.Collection.Logs.Type
 	var confSections []generator.Section
-	switch collector {
+	switch collectorType {
 	case logging.LogCollectionTypeFluentd:
 		confSections = fluentd.Conf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
-	case "vector":
+	case logging.LogCollectionTypeVector:
 		confSections = vector.Conf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
-	case "fluent-bit":
 	}
 	generatedConfig, err := g.GenerateConf(generator.MergeSections(confSections)...)
 

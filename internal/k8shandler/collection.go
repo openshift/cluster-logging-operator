@@ -1,22 +1,34 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"io/ioutil"
+	"path"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/components/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/servicemonitor"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/services"
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -47,7 +59,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
-	if cluster.Spec.Collection != nil && cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd {
+	if cluster.Spec.Collection != nil &&
+		(cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd ||
+			cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeVector) {
+
+		var collectorType logging.LogCollectionType = cluster.Spec.Collection.Logs.Type
 
 		//TODO: Remove me once fully migrated to new collector naming
 		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
@@ -62,7 +78,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdSecret(); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorSecret(); err != nil {
 			return
 		}
 
@@ -76,27 +92,27 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			log.Error(err, "unable to calculate MD5 hash")
 			return
 		}
-		if err = clusterRequest.reconcileFluentdService(); err != nil {
+		if err = clusterRequest.reconcileCollectorService(); err != nil {
 			return
 		}
 
-		if err = clusterRequest.reconcileFluentdServiceMonitor(); err != nil {
+		if err = clusterRequest.reconcileCollectorServiceMonitor(); err != nil {
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdPrometheusRule(); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorPrometheusRule(); err != nil {
 			log.Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdConfigMap(collectorConfig); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorConfigMap(collectorType, collectorConfig); err != nil {
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateFluentdDaemonset(collectorConfHash); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorDaemonset(collectorType, collectorConfHash); err != nil {
 			return
 		}
 
-		if err = clusterRequest.UpdateFluentdStatus(); err != nil {
+		if err = clusterRequest.UpdateCollectorStatus(collectorType); err != nil {
 			log.Error(err, "unable to update status for the collector")
 		}
 
@@ -126,6 +142,303 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	return nil
 }
 
+func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err error) {
+	if clusterRequest.isManaged() {
+
+		if err = clusterRequest.RemoveService(name); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveServiceMonitor(name); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemovePrometheusRule(name); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveConfigMap(name); err != nil {
+			return
+		}
+
+		caName := fmt.Sprintf("%s-trusted-ca-bundle", name)
+		if err = clusterRequest.RemoveConfigMap(caName); err != nil {
+			return
+		}
+
+		if err = clusterRequest.RemoveDaemonset(name); err != nil {
+			return
+		}
+
+		// Wait longer than the terminationGracePeriodSeconds
+		time.Sleep(12 * time.Second)
+
+		if err = clusterRequest.RemoveSecret(name); err != nil {
+			return
+		}
+
+	}
+
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorSecret() error {
+	var secrets = map[string][]byte{}
+	_ = Syncronize(func() error {
+		secrets = map[string][]byte{}
+		// Ignore errors, these files are optional depending on security settings.
+		secrets["ca-bundle.crt"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("ca.crt"))
+		secrets["tls.key"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("system.logging.fluentd.key"))
+		secrets["tls.crt"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("system.logging.fluentd.crt"))
+		return nil
+	})
+	collectorSecret := NewSecret(
+		constants.CollectorName,
+		clusterRequest.Cluster.Namespace,
+		secrets)
+
+	utils.AddOwnerRefToObject(collectorSecret, utils.AsOwner(clusterRequest.Cluster))
+
+	err := clusterRequest.CreateOrUpdateSecret(collectorSecret)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) reconcileCollectorService() error {
+	desired := factory.NewService(
+		constants.CollectorName,
+		clusterRequest.Cluster.Namespace,
+		constants.CollectorName,
+		[]v1.ServicePort{
+			{
+				Port:       metricsPort,
+				TargetPort: intstr.FromString(metricsPortName),
+				Name:       metricsPortName,
+			},
+			{
+				Port:       exporterPort,
+				TargetPort: intstr.FromString(exporterPortName),
+				Name:       exporterPortName,
+			},
+		},
+	)
+
+	desired.Annotations = map[string]string{
+		"service.alpha.openshift.io/serving-cert-secret-name": constants.CollectorMetricSecretName,
+	}
+
+	utils.AddOwnerRefToObject(desired, utils.AsOwner(clusterRequest.Cluster))
+	err := clusterRequest.Create(desired)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating the collector service: %v", err)
+		}
+		current := &v1.Service{}
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err = clusterRequest.Get(desired.Name, current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
+			}
+			if services.AreSame(current, desired) {
+				log.V(3).Info("Services are the same skipping update")
+				return nil
+			}
+			//Explicitly copying because services are immutable
+			current.Labels = desired.Labels
+			current.Spec.Selector = desired.Spec.Selector
+			current.Spec.Ports = desired.Spec.Ports
+			return clusterRequest.Update(current)
+		})
+		log.V(3).Error(retryErr, "Reconcile Service retry error")
+		return retryErr
+	}
+	return err
+}
+
+func (clusterRequest *ClusterLoggingRequest) reconcileCollectorServiceMonitor() error {
+
+	cluster := clusterRequest.Cluster
+
+	desired := NewServiceMonitor(constants.CollectorName, cluster.Namespace)
+
+	endpoint := monitoringv1.Endpoint{
+		Port:   metricsPortName,
+		Path:   "/metrics",
+		Scheme: "https",
+		TLSConfig: &monitoringv1.TLSConfig{
+			CAFile:     prometheusCAFile,
+			ServerName: fmt.Sprintf("%s.%s.svc", constants.CollectorName, cluster.Namespace),
+		},
+	}
+	logMetricExporterEndpoint := monitoringv1.Endpoint{
+		Port:   exporterPortName,
+		Path:   "/metrics",
+		Scheme: "https",
+		TLSConfig: &monitoringv1.TLSConfig{
+			CAFile:     prometheusCAFile,
+			ServerName: fmt.Sprintf("%s.%s.svc", constants.CollectorName, cluster.Namespace),
+		},
+	}
+
+	labelSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"logging-infra": "support",
+		},
+	}
+
+	desired.Spec = monitoringv1.ServiceMonitorSpec{
+		JobLabel:  "monitor-collector",
+		Endpoints: []monitoringv1.Endpoint{endpoint, logMetricExporterEndpoint},
+		Selector:  labelSelector,
+		NamespaceSelector: monitoringv1.NamespaceSelector{
+			MatchNames: []string{cluster.Namespace},
+		},
+	}
+
+	utils.AddOwnerRefToObject(desired, utils.AsOwner(cluster))
+
+	err := clusterRequest.Create(desired)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("Failure creating the collector ServiceMonitor: %v", err)
+		}
+		current := &monitoringv1.ServiceMonitor{}
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err = clusterRequest.Get(desired.Name, current); err != nil {
+				if errors.IsNotFound(err) {
+					// the object doesn't exist -- it was likely culled
+					// recreate it on the next time through if necessary
+					return nil
+				}
+				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
+			}
+			if servicemonitor.AreSame(current, desired) {
+				log.V(3).Info("ServiceMonitor are the same skipping update")
+				return nil
+			}
+			current.Labels = desired.Labels
+			current.Spec = desired.Spec
+			current.Annotations = desired.Annotations
+
+			return clusterRequest.Update(current)
+		})
+		log.V(3).Error(retryErr, "Reconcile ServiceMonitor retry error")
+		return retryErr
+	}
+	return err
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRule() error {
+	ctx := context.TODO()
+	cluster := clusterRequest.Cluster
+
+	rule := NewPrometheusRule(constants.CollectorName, cluster.Namespace)
+
+	spec, err := NewPrometheusRuleSpecFrom(path.Join(utils.GetShareDir(), fluentdAlertsFile))
+	if err != nil {
+		return fmt.Errorf("failure creating the collector PrometheusRule: %w", err)
+	}
+
+	rule.Spec = *spec
+
+	utils.AddOwnerRefToObject(rule, utils.AsOwner(cluster))
+
+	err = clusterRequest.Create(rule)
+	if err == nil {
+		return nil
+	}
+	if !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("failure creating the collector PrometheusRule: %w", err)
+	}
+
+	current := &monitoringv1.PrometheusRule{}
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		err = clusterRequest.Client.Get(ctx, types.NamespacedName{Name: rule.Name, Namespace: rule.Namespace}, current)
+		if err != nil {
+			log.V(2).Info("could not get prometheus rule", rule.Name, err)
+			return err
+		}
+		current.Spec = rule.Spec
+		if err = clusterRequest.Client.Update(ctx, current); err != nil {
+			return err
+		}
+		log.V(3).Info("updated prometheus rules")
+		return nil
+	})
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfigMap(collectorType logging.LogCollectionType, collectorConfig string) error {
+	var collectorConfigMap *corev1.ConfigMap = nil
+	if collectorType == logging.LogCollectionTypeFluentd {
+		collectorConfigMap = NewConfigMap(
+			constants.CollectorName,
+			clusterRequest.Cluster.Namespace,
+			map[string]string{
+				"fluent.conf": collectorConfig,
+				"run.sh":      fluentd.RunScript,
+			},
+		)
+	} else if collectorType == logging.LogCollectionTypeVector {
+		collectorConfigMap = NewConfigMap(
+			constants.CollectorName,
+			clusterRequest.Cluster.Namespace,
+			map[string]string{
+				"vector.toml": collectorConfig,
+			},
+		)
+	}
+
+	utils.AddOwnerRefToObject(collectorConfigMap, utils.AsOwner(clusterRequest.Cluster))
+
+	err := clusterRequest.Create(collectorConfigMap)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("Failure constructing collector configmap: %v", err)
+	}
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		current := &v1.ConfigMap{}
+		if err = clusterRequest.Get(collectorConfigMap.Name, current); err != nil {
+			if errors.IsNotFound(err) {
+				log.V(2).Info("Returning nil. The configmap was not found even though create previously failed.  Was it culled?", "configmap name", collectorConfigMap.Name)
+				return nil
+			}
+			return fmt.Errorf("Failed to get %v configmap for %q: %v", collectorConfigMap.Name, clusterRequest.Cluster.Name, err)
+		}
+		if reflect.DeepEqual(collectorConfigMap.Data, current.Data) {
+			return nil
+		}
+		current.Data = collectorConfigMap.Data
+		return clusterRequest.Update(current)
+	})
+
+	return retryErr
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorDaemonset(collectorType logging.LogCollectionType, pipelineConfHash string) (err error) {
+	var fluentdTrustBundle *v1.ConfigMap
+	// Create or update cluster proxy trusted CA bundle.
+	fluentdTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.CollectorTrustedCAName)
+	if err != nil {
+		return
+	}
+	if collectorType == logging.LogCollectionTypeFluentd {
+		return clusterRequest.createOrUpdateFluentdDaemonset(fluentdTrustBundle, pipelineConfHash)
+	}
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus(collectorType logging.LogCollectionType) (err error) {
+	if collectorType == logging.LogCollectionTypeFluentd {
+		return clusterRequest.UpdateFluentdStatus()
+	}
+	return nil
+}
 func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 
 	cluster := clusterRequest.Cluster

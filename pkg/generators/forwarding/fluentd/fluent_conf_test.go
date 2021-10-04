@@ -449,14 +449,12 @@ var _ = Describe("Generating fluentd config", func() {
      @type record_modifier
      <record>
       k8s_audit_level ${record['level']}
-      level info
      </record>
     </filter>
     <filter openshift-audit.log**>
      @type record_modifier
      <record>
       openshift_audit_level ${record['level']}
-      level info
      </record>
     </filter>
 
@@ -477,6 +475,22 @@ var _ = Describe("Generating fluentd config", func() {
      undefined_dot_replace_char 'UNUSED'
      undefined_max_num_fields '-1'
      process_kubernetes_events 'false'
+       <level>
+         name warn
+         match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+       </level>
+       <level>
+         name info
+         match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+       </level>
+       <level>
+         name error
+         match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+       </level>
+       <level>
+         name debug
+         match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      </level>
      <formatter>
        tag "system.var.log**"
        type sys_var_log
@@ -1180,14 +1194,12 @@ var _ = Describe("Generating fluentd config", func() {
    @type record_modifier
    <record>
     k8s_audit_level ${record['level']}
-    level info
    </record>
   </filter>
   <filter openshift-audit.log**>
    @type record_modifier
    <record>
     openshift_audit_level ${record['level']}
-    level info
    </record>
   </filter>
 
@@ -1208,6 +1220,22 @@ var _ = Describe("Generating fluentd config", func() {
    undefined_dot_replace_char 'UNUSED'
    undefined_max_num_fields '-1'
    process_kubernetes_events 'false'
+   <level>
+	 name warn
+	 match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+   </level>
+   <level>
+	 name info
+	 match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+   </level>
+   <level>
+	 name error
+	 match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+   </level>
+   <level>
+	 name debug
+	 match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+  </level>
    <formatter>
     tag "system.var.log**"
     type sys_var_log
@@ -1907,14 +1935,12 @@ var _ = Describe("Generating fluentd config", func() {
       @type record_modifier
       <record>
        k8s_audit_level ${record['level']}
-       level info
       </record>
     </filter>
     <filter openshift-audit.log**>
       @type record_modifier
       <record>
        openshift_audit_level ${record['level']}
-       level info
       </record>
     </filter>
 
@@ -1935,6 +1961,22 @@ var _ = Describe("Generating fluentd config", func() {
       undefined_dot_replace_char 'UNUSED'
       undefined_max_num_fields '-1'
       process_kubernetes_events 'false'
+       <level>
+         name warn
+         match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+       </level>
+       <level>
+         name info
+         match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+       </level>
+       <level>
+         name error
+         match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+       </level>
+       <level>
+         name debug
+         match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      </level>
       <formatter>
         tag "system.var.log**"
         type sys_var_log
@@ -2571,14 +2613,12 @@ var _ = Describe("Generating fluentd config", func() {
      @type record_modifier
      <record>
       k8s_audit_level ${record['level']}
-      level info
      </record>
     </filter>
     <filter openshift-audit.log**>
      @type record_modifier
      <record>
       openshift_audit_level ${record['level']}
-      level info
      </record>
     </filter>
 
@@ -2599,6 +2639,22 @@ var _ = Describe("Generating fluentd config", func() {
      undefined_dot_replace_char 'UNUSED'
      undefined_max_num_fields '-1'
      process_kubernetes_events 'false'
+       <level>
+         name warn
+         match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+       </level>
+       <level>
+         name info
+         match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+       </level>
+       <level>
+         name error
+         match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+       </level>
+       <level>
+         name debug
+         match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      </level>
      <formatter>
       tag "system.var.log**"
       type sys_var_log
@@ -3075,14 +3131,12 @@ var _ = Describe("Generating fluentd config", func() {
       @type record_modifier
       <record>
      k8s_audit_level ${record['level']}
-     level info
       </record>
     </filter>
     <filter openshift-audit.log**>
       @type record_modifier
       <record>
      openshift_audit_level ${record['level']}
-     level info
       </record>
     </filter>
 
@@ -3103,6 +3157,22 @@ var _ = Describe("Generating fluentd config", func() {
      undefined_dot_replace_char 'UNUSED'
      undefined_max_num_fields '-1'
      process_kubernetes_events 'false'
+       <level>
+         name warn
+         match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+       </level>
+       <level>
+         name info
+         match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+       </level>
+       <level>
+         name error
+         match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+       </level>
+       <level>
+         name debug
+         match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      </level>
      <formatter>
       tag "system.var.log**"
       type sys_var_log
@@ -4039,14 +4109,12 @@ var _ = Describe("Generating fluentd config", func() {
       @type record_modifier
       <record>
         k8s_audit_level ${record['level']}
-        level info
       </record>
      </filter>
      <filter openshift-audit.log**>
       @type record_modifier
       <record>
         openshift_audit_level ${record['level']}
-        level info
       </record>
      </filter>
 
@@ -4067,6 +4135,22 @@ var _ = Describe("Generating fluentd config", func() {
        undefined_dot_replace_char 'UNUSED'
        undefined_max_num_fields '-1'
        process_kubernetes_events 'false'
+       <level>
+         name warn
+         match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+       </level>
+       <level>
+         name info
+         match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+       </level>
+       <level>
+         name error
+         match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+       </level>
+       <level>
+         name debug
+         match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      </level>
        <formatter>
          tag "system.var.log**"
          type sys_var_log

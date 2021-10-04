@@ -232,7 +232,7 @@ var _ = Describe("Reconciling", func() {
 
 		Context("for collector", func() {
 			It("should provide a X509 cert for `CN=system.logging.fluentd`", func() {
-				Expect(clusterRequest.createOrUpdateFluentdSecret()).Should(Succeed())
+				Expect(clusterRequest.createOrUpdateCollectorSecret()).Should(Succeed())
 				secret := &corev1.Secret{}
 				key := types.NamespacedName{Name: constants.CollectorName, Namespace: constants.OpenshiftNS}
 				Expect(client.Get(context.TODO(), key, secret)).Should(Succeed())

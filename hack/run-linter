@@ -9,3 +9,18 @@ if [ "$change" != "$(md5sum Dockerfile | cut -d ' ' -f1)" ] ; then
     echo "Please reset the CI file (e.g. Dockerfile), update Dockerfile.in, run make gen-dockerfiles and commit the results"
   exit 1
 fi
+
+set +e
+rc=0
+fitCheck=$(grep -nEIr --include=*_test.go 'FContext|FEntry|FDescribe|FDescribeTable|FIt')
+if [ "$fitCheck" != "" ]; then
+    rc=1
+    echo "Focused tests were found in the code base"
+    echo "Please remove any of FIt, FEntry, FDescribeTable, etc. from:"
+    echo ""
+    echo "$fitCheck"
+    echo ""
+fi
+set -e
+
+exit $rc

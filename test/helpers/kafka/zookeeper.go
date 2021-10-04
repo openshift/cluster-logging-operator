@@ -219,3 +219,11 @@ func NewZookeeperConfigMap(namespace string) *v1.ConfigMap {
 	}
 	return k8shandler.NewConfigMap(zookeeperDeploymentName, namespace, data)
 }
+func NewZookeeperConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
+	data := map[string]string{
+		"init.sh":              functionalPodinitZookeeperScript,
+		"zookeeper.properties": functionalPodzookeeperProperties,
+		"log4j.properties":     functionalPodzookeeperLog4JProperties,
+	}
+	return k8shandler.NewConfigMap(zookeeperDeploymentName, namespace, data)
+}

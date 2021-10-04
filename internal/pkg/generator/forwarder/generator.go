@@ -2,8 +2,9 @@ package forwarder
 
 import (
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	yaml "sigs.k8s.io/yaml"
+	"sigs.k8s.io/yaml"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
@@ -18,7 +19,7 @@ const (
 	useOldRemoteSyslogPlugin = false
 )
 
-func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool) (string, error) {
+func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool, client client.Client) (string, error) {
 
 	generator, err := forwarding.NewConfigGenerator(
 		logCollectorType,
@@ -45,6 +46,11 @@ func Generate(clfYaml string, includeDefaultLogStore, includeLegacyForward bool)
 		FnIncludeLegacyForward: func() bool { return includeLegacyForward },
 		FnIncludeLegacySyslog:  func() bool { return includeLegacySyslog },
 	}
+
+	if client != nil {
+		clRequest.Client = client
+	}
+
 	if includeDefaultLogStore {
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{
 			Type: logging.LogStoreTypeElasticsearch,

@@ -271,3 +271,6 @@ func Get() *Client {
 	}
 	return s.c
 }
+
+// ControllerRuntimeClient returns the underlying controller runtime Client
+func (c *Client) ControllerRuntimeClient() crclient.Client { return c.c }

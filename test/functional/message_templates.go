@@ -38,7 +38,7 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 		Message:          "*",
 		LogType:          "application",
 		ViaqIndexName:    "app-write",
-		Level:            "unknown",
+		Level:            "*",
 		Hostname:         "*",
 		ViaqMsgID:        "*",
 		OpenshiftLabels:  types.OpenshiftMeta{Labels: map[string]string{"*": "*"}},

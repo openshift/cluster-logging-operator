@@ -50,6 +50,10 @@ func (p *PipelineBuilder) ToCloudwatchOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeCloudwatch)
 }
 
+func (p *PipelineBuilder) ToKafkaOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeKafka)
+}
+
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
@@ -92,9 +96,19 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 					Name: "cloudwatch",
 				},
 			}
+		case logging.OutputTypeKafka:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeKafka,
+				Type: logging.OutputTypeKafka,
+				URL:  "https://0.0.0.0:9093",
+				Secret: &logging.OutputSecretSpec{
+					Name: "kafka",
+				},
+			}
 		}
 
 		visit(output)
+
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}
 	added := false

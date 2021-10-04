@@ -66,6 +66,12 @@ var outputLogFile = map[string]map[string]string{
 		ovnAuditLog:    "/var/log/infra.log",
 		infraLog:       "/var/log/infra.log",
 	},
+	logging.OutputTypeKafka: {
+		applicationLog: "/var/log/app.log",
+		auditLog:       "/var/log/infra.log",
+		k8sAuditLog:    "/var/log/audit.log",
+		ovnAuditLog:    "/var/log/ovnaudit.log",
+	},
 }
 
 var (
@@ -210,6 +216,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, &testClient); err != nil {
 		return err
 	}
+
 	log.V(2).Info("Generating Certificates")
 	if err, _, _ = certificates.GenerateCertificates(f.Test.NS.Name,
 		test.GitRoot("scripts"), "elasticsearch",
@@ -294,6 +301,7 @@ done
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
 		AddVolumeMount("certs", "/etc/fluent/metrics", "", true).
 		End()
+
 	for _, visit := range visitors {
 		if err = visit(b); err != nil {
 			return err
@@ -361,6 +369,10 @@ func (f *FluentdFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, 
 			}
 		case logging.OutputTypeSyslog:
 			if err := f.addSyslogOutput(b, output); err != nil {
+				return err
+			}
+		case logging.OutputTypeKafka:
+			if err := f.addKafkaOutput(b, output); err != nil {
 				return err
 			}
 		case logging.OutputTypeElasticsearch:
@@ -483,6 +495,26 @@ func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) 
 
 func (f *FluentdFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, infraLog)
+}
+func (f *FluentdFunctionalFramework) ReadApplicationLogsFromKafka(topic string, brokerlistener string, consumercontainername string) (results []string, err error) {
+	//inter broker zookeeper connect is plaintext so use plaintext port to check on sent messages from kafka producer ie. fluent-kafka plugin
+	//till this step it must be ensured that a topic is created and published in kafka-consumer-clo-app-topic container within functional pod
+	var result string
+	outputFilename := "/shared/consumed.logs"
+	cmd := fmt.Sprintf("tail -1 %s", outputFilename)
+	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
+		result, err = f.RunCommand(consumercontainername, "/bin/bash", "-c", cmd)
+		if result != "" && err == nil {
+			return true, nil
+		}
+		log.V(4).Error(err, "Polling logs from kafka")
+		return false, nil
+	})
+	if err == nil {
+		results = strings.Split(strings.TrimSpace(result), "\n")
+	}
+	log.V(4).Info("Returning", "logs", result)
+	return results, err
 }
 
 func (f *FluentdFunctionalFramework) ReadAuditLogsFrom(outputName string) ([]string, error) {

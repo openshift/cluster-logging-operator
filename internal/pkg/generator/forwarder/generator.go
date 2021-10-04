@@ -53,9 +53,11 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client *
 			VerifyOutputSecret: func(output *logging.OutputSpec, conds logging.NamedConditions) bool { return true },
 		},
 	}
+
 	if client != nil {
 		clRequest.Client = *client
 	}
+
 	if includeDefaultLogStore {
 		clRequest.Cluster.Spec.LogStore = &logging.LogStoreSpec{
 			Type: logging.LogStoreTypeElasticsearch,
@@ -72,14 +74,16 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client *
 	}
 	if logCollectorType == logging.LogCollectionTypeFluentd {
 
-		sections := fluentd2.Conf(&clspec, nil, spec, op)
-		es := generator.MergeSections(sections)
+		//passing a secret for a secure connection between fluentd output plugin and forwarder endpoint
 
+		sections := fluentd2.Conf(&clspec, clRequest.OutputSecrets, spec, op)
+		es := generator.MergeSections(sections)
 		generatedConfig, err := g.GenerateConf(es...)
 		if err != nil {
 			return "", fmt.Errorf("Unable to generate log configuration: %v", err)
 		}
 		return generatedConfig, nil
+
 	} else {
 		return "", errors.New("Only fluentd Log Collector supported")
 	}

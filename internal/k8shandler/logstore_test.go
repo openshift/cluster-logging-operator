@@ -7,7 +7,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	elasticsearch "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	esutils "github.com/openshift/elasticsearch-operator/test/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"

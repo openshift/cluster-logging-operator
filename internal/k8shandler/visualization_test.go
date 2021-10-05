@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	es "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
+	es "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	v1 "k8s.io/api/core/v1"
@@ -46,7 +46,7 @@ func TestNewKibanaCR(t *testing.T) {
 			want: es.Kibana{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Kibana",
-					APIVersion: es.SchemeGroupVersion.String(),
+					APIVersion: es.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "kibana",
@@ -83,7 +83,7 @@ func TestNewKibanaCR(t *testing.T) {
 			want: es.Kibana{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Kibana",
-					APIVersion: es.SchemeGroupVersion.String(),
+					APIVersion: es.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "kibana",
@@ -127,7 +127,7 @@ func TestNewKibanaCR(t *testing.T) {
 			want: es.Kibana{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Kibana",
-					APIVersion: es.SchemeGroupVersion.String(),
+					APIVersion: es.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "kibana",
@@ -171,7 +171,7 @@ func TestNewKibanaCR(t *testing.T) {
 			want: es.Kibana{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Kibana",
-					APIVersion: es.SchemeGroupVersion.String(),
+					APIVersion: es.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "kibana",
@@ -234,7 +234,7 @@ func TestNewKibanaCR(t *testing.T) {
 			want: es.Kibana{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Kibana",
-					APIVersion: es.SchemeGroupVersion.String(),
+					APIVersion: es.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "kibana",
@@ -291,7 +291,7 @@ func TestNewKibanaCR(t *testing.T) {
 			want: es.Kibana{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Kibana",
-					APIVersion: es.SchemeGroupVersion.String(),
+					APIVersion: es.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "kibana",
@@ -343,7 +343,7 @@ func TestNewKibanaCR(t *testing.T) {
 			want: es.Kibana{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Kibana",
-					APIVersion: es.SchemeGroupVersion.String(),
+					APIVersion: es.GroupVersion.String(),
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "kibana",

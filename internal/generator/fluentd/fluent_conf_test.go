@@ -679,6 +679,7 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_PIPELINE>
   <match **>
     @type copy
+    deep_copy true
     <store>
       @type relabel
       @label @APPS_ES_1
@@ -3575,6 +3576,7 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_PIPELINE>
   <match **>
     @type copy
+	deep_copy true
     <store>
       @type relabel
       @label @APPS_ES_1

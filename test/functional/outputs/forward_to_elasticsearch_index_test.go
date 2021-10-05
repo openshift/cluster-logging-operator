@@ -127,7 +127,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			Expect(framework.Deploy()).To(BeNil())
 
 			applicationLogLine := functional.CreateAppLogFromJson(jsonLog)
-			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
+			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, ESIndexName)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
@@ -136,6 +136,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			var logs []types.ApplicationLog
 			err = types.StrictlyParseLogs(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(logs).To(Not(BeEmpty()), "Expected to find logs indexed")
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""

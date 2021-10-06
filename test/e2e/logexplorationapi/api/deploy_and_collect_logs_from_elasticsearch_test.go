@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
-var _ = Describe("Deploys API and collect logs from elasticsearch", func() {
+var _ = Describe("Deploys API and query logs from elasticsearch", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	log.Info("Running ", "filename", filename)
 	var (
@@ -21,7 +21,7 @@ var _ = Describe("Deploys API and collect logs from elasticsearch", func() {
 		err                         error
 		logExplorationAPiDeployment *apps.Deployment
 	)
-	Describe("Deploying API and collecting logs from elasticsearch", func() {
+	Describe("Deploying API and querying logs from elasticsearch", func() {
 		BeforeEach(func() {
 
 			cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector, helpers.ComponentTypeStore, helpers.ComponentLogAPI)
@@ -49,7 +49,7 @@ var _ = Describe("Deploys API and collect logs from elasticsearch", func() {
 			}
 		})
 
-		It("should collect logs from the endpoint", func() {
+		It("should query logs from the endpoint", func() {
 			for _, component := range components {
 				if err = e2e.WaitFor(component); err != nil {
 					Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))

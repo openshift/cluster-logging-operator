@@ -1,7 +1,6 @@
 package k8shandler
 
 import (
-	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -10,9 +9,8 @@ import (
 	"testing"
 )
 
-var _ = Describe("fluentd.go#newFluentdPodSpec", func() {
+var _ = Describe("log-exploration-api.go#newLogExplorationAPIPodSpec", func() {
 	var (
-		//cluster   = &logging.ClusterLogging{}
 		podSpec   v1.PodSpec
 		container v1.Container
 	)
@@ -37,24 +35,11 @@ func TestNewLogExplorationAPIPodSpecWhenResourcesAreDefined(t *testing.T) {
 	limitCpu := resource.MustParse("100m")
 	requestMemory := resource.MustParse("736Mi")
 	requestCPU := resource.MustParse("100m")
-	//cluster := &logging.ClusterLogging{
-	//	Spec: logging.ClusterLoggingSpec{
-	//		Api: &logging.ApiSpec{
-	//			Enabled: true,
-	//			LoggingAPISpec: logging.LoggingAPISpec{
-	//				Resources: newResourceRequirements("128Mi", "500m", "64Mi", "250m"),
-	//			},
-	//		},
-	//	},
-	//}
-
-	//podSpec := newLogExplorationApiPodSpec(cluster)
 	podSpec := newLogExplorationApiPodSpec()
-	fmt.Println("podspec details: ", podSpec.Containers)
+
 	if len(podSpec.Containers) != 1 {
 		t.Error("Exp. there to be 1 fluentd container")
 	}
-
 	resources := podSpec.Containers[0].Resources
 	if resources.Limits[v1.ResourceMemory] != limitMemory {
 		t.Errorf("Exp. the spec memory limit to be %v", limitMemory)

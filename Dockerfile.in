@@ -1,4 +1,4 @@
-#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:rhel_8_golang_1.15)
+#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:rhel_8_golang_1.16)
 FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:v1.15.14-202107291503.el8.git.1794691 AS builder
 
 ENV BUILD_VERSION=${CI_CONTAINER_VERSION}
@@ -33,8 +33,8 @@ COPY ${REMOTE_SOURCE}/Makefile ./Makefile
 RUN make build
 
 
-#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.7)
-FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.7.0-202104250659.p0 AS origincli
+#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.8)
+FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.8.0-202104250659.p0 AS origincli
 
 #@follow_tag(registry.redhat.io/ubi8:latest)
 FROM registry.redhat.io/ubi8:8.4-209

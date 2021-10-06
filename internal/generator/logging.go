@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -9,18 +10,8 @@ import (
 )
 
 const (
-	IncludeLegacyForwardConfig      = "includeLegacyForwardConfig"
-	IncludeLegacySyslogConfig       = "includeLegacySyslogConfig"
-	UseOldRemoteSyslogPlugin        = "useOldRemoteSyslogPlugin"
-	LegacySecureforward             = "_LEGACY_SECUREFORWARD"
-	LegacySyslog                    = "_LEGACY_SYSLOG"
-	LoggingNamespace                = "openshift-logging"
-	FluentdCollectorPodNamePrefix   = "fluentd"
-	FluentBitCollectorPodNamePrefix = "fluent-bit"
-	VectorCollectorPodNamePrefix    = "vector"
-	ESLogStorePodNamePrefix         = "elasticsearch"
-	LokiLogStorePodNamePrefix       = "loki"
-	VisualizationPodNamePrefix      = "kibana"
+	IncludeLegacyForwardConfig = "includeLegacyForwardConfig"
+	UseOldRemoteSyslogPlugin   = "useOldRemoteSyslogPlugin"
 )
 
 //GatherSources collects the set of unique source types and namespaces
@@ -65,13 +56,13 @@ func InputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMa
 }
 
 func CollectorLogsPath() string {
-	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", LoggingNamespace)
+	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", constants.OpenshiftNS)
 }
 
 func LogStoreLogsPath() string {
-	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", LoggingNamespace)
+	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", constants.OpenshiftNS)
 }
 
 func VisualizationLogsPath() string {
-	return fmt.Sprintf("/var/log/containers/%s-*_%s_*.log", VisualizationPodNamePrefix, LoggingNamespace)
+	return fmt.Sprintf("/var/log/containers/%s-*_%s_*.log", constants.KibanaName, constants.OpenshiftNS)
 }

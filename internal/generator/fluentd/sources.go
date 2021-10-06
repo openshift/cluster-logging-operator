@@ -2,6 +2,7 @@ package fluentd
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	source2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	"strings"
@@ -86,8 +87,8 @@ func ContainerLogPaths() string {
 func ExcludeContainerPaths() string {
 	return fmt.Sprintf("[%s]", strings.Join(
 		[]string{
-			fmt.Sprintf("%q", fmt.Sprintf(generator.CollectorLogsPath(), generator.FluentdCollectorPodNamePrefix)),
-			fmt.Sprintf("%q", fmt.Sprintf(generator.LogStoreLogsPath(), generator.ESLogStorePodNamePrefix)),
+			fmt.Sprintf("%q", fmt.Sprintf(generator.CollectorLogsPath(), constants.CollectorName)),
+			fmt.Sprintf("%q", fmt.Sprintf(generator.LogStoreLogsPath(), constants.ElasticsearchName)),
 			fmt.Sprintf("%q", generator.VisualizationLogsPath()),
 		},
 		", ",

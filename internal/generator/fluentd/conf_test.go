@@ -146,7 +146,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
   @type tail
   @id container-input
   path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5

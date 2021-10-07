@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	route "github.com/openshift/api/route/v1"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -10,8 +11,9 @@ import (
 )
 
 const (
-	logAPIPort         = 8080
-	explorationAPIName = "exploration-api"
+	logAPIPort            = 8080
+	explorationAPIName    = "exploration-api"
+	explorationAPIMetrics = "prom-metrics"
 )
 
 func newExplorationAPIRoute(routeName, namespace, serviceName, componentName, loggingComponent string) *route.Route {
@@ -46,13 +48,54 @@ func (clusterRequest *ClusterLoggingRequest) createExplorationAPIService() error
 			{
 				Port:       logAPIPort,
 				TargetPort: intstr.FromInt(logAPIPort),
+				Name:       explorationAPIMetrics,
 			},
 		},
 	)
 
+	// Override the label from factory.NewService
+	desired.Labels = map[string]string{
+		"component": explorationAPIName,
+	}
+
 	utils.AddOwnerRefToObject(desired, utils.AsOwner(clusterRequest.Cluster))
 	err := clusterRequest.Create(desired)
 	return err
+}
+
+func (clusterRequest *ClusterLoggingRequest) createExplorationAPIServiceMonitor() error {
+	cluster := clusterRequest.Cluster
+	desired := NewServiceMonitor(explorationAPIName, cluster.Namespace)
+
+	endpoint := monitoringv1.Endpoint{
+		Port:   explorationAPIMetrics,
+		Path:   "/metrics",
+		Scheme: "http",
+	}
+
+	// match label used to select the log-exploration-api service object
+	labelSelector := metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			"component": explorationAPIName,
+		},
+	}
+
+	desired.Spec = monitoringv1.ServiceMonitorSpec{
+		JobLabel:  "monitor-logexplorationapi",
+		Endpoints: []monitoringv1.Endpoint{endpoint},
+		Selector:  labelSelector,
+		NamespaceSelector: monitoringv1.NamespaceSelector{
+			MatchNames: []string{cluster.Namespace},
+		},
+	}
+
+	utils.AddOwnerRefToObject(desired, utils.AsOwner(cluster))
+
+	err := clusterRequest.Create(desired)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) createExplorationAPIRoute() error {
@@ -158,6 +201,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrDeleteLogExplorationApi() e
 		if err := clusterRequest.createExplorationAPIRoute(); err != nil {
 			return err
 		}
+		if err := clusterRequest.createExplorationAPIServiceMonitor(); err != nil {
+			return err
+		}
 	} else {
 		if err := clusterRequest.RemoveDeployment(explorationAPIName); err != nil {
 			return err
@@ -166,6 +212,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrDeleteLogExplorationApi() e
 			return err
 		}
 		if err := clusterRequest.RemoveRoute(explorationAPIName); err != nil {
+			return err
+		}
+		if err := clusterRequest.RemoveServiceMonitor(explorationAPIName); err != nil {
 			return err
 		}
 	}

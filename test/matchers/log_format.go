@@ -13,6 +13,7 @@ import (
 
 type LogMatcher struct {
 	expected interface{}
+	field    string
 }
 
 func FitLogFormatTemplate(expected interface{}) types.GomegaMatcher {
@@ -26,15 +27,16 @@ func (m *LogMatcher) Match(actual interface{}) (success bool, err error) {
 		return false, fmt.Errorf("matcher expects to compare same log types")
 	}
 
-	return CompareLog(m.expected, actual)
+	m.field, success, err = CompareLog(m.expected, actual)
+	return success, err
 }
 
 func (m *LogMatcher) FailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected\n\t%s\nto fit \n\t%s", test.JSONString(actual), test.JSONString(m.expected))
+	return fmt.Sprintf("Expected\n\t%s\nto fit \n\t%s\nFailed field is: %s", test.JSONString(actual), test.JSONString(m.expected), m.field)
 }
 
 func (m *LogMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected\n\t%s\nto not fit \n\t%s", test.JSONString(actual), test.JSONString(m.expected))
+	return fmt.Sprintf("Expected\n\t%s\nto not fit \n\t%s\nFailed field is: %s", test.JSONString(actual), test.JSONString(m.expected), m.field)
 }
 
 func isNil(i interface{}) bool {
@@ -145,7 +147,7 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 	return false
 }
 
-func CompareLog(template interface{}, log interface{}) (bool, error) {
+func CompareLog(template interface{}, log interface{}) (string, bool, error) {
 	logFieldValues, logFieldNames := DeepFields(log, "")
 
 	// templateString := test.JSONLine(template)
@@ -173,7 +175,7 @@ func CompareLog(template interface{}, log interface{}) (bool, error) {
 					if compareLogLogic(templateFieldName, templateFieldValue, logFieldValue) {
 						break
 					}
-					return false, nil
+					return templateFieldName, false, nil
 				} else {
 					logger.V(3).Info("CompareLog: skipping not interesting field", "name", templateFieldName)
 					break // If this is not an interesting field
@@ -185,5 +187,5 @@ func CompareLog(template interface{}, log interface{}) (bool, error) {
 		}
 	}
 
-	return true, nil
+	return "", true, nil
 }

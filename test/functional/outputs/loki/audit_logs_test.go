@@ -71,7 +71,7 @@ var _ = Describe("Forwarding to Loki", func() {
 	Context("when writing Audit logs from different sources", func() {
 
 		//https://issues.redhat.com/browse/LOG-1702
-		It("should ingest kubernetes audit records without error", func() {
+		It("should ingest kubernetes audit records from different audit sources without error", func() {
 
 			now := time.Now()
 			nowCrio := functional.CRIOTime(now)

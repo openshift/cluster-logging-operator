@@ -2,6 +2,7 @@ package fluent_test
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -12,7 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 )
 

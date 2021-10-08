@@ -6,12 +6,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"os/exec"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/test"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 )
 

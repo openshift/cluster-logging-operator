@@ -10,6 +10,7 @@ const HostAuditLogTemplate = `
 [sources.{{.ComponentID}}]
   type = "file"
   ignore_older_secs = 600
+  data_dir = "/var/lib/vector/pos"
   include = ["/var/log/audit/audit.log"]
 {{end}}`
 
@@ -21,7 +22,7 @@ const OpenshiftAuditLogTemplate = `
 [sources.{{.ComponentID}}]
   type = "file"
   ignore_older_secs = 600
-  include = ["/var/log/oauth-apiserver.audit.log"]
+  include = ["/var/log/oauth-apiserver/audit.log", "/var/log/openshift-apiserver/audit.log"]
 {{end}}
 `
 
@@ -34,6 +35,18 @@ const K8sAuditLogTemplate = `
   type = "file"
   ignore_older_secs = 600
   include = ["/var/log/kube-apiserver/audit.log"]
+{{end}}
+`
+
+type OVNAuditLog = generator.ConfLiteral
+
+const OVNAuditLogTemplate = `
+{{define "inputSourceOVNAuditTemplate" -}}
+# {{.Desc}}
+[sources.{{.ComponentID}}]
+  type = "file"
+  ignore_older_secs = 600
+  include = ["/var/log/ovn/acl-audit-log.log"]
 {{end}}
 `
 

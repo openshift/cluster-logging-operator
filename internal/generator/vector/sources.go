@@ -2,75 +2,80 @@ package vector
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-	source2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
-func Sources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-	return generator.MergeElements(
-		LogSources(spec, op),
-	)
+func Sources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []source.LogSource {
+	return LogSources(spec, op)
 }
 
-func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-	var el []generator.Element = make([]generator.Element, 0)
+func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
+	return []generator.Element{
+		PrometheusMonitor{
+			Desc:         "Prometheus Monitoring",
+			TemplateName: "PrometheusMonitor",
+			TemplateStr:  PrometheusMonitorTemplate,
+		},
+	}
+}
+
+func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []source.LogSource {
+	var el []source.LogSource = make([]source.LogSource, 0)
 	types := generator.GatherSources(spec, op)
-	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
+	if types.Has(logging.InputNameApplication) {
 		el = append(el,
 			source.KubernetesLogs{
-				ComponentID:  "container_logs",
-				Desc:         "Logs from containers (including openshift containers)",
+				SourceID:     logging.InputNameApplication,
+				SourceType:   "kubernetes_logs",
+				Desc:         "Logs from containers",
+				ExcludePaths: ExcludeContainerPaths(),
+			})
+	}
+	if !types.Has(logging.InputNameApplication) && types.Has(logging.InputNameInfrastructure) {
+		el = append(el,
+			source.KubernetesLogs{
+				SourceID:     logging.InputNameInfrastructure,
+				SourceType:   "kubernetes_logs",
+				Desc:         "Logs from containers",
 				ExcludePaths: ExcludeContainerPaths(),
 			})
 	}
 	if types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
-			source2.JournalLog{
-				ComponentID:  "journal_logs",
-				Desc:         "Logs from linux journal",
-				TemplateName: "inputSourceJournalTemplate",
-				TemplateStr:  source2.JournalLogTemplate,
-			})
-	}
-	if types.Has(logging.InputNameAudit) {
-		el = append(el,
-			source2.HostAuditLog{
-				ComponentID:  "host_audit_logs",
-				Desc:         "Logs from host audit",
-				TemplateName: "inputSourceHostAuditTemplate",
-				TemplateStr:  source2.HostAuditLogTemplate,
-			},
-			source2.K8sAuditLog{
-				ComponentID:  "k8s_audit_logs",
-				Desc:         "Logs from kubernetes audit",
-				TemplateName: "inputSourceK8sAuditTemplate",
-				TemplateStr:  source2.K8sAuditLogTemplate,
-			},
-			source2.OpenshiftAuditLog{
-				ComponentID:  "openshift_audit_logs",
-				Desc:         "Logs from openshift audit",
-				TemplateName: "inputSourceOpenShiftAuditTemplate",
-				TemplateStr:  source2.OpenshiftAuditLogTemplate,
+			source.JournalLogs{
+				SourceID:   logging.InputNameInfrastructure,
+				SourceType: "journald",
+				Desc:       "Logs from journald",
 			})
 	}
 	return el
 }
 
-func ContainerLogPaths() string {
-	return fmt.Sprintf("%q", "/var/log/containers/*.log")
+func VectorCollectorLogsPath() string {
+	return fmt.Sprintf("/var/log/pods/%%s-*_%s_*.log", constants.OpenshiftNS)
+}
+
+func VectorLogStoreLogsPath() string {
+	return fmt.Sprintf("/var/log/pods/%%s-*_%s_*.log", constants.OpenshiftNS)
+}
+
+func VectorVisualizationLogsPath() string {
+	return fmt.Sprintf("/var/log/pods/%s-*_%s_*.log", constants.KibanaName, constants.OpenshiftNS)
 }
 
 func ExcludeContainerPaths() string {
 	return fmt.Sprintf("[%s]", strings.Join(
 		[]string{
-			fmt.Sprintf("%q", fmt.Sprintf(generator.CollectorLogsPath(), constants.CollectorName)),
-			fmt.Sprintf("%q", fmt.Sprintf(generator.LogStoreLogsPath(), constants.ElasticsearchName)),
-			fmt.Sprintf("%q", generator.VisualizationLogsPath()),
+			fmt.Sprintf("%q", fmt.Sprintf(VectorCollectorLogsPath(), constants.CollectorName)),
+			fmt.Sprintf("%q", fmt.Sprintf(VectorLogStoreLogsPath(), constants.ElasticsearchName)),
+			fmt.Sprintf("%q", VectorVisualizationLogsPath()),
 		},
 		", ",
 	))

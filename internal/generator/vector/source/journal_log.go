@@ -1,13 +1,28 @@
 package source
 
-import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-)
+type JournalLogs struct {
+	SourceID     string
+	Desc         string
+	SourceType   string
+	ExcludePaths string
+}
 
-const JournalLogTemplate = `
-{{define "inputSourceJournalTemplate" -}}
-[sources.{{.ComponentID}}]
-  type = "journald"
+func (jl JournalLogs) ComponentID() string {
+	return jl.SourceID
+}
+
+func (jl JournalLogs) Type() string {
+	return jl.SourceType
+}
+
+func (jl JournalLogs) Name() string {
+	return "journald"
+}
+
+func (jl JournalLogs) Template() string {
+	return `{{define "` + jl.Name() + `" -}}
+# {{.Desc}}
+[sources.{{.SourceType}}]
+  type = "{{.SourceType}}"
 {{end}}`
-
-type JournalLog = generator.ConfLiteral
+}

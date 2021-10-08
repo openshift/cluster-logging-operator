@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -13,7 +14,7 @@ import (
 // be idle but will not exit until deleted.
 func NewLogGenerator(namespace, name string, count int, delay time.Duration, message string) *corev1.Pod {
 	cmd := fmt.Sprintf(`i=0; while [ $i -lt %v ]; do echo "$(date) [$i]: %v"; i=$((i+1)); sleep %f; done; sleep infinity`, count, message, delay.Seconds())
-	l := NewPod(namespace, "log-generator", corev1.Container{
+	l := runtime.NewPod(namespace, "log-generator", corev1.Container{
 		Name:    name,
 		Image:   "busybox",
 		Command: []string{"sh", "-c", cmd}},
@@ -26,7 +27,7 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 //Once done printing the pod will be idle but will not exit until deleted.
 func NewOneLineLogGenerator(namespace, containerName, message string) *corev1.Pod {
 	cmd := fmt.Sprintf(`echo "%v"; sleep infinity`, message)
-	l := NewPod(namespace, "log-generator", corev1.Container{
+	l := runtime.NewPod(namespace, "log-generator", corev1.Container{
 		Name:    containerName,
 		Image:   "busybox",
 		Command: []string{"sh", "-c", cmd}},

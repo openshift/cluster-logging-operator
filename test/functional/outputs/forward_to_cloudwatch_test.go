@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"net/http"
 	"time"
 
@@ -21,7 +22,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to CloudWatch", func() {

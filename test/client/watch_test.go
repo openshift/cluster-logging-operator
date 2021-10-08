@@ -1,6 +1,7 @@
 package client_test
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -8,7 +9,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test"
 	. "github.com/openshift/cluster-logging-operator/test/client"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )

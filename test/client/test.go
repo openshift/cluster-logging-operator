@@ -2,11 +2,11 @@ package client
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"testing"
 
 	"github.com/onsi/ginkgo"
 	"github.com/openshift/cluster-logging-operator/test"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/ViaQ/logerr/log"

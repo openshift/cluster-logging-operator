@@ -4,6 +4,7 @@ import (
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"runtime"
 
 	"github.com/ViaQ/logerr/log"
@@ -20,7 +21,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	var (
 		app *apps.StatefulSet
 		err error
-		e2e = helpers.NewE2ETestFramework()
+		e2e = framework.NewE2ETestFramework()
 	)
 	BeforeEach(func() {
 		if err := e2e.DeployLogGenerator(); err != nil {
@@ -123,9 +124,9 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			})
 
 			It("should send logs to the forward.Output logstore", func() {
-				Expect(e2e.LogStores[app.Name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStores[app.Name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
-				Expect(e2e.LogStores[app.Name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+				Expect(e2e.LogStores[app.Name].HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(e2e.LogStores[app.Name].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStores[app.Name].HasAuditLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 			})
 
 			AfterEach(func() {

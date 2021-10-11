@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"os"
 	"sort"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
-	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 

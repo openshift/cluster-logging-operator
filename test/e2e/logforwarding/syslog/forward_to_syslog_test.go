@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -33,7 +34,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	var (
 		err              error
 		syslogDeployment *apps.Deployment
-		e2e              = helpers.NewE2ETestFramework()
+		e2e              = framework.NewE2ETestFramework()
 		testDir          string
 		forwarder        *logging.ClusterLogForwarder
 		generatorPayload map[string]string
@@ -108,7 +109,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				}
 			})
 			DescribeTable("should be able to send logs to syslog receiver", func(tls bool, protocol corev1.Protocol) {
-				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, protocol, tls, helpers.RFC5424); err != nil {
+				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, protocol, tls, framework.RFC5424); err != nil {
 					Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 				}
 				if protocol == corev1.ProtocolTCP {
@@ -132,14 +133,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					}
 				}
 				logStore := e2e.LogStores[syslogDeployment.GetName()]
-				Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+				Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 				expectedAppName := forwarder.Spec.Outputs[0].Syslog.AppName
-				Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
+				Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
 				expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
-				Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
+				Expect(logStore.GrepLogs(grepmsgid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 				expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
-				Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+				Expect(logStore.GrepLogs(grepprocid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
 			},
 				Entry("with TLS disabled, with TCP", false, corev1.ProtocolTCP),
 				Entry("with TLS disabled, with UDP", false, corev1.ProtocolUDP),
@@ -154,14 +155,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						generatorPayload["procid_key"] = "rec_procid"
 					})
 					It("should use values from record", func() {
-						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
+						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC5424); err != nil {
 							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 						}
 						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 						forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 							Name: syslogDeployment.ObjectMeta.Name,
 						}
-						forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC5424.String()
+						forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC5424.String()
 						forwarder.Spec.Outputs[0].Syslog.AppName = "$.message.appname_key"
 						forwarder.Spec.Outputs[0].Syslog.MsgID = "$.message.msgid_key"
 						forwarder.Spec.Outputs[0].Syslog.ProcID = "$.message.procid_key"
@@ -175,25 +176,25 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							}
 						}
 						logStore := e2e.LogStores[syslogDeployment.GetName()]
-						Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+						Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 						expectedAppName := generatorPayload["appname_key"]
-						Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
+						Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
 						expectedMsgID := generatorPayload["msgid_key"]
-						Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
+						Expect(logStore.GrepLogs(grepmsgid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 						expectedProcID := generatorPayload["procid_key"]
-						Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+						Expect(logStore.GrepLogs(grepprocid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
 					})
 				})
 				It("should take value from complete fluentd tag", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC5424.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC5424.String()
 					forwarder.Spec.Outputs[0].Syslog.AppName = "tag"
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
@@ -205,25 +206,25 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					// typical value of tag in this test case is: kubernetes.var.log.containers.log-generator-746f659fdf-qgclg_clo-test-5764_log-generator-fef2a7848f9741bc6aeb1325aac051c0734c5dc177839c6787da207dc95530ad.log
 					expectedAppNamePrefix := "kubernetes.var.log.containers"
-					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedAppNamePrefix))
+					Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedAppNamePrefix))
 					expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
-					Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
+					Expect(logStore.GrepLogs(grepmsgid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 					expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
-					Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+					Expect(logStore.GrepLogs(grepprocid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
 				})
 				It("should use values from parts of tag", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC5424.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC5424.String()
 					forwarder.Spec.Outputs[0].Syslog.AppName = "${tag[0]}#${tag[-2]}"
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
@@ -235,16 +236,16 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					// typical value of tag in this test case is: kubernetes.var.log.containers.log-generator-746f659fdf-qgclg_clo-test-5764_log-generator-fef2a7848f9741bc6aeb1325aac051c0734c5dc177839c6787da207dc95530ad.log
 					// prefix expected is: kubernetes#
 					expectedAppNamePrefix := "kubernetes#"
-					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedAppNamePrefix))
+					Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedAppNamePrefix))
 					expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
-					Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
+					Expect(logStore.GrepLogs(grepmsgid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 					expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
-					Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+					Expect(logStore.GrepLogs(grepprocid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
 				})
 			})
 			Describe("values for facility,severity", func() {
@@ -253,14 +254,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					generatorPayload["severity_key"] = "Informational"
 				})
 				It("should take from record", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC5424.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC5424.String()
 					forwarder.Spec.Outputs[0].Syslog.Facility = "$.message.facility_key"
 					forwarder.Spec.Outputs[0].Syslog.Severity = "$.message.severity_key"
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
@@ -273,13 +274,13 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					// 134 = Facility(local0/16)*8 + Severity(Informational/6)
 					// The 1 after <134> is version, which is always set to 1
 					expectedPriority := "<134>1"
 					grepPri := fmt.Sprintf(rsyslogFormatStr, logGenPod, "$1")
-					Expect(logStore.GrepLogs(grepPri, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedPriority), "Expected: "+expectedPriority)
+					Expect(logStore.GrepLogs(grepPri, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedPriority), "Expected: "+expectedPriority)
 				})
 			})
 			Describe("syslog payload", func() {
@@ -287,14 +288,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					generatorPayload["appname_key"] = "rec_appname"
 				})
 				It("should take from payload_key", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC5424.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC5424.String()
 					forwarder.Spec.Outputs[0].Syslog.AppName = "$.message.appname_key"
 					forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
@@ -307,10 +308,10 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_appname")
-					str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+					str, err := logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)
 					Expect(err).To(BeNil())
 					msg := map[string]interface{}{}
 					err = json.Unmarshal([]byte(str), &msg)
@@ -324,14 +325,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					generatorPayload["msgcontent"] = str
 				})
 				It("should be able to send", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC5424); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC5424); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC5424.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC5424.String()
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
 					}
@@ -342,14 +343,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					expectedAppName := forwarder.Spec.Outputs[0].Syslog.AppName
-					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
+					Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
 					expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
-					Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
+					Expect(logStore.GrepLogs(grepmsgid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 					expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
-					Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+					Expect(logStore.GrepLogs(grepprocid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
 				})
 			})
 		})
@@ -389,7 +390,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				}
 			})
 			DescribeTable("should be able to send logs to syslog receiver", func(useOldPlugin bool, tls bool, protocol corev1.Protocol) {
-				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, protocol, tls, helpers.RFC3164); err != nil {
+				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, protocol, tls, framework.RFC3164); err != nil {
 					Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 				}
 				if protocol == corev1.ProtocolTCP {
@@ -418,11 +419,11 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					}
 				}
 				logStore := e2e.LogStores[syslogDeployment.GetName()]
-				Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				if !useOldPlugin {
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					expectedAppName := forwarder.Spec.Outputs[0].Syslog.Tag
-					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
+					Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
 				}
 			},
 				// old syslog plugin does not support TLS, so set false for tls
@@ -439,14 +440,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					generatorPayload["tag_key"] = "rec_tag"
 				})
 				It("should use values from record", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
 					forwarder.Spec.Outputs[0].Syslog.Tag = "$.message.tag_key"
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
@@ -458,20 +459,20 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					expectedTag := generatorPayload["tag_key"]
-					Expect(logStore.GrepLogs(greptag, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedTag), "Expected: "+expectedTag)
+					Expect(logStore.GrepLogs(greptag, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedTag), "Expected: "+expectedTag)
 				})
 				It("should take value from complete fluentd tag", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
 					forwarder.Spec.Outputs[0].Syslog.Tag = "tag"
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
@@ -483,21 +484,21 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					// typical value of tag in this test case is: kubernetes.var.log.containers.log-generator-746f659fdf-qgclg_clo-test-5764_log-generator-fef2a7848f9741bc6aeb1325aac051c0734c5dc177839c6787da207dc95530ad.log
 					expectedTagPrefix := "kubernetes.var.log.containers"
-					Expect(logStore.GrepLogs(greptag, helpers.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedTagPrefix))
+					Expect(logStore.GrepLogs(greptag, framework.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedTagPrefix))
 				})
 				It("should use values from parts of tag", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
 					forwarder.Spec.Outputs[0].Syslog.Tag = "${tag[0]}#${tag[-2]}"
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
@@ -509,12 +510,12 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					// typical value of tag in this test case is: kubernetes.var.log.containers.log-generator-746f659fdf-qgclg_clo-test-5764_log-generator-fef2a7848f9741bc6aeb1325aac051c0734c5dc177839c6787da207dc95530ad.log
 					// prefix expected is: kubernetes#
 					expectedTagPrefix := "kubernetes#"
-					Expect(logStore.GrepLogs(greptag, helpers.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedTagPrefix))
+					Expect(logStore.GrepLogs(greptag, framework.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedTagPrefix))
 				})
 			})
 			Describe("values for facility,severity", func() {
@@ -523,14 +524,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					generatorPayload["severity_key"] = "Informational"
 				})
 				It("should take from record", func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, helpers.RFC3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, true, framework.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tcp://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
 					forwarder.Spec.Outputs[0].Secret = &logging.OutputSecretSpec{
 						Name: syslogDeployment.ObjectMeta.Name,
 					}
-					forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+					forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
 					forwarder.Spec.Outputs[0].Syslog.Facility = "$.message.facility_key"
 					forwarder.Spec.Outputs[0].Syslog.Severity = "$.message.severity_key"
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
@@ -543,13 +544,13 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						}
 					}
 					logStore := e2e.LogStores[syslogDeployment.GetName()]
-					Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					// 134 = Facility(local0/16)*8 + Severity(Informational/6)
 					// The 1 after <134> is version, which is always set to 1
 					expectedPriority := "<134>1"
 					grepPri := fmt.Sprintf(rsyslogFormatStr, logGenPod, "$1")
-					Expect(logStore.GrepLogs(grepPri, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedPriority), "Expected: "+expectedPriority)
+					Expect(logStore.GrepLogs(grepPri, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedPriority), "Expected: "+expectedPriority)
 				})
 			})
 			Describe("syslog payload", func() {
@@ -558,11 +559,11 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						generatorPayload["tag_key"] = "rec_tag"
 					})
 					It("should take from payload_key", func() {
-						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
+						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, framework.RFC3164); err != nil {
 							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 						}
 						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-						forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+						forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
 						forwarder.Spec.Outputs[0].Syslog.Tag = "$.message.tag_key"
 						forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
 						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
@@ -575,10 +576,10 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							}
 						}
 						logStore := e2e.LogStores[syslogDeployment.GetName()]
-						Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+						Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 						grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_tag")
-						str, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+						str, err := logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)
 						Expect(err).To(BeNil())
 						msg := map[string]interface{}{}
 						err = json.Unmarshal([]byte(str), &msg)
@@ -593,11 +594,11 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						generatorPayload["tag_key"] = "rec_tag"
 					})
 					It("should add namespace, pod, container name to log message", func() {
-						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
+						if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, framework.RFC3164); err != nil {
 							Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 						}
 						forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-						forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+						forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
 						forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
 						forwarder.Spec.Outputs[0].Syslog.AddLogSource = true
 						if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
@@ -610,10 +611,10 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							}
 						}
 						logStore := e2e.LogStores[syslogDeployment.GetName()]
-						Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-						_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+						Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+						_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 						grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "namespace_name")
-						_, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+						_, err := logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)
 						Expect(err).To(BeNil())
 					})
 				})
@@ -624,11 +625,11 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							forwarder.Spec.Pipelines[0].InputRefs = []string{"audit"}
 						})
 						It("should send log message successfully", func() {
-							if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
+							if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, framework.RFC3164); err != nil {
 								Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 							}
 							forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-							forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+							forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
 							forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
 							forwarder.Spec.Outputs[0].Syslog.AddLogSource = true
 							if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
@@ -641,10 +642,10 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 								}
 							}
 							logStore := e2e.LogStores[syslogDeployment.GetName()]
-							Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-							_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+							Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+							_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 							grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_tag")
-							_, err := logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)
+							_, err := logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)
 							Expect(err).To(BeNil())
 						})
 					})
@@ -655,11 +656,11 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							forwarder.Spec.Pipelines[0].InputRefs = []string{"infrastructure"}
 						})
 						It("should add the originating process name and id to journal log message", func() {
-							if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
+							if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, framework.RFC3164); err != nil {
 								Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 							}
 							forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-							forwarder.Spec.Outputs[0].Syslog.RFC = helpers.RFC3164.String()
+							forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
 							forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
 							forwarder.Spec.Outputs[0].Syslog.AddLogSource = true
 							if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
@@ -672,14 +673,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 								}
 							}
 							logStore := e2e.LogStores[syslogDeployment.GetName()]
-							Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-							_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+							Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+							_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 							grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ print $4; }'`, logGenPod)
-							Expect(logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)).To(Equal("mytag"), "Expected: mytag")
+							Expect(logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)).To(Equal("mytag"), "Expected: mytag")
 							waitjournallogs := `[ $(grep -v pod_name %s | wc -l) -gt 0 ]`
-							_, _ = logStore.GrepLogs(waitjournallogs, helpers.DefaultWaitForLogsTimeout)
+							_, _ = logStore.GrepLogs(waitjournallogs, framework.DefaultWaitForLogsTimeout)
 							grepMsgContent = `grep -v pod_name %s | tail -n 1 | awk -F' ' '{ print $4; }'`
-							Expect(logStore.GrepLogs(grepMsgContent, helpers.DefaultWaitForLogsTimeout)).To(Not(Equal("mytag")), "Expected: not mytag")
+							Expect(logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)).To(Not(Equal("mytag")), "Expected: not mytag")
 						})
 					})
 				})
@@ -688,7 +689,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		AfterEach(func() {
 			e2e.Cleanup()
 			e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{constants.CollectorName, "syslog-receiver"})
+			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "syslog-receiver"})
 			generatorPayload = map[string]string{}
 		})
 	})

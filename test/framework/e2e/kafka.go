@@ -1,8 +1,9 @@
-package helpers
+package e2e
 
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"strings"
 	"time"
 
@@ -108,7 +109,7 @@ func (kr *kafkaReceiver) RetrieveLogs() (map[string]string, error) {
 }
 
 func (kr *kafkaReceiver) ClusterLocalEndpoint() string {
-	return kafka.ClusterLocalEndpoint(OpenshiftLoggingNS)
+	return kafka.ClusterLocalEndpoint(constants.OpenshiftNS)
 }
 
 func (tc *E2ETestFramework) DeployKafkaReceiver(topics []string) (*apps.StatefulSet, error) {
@@ -143,7 +144,7 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (types.Logs,
 	options := metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("component=%s", name),
 	}
-	pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
+	pods, err := tc.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +153,7 @@ func (tc *E2ETestFramework) consumedLogs(rcvName, inputName string) (types.Logs,
 	}
 
 	cmd := "tail -n 5000 /shared/consumed.logs"
-	stdout, err := tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, name, []string{"bash", "-c", cmd})
+	stdout, err := tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, name, []string{"bash", "-c", cmd})
 	if err != nil {
 		return nil, err
 	}
@@ -210,23 +211,23 @@ func (tc *E2ETestFramework) createZookeeper() error {
 
 func (tc *E2ETestFramework) createKafkaConsumers(rcv *kafkaReceiver) error {
 	for _, topic := range rcv.topics {
-		app := kafka.NewKafkaConsumerDeployment(OpenshiftLoggingNS, topic)
+		app := kafka.NewKafkaConsumerDeployment(constants.OpenshiftNS, topic)
 
 		tc.AddCleanup(func() error {
 			var zerograce int64
 			opts := metav1.DeleteOptions{
 				GracePeriodSeconds: &zerograce,
 			}
-			return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(context.TODO(), app.GetName(), opts)
+			return tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Delete(context.TODO(), app.GetName(), opts)
 		})
 
 		opts := metav1.CreateOptions{}
-		app, err := tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Create(context.TODO(), app, opts)
+		app, err := tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Create(context.TODO(), app, opts)
 		if err != nil {
 			return err
 		}
 
-		if err := tc.waitForDeployment(OpenshiftLoggingNS, app.GetName(), defaultRetryInterval, defaultTimeout); err != nil {
+		if err := tc.waitForDeployment(constants.OpenshiftNS, app.GetName(), defaultRetryInterval, defaultTimeout); err != nil {
 			return err
 		}
 	}
@@ -234,58 +235,58 @@ func (tc *E2ETestFramework) createKafkaConsumers(rcv *kafkaReceiver) error {
 }
 
 func (tc *E2ETestFramework) createKafkaBrokerStatefulSet() (*apps.StatefulSet, error) {
-	app := kafka.NewBrokerStatefuleSet(OpenshiftLoggingNS)
+	app := kafka.NewBrokerStatefuleSet(constants.OpenshiftNS)
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.AppsV1().StatefulSets(OpenshiftLoggingNS).Delete(context.TODO(), app.GetName(), opts)
+		return tc.KubeClient.AppsV1().StatefulSets(constants.OpenshiftNS).Delete(context.TODO(), app.GetName(), opts)
 	})
 
 	opts := metav1.CreateOptions{}
-	_, err := tc.KubeClient.AppsV1().StatefulSets(OpenshiftLoggingNS).Create(context.TODO(), app, opts)
+	_, err := tc.KubeClient.AppsV1().StatefulSets(constants.OpenshiftNS).Create(context.TODO(), app, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return app, tc.waitForStatefulSet(OpenshiftLoggingNS, app.GetName(), defaultRetryInterval, defaultTimeout)
+	return app, tc.waitForStatefulSet(constants.OpenshiftNS, app.GetName(), defaultRetryInterval, defaultTimeout)
 }
 
 func (tc *E2ETestFramework) createZookeeperStatefulSet() (*apps.StatefulSet, error) {
-	app := kafka.NewZookeeperStatefuleSet(OpenshiftLoggingNS)
+	app := kafka.NewZookeeperStatefuleSet(constants.OpenshiftNS)
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.AppsV1().StatefulSets(OpenshiftLoggingNS).Delete(context.TODO(), app.GetName(), opts)
+		return tc.KubeClient.AppsV1().StatefulSets(constants.OpenshiftNS).Delete(context.TODO(), app.GetName(), opts)
 	})
 
 	opts := metav1.CreateOptions{}
-	app, err := tc.KubeClient.AppsV1().StatefulSets(OpenshiftLoggingNS).Create(context.TODO(), app, opts)
+	app, err := tc.KubeClient.AppsV1().StatefulSets(constants.OpenshiftNS).Create(context.TODO(), app, opts)
 	if err != nil {
 		return nil, err
 	}
 
-	return app, tc.waitForStatefulSet(OpenshiftLoggingNS, app.GetName(), defaultRetryInterval, defaultTimeout)
+	return app, tc.waitForStatefulSet(constants.OpenshiftNS, app.GetName(), defaultRetryInterval, defaultTimeout)
 }
 
 func (tc *E2ETestFramework) createKafkaBrokerService() error {
-	svc := kafka.NewBrokerService(OpenshiftLoggingNS)
+	svc := kafka.NewBrokerService(constants.OpenshiftNS)
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(context.TODO(), svc.GetName(), opts)
+		return tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Delete(context.TODO(), svc.GetName(), opts)
 	})
 
 	opts := metav1.CreateOptions{}
-	if _, err := tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(context.TODO(), svc, opts); err != nil {
+	if _, err := tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Create(context.TODO(), svc, opts); err != nil {
 		return err
 	}
 
@@ -293,18 +294,18 @@ func (tc *E2ETestFramework) createKafkaBrokerService() error {
 }
 
 func (tc *E2ETestFramework) createZookeeperService() error {
-	svc := kafka.NewZookeeperService(OpenshiftLoggingNS)
+	svc := kafka.NewZookeeperService(constants.OpenshiftNS)
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(context.TODO(), svc.GetName(), opts)
+		return tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Delete(context.TODO(), svc.GetName(), opts)
 	})
 
 	opts := metav1.CreateOptions{}
-	if _, err := tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(context.TODO(), svc, opts); err != nil {
+	if _, err := tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Create(context.TODO(), svc, opts); err != nil {
 		return err
 	}
 
@@ -312,7 +313,7 @@ func (tc *E2ETestFramework) createZookeeperService() error {
 }
 
 func (tc *E2ETestFramework) createKafkaBrokerRBAC() error {
-	cr, crb := kafka.NewBrokerRBAC(OpenshiftLoggingNS)
+	cr, crb := kafka.NewBrokerRBAC(constants.OpenshiftNS)
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
@@ -343,18 +344,18 @@ func (tc *E2ETestFramework) createKafkaBrokerRBAC() error {
 }
 
 func (tc *E2ETestFramework) createKafkaBrokerConfigMap() error {
-	cm := kafka.NewBrokerConfigMap(OpenshiftLoggingNS)
+	cm := kafka.NewBrokerConfigMap(constants.OpenshiftNS)
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Delete(context.TODO(), cm.GetName(), opts)
+		return tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Delete(context.TODO(), cm.GetName(), opts)
 	})
 
 	opts := metav1.CreateOptions{}
-	if _, err := tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), cm, opts); err != nil {
+	if _, err := tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Create(context.TODO(), cm, opts); err != nil {
 		return err
 	}
 
@@ -362,18 +363,18 @@ func (tc *E2ETestFramework) createKafkaBrokerConfigMap() error {
 }
 
 func (tc *E2ETestFramework) createKafkaBrokerSecret() error {
-	s := kafka.NewBrokerSecret(OpenshiftLoggingNS)
+	s := kafka.NewBrokerSecret(constants.OpenshiftNS)
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Delete(context.TODO(), s.GetName(), opts)
+		return tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Delete(context.TODO(), s.GetName(), opts)
 	})
 
 	opts := metav1.CreateOptions{}
-	if _, err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), s, opts); err != nil {
+	if _, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), s, opts); err != nil {
 		return err
 	}
 
@@ -381,18 +382,18 @@ func (tc *E2ETestFramework) createKafkaBrokerSecret() error {
 }
 
 func (tc *E2ETestFramework) createZookeeperConfigMap() error {
-	cm := kafka.NewZookeeperConfigMap(OpenshiftLoggingNS)
+	cm := kafka.NewZookeeperConfigMap(constants.OpenshiftNS)
 
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Delete(context.TODO(), cm.GetName(), opts)
+		return tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Delete(context.TODO(), cm.GetName(), opts)
 	})
 
 	opts := metav1.CreateOptions{}
-	if _, err := tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), cm, opts); err != nil {
+	if _, err := tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Create(context.TODO(), cm, opts); err != nil {
 		return err
 	}
 

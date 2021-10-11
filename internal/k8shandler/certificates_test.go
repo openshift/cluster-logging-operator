@@ -92,7 +92,7 @@ var _ = Describe("Reconciling", func() {
 		)
 
 		BeforeSuite(func() {
-			client = fake.NewFakeClient(
+			client = fake.NewFakeClient( //nolint
 				cluster,
 				masterCASecret,
 				fluentdSecret,

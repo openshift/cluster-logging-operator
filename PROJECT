@@ -1,15 +1,29 @@
 domain: openshift.io
-layout: go.kubebuilder.io/v2
-repo: github.com/openshift/cluster-logging-operator
-projectName: cluster-logging-operator
-resources:
-- group: logging
-  kind: ClusterLogForwarder
-  version: v1
-- group: logging
-  kind: ClusterLogging
-  version: v1
+layout:
+- go.kubebuilder.io/v3
 multigroup: true
-version: 3-alpha
 plugins:
-  go.operator-sdk.io/v2-alpha: {}
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: cluster-logging-operator
+repo: github.com/openshift/cluster-logging-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: openshift.io
+  group: logging
+  kind: ClusterLogForwarder
+  path: github.com/cluster-logging-operator/apis/logging/v1
+  version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: openshift.io
+  group: logging
+  kind: ClusterLogging
+  path: github.com/cluster-logging-operator/apis/logging/v1
+  version: v1
+version: "3"

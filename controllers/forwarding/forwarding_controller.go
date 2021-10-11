@@ -88,12 +88,12 @@ func condInvalid(format string, args ...interface{}) status.Condition {
 // and what is in the Logging.Spec
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileForwarder) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileForwarder) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	log.V(3).Info("clusterlogforwarder-controller fetching LF instance")
 
 	// Fetch the ClusterLogForwarder instance
 	instance := &logging.ClusterLogForwarder{}
-	if err := r.Client.Get(context.TODO(), request.NamespacedName, instance); err != nil {
+	if err := r.Client.Get(ctx, request.NamespacedName, instance); err != nil {
 		log.V(2).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err)
 		if !errors.IsNotFound(err) {
 			// Error reading - requeue the request.

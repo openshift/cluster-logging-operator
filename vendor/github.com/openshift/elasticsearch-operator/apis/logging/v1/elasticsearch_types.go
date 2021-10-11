@@ -36,16 +36,18 @@ type Elasticsearch struct {
 
 // AddOwnerRefTo appends the Elasticsearch object as an OwnerReference to the passed object
 func (es *Elasticsearch) AddOwnerRefTo(o metav1.Object) {
+	ref := es.GetOwnerRef()
+	o.SetOwnerReferences(append(o.GetOwnerReferences(), ref))
+}
+
+func (es *Elasticsearch) GetOwnerRef() metav1.OwnerReference {
 	trueVar := true
-	ref := metav1.OwnerReference{
+	return metav1.OwnerReference{
 		APIVersion: GroupVersion.String(),
 		Kind:       "Elasticsearch",
 		Name:       es.Name,
 		UID:        es.UID,
 		Controller: &trueVar,
-	}
-	if (metav1.OwnerReference{}) != ref {
-		o.SetOwnerReferences(append(o.GetOwnerReferences(), ref))
 	}
 }
 
@@ -92,6 +94,7 @@ type ElasticsearchSpec struct {
 // ElasticsearchStatus defines the observed state of Elasticsearch
 // +k8s:openapi-gen=true
 type ElasticsearchStatus struct {
+	// +nullable
 	// +optional
 	Nodes []ElasticsearchNodeStatus `json:"nodes,omitempty"`
 	// +optional
@@ -100,6 +103,7 @@ type ElasticsearchStatus struct {
 	Cluster ClusterHealth `json:"cluster,omitempty"`
 	// +optional
 	ShardAllocationEnabled ShardAllocationState `json:"shardAllocationEnabled,omitempty"`
+	// +nullable
 	// +optional
 	Pods map[ElasticsearchNodeRole]PodStateMap `json:"pods,omitempty"`
 	// +optional
@@ -336,4 +340,7 @@ const (
 	NodeStorage              ClusterConditionType = "NodeStorage"
 	CustomImage              ClusterConditionType = "CustomImageIgnored"
 	DegradedState            ClusterConditionType = "Degraded"
+	StorageClassName         ClusterConditionType = "StorageClassNameChangeIgnored"
+	StorageSize              ClusterConditionType = "StorageSizeChangeIgnored"
+	StorageStructure         ClusterConditionType = "StorageStructureChangeIgnored"
 )

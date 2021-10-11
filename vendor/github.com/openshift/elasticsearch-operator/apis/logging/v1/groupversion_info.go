@@ -35,3 +35,4 @@ var (
 // +kubebuilder:rbac:groups=config.openshift.io,resources=proxies,verbs=get;list;watch
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=create;delete
 // +kubebuilder:rbac:groups=apps,resourceNames=elasticsearch-operator,resources=deployments/finalizers,verbs=update
+// +kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=get;create;update

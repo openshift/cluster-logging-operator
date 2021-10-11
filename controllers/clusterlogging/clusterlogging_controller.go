@@ -72,12 +72,12 @@ var (
 // and what is in the ClusterLogging.Spec
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileClusterLogging) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	log.V(3).Info("Clusterlogging reconcile request.", "name", request.Name)
 
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
-	err := r.Client.Get(context.TODO(), request.NamespacedName, instance)
+	err := r.Client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.

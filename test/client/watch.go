@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"reflect"
 	gort "runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
 
@@ -55,7 +56,7 @@ func (c *Client) Watch(gvr schema.GroupVersionResource, opts ...ListOption) (w w
 }
 
 // WatchTypeOf returns a watch using the GroupVersionResource of object o.
-func (c *Client) WatchTypeOf(o runtime.Object, opts ...ListOption) (w watch.Interface, err error) {
+func (c *Client) WatchTypeOf(o client.Object, opts ...ListOption) (w watch.Interface, err error) {
 	gvr, err := c.GroupVersionResource(o)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (c *Client) WatchTypeOf(o runtime.Object, opts ...ListOption) (w watch.Inte
 
 // WatchObject returns a watch for changes to a single named object.
 // Note: it is not an error if no such object exists, the watcher will wait for creation.
-func (c *Client) WatchObject(o runtime.Object) (w watch.Interface, err error) {
+func (c *Client) WatchObject(o client.Object) (w watch.Interface, err error) {
 	mo := runtime.Meta(o)
 	return c.WatchTypeOf(o,
 		InNamespace(mo.GetNamespace()),
@@ -119,7 +120,7 @@ func (c *Client) waitFor(o runtime.Object, condition Condition, w watch.Interfac
 // WaitFor watches o until condition() returns true or error, or c.Timeout expires.
 // It is not an error if o does not exist, it will be waited for.
 // o is updated from the last object seen by the watch.
-func (c *Client) WaitFor(o runtime.Object, condition Condition) (err error) {
+func (c *Client) WaitFor(o client.Object, condition Condition) (err error) {
 	w, err := c.WatchObject(o)
 	if err != nil {
 		return err
@@ -132,7 +133,7 @@ func (c *Client) WaitFor(o runtime.Object, condition Condition) (err error) {
 // WaitForType watches for events involving objects of the same type as o,
 // until condition() returns true or error, or c.Timeout expires.
 // o is updated from the last object seen by the watch.
-func (c *Client) WaitForType(o runtime.Object, condition Condition, opts ...ListOption) (err error) {
+func (c *Client) WaitForType(o client.Object, condition Condition, opts ...ListOption) (err error) {
 	w, err := c.WatchTypeOf(o, opts...)
 	if err != nil {
 		return err

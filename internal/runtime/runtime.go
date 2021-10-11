@@ -41,9 +41,8 @@ func Meta(o runtime.Object) metav1.Object {
 }
 
 // NamespacedName returns the namespaced name of an object.
-func NamespacedName(o runtime.Object) types.NamespacedName {
-	nn, err := client.ObjectKeyFromObject(o)
-	must(err)
+func NamespacedName(o client.Object) types.NamespacedName {
+	nn := client.ObjectKeyFromObject(o)
 	return nn
 }
 

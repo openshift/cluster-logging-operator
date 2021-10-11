@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
+	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/functional"
@@ -21,6 +22,7 @@ import (
 // Here we will emulate CRI-O split by direct writing formatted content
 var _ = Describe("Reassembly split by CRI-O logs ", func() {
 
+	const chunkSize = 1024 * 8
 	var (
 		framework *functional.FluentdFunctionalFramework
 		timestamp = "2021-03-31T12:59:28.573159188+00:00"
@@ -86,4 +88,234 @@ var _ = Describe("Reassembly split by CRI-O logs ", func() {
 		Expect(logs[0].Message).Should(Equal("Run, Forest, Run!"))
 		Expect(logs[1].Message).Should(Equal("Freedom!!!"))
 	})
+
+	Context("When a Java container logs a multi-line stack trace as JSON", func() {
+		It("should be forwarded as a single message", func() {
+			stack := strings.ReplaceAll(JsonJavaStackTrace, "\n", "")
+			messages := []string{}
+			start := 0
+			totChunks := (len(stack) / (chunkSize)) + 1
+			partial := true
+			for chunk := 0; chunk < totChunks; chunk++ {
+				end := start + chunkSize
+				if end > len(stack) {
+					end = len(stack)
+					partial = false
+				}
+				m := stack[start:end]
+				messages = append(messages, functional.NewCRIOLogMessage(timestamp, m, partial))
+				start = end
+			}
+			message := strings.Join(messages, "\n")
+			Expect(framework.WriteMessagesToApplicationLog(message, 1)).To(Succeed())
+			raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			Expect(logs[0].Message).Should(Equal(stack))
+		})
+	})
 })
+
+//JsonJavaStackTrace - sample of Java stack trace in JSON format
+const JsonJavaStackTrace = `{"instant":{"epochSecond":1617711572,"nanoOfSecond":619500000},"thread":"main",
+"level":"ERROR","loggerName":"App","message":"trace","thrown":{"commonElementCount":0,
+"localizedMessage":"/ by zero","message":"/ by zero","name":"java.lang.ArithmeticException",
+"extendedStackTrace":[{"class":"App","method":"main","file":"App.java","line":15,
+"exact":true,"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?",
+"version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke",
+"file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method",
+"method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},
+{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java",
+"line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main",
+"file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},{"class":
+"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?",
+"version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke",
+"file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
+{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,
+"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main",
+"file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App",
+"method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?",
+"version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke",
+"file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
+{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,
+"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main",
+"file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App",
+"method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App",
+"method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},
+{"class":"App","method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App",
+"method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},
+{"class":"App","method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,
+"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke",
+"file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},{"class":
+"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,
+"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java",
+"line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main",
+"file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main",
+"file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,
+"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},
+{"class":"App","method":"main","file":"App.java","line":15,"exact":true,"location":"classes/",
+"version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke",
+"file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},
+{"class":"App","method":"main","file":"App.java","line":15,"exact":true,"location":"classes/",
+"version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App",
+"method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},
+{"class":"App","method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,
+"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke",
+"file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,
+"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App",
+"method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke",
+"file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
+{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,
+"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main",
+"file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App",
+"method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java",
+"line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke","file":"DelegatingMethodAccessorImpl.java",
+"line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method","method":"invoke",
+"file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},{"class":
+"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java","line":131,
+"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main","file":"App.java",
+"line":15,"exact":true,"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java",
+"line":62,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl",
+"method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
+{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?",
+"version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java",
+"line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main","file":"App.java",
+"line":15,"exact":true,"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java",
+"line":62,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl",
+"method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
+{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?",
+"version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java","line":131,
+"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main","file":"App.java","line":15,"exact":true,
+"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0",
+"file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},{"class":
+"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,
+"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl",
+"method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?",
+"version":"?"},{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,
+"exact":false,"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2",
+"method":"main","file":"AppMainV2.java","line":131,"exact":true,"location":"idea_rt.jar","version":"?"},
+{"class":"App","method":"main","file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,
+"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java",
+"line":62,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl",
+"method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
+{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?",
+"version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java",
+"line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main","file":"App.java",
+"line":15,"exact":true,"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,
+"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke",
+"file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method",
+"method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},
+{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java",
+"line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main",
+"file":"App.java","line":15,"exact":true,"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl",
+"method":"invoke0","file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java","line":62,
+"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl","method":"invoke",
+"file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},{"class":"java.lang.reflect.Method",
+"method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},
+{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java","line":131,
+"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main","file":"App.java",
+"line":15,"exact":true,"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0",
+"file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke",
+"file":"NativeMethodAccessorImpl.java","line":62,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl",
+"method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?",
+"version":"?"},{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,
+"location":"?","version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java",
+"line":131,"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main","file":"App.java","line":15,
+"exact":true,"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0",
+"file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},{"class":
+"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java",
+"line":62,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl",
+"method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
+{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?",
+"version":"?"},{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java","line":131,
+"exact":true,"location":"idea_rt.jar","version":"?"},{"class":"App","method":"main","file":"App.java","line":15,"exact":true,
+"location":"classes/","version":"?"},{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke0",
+"file":"NativeMethodAccessorImpl.java","line":-2,"exact":false,"location":"?","version":"?"},
+{"class":"jdk.internal.reflect.NativeMethodAccessorImpl","method":"invoke","file":"NativeMethodAccessorImpl.java",
+"line":62,"exact":false,"location":"?","version":"?"},{"class":"jdk.internal.reflect.DelegatingMethodAccessorImpl",
+"method":"invoke","file":"DelegatingMethodAccessorImpl.java","line":43,"exact":false,"location":"?","version":"?"},
+{"class":"java.lang.reflect.Method","method":"invoke","file":"Method.java","line":566,"exact":false,"location":"?","version":"?"},
+{"class":"com.intellij.rt.execution.application.AppMainV2","method":"main","file":"AppMainV2.java","line":131,"exact":true,
+"location":"idea_rt.jar","version":"?"}]},"endOfBatch":false,"loggerFqcn":"org.apache.logging.log4j.spi.AbstractLogger",
+"threadId":1,"threadPriority":5,"service":"java-app"}`

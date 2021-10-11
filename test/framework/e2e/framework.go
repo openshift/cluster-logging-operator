@@ -1,9 +1,11 @@
-package helpers
+package e2e
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -37,9 +39,7 @@ const (
 	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
 	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterlogforwarders"
 	DefaultCleanUpTimeout  = 60.0 * 2
-)
 
-const (
 	defaultRetryInterval      = 1 * time.Second
 	defaultTimeout            = 10 * time.Minute
 	DefaultWaitForLogsTimeout = 10 * time.Minute
@@ -205,14 +205,14 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 	return name
 }
 
-func (tc *E2ETestFramework) WaitFor(component LogComponentType) error {
+func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 	switch component {
-	case ComponentTypeVisualization:
-		return tc.waitForDeployment(OpenshiftLoggingNS, "kibana", defaultRetryInterval, defaultTimeout)
-	case ComponentTypeCollector:
+	case helpers.ComponentTypeVisualization:
+		return tc.waitForDeployment(constants.OpenshiftNS, "kibana", defaultRetryInterval, defaultTimeout)
+	case helpers.ComponentTypeCollector:
 		clolog.V(3).Info("Waiting for ", "component", component)
 		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
-	case ComponentTypeStore:
+	case helpers.ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
 	}
 	return fmt.Errorf("Unable to waitfor unrecognized component: %v", component)
@@ -252,7 +252,7 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
 		}
-		pods, err := tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
+		pods, err := tc.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				clolog.V(2).Error(err, "Did not find elasticsearch pods")
@@ -360,8 +360,8 @@ func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInte
 	return nil
 }
 
-func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...LogComponentType) error {
-	tc.ClusterLogging = NewClusterLogging(componentTypes...)
+func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...helpers.LogComponentType) error {
+	tc.ClusterLogging = helpers.NewClusterLogging(componentTypes...)
 	tc.LogStores["elasticsearch"] = &ElasticLogStore{
 		Framework: tc,
 	}
@@ -586,7 +586,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		return nil, err
 	}
 	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
-	if err, _, _ := certificates.GenerateCertificates(OpenshiftLoggingNS, scriptsDir, logStoreName, workingDir); err != nil {
+	if err, _, _ := certificates.GenerateCertificates(constants.OpenshiftNS, scriptsDir, logStoreName, workingDir); err != nil {
 		return nil, err
 	}
 	data := map[string][]byte{
@@ -602,17 +602,17 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 	sOpts := metav1.CreateOptions{}
 	secret := k8shandler.NewSecret(
 		secretName,
-		OpenshiftLoggingNS,
+		constants.OpenshiftNS,
 		data,
 	)
 	clolog.V(3).Info("Creating secret for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
-	newSecret, err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts)
+	newSecret, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), secret, sOpts)
 	if err == nil {
 		return newSecret, nil
 	}
 	if errors.IsAlreadyExists(err) {
 		sOpts := metav1.UpdateOptions{}
-		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Update(context.TODO(), secret, sOpts)
+		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Update(context.TODO(), secret, sOpts)
 		if err == nil {
 			return updatedSecret, nil
 		}

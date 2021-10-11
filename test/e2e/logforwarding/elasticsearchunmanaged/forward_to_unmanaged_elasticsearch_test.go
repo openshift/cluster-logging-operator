@@ -3,6 +3,7 @@ package elasticsearchunmanaged
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
 
@@ -23,7 +24,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	log.Info("Running ", "filename", filename)
 	var (
 		err            error
-		e2e            = helpers.NewE2ETestFramework()
+		e2e            = framework.NewE2ETestFramework()
 		pipelineSecret *corev1.Secret
 		elasticsearch  *elasticsearch.Elasticsearch
 	)
@@ -98,14 +99,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{constants.CollectorName, "elasticsearch"})
+			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "elasticsearch"})
 		})
 
 		It("should send logs to the forward.Output logstore", func() {
 			name := elasticsearch.GetName()
-			Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-			Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
-			Expect(e2e.LogStores[name].HasAuditLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
+			Expect(e2e.LogStores[name].HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+			Expect(e2e.LogStores[name].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+			Expect(e2e.LogStores[name].HasAuditLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored audit logs")
 		})
 
 	})

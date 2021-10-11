@@ -2,6 +2,7 @@ package normalization
 
 import (
 	"fmt"
+	functional "github.com/openshift/cluster-logging-operator/test/framework/functional"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
@@ -10,7 +11,6 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/functional"
 )
 
 var _ = Describe("[Normalization] Fluentd normalization", func() {

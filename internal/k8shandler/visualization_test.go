@@ -422,7 +422,7 @@ func TestRemoveKibanaCR(t *testing.T) {
 		},
 	}
 
-	clr.Client = fake.NewFakeClient(kbn)
+	clr.Client = fake.NewFakeClient(kbn) //nolint
 
 	if err := clr.removeKibanaCR(); err != nil {
 		t.Error(err)

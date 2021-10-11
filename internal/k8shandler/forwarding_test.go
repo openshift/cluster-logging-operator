@@ -70,7 +70,7 @@ var _ = Describe("Normalizing forwarder", func() {
 			URL:  "http://there",
 		}
 		request = &ClusterLoggingRequest{
-			Client: fake.NewFakeClient(),
+			Client: fake.NewFakeClient(), //nolint
 			Cluster: &logging.ClusterLogging{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: aNamespace,
@@ -354,14 +354,14 @@ var _ = Describe("Normalizing forwarder", func() {
 						request.ForwarderSpec.Outputs = []logging.OutputSpec{output}
 					})
 					It("should drop outputs with secrets that are missing aws_access_key_id and aws_secret_access_key", func() {
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should drop outputs with secrets that is missing aws_secret_access_id", func() {
 						secret.Data["aws_secret_access_key"] = []byte{0, 1, 2}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
@@ -369,14 +369,14 @@ var _ = Describe("Normalizing forwarder", func() {
 					It("should drop outputs with secrets that has empty aws_secret_access_key", func() {
 						secret.Data["aws_secret_access_key"] = []byte{}
 						secret.Data["aws_access_key_id"] = []byte{1, 2, 3}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should drop outputs with secrets that is missing aws_secret_access_key", func() {
 						secret.Data["aws_access_key_id"] = []byte{0, 1, 2}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
@@ -384,7 +384,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					It("should drop outputs with secrets that have empty aws_access_key_id", func() {
 						secret.Data["aws_access_key_id"] = []byte{}
 						secret.Data["aws_secret_access_key"] = []byte{1, 2, 3}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
@@ -392,7 +392,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					It("should accept outputs with secrets that have aws_secret_access_key and aws_access_key_id", func() {
 						secret.Data["aws_secret_access_key"] = []byte{0, 1, 2}
 						secret.Data["aws_access_key_id"] = []byte{0, 1, 2}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
@@ -411,7 +411,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					})
 					It("should drop outputs with secrets that have missing tls.key", func() {
 						secret.Data["tls.crt"] = []byte{0, 1, 2}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
@@ -419,14 +419,14 @@ var _ = Describe("Normalizing forwarder", func() {
 					It("should drop outputs with secrets that have empty tls.crt", func() {
 						secret.Data["tls.crt"] = []byte{}
 						secret.Data["tls.key"] = []byte{1, 2, 3}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 					})
 					It("should drop outputs with secrets that have missing tls.crt", func() {
 						secret.Data["tls.key"] = []byte{0, 1, 2}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
@@ -434,7 +434,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					It("should drop outputs with secrets that have empty tls.key", func() {
 						secret.Data["tls.key"] = []byte{}
 						secret.Data["tls.crt"] = []byte{1, 2, 3}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
@@ -442,7 +442,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					It("should accept outputs with secrets that have tls.key and tls.cert", func() {
 						secret.Data["tls.key"] = []byte{0, 1, 2}
 						secret.Data["tls.crt"] = []byte{0, 1, 2}
-						request.Client = fake.NewFakeClient(secret)
+						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
@@ -451,7 +451,7 @@ var _ = Describe("Normalizing forwarder", func() {
 			})
 
 			It("should accept well formed outputs", func() {
-				request.Client = fake.NewFakeClient(
+				request.Client = fake.NewFakeClient( //nolint
 					&corev1.Secret{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Secret",
@@ -749,7 +749,7 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 				BinaryData: nil,
 			}
 
-			clusterRequest.Client = fake.NewFakeClient(tt.fields.cluster, config)
+			clusterRequest.Client = fake.NewFakeClient(tt.fields.cluster, config) //nolint
 
 			gotConfig, err := clusterRequest.generateCollectorConfig()
 			if (err != nil) != tt.wantErr {
@@ -767,7 +767,7 @@ var _ = DescribeTable("Normalizing round trip of valid YAML specs",
 
 	func(yamlSpec string) {
 		request := ClusterLoggingRequest{
-			Client: fake.NewFakeClient(),
+			Client: fake.NewFakeClient(), //nolint
 			Cluster: &logging.ClusterLogging{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: aNamespace,

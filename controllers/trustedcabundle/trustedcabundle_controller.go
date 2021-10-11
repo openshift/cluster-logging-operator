@@ -1,6 +1,7 @@
 package trustedcabundle
 
 import (
+	"context"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"time"
@@ -52,9 +53,9 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// Watch for changes to the additional trust bundle configmap in "openshift-logging".
 	pred := predicate.Funcs{
-		UpdateFunc:  func(e event.UpdateEvent) bool { return handleConfigMap(e.MetaNew) },
+		UpdateFunc:  func(e event.UpdateEvent) bool { return handleConfigMap(e.ObjectNew) },
 		DeleteFunc:  func(e event.DeleteEvent) bool { return false },
-		CreateFunc:  func(e event.CreateEvent) bool { return handleConfigMap(e.Meta) },
+		CreateFunc:  func(e event.CreateEvent) bool { return handleConfigMap(e.Object) },
 		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
 	if err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForObject{}, pred); err != nil {
@@ -77,7 +78,7 @@ type ReconcileTrustedCABundle struct {
 // Reconcile reads that state of the trusted CA bundle configmap objects for the
 // collector and the visualization resources.
 // When the user configured and/or system certs are updated, the pods are triggered to restart.
-func (r *ReconcileTrustedCABundle) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileTrustedCABundle) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 
 	if err := k8shandler.ReconcileForTrustedCABundle(request.Name, r.client); err != nil {
 		// Failed to reconcile - requeuing.

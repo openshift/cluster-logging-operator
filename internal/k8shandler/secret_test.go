@@ -32,7 +32,7 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		Client: fake.NewFakeClient(),
+		Client: fake.NewFakeClient(), //nolint
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "instance",
@@ -97,7 +97,7 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		Client: fake.NewFakeClient(),
+		Client: fake.NewFakeClient(), //nolint
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "instance",
@@ -172,7 +172,7 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		Client: fake.NewFakeClient(),
+		Client: fake.NewFakeClient(), //nolint
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "instance",
@@ -239,7 +239,7 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		Client: fake.NewFakeClient(),
+		Client: fake.NewFakeClient(), //nolint
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "instance",

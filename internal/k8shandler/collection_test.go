@@ -104,7 +104,7 @@ var _ = Describe("Reconciling", func() {
 				}
 			)
 			BeforeEach(func() {
-				client = fake.NewFakeClient(
+				client = fake.NewFakeClient( //nolint
 					cluster,
 					fluentdSecret,
 					fluentdCABundle,

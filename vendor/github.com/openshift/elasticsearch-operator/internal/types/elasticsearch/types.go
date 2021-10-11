@@ -4,8 +4,10 @@ func NewIndexTemplate(pattern string, aliases []string, shards, replicas int32) 
 	template := IndexTemplate{
 		Template: pattern,
 		Settings: IndexSettings{
-			NumberOfShards:   shards,
-			NumberOfReplicas: replicas,
+			Index: &IndexingSettings{
+				NumberOfShards:   shards,
+				NumberOfReplicas: replicas,
+			},
 		},
 		Aliases: map[string]IndexAlias{},
 	}
@@ -18,9 +20,11 @@ func NewIndexTemplate(pattern string, aliases []string, shards, replicas int32) 
 func NewIndex(name string, shards, replicas int32) *Index {
 	index := Index{
 		Name: name,
-		Settings: IndexSettings{
-			NumberOfShards:   shards,
-			NumberOfReplicas: replicas,
+		Settings: &IndexSettings{
+			Index: &IndexingSettings{
+				NumberOfShards:   shards,
+				NumberOfReplicas: replicas,
+			},
 		},
 		Aliases: map[string]IndexAlias{},
 	}
@@ -39,7 +43,7 @@ func (index *Index) AddAlias(name string, isWriteIndex bool) *Index {
 type Index struct {
 	// Name  intentionally not serialized
 	Name     string                 `json:"-"`
-	Settings IndexSettings          `json:"settings,omitempty"`
+	Settings *IndexSettings         `json:"settings,omitempty"`
 	Aliases  map[string]IndexAlias  `json:"aliases,omitempty"`
 	Mappings map[string]interface{} `json:"mappings,omitempty"`
 }
@@ -90,20 +94,21 @@ type IndexAlias struct {
 }
 
 type IndexSettings struct {
-	NumberOfShards   int32             `json:"number_of_shards,omitempty"`
-	NumberOfReplicas int32             `json:"number_of_replicas,omitempty"`
-	Index            *IndexingSettings `json:"index,omitempty"`
+	Index *IndexingSettings `json:"index,omitempty"`
 }
 
 type IndexingSettings struct {
-	Format  int32                 `json:"format,omitempty"`
-	Blocks  *IndexBlocksSettings  `json:"blocks,omitempty"`
-	Mapper  *IndexMapperSettings  `json:"mapper,omitempty"`
-	Mapping *IndexMappingSettings `json:"mapping,omitempty"`
+	NumberOfShards   int32                 `json:"number_of_shards,string,omitempty"`
+	NumberOfReplicas int32                 `json:"number_of_replicas,string,omitempty"`
+	Format           int32                 `json:"format,omitempty"`
+	Blocks           *IndexBlocksSettings  `json:"blocks,omitempty"`
+	Mapper           *IndexMapperSettings  `json:"mapper,omitempty"`
+	Mapping          *IndexMappingSettings `json:"mapping,omitempty"`
 }
 
 type IndexBlocksSettings struct {
-	Write bool `json:"write"`
+	Write               bool    `json:"write,omitempty"`
+	ReadOnlyAllowDelete *string `json:"read_only_allow_delete"`
 }
 
 type IndexMapperSettings struct {

@@ -5,7 +5,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 
@@ -46,13 +45,13 @@ func (clusterRequest *ClusterLoggingRequest) isManaged() bool {
 		clusterRequest.Cluster.Spec.ManagementState == ""
 }
 
-func (clusterRequest *ClusterLoggingRequest) Create(object runtime.Object) error {
+func (clusterRequest *ClusterLoggingRequest) Create(object client.Object) error {
 	err := clusterRequest.Client.Create(context.TODO(), object)
 	return err
 }
 
 //Update the runtime Object or return error
-func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err error) {
+func (clusterRequest *ClusterLoggingRequest) Update(object client.Object) (err error) {
 	if err = clusterRequest.Client.Update(context.TODO(), object); err != nil {
 		log.Error(err, "Error updating ", object.GetObjectKind())
 	}
@@ -60,7 +59,7 @@ func (clusterRequest *ClusterLoggingRequest) Update(object runtime.Object) (err 
 }
 
 //Update the runtime Object status or return error
-func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object runtime.Object) (err error) {
+func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object client.Object) (err error) {
 	if err = clusterRequest.Client.Status().Update(context.TODO(), object); err != nil {
 		// making this debug because we should be throwing the returned error if we are never
 		// able to update the status
@@ -69,7 +68,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object runtime.Object)
 	return err
 }
 
-func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object runtime.Object) error {
+func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object client.Object) error {
 	namespacedName := types.NamespacedName{Name: objectName, Namespace: clusterRequest.Cluster.Namespace}
 
 	log.V(3).Info("Getting object", "namespacedName", namespacedName, "object", object)
@@ -77,7 +76,7 @@ func (clusterRequest *ClusterLoggingRequest) Get(objectName string, object runti
 	return clusterRequest.Client.Get(context.TODO(), namespacedName, object)
 }
 
-func (clusterRequest *ClusterLoggingRequest) GetClusterResource(objectName string, object runtime.Object) error {
+func (clusterRequest *ClusterLoggingRequest) GetClusterResource(objectName string, object client.Object) error {
 	namespacedName := types.NamespacedName{Name: objectName}
 	log.V(3).Info("Getting ClusterResource object", "namespacedName", namespacedName, "object", object)
 	err := clusterRequest.Client.Get(context.TODO(), namespacedName, object)
@@ -85,7 +84,7 @@ func (clusterRequest *ClusterLoggingRequest) GetClusterResource(objectName strin
 	return err
 }
 
-func (clusterRequest *ClusterLoggingRequest) List(selector map[string]string, object runtime.Object) error {
+func (clusterRequest *ClusterLoggingRequest) List(selector map[string]string, object client.ObjectList) error {
 	log.V(3).Info("Listing selector object", "selector", selector, "object", object)
 
 	listOpts := []client.ListOption{
@@ -100,7 +99,7 @@ func (clusterRequest *ClusterLoggingRequest) List(selector map[string]string, ob
 	)
 }
 
-func (clusterRequest *ClusterLoggingRequest) Delete(object runtime.Object) error {
+func (clusterRequest *ClusterLoggingRequest) Delete(object client.Object) error {
 	log.V(3).Info("Deleting", "object", object)
 	return clusterRequest.Client.Delete(context.TODO(), object)
 }

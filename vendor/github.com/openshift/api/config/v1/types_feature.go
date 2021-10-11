@@ -37,6 +37,9 @@ var (
 
 	// TopologyManager enables ToplogyManager support. Upgrades are enabled with this feature.
 	LatencySensitive FeatureSet = "LatencySensitive"
+
+	// IPv6DualStackNoUpgrade enables dual-stack. Turning this feature set on IS NOT SUPPORTED, CANNOT BE UNDONE, and PREVENTS UPGRADES.
+	IPv6DualStackNoUpgrade FeatureSet = "IPv6DualStackNoUpgrade"
 )
 
 type FeatureGateSpec struct {
@@ -102,10 +105,20 @@ var FeatureSets = map[FeatureSet]*FeatureGateEnabledDisabled{
 		Enabled:  []string{},
 		Disabled: []string{},
 	},
-	TechPreviewNoUpgrade: newDefaultFeatures().toFeatures(),
+	TechPreviewNoUpgrade: newDefaultFeatures().
+		with("CSIDriverAzureDisk").    // sig-storage, jsafrane, OCP specific
+		with("CSIDriverVSphere").      // sig-storage, jsafrane, OCP specific
+		with("CSIMigrationAWS").       // sig-storage, jsafrane, Kubernetes feature gate
+		with("CSIMigrationOpenStack"). // sig-storage, jsafrane, Kubernetes feature gate
+		toFeatures(),
 	LatencySensitive: newDefaultFeatures().
 		with(
 			"TopologyManager", // sig-pod, sjenning
+		).
+		toFeatures(),
+	IPv6DualStackNoUpgrade: newDefaultFeatures().
+		with(
+			"IPv6DualStack", // sig-network, danwinship
 		).
 		toFeatures(),
 }
@@ -117,7 +130,7 @@ var defaultFeatures = &FeatureGateEnabledDisabled{
 		"SupportPodPidsLimit",            // sig-pod, sjenning
 		"NodeDisruptionExclusion",        // sig-scheduling, ccoleman
 		"ServiceNodeExclusion",           // sig-scheduling, ccoleman
-		"SCTPSupport",                    // sig-network, ccallend
+		"DownwardAPIHugePages",           // sig-node, rphillips
 	},
 	Disabled: []string{
 		"LegacyNodeRoleBehavior", // sig-scheduling, ccoleman

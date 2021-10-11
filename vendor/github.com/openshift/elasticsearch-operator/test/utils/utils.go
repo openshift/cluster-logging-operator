@@ -14,7 +14,6 @@ import (
 
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	loggingv1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
-	"github.com/openshift/elasticsearch-operator/internal/elasticsearch"
+	"github.com/openshift/elasticsearch-operator/internal/elasticsearch/esclient"
 	"github.com/openshift/elasticsearch-operator/internal/utils"
 )
 
@@ -102,7 +101,7 @@ func WaitForPods(t *testing.T, f client.Client, namespace string, labels map[str
 		}
 		err := f.List(context.TODO(), pods, opts...)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				return false, err
 			}
 			return false, nil
@@ -126,7 +125,7 @@ func WaitForRolloutComplete(t *testing.T, f client.Client, namespace string, lab
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		err = f.List(context.TODO(), pods, opts...)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				t.Logf("Waiting for availability of pods with labels: %v in Namespace: %s \n", labels, namespace)
 				return false, nil
 			}
@@ -173,7 +172,7 @@ func WaitForNodeStatusCondition(t *testing.T, f client.Client, namespace, name s
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		err = f.Get(context.TODO(), elasticsearchName, elasticsearchCR)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s elasticsearch\n", name)
 				return false, nil
 			}
@@ -213,7 +212,7 @@ func WaitForClusterStatusCondition(t *testing.T, f client.Client, namespace, nam
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		err = f.Get(context.TODO(), elasticsearchName, elasticsearchCR)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s elasticsearch\n", name)
 				return false, nil
 			}
@@ -249,7 +248,7 @@ func WaitForReadyDeployment(t *testing.T, kubeclient client.Client, namespace, n
 		deployment := &apps.Deployment{}
 		err = kubeclient.Get(context.Background(), lookupKey, deployment)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				t.Logf("Waiting for availability of Deployment: %s in Namespace: %s \n", name, namespace)
 				return false, nil
 			}
@@ -276,7 +275,7 @@ func WaitForStatefulset(t *testing.T, kubeclient client.Client, namespace, name 
 		statefulset := &apps.StatefulSet{}
 		err = kubeclient.Get(context.Background(), lookupKey, statefulset)
 		if err != nil {
-			if errors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				t.Logf("Waiting for availability of %s statefulset\n", name)
 				return false, nil
 			}
@@ -308,7 +307,7 @@ func GenerateUUID() string {
 func WaitForIndexTemplateReplicas(t *testing.T, kubeclient kubernetes.Interface, namespace, clusterName string, replicas int32, retryInterval, timeout time.Duration) error {
 	// mock out Secret response from client
 	mockClient := fake.NewFakeClient(getMockedSecret(clusterName, namespace))
-	esClient := elasticsearch.NewClient(clusterName, namespace, mockClient)
+	esClient := esclient.NewClient(clusterName, namespace, mockClient)
 
 	stringReplicas := fmt.Sprintf("%d", replicas)
 
@@ -345,7 +344,7 @@ func WaitForIndexTemplateReplicas(t *testing.T, kubeclient kubernetes.Interface,
 func WaitForIndexReplicas(t *testing.T, kubeclient kubernetes.Interface, namespace, clusterName string, replicas int32, retryInterval, timeout time.Duration) error {
 	// mock out Secret response from client
 	mockClient := fake.NewFakeClient(getMockedSecret(clusterName, namespace))
-	esClient := elasticsearch.NewClient(clusterName, namespace, mockClient)
+	esClient := esclient.NewClient(clusterName, namespace, mockClient)
 
 	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
 		// get all index replica count

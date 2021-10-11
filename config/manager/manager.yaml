@@ -18,6 +18,20 @@ spec:
       - name: cluster-logging-operator
         image: quay.io/openshift-logging/cluster-logging-operator:latest
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
         command:
           - cluster-logging-operator
         env:

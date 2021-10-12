@@ -70,7 +70,7 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 			var MaxLen uint64 = 40000
 			Expect(framework.WritesNApplicationLogsOfSize(1, MaxLen)).To(BeNil())
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], "#011")
@@ -93,7 +93,7 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
 			}
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " ")
@@ -118,7 +118,7 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
 			}
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " ")
@@ -141,7 +141,7 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 				Expect(framework.WriteMessagesToApplicationLog(log, 1)).To(BeNil())
 			}
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeSyslog)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).ToNot(BeEmpty())
 			fields := strings.Split(outputlogs[0], " ")

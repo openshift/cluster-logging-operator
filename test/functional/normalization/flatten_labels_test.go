@@ -55,7 +55,7 @@ var _ = Describe("[Normalization] Fluentd normalization", func() {
 			pb.ToFluentForwardOutput()
 			Expect(framework.Deploy()).To(BeNil())
 			Expect(framework.WritesApplicationLogs(1)).To(BeNil())
-			raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+			raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")

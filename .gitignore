@@ -1,3 +1,4 @@
+.target/*
 **/.kube/*
 Dockerfile.local
 _output/

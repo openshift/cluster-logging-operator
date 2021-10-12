@@ -112,7 +112,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog
@@ -140,7 +140,7 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog

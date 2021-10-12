@@ -3,6 +3,7 @@ package functional
 import (
 	"encoding/json"
 	"fmt"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
@@ -10,7 +11,8 @@ import (
 )
 
 var ElasticIndex = map[string]string{
-	applicationLog: "app-write",
+	logging.InputNameApplication:    "app-write",
+	logging.InputNameInfrastructure: "app-infra",
 }
 
 func (f *FluentdFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string) (result string, err error) {
@@ -23,6 +25,7 @@ func (f *FluentdFunctionalFramework) GetLogsFromElasticSearch(outputName string,
 
 func (f *FluentdFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string) (result string, err error) {
 
+	buffer := []string{}
 	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
 		cmd := `curl -X GET "localhost:9200/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
 {
@@ -40,17 +43,20 @@ func (f *FluentdFunctionalFramework) GetLogsFromElasticSearchIndex(outputName st
 				if elasticResult["timed_out"] == false {
 					resultHits := elasticResult["hits"].(map[string]interface{})
 					total := resultHits["total"].(map[string]interface{})
+					if int(total["value"].(float64)) == 0 {
+						return false, nil
+					}
 					hits := resultHits["hits"].([]interface{})
-					if int(total["value"].(float64)) >= 1 {
-						hit := hits[0].(map[string]interface{})
+					for i := 0; i < len(hits); i++ {
+						hit := hits[i].(map[string]interface{})
 						jsonHit, err := json.Marshal(hit["_source"])
 						if err == nil {
-							result = string(jsonHit)
-							return true, nil
+							buffer = append(buffer, string(jsonHit))
 						} else {
 							log.V(4).Info("Marshall failed", "err", err)
 						}
 					}
+					return true, nil
 				}
 			} else {
 				log.V(4).Info("Unmarshall failed", "err", err)
@@ -60,7 +66,7 @@ func (f *FluentdFunctionalFramework) GetLogsFromElasticSearchIndex(outputName st
 		return false, nil
 	})
 	if err == nil {
-		result = fmt.Sprintf("[%s]", strings.Join(strings.Split(strings.TrimSpace(result), "\n"), ","))
+		result = fmt.Sprintf("[%s]", strings.Join(buffer, ","))
 	}
 	log.V(4).Info("Returning", "logs", result)
 	return result, err

@@ -37,6 +37,7 @@ const (
 	auditLog           = "audit"
 	ovnAuditLog        = "ovn"
 	k8sAuditLog        = "k8s"
+	infraLog           = "infra"
 	OpenshiftAuditLog  = "openshift-audit-logs"
 	ApplicationLogFile = "/tmp/app-logs"
 	FunctionalNodeName = "functional-test-node"
@@ -56,12 +57,14 @@ var outputLogFile = map[string]map[string]string{
 		auditLog:       "/tmp/audit-logs",
 		ovnAuditLog:    "/tmp/audit-logs",
 		k8sAuditLog:    "/tmp/audit-logs",
+		infraLog:       "/tmp/infra-logs",
 	},
 	logging.OutputTypeSyslog: {
 		applicationLog: "/var/log/infra.log",
 		auditLog:       "/var/log/infra.log",
 		k8sAuditLog:    "/var/log/infra.log",
 		ovnAuditLog:    "/var/log/infra.log",
+		infraLog:       "/var/log/infra.log",
 	},
 }
 
@@ -385,6 +388,11 @@ func (f *FluentdFunctionalFramework) WriteMessagesToApplicationLog(msg string, n
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
+func (f *FluentdFunctionalFramework) WriteMessagesInfraContainerLog(msg string, numOfLogs int) error {
+	filename := fmt.Sprintf("%s/%s_%s_%s-%s.log", fluentdLogPath[applicationLog], f.Pod.Name, "openshift-fake-infra", constants.FluentdName, f.fluentContainerId)
+	return f.WriteMessagesToLog(msg, numOfLogs, filename)
+}
+
 func (f *FluentdFunctionalFramework) WriteMessagesToAuditLog(msg string, numOfLogs int) error {
 	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[auditLog])
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
@@ -473,6 +481,10 @@ func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) 
 	return f.ReadLogsFrom(outputName, applicationLog)
 }
 
+func (f *FluentdFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
+	return f.ReadLogsFrom(outputName, infraLog)
+}
+
 func (f *FluentdFunctionalFramework) ReadAuditLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, auditLog)
 }
@@ -486,10 +498,15 @@ func (f *FluentdFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) ([]
 }
 
 func (f *FluentdFunctionalFramework) ReadLogsFrom(outputName string, outputLogType string) (results []string, err error) {
+	outputSpecs := f.Forwarder.Spec.OutputMap()
+	outputLog := outputName
+	if output, found := outputSpecs[outputName]; found {
+		outputLog = output.Type
+	}
 	var result string
-	outputType, ok := outputLogFile[outputName]
+	outputType, ok := outputLogFile[outputLog]
 	if !ok {
-		return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s", outputName))
+		return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
 	}
 	file, ok := outputType[outputLogType]
 	if !ok {

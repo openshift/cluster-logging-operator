@@ -5,7 +5,8 @@ import (
 )
 
 type Copy struct {
-	Stores []generator.Element
+	DeepCopy bool
+	Stores   []generator.Element
 }
 
 func (c Copy) Name() string {
@@ -15,6 +16,9 @@ func (c Copy) Name() string {
 func (c Copy) Template() string {
 	return `{{define "` + c.Name() + `"  -}}
 @type copy
+{{if .DeepCopy -}}
+deep_copy true
+{{end -}}
 {{compose .Stores}}
 {{end}}`
 }

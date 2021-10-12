@@ -68,7 +68,7 @@ created by main.main
 			buffer = append(buffer, crioLine)
 		}
 		Expect(framework.WriteMessagesToApplicationLog(strings.Join(buffer, "\n"), 1)).To(Succeed())
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")

@@ -124,7 +124,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		// Parse log line
@@ -156,7 +156,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		// Parse log line
@@ -179,7 +179,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		// Parse log line
@@ -204,7 +204,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		// Parse log line

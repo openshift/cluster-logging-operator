@@ -113,7 +113,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog
@@ -146,7 +146,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
 		// Parse log line
@@ -176,7 +176,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 		// Read line from Log Forward output
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		// Parse log line
 		var logs []types.ApplicationLog

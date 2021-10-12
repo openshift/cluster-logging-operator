@@ -102,7 +102,7 @@ output {
 
 	Context("when sending to Logstash using fluent's forward protocol", func() {
 		It("should  be compatible", func() {
-			raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+			raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
 

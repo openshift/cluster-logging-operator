@@ -202,11 +202,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "#{ENV['POD_IP']}"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -982,11 +981,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "#{ENV['POD_IP']}"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -1747,11 +1745,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "#{ENV['POD_IP']}"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -2457,11 +2454,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "#{ENV['POD_IP']}"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -2929,11 +2925,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "#{ENV['POD_IP']}"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -4011,11 +4006,10 @@ inputs:
 <source>
   @type prometheus
   bind "#{ENV['POD_IP']}"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>

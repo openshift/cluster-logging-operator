@@ -1,0 +1,29 @@
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  creationTimestamp: null
+  name: instance
+  namespace: test-qa52ql7x
+spec:
+  outputs:
+  - name: elasticsearch
+    type: elasticsearch
+    url: https://0.0.0.0:9200
+  - name: syslog
+    syslog:
+      appName: myapp
+      facility: user
+      msgID: mymsg
+      procID: myproc
+      rfc: RFC5424
+      severity: debug
+    type: syslog
+    url: udp://0.0.0.0:24224
+  pipelines:
+  - inputRefs:
+    - application
+    name: forward-pipeline
+    outputRefs:
+    - elasticsearch
+    - syslog
+status: {}

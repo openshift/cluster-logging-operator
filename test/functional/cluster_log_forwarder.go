@@ -2,6 +2,7 @@ package functional
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
@@ -97,7 +98,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}
 	added := false
-	clf.Spec.Pipelines, added = addInputToPipeline(p.inputName, forwardPipelineName, clf.Spec.Pipelines)
+	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, forwardPipelineName, clf.Spec.Pipelines)
 	if !added {
 		clf.Spec.Pipelines = append(clf.Spec.Pipelines, logging.PipelineSpec{
 			Name:       forwardPipelineName,
@@ -108,13 +109,21 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 	return p.clfb
 }
 
-func addInputToPipeline(inputName, pipelineName string, pipelineSpecs []logging.PipelineSpec) ([]logging.PipelineSpec, bool) {
+func addInputOutputToPipeline(inputName, outputName, pipelineName string, pipelineSpecs []logging.PipelineSpec) ([]logging.PipelineSpec, bool) {
 	pipelines := []logging.PipelineSpec{}
 	found := false
 	for _, pipeline := range pipelineSpecs {
 		if pipelineName == pipeline.Name {
 			found = true
-			pipeline.InputRefs = append(pipeline.InputRefs, inputName)
+
+			outputRefs := sets.NewString(pipeline.OutputRefs...)
+			if !outputRefs.Has(outputName) {
+				pipeline.OutputRefs = append(pipeline.OutputRefs, outputName)
+			}
+			inputRefs := sets.NewString(pipeline.InputRefs...)
+			if !inputRefs.Has(inputName) {
+				pipeline.InputRefs = append(pipeline.InputRefs, inputName)
+			}
 		}
 		pipelines = append(pipelines, pipeline)
 	}

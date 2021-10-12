@@ -81,7 +81,8 @@ func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Elem
 				Match{
 					MatchTags: "**",
 					MatchElement: Copy{
-						Stores: CopyToLabels(helpers.LabelNames(p.OutputRefs)),
+						DeepCopy: true,
+						Stores:   CopyToLabels(helpers.LabelNames(p.OutputRefs)),
 					},
 				})
 		}

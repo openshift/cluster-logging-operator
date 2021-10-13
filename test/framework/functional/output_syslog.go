@@ -2,12 +2,12 @@ package functional
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"net/url"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
 const ImageRemoteSyslog = "quay.io/openshift/origin-logging-rsyslog:latest"
@@ -20,12 +20,12 @@ func (f *FluentdFunctionalFramework) addSyslogOutput(b *runtime.PodBuilder, outp
 	var baseRsyslogConfig string
 	u, _ := url.Parse(output.URL)
 	if strings.ToLower(u.Scheme) == "udp" {
-		baseRsyslogConfig = helpers.UdpSyslogInput
+		baseRsyslogConfig = e2e.UdpSyslogInput
 	} else {
-		baseRsyslogConfig = helpers.TcpSyslogInput
+		baseRsyslogConfig = e2e.TcpSyslogInput
 	}
 	// using unsecure rsyslog conf
-	rsyslogConf := helpers.GenerateRsyslogConf(baseRsyslogConfig, helpers.RFC5424)
+	rsyslogConf := e2e.GenerateRsyslogConf(baseRsyslogConfig, e2e.RFC5424)
 	rsyslogConf = strings.Join([]string{IncreaseRsyslogMaxMessageSize, rsyslogConf}, "\n")
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"rsyslog.conf": rsyslogConf,

@@ -2,6 +2,8 @@ package fluentd
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
 
@@ -21,7 +23,7 @@ var _ = Describe("[Collection] Namespace filtering", func() {
 	var (
 		err              error
 		fluentDeployment *apps.Deployment
-		e2e              = helpers.NewE2ETestFramework()
+		e2e              = framework.NewE2ETestFramework()
 		rootDir          string
 	)
 	appNamespace1 := "application-ns1"
@@ -93,9 +95,9 @@ var _ = Describe("[Collection] Namespace filtering", func() {
 
 	})
 	It("should send logs from one namespace only", func() {
-		Expect(e2e.LogStores[fluentDeployment.GetName()].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+		Expect(e2e.LogStores[fluentDeployment.GetName()].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 
-		logs, err := e2e.LogStores[fluentDeployment.GetName()].ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
+		logs, err := e2e.LogStores[fluentDeployment.GetName()].ApplicationLogs(framework.DefaultWaitForLogsTimeout)
 		Expect(err).To(BeNil(), fmt.Sprintf("Error fetching logs: %v", err))
 		Expect(len(logs)).To(Not(Equal(0)), "There were no documents returned in the logs")
 
@@ -115,7 +117,7 @@ var _ = Describe("[Collection] Namespace filtering", func() {
 		e2e.WaitForCleanupCompletion(appNamespace1, []string{"test"})
 		e2e.WaitForCleanupCompletion(appNamespace2, []string{"test"})
 		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd"})
-	}, helpers.DefaultCleanUpTimeout)
+		e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{"fluent-receiver", "fluentd"})
+	}, framework.DefaultCleanUpTimeout)
 
 })

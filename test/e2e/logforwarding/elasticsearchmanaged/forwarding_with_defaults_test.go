@@ -3,6 +3,7 @@ package elasticsearchmanaged
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"runtime"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	log.Info("Running ", "filename", filename)
 	var (
-		e2e          = helpers.NewE2ETestFramework()
+		e2e          = framework.NewE2ETestFramework()
 		generatorNS  string
 		generatorPod string
 		err          error
@@ -56,8 +57,8 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		})
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{constants.CollectorName, "elasticsearch"})
-		}, helpers.DefaultCleanUpTimeout)
+			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "elasticsearch"})
+		}, framework.DefaultCleanUpTimeout)
 
 		Context("forwarding logs to default output", func() {
 			Context("with TypeKey set in outputDefaults", func() {
@@ -98,8 +99,8 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				})
 				It("should send logs to index set in labsls ", func() {
 					store := e2e.LogStores["elasticsearch"]
-					estore := store.(*helpers.ElasticLogStore)
-					var indices helpers.Indices
+					estore := store.(*framework.ElasticLogStore)
+					var indices framework.Indices
 					var err error
 					err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
 						indices, err = estore.Indices()
@@ -167,8 +168,8 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				})
 				It("should send logs to index set in IndexName ", func() {
 					store := e2e.LogStores["elasticsearch"]
-					estore := store.(*helpers.ElasticLogStore)
-					var indices helpers.Indices
+					estore := store.(*framework.ElasticLogStore)
+					var indices framework.Indices
 					var err error
 					err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
 						indices, err = estore.Indices()

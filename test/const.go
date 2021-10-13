@@ -24,8 +24,6 @@ const (
 	//
 	DefaultFailureTimeout = 1 * time.Second
 
-	InstanceName               = "instance"
-	OpenshiftLoggingNS         = "openshift-logging"
 	OpenshiftOperatorsRedhatNS = "openshift-operators-redhat"
 )
 

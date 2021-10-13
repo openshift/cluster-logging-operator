@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -26,7 +27,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -74,8 +74,8 @@ var (
 
 	//Timestamp = 2021-07-06T08:26:58.687Z
 	OVNLogTemplate            = "%s|00004|acl_log(ovn_pinctrl0)|INFO|name=verify-audit-logging_deny-all, verdict=drop"
-	KubeAuditLogTemplate      = `{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"info","auditID":"a6299d35-5759-4f67-9bed-2b962cf21cf3","stage":"ResponseComplete","requestURI":"/api/v1/namespaces/openshift-kube-storage-version-migrator/serviceaccounts/kube-storage-version-migrator-sa","verb":"get","user":{"username":"system:serviceaccount:openshift-kube-storage-version-migrator-operator:kube-storage-version-migrator-operator","uid":"d40a1a15-8b96-4ffa-a56b-5a834583532e","groups":["system:serviceaccounts","system:serviceaccounts:openshift-kube-storage-version-migrator-operator","system:authenticated"]},"sourceIPs":["10.128.0.16"],"userAgent":"cluster-kube-storage-version-migrator-operator/v0.0.0 (linux/amd64) kubernetes/$Format","objectRef":{"resource":"serviceaccounts","namespace":"openshift-kube-storage-version-migrator","name":"kube-storage-version-migrator-sa","apiVersion":"v1"},"responseStatus":{"metadata":{},"code":200},"requestReceivedTimestamp":"%s","stageTimestamp":"%s","annotations":{"authentication.k8s.io/legacy-token":"system:serviceaccount:openshift-kube-storage-version-migrator-operator:kube-storage-version-migrator-operator","authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"system:openshift:operator:kube-storage-version-migrator-operator\" of ClusterRole \"cluster-admin\" to ServiceAccount \"kube-storage-version-migrator-operator/openshift-kube-storage-version-migrator-operator\""}}`
-	OpenShiftAuditLogTemplate = `{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"info","auditID":"19f44b1a-e4fb-4c9a-bc2f-068dc94be8fb","stage":"ResponseComplete","requestURI":"/","verb":"get","user":{"username":"system:anonymous","groups":["system:unauthenticated"]},"sourceIPs":["10.128.0.1"],"userAgent":"Go-http-client/1.1","responseStatus":{"metadata":{},"status":"Failure","reason":"Forbidden","code":403},"requestReceivedTimestamp":"%s","stageTimestamp":"%s","annotations":{"authorization.k8s.io/decision":"forbid","authorization.k8s.io/reason":""}}`
+	KubeAuditLogTemplate      = `{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"a6299d35-5759-4f67-9bed-2b962cf21cf3","stage":"ResponseComplete","requestURI":"/api/v1/namespaces/openshift-kube-storage-version-migrator/serviceaccounts/kube-storage-version-migrator-sa","verb":"get","user":{"username":"system:serviceaccount:openshift-kube-storage-version-migrator-operator:kube-storage-version-migrator-operator","uid":"d40a1a15-8b96-4ffa-a56b-5a834583532e","groups":["system:serviceaccounts","system:serviceaccounts:openshift-kube-storage-version-migrator-operator","system:authenticated"]},"sourceIPs":["10.128.0.16"],"userAgent":"cluster-kube-storage-version-migrator-operator/v0.0.0 (linux/amd64) kubernetes/$Format","objectRef":{"resource":"serviceaccounts","namespace":"openshift-kube-storage-version-migrator","name":"kube-storage-version-migrator-sa","apiVersion":"v1"},"responseStatus":{"metadata":{},"code":200},"requestReceivedTimestamp":"%s","stageTimestamp":"%s","annotations":{"authentication.k8s.io/legacy-token":"system:serviceaccount:openshift-kube-storage-version-migrator-operator:kube-storage-version-migrator-operator","authorization.k8s.io/decision":"allow","authorization.k8s.io/reason":"RBAC: allowed by ClusterRoleBinding \"system:openshift:operator:kube-storage-version-migrator-operator\" of ClusterRole \"cluster-admin\" to ServiceAccount \"kube-storage-version-migrator-operator/openshift-kube-storage-version-migrator-operator\""}}`
+	OpenShiftAuditLogTemplate = `{"kind":"Event","apiVersion":"audit.k8s.io/v1","level":"Metadata","auditID":"19f44b1a-e4fb-4c9a-bc2f-068dc94be8fb","stage":"ResponseComplete","requestURI":"/","verb":"get","user":{"username":"system:anonymous","groups":["system:unauthenticated"]},"sourceIPs":["10.128.0.1"],"userAgent":"Go-http-client/1.1","responseStatus":{"metadata":{},"status":"Failure","reason":"Forbidden","code":403},"requestReceivedTimestamp":"%s","stageTimestamp":"%s","annotations":{"authorization.k8s.io/decision":"forbid","authorization.k8s.io/reason":""}}`
 )
 
 func NewKubeAuditLog(eventTime time.Time) string {
@@ -205,9 +205,9 @@ func (f *FluentdFunctionalFramework) DeployWithVisitor(visitor runtime.PodBuilde
 func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBuilderVisitor) (err error) {
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
-	debug_output := false
+	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()
-	if f.Conf, err = forwarder.Generate(string(clfYaml), false, debug_output, &testClient); err != nil {
+	if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, &testClient); err != nil {
 		return err
 	}
 	log.V(2).Info("Generating Certificates")
@@ -334,7 +334,7 @@ done
 		}
 
 		// if fluentd started successfully return success
-		if strings.Contains(output, "flush_thread actually running") || debug_output {
+		if strings.Contains(output, "flush_thread actually running") || debugOutput {
 			return true, nil
 		}
 		return false, nil

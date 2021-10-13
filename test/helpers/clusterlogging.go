@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,8 +27,8 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 			APIVersion: cl.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ClusterLoggingName,
-			Namespace: OpenshiftLoggingNS,
+			Name:      constants.SingletonName,
+			Namespace: constants.OpenshiftNS,
 		},
 		Spec: cl.ClusterLoggingSpec{
 			ManagementState: cl.ManagementStateManaged,

@@ -5,12 +5,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
 func runInFluentdContainer(command string, args ...string) (string, error) {
-	return oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).Pod("service/collector").
+	return oc.Exec().WithNamespace(constants.OpenshiftNS).Pod("service/collector").
 		Container(constants.CollectorName).WithCmd(command, args...).Run()
 }
 
@@ -22,7 +23,7 @@ func checkMountReadOnly(mount string) {
 }
 
 var _ = Describe("Tests of collector container security stance", func() {
-	e2e := helpers.NewE2ETestFramework()
+	e2e := framework.NewE2ETestFramework()
 
 	BeforeEach(func() {
 		components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
@@ -36,8 +37,8 @@ var _ = Describe("Tests of collector container security stance", func() {
 
 	AfterEach(func() {
 		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{constants.CollectorName})
-	}, helpers.DefaultCleanUpTimeout)
+		e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName})
+	}, framework.DefaultCleanUpTimeout)
 
 	It("collector containers should have tight security settings", func() {
 		By("having all Linux capabilities disabled")
@@ -64,7 +65,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		}
 
 		By("not running as a privileged container")
-		result, err = oc.Get().WithNamespace(helpers.OpenshiftLoggingNS).Pod().Selector("component=collector").
+		result, err = oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").
 			OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 		Expect(result).To(BeEmpty())
 		Expect(err).NotTo(HaveOccurred())

@@ -524,6 +524,7 @@ type LogCollectionType string
 
 const (
 	LogCollectionTypeFluentd LogCollectionType = "fluentd"
+	LogCollectionTypeVector  LogCollectionType = "vector"
 )
 
 type EventCollectionType string

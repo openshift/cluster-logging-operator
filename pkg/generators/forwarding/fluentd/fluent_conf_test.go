@@ -2729,6 +2729,7 @@ var _ = Describe("Generating fluentd config", func() {
               @label @MEASURE
               path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
               pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+              refresh_interval 5
               tag linux-audit.log
               <parse>
                 @type viaq_host_audit
@@ -2742,6 +2743,7 @@ var _ = Describe("Generating fluentd config", func() {
               @label @MEASURE
               path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
               pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+              refresh_interval 5
               tag k8s-audit.log
               <parse>
                 @type json
@@ -2759,6 +2761,7 @@ var _ = Describe("Generating fluentd config", func() {
 				@label @MEASURE
 				path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
 				pos_file /var/log/oauth-apiserver.audit.log
+                refresh_interval 5
 				tag openshift-audit.log
 				<parse>
 				@type json

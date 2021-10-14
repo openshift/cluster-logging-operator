@@ -240,7 +240,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
-    verify_mode true
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
     timeout 60
     timeout_exception true
@@ -290,7 +289,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
-    verify_mode true
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
     <format>
       @type json
@@ -357,6 +355,47 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					Expect(results).To(EqualTrimLines(tcpWithTLSConf))
 				})
 			})
+			Context("with TLS enabled and Hostname Verify", func() {
+				BeforeEach(func() {
+					outputs = []logging.OutputSpec{
+						{
+							Type: "syslog",
+							Name: "syslog-receiver",
+							URL:  "tls://sl.svc.messaging.cluster.local:9654",
+							Secret: &logging.OutputSecretSpec{
+								Name: "some-secret",
+							},
+						},
+					}
+					secret = &corev1.Secret{
+						Data: map[string][]byte{
+							"ca-bundle.crt":          []byte("junk"),
+							"syslog_hostname_verify": []byte("true"),
+						},
+					}
+				})
+				It("should produce security config with host name verification", func() {
+					c := SecurityConfig(outputs[0], secret)
+					results, err := g.GenerateConf(c...)
+					Expect(err).To(BeNil())
+					Expect(results).To(EqualTrimLines(`
+						tls true
+						verify_mode 1 #VERIFY_NONE:0, VERIFY_PEER:1
+						ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
+					`))
+				})
+				It("should produce security config with host name verification disabled", func() {
+					secret.Data[SyslogHostnameVerify] = []byte("false")
+					c := SecurityConfig(outputs[0], secret)
+					results, err := g.GenerateConf(c...)
+					Expect(err).To(BeNil())
+					Expect(results).To(EqualTrimLines(`
+						tls true
+						verify_mode 0 #VERIFY_NONE:0, VERIFY_PEER:1
+						ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
+					`))
+				})
+			})
 			Context("with AddLogSource flag", func() {
 				syslogConfWithAddSource := `
 <label @SYSLOG_RECEIVER>
@@ -395,7 +434,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
-    verify_mode true
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
     timeout 60
     timeout_exception true
@@ -435,7 +473,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
-    verify_mode true
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
     timeout 60
     timeout_exception true
@@ -532,7 +569,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
-    verify_mode true
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
     timeout 60
     timeout_exception true
@@ -573,7 +609,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
-    verify_mode true
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
     timeout 60
     timeout_exception true
@@ -671,7 +706,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
-    verify_mode true
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
     timeout 60
     timeout_exception true
@@ -711,7 +745,6 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
-    verify_mode true
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
     timeout 60
     timeout_exception true

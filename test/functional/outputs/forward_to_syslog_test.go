@@ -66,7 +66,7 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 				}), logging.OutputTypeSyslog)
 			Expect(framework.Deploy()).To(BeNil())
 
-			var MaxLen uint64 = 40000
+			var MaxLen int = 40000
 			Expect(framework.WritesNApplicationLogsOfSize(1, MaxLen)).To(BeNil())
 			// Read line from Syslog output
 			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
@@ -81,7 +81,7 @@ var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
 			message, ok := msg.(string)
 			Expect(ok).To(BeTrue())
 			ReceivedLen := uint64(len(message))
-			Expect(ReceivedLen).To(Equal(MaxLen))
+			Expect(ReceivedLen).To(BeEquivalentTo(MaxLen), "Expected the message length to be the same")
 		})
 		It("should send NonJson App logs to syslog", func() {
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).

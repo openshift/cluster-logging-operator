@@ -1,3 +1,5 @@
+benchmark*/
+.make
 **/.kube/*
 Dockerfile.local
 _output/

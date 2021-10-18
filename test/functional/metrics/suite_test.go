@@ -11,7 +11,7 @@ import (
 func TestFunctionMetrics(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	tc := "ClusterLogging Functional Suite - Metrics"
+	tc := "ClusterLogging Functional Suite - SampleCollector"
 	jr := reporters.NewJUnitReporter("/tmp/artifacts/junit/junit-functional-metrics.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, tc, []Reporter{jr})
 }

@@ -2,149 +2,136 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
+	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/reports"
+	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/runners/cluster"
+	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"os"
-	"sort"
+	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/ViaQ/logerr/log"
-
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test"
-	"github.com/openshift/cluster-logging-operator/test/client"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
 // HACK - This command is for development use only
 func main() {
-	image := flag.String("image", "quay.io/openshift-logging/fluentd:1.7.4", "The image to use to run the benchmark")
-	totalMessages := flag.Uint64("totMessages", 10000, "The number of messages to write")
-	msgSize := flag.Uint64("size", 1024, "The message size in bytes")
-	verbosity := flag.Int("verbosity", 0, "")
-	doCleanup := flag.Bool("docleanup", true, "set to false to preserve the namespace")
-	sample := flag.Bool("sample", false, "set to true to dump a sample message")
+	options := config.InitOptions()
 
-	flag.Parse()
+	options.CollectorConfig = config.ReadConfig(options.CollectorConfigPath)
+	log.V(1).Info(options.CollectorConfig)
 
-	log.MustInit("functional-benchmark")
-	log.SetLogLevel(*verbosity)
-	log.V(1).Info("Starting functional benchmarker", "args", os.Args)
+	artifactDir := createArtifactDir(options.ArtifactDir)
 
-	if err := os.Setenv(constants.FluentdImageEnvVar, *image); err != nil {
-		log.Error(err, "Error setting fluent image env var")
-		os.Exit(1)
-	}
-	testclient := client.NewNamesapceClient()
-	framework := functional.NewFluentdFunctionalFrameworkUsing(&testclient.Test, testclient.Close, *verbosity)
-	if *doCleanup {
-		defer framework.Cleanup()
-	}
-
-	functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-		FromInput(logging.InputNameApplication).
-		ToFluentForwardOutput()
-	err := framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-		func(b *runtime.PodBuilder) error {
-			return framework.AddBenchmarkForwardOutput(b, framework.Forwarder.Spec.Outputs[0])
-		},
-	})
+	metrics, statistics, err := RunBenchmark(artifactDir, options)
 	if err != nil {
-		log.Error(err, "Error deploying test pod")
+		log.Error(err, "Error in run")
 		os.Exit(1)
 	}
-	startTime := time.Now()
-	var (
-		logs    []string
-		readErr error
-	)
+
+	reporter := reports.NewReporter(options.Output, artifactDir, metrics, statistics)
+	reporter.Generate()
+}
+
+func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMetrics, *stats.Statistics, error) {
+	runDuration := config.MustParseDuration(options.RunDuration, "run-duration")
+	sampleDuration := config.MustParseDuration(options.SampleDuration, "resource-sample-duration")
+	runner := NewRunner(options)
+	runner.Deploy()
+	if options.DoCleanup {
+		log.V(2).Info("Deferring cleanup", "DoCleanup", options.DoCleanup)
+		defer runner.Cleanup()
+	}
+	//delay waiting to spin up
+	log.V(1).Info("delaying awaiting pod start")
+	time.Sleep(1 * time.Minute)
 	done := make(chan bool)
+	startTime := time.Now()
+	sampler := time.NewTicker(sampleDuration)
+	metrics := stats.NewResourceMetrics()
 	go func() {
-		logs, readErr = framework.ReadNApplicationLogsFrom(*totalMessages, logging.OutputTypeFluentdForward)
-		done <- true
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				{
+					log.V(3).Info("Collecting Sample")
+					metrics.AddSample(runner.SampleCollector())
+				}
+
+			}
+		}
 	}()
-	// defer reader to get logs
-	if err := framework.WritesNApplicationLogsOfSize(*totalMessages, *msgSize); err != nil {
-		log.Error(err, "Error writing logs to test pod")
-		os.Exit(1)
-	}
-	<-done
+	time.Sleep(runDuration)
 	endTime := time.Now()
-	if readErr != nil {
-		log.Error(readErr, "Error reading logs")
-		os.Exit(1)
+	statistics := gatherStatistics(runner, options.Sample, options.MsgSize, startTime, endTime)
+	done <- true
+	sampler.Stop()
+
+	return metrics, statistics, nil
+}
+
+func gatherStatistics(runner Runner, sample bool, msgSize int, startTime, endTime time.Time) *stats.Statistics {
+	raw, err := runner.ReadApplicationLogs()
+	if err != nil {
+		log.Error(err, "Error reading logs")
+		return nil
 	}
-	log.V(4).Info("Read logs", "raw", logs)
-	perflogs := types.PerfLogs{}
-	err = json.Unmarshal([]byte(utils.ToJsonLogs(logs)), &perflogs)
+	log.V(4).Info("Read logs", "raw", raw)
+	logs := types.PerfLogs{}
+	err = json.Unmarshal([]byte(utils.ToJsonLogs(raw)), &logs)
 	if err != nil {
 		log.Error(err, "Error parsing logs")
+		return nil
+	}
+	log.V(4).Info("Read logs", "parsed", logs)
+	if sample {
+		fmt.Printf("Sample:\n%s\n", test.JSONString(logs[0]))
+	}
+	log.V(4).Info("Removing logs outside the duration")
+	filtered := types.PerfLogs{}
+	for _, entry := range logs {
+		if entry.Timestamp.After(startTime) && entry.Timestamp.Before(endTime) {
+			filtered = append(filtered, entry)
+		}
+	}
+	log.V(4).Info("filtered", "logs", filtered)
+	return stats.NewStatisics(filtered, msgSize, endTime.Sub(startTime))
+}
+
+type Runner interface {
+	Deploy()
+	WritesApplicationLogsOfSize(msgSize int) error
+	ReadApplicationLogs() ([]string, error)
+	SampleCollector() *stats.Sample
+	Cleanup()
+}
+
+func NewRunner(options config.Options) Runner {
+	return &cluster.ClusterRunner{
+		Options: options,
+	}
+}
+
+func createArtifactDir(rootDir string) string {
+	var err error
+	artifactDir := path.Join(rootDir, fmt.Sprintf("benchmark-%s", time.Now().Format(time.RFC3339)))
+	if err = os.Mkdir(artifactDir, 0755); err != nil {
+		log.Error(err, "Error creating temp director")
 		os.Exit(1)
 	}
-	log.V(4).Info("Read logs", "parsed", perflogs)
-	if *sample {
-		fmt.Printf("Sample:\n%s\n", test.JSONString(perflogs[0]))
+	if err := os.Chmod(artifactDir, 0755); err != nil {
+		log.Error(err, "Error modifying temp director permissions")
+		os.Exit(1)
 	}
-	timeDiffs := sortLogsByTimeDiff(perflogs)
-	fmt.Printf("  Total Msg: %d\n", *totalMessages)
-	fmt.Printf("Size(bytes): %d\n", *msgSize)
-	fmt.Printf(" Elapsed(s): %s\n", endTime.Sub(startTime))
-	fmt.Printf("    Mean(s): %f\n", mean(perflogs))
-	fmt.Printf("     Min(s): %f\n", min(timeDiffs))
-	fmt.Printf("     Max(s): %f\n", max(timeDiffs))
-	fmt.Printf("  Median(s): %f\n", median(timeDiffs))
-	fmt.Printf(" Mean Bloat: %f\n", meanBloat(perflogs))
-}
-
-func meanBloat(logs types.PerfLogs) float64 {
-	return genericMean(logs, (*types.PerfLog).Bloat)
-}
-
-func mean(logs types.PerfLogs) float64 {
-	return genericMean(logs, (*types.PerfLog).ElapsedEpoc)
-}
-
-func genericMean(logs types.PerfLogs, f func(l *types.PerfLog) float64) float64 {
-	if len(logs) == 0 {
-		return 0
+	if artifactDir, err = filepath.Abs(artifactDir); err != nil {
+		log.Error(err, "Unable to determine the absolute file path of the artifactDir")
+		os.Exit(1)
 	}
-	var total float64
-	for i := range logs {
-		total += f(&logs[i])
-	}
-	return total / float64(len(logs))
-}
-
-func median(diffs []float64) float64 {
-	if len(diffs) == 0 {
-		return 0
-	}
-	return diffs[(len(diffs) / 2)]
-}
-
-func min(diffs []float64) float64 {
-	if len(diffs) == 0 {
-		return 0
-	}
-	return diffs[0]
-}
-
-func max(diffs []float64) float64 {
-	if len(diffs) == 0 {
-		return 0
-	}
-	return diffs[len(diffs)-1]
-}
-
-func sortLogsByTimeDiff(logs types.PerfLogs) []float64 {
-	diffs := make([]float64, len(logs))
-	for i := range logs {
-		diffs[i] = logs[i].ElapsedEpoc()
-	}
-	sort.Slice(diffs, func(i, j int) bool { return diffs[i] < diffs[j] })
-	return diffs
+	return artifactDir
 }

@@ -52,7 +52,7 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 			Expect(framework.WriteMessagesToApplicationLog(crioMsg, 1)).To(BeNil())
 
 			// Read line from Syslog output
-			outputlogs, err := framework.ReadApplicationLogsFrom(SYSLOG_NAME)
+			outputlogs, err := framework.ReadRawApplicationLogsFrom(SYSLOG_NAME)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(outputlogs).To(HaveLen(2), "Expected syslog to have received all the records")
 

@@ -115,7 +115,6 @@ func addInputOutputToPipeline(inputName, outputName, pipelineName string, pipeli
 	for _, pipeline := range pipelineSpecs {
 		if pipelineName == pipeline.Name {
 			found = true
-
 			outputRefs := sets.NewString(pipeline.OutputRefs...)
 			if !outputRefs.Has(outputName) {
 				pipeline.OutputRefs = append(pipeline.OutputRefs, outputName)

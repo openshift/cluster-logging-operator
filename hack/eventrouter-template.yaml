@@ -10,7 +10,7 @@ objects:
     apiVersion: v1
     metadata:
       name: eventrouter
-      namespace: ${NAMESPACE}
+      namespace: ${SA_NAMESPACE}
   - kind: ClusterRole
     apiVersion: v1
     metadata:
@@ -26,7 +26,7 @@ objects:
     subjects:
     - kind: ServiceAccount
       name: eventrouter
-      namespace: ${NAMESPACE}
+      namespace: ${SA_NAMESPACE}
     roleRef:
       kind: ClusterRole
       name: event-reader
@@ -34,7 +34,6 @@ objects:
     apiVersion: v1
     metadata:
       name: eventrouter
-      namespace: ${NAMESPACE}
     data:
       config.json: |-
         {
@@ -44,7 +43,6 @@ objects:
     apiVersion: apps/v1
     metadata:
       name: eventrouter
-      namespace: ${NAMESPACE}
       labels:
         component: eventrouter
         logging-infra: eventrouter
@@ -90,6 +88,6 @@ parameters:
   - name: MEMORY
     displayName: Memory
     value: "128Mi"
-  - name: NAMESPACE
-    displayName: Namespace
+  - name: SA_NAMESPACE
+    displayName: ServiceAccountNamespace
     value: "openshift-logging"

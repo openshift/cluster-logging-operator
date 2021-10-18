@@ -361,12 +361,16 @@ func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInte
 	return nil
 }
 
-func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...helpers.LogComponentType) error {
+func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...helpers.LogComponentType) (err error) {
 	tc.ClusterLogging = helpers.NewClusterLogging(componentTypes...)
 	tc.LogStores["elasticsearch"] = &ElasticLogStore{
 		Framework: tc,
 	}
-	return tc.CreateClusterLogging(tc.ClusterLogging)
+	if err = tc.CreateClusterLogging(tc.ClusterLogging); apierrors.IsAlreadyExists(err) {
+		clolog.Info("cluster logging instance already exists. Ignoring AlreadyExists error")
+		return nil
+	}
+	return err
 }
 
 func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLogging) error {
@@ -374,19 +378,24 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	if err != nil {
 		return err
 	}
-	clolog.V(3).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterLoggingURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do(context.TODO())
 	tc.AddCleanup(func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
 	})
-	return result.Error()
+	clolog.V(3).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
+	result := tc.KubeClient.RESTClient().Post().
+		RequestURI(clusterLoggingURI).
+		SetHeader("Content-Type", "application/json").
+		Body(body).
+		Do(context.TODO())
+	err = result.Error()
+	if apierrors.IsAlreadyExists(err) {
+		clolog.Info("clusterlogging instance already exists. Reusing deployment...")
+		return nil
+	}
+	return err
 }
 
 func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.ClusterLogForwarder) error {
@@ -394,18 +403,30 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 	if err != nil {
 		return err
 	}
-	clolog.V(3).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterlogforwarderURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do(context.TODO())
-	tc.AddCleanup(func() error {
+	deleteCLF := func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterlogforwarderURI)).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
-	})
+	}
+	tc.AddCleanup(deleteCLF)
+	clolog.V(3).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
+	createCLF := func() rest.Result {
+		return tc.KubeClient.RESTClient().Post().
+			RequestURI(clusterlogforwarderURI).
+			SetHeader("Content-Type", "application/json").
+			Body(body).
+			Do(context.TODO())
+	}
+	result := createCLF()
+	if err := result.Error(); err != nil && apierrors.IsAlreadyExists(err) {
+		clolog.Info("clusterlogforwarder instance already exists. Removing and trying to recreate...")
+		if err := deleteCLF(); err != nil {
+			return err
+		}
+		result = createCLF()
+	}
+
 	return result.Error()
 }
 

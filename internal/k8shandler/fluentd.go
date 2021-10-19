@@ -88,7 +88,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 			},
 		}
 	}
-	fluentdContainer := NewContainer(constants.CollectorName, constants.CollectorName, v1.PullIfNotPresent, *resources)
+	fluentdContainer := NewContainer(constants.CollectorName, constants.FluentdName, v1.PullIfNotPresent, *resources)
 	// deliberately not passing any resources for running the below container process, let it have cpu and memory as the process requires
 	exporterresources := &v1.ResourceRequirements{}
 
@@ -288,7 +288,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(flue
 	fluentdPodSpec := newFluentdPodSpec(cluster, fluentdTrustBundle, clusterRequest.ForwarderSpec)
 
 	fluentdDaemonset := NewDaemonSet(constants.CollectorName, cluster.Namespace, constants.CollectorName, constants.CollectorName, fluentdPodSpec)
-	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
+	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "COLLECTOR_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
 
 	trustedCAHashValue, err := clusterRequest.getTrustedCABundleHash()
 	if err != nil {

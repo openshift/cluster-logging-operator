@@ -18,7 +18,7 @@ spec:
       initContainers:
       - name: mutate-csv-and-generate-sqlite-db
         image: ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         command:
         - sh
         args:
@@ -33,6 +33,8 @@ spec:
           value: ${IMAGE_LOGGING_CURATOR5}
         - name: IMAGE_LOGGING_FLUENTD
           value: ${IMAGE_LOGGING_FLUENTD}
+        - name: IMAGE_LOGGING_VECTOR
+          value: ${IMAGE_LOGGING_VECTOR}
         - name: IMAGE_LOG_FILE_METRIC_EXPORTER
           value: ${IMAGE_LOG_FILE_METRIC_EXPORTER}
 

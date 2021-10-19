@@ -18,6 +18,7 @@ func (kl KubernetesLogs) Template() string {
 	return `{{define "` + kl.Name() + `" -}}
 # {{.Desc}}
 [sources.{{.ComponentID}}]
+  type = "kubernetes_logs"
   auto_partial_merge = true
   exclude_paths_glob_patterns = {{.ExcludePaths}}
 {{end}}`

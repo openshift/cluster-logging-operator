@@ -27,11 +27,13 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/tools v0.1.3 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.22.2
-	k8s.io/apimachinery v0.22.2
+	k8s.io/api v0.21.2
+	k8s.io/apimachinery v0.21.2
 	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/klog/v2 v2.9.0 // indirect
+	k8s.io/utils v0.0.0-20210629042839-4a2b36d8d73f // indirect
 	sigs.k8s.io/controller-runtime v0.9.2
 	sigs.k8s.io/yaml v1.2.0
 )
 
-replace k8s.io/client-go => k8s.io/client-go v0.22.2 // Required by prometheus-operator
+replace k8s.io/client-go => k8s.io/client-go v0.21.2 // Required by prometheus-operator

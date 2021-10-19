@@ -81,7 +81,8 @@ metadata:
     certified: "false"
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
     createdAt: "2018-08-01T08:00:00Z"
-    description: The Red Hat OpenShift Logging Operator for OCP provides a means for configuring and managing your aggregated logging stack.
+    description: The Red Hat OpenShift Logging Operator for OCP provides a means for
+      configuring and managing your aggregated logging stack.
     olm.skipRange: '>=4.6.0-0 <5.3.0'
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/suggested-namespace: openshift-logging
@@ -100,7 +101,15 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: "ClusterLogForwarder is an API to configure forwarding logs. \n You configure forwarding by specifying a list of `pipelines`, which forward from a set of named inputs to a set of named outputs. \n There are built-in input names for common log categories, and you can define custom inputs to do additional filtering. \n There is a built-in output name for the default openshift log store, but you can define your own outputs with a URL and other connection information to forward logs to other stores or processors, inside or outside the cluster. \n For more details see the documentation on the API fields."
+    - description: "ClusterLogForwarder is an API to configure forwarding logs. \n
+        You configure forwarding by specifying a list of `pipelines`, which forward
+        from a set of named inputs to a set of named outputs. \n There are built-in
+        input names for common log categories, and you can define custom inputs to
+        do additional filtering. \n There is a built-in output name for the default
+        openshift log store, but you can define your own outputs with a URL and other
+        connection information to forward logs to other stores or processors, inside
+        or outside the cluster. \n For more details see the documentation on the API
+        fields."
       displayName: Cluster Log Forwarder
       kind: ClusterLogForwarder
       name: clusterlogforwarders.logging.openshift.io

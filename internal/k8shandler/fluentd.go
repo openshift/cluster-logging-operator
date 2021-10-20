@@ -381,7 +381,8 @@ func (clusterRequest *ClusterLoggingRequest) getTrustedCABundleHash() (string, e
 	}
 
 	if _, ok := fluentdTrustBundle.Data[constants.TrustedCABundleKey]; !ok {
-		return "", fmt.Errorf("%v does not yet contain expected key %v", fluentdTrustBundle.Name, constants.TrustedCABundleKey)
+		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key", "configmapName", fluentdTrustBundle.Name, "key", constants.TrustedCABundleKey)
+		return "", nil
 	}
 
 	trustedCAHashValue, err := calcTrustedCAHashValue(fluentdTrustBundle)
@@ -390,7 +391,8 @@ func (clusterRequest *ClusterLoggingRequest) getTrustedCABundleHash() (string, e
 	}
 
 	if trustedCAHashValue == "" {
-		return "", fmt.Errorf("Did not receive hashvalue for trusted CA value")
+		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain a ca bundle", "configmapName", fluentdTrustBundle.Name)
+		return "", nil
 	}
 
 	return trustedCAHashValue, nil

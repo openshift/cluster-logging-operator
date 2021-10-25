@@ -1,4 +1,4 @@
-package kafka
+package elasticsearch
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
@@ -6,12 +6,8 @@ import (
 
 type CAFile security.CAFile
 
-func (ca CAFile) ID() string {
-	return "kafkaCAFileTemplateID"
-}
-
 func (ca CAFile) Name() string {
-	return "kafkaCAFileTemplate"
+	return "elasticsearchCAFileTemplate"
 }
 
 func (ca CAFile) Template() string {

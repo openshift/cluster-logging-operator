@@ -25,9 +25,10 @@ var _ = Describe("Generating external kafka server output store config", func() 
 		kafkaConf := `
     [sinks.kafka_receiver]
     type = "kafka"
-    input = ["transform_application"]
+    inputs = ["transform_application"]
     bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
     topic = "topic"
+    encoding.codec = "json"
 `
 
 		It("should result in a valid kafka config", func() {

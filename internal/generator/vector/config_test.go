@@ -6,13 +6,13 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 //TODO: Use a detailed CLF spec
@@ -61,15 +61,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 					},
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"es-1": {
-					Data: map[string][]byte{
-						"tls.key":       []byte("junk"),
-						"tls.crt":       []byte("junk"),
-						"ca-bundle.crt": []byte("junk"),
-					},
-				},
-			},
+			Secrets: security.NoSecrets,
 			ExpectedConf: `
 		# Logs from containers
 [sources.kubernetes_logs]
@@ -85,7 +77,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 # Ship logs to specific outputs
 [sinks.kafka]
   type = "kafka"
-  input = ["transform_kubernetes_logs.app"]
+  inputs = ["transform_kubernetes_logs.app"]
   bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
   topic = "build_complete"
   sasl.enabled = false
@@ -119,15 +111,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 					},
 				},
 			},
-			Secrets: map[string]*corev1.Secret{
-				"es-1": {
-					Data: map[string][]byte{
-						"tls.key":       []byte("junk"),
-						"tls.crt":       []byte("junk"),
-						"ca-bundle.crt": []byte("junk"),
-					},
-				},
-			},
+			Secrets: security.NoSecrets,
 			ExpectedConf: `
 		# Logs from containers
 [sources.kubernetes_logs]
@@ -152,7 +136,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 # Ship logs to specific outputs
 [sinks.kafka]
   type = "kafka"
-  input = ["transform_kubernetes_logs.app", "transform_journald.infra"]
+  inputs = ["transform_kubernetes_logs.app", "transform_journald.infra"]
   bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
   topic = "build_complete"
   sasl.enabled = false

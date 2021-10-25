@@ -42,9 +42,10 @@ func (k Kafka) Template() string {
 	return `{{define "` + k.Name() + `" -}}
 [sinks.{{.ElementID}}]
   type = "kafka"
-  input = ` + helpers.ConcatArrays(k.InputPipeline) + `
+  inputs = ` + helpers.ConcatArrays(k.InputPipeline) + `
   bootstrap_servers = "{{.Brokers}}"
   topic = "{{.Topics}}"
+  encoding.codec = "json"
   {{- with $x := compose .SecurityConfig }}
   {{$x}}
   {{- end}}

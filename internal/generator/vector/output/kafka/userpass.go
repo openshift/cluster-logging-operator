@@ -12,8 +12,8 @@ func (up UserNamePass) Name() string {
 
 func (up UserNamePass) Template() string {
 	return `{{define "` + up.Name() + `" -}}
-sasl.username = ""
-sasl.password = ""
+sasl.username = "#{File.exists?({{.UsernamePath}}) ? open({{.UsernamePath}},'r') do |f|f.read end : ''}"
+sasl.password = "#{File.exists?({{.PasswordPath}}) ? open({{.PasswordPath}},'r') do |f|f.read end : ''}"
 {{- end}}
 `
 }

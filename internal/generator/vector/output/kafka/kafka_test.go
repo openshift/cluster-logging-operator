@@ -24,12 +24,12 @@ var _ = Describe("Generate vector config", func() {
 		return Conf(bufspec, secrets[clfspec.Outputs[0].Name], clfspec.Outputs[0], op, inputPipeline)
 	}
 	DescribeTable("for kafka output testing in kafka_test.go", generator.TestGenerateConfWith(f),
-		Entry("with username,password to single topic 123", generator.ConfGenerateTest{
+		Entry("with username,password to single topic", generator.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
 						Type: logging.OutputTypeKafka,
-						Name: "kafka-receiver",
+						Name: "kafka-receiver-1",
 						URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
 						Secret: &logging.OutputSecretSpec{
 							Name: "kafka-receiver-1",
@@ -43,7 +43,7 @@ var _ = Describe("Generate vector config", func() {
 				},
 			},
 			Secrets: map[string]*corev1.Secret{
-				"kafka-receiver": {
+				"kafka-receiver-1": {
 					Data: map[string][]byte{
 						"username": []byte("junk"),
 						"password": []byte("junk"),
@@ -51,14 +51,16 @@ var _ = Describe("Generate vector config", func() {
 				},
 			},
 			ExpectedConf: `
-[sinks.kafka_receiver]
+[sinks.kafka_receiver_1]
   type = "kafka"
-  input = ["transform_application"]
+  inputs = ["transform_application"]
   bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
   topic = "build_complete"
-  sasl.username = ""
-sasl.password = ""
+  encoding.codec = "json"
+  sasl.username = "#{File.exists?('/var/run/ocp-collector/secrets/kafka-receiver-1/username') ? open('/var/run/ocp-collector/secrets/kafka-receiver-1/username','r') do |f|f.read end : ''}"
+sasl.password = "#{File.exists?('/var/run/ocp-collector/secrets/kafka-receiver-1/password') ? open('/var/run/ocp-collector/secrets/kafka-receiver-1/password','r') do |f|f.read end : ''}"
 sasl.enabled = false
+
 `,
 		}),
 	)

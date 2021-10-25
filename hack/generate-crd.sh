@@ -28,6 +28,12 @@ echo "--------------------------------------------------------------"
 $OPERATOR_SDK generate kustomize manifests -q
 	$KUSTOMIZE build config/manifests | $OPERATOR_SDK generate bundle -q --overwrite --version ${BUNDLE_VERSION} ${BUNDLE_METADATA_OPTS}
 rm ${BUNDLE_DIR}/cluster-logging-operator.clusterserviceversion.yaml
+#NOTE: temporary cleanup few generated files until 'make lint' will not respect those files
+rm ${BUNDLE_DIR}/clusterlogging-operator_rbac.authorization.k8s.io_v1_clusterrole.yaml
+rm ${BUNDLE_DIR}/leader-election-role_rbac.authorization.k8s.io_v1_role.yaml
+rm ${BUNDLE_DIR}/leader-election-rolebinding_rbac.authorization.k8s.io_v1_rolebinding.yaml
+rm ${BUNDLE_DIR}/manager-rolebinding_rbac.authorization.k8s.io_v1_clusterrolebinding.yaml
+
 mv ${BUNDLE_DIR}/logging.openshift.io_clusterlogforwarders.yaml ${BUNDLE_DIR}/${CLF_CRD_FILE}
 mv ${BUNDLE_DIR}/logging.openshift.io_clusterloggings.yaml ${BUNDLE_DIR}/${CLO_CRD_FILE}
 

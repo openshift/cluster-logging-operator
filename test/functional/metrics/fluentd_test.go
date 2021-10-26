@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
 
-var _ = Describe("[Metrics] Function testing of fluentd metrics", func() {
+var _ = Describe("[SampleCollector] Function testing of fluentd metrics", func() {
 
 	const (
 		sampleMetric = "# HELP fluentd_output_status_buffer_total_bytes"

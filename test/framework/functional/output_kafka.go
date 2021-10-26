@@ -48,11 +48,11 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 
 	//init container for zookeeper
 	b.AddInitContainer("init-config0", ImageRemoteKafkaInit).
-		AddVolumeMountToInitContainer("configmapkafka", "/etc/kafka-configmap", "", false).
-		AddVolumeMountToInitContainer("configkafka", "/etc/kafka", "", false).
-		AddVolumeMountToInitContainer("datazookeeper", "/var/lib/zookeeper", "", false).
-		WithCmdArgsToInitContainer([]string{"./bin/bash", "/etc/kafka-configmap/init.sh"}).
-		InitContainerEnd()
+		AddVolumeMount("configmapkafka", "/etc/kafka-configmap", "", false).
+		AddVolumeMount("configkafka", "/etc/kafka", "", false).
+		AddVolumeMount("zookeeper-data", "/var/lib/zookeeper", "", false).
+		WithCmdArgs([]string{"./bin/bash", "/etc/kafka-configmap/init.sh"}).
+		End()
 
 	//standup container running zookeeper
 	log.V(2).Info("Adding container", "name", name)
@@ -63,13 +63,13 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		AddContainerPort("leader-election", zookeeperLeaderElectionPort).
 		AddVolumeMount("configmapkafka", "/etc/kafka-configmap", "", false).
 		AddVolumeMount("configkafka", "/etc/kafka", "", false).
-		AddVolumeMount("datazookeeper", "/var/lib/zookeeper", "", false).
-		WithCmd("./bin/zookeeper-server-start.sh /etc/kafka/zookeeper.properties").
+		AddVolumeMount("zookeeper-data", "/var/lib/zookeeper", "", false).
+		WithCmd([]string{"./bin/zookeeper-server-start.sh", "/etc/kafka/zookeeper.properties"}).
 		End().
 		AddConfigMapVolume("configmapkafka", zookeeperDeploymentName).
 		AddEmptyDirVolume("configkafka").
-		AddEmptyDirVolume("zookeeperlogs").
-		AddEmptyDirVolume("datazookeeper")
+		AddEmptyDirVolume("zookeeper-logs").
+		AddEmptyDirVolume("zookeeper-data")
 
 	///////////////////////////////////
 
@@ -93,15 +93,15 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 
 	//standup pod with container running broker
 	b.AddInitContainer("init-config1", ImageRemoteKafkaInit).
-		AddEnvVarToInitContainer("NODE_NAME", "functional-test-node").
-		AddEnvVarToInitContainer("POD_NAME", "functional").
-		AddEnvVarToInitContainer("POD_NAMESPACE", b.Pod.Namespace).
-		AddEnvVarToInitContainer("ADVERTISE_ADDR", fmt.Sprintf("%s.%s.svc.cluster.local", kafka.DeploymentName, b.Pod.Namespace)).
-		WithCmdArgsToInitContainer([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
-		AddVolumeMountToInitContainer("brokerconfig", "/etc/kafka-configmap", "", false).
-		AddVolumeMountToInitContainer("configkafka", "/etc/kafka", "", false).
-		AddVolumeMountToInitContainer("extensions", "/opt/kafka/libs/extensions", "", false).
-		InitContainerEnd()
+		AddEnvVar("NODE_NAME", "functional-test-node").
+		AddEnvVar("POD_NAME", "functional").
+		AddEnvVar("POD_NAMESPACE", b.Pod.Namespace).
+		AddEnvVar("ADVERTISE_ADDR", fmt.Sprintf("%s.%s.svc.cluster.local", kafka.DeploymentName, b.Pod.Namespace)).
+		WithCmdArgs([]string{"/bin/bash", "/etc/kafka-configmap/init.sh"}).
+		AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
+		AddVolumeMount("configkafka", "/etc/kafka", "", false).
+		AddVolumeMount("extensions", "/opt/kafka/libs/extensions", "", false).
+		End()
 
 	cmdCreateTopicAndDeployBroker := "./bin/kafka-server-start.sh /etc/kafka-configmap/server.properties"
 
@@ -113,7 +113,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		AddContainerPort("inside", kafkaInsidePort).
 		AddContainerPort("outside", kafkaOutsidePort).
 		AddContainerPort("jmx", kafkaJMXPort).
-		WithCmdStringSlice([]string{"/bin/bash", "-c", cmdCreateTopicAndDeployBroker}).
+		WithCmd([]string{"/bin/bash", "-c", cmdCreateTopicAndDeployBroker}).
 		AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
 		AddVolumeMount("configkafka", "/etc/kafka", "", false).
 		AddVolumeMount("brokerlogs", "/opt/kafka/logs", "", false).
@@ -143,7 +143,7 @@ func (f *FluentdFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, outpu
 		cmdCreateTopicAndDeployConsumer := []string{"/bin/bash", "-c", cmdJ}
 
 		b.AddContainer(containername, ImageRemoteKafka).
-			WithCmdStringSlice(cmdCreateTopicAndDeployConsumer).
+			WithCmd(cmdCreateTopicAndDeployConsumer).
 			AddVolumeMount("brokerconfig", "/etc/kafka-configmap", "", false).
 			AddVolumeMount("kafka", "/var/run/ocp-collector/secrets/kafka", "", false).
 			AddVolumeMount("shared", "/shared", "", false).

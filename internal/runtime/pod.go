@@ -23,7 +23,11 @@ func NewPodBuilder(pod *corev1.Pod) *PodBuilder {
 }
 
 type ContainerBuilder struct {
-	container     *corev1.Container
+	container  *corev1.Container
+	podBuilder *PodBuilder
+}
+
+type InitContainerBuilder struct {
 	initcontainer *corev1.Container
 	podBuilder    *PodBuilder
 }
@@ -43,15 +47,14 @@ func (builder *ContainerBuilder) AddVolumeMount(name, path, subPath string, read
 	return builder
 }
 
-func (builder *ContainerBuilder) WithCmdArgs(cmdAgrgs []string) *ContainerBuilder {
-	builder.container.Args = cmdAgrgs
+func (builder *ContainerBuilder) WithCmdArgs(cmdArgs []string) *ContainerBuilder {
+	builder.container.Args = cmdArgs
 	return builder
 }
 
-func (builder *ContainerBuilder) WithCmd(cmdString string) *ContainerBuilder {
-	cmd := strings.Split(cmdString, " ")
-	builder.container.Command = []string{cmd[0]}
-	builder.container.Args = cmd[1:]
+func (builder *ContainerBuilder) WithCmd(cmdAgrgs []string) *ContainerBuilder {
+	builder.container.Command = []string{cmdAgrgs[0]}
+	builder.container.Args = cmdAgrgs[1:]
 	return builder
 }
 
@@ -153,52 +156,24 @@ func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
 	return builder
 }
 
-func (builder *ContainerBuilder) InitContainerEnd() *PodBuilder {
+func (builder *InitContainerBuilder) End() *PodBuilder {
 	builder.podBuilder.Pod.Spec.InitContainers = append(builder.podBuilder.Pod.Spec.InitContainers, *builder.initcontainer)
 	return builder.podBuilder
 }
 
-func (builder *ContainerBuilder) WithCmdArgsToInitContainer(cmdAgrgs []string) *ContainerBuilder {
+func (builder *InitContainerBuilder) WithCmdArgs(cmdAgrgs []string) *InitContainerBuilder {
 	builder.initcontainer.Command = []string{cmdAgrgs[0]}
 	builder.initcontainer.Args = cmdAgrgs[1:]
 	return builder
 }
 
-func (builder *ContainerBuilder) AddEnvVarFromEnvVarSourceNodeToInitContainer(name string) *ContainerBuilder {
+func (builder *InitContainerBuilder) AddEnvVarFromEnvVarSource(name string, value string) *InitContainerBuilder {
 
 	builder.initcontainer.Env = append(builder.initcontainer.Env, corev1.EnvVar{
 		Name: name,
 		ValueFrom: &corev1.EnvVarSource{
 			FieldRef: &corev1.ObjectFieldSelector{
-				FieldPath: "spec.nodeName",
-			},
-		},
-	})
-
-	return builder
-}
-
-func (builder *ContainerBuilder) AddEnvVarFromEnvVarSourcePodToInitContainer(name string) *ContainerBuilder {
-
-	builder.initcontainer.Env = append(builder.initcontainer.Env, corev1.EnvVar{
-		Name: name,
-		ValueFrom: &corev1.EnvVarSource{
-			FieldRef: &corev1.ObjectFieldSelector{
-				FieldPath: "metadata.name",
-			},
-		},
-	})
-
-	return builder
-}
-
-func (builder *ContainerBuilder) AddEnvVarFromEnvVarSourceNamespaceToInitContainer(name string) *ContainerBuilder {
-
-	builder.initcontainer.Env = append(builder.initcontainer.Env, corev1.EnvVar{
-		Name: name,
-		ValueFrom: &corev1.EnvVarSource{
-			FieldRef: &corev1.ObjectFieldSelector{
-				FieldPath: "metadata.namespace",
+				FieldPath: value,
 			},
 		},
 	})
@@ -207,7 +182,7 @@ func (builder *ContainerBuilder) AddEnvVarFromEnvVarSourceNamespaceToInitContain
 }
 
 //added functions for support kafka in the functional pod
-func (builder *ContainerBuilder) AddVolumeMountToInitContainer(name, path, subPath string, readonly bool) *ContainerBuilder {
+func (builder *InitContainerBuilder) AddVolumeMount(name, path, subPath string, readonly bool) *InitContainerBuilder {
 	builder.initcontainer.VolumeMounts = append(builder.initcontainer.VolumeMounts, corev1.VolumeMount{
 		Name:      name,
 		ReadOnly:  readonly,
@@ -217,13 +192,7 @@ func (builder *ContainerBuilder) AddVolumeMountToInitContainer(name, path, subPa
 	return builder
 }
 
-func (builder *ContainerBuilder) WithCmdStringSlice(cmdAgrgs []string) *ContainerBuilder {
-	builder.container.Command = []string{cmdAgrgs[0]}
-	builder.container.Args = cmdAgrgs[1:]
-	return builder
-}
-
-func (builder *ContainerBuilder) AddEnvVarToInitContainer(name, value string) *ContainerBuilder {
+func (builder *InitContainerBuilder) AddEnvVar(name, value string) *InitContainerBuilder {
 	builder.initcontainer.Env = append(builder.initcontainer.Env, corev1.EnvVar{
 		Name:  name,
 		Value: value,
@@ -231,8 +200,8 @@ func (builder *ContainerBuilder) AddEnvVarToInitContainer(name, value string) *C
 	return builder
 }
 
-func (builder *PodBuilder) AddInitContainer(name, image string) *ContainerBuilder {
-	containerBuilder := ContainerBuilder{
+func (builder *PodBuilder) AddInitContainer(name, image string) *InitContainerBuilder {
+	containerBuilder := InitContainerBuilder{
 		initcontainer: &corev1.Container{
 			Name:            strings.ToLower(name),
 			Image:           image,

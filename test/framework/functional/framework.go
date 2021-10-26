@@ -208,8 +208,12 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()
-	if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, &testClient); err != nil {
-		return err
+	if strings.TrimSpace(f.Conf) == "" {
+		if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, &testClient); err != nil {
+			return err
+		}
+	} else {
+		log.V(2).Info("Using provided collector conf instead of generating one")
 	}
 	log.V(2).Info("Generating Certificates")
 	if err, _, _ = certificates.GenerateCertificates(f.Test.NS.Name,
@@ -454,11 +458,11 @@ func (f *FluentdFunctionalFramework) WriteOVNAuditLog(numOfLogs int) error {
 	return nil
 }
 
-func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs uint64) error {
-	return f.WritesNApplicationLogsOfSize(numOfLogs, uint64(100))
+func (f *FluentdFunctionalFramework) WritesApplicationLogs(numOfLogs int) error {
+	return f.WritesNApplicationLogsOfSize(numOfLogs, 100)
 }
 
-func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size uint64) error {
+func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size int) error {
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
 	//podname_ns_containername-containerid.log
 	//functional_testhack-16511862744968_fluentd-90a0f0a7578d254eec640f08dd155cc2184178e793d0289dff4e7772757bb4f8.log

@@ -31,6 +31,15 @@ func (builder *ContainerBuilder) End() *PodBuilder {
 	builder.podBuilder.Pod.Spec.Containers = append(builder.podBuilder.Pod.Spec.Containers, *builder.container)
 	return builder.podBuilder
 }
+func (builder *ContainerBuilder) Update() *PodBuilder {
+	for i := range builder.podBuilder.Pod.Spec.Containers {
+		if builder.podBuilder.Pod.Spec.Containers[i].Name == builder.container.Name {
+			builder.podBuilder.Pod.Spec.Containers[i] = *(builder.container)
+			return builder.podBuilder
+		}
+	}
+	return builder.podBuilder
+}
 
 func (builder *ContainerBuilder) AddVolumeMount(name, path, subPath string, readonly bool) *ContainerBuilder {
 	builder.container.VolumeMounts = append(builder.container.VolumeMounts, corev1.VolumeMount{
@@ -94,6 +103,15 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	return &containerBuilder
 }
 
+func (builder *PodBuilder) AddEmptyDirVolume(name string) *PodBuilder {
+	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
+		Name: name,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
+	return builder
+}
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
 	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
 		Name: name,
@@ -121,16 +139,17 @@ func (builder *PodBuilder) AddSecretVolume(name, secretName string) *PodBuilder 
 }
 
 func (builder *PodBuilder) GetContainer(name string) *ContainerBuilder {
+	b := &ContainerBuilder{
+		podBuilder: builder,
+	}
 	lowerCaseName := strings.ToLower(name)
 	for i := range builder.Pod.Spec.Containers {
 		if builder.Pod.Spec.Containers[i].Name == lowerCaseName {
-			return &ContainerBuilder{
-				container:  &builder.Pod.Spec.Containers[i],
-				podBuilder: builder,
-			}
+			b.container = &builder.Pod.Spec.Containers[i]
+			return b
 		}
 	}
-	return nil
+	return b
 }
 
 func (builder *ContainerBuilder) AddRunAsUser(uid int64) *ContainerBuilder {

@@ -39,7 +39,6 @@ var _ = Describe("[Functional][Outputs][Multiple]", func() {
 			})
 
 			It("should send logs to the fluentd receiver and elasticsearch", func() {
-				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 
 				logs, err := framework.ReadApplicationLogsFrom(loggingv1.OutputTypeFluentdForward)
 				Expect(err).To(BeNil(), "Expected no error reading logs from %s", loggingv1.OutputTypeFluentdForward)
@@ -63,7 +62,6 @@ var _ = Describe("[Functional][Outputs][Multiple]", func() {
 				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 			})
 			It("should send logs to the fluentd receiver only", func() {
-				Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 				logs, err := framework.ReadApplicationLogsFrom(loggingv1.OutputTypeFluentdForward)
 				Expect(err).To(BeNil(), "Expected no error reading logs from %s", loggingv1.OutputTypeFluentdForward)
 				Expect(logs).To(HaveLen(1), "Exp. to receive a log message at output type %s", loggingv1.OutputTypeFluentdForward)

@@ -56,11 +56,7 @@ var _ = Describe("Reconciling", func() {
 				},
 			},
 			Data: map[string]string{
-				constants.TrustedCABundleKey: `
-                  -----BEGIN CERTIFICATE-----
-                  <PEM_ENCODED_CERT>
-                  -----END CERTIFICATE-------
-                `,
+				constants.TrustedCABundleKey: "",
 			},
 		}
 	)
@@ -115,24 +111,6 @@ var _ = Describe("Reconciling", func() {
 				}
 			})
 
-			It("should use the default CA bundle in fluentd", func() {
-				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
-
-				key := types.NamespacedName{Name: constants.CollectorTrustedCAName, Namespace: cluster.GetNamespace()}
-				fluentdCaBundle := &corev1.ConfigMap{}
-				Expect(client.Get(context.TODO(), key, fluentdCaBundle)).Should(Succeed())
-				Expect(fluentdCABundle.Data).To(Equal(fluentdCaBundle.Data))
-
-				key = types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
-				ds := &appsv1.DaemonSet{}
-				Expect(client.Get(context.TODO(), key, ds)).Should(Succeed())
-
-				trustedCABundleHash := ds.Spec.Template.Annotations[constants.TrustedCABundleHashName]
-				Expect(calcTrustedCAHashValue(fluentdCABundle)).To(Equal(trustedCABundleHash))
-				Expect(ds.Spec.Template.Spec.Volumes).To(ContainElement(trustedCABundleVolume))
-				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(ContainElement(trustedCABundleVolumeMount))
-			})
-
 			It("should use the injected custom CA bundle in fluentd", func() {
 				// Reconcile w/o custom CA bundle
 				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
@@ -153,6 +131,61 @@ var _ = Describe("Reconciling", func() {
 				Expect(calcTrustedCAHashValue(injectedCABundle)).To(Equal(trustedCABundleHash))
 				Expect(ds.Spec.Template.Spec.Volumes).To(ContainElement(trustedCABundleVolume))
 				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(ContainElement(trustedCABundleVolumeMount))
+			})
+		})
+		Context("when cluster proxy is not present", func() {
+			var (
+				trustedCABundleVolume = corev1.Volume{
+					Name: constants.CollectorTrustedCAName,
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: constants.CollectorTrustedCAName,
+							},
+							Items: []corev1.KeyToPath{
+								{
+									Key:  constants.TrustedCABundleKey,
+									Path: constants.TrustedCABundleMountFile,
+								},
+							},
+						},
+					},
+				}
+				trustedCABundleVolumeMount = corev1.VolumeMount{
+					Name:      constants.CollectorTrustedCAName,
+					ReadOnly:  true,
+					MountPath: constants.TrustedCABundleMountDir,
+				}
+			)
+			BeforeEach(func() {
+				client = fake.NewFakeClient( //nolint
+					cluster,
+					fluentdSecret,
+					fluentdCABundle,
+				)
+				clusterRequest = &ClusterLoggingRequest{
+					Client:  client,
+					Cluster: cluster,
+				}
+			})
+
+			//https://issues.redhat.com/browse/LOG-1859
+			It("should continue to reconcile without error", func() {
+				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
+
+				key := types.NamespacedName{Name: constants.CollectorTrustedCAName, Namespace: cluster.GetNamespace()}
+				fluentdCaBundle := &corev1.ConfigMap{}
+				Expect(client.Get(context.TODO(), key, fluentdCaBundle)).Should(Succeed())
+				Expect(fluentdCABundle.Data).To(Equal(fluentdCaBundle.Data))
+
+				key = types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
+				ds := &appsv1.DaemonSet{}
+				Expect(client.Get(context.TODO(), key, ds)).Should(Succeed())
+
+				trustedCABundleHash := ds.Spec.Template.Annotations[constants.TrustedCABundleHashName]
+				Expect(trustedCABundleHash).To(BeEmpty())
+				Expect(ds.Spec.Template.Spec.Volumes).To(Not(ContainElement(trustedCABundleVolume)))
+				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(Not(ContainElement(trustedCABundleVolumeMount)))
 			})
 		})
 	})

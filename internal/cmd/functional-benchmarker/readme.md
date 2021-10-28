@@ -73,3 +73,9 @@ $ ./bin/functional-benchmarker
         297      1024      5m0s     3.425     0.874     5.991     2.990
 
 ```
+## Platform notes
+Running on `crc` requires enabling monitoring and adding more memory:
+```
+ crc config set enable-cluster-monitoring true
+ crc start -m16384 
+```

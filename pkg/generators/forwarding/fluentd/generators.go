@@ -62,10 +62,12 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		inputs.Insert(
 			logging.InputNameInfrastructure,
 			logging.InputNameApplication,
-			logging.InputNameAudit,
 		)
+		if engine.includeLegacyForwardConfig {
+			inputs.Insert(logging.InputNameAudit)
+		}
 		for _, logType := range inputs.List() {
-			if engine.includeLegacySyslogConfig {
+			if engine.includeLegacySyslogConfig && logType != logging.InputNameAudit {
 				routeMap.Insert(logType, constants.LegacySyslog)
 			}
 			if engine.includeLegacyForwardConfig {

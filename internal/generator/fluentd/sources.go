@@ -84,12 +84,24 @@ func ContainerLogPaths() string {
 	return fmt.Sprintf("%q", "/var/log/containers/*.log")
 }
 
+func CollectorLogsPath() string {
+	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", constants.OpenshiftNS)
+}
+
+func LogStoreLogsPath() string {
+	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", constants.OpenshiftNS)
+}
+
+func VisualizationLogsPath() string {
+	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", constants.OpenshiftNS)
+}
+
 func ExcludeContainerPaths() string {
 	return fmt.Sprintf("[%s]", strings.Join(
 		[]string{
-			fmt.Sprintf("%q", fmt.Sprintf(generator.CollectorLogsPath(), constants.CollectorName)),
-			fmt.Sprintf("%q", fmt.Sprintf(generator.LogStoreLogsPath(), constants.ElasticsearchName)),
-			fmt.Sprintf("%q", generator.VisualizationLogsPath()),
+			fmt.Sprintf("%q", fmt.Sprintf(CollectorLogsPath(), constants.CollectorName)),
+			fmt.Sprintf("%q", fmt.Sprintf(LogStoreLogsPath(), constants.ElasticsearchName)),
+			fmt.Sprintf("%q", fmt.Sprintf(VisualizationLogsPath(), constants.KibanaName)),
 		},
 		", ",
 	))

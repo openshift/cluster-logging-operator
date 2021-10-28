@@ -177,7 +177,7 @@ test-forwarder-generator: bin/forwarder-generator
 .PHONY: test-forwarder-generator
 
 test-functional-benchmarker: bin/functional-benchmarker
-	@out=$$(bin/functional-benchmarker --artifact-dir=/tmp 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
+	@out=$$(bin/functional-benchmarker --artifact-dir=/tmp/benchmark-test 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 .PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator

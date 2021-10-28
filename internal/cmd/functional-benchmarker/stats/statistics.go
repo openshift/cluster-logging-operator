@@ -1,19 +1,18 @@
 package stats
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"sort"
 	"time"
 )
 
 type Statistics struct {
-	Logs      types.PerfLogs
+	Logs      PerfLogs
 	MsgSize   int
 	TimeDiffs []float64
 	Elapsed   time.Duration
 }
 
-func NewStatisics(logs types.PerfLogs, msgSize int, elapsed time.Duration) *Statistics {
+func NewStatisics(logs PerfLogs, msgSize int, elapsed time.Duration) *Statistics {
 	return &Statistics{
 		logs,
 		msgSize,
@@ -26,14 +25,14 @@ func (stats *Statistics) TotMessages() int {
 }
 
 func (stats *Statistics) MeanBloat() float64 {
-	return stats.GenericMean((*types.PerfLog).Bloat)
+	return stats.GenericMean((*PerfLog).Bloat)
 }
 
 func (stats *Statistics) Mean() float64 {
-	return stats.GenericMean((*types.PerfLog).ElapsedEpoc)
+	return stats.GenericMean((*PerfLog).ElapsedEpoc)
 }
 
-func (stats *Statistics) GenericMean(f func(l *types.PerfLog) float64) float64 {
+func (stats *Statistics) GenericMean(f func(l *PerfLog) float64) float64 {
 	if len(stats.Logs) == 0 {
 		return 0
 	}
@@ -65,7 +64,7 @@ func (stats *Statistics) Max() float64 {
 	return stats.TimeDiffs[len(stats.TimeDiffs)-1]
 }
 
-func sortLogsByTimeDiff(logs types.PerfLogs) []float64 {
+func sortLogsByTimeDiff(logs PerfLogs) []float64 {
 	diffs := make([]float64, len(logs))
 	for i := range logs {
 		diffs[i] = logs[i].ElapsedEpoc()

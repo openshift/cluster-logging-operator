@@ -22,6 +22,7 @@ type Options struct {
 	TotalMessages       int
 	MsgSize             int
 	Verbosity           int
+	BaseLine            bool
 	DoCleanup           bool
 	Sample              bool
 	Platform            string
@@ -34,6 +35,7 @@ type Options struct {
 	ReadTimeout         string
 	RunDuration         string
 	SampleDuration      string
+	PayloadSource       string
 }
 
 func InitOptions() Options {
@@ -44,12 +46,14 @@ func InitOptions() Options {
 
 	fs.StringVar(&options.Image, "image", "quay.io/openshift-logging/fluentd:1.7.4", "The Image to use to run the benchmark")
 	//fs.IntVar(&options.TotalMessages, "tot-messages", 10000, "The number of messages to write per stressor")
-	fs.IntVar(&options.MsgSize, "size", 1024, "The message size in bytes per stressor")
+	fs.IntVar(&options.MsgSize, "size", 1024, "The message size in bytes per stressor for 'synthetic' payload")
 	fs.IntVar(&options.LinesPerSecond, "lines-per-sec", 1, "The log lines per second per stressor")
 	fs.IntVar(&options.Verbosity, "verbosity", 0, "The output log level")
 	fs.BoolVar(&options.DoCleanup, "do-cleanup", true, "set to false to preserve the namespace")
+	fs.BoolVar(&options.BaseLine, "baseline", false, "run the test with a baseline config. This supercedes --collector-config")
 	fs.BoolVar(&options.Sample, "sample", false, "set to true to dump a Sample message")
 	//fs.StringVar(&options.Platform, "platform", "cluster", "The runtime environment: cluster, local. local requires podman")
+	fs.StringVar(&options.PayloadSource, "payload-source", "synthetic", "The load message profile: synthetic,application,simple")
 
 	fs.StringVar(&options.ReadTimeout, "read-timeout", test.SuccessTimeout().String(), "The read timeout duration to wait for logs")
 	fs.StringVar(&options.RunDuration, "run-duration", "5m", "The duration of the test run")
@@ -57,7 +61,7 @@ func InitOptions() Options {
 
 	fs.IntVar(&options.TotalLogStressors, "tot-stressors", 1, "Total log stressors")
 	fs.StringVar(&options.CollectorConfigPath, "collector-config", "", "The path to the collector config to use")
-	fs.StringVar(&options.ArtifactDir, "artifact-dir", ".", "The root directory to write artifacts")
+	fs.StringVar(&options.ArtifactDir, "artifact-dir", "", "The directory to write artifacts (default: Time.now())")
 
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		fmt.Printf("Error parsing argument: %v", err)
@@ -76,7 +80,11 @@ func InitOptions() Options {
 	return options
 }
 
-func ReadConfig(configFile string) string {
+func ReadConfig(configFile string, baseline bool) string {
+	if baseline {
+		log.V(0).Info("Using the baseline config")
+		return FluentdBaselineConf
+	}
 	var reader func() ([]byte, error)
 	switch configFile {
 	case "-":

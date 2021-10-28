@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/reports"
-	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/runners/cluster"
+	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/runners"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"os"
-	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ViaQ/logerr/log"
@@ -22,7 +21,7 @@ import (
 func main() {
 	options := config.InitOptions()
 
-	options.CollectorConfig = config.ReadConfig(options.CollectorConfigPath)
+	options.CollectorConfig = config.ReadConfig(options.CollectorConfigPath, options.BaseLine)
 	log.V(1).Info(options.CollectorConfig)
 
 	artifactDir := createArtifactDir(options.ArtifactDir)
@@ -33,22 +32,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	reporter := reports.NewReporter(options.Output, artifactDir, metrics, statistics)
+	reporter := reports.NewReporter(options, artifactDir, metrics, statistics)
 	reporter.Generate()
 }
 
 func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMetrics, *stats.Statistics, error) {
 	runDuration := config.MustParseDuration(options.RunDuration, "run-duration")
 	sampleDuration := config.MustParseDuration(options.SampleDuration, "resource-sample-duration")
-	runner := NewRunner(options)
+	runner := runners.NewRunner(options)
 	runner.Deploy()
 	if options.DoCleanup {
 		log.V(2).Info("Deferring cleanup", "DoCleanup", options.DoCleanup)
 		defer runner.Cleanup()
 	}
-	//delay waiting to spin up
-	log.V(1).Info("delaying awaiting pod start")
-	time.Sleep(1 * time.Minute)
 	done := make(chan bool)
 	startTime := time.Now()
 	sampler := time.NewTicker(sampleDuration)
@@ -69,68 +65,49 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 	}()
 	time.Sleep(runDuration)
 	endTime := time.Now()
-	statistics := gatherStatistics(runner, options.Sample, options.MsgSize, startTime, endTime)
 	done <- true
+	statistics, _ := gatherStatistics(runner, options.Sample, options.MsgSize, startTime, endTime)
 	sampler.Stop()
 
 	return metrics, statistics, nil
 }
 
-func gatherStatistics(runner Runner, sample bool, msgSize int, startTime, endTime time.Time) *stats.Statistics {
+func gatherStatistics(runner runners.Runner, sample bool, msgSize int, startTime, endTime time.Time) (*stats.Statistics, []string) {
 	raw, err := runner.ReadApplicationLogs()
 	if err != nil {
 		log.Error(err, "Error reading logs")
-		return nil
+		return &stats.Statistics{}, []string{}
 	}
 	log.V(4).Info("Read logs", "raw", raw)
-	logs := types.PerfLogs{}
+	logs := stats.PerfLogs{}
 	err = json.Unmarshal([]byte(utils.ToJsonLogs(raw)), &logs)
 	if err != nil {
 		log.Error(err, "Error parsing logs")
-		return nil
+		return &stats.Statistics{}, []string{}
 	}
 	log.V(4).Info("Read logs", "parsed", logs)
 	if sample {
 		fmt.Printf("Sample:\n%s\n", test.JSONString(logs[0]))
 	}
-	log.V(4).Info("Removing logs outside the duration")
-	filtered := types.PerfLogs{}
-	for _, entry := range logs {
-		if entry.Timestamp.After(startTime) && entry.Timestamp.Before(endTime) {
-			filtered = append(filtered, entry)
-		}
+	return stats.NewStatisics(logs, msgSize, endTime.Sub(startTime)), raw
+}
+
+func createArtifactDir(artifactDir string) string {
+	if strings.TrimSpace(artifactDir) == "" {
+		artifactDir = fmt.Sprintf("./benchmark-%s", time.Now().Format(time.RFC3339Nano))
 	}
-	log.V(4).Info("filtered", "logs", filtered)
-	return stats.NewStatisics(filtered, msgSize, endTime.Sub(startTime))
-}
-
-type Runner interface {
-	Deploy()
-	WritesApplicationLogsOfSize(msgSize int) error
-	ReadApplicationLogs() ([]string, error)
-	SampleCollector() *stats.Sample
-	Cleanup()
-}
-
-func NewRunner(options config.Options) Runner {
-	return &cluster.ClusterRunner{
-		Options: options,
-	}
-}
-
-func createArtifactDir(rootDir string) string {
 	var err error
-	artifactDir := path.Join(rootDir, fmt.Sprintf("benchmark-%s", time.Now().Format(time.RFC3339)))
+
 	if err = os.Mkdir(artifactDir, 0755); err != nil {
-		log.Error(err, "Error creating temp director")
+		log.Error(err, "Error creating artifact directory")
 		os.Exit(1)
 	}
 	if err := os.Chmod(artifactDir, 0755); err != nil {
-		log.Error(err, "Error modifying temp director permissions")
+		log.Error(err, "Error modifying artifact directory permissions")
 		os.Exit(1)
 	}
 	if artifactDir, err = filepath.Abs(artifactDir); err != nil {
-		log.Error(err, "Unable to determine the absolute file path of the artifactDir")
+		log.Error(err, "Unable to determine the absolute file path of the artifact directory")
 		os.Exit(1)
 	}
 	return artifactDir

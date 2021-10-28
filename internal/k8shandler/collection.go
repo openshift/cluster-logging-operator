@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -54,6 +55,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	cluster := clusterRequest.Cluster
 	collectorConfig := ""
 	collectorConfHash := ""
+	log.V(9).Info("Entering CreateOrUpdateCollection")
+	defer func() {
+		log.V(9).Info("Leaving CreateOrUpdateCollection")
+	}()
 
 	var collectorServiceAccount *core.ServiceAccount
 
@@ -63,26 +68,36 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		(cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd ||
 			cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeVector) {
 
-		var collectorType logging.LogCollectionType = cluster.Spec.Collection.Logs.Type
+		var collectorType = cluster.Spec.Collection.Logs.Type
 
 		//TODO: Remove me once fully migrated to new collector naming
 		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
 			log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
 		}
+		enabled, present := os.LookupEnv("ENABLE_VECTOR_COLLECTOR")
+		if collectorType == logging.LogCollectionTypeVector && (!present || strings.ToLower(enabled) != "true") {
+			err = errors.NewBadRequest("Vector as collector not enabled via env variable ENABLE_VECTOR_COLLECTOR")
+			log.V(9).Error(err, "Vector as collector not enabled via env variable ENABLE_VECTOR_COLLECTOR")
+			return err
+		}
 
 		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectionPriorityClass")
 			return
 		}
 
 		if collectorServiceAccount, err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorServiceAccount")
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateCollectorSecret(); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorSecret")
 			return
 		}
 
 		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
+			log.V(9).Error(err, "clusterRequest.generateCollectorConfig")
 			return
 		}
 
@@ -90,30 +105,35 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 		if err != nil {
 			log.Error(err, "unable to calculate MD5 hash")
+			log.V(9).Error(err, "Returning from unable to calculate MD5 hash")
 			return
 		}
 		if err = clusterRequest.reconcileCollectorService(); err != nil {
+			log.V(9).Error(err, "clusterRequest.reconcileCollectorService")
 			return
 		}
 
 		if err = clusterRequest.reconcileCollectorServiceMonitor(); err != nil {
+			log.V(9).Error(err, "clusterRequest.reconcileCollectorServiceMonitor")
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateCollectorPrometheusRule(); err != nil {
-			log.Error(err, "unable to create or update fluentd prometheus rule")
+			log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
 		if err = clusterRequest.createOrUpdateCollectorConfigMap(collectorType, collectorConfig); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorConfigMap")
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateCollectorDaemonset(collectorType, collectorConfHash); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorDaemonset")
 			return
 		}
 
 		if err = clusterRequest.UpdateCollectorStatus(collectorType); err != nil {
-			log.Error(err, "unable to update status for the collector")
+			log.V(9).Error(err, "unable to update status for the collector")
 		}
 
 		if collectorServiceAccount != nil {
@@ -122,6 +142,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 			if err = clusterRequest.Update(collectorServiceAccount); err != nil {
 				log.Info("Unable to update the collector serviceaccount finalizers", "collectorServiceAccount.Name", collectorServiceAccount.Name)
+				log.V(9).Error(err, "Unable to update the collector serviceaccount finalizers")
 				return nil
 			}
 		}
@@ -429,6 +450,8 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorDaemonset(co
 	}
 	if collectorType == logging.LogCollectionTypeFluentd {
 		return clusterRequest.createOrUpdateFluentdDaemonset(fluentdTrustBundle, pipelineConfHash)
+	} else if collectorType == logging.LogCollectionTypeVector {
+		return clusterRequest.createOrUpdateVectorDaemonset(fluentdTrustBundle, pipelineConfHash)
 	}
 	return nil
 }
@@ -519,7 +542,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	cluster := clusterRequest.Cluster
 
-	collectorServiceAccount := NewServiceAccount("logcollector", cluster.Namespace)
+	collectorServiceAccount := NewServiceAccount(constants.CollectorServiceAccountName, cluster.Namespace)
 
 	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(clusterRequest.Cluster))
 

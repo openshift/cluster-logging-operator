@@ -48,6 +48,7 @@ const (
 	ElasticsearchName          = "elasticsearch"
 	ElasticsearchPort          = "9200"
 	FluentdName                = "fluentd"
+	VectorName                 = "vector"
 	KibanaName                 = "kibana"
 	KibanaProxyName            = "kibana-proxy"
 	CuratorName                = "curator"
@@ -64,10 +65,13 @@ const (
 	CollectorMonitorJobLabel  = "monitor-collector"
 	CollectorTrustedCAName    = "collector-trusted-ca-bundle"
 
+	CollectorServiceAccountName = "logcollector"
+
 	LegacySecureforward = "_LEGACY_SECUREFORWARD"
 	LegacySyslog        = "_LEGACY_SYSLOG"
 
 	FluentdImageEnvVar            = "FLUENTD_IMAGE"
+	VectorImageEnvVar             = "VECTOR_IMAGE"
 	LogfilesmetricImageEnvVar     = "LOGFILEMETRICEXPORTER_IMAGE"
 	CertEventName                 = "cluster-logging-certs-generate"
 	ClusterInfrastructureInstance = "cluster"

@@ -35,6 +35,7 @@ var COMPONENT_IMAGES = map[string]string{
 	constants.CollectorName:              constants.FluentdImageEnvVar,
 	"curator":                            "CURATOR_IMAGE",
 	constants.FluentdName:                constants.FluentdImageEnvVar,
+	constants.VectorName:                 constants.VectorImageEnvVar,
 	"kibana":                             "KIBANA_IMAGE",
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,
 }

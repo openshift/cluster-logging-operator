@@ -338,7 +338,7 @@ spec:
     - name: clusterloggings.logging.openshift.io
       version: v1
       kind: ClusterLogging
-      displayName: Red Hat OpenShift Logging
+      displayName: Cluster Logging
       description: A Red Hat OpenShift Logging instance
       resources:
       - kind: Deployment

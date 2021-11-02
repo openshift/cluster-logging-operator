@@ -237,6 +237,9 @@ spec:
                 description: Pipelines forward the messages selected by a set of inputs to a set of outputs.
                 items:
                   properties:
+                    detectMultilineErrors:
+                      description: DetectMultilineErrors enables multiline error detection of container logs
+                      type: boolean
                     inputRefs:
                       description: "InputRefs lists the names (`input.name`) of inputs to this pipeline. \n The following built-in input names are always available: \n `application` selects all logs from application pods. \n `infrastructure` selects logs from openshift and kubernetes pods and some node logs. \n `audit` selects node logs related to security audits."
                       items:

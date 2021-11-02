@@ -232,6 +232,11 @@ type PipelineSpec struct {
 	// +kubebuilder:validation:Enum:=json
 	// +optional
 	Parse string `json:"parse,omitempty"`
+
+	// DetectMultilineErrors enables multiline error detection of container logs
+	//
+	// +optional
+	DetectMultilineErrors bool `json:"detectMultilineErrors,omitempty"`
 }
 
 type OutputDefaults struct {
@@ -240,6 +245,7 @@ type OutputDefaults struct {
 	//
 	// Values specified here will be used as default values for Elasticsearch Output spec
 	//
+	// +kubebuilder:default:false
 	// +optional
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 }

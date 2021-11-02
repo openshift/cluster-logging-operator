@@ -14,8 +14,9 @@ type ClusterLogForwarderBuilder struct {
 }
 
 type PipelineBuilder struct {
-	clfb      *ClusterLogForwarderBuilder
-	inputName string
+	clfb                          *ClusterLogForwarderBuilder
+	inputName                     string
+	enableMultilineErrorDetection bool
 }
 
 type OutputSpecVisiter func(spec *logging.OutputSpec)
@@ -32,6 +33,11 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 		inputName: inputName,
 	}
 	return pipelineBuilder
+}
+
+func (p *PipelineBuilder) WithMultineErrorDetection() *PipelineBuilder {
+	p.enableMultilineErrorDetection = true
+	return p
 }
 
 func (p *PipelineBuilder) ToFluentForwardOutput() *ClusterLogForwarderBuilder {
@@ -101,9 +107,10 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, forwardPipelineName, clf.Spec.Pipelines)
 	if !added {
 		clf.Spec.Pipelines = append(clf.Spec.Pipelines, logging.PipelineSpec{
-			Name:       forwardPipelineName,
-			InputRefs:  []string{p.inputName},
-			OutputRefs: []string{output.Name},
+			Name:                  forwardPipelineName,
+			InputRefs:             []string{p.inputName},
+			OutputRefs:            []string{output.Name},
+			DetectMultilineErrors: p.enableMultilineErrorDetection,
 		})
 	}
 	return p.clfb

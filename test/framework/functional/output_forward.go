@@ -23,7 +23,7 @@ const (
 	include_time_key true 
 </filter>
 
-<match kubernetes.**>
+<match kubernetes.** var.log.containers.**>
   @type file
   append true
   path /tmp/app.logs
@@ -73,7 +73,7 @@ const (
 	include_time_key true 
 </filter>
 
-<filter kubernetes.**>
+<filter kubernetes.** var.log.containers.**>
   @type record_transformer
   enable_ruby
   <record>
@@ -83,7 +83,7 @@ const (
   </record>
 </filter>
 
-<match kubernetes.**>
+<match kubernetes.** var.log.containers.**>
   @type file
   append true
   path /tmp/app.logs

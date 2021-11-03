@@ -359,22 +359,11 @@ func StrictlyParseLogs(in string, logs interface{}) error {
 
 type Logs []AllLog
 
-type PerfLog struct {
-	AllLog
-	Timing `json:",inline"`
-}
-
 type Timing struct {
 	//EpocIn is only added during benchmark testing
 	EpocIn float64 `json:"epoc_in,omitempty"`
 	//EpocOut is only added during benchmark testing
 	EpocOut float64 `json:"epoc_out,omitempty"`
-}
-
-type PerfLogs []PerfLog
-
-func (t *PerfLog) ElapsedEpoc() float64 {
-	return t.EpocOut - t.EpocIn
 }
 
 //Bloat is the ratio of overall size / Message size

@@ -11,7 +11,10 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"os"
+	"path"
 	"strings"
 	"time"
 )
@@ -21,6 +24,52 @@ const containerVolumeName = "container"
 type ClusterRunner struct {
 	framework *functional.FluentdFunctionalFramework
 	config.Options
+	loaders []loader
+}
+
+type loader struct {
+	Name string
+	File string
+}
+
+func New(options config.Options) *ClusterRunner {
+	return &ClusterRunner{
+		Options: options,
+		loaders: []loader{},
+	}
+}
+
+/* #nosec G306*/
+func (r *ClusterRunner) DumpLoaderArtifacts() {
+	maxDuration, _ := time.ParseDuration("5m")
+	defaultRetryInterval, _ := time.ParseDuration("10s")
+	for _, l := range r.loaders {
+		var result string
+		name := l.Name
+		file := l.File
+		err := wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
+			result, err = r.framework.RunCommand(name, "cat", file)
+			if result != "" && err == nil {
+				return true, nil
+			}
+			log.V(4).Error(err, "Polling logs")
+			return false, nil
+		})
+		if err == nil {
+			file := path.Base(l.File)
+			if err := ioutil.WriteFile(path.Join(r.ArtifactDir, file), []byte(result), 0655); err != nil {
+				log.V(0).Error(err, "Unable to write l logs", "file", file)
+			}
+		}
+	}
+}
+
+func (r *ClusterRunner) Namespace() string {
+	return r.framework.Namespace
+}
+
+func (r *ClusterRunner) Pod() string {
+	return r.framework.Pod.Name
 }
 
 func (r *ClusterRunner) Deploy() {
@@ -35,18 +84,24 @@ func (r *ClusterRunner) Deploy() {
 		func(b *runtime.PodBuilder) error {
 			for i := 0; i < r.TotalLogStressors; i++ {
 				name := fmt.Sprintf("loader-%d", i)
+				file := fmt.Sprintf("%s/%s_%s_%s-12345.log", config.ContainerLogDir, b.Pod.Name, b.Pod.Namespace, name)
+				args := []string{
+					"generate",
+					"--destination=file",
+					"--output-format=crio",
+					fmt.Sprintf("--source=%s", r.PayloadSource),
+					fmt.Sprintf("--log-lines-rate=%d", r.LinesPerSecond),
+					fmt.Sprintf("--file=%s", file),
+				}
+				if r.PayloadSource == "synthetic" {
+					args = append(args, fmt.Sprintf("--synthetic-payload-size=%d", r.MsgSize))
+				}
+
 				b.AddContainer(name, config.LogStressorImage).
-					WithCmdArgs([]string{
-						"generate",
-						"--destination=file",
-						"--output-format=crio",
-						"--source=application",
-						fmt.Sprintf("--log-lines-rate=%d", r.LinesPerSecond),
-						fmt.Sprintf("--synthetic-payload-size=%d", r.MsgSize),
-						fmt.Sprintf("--file=%s/%s_%s_%s-12345.log", config.ContainerLogDir, b.Pod.Name, b.Pod.Namespace, name),
-					}).
+					WithCmdArgs(args).
 					AddVolumeMount(containerVolumeName, "/var/log/containers", "", false).
 					End()
+				r.loaders = append(r.loaders, loader{Name: name, File: file})
 			}
 			b.AddEmptyDirVolume(containerVolumeName)
 			b.GetContainer(constants.CollectorName).

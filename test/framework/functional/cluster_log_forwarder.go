@@ -17,9 +17,13 @@ type PipelineBuilder struct {
 	clfb                          *ClusterLogForwarderBuilder
 	inputName                     string
 	enableMultilineErrorDetection bool
+	input                         *logging.InputSpec
+	pipelineName                  string
 }
 
+type InputSpecVisitor func(spec *logging.InputSpec)
 type OutputSpecVisiter func(spec *logging.OutputSpec)
+type PipelineSpecVisitor func(spec *logging.PipelineSpec)
 
 func NewClusterLogForwarderBuilder(clf *logging.ClusterLogForwarder) *ClusterLogForwarderBuilder {
 	return &ClusterLogForwarderBuilder{
@@ -31,12 +35,23 @@ func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilde
 	pipelineBuilder := &PipelineBuilder{
 		clfb:      b,
 		inputName: inputName,
+		input:     &logging.InputSpec{Name: inputName},
 	}
+	return pipelineBuilder
+}
+func (b *ClusterLogForwarderBuilder) FromInputWithVisitor(inputName string, visit InputSpecVisitor) *PipelineBuilder {
+	pipelineBuilder := b.FromInput(inputName)
+	visit(pipelineBuilder.input)
 	return pipelineBuilder
 }
 
 func (p *PipelineBuilder) WithMultineErrorDetection() *PipelineBuilder {
 	p.enableMultilineErrorDetection = true
+	return p
+}
+
+func (p *PipelineBuilder) Named(name string) *PipelineBuilder {
+	p.pipelineName = name
 	return p
 }
 
@@ -98,16 +113,28 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 					Name: "cloudwatch",
 				},
 			}
+		default:
+			output = &logging.OutputSpec{
+				Name: outputName,
+			}
 		}
-
 		visit(output)
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}
+
+	if p.input.Application != nil {
+		clf.Spec.Inputs = append(clf.Spec.Inputs, *p.input)
+	}
+
 	added := false
-	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, forwardPipelineName, clf.Spec.Pipelines)
+	pipelineName := forwardPipelineName
+	if p.pipelineName != "" {
+		pipelineName = p.pipelineName
+	}
+	clf.Spec.Pipelines, added = addInputOutputToPipeline(p.inputName, output.Name, pipelineName, clf.Spec.Pipelines)
 	if !added {
 		clf.Spec.Pipelines = append(clf.Spec.Pipelines, logging.PipelineSpec{
-			Name:                  forwardPipelineName,
+			Name:                  pipelineName,
 			InputRefs:             []string{p.inputName},
 			OutputRefs:            []string{output.Name},
 			DetectMultilineErrors: p.enableMultilineErrorDetection,

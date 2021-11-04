@@ -98,7 +98,7 @@ type Application struct {
 	// If the list is empty, logs are collected from all namespaces.
 	//
 	// +optional
-	Namespaces []string `json:"namespaces"`
+	Namespaces []string `json:"namespaces,omitempty"`
 	// Selector selects logs from all pods with matching labels.
 	// For testing purpose, MatchLabels is only supported.
 	// +optional

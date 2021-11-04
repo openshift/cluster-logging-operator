@@ -52,8 +52,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
 							logging.InputNameApplication,
 							logging.InputNameInfrastructure,
 							logging.InputNameAudit},
-						OutputRefs: []string{"es-1"},
-						Name:       "pipeline",
+						OutputRefs:            []string{"es-1"},
+						Name:                  "pipeline",
+						DetectMultilineErrors: true,
 					},
 				},
 				Outputs: []logging.OutputSpec{
@@ -306,37 +307,12 @@ var _ = Describe("Testing Complete Config Generation", func() {
   
   <match kubernetes.**>
     @type relabel
-    @label @_MULITLINE_DETECT
-  </match>
-</label>
-
-<label @_MULITLINE_DETECT>
-  <match kubernetes.**>
-    @id multiline-detect-except
-    @type detect_exceptions
-    remove_tag_prefix 'kubernetes'
-    message log
-    force_line_breaks true
-    multiline_flush_interval .2
-  </match>
-  <match **>
-    @type relabel
     @label @INGRESS
   </match>
 </label>
 
 # Ingress pipeline
 <label @INGRESS>
-  # Fix tag removed by multiline exception detection
-  <match var.log.containers.**>
-    @type rewrite_tag_filter
-    <rule>
-      key log
-      pattern /.*/
-      tag kubernetes.${tag}
-    </rule>
-  </match>
-  
   # Filter out PRIORITY from journal logs
   <filter journal>
     @type grep
@@ -643,6 +619,14 @@ var _ = Describe("Testing Complete Config Generation", func() {
 
 # Copying pipeline pipeline to outputs
 <label @PIPELINE>
+  <match kubernetes.**>
+    @id multiline-detect-except
+    @type detect_exceptions
+    remove_tag_prefix 'kubernetes'
+    message message
+    force_line_breaks true
+    multiline_flush_interval .2
+  </match>
   <match **>
     @type relabel
     @label @ES_1

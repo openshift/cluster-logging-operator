@@ -54,6 +54,7 @@ created by main.main
 		framework = functional.NewFluentdFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
+			WithMultineErrorDetection().
 			ToFluentForwardOutput()
 		Expect(framework.Deploy()).To(BeNil())
 	})

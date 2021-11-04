@@ -115,7 +115,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 		clf.Spec.Outputs = append(clf.Spec.Outputs, *output)
 	}
 
-	if p.input != nil {
+	if p.input.Application != nil {
 		clf.Spec.Inputs = append(clf.Spec.Inputs, *p.input)
 	}
 

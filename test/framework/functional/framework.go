@@ -81,7 +81,7 @@ type FluentdFunctionalFramework struct {
 	Namespace         string
 	Conf              string
 	image             string
-	labels            map[string]string
+	Labels            map[string]string
 	Forwarder         *logging.ClusterLogForwarder
 	Test              *client.Test
 	Pod               *corev1.Pod
@@ -124,7 +124,7 @@ func NewFluentdFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosit
 		Name:      testName,
 		Namespace: t.NS.Name,
 		image:     utils.GetComponentImage(constants.FluentdName),
-		labels: map[string]string{
+		Labels: map[string]string{
 			"testtype": "functional",
 			"testname": testName,
 		},
@@ -223,7 +223,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	service := runtime.NewService(f.Test.NS.Name, f.Name)
 	runtime.NewServiceBuilder(service).
 		AddServicePort(24231, 24231).
-		WithSelector(f.labels)
+		WithSelector(f.Labels)
 	if err = f.Test.Client.Create(service); err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	var containers []corev1.Container
 	f.Pod = runtime.NewPod(f.Test.NS.Name, f.Name, containers...)
 	b := runtime.NewPodBuilder(f.Pod).
-		WithLabels(f.labels).
+		WithLabels(f.Labels).
 		AddConfigMapVolume("config", f.Name).
 		AddConfigMapVolume("entrypoint", f.Name).
 		AddConfigMapVolume("certs", certsName).

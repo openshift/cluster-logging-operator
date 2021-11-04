@@ -21,7 +21,7 @@ func Concat(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 				Match{
 					MatchTags: "kubernetes.**",
 					MatchElement: Relabel{
-						OutLabel: helpers.LabelName("_MULITLINE_DETECT"),
+						OutLabel: helpers.LabelName("INGRESS"),
 					},
 				},
 			},
@@ -35,11 +35,6 @@ func Ingress(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 			InLabel: helpers.LabelName("INGRESS"),
 			Desc:    "Ingress pipeline",
 			SubElements: MergeElements([]Element{
-				ConfLiteral{
-					Desc:         "Fix tag removed by multiline exception detection",
-					TemplateName: "matchRetagContainerMultilineExceptions",
-					TemplateStr:  matchRetagContainerMultilineExceptions,
-				},
 				ConfLiteral{
 					Desc:         "Filter out PRIORITY from journal logs",
 					TemplateName: "filterJournalPRIORITY",
@@ -92,19 +87,6 @@ func Ingress(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 	}
 }
 
-const matchRetagContainerMultilineExceptions string = `
-{{define "matchRetagContainerMultilineExceptions" -}}
-# {{.Desc}}
-<match var.log.containers.**>
-  @type rewrite_tag_filter
-  <rule>
-    key log
-    pattern /.*/
-    tag kubernetes.${tag}
-  </rule>
-</match>
-{{end}}
-`
 const FilterJournalPRIORITY string = `
 {{define "filterJournalPRIORITY" -}}
 # {{.Desc}}

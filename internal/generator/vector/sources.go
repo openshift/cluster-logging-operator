@@ -2,10 +2,11 @@ package vector
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
-	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
@@ -22,7 +23,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []g
 	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
 			source.KubernetesLogs{
-				ComponentID:  "container_logs",
+				ComponentID:  "raw_container_logs",
 				Desc:         "Logs from containers (including openshift containers)",
 				ExcludePaths: ExcludeContainerPaths(),
 			})
@@ -30,7 +31,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []g
 	if types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
 			source.JournalLog{
-				ComponentID:  "journal_logs",
+				ComponentID:  "raw_journal_logs",
 				Desc:         "Logs from linux journal",
 				TemplateName: "inputSourceJournalTemplate",
 				TemplateStr:  source.JournalLogTemplate,
@@ -76,7 +77,6 @@ func VisualizationLogsPath() string {
 	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", constants.OpenshiftNS)
 }
 
-//var/log/pods/openshift-logging_collector-jhfhl_f95933e2-863f-421a-a399-a87ff1849eaf/collector/0.log
 func ExcludeContainerPaths() string {
 	return fmt.Sprintf("[%s]", strings.Join(
 		[]string{

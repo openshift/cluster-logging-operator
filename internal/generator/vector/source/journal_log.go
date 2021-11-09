@@ -7,7 +7,7 @@ import (
 const JournalLogTemplate = `
 {{define "inputSourceJournalTemplate" -}}
 [sources.{{.ComponentID}}]
-  type = "journald"
+type = "journald"
 {{end}}`
 
 type JournalLog = generator.ConfLiteral

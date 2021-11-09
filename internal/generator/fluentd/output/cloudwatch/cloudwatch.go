@@ -69,7 +69,7 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 			SubElements: []Element{
 				GroupNameStreamName(fmt.Sprintf("%s%s", logGroupPrefix, logGroupName),
 					"${tag}",
-					source.ApplicationTags),
+					source.MultilineErrorStrippedApplicationTags),
 				GroupNameStreamName(fmt.Sprintf("%sinfrastructure", logGroupPrefix),
 					"${record['hostname']}.${tag}",
 					source.InfraTags),

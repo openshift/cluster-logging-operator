@@ -33,6 +33,7 @@ var _ = Describe("Generating pipeline to output labels", func() {
 		Expect(got[0]).To(EqualTrimLines(`<label @PIPELINE_1>
   <match **>
     @type copy
+    deep_copy false
 
     <store>
       @type relabel
@@ -62,6 +63,7 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </filter>
   <match **>
     @type copy
+    deep_copy false
 
     <store>
       @type relabel
@@ -91,6 +93,7 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </filter>
   <match **>
     @type copy
+    deep_copy false
 
     <store>
       @type relabel
@@ -126,6 +129,7 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </filter>
   <match **>
     @type copy
+    deep_copy false
     <store>
       @type relabel
       @label @INFRA_ES
@@ -140,6 +144,7 @@ var _ = Describe("Generating pipeline to output labels", func() {
   </filter>
   <match **>
     @type copy
+    deep_copy false
     <store>
       @type relabel
       @label @INFRA_ES

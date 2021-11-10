@@ -84,9 +84,10 @@ func (builder *ContainerBuilder) WithPrivilege() *ContainerBuilder {
 func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	containerBuilder := ContainerBuilder{
 		container: corev1.Container{
-			Name:  strings.ToLower(name),
-			Image: image,
-			Env:   []corev1.EnvVar{},
+			Name:            strings.ToLower(name),
+			Image:           image,
+			Env:             []corev1.EnvVar{},
+			ImagePullPolicy: corev1.PullAlways,
 		},
 		podBuilder: builder,
 	}

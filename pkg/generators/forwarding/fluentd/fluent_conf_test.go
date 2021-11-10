@@ -605,6 +605,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @APPS_PIPELINE>
     <match **>
      @type copy
+     deep_copy true
      <store>
       @type relabel
       @label @APPS_ES_1
@@ -618,6 +619,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @APPS_PIPELINE2>
     <match **>
      @type copy
+     deep_copy false
      <store>
       @type relabel
       @label @APPS_ES_2
@@ -627,6 +629,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @MY_DEFAULT_PIPELINE>
     <match **>
      @type copy
+     deep_copy false
      <store>
       @type relabel
       @label @APPS_ES_2
@@ -1346,6 +1349,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @APPS_DEFAULT>
     <match **>
       @type copy
+      deep_copy false
       <store>
         @type relabel
         @label @DEFAULT
@@ -1355,6 +1359,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @APPS_DEV_PIPELINE>
     <match **>
       @type copy
+      deep_copy false
       <store>
         @type relabel
         @label @APPS_ES_2
@@ -1364,6 +1369,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @APPS_PROD_PIPELINE>
     <match **>
       @type copy
+      deep_copy false
       <store>
         @type relabel
         @label @APPS_ES_1
@@ -2089,7 +2095,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @APPS_DEFAULT>
     <match **>
       @type copy
-
+      deep_copy false
       <store>
         @type relabel
         @label @DEFAULT
@@ -2099,7 +2105,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @APPS_DEV_PIPELINE>
     <match **>
       @type copy
-
+      deep_copy false
       <store>
         @type relabel
         @label @APPS_ES_2
@@ -2109,7 +2115,7 @@ var _ = Describe("Generating fluentd config", func() {
   <label @APPS_PROD_PIPELINE>
     <match **>
       @type copy
-
+      deep_copy false
       <store>
         @type relabel
         @label @APPS_ES_1
@@ -2750,6 +2756,7 @@ var _ = Describe("Generating fluentd config", func() {
    <label @APPS_PIPELINE>
     <match **>
      @type copy
+      deep_copy false
      <store>
       @type relabel
       @label @SECUREFORWARD_RECEIVER
@@ -3295,6 +3302,7 @@ var _ = Describe("Generating fluentd config", func() {
    <label @APPS_PIPELINE>
     <match **>
      @type copy
+     deep_copy true
      <store>
       @type relabel
       @label @APPS_ES_1
@@ -3308,6 +3316,7 @@ var _ = Describe("Generating fluentd config", func() {
    <label @AUDIT_PIPELINE>
     <match **>
      @type copy
+      deep_copy false
      <store>
       @type relabel
       @label @AUDIT_ES
@@ -3317,6 +3326,7 @@ var _ = Describe("Generating fluentd config", func() {
    <label @INFRA_PIPELINE>
     <match **>
      @type copy
+      deep_copy false
      <store>
       @type relabel
       @label @INFRA_ES
@@ -3805,6 +3815,7 @@ var _ = Describe("Generating fluentd config", func() {
     </filter>
     <match **>
       @type copy
+      deep_copy false
       <store>
         @type relabel
         @label @APPS_ES_1
@@ -4243,7 +4254,7 @@ var _ = Describe("Generating fluentd config", func() {
     <label @TEST_APP>
      <match **>
        @type copy
-
+       deep_copy false
        <store>
          @type relabel
          @label @DEFAULT

@@ -264,11 +264,13 @@ func (engine *ConfigGenerator) generatePipelineToOutputLabels(pipelines []loggin
 			Outputs        []string
 			PipelineLabels string
 			Parse          string
+			DeepCopy       bool
 		}{
 			pipeline.Name,
 			pipeline.OutputRefs,
 			jsonLabels,
 			pipeline.Parse,
+			len(pipeline.OutputRefs) > 1,
 		}
 		result, err := engine.Execute("pipelineToOutputCopyTemplate", data)
 		if err != nil {

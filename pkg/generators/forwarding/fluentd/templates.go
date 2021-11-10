@@ -992,9 +992,13 @@ const storeSyslogTemplate = `{{- define "storeSyslog" -}}
 
 {{if .PayloadKey -}}
   <format>
-    @type single_value
+    @type single_json_value
     message_key {{.PayloadKey}}
   </format>
+{{else -}}
+<format>
+  @type json
+</format>
 {{end -}}
   <buffer {{.ChunkKeys}}>
     @type file

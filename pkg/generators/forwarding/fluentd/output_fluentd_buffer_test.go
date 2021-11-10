@@ -565,6 +565,9 @@ var _ = Describe("Generating fluentd config", func() {
                 keep_alive_idle 75
                 keep_alive_cnt 9
                 keep_alive_intvl 7200
+			<format>
+			  @type json
+			</format>
             <buffer >
                 @type file
                 path '/var/lib/fluentd/syslog_receiver'
@@ -618,6 +621,9 @@ var _ = Describe("Generating fluentd config", func() {
                 keep_alive_idle 75
                 keep_alive_cnt 9
                 keep_alive_intvl 7200
+			<format>
+			  @type json
+			</format>
             <buffer >
                 @type file
                 path '/var/lib/fluentd/syslog_receiver'

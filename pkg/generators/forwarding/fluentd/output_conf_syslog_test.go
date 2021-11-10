@@ -150,6 +150,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
         keep_alive_idle 75
         keep_alive_cnt 9
         keep_alive_intvl 7200
+		<format>
+		  @type json
+		</format>
 		<buffer >
         @type file
         path '/var/lib/fluentd/syslog_receiver'
@@ -188,6 +191,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
     	protocol udp
     	packet_size 4096
 		hostname "#{ENV['NODE_NAME']}"
+		<format>
+		  @type json
+		</format>
         <buffer >
         @type file
         path '/var/lib/fluentd/syslog_receiver'
@@ -235,6 +241,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
         keep_alive_idle 75
         keep_alive_cnt 9
         keep_alive_intvl 7200
+		<format>
+		  @type json
+		</format>
         <buffer >
     		@type file
         path '/var/lib/fluentd/syslog_receiver'
@@ -276,6 +285,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
         tls true
         ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
         verify_mode true
+		<format>
+		  @type json
+		</format>
         <buffer >
         @type file
         path '/var/lib/fluentd/syslog_receiver'
@@ -380,6 +392,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					  keep_alive_idle 75
 					  keep_alive_cnt 9
 					  keep_alive_intvl 7200
+                      <format>
+					   @type json
+					  </format>
 					  <buffer $.systemd.u.SYSLOG_IDENTIFIER>
 						@type file
 						path '/var/lib/fluentd/syslog_receiver_journal'
@@ -419,6 +434,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					  keep_alive_idle 75
 					  keep_alive_cnt 9
 					  keep_alive_intvl 7200
+                      <format>
+                        @type json
+                      </format>
 					  <buffer >
 						@type file
 						path '/var/lib/fluentd/syslog_receiver'
@@ -509,6 +527,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					  keep_alive_idle 75
 					  keep_alive_cnt 9
 					  keep_alive_intvl 7200
+                      <format>
+                          @type json
+                      </format>
 					  <buffer $.systemd.u.SYSLOG_IDENTIFIER>
 						@type file
 						path '/var/lib/fluentd/syslog_receiver_journal'
@@ -549,6 +570,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					  keep_alive_idle 75
 					  keep_alive_cnt 9
 					  keep_alive_intvl 7200
+                      <format>
+                        @type json
+                      </format>
 					  <buffer >
 						@type file
 						path '/var/lib/fluentd/syslog_receiver'
@@ -640,6 +664,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					  keep_alive_idle 75
 					  keep_alive_cnt 9
 					  keep_alive_intvl 7200
+                      <format>
+                          @type json
+                      </format>
 					  <buffer $.systemd.u.SYSLOG_IDENTIFIER>
 						@type file
 						path '/var/lib/fluentd/syslog_receiver_journal'
@@ -679,6 +706,9 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					  keep_alive_idle 75
 					  keep_alive_cnt 9
 					  keep_alive_intvl 7200
+                      <format>
+                          @type json
+                      </format>
 					  <buffer >
 						@type file
 						path '/var/lib/fluentd/syslog_receiver'

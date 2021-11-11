@@ -51,7 +51,7 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.**>
+  <filter kubernetes.** var.log.containers.**>
     @type record_modifier
     <record>
       cw_group_name application
@@ -105,7 +105,7 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.**>
+  <filter kubernetes.** var.log.containers.**>
     @type record_modifier
     <record>
       cw_group_name ${record['kubernetes']['namespace_name']}
@@ -162,7 +162,7 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.**>
+  <filter kubernetes.** var.log.containers.**>
     @type record_modifier
     <record>
       cw_group_name foo.${record['kubernetes']['namespace_id']}

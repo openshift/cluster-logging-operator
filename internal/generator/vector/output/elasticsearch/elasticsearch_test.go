@@ -35,8 +35,8 @@ var _ = Describe("Generate Vector config", func() {
 			Secrets: map[string]*corev1.Secret{
 				"es-1": {
 					Data: map[string][]byte{
-						"username": []byte("junk"),
-						"password": []byte("junk"),
+						"username": []byte("testuser"),
+						"password": []byte("testpass"),
 					},
 				},
 			},
@@ -60,8 +60,8 @@ id_key = "_id"
 # Basic Auth Config
 [sinks.es_1.auth]
 strategy = "basic"
-user = ""
-password = ""
+user = "testuser"
+password = "testpass"
 `,
 		}),
 		Entry("with tls key,cert,ca-bundle", generator.ConfGenerateTest{

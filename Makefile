@@ -30,7 +30,7 @@ export CLF_TEST_INCLUDES?=
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN)
 
 # Should pass when run before commit.
-pre-commit: clean generate-bundle check
+pre-commit: clean bundle check
 
 # check health of the code:
 # - Update generated code
@@ -53,9 +53,8 @@ ci-check: check
 		exit 1 ; \
 	}
 
-# .target is used to hold timestamp files to avoid un-necessary rebuilds. Do NOT check in.
-.target:
-	mkdir -p .target
+# Create temporary directories immediately.
+$(shell mkdir -p bin .target)
 
 # Note: Go has built-in build caching, so always run `go build`.
 # It will do a better job than using source dependencies to decide if we need to build.
@@ -107,7 +106,7 @@ clean:
 
 PATCH?=Dockerfile.patch
 image: .target/image
-.target/image: .target $(shell find must-gather version scripts files vendor manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
+.target/image: $(shell find must-gather version scripts files vendor manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
 	patch -o Dockerfile.local Dockerfile $(PATCH)
 	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
 	touch $@
@@ -127,9 +126,8 @@ fmt:
 MANIFESTS=manifests/$(LOGGING_VERSION)
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
-GEN_TIMESTAMP=.target/codegen
-generate: $(GEN_TIMESTAMP)
-$(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE) .target
+generate: .target/codegen
+.target/codegen: $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE)
 	@$(CONTROLLER_GEN) object paths="./apis/..."
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
 	@bash ./hack/generate-crd.sh
@@ -190,12 +188,15 @@ test-cluster:
 OPENSHIFT_VERSIONS?="v4.7"
 CHANNELS="stable,stable-${LOGGING_VERSION}"
 DEFAULT_CHANNEL="stable"
-generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
-.PHONY: generate-bundle
-
-bundle: generate-bundle
-.PHONY: bundle
+bundle: $(OPM) $(shell find manifests -type f)
+	@rm -rf bundle
+	$(MAKE) regenerate
+	MANIFEST_VERSION=${LOGGING_VERSION} \
+	OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} \
+	CHANNELS=${CHANNELS} \
+	DEFAULT_CHANNEL=${DEFAULT_CHANNEL} \
+	hack/generate-bundle.sh
+	@touch $@
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
@@ -226,13 +227,13 @@ cluster-logging-cleanup: cluster-logging-operator-uninstall cluster-logging-cata
 
 # builds an operator-registry image containing the cluster-logging operator
 cluster-logging-catalog-build: .target/cluster-logging-catalog-build
-.target/cluster-logging-catalog-build: $(shell find olm_deploy -type f)
+.target/cluster-logging-catalog-build: bundle $(shell find olm_deploy manifests bin scripts -type f)
 	olm_deploy/scripts/catalog-build.sh
 	touch $@
 
 # deploys the operator registry image and creates a catalogsource referencing it
 cluster-logging-catalog-deploy: .target/cluster-logging-catalog-deploy
-.target/cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
+.target/cluster-logging-catalog-deploy: cluster-logging-catalog-build $(shell find olm_deploy -type f)
 	olm_deploy/scripts/catalog-deploy.sh
 
 # deletes the catalogsource and catalog namespace
@@ -240,7 +241,7 @@ cluster-logging-catalog-uninstall:
 	olm_deploy/scripts/catalog-uninstall.sh
 
 # installs the cluster-logging operator from the deployed operator-registry/catalogsource.
-cluster-logging-operator-install:
+cluster-logging-operator-install: cluster-logging-catalog-deploy
 	olm_deploy/scripts/operator-install.sh
 
 # uninstalls the cluster-logging operator

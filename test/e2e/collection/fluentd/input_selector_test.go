@@ -175,6 +175,7 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				e2e.WaitForCleanupCompletion(appNamespace2, []string{"test"})
 				e2e.Cleanup()
 				e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{"fluent-receiver", "fluentd"})
+				e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName})
 			}, framework.DefaultCleanUpTimeout)
 
 		})
@@ -274,6 +275,7 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				e2e.WaitForCleanupCompletion(appNamespace2, []string{"test"})
 				e2e.Cleanup()
 				e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{"fluent-receiver", "fluentd"})
+				e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName})
 			}, framework.DefaultCleanUpTimeout)
 
 		})

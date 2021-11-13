@@ -14,7 +14,7 @@ require (
 	github.com/go-logr/logr v0.4.0
 	github.com/google/go-cmp v0.5.6
 	github.com/onsi/ginkgo v1.16.4
-	github.com/onsi/gomega v1.13.0
+	github.com/onsi/gomega v1.17.0
 	github.com/openshift/api v0.0.0-20210713130143-be21c6cb1bea
 	github.com/openshift/elasticsearch-operator v0.0.0-20210825140237-c3774595747e
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0

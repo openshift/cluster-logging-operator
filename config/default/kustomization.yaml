@@ -9,8 +9,8 @@ namespace: openshift-logging
 # namePrefix: clo-
 
 # Labels to add to all resources and selectors.
-#commonLabels:
-#  someName: someValue
+commonLabels:
+  name: cluster-logging-operator
 
 bases:
 - ../crd

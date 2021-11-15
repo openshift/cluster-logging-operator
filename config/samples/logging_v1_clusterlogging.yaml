@@ -1,21 +1,26 @@
-apiVersion: "logging.openshift.io/v1"
-kind: "ClusterLogging"
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
 metadata:
-  name: "instance"
+  name: instance
+  namespace: openshift-logging
 spec:
+  managementState: Managed
   logStore:
-    type: "elasticsearch"
+    type: elasticsearch
     elasticsearch:
       nodeCount: 3
-      resources:
-        requests:
-          limits: 2Gi
-      redundancyPolicy: "ZeroRedundancy"
+      redundancyPolicy: SingleRedundancy
+      storage:
+        storageClassName: gp2
+        size: 200G
+    retentionPolicy:
+      application:
+        maxAge: 7d
   visualization:
-    type: "kibana"
+    type: kibana
     kibana:
       replicas: 1
   collection:
     logs:
-      type: "fluentd"
+      type: fluentd
       fluentd: {}

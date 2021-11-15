@@ -24,6 +24,7 @@ import (
 const ClusterLogForwarderKind = "ClusterLogForwarder"
 
 // ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
+// +k8s:openapi-gen=true
 type ClusterLogForwarderSpec struct {
 	// Inputs are named filters for log messages to be forwarded.
 	//
@@ -31,7 +32,10 @@ type ClusterLogForwarderSpec struct {
 	// `audit`. You don't need to define inputs here if those are sufficient for
 	// your needs. See `inputRefs` for more.
 	//
+
+	// Definitions of input selectors for log messages.
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Inputs",xDescriptors="urn:alm:descriptor:com.tectonic.ui:forwarderInputs"
 	Inputs []InputSpec `json:"inputs,omitempty"`
 
 	// Outputs are named destinations for log messages.
@@ -39,13 +43,16 @@ type ClusterLogForwarderSpec struct {
 	// There is a built-in output named `default` which forwards to the default
 	// openshift log store. You can define outputs to forward to other stores or
 	// log processors, inside or outside the cluster.
-	//
+
+	// Definitions of output destinations for log messages.
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Outputs",xDescriptors="urn:alm:descriptor:com.tectonic.ui:forwarderOutputs"
 	Outputs []OutputSpec `json:"outputs,omitempty"`
 
 	// Pipelines forward the messages selected by a set of inputs to a set of outputs.
 	//
 	// +required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Pipelines",xDescriptors="urn:alm:descriptor:com.tectonic.ui:forwarderPipelines"
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 
 	// OutputDefaults are used to specify default values for OutputSpec
@@ -56,13 +63,17 @@ type ClusterLogForwarderSpec struct {
 
 // ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 type ClusterLogForwarderStatus struct {
-	// Conditions of the log forwarder.
+	// Status conditions for the forwarder resource.
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Forwarder Conditions",xDescriptors="urn:alm:descriptor:com.tectonic.ui:forwarderConditions"
 	Conditions status.Conditions `json:"conditions,omitempty"`
-	// Inputs maps input name to condition of the input.
+	// Status conditions for individual log inputs.
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Input Conditions",xDescriptors="urn:alm:descriptor:com.tectonic.ui:inputConditions"
 	Inputs NamedConditions `json:"inputs,omitempty"`
-	// Outputs maps output name to condition of the output.
+	// Status conditions for individual forwarder outputs
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Output Conditions",xDescriptors="urn:alm:descriptor:com.tectonic.ui:outputConditions"
 	Outputs NamedConditions `json:"outputs,omitempty"`
-	// Pipelines maps pipeline name to condition of the pipeline.
+	// Status conditions for forwarder pipelines
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Pipeline Conditions",xDescriptors="urn:alm:descriptor:com.tectonic.ui:pipelineConditions"
 	Pipelines NamedConditions `json:"pipelines,omitempty"`
 }
 
@@ -250,10 +261,6 @@ type OutputDefaults struct {
 	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
 }
 
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +kubebuilder:resource:categories=logging,shortName=clf
-
 // ClusterLogForwarder is an API to configure forwarding logs.
 //
 // You configure forwarding by specifying a list of `pipelines`,
@@ -267,6 +274,12 @@ type OutputDefaults struct {
 // to forward logs to other stores or processors, inside or outside the cluster.
 //
 // For more details see the documentation on the API fields.
+
+// +kubebuilder:object:root=true
+// +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:categories=logging,shortName=clf
+// Defines destinations for forwarding selected logs.
 type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

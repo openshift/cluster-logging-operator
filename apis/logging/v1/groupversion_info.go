@@ -35,19 +35,20 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme
 )
 
-// +kubebuilder:rbac:groups=console.openshift.io,resources=consolelinks;consoleexternalloglinks,verbs=get;create;update;delete
-// +kubebuilder:rbac:groups=logging.openshift.io,resources=*,verbs=*
-// +kubebuilder:rbac:groups=core,resources=pods;pods/exec;services;endpoints;persistentvolumeclaims;events;configmaps;secrets;serviceaccounts;services/finalizers,verbs=*
-// +kubebuilder:rbac:groups=route.openshift.io,resources=routes;routes/custom-host,verbs="*"
-// +kubebuilder:rbac:groups=apps,resources=deployments;daemonsets;replicasets;statefulsets,verbs=*
-// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=*
-// +kubebuilder:rbac:groups=monitoring.coreos.com,resources=prometheusrules;servicemonitors,verbs=*
+// +kubebuilder:rbac:groups=logging.openshift.io,namespace=openshift-logging,resources=*,verbs=*
+// +kubebuilder:rbac:groups=core,namespace=openshift-logging,resources=pods;services;endpoints;persistentvolumeclaims;events;configmaps;secrets;serviceaccounts;serviceaccounts/finalizers;services/finalizers,verbs=*
+// +kubebuilder:rbac:groups=apps,namespace=openshift-logging,resources=deployments;daemonsets;replicasets;statefulsets,verbs=*
+// +kubebuilder:rbac:groups=route.openshift.io,namespace=openshift-logging,resources=routes;routes/custom-host,verbs="*"
+// +kubebuilder:rbac:groups=batch,namespace=openshift-logging,resources=cronjobs,verbs=*
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,namespace=openshift-logging,resources=roles;rolebindings,verbs=*
+// +kubebuilder:rbac:groups=monitoring.coreos.com,namespace=openshift-logging,resources=prometheusrules;servicemonitors,verbs=*
+// +kubebuilder:rbac:groups=apps,namespace=openshift-logging,resourceNames=cluster-logging-operator,resources=deployments/finalizers,verbs=update
+// +kubebuilder:rbac:groups=console.openshift.io,resources=consoleexternalloglinks,verbs=*
+// +kubebuilder:rbac:groups=core,resources=configmaps,verbs=*
+// +kubebuilder:rbac:groups=scheduling.k8s.io,resources=priorityclasses,verbs=*
 // +kubebuilder:rbac:groups=oauth.openshift.io,resources=oauthclients,verbs=*
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;clusterrolebindings,verbs=*
-// +kubebuilder:rbac:urls=/metrics,verbs=get
-// +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews;subjectaccessreviews,verbs=create
-// +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles;rolebindings,verbs=*
-// +kubebuilder:rbac:groups=config.openshift.io,resources=proxies,verbs=get;list;watch
-// +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=create;delete
-// +kubebuilder:rbac:groups=apps,resourceNames=elasticsearch-operator,resources=deployments/finalizers,verbs=update
+// +kubebuilder:rbac:groups=config.openshift.io,resources=proxies;infrastructures,verbs=get;list;watch
+// +kubebuilder:rbac:groups=security.openshift.io,resources=securitycontextconstraints,verbs=create
+// +kubebuilder:rbac:groups=core,resources=pods;namespaces;services;services/finalizers,verbs=get;list;watch
+// +kubebuilder:rbac:groups=security.openshift.io,namespace=openshift-logging,resources=securitycontextconstraints,resourceNames=log-collector-scc,verbs=use

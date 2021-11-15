@@ -27,7 +27,7 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: ClusterLogging is the Schema for the clusterloggings API
+        description: A Red Hat OpenShift Logging instance
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
@@ -53,11 +53,11 @@ spec:
                           nodeSelector:
                             additionalProperties:
                               type: string
-                            description: Define which Nodes the Pods are scheduled on.
+                            description: The node selector to use for the Fluentd log collection component
                             nullable: true
                             type: object
                           resources:
-                            description: The resource requirements for Fluentd
+                            description: Resource requirements for the Fluentd pods
                             nullable: true
                             properties:
                               limits:
@@ -119,11 +119,11 @@ spec:
                       nodeSelector:
                         additionalProperties:
                           type: string
-                        description: Define which Nodes the Pods are scheduled on.
+                        description: The node selector to use for the Curator component
                         nullable: true
                         type: object
                       resources:
-                        description: The resource requirements for Curator
+                        description: Resource requirements for the Curator pods
                         nullable: true
                         properties:
                           limits:
@@ -248,13 +248,13 @@ spec:
                     description: Specification of the Elasticsearch Log Store component
                     properties:
                       nodeCount:
-                        description: Number of nodes to deploy for Elasticsearch
+                        description: The desired number of Elasticsearch Nodes for the Log Storage component
                         format: int32
                         type: integer
                       nodeSelector:
                         additionalProperties:
                           type: string
-                        description: Define which Nodes the Pods are scheduled on.
+                        description: The node selector to use for the Elasticsearch Log Storage component
                         nullable: true
                         type: object
                       proxy:
@@ -295,7 +295,7 @@ spec:
                         - ZeroRedundancy
                         type: string
                       resources:
-                        description: The resource requirements for Elasticsearch
+                        description: Resource requirements for each Elasticsearch node
                         nullable: true
                         properties:
                           limits:
@@ -408,7 +408,7 @@ spec:
                       nodeSelector:
                         additionalProperties:
                           type: string
-                        description: Define which Nodes the Pods are scheduled on.
+                        description: Define which Nodes the Pods are scheduled on. The node selector to use for the Kibana Visualization component
                         nullable: true
                         type: object
                       proxy:
@@ -441,11 +441,11 @@ spec:
                         - resources
                         type: object
                       replicas:
-                        description: Number of instances to deploy for a Kibana deployment
+                        description: The desired number of Kibana Pods for the Visualization component
                         format: int32
                         type: integer
                       resources:
-                        description: The resource requirements for Kibana
+                        description: Resource requirements for the Kibana pods
                         nullable: true
                         properties:
                           limits:
@@ -567,6 +567,7 @@ spec:
                               items:
                                 type: string
                               type: array
+                            description: The status for each of the Fluentd pods for the Log Collection component
                             type: object
                         type: object
                     type: object
@@ -687,6 +688,7 @@ spec:
                             type: object
                           type: array
                         clusterHealth:
+                          description: The cluster status for each of the Elasticsearch Clusters for the Log Storage component
                           type: string
                         clusterName:
                           type: string
@@ -724,12 +726,28 @@ spec:
                           format: int32
                           type: integer
                         pods:
-                          additionalProperties:
-                            additionalProperties:
-                              items:
-                                type: string
-                              type: array
-                            type: object
+                          properties:
+                            client:
+                              additionalProperties:
+                                items:
+                                  type: string
+                                type: array
+                              description: The status for each of the Elasticsearch Client pods for the Log Storage component
+                              type: object
+                            data:
+                              additionalProperties:
+                                items:
+                                  type: string
+                                type: array
+                              description: The status for each of the Elasticsearch Data pods for the Log Storage component
+                              type: object
+                            master:
+                              additionalProperties:
+                                items:
+                                  type: string
+                                type: array
+                              description: The status for each of the Elasticsearch Master pods for the Log Storage component
+                              type: object
                           type: object
                         replicaSets:
                           items:

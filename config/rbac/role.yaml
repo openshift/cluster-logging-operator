@@ -4,12 +4,74 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: clusterlogging-operator
+  name: cluster-logging
 rules:
-- nonResourceURLs:
-  - /metrics
+- apiGroups:
+  - config.openshift.io
+  resources:
+  - infrastructures
+  - proxies
   verbs:
   - get
+  - list
+  - watch
+- apiGroups:
+  - console.openshift.io
+  resources:
+  - consoleexternalloglinks
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - pods
+  - services
+  - services/finalizers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - oauth.openshift.io
+  resources:
+  - oauthclients
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - clusterrolebindings
+  - clusterroles
+  verbs:
+  - '*'
+- apiGroups:
+  - scheduling.k8s.io
+  resources:
+  - priorityclasses
+  verbs:
+  - '*'
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - create
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: null
+  name: cluster-logging
+  namespace: openshift-logging
+rules:
 - apiGroups:
   - apps
   resources:
@@ -22,48 +84,17 @@ rules:
 - apiGroups:
   - apps
   resourceNames:
-  - elasticsearch-operator
+  - cluster-logging-operator
   resources:
   - deployments/finalizers
   verbs:
   - update
-- apiGroups:
-  - authentication.k8s.io
-  resources:
-  - subjectaccessreviews
-  - tokenreviews
-  verbs:
-  - create
-- apiGroups:
-  - authorization.k8s.io
-  resources:
-  - subjectaccessreviews
-  verbs:
-  - create
 - apiGroups:
   - batch
   resources:
   - cronjobs
   verbs:
   - '*'
-- apiGroups:
-  - config.openshift.io
-  resources:
-  - proxies
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - console.openshift.io
-  resources:
-  - consoleexternalloglinks
-  - consolelinks
-  verbs:
-  - create
-  - delete
-  - get
-  - update
 - apiGroups:
   - ""
   resources:
@@ -72,9 +103,9 @@ rules:
   - events
   - persistentvolumeclaims
   - pods
-  - pods/exec
   - secrets
   - serviceaccounts
+  - serviceaccounts/finalizers
   - services
   - services/finalizers
   verbs:
@@ -93,26 +124,6 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - networking.k8s.io
-  resources:
-  - networkpolicies
-  verbs:
-  - create
-  - delete
-- apiGroups:
-  - oauth.openshift.io
-  resources:
-  - oauthclients
-  verbs:
-  - '*'
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterrolebindings
-  - clusterroles
-  verbs:
-  - '*'
-- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - rolebindings
@@ -126,3 +137,11 @@ rules:
   - routes/custom-host
   verbs:
   - '*'
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - log-collector-scc
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use

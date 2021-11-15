@@ -116,12 +116,12 @@ func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging
 	return status, nil
 }
 
-func getPodMap(node elasticsearch.ElasticsearchStatus) map[logging.ElasticsearchRoleType]logging.PodStateMap {
+func getPodMap(node elasticsearch.ElasticsearchStatus) logging.ElasticsearchPodStatuses {
 
-	return map[logging.ElasticsearchRoleType]logging.PodStateMap{
-		logging.ElasticsearchRoleTypeClient: translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleClient]),
-		logging.ElasticsearchRoleTypeData:   translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleData]),
-		logging.ElasticsearchRoleTypeMaster: translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleMaster]),
+	return logging.ElasticsearchPodStatuses{
+		Client: translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleClient]),
+		Data:   translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleData]),
+		Master: translatePodMap(node.Pods[elasticsearch.ElasticsearchRoleMaster]),
 	}
 }
 

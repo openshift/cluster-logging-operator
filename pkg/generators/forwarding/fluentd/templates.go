@@ -649,6 +649,7 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
   {{ end -}}
   <match **>
     @type copy
+    deep_copy {{.DeepCopy}}
 {{- range $index, $target := .Outputs }}
     <store>
       @type relabel

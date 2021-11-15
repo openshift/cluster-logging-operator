@@ -64,6 +64,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 			Expect(results[0]).To(EqualTrimLines(`<label @MY_SECURE_PIPELINE>
 				<match **>
 					@type copy
+					deep_copy true
 					<store>
 						@type relabel
 						@label @ONCLUSTER_ELASTICSEARCH

@@ -61,15 +61,24 @@ type LineJSONDev struct {
 func (l Line) MarshalJSON() ([]byte, error) {
 	lineTemp := LineJSON(l)
 
-	lineValue, _ := json.Marshal(lineTemp)
+	lineValue, err := json.Marshal(lineTemp)
+	if err != nil {
+		return nil, err
+	}
 	verbosity, errConvert := strconv.Atoi(l.Verbosity)
 	if verbosity > 1 && errConvert == nil {
 		lineTempDev := LineJSONDev(l)
-		lineValue, _ = json.Marshal(lineTempDev)
+		lineValue, err = json.Marshal(lineTempDev)
+		if err != nil {
+			return nil, err
+		}
 	}
 	lineValue = lineValue[1 : len(lineValue)-1]
 
-	contextValue, _ := json.Marshal(lineTemp.Context)
+	contextValue, err := json.Marshal(lineTemp.Context)
+	if err != nil {
+		return nil, err
+	}
 	contextValue = contextValue[1 : len(contextValue)-1]
 
 	sep := ""

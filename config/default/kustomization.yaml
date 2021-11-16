@@ -10,7 +10,7 @@ namespace: openshift-logging
 
 # Labels to add to all resources and selectors.
 commonLabels:
-  name: openshift-logging-operator
+  name: cluster-logging-operator
 
 bases:
 - ../crd

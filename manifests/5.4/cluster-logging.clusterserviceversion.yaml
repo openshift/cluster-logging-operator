@@ -437,17 +437,17 @@ spec:
           - create
         serviceAccountName: cluster-logging-operator
       deployments:
-      - name: openshift-logging-operator
+      - name: cluster-logging-operator
         spec:
           replicas: 1
           selector:
             matchLabels:
-              name: openshift-logging-operator
+              name: cluster-logging-operator
           strategy: {}
           template:
             metadata:
               labels:
-                name: openshift-logging-operator
+                name: cluster-logging-operator
             spec:
               containers:
               - command:

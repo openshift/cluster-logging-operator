@@ -3,7 +3,7 @@ filters:
   ".*":
     approvers:
       - jcantrill
-      - igor-karpukhin
+      - periklis
       - alanconway
       - vimalk78
     reviewers:

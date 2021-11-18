@@ -62,7 +62,7 @@ for dir in $(ls -d $TEST_DIR); do
     artifact_dir=$artifact_dir \
     GENERATOR_NS=$GENERATOR_NS \
     SUCCESS_TIMEOUT=10m \
-    go test -count=1 -parallel=1 -timeout=90m "$dir" -ginkgo.noColor -ginkgo.trace | tee -a "$artifact_dir/test.log" ; then
+    go test -count=1 -parallel=1 -timeout=90m "$dir" -ginkgo.noColor -ginkgo.trace -ginkgo.slowSpecThreshold=300.0 | tee -a "$artifact_dir/test.log" ; then
     os::log::info "======================================================="
     os::log::info "Logforwarding $dir passed"
     os::log::info "======================================================="

@@ -27,6 +27,11 @@ type ContainerBuilder struct {
 	podBuilder *PodBuilder
 }
 
+type InitContainerBuilder struct {
+	initcontainer *corev1.Container
+	podBuilder    *PodBuilder
+}
+
 func (builder *ContainerBuilder) End() *PodBuilder {
 	builder.podBuilder.Pod.Spec.Containers = append(builder.podBuilder.Pod.Spec.Containers, *builder.container)
 	return builder.podBuilder
@@ -51,15 +56,14 @@ func (builder *ContainerBuilder) AddVolumeMount(name, path, subPath string, read
 	return builder
 }
 
-func (builder *ContainerBuilder) WithCmdArgs(cmdAgrgs []string) *ContainerBuilder {
-	builder.container.Args = cmdAgrgs
+func (builder *ContainerBuilder) WithCmdArgs(cmdArgs []string) *ContainerBuilder {
+	builder.container.Args = cmdArgs
 	return builder
 }
 
-func (builder *ContainerBuilder) WithCmd(cmdString string) *ContainerBuilder {
-	cmd := strings.Split(cmdString, " ")
-	builder.container.Command = []string{cmd[0]}
-	builder.container.Args = cmd[1:]
+func (builder *ContainerBuilder) WithCmd(cmdAgrgs []string) *ContainerBuilder {
+	builder.container.Command = []string{cmdAgrgs[0]}
+	builder.container.Args = cmdAgrgs[1:]
 	return builder
 }
 
@@ -103,15 +107,6 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	return &containerBuilder
 }
 
-func (builder *PodBuilder) AddEmptyDirVolume(name string) *PodBuilder {
-	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
-		Name: name,
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
-		},
-	})
-	return builder
-}
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
 	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
 		Name: name,
@@ -168,5 +163,77 @@ func (builder *PodBuilder) AddLabels(labels map[string]string) *PodBuilder {
 	for k, v := range labels {
 		builder.Pod.Labels[k] = v
 	}
+	return builder
+}
+
+func (builder *InitContainerBuilder) End() *PodBuilder {
+	builder.podBuilder.Pod.Spec.InitContainers = append(builder.podBuilder.Pod.Spec.InitContainers, *builder.initcontainer)
+	return builder.podBuilder
+}
+
+func (builder *InitContainerBuilder) WithCmdArgs(cmdAgrgs []string) *InitContainerBuilder {
+	builder.initcontainer.Command = []string{cmdAgrgs[0]}
+	builder.initcontainer.Args = cmdAgrgs[1:]
+	return builder
+}
+
+func (builder *InitContainerBuilder) AddEnvVarFromEnvVarSource(name string, value string) *InitContainerBuilder {
+
+	builder.initcontainer.Env = append(builder.initcontainer.Env, corev1.EnvVar{
+		Name: name,
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				FieldPath: value,
+			},
+		},
+	})
+
+	return builder
+}
+
+//added functions for support kafka in the functional pod
+func (builder *InitContainerBuilder) AddVolumeMount(name, path, subPath string, readonly bool) *InitContainerBuilder {
+	builder.initcontainer.VolumeMounts = append(builder.initcontainer.VolumeMounts, corev1.VolumeMount{
+		Name:      name,
+		ReadOnly:  readonly,
+		MountPath: path,
+		SubPath:   subPath,
+	})
+	return builder
+}
+
+func (builder *InitContainerBuilder) AddEnvVar(name, value string) *InitContainerBuilder {
+	builder.initcontainer.Env = append(builder.initcontainer.Env, corev1.EnvVar{
+		Name:  name,
+		Value: value,
+	})
+	return builder
+}
+
+func (builder *PodBuilder) AddInitContainer(name, image string) *InitContainerBuilder {
+	containerBuilder := InitContainerBuilder{
+		initcontainer: &corev1.Container{
+			Name:            strings.ToLower(name),
+			Image:           image,
+			Env:             []corev1.EnvVar{},
+			ImagePullPolicy: corev1.PullAlways,
+		},
+		podBuilder: builder,
+	}
+	return &containerBuilder
+}
+
+func (builder *PodBuilder) AddEmptyDirVolume(name string) *PodBuilder {
+	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
+		Name: name,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
+	return builder
+}
+
+func (builder *ContainerBuilder) AddContainerPort(name string, port int32) *ContainerBuilder {
+	builder.container.Ports = append(builder.container.Ports, corev1.ContainerPort{Name: name, ContainerPort: port})
 	return builder
 }

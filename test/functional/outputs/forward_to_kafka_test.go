@@ -9,7 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 )
 
-var _ = Describe("[LogForwarding][Kafka] Functional tests", func() {
+var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 
 	var (
 		framework *functional.FluentdFunctionalFramework

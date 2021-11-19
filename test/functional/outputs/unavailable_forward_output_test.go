@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
-var _ = Describe("[Functional][Outputs] FluentdForward Output", func() {
+var _ = Describe("[Functional][Outputs][Unavailable] FluentdForward Output", func() {
 
 	var (
 		framework *functional.FluentdFunctionalFramework

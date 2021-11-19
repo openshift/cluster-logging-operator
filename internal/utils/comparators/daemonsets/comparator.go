@@ -41,8 +41,8 @@ func AreSame(current *apps.DaemonSet, desired *apps.DaemonSet) bool {
 	}
 
 	if !utils.EnvValueEqual(current.Spec.Template.Spec.Containers[0].Env, desired.Spec.Template.Spec.Containers[0].Env) {
-		log.V(3).Info("Collector container EnvVar change found, updating ", "DaemonSetName", current.Name)
-		log.V(3).Info("Collector envvars -", "current", current.Spec.Template.Spec.Containers[0].Env, "desired", desired.Spec.Template.Spec.Containers[0].Env)
+		log.V(3).Info("collector container EnvVar change found, updating ", "DaemonSetName", current.Name)
+		log.V(3).Info("collector envvars -", "current", current.Spec.Template.Spec.Containers[0].Env, "desired", desired.Spec.Template.Spec.Containers[0].Env)
 		current.Spec.Template.Spec.Containers[0].Env = desired.Spec.Template.Spec.Containers[0].Env
 		return false
 	}

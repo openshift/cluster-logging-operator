@@ -85,6 +85,6 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client *
 		return generatedConfig, nil
 
 	} else {
-		return "", errors.New("Only fluentd Log Collector supported")
+		return "", errors.New("Only fluentd Log collector supported")
 	}
 }

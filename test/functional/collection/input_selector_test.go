@@ -13,7 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("[Functional][LogForwarding] InputSelector filtering", func() {
+var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	log.Info("Running ", "filename", filename)
 

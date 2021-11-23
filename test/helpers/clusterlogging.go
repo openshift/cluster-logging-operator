@@ -16,7 +16,7 @@ type LogComponentType string
 const (
 	ComponentTypeStore         LogComponentType = "LogStore"
 	ComponentTypeVisualization LogComponentType = "Visualization"
-	ComponentTypeCollector     LogComponentType = "Collector"
+	ComponentTypeCollector     LogComponentType = "collector"
 )
 
 func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {

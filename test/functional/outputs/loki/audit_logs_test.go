@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-var _ = Describe("Forwarding to Loki", func() {
+var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 	var (
 		f *functional.FluentdFunctionalFramework
 		l *loki.Receiver

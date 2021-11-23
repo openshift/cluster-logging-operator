@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-var _ = Describe("[Normalization] Fluentd normalization", func() {
+var _ = Describe("[Functional][Normalization] Fluentd normalization", func() {
 
 	var (
 		framework *functional.FluentdFunctionalFramework

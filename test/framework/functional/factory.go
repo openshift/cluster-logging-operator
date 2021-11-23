@@ -27,7 +27,6 @@ func NewOVNAuditLog(eventTime time.Time) string {
 	return fmt.Sprintf(OVNLogTemplate, now)
 }
 
-
 func NewPartialCRIOLogMessage(timestamp, message string) string {
 	return NewCRIOLogMessage(timestamp, message, true)
 }

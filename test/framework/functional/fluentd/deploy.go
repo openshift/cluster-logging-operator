@@ -12,8 +12,7 @@ type FluentdCollector struct {
 	*client.Test
 }
 
-
-func(c *FluentdCollector) DeployConfigMapForConfig(name, config, clfYaml string) error {
+func (c *FluentdCollector) DeployConfigMapForConfig(name, config, clfYaml string) error {
 	log.V(2).Info("Creating config configmap")
 	configmap := runtime.NewConfigMap(c.NS.Name, name, map[string]string{})
 

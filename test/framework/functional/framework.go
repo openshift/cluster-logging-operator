@@ -83,7 +83,7 @@ func NewFluentdFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosit
 		Forwarder:        testruntime.NewClusterLogForwarder(),
 		receiverBuilders: []receiverBuilder{},
 		closeClient:      fnClose,
-		collector:        &frameworkfluent.FluentdCollector{
+		collector: &frameworkfluent.FluentdCollector{
 			Test: t,
 		},
 	}

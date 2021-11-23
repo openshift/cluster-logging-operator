@@ -87,7 +87,7 @@ const (
     `
 )
 
-var _ = Describe("[LogForwarding] Json log parsing", func() {
+var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 	var (
 		framework       *functional.FluentdFunctionalFramework
 		clfb            *functional.ClusterLogForwarderBuilder

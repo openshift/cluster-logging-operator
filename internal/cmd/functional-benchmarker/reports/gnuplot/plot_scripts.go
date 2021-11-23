@@ -101,7 +101,7 @@ plot 'latency.data' using 1:2 with lines`
 </html>
 `
 	markdown = `
-# Collector Functionl Benchmark Results
+# collector Functionl Benchmark Results
 ## Options
 * Image: %s
 * Total Log Stressors: %d

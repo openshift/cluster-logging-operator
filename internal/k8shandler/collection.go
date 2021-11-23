@@ -479,7 +479,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 		return nil
 	})
 	if retryErr != nil {
-		return fmt.Errorf("Failed to update Cluster Logging Collector status: %v", retryErr)
+		return fmt.Errorf("Failed to update Cluster Logging collector status: %v", retryErr)
 	}
 
 	return nil
@@ -526,7 +526,7 @@ func compareFluentdCollectorStatus(lhs, rhs logging.FluentdCollectorStatus) bool
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityClass() error {
 
-	collectionPriorityClass := NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging Collector")
+	collectionPriorityClass := NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging collector")
 
 	utils.AddOwnerRefToObject(collectionPriorityClass, utils.AsOwner(clusterRequest.Cluster))
 
@@ -554,7 +554,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 		}
 		err := clusterRequest.Create(collectorServiceAccount)
 		if err != nil && !errors.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("Failure creating Log Collector service account: %v", err)
+			return nil, fmt.Errorf("Failure creating Log collector service account: %v", err)
 		}
 		if len(collectorServiceAccount.ObjectMeta.UID) != 0 {
 			serviceAccountLogCollectorUID = collectorServiceAccount.ObjectMeta.UID
@@ -569,7 +569,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	scc := NewSCC(LogCollectorSCCName)
 	err := clusterRequest.Create(scc)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating Log Collector SecurityContextConstraints: %v", err)
+		return nil, fmt.Errorf("Failure creating Log collector SecurityContextConstraints: %v", err)
 	}
 
 	// Also create the role and role binding so that the service account has host read access

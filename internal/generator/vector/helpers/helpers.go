@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+var Replacer = strings.NewReplacer(" ", "_", "-", "_", ".", "_")
+
 func MakeInputs(in ...string) string {
 	out := make([]string, len(in))
 	for i, o := range in {

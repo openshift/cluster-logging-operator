@@ -4,16 +4,12 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	"io/ioutil"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"strconv"
 
-	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	"github.com/spf13/pflag"
 
 	"github.com/ViaQ/logerr/log"
@@ -70,51 +66,10 @@ func main() {
 
 	log.Info("Finished reading yaml", "content", string(content))
 
-	clfYaml := string(content)
-	client := buildClient(clfYaml)
-	generatedConfig, err := forwarder.Generate(clfYaml, *includeDefaultLogStore, *debugOutput, client)
+	generatedConfig, err := forwarder.Generate(logging.LogCollectionTypeFluentd, string(content), *includeDefaultLogStore, *debugOutput, nil)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		os.Exit(1)
 	}
 	fmt.Println(generatedConfig)
-}
-
-func buildClient(clfYaml string) client.Client {
-
-	instance, err := forwarder.UnMarshalClusterLogForwarder(clfYaml)
-	if err != nil {
-		log.Error(err, "Unable to generate log configuration")
-		os.Exit(1)
-	}
-
-	secrets := []client.Object{}
-	for _, output := range instance.Spec.Outputs {
-		if output.Secret != nil {
-			s := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Namespace: constants.OpenshiftNS,
-					Name:      output.Secret.Name,
-				},
-				Data: map[string][]byte{
-					constants.ClientPrivateKey:   []byte("value"),
-					constants.ClientCertKey:      []byte("value"),
-					constants.TrustedCABundleKey: []byte("value"),
-				},
-			}
-			secrets = append(secrets, s)
-		}
-	}
-	secrets = append(secrets, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      constants.CollectorSecretName,
-			Namespace: constants.OpenshiftNS,
-		},
-		Data: map[string][]byte{
-			constants.ClientPrivateKey:   []byte("value"),
-			constants.ClientCertKey:      []byte("value"),
-			constants.TrustedCABundleKey: []byte("value"),
-		},
-	})
-	return fake.NewClientBuilder().WithObjects(secrets...).Build()
 }

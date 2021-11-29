@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/components/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"os"
 	"strconv"
@@ -13,6 +15,10 @@ import (
 
 type FluentdCollector struct {
 	*client.Test
+}
+
+func (c *FluentdCollector) String() string {
+	return constants.FluentdName
 }
 
 func (c *FluentdCollector) DeployConfigMapForConfig(name, config, clfYaml string) error {
@@ -73,4 +79,8 @@ func adaptLogLevel() string {
 		}
 	}
 	return logLevel
+}
+
+func (c *FluentdCollector) Image() string {
+	return utils.GetComponentImage(constants.FluentdName)
 }

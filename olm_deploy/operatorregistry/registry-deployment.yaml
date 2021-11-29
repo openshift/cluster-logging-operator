@@ -18,7 +18,7 @@ spec:
       initContainers:
       - name: mutate-csv-and-generate-sqlite-db
         image: ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         command:
         - sh
         args:

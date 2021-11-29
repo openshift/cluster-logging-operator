@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"io/ioutil"
 	"os"
 	"path"
@@ -147,7 +148,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			}
 		}
 	} else {
-		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
+		if err = clusterRequest.RemoveServiceAccount(constants.CollectorServiceAccountName); err != nil {
 			return
 		}
 
@@ -542,7 +543,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	cluster := clusterRequest.Cluster
 
-	collectorServiceAccount := NewServiceAccount(constants.CollectorServiceAccountName, cluster.Namespace)
+	collectorServiceAccount := runtime.NewServiceAccount(clusterRequest.Cluster.Namespace, constants.CollectorServiceAccountName)
 
 	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(clusterRequest.Cluster))
 
@@ -595,7 +596,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	subject := NewSubject(
 		"ServiceAccount",
-		"logcollector",
+		constants.CollectorServiceAccountName,
 	)
 	subject.APIGroup = ""
 
@@ -630,7 +631,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	}
 	subject = NewSubject(
 		"ServiceAccount",
-		"logcollector",
+		constants.CollectorServiceAccountName,
 	)
 	subject.Namespace = cluster.Namespace
 	subject.APIGroup = ""

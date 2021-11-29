@@ -37,6 +37,13 @@ func NewService(namespace, name string) *corev1.Service {
 	return svc
 }
 
+// NewServiceAccount returns a corev1.ServiceAccount with namespace and name.
+func NewServiceAccount(namespace, name string) *corev1.ServiceAccount {
+	obj := &corev1.ServiceAccount{}
+	Initialize(obj, namespace, name)
+	return obj
+}
+
 // NewSecret returns a corev1.Secret with namespace and name.
 func NewSecret(namespace, name string, data map[string][]byte) *corev1.Secret {
 	if data == nil {

@@ -12,7 +12,7 @@ import (
 var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to ElasticSearch", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 
 		// Template expected as output Log
 		outputLogTemplate = functional.NewApplicationLogTemplate()
@@ -20,7 +20,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 
 	BeforeEach(func() {
 
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToElasticSearchOutput()

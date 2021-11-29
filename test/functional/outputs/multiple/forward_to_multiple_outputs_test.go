@@ -14,12 +14,12 @@ import (
 var _ = Describe("[Functional][Outputs][Multiple]", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 		builder   *functional.PipelineBuilder
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		builder = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(loggingv1.InputNameApplication)
 		builder.ToFluentForwardOutput()

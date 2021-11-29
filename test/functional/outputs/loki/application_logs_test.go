@@ -21,12 +21,12 @@ import (
 // that isn't a requirement for tests in general.
 func TestLokiOutput(t *testing.T) {
 	var (
-		f      *functional.FluentdFunctionalFramework
+		f      *functional.CollectorFunctionalFramework
 		l      *loki.Receiver
 		tsTime = time.Now()
 		ts     = functional.CRIOTime(tsTime)
 
-		containerTag = func(f *functional.FluentdFunctionalFramework) string {
+		containerTag = func(f *functional.CollectorFunctionalFramework) string {
 			for _, s := range f.Pod.Status.ContainerStatuses {
 				if s.Name == constants.CollectorName {
 					containerId := s.ContainerID[len("cri-o://"):]

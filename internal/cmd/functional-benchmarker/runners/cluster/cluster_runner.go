@@ -22,7 +22,7 @@ import (
 const containerVolumeName = "container"
 
 type ClusterRunner struct {
-	framework *functional.FluentdFunctionalFramework
+	framework *functional.CollectorFunctionalFramework
 	config.Options
 	loaders []loader
 }
@@ -74,7 +74,7 @@ func (r *ClusterRunner) Pod() string {
 
 func (r *ClusterRunner) Deploy() {
 	testclient := client.NewNamesapceClient()
-	r.framework = functional.NewFluentdFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity)
+	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity)
 	r.framework.Conf = r.CollectorConfig
 
 	functional.NewClusterLogForwarderBuilder(r.framework.Forwarder).

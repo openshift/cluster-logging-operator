@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -208,7 +209,7 @@ func (fluent *fluentReceiverLogStore) ClusterLocalEndpoint() string {
 
 func (tc *E2ETestFramework) createServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
 	opts := metav1.CreateOptions{}
-	serviceAccount = k8shandler.NewServiceAccount("fluent-receiver", constants.OpenshiftNS)
+	serviceAccount = runtime.NewServiceAccount(constants.OpenshiftNS, "fluent-receiver")
 	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Create(context.TODO(), serviceAccount, opts); err != nil {
 		return nil, err
 	}

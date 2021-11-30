@@ -224,7 +224,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	)
 
 	fluentdPodSpec := NewPodSpec(
-		"logcollector",
+		constants.CollectorServiceAccountName,
 		[]v1.Container{fluentdContainer, exporterContainer},
 		[]v1.Volume{
 			{Name: logVolumeMountName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logVolumePath}}},

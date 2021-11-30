@@ -1,4 +1,4 @@
-package kafka
+package functional
 
 import (
 	"testing"
@@ -8,10 +8,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestLogForwarding(t *testing.T) {
+func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	tc := "ClusterLogForwarder E2E Suite - Kafka"
-	jr := reporters.NewJUnitReporter("/tmp/artifacts/junit/junit-kafka.xml")
+	tc := "[Framework][Functional] Suite"
+	jr := reporters.NewJUnitReporter("/tmp/artifacts/junit/junit-framework-functional.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, tc, []Reporter{jr})
 }

@@ -13,7 +13,7 @@ func InputsToPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Optio
 		r := Remap{
 			ComponentID: p.Name,
 			Inputs:      helpers.MakeInputs(p.InputRefs...),
-			VRL:         PassThrough,
+			VRL:         SrcPassThrough,
 		}
 		el = append(el, r)
 

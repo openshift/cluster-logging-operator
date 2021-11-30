@@ -31,7 +31,7 @@ func (clusterRequest *ClusterLoggingRequest) RemovePriorityClass(priorityclassNa
 		priorityclassName,
 		1000000,
 		false,
-		"This priority class is for the Cluster-Logging Collector",
+		"This priority class is for the Cluster-Logging collector",
 	)
 
 	err := clusterRequest.Delete(collectionPriorityClass)

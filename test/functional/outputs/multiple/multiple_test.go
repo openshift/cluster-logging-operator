@@ -13,13 +13,13 @@ import (
 var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 	)
 
 	const SYSLOG_NAME = "asyslog"
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 	})
 	AfterEach(func() {
 		framework.Cleanup()

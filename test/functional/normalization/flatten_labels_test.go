@@ -13,15 +13,15 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-var _ = Describe("[Normalization] Fluentd normalization", func() {
+var _ = Describe("[Functional][Normalization] Fluentd normalization", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 		pb        *functional.PipelineBuilder
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		pb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication)
 	})

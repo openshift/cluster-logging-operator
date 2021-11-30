@@ -13,7 +13,7 @@ const (
 	ElasticSearchImage = "elasticsearch:" + ElasticSearchTag
 )
 
-func (f *FluentdFunctionalFramework) addES7Output(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) addES7Output(b *runtime.PodBuilder, output logging.OutputSpec) error {
 
 	log.V(2).Info("Adding elasticsearc7 output", "name", output.Name)
 	name := strings.ToLower(output.Name)

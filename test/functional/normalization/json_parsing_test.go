@@ -87,9 +87,9 @@ const (
     `
 )
 
-var _ = Describe("[LogForwarding] Json log parsing", func() {
+var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 	var (
-		framework       *functional.FluentdFunctionalFramework
+		framework       *functional.CollectorFunctionalFramework
 		clfb            *functional.ClusterLogForwarderBuilder
 		expected        map[string]interface{}
 		empty           map[string]interface{}
@@ -104,7 +104,7 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 	BeforeEach(func() {
 		_ = json.Unmarshal([]byte(Json), &expected)
 		empty = map[string]interface{}{}
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()

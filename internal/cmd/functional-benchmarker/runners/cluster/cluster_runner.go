@@ -22,7 +22,7 @@ import (
 const containerVolumeName = "container"
 
 type ClusterRunner struct {
-	framework *functional.FluentdFunctionalFramework
+	framework *functional.CollectorFunctionalFramework
 	config.Options
 	loaders []loader
 }
@@ -74,7 +74,7 @@ func (r *ClusterRunner) Pod() string {
 
 func (r *ClusterRunner) Deploy() {
 	testclient := client.NewNamesapceClient()
-	r.framework = functional.NewFluentdFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity)
+	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity)
 	r.framework.Conf = r.CollectorConfig
 
 	functional.NewClusterLogForwarderBuilder(r.framework.Forwarder).
@@ -129,7 +129,7 @@ func (r *ClusterRunner) Cleanup() {
 
 func (r *ClusterRunner) SampleCollector() *stats.Sample {
 	if result, err := oc.AdmTop(r.framework.Namespace, r.framework.Name).NoHeaders().ForContainers().Run(); err == nil {
-		log.V(3).Info("Sample Collector", "result", result)
+		log.V(3).Info("Sample collector", "result", result)
 		if !strings.Contains(result, "Error from server") {
 			for _, line := range strings.Split(result, "\n") {
 				fields := strings.Fields(line)

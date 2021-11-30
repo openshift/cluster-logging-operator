@@ -124,7 +124,7 @@ const (
 </match>`
 )
 
-func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuilder, output logging.OutputSpec, conf string) error {
+func (f *CollectorFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuilder, output logging.OutputSpec, conf string) error {
 	log.V(2).Info("Adding forward output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
@@ -144,7 +144,7 @@ func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuil
 	return nil
 }
 
-func (f *FluentdFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
 	outURL, err := url.Parse(output.URL)
 	if err != nil {
 		return err
@@ -153,6 +153,6 @@ func (f *FluentdFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, out
 	return f.addForwardOutputWithConf(b, output, config)
 }
 
-func (f *FluentdFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
 	return f.addForwardOutputWithConf(b, output, UnsecureFluentConfBenchmark)
 }

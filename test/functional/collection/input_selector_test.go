@@ -22,7 +22,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 	)
 
 	var (
-		instance *functional.FluentdFunctionalFramework
+		instance *functional.CollectorFunctionalFramework
 	)
 	//appNamespace2 := "application-ns2"
 	appLabels1 := map[string]string{"name": "app1", "env": "env1"}
@@ -36,7 +36,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 		Describe("from pods identified by labels", func() {
 
 			It("should send logs from specific applications by using labels", func() {
-				instance = functional.NewFluentdFunctionalFramework()
+				instance = functional.NewCollectorFunctionalFramework()
 				instance.Labels = map[string]string{
 					"name":     "app1",
 					"env":      "env1",
@@ -96,7 +96,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 		Describe("from pods identified by labels and namespaces", func() {
 			It("should send logs with labels name:app1 and env:env1 from namespace application-ns1 to fluentd only", func() {
 
-				instance = functional.NewFluentdFunctionalFramework()
+				instance = functional.NewCollectorFunctionalFramework()
 				instance.Labels = map[string]string{
 					"name": "app1",
 					"env":  "env1",

@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]types.ApplicationLog, error) {
+func (f *CollectorFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]types.ApplicationLog, error) {
 	raw, err := f.ReadLogsFrom(outputName, applicationLog)
 	if err != nil {
 		return nil, err
@@ -25,14 +25,14 @@ func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) 
 	return logs, nil
 }
 
-func (f *FluentdFunctionalFramework) ReadRawApplicationLogsFrom(outputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) ReadRawApplicationLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, applicationLog)
 }
 
-func (f *FluentdFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, infraLog)
 }
-func (f *FluentdFunctionalFramework) ReadApplicationLogsFromKafka(topic string, brokerlistener string, consumercontainername string) (results []string, err error) {
+func (f *CollectorFunctionalFramework) ReadApplicationLogsFromKafka(topic string, brokerlistener string, consumercontainername string) (results []string, err error) {
 	//inter broker zookeeper connect is plaintext so use plaintext port to check on sent messages from kafka producer ie. fluent-kafka plugin
 	//till this step it must be ensured that a topic is created and published in kafka-consumer-clo-app-topic container within functional pod
 	var result string
@@ -53,19 +53,19 @@ func (f *FluentdFunctionalFramework) ReadApplicationLogsFromKafka(topic string, 
 	return results, err
 }
 
-func (f *FluentdFunctionalFramework) ReadAuditLogsFrom(outputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) ReadAuditLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, auditLog)
 }
 
-func (f *FluentdFunctionalFramework) Readk8sAuditLogsFrom(outputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) Readk8sAuditLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, k8sAuditLog)
 }
 
-func (f *FluentdFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, ovnAuditLog)
 }
 
-func (f *FluentdFunctionalFramework) ReadLogsFrom(outputName string, outputLogType string) (results []string, err error) {
+func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName string, outputLogType string) (results []string, err error) {
 	outputSpecs := f.Forwarder.Spec.OutputMap()
 	outputLog := outputName
 	if output, found := outputSpecs[outputName]; found {
@@ -95,7 +95,7 @@ func (f *FluentdFunctionalFramework) ReadLogsFrom(outputName string, outputLogTy
 	return results, err
 }
 
-func (f *FluentdFunctionalFramework) ReadNApplicationLogsFrom(n uint64, outputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) ReadNApplicationLogsFrom(n uint64, outputName string) ([]string, error) {
 	lines := []string{}
 	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
 	defer cancel()

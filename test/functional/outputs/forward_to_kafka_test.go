@@ -12,11 +12,11 @@ import (
 var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 
 		log.V(2).Info("Creating secret for broker credentials")
 		brokersecret := kafka.NewBrokerSecret(framework.Namespace)

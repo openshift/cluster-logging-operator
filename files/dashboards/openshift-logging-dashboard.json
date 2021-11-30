@@ -947,7 +947,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(container)(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_rate{container=~'elasticsearch|fluentd|kibana'})",
+          "expr": "sum by(container)(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{container=~'elasticsearch|collector|kibana'})",
           "legendFormat": "{{container}}",
           "refId": "A"
         }
@@ -1211,7 +1211,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by(app)(label_replace(container_file_descriptors{pod=~'(elastic|kibana|fluentd).+'}, 'app', '$1', 'pod', '([^-]+)-.+'))",
+          "expr": "sum by(app)(label_replace(container_file_descriptors{pod=~'(elastic|kibana|collector).+'}, 'app', '$1', 'pod', '([^-]+)-.+'))",
           "legendFormat": "{{app}}",
           "refId": "A"
         }

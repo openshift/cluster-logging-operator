@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -166,7 +167,7 @@ func (syslog *syslogReceiverLogStore) ClusterLocalEndpoint() string {
 
 func (tc *E2ETestFramework) createSyslogServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
 	opts := metav1.CreateOptions{}
-	serviceAccount = k8shandler.NewServiceAccount("syslog-receiver", constants.OpenshiftNS)
+	serviceAccount = runtime.NewServiceAccount(constants.OpenshiftNS, "syslog-receiver")
 	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Create(context.TODO(), serviceAccount, opts); err != nil {
 		return nil, err
 	}

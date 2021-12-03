@@ -1,17 +1,13 @@
-
-# Prometheus Monitor Service (Metrics)
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   labels:
     control-plane: controller-manager
   name: cluster-logging-operator-metrics-monitor
-  namespace: openshift-logging
 spec:
   endpoints:
-    - path: /metrics
-      targetPort: 8686
-      port: 8686
+  - path: /metrics
+    targetPort: 8686
   selector:
     matchLabels:
       control-plane: cluster-logging-operator

@@ -67,7 +67,7 @@ get_elasticsearch_status() {
   local cluster_folder=$es_folder/cluster-$comp
   mkdir -p $cluster_folder
 
-  curl_es='curl -s --max-time 20 --key /var/run/elasticsearch/secret/admin-key --cert /var/run/elasticsearch/secret/admin-cert --cacert /var/run/elasticsearch/secret/admin-ca https://localhost:9200'
+  curl_es='curl -s --max-time 20 --key /etc/elasticsearch/secret/admin-key --cert /etc/elasticsearch/secret/admin-cert --cacert /etc/elasticsearch/secret/admin-ca https://localhost:9200'
   local cat_items=(health nodes aliases thread_pool)
   for cat_item in ${cat_items[@]}
   do

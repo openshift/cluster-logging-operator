@@ -372,13 +372,23 @@ source = """
 .
 """
 
+
+# Adding _id field
+[transforms.elasticsearch_preprocess]
+type = "remap"
+inputs = ["pipeline"]
+source = """
+._id = encode_base64(uuid_v4())
+"""
+
 [sinks.elastic_search]
 type = "elasticsearch"
-inputs = ["pipeline"]
+inputs = ["elasticsearch_preprocess"]
 endpoint = "https://es.svc.messaging.cluster.local:9200"
 index = "{{ log_type }}-write"
 request.timeout_secs = 2147483648
 bulk_action = "create"
+id_key = "_id"
 # TLS Config
 [sinks.elastic_search.tls]
 key_file = "/var/run/ocp-collector/secrets/secret/tls.key"

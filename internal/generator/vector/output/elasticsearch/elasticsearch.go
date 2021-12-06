@@ -6,6 +6,8 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
@@ -34,6 +36,7 @@ endpoint = "{{.Endpoint}}"
 index = "{{ "{{ log_type }}-write" }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
+id_key = "_id"
 {{- end}}
 `
 }
@@ -43,7 +46,13 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 	outputs = MergeElements(outputs,
 		[]Element{
-			Output(o, inputs, secret, op),
+			Remap{
+				Desc:        "Adding _id field",
+				ComponentID: "elasticsearch_preprocess",
+				Inputs:      helpers.MakeInputs(inputs...),
+				VRL:         "._id = encode_base64(uuid_v4())",
+			},
+			Output(o, []string{"elasticsearch_preprocess"}, secret, op),
 		},
 		TLSConf(o, secret),
 		BasicAuth(o, secret),

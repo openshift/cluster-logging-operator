@@ -64,13 +64,22 @@ var _ = Describe("Generating vector config blocks", func() {
 			results, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(`
+    # Adding _id field
+    [transforms.elasticsearch_preprocess]
+    type = "remap"
+    inputs = ["application"]
+    source = """
+    ._id = encode_base64(uuid_v4())
+    """
+
     [sinks.oncluster_elasticsearch]
     type = "elasticsearch"
-    inputs = ["application"]
+    inputs = ["elasticsearch_preprocess"]
     endpoint = "https://es.svc.messaging.cluster.local:9200"
     index = "{{ log_type }}-write"
     request.timeout_secs = 2147483648
     bulk_action = "create"
+    id_key = "_id"
 `))
 		})
 		It("should produce well formed output label config with username/password", func() {
@@ -78,13 +87,22 @@ var _ = Describe("Generating vector config blocks", func() {
 			results, err := g.GenerateConf(elasticsearch.Conf(outputs[0], inputPipeline, secrets[outputs[0].Name], nil)...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(`
+  # Adding _id field
+  [transforms.elasticsearch_preprocess]
+  type = "remap"
+  inputs = ["application"]
+  source = """
+  ._id = encode_base64(uuid_v4())
+  """
+
   [sinks.oncluster_elasticsearch]
   type = "elasticsearch"
-  inputs = ["application"]
+  inputs = ["elasticsearch_preprocess"]
   endpoint = "https://es.svc.messaging.cluster.local:9200"
   index = "{{ log_type }}-write"
   request.timeout_secs = 2147483648
   bulk_action = "create"
+  id_key = "_id"
   # TLS Config
   [sinks.oncluster_elasticsearch.tls]
   key_file = "/var/run/ocp-collector/secrets/my-es-secret/tls.key"

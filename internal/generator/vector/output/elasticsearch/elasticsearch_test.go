@@ -41,13 +41,22 @@ var _ = Describe("Generate Vector config", func() {
 				},
 			},
 			ExpectedConf: `
+# Adding _id field
+[transforms.elasticsearch_preprocess]
+type = "remap"
+inputs = ["application"]
+source = """
+._id = encode_base64(uuid_v4())
+"""
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["application"]
+inputs = ["elasticsearch_preprocess"]
 endpoint = "https://es.svc.infra.cluster:9200"
 index = "{{ log_type }}-write"
 request.timeout_secs = 2147483648
 bulk_action = "create"
+id_key = "_id"
 # Basic Auth Config
 [sinks.es_1.auth]
 strategy = "basic"
@@ -78,13 +87,22 @@ password = ""
 				},
 			},
 			ExpectedConf: `
+# Adding _id field
+[transforms.elasticsearch_preprocess]
+type = "remap"
+inputs = ["application"]
+source = """
+._id = encode_base64(uuid_v4())
+"""
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["application"]
+inputs = ["elasticsearch_preprocess"]
 endpoint = "https://es.svc.infra.cluster:9200"
 index = "{{ log_type }}-write"
 request.timeout_secs = 2147483648
 bulk_action = "create"
+id_key = "_id"
 # TLS Config
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
@@ -105,13 +123,22 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 			},
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
+# Adding _id field
+[transforms.elasticsearch_preprocess]
+type = "remap"
+inputs = ["application"]
+source = """
+._id = encode_base64(uuid_v4())
+"""
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["application"]
+inputs = ["elasticsearch_preprocess"]
 endpoint = "http://es.svc.infra.cluster:9200"
 index = "{{ log_type }}-write"
 request.timeout_secs = 2147483648
 bulk_action = "create"
+id_key = "_id"
 `,
 		}),
 	)

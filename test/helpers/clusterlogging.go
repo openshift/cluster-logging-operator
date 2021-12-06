@@ -14,9 +14,11 @@ import (
 type LogComponentType string
 
 const (
-	ComponentTypeStore         LogComponentType = "LogStore"
-	ComponentTypeVisualization LogComponentType = "Visualization"
-	ComponentTypeCollector     LogComponentType = "collector"
+	ComponentTypeStore            LogComponentType = "LogStore"
+	ComponentTypeVisualization    LogComponentType = "Visualization"
+	ComponentTypeCollector        LogComponentType = "collector"
+	ComponentTypeCollectorFluentd LogComponentType = "collector-fluentd"
+	ComponentTypeCollectorVector  LogComponentType = "collector-vector"
 )
 
 func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
@@ -59,7 +61,7 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 					RedundancyPolicy: elasticsearch.ZeroRedundancy,
 				},
 			}
-		case ComponentTypeCollector:
+		case ComponentTypeCollector, ComponentTypeCollectorFluentd:
 			instance.Spec.Collection = &cl.CollectionSpec{
 				Logs: cl.LogCollectionSpec{
 					Type: cl.LogCollectionTypeFluentd,
@@ -73,6 +75,13 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 					},
 				},
 			}
+		case ComponentTypeCollectorVector:
+			instance.Spec.Collection = &cl.CollectionSpec{
+				Logs: cl.LogCollectionSpec{
+					Type: cl.LogCollectionTypeVector,
+				},
+			}
+
 		}
 	}
 	return instance

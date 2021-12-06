@@ -2,11 +2,12 @@ package elasticsearchmanaged
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,7 +31,17 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	)
 
 	Describe("ClusterLogging with default store", func() {
-		BeforeEach(func() {
+		DeployLoggingWithComponents := func(components []helpers.LogComponentType) {
+			if err := e2e.SetupClusterLogging(components...); err != nil {
+				Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
+			}
+			for _, component := range components {
+				if err := e2e.WaitFor(component); err != nil {
+					Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
+				}
+			}
+		}
+		SetupLogGeneratorWithLabels := func() {
 			appLabels := map[string]string{"logFormat": "redhat"}
 			generatorNS, generatorPod, err = e2e.DeployJsonLogGenerator(map[string]string{
 				"level":   "debug",
@@ -44,16 +55,9 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					Fail(fmt.Sprintf("Failed to apply labels to log generator. err: %v", err))
 				}
 			}
-
-			components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
-			if err := e2e.SetupClusterLogging(components...); err != nil {
-				Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
-			}
-			for _, component := range components {
-				if err := e2e.WaitFor(component); err != nil {
-					Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
-				}
-			}
+		}
+		BeforeEach(func() {
+			SetupLogGeneratorWithLabels()
 		})
 		AfterEach(func() {
 			e2e.Cleanup()
@@ -62,7 +66,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		Context("forwarding logs to default output", func() {
 			Context("with TypeKey set in outputDefaults", func() {
-				BeforeEach(func() {
+				DeployLogForwarderWithStructuredTypeKey := func() {
 					forwarder := &logging.ClusterLogForwarder{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       logging.ClusterLogForwarderKind,
@@ -96,34 +100,52 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
 					}
-				})
-				It("should send logs to index set in labsls ", func() {
-					store := e2e.LogStores["elasticsearch"]
-					estore := store.(*framework.ElasticLogStore)
-					var indices framework.Indices
-					var err error
-					err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
-						indices, err = estore.Indices()
-						if err != nil {
-							log.Error(err, "Error retrieving indices from elasticsearch")
-							return false, nil
-						}
-						found := false
-						log.V(2).Info("indices", "indices", indices)
-						for _, index := range indices {
-							if strings.HasPrefix(index.Name, "app-redhat") {
-								found = true
+				}
+				AssertBehaviours := func() {
+					It("should send logs to index set in labsls ", func() {
+						store := e2e.LogStores["elasticsearch"]
+						estore := store.(*framework.ElasticLogStore)
+						var indices framework.Indices
+						var err error
+						err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
+							indices, err = estore.Indices()
+							if err != nil {
+								log.Error(err, "Error retrieving indices from elasticsearch")
+								return false, nil
 							}
-						}
-						return found, nil
+							found := false
+							log.V(2).Info("indices", "indices", indices)
+							for _, index := range indices {
+								if strings.HasPrefix(index.Name, "app-redhat") {
+									found = true
+								}
+							}
+							return found, nil
+						})
+						log.V(2).Info("error", "error", err)
+						Expect(err).To(BeNil())
 					})
-					log.V(2).Info("error", "error", err)
-					Expect(err).To(BeNil())
+				}
+				Describe("for fluentd collector", func() {
+					BeforeEach(func() {
+						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeStore})
+						DeployLogForwarderWithStructuredTypeKey()
+					})
+					AssertBehaviours()
 				})
+				/* UnComment after Handeling User Defined Inputs for Vector
+				Describe("for vector collector", func() {
+					BeforeEach(func() {
+						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorVector, helpers.ComponentTypeStore})
+						DeployLogForwarderWithStructuredTypeKey()
+					})
+					AssertBehaviours()
+				})
+				*/
 			})
 			Context("with IndexName set in outputDefaults", func() {
 				IndexName := "testindex"
-				BeforeEach(func() {
+				DeployLogForwarderWithStructuredTypeName := func() {
 					forwarder := &logging.ClusterLogForwarder{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       logging.ClusterLogForwarderKind,
@@ -165,30 +187,47 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
 					}
-				})
-				It("should send logs to index set in IndexName ", func() {
-					store := e2e.LogStores["elasticsearch"]
-					estore := store.(*framework.ElasticLogStore)
-					var indices framework.Indices
-					var err error
-					err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
-						indices, err = estore.Indices()
-						if err != nil {
-							log.Error(err, "Error retrieving indices from elasticsearch")
-							return false, nil
-						}
-						found := false
-						for _, index := range indices {
-							if strings.HasPrefix(index.Name, "app-testindex") {
-								found = true
+				}
+				AssertBehaviours := func() {
+					It("should send logs to index set in IndexName ", func() {
+						store := e2e.LogStores["elasticsearch"]
+						estore := store.(*framework.ElasticLogStore)
+						var indices framework.Indices
+						var err error
+						err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
+							indices, err = estore.Indices()
+							if err != nil {
+								log.Error(err, "Error retrieving indices from elasticsearch")
+								return false, nil
 							}
-						}
-						return found, nil
+							found := false
+							for _, index := range indices {
+								if strings.HasPrefix(index.Name, "app-testindex") {
+									found = true
+								}
+							}
+							return found, nil
+						})
+						Expect(err).To(BeNil())
 					})
-					Expect(err).To(BeNil())
+				}
+				Describe("for fluentd collector", func() {
+					BeforeEach(func() {
+						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeStore})
+						DeployLogForwarderWithStructuredTypeName()
+					})
+					AssertBehaviours()
 				})
+				/* UnComment after Handeling User Defined Inputs for Vector
+				Describe("for vector collector", func() {
+					BeforeEach(func() {
+						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorVector, helpers.ComponentTypeStore})
+						DeployLogForwarderWithStructuredTypeName()
+					})
+					AssertBehaviours()
+				})
+				*/
 			})
 		})
-
 	})
 })

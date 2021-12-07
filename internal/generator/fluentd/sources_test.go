@@ -30,8 +30,8 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
@@ -91,8 +91,8 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
@@ -236,8 +236,8 @@ const AllSources = `
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5

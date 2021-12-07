@@ -118,7 +118,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 				Expect(instance.WritesApplicationLogs(1)).To(Succeed(), "Expected no errors writing log messages")
 
 				msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "Here is my message", false)
-				filepath := fmt.Sprintf("/var/log/containers/%s_%s_%s-%s.log", "myname", "application1", "thecontainer", "12345")
+				filepath := fmt.Sprintf("/var/log/pods/%s_%s_%s/%s/0.log", "myname", "application1", "12345", "thecontainer")
 				Expect(instance.WriteMessagesToLog(msg, 1, filepath)).To(Succeed(), "Expected no errors writing log messages")
 
 				logs, err := instance.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)

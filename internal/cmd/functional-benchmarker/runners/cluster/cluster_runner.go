@@ -70,8 +70,6 @@ func (r *ClusterRunner) Deploy() {
 
 				b.AddContainer(name, config.LogStressorImage).
 					WithCmdArgs(args).
-					AddVolumeMount(containerVolumeName, constants.ContainerLogDir, "", false).
-					AddVolumeMount(PodLogsDirName, constants.PodLogDir, "", false).
 					End()
 			}
 			b.AddHostPathVolume(containerVolumeName, constants.ContainerLogDir)
@@ -81,6 +79,7 @@ func (r *ClusterRunner) Deploy() {
 				AddVolumeMount(PodLogsDirName, constants.PodLogDir, "", true).
 				WithPrivilege()
 			collectorBuilder.Update()
+
 			return r.framework.AddBenchmarkForwardOutput(b, r.framework.Forwarder.Spec.Outputs[0])
 		},
 	})

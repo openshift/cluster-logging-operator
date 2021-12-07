@@ -26,7 +26,7 @@ const (
 	include_time_key true 
 </filter>
 
-<match kubernetes.** var.log.containers.**>
+<match kubernetes.** var.log.**>
   @type file
   append true
   path /tmp/app.logs

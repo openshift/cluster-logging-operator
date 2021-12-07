@@ -169,7 +169,7 @@ test-functional: test-functional-benchmarker
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
-	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m
+	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
@@ -200,7 +200,7 @@ bundle: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" hack/test-e2e-olm.sh
+	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \

@@ -29,8 +29,7 @@ func TestLokiOutput(t *testing.T) {
 		containerTag = func(f *functional.CollectorFunctionalFramework) string {
 			for _, s := range f.Pod.Status.ContainerStatuses {
 				if s.Name == constants.CollectorName {
-					containerId := s.ContainerID[len("cri-o://"):]
-					return fmt.Sprintf("kubernetes.var.log.containers.%s_%s_%s-%s.log", f.Pod.Name, f.Pod.Namespace, f.Pod.Spec.Containers[0].Name, containerId)
+					return fmt.Sprintf("kubernetes.var.log.pods.%s_%s_%s.%s.0.log", f.Pod.Namespace, f.Pod.Name, f.Pod.UID, f.Pod.Spec.Containers[0].Name)
 				}
 			}
 			assert.Fail(t, "Unable to find the container id to create a tag for the test")

@@ -515,6 +515,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					_, _ = request.generateCollectorConfig()
 
 					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch).ToNot(BeNil(), "Expected an Elasticsearch specific config")
 					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
 
 				})
@@ -653,6 +654,53 @@ pipelines:
 		Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""), "unexpected "+YAMLString(status))
 		Expect(status.Conditions).NotTo(HaveCondition("Degraded", true, "", ""), "unexpected "+YAMLString(status))
 		Expect(*spec).To(EqualDiff(request.ForwarderSpec))
+	})
+})
+
+var _ = Describe("#applyOutputDefaults", func() {
+	var (
+		outputDefault *logging.OutputDefaults
+		esOutput      = logging.OutputSpec{
+			Name: "external-elasticsearch",
+			Type: logging.OutputTypeElasticsearch,
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+	)
+
+	It("should do nothing when no OutputDefaults are defined", func() {
+		Expect(applyOutputDefaults(nil, esOutput)).To(Equal(esOutput))
+	})
+	Context("when Elasticsearch OutputDefaults are defined", func() {
+
+		BeforeEach(func() {
+			outputDefault = &logging.OutputDefaults{
+				Elasticsearch: &logging.Elasticsearch{
+					StructuredTypeKey:  "kubernetes.labels.app",
+					StructuredTypeName: "nologformat",
+				},
+			}
+		})
+
+		It("should set the values on the output from the default when the output does not define them", func() {
+			act := applyOutputDefaults(outputDefault, esOutput)
+			esOutput.Elasticsearch = &logging.Elasticsearch{
+				StructuredTypeKey:  "kubernetes.labels.app",
+				StructuredTypeName: "nologformat",
+			}
+			Expect(act).To(Equal(esOutput))
+		})
+
+		It("should not set the values on the output from the default when the output defines them", func() {
+			esOutput.Elasticsearch = &logging.Elasticsearch{
+				StructuredTypeKey:  "some.label.value",
+				StructuredTypeName: "someTypeName",
+			}
+			act := applyOutputDefaults(outputDefault, esOutput)
+			Expect(act).To(Equal(esOutput))
+		})
+
 	})
 })
 

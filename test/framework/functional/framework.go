@@ -209,7 +209,7 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()
 	if strings.TrimSpace(f.Conf) == "" {
-		if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, &testClient); err != nil {
+		if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, testClient); err != nil {
 			return err
 		}
 	} else {

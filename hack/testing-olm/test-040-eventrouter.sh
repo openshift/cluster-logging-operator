@@ -107,8 +107,6 @@ spec:
       fluentd: {}
 EOL
 
-os::cmd::try_until_text "oc -n ${LOGGING_NS} get clusterloggings/instance -o jsonpath={.status.logStore.elasticsearchStatus[0].cluster.status}" "green" "$((5 * $minute))" 10
-
 deploy_eventrouter
 
 os::log::info "Checking deployment of elasticsearch..."

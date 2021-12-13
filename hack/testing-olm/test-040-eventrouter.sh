@@ -21,6 +21,7 @@ mkdir -p /tmp/artifacts/junit
 os::test::junit::declare_suite_start "[ClusterLogging] event router e2e test"
 
 deploy_eventrouter() {
+    os::log::info  "Event router image version ${IMAGE_LOGGING_EVENTROUTER}"
     oc process -p NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
         -f $EVENT_ROUTER_TEMPLATE | oc create -f - 2>&1
 
@@ -36,9 +37,11 @@ deploy_eventrouter() {
     done
     if [ $ii -eq $looptries ] ; then
       os::log::error could not start eventrouter pod after $looptries seconds
+      sleep 5m
       oc get pods -l component=eventrouter -n $LOGGING_NS -oyaml
       exit 1
     fi
+    os::log::info  "Event router image version ${IMAGE_LOGGING_EVENTROUTER} deployed"
 }
 
 cleanup() {

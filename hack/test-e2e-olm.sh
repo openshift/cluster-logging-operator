@@ -9,6 +9,7 @@ get_setup_artifacts=true
 CLUSTER_LOGGING_OPERATOR_NAMESPACE=${CLUSTER_LOGGING_OPERATOR_NAMESPACE:-openshift-logging}
 ARTIFACT_DIR=${ARTIFACT_DIR:-"$(pwd)/_output"}
 test_artifactdir="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
+repo_dir="$(dirname $0)/.."
 if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
@@ -22,6 +23,18 @@ cleanup(){
     gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
   fi
 
+  if [ "${DO_CLEANUP:-true}" == "true" ] ; then
+      ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
+      ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
+
+      pushd ../elasticsearch-operator
+        # uninstall the elasticsearch operator
+        ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat ../elasticsearch-operator/olm_deploy/scripts/operator-uninstall.sh
+        # uninstall the catalog containing the elasticsearch operator csv
+        ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat ../elasticsearch-operator/olm_deploy/scripts/catalog-uninstall.sh
+      popd
+  fi
+  os::cleanup::all "${return_code}"
   set -e
   exit ${return_code}
 }
@@ -35,6 +48,10 @@ if [ "${DO_EO_SETUP:-true}" == "true" ] ; then
     ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
     popd
 fi
+
+os::log::info "Deploying cluster-logging-operator"
+${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
+${repo_dir}/olm_deploy/scripts/operator-install.sh
 
 get_setup_artifacts=false
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
@@ -61,13 +78,6 @@ for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sor
 		failed="true"
 	fi
 done
-
-pushd ../elasticsearch-operator
-# uninstall the elasticsearch operator
-ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat ../elasticsearch-operator/olm_deploy/scripts/operator-uninstall.sh
-# uninstall the catalog containing the elasticsearch operator csv
-ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat ../elasticsearch-operator/olm_deploy/scripts/catalog-uninstall.sh
-popd
 
 get_logging_pod_logs
 

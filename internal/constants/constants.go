@@ -61,6 +61,7 @@ const (
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
 
 	CollectorName             = "collector"
+	CollectorConfigSecretName = "collector-config"
 	CollectorMetricSecretName = "collector-metrics"
 	CollectorMonitorJobLabel  = "monitor-collector"
 	CollectorTrustedCAName    = "collector-trusted-ca-bundle"

@@ -190,8 +190,8 @@ func SASLConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		if security.HasUsernamePassword(secret) {
 			hasSASL = true
 			up := UserNamePass{
-				UsernamePath: security.SecretPath(o.Secret.Name, constants.ClientUsername),
-				PasswordPath: security.SecretPath(o.Secret.Name, constants.ClientPassword),
+				Username: security.GetFromSecret(secret, constants.ClientUsername),
+				Password: security.GetFromSecret(secret, constants.ClientPassword),
 			}
 			conf = append(conf, up)
 		}

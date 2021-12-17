@@ -15,7 +15,7 @@ export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
 export APP_NAME=cluster-logging-operator
-export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):$(CURRENT_BRANCH)
 
 export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))

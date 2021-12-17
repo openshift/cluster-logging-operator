@@ -33,7 +33,7 @@ func (e Elasticsearch) Template() string {
 type = "elasticsearch"
 inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
-index = "{{ "{{ log_type }}-write" }}"
+index = "{{ "{{ write-index }}" }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
@@ -50,7 +50,20 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 				Desc:        "Adding _id field",
 				ComponentID: "elasticsearch_preprocess",
 				Inputs:      helpers.MakeInputs(inputs...),
-				VRL:         "._id = encode_base64(uuid_v4())",
+				VRL: strings.TrimSpace(`
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
+._id = encode_base64(uuid_v4())
+`),
 			},
 			Output(o, []string{"elasticsearch_preprocess"}, secret, op),
 		},

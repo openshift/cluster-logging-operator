@@ -57,7 +57,7 @@ reset_logging(){
 }
 
 failed=0
-for dir in $(ls -d $TEST_DIR); do
+for dir in $(eval echo $TEST_DIR); do
   if [ -n "${CLF_INCLUDES}" ] ; then
     if ! basename $dir | grep -P -q "${CLF_INCLUDES}" ; then
       os::log::info "==============================================================="

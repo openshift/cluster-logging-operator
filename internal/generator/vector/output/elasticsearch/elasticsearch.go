@@ -78,7 +78,6 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			Desc:        "TLS Config",
 			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		})
-
 		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
 			hasTLS = true
 			kc := TLSKeyCert{
@@ -113,8 +112,8 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		if security.HasUsernamePassword(secret) {
 			hasBasicAuth = true
 			up := UserNamePass{
-				UsernamePath: security.SecretPath(o.Secret.Name, constants.ClientUsername),
-				PasswordPath: security.SecretPath(o.Secret.Name, constants.ClientPassword),
+				Username: security.GetFromSecret(secret, constants.ClientUsername),
+				Password: security.GetFromSecret(secret, constants.ClientPassword),
 			}
 			conf = append(conf, up)
 		}

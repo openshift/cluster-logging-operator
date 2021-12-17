@@ -3,13 +3,14 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/components/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -123,8 +124,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
-		if err = clusterRequest.createOrUpdateCollectorConfigMap(collectorType, collectorConfig); err != nil {
-			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorConfigMap")
+		if err = clusterRequest.createOrUpdateCollectorConfig(collectorType, collectorConfig); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorConfig")
 			return
 		}
 
@@ -396,10 +397,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRu
 	})
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfigMap(collectorType logging.LogCollectionType, collectorConfig string) error {
-	var collectorConfigMap *corev1.ConfigMap = nil
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfig(collectorType logging.LogCollectionType, collectorConfig string) error {
+	log.V(3).Info("Updating ConfigMap and Secrets")
+	var err error = nil
 	if collectorType == logging.LogCollectionTypeFluentd {
-		collectorConfigMap = NewConfigMap(
+		collectorConfigMap := NewConfigMap(
 			constants.CollectorName,
 			clusterRequest.Cluster.Namespace,
 			map[string]string{
@@ -407,16 +409,26 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfigMap(co
 				"run.sh":      fluentd.RunScript,
 			},
 		)
+		err = clusterRequest.createConfigMap(collectorConfigMap)
+
 	} else if collectorType == logging.LogCollectionTypeVector {
-		collectorConfigMap = NewConfigMap(
-			constants.CollectorName,
-			clusterRequest.Cluster.Namespace,
-			map[string]string{
-				"vector.toml": collectorConfig,
-			},
-		)
+		var secrets = map[string][]byte{}
+		_ = Syncronize(func() error {
+			secrets = map[string][]byte{}
+			// Ignore errors, these files are optional depending on security settings.
+			secrets["vector.toml"] = []byte(collectorConfig)
+			return nil
+		})
+		err = clusterRequest.createSecret(constants.CollectorConfigSecretName, clusterRequest.Cluster.Namespace, secrets)
+	}
+	if err != nil {
+		return err
 	}
 
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createConfigMap(collectorConfigMap *corev1.ConfigMap) error {
 	utils.AddOwnerRefToObject(collectorConfigMap, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(collectorConfigMap)
@@ -438,8 +450,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfigMap(co
 		current.Data = collectorConfigMap.Data
 		return clusterRequest.Update(current)
 	})
-
 	return retryErr
+}
+
+func (clusterRequest *ClusterLoggingRequest) createSecret(secretName, namespace string, secrets map[string][]byte) error {
+	collectorSecret := NewSecret(secretName, namespace, secrets)
+	utils.AddOwnerRefToObject(collectorSecret, utils.AsOwner(clusterRequest.Cluster))
+	err := clusterRequest.CreateOrUpdateSecret(collectorSecret)
+	return err
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorDaemonset(collectorType logging.LogCollectionType, pipelineConfHash string) (err error) {

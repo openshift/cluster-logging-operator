@@ -19,8 +19,8 @@ type TLSCertKey struct {
 }
 
 type UserNamePass struct {
-	UsernamePath string
-	PasswordPath string
+	Username string
+	Password string
 }
 
 type SharedKey struct {

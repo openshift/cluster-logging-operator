@@ -46,6 +46,17 @@ var _ = Describe("Generate Vector config", func() {
 type = "remap"
 inputs = ["application"]
 source = """
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
 ._id = encode_base64(uuid_v4())
 """
 
@@ -53,7 +64,7 @@ source = """
 type = "elasticsearch"
 inputs = ["elasticsearch_preprocess"]
 endpoint = "https://es.svc.infra.cluster:9200"
-index = "{{ log_type }}-write"
+index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
@@ -92,6 +103,17 @@ password = "testpass"
 type = "remap"
 inputs = ["application"]
 source = """
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
 ._id = encode_base64(uuid_v4())
 """
 
@@ -99,7 +121,7 @@ source = """
 type = "elasticsearch"
 inputs = ["elasticsearch_preprocess"]
 endpoint = "https://es.svc.infra.cluster:9200"
-index = "{{ log_type }}-write"
+index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
@@ -128,6 +150,17 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 type = "remap"
 inputs = ["application"]
 source = """
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
 ._id = encode_base64(uuid_v4())
 """
 
@@ -135,7 +168,7 @@ source = """
 type = "elasticsearch"
 inputs = ["elasticsearch_preprocess"]
 endpoint = "http://es.svc.infra.cluster:9200"
-index = "{{ log_type }}-write"
+index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"

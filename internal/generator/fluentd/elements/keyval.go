@@ -1,4 +1,4 @@
-package generator
+package elements
 
 // KeyVal is an Element which can be used to generate a <key value> line in config
 // When used with 'kv' function, can be used to omit lines for which values are not set

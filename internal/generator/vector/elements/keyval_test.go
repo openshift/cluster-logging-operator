@@ -1,4 +1,4 @@
-package generator
+package elements
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	. "github.com/openshift/cluster-logging-operator/internal/generator"
 )
 
 type FluentConfig struct {
@@ -49,8 +50,8 @@ func TestKeyVal(t *testing.T) {
 			},
 			conf: `
 @id teststore
-field1 value1
-field2 value2
+field1 = value1
+field2 = value2
 type Tcp
 `,
 		},
@@ -65,7 +66,7 @@ type Tcp
 			},
 			conf: `
 @id teststore
-field2 value2
+field2 = value2
 type Tcp
 `,
 		},
@@ -80,11 +81,11 @@ type Tcp
 			},
 			conf: `
 @id teststore
-field1 value1
-field2 value2
-field3 value3
+field1 = value1
+field2 = value2
+field3 = value3
 type Tcp
-field4 value4
+field4 = value4
 `,
 		},
 		{

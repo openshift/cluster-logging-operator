@@ -14,11 +14,7 @@ func Conf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret,
 			"Set of all input sources",
 		},
 		{
-			Normalize("raw_container_logs", "container_logs"),
-			"set 'level' field, add metadata",
-		},
-		{
-			Normalize("raw_journal_logs", "journal_logs"),
+			NormalizeLogs(clfspec, op),
 			"set 'level' field, add metadata",
 		},
 		{
@@ -34,6 +30,18 @@ func Conf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret,
 			"vector outputs",
 		},
 	}
+}
+
+func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	types := generator.GatherSources(spec, op)
+	var el []generator.Element = make([]generator.Element, 0)
+	if types.Has(logging.InputNameApplication) {
+		el = append(el, Normalize("raw_container_logs", "container_logs")...)
+	}
+	if types.Has(logging.InputNameInfrastructure) {
+		el = append(el, Normalize("raw_journal_logs", "journal_logs")...)
+	}
+	return el
 }
 
 func Normalize(inLabel, outLabel string) []generator.Element {

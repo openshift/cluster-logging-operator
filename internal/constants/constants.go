@@ -76,6 +76,9 @@ const (
 	LogfilesmetricImageEnvVar     = "LOGFILEMETRICEXPORTER_IMAGE"
 	CertEventName                 = "cluster-logging-certs-generate"
 	ClusterInfrastructureInstance = "cluster"
+
+	ContainerLogDir = "/var/log/containers"
+	PodLogDir       = "/var/log/pods"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

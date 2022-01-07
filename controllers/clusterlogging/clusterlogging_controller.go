@@ -58,7 +58,12 @@ var _ reconcile.Reconciler = &ReconcileClusterLogging{}
 type ReconcileClusterLogging struct {
 	// This Client, initialized using mgr.Client() above, is a split Client
 	// that reads objects from the cache and writes to the apiserver
-	Client   client.Client
+	Client client.Client
+
+	// Reader is an initialized client.Reader that reads objects directly from the apiserver
+	// instead of the cache. Useful for cases where need to read/write to a namespace other than
+	// the deployed namespace (e.g. openshift-config-managed)
+	Reader   client.Reader
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 }
@@ -93,7 +98,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request reconci
 		return reconcile.Result{}, nil
 	}
 
-	if err = k8shandler.Reconcile(instance, r.Client, r.Recorder); err != nil {
+	if err = k8shandler.Reconcile(instance, r.Client, r.Reader, r.Recorder); err != nil {
 		log.Error(err, "Error reconciling clusterlogging instance")
 	}
 

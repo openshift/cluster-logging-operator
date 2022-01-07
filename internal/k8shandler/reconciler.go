@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"strconv"
 
 	"github.com/ViaQ/logerr/log"
@@ -21,9 +22,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client, r record.EventRecorder) (err error) {
+func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client, reader client.Reader, r record.EventRecorder) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client:        requestClient,
+		Reader:        reader,
 		Cluster:       requestCluster,
 		EventRecorder: r,
 	}
@@ -76,8 +78,8 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	}
 
 	// Reconcile metrics Dashboards
-	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client); err != nil {
-		return fmt.Errorf("Unable to create or update metrics dashboards for %q: %w", clusterLoggingRequest.Cluster.Name, err)
+	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader, utils.AsOwner(clusterLoggingRequest.Cluster)); err != nil {
+		log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)
 	}
 
 	///////

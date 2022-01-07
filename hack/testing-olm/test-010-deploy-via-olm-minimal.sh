@@ -83,6 +83,8 @@ assert_resources_does_not_exist
 # assert kibana instance does not exists
 assert_kibana_instance_does_not_exists
 
+# wait few seconds
+sleep 10
 # delete cluster logging
 os::cmd::expect_success "oc -n $NAMESPACE delete -f ${repo_dir}/hack/cr-unmanaged.yaml"
 
@@ -96,3 +98,4 @@ assert_kibana_instance_exists
 
 # delete cluster logging
 os::cmd::expect_success "oc -n $NAMESPACE delete -f ${repo_dir}/hack/cr.yaml"
+

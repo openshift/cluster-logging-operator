@@ -10,6 +10,7 @@ metadata:
     "operatorframework.io/arch.amd64": supported
     "operatorframework.io/arch.ppc64le": supported
     "operatorframework.io/arch.s390x": supported
+    "operatorframework.io/arch.arm64": supported
   annotations:
     "operatorframework.io/suggested-namespace": openshift-logging
     "operatorframework.io/cluster-monitoring": "true"

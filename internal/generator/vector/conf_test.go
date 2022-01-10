@@ -169,7 +169,7 @@ route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.k
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "app"
+.log_type = "application"
 """
 
 
@@ -178,7 +178,7 @@ source = """
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infra"
+.log_type = "infrastructure"
 """
 
 
@@ -343,7 +343,7 @@ route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.k
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "app"
+.log_type = "application"
 """
 
 
@@ -352,7 +352,7 @@ source = """
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infra"
+.log_type = "infrastructure"
 """
 
 
@@ -378,6 +378,17 @@ source = """
 type = "remap"
 inputs = ["pipeline"]
 source = """
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
 ._id = encode_base64(uuid_v4())
 """
 
@@ -385,7 +396,7 @@ source = """
 type = "elasticsearch"
 inputs = ["elasticsearch_preprocess"]
 endpoint = "https://es.svc.messaging.cluster.local:9200"
-index = "{{ log_type }}-write"
+index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"

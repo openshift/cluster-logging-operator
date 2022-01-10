@@ -10,15 +10,29 @@ import (
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/client"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
-func TestLogForwardingToLoki(t *testing.T) {
-	c := client.ForTest(t)
-	rcv := loki.NewReceiver(c.NS.Name, "loki-receiver")
+func TestLogForwardingToLokiWithFluentd(t *testing.T) {
 	cl := runtime.NewClusterLogging()
 	clf := runtime.NewClusterLogForwarder()
+	testLogForwardingToLoki(t, cl, clf)
+}
+
+func TestLogForwardingToLokiWithVector(t *testing.T) {
+	cl := runtime.NewClusterLogging()
+	cl.Spec.Collection.Logs.Type = loggingv1.LogCollectionTypeVector
+	cl.Spec.Collection.Logs.FluentdSpec = loggingv1.FluentdSpec{}
+	clf := runtime.NewClusterLogForwarder()
+	testLogForwardingToLoki(t, cl, clf)
+}
+
+func testLogForwardingToLoki(t *testing.T, cl *loggingv1.ClusterLogging, clf *loggingv1.ClusterLogForwarder) {
+	c := client.ForTest(t)
+	defer e2e.RunCleanupScript()
+	rcv := loki.NewReceiver(c.NS.Name, "loki-receiver")
 	gen := runtime.NewLogGenerator(c.NS.Name, rcv.Name, 100, 0, "I am Loki, of Asgard, and I am burdened with glorious purpose.")
 	clf.Spec = loggingv1.ClusterLogForwarderSpec{
 		Outputs: []loggingv1.OutputSpec{{
@@ -48,7 +62,9 @@ func TestLogForwardingToLoki(t *testing.T) {
 	// Start independent components in parallel to speed up the test.
 	var g errgroup.Group
 	g.Go(func() error { return c.Recreate(cl) })
+	defer func(r *loggingv1.ClusterLogging) { _ = c.Delete(r) }(cl)
 	g.Go(func() error { return c.Recreate(clf) })
+	defer func(r *loggingv1.ClusterLogForwarder) { _ = c.Delete(r) }(clf)
 	g.Go(func() error { return rcv.Create(c.Client) })
 	g.Go(func() error { return c.Create(gen) })
 	require.NoError(t, g.Wait())

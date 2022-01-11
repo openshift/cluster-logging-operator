@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"log"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -45,6 +46,19 @@ const (
 	// RFC3164RFC5424 either rfc3164 or rfc5424
 	RFC3164RFC5424
 )
+
+func MustParseRFC(rfc string) SyslogRfc {
+	switch strings.ToUpper(rfc) {
+	case "RFC3164":
+		return RFC3164
+	case "RFC5424":
+		return RFC5424
+	case "RFC3164 or RFC5424":
+		return RFC3164RFC5424
+	}
+	log.Fatal("Unable to parse RFC", "rfc", rfc)
+	return 0
+}
 
 func (e SyslogRfc) String() string {
 	switch e {

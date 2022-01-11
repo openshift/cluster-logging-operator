@@ -42,7 +42,7 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 			log.Error(err, "Error occurred while getting hot phase age for App log source")
 			return nil
 		}
-		appPolicySpec := newPolicySpec(PolicyNameApp, retentionPolicy.App.MaxAge, hotPhaseAgeApp)
+		appPolicySpec := newPolicySpec(PolicyNameApp, retentionPolicy.App, hotPhaseAgeApp)
 		indexManagement.Policies = append(indexManagement.Policies, appPolicySpec)
 		appMappingSpec := newMappingSpec(MappingNameApp, PolicyNameApp, AliasesApp)
 		indexManagement.Mappings = append(indexManagement.Mappings, appMappingSpec)
@@ -53,7 +53,7 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 			log.Error(err, "Error occurred while getting hot phase age for Infra log source.")
 			return nil
 		}
-		infraPolicySpec := newPolicySpec(PolicyNameInfra, retentionPolicy.Infra.MaxAge, hotPhaseAgeInfra)
+		infraPolicySpec := newPolicySpec(PolicyNameInfra, retentionPolicy.Infra, hotPhaseAgeInfra)
 		indexManagement.Policies = append(indexManagement.Policies, infraPolicySpec)
 		infraMappingSpec := newMappingSpec(MappingNameInfra, PolicyNameInfra, AliasesInfra)
 		indexManagement.Mappings = append(indexManagement.Mappings, infraMappingSpec)
@@ -64,7 +64,7 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 			log.Error(err, "Error occurred while getting hot phase age for Audit log source.")
 			return nil
 		}
-		auditPolicySpec := newPolicySpec(PolicyNameAudit, retentionPolicy.Audit.MaxAge, hotPhaseAgeAudit)
+		auditPolicySpec := newPolicySpec(PolicyNameAudit, retentionPolicy.Audit, hotPhaseAgeAudit)
 		indexManagement.Policies = append(indexManagement.Policies, auditPolicySpec)
 		auditMappingSpec := newMappingSpec(MappingNameAudit, PolicyNameAudit, AliasesAudit)
 		indexManagement.Mappings = append(indexManagement.Mappings, auditMappingSpec)
@@ -76,30 +76,59 @@ func newDefaultPoliciesSpec(spec *logging.RetentionPoliciesSpec) *logging.Retent
 
 	defaultSpec := &logging.RetentionPoliciesSpec{
 		App: &logging.RetentionPolicySpec{
-			MaxAge: esapi.TimeUnit("7d"),
+			MaxAge:                  esapi.TimeUnit("7d"),
+			PruneNamespacesInterval: esapi.TimeUnit("30m"),
 		},
 		Infra: &logging.RetentionPolicySpec{
-			MaxAge: esapi.TimeUnit("7d"),
+			MaxAge:                  esapi.TimeUnit("7d"),
+			PruneNamespacesInterval: esapi.TimeUnit("30m"),
 		},
 		Audit: &logging.RetentionPolicySpec{
-			MaxAge: esapi.TimeUnit("7d"),
+			MaxAge:                  esapi.TimeUnit("7d"),
+			PruneNamespacesInterval: esapi.TimeUnit("30m"),
 		},
 	}
+
 	if spec != nil {
 		if spec.App != nil {
-			defaultSpec.App = spec.App
+			if spec.App.MaxAge != "" {
+				defaultSpec.App.MaxAge = spec.App.MaxAge
+			}
+			if spec.App.Namespaces != nil {
+				if spec.App.PruneNamespacesInterval != "" {
+					defaultSpec.App.PruneNamespacesInterval = spec.App.PruneNamespacesInterval
+				}
+				defaultSpec.App.Namespaces = spec.App.Namespaces
+			}
 		}
 		if spec.Infra != nil {
-			defaultSpec.Infra = spec.Infra
+			if spec.Infra.MaxAge != "" {
+				defaultSpec.Infra.MaxAge = spec.Infra.MaxAge
+			}
+			if spec.Infra.Namespaces != nil {
+				if spec.Infra.PruneNamespacesInterval != "" {
+					defaultSpec.Infra.PruneNamespacesInterval = spec.Infra.PruneNamespacesInterval
+				}
+				defaultSpec.Infra.Namespaces = spec.Infra.Namespaces
+			}
 		}
 		if spec.Audit != nil {
-			defaultSpec.Audit = spec.Audit
+			if spec.Audit.MaxAge != "" {
+				defaultSpec.Audit.MaxAge = spec.Audit.MaxAge
+			}
+			if spec.Audit.Namespaces != nil {
+				if spec.Audit.PruneNamespacesInterval != "" {
+					defaultSpec.Audit.PruneNamespacesInterval = spec.Audit.PruneNamespacesInterval
+				}
+				defaultSpec.Audit.Namespaces = spec.Audit.Namespaces
+			}
 		}
 	}
+
 	return defaultSpec
 }
 
-func newPolicySpec(name string, maxIndexAge esapi.TimeUnit, hotPhaseAge esapi.TimeUnit) esapi.IndexManagementPolicySpec {
+func newPolicySpec(name string, retentionPolicy *logging.RetentionPolicySpec, hotPhaseAge esapi.TimeUnit) esapi.IndexManagementPolicySpec {
 
 	policySpec := esapi.IndexManagementPolicySpec{
 		Name:         name,
@@ -113,10 +142,16 @@ func newPolicySpec(name string, maxIndexAge esapi.TimeUnit, hotPhaseAge esapi.Ti
 				},
 			},
 			Delete: &esapi.IndexManagementDeletePhaseSpec{
-				MinAge: maxIndexAge,
+				MinAge:                  retentionPolicy.MaxAge,
+				PruneNamespacesInterval: retentionPolicy.PruneNamespacesInterval,
 			},
 		},
 	}
+
+	if retentionPolicy.Namespaces != nil {
+		policySpec.Phases.Delete.Namespaces = retentionPolicy.Namespaces
+	}
+
 	return policySpec
 }
 

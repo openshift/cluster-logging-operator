@@ -770,3 +770,57 @@ func TestIndexManagementChanges(t *testing.T) {
 		t.Errorf("Expected that difference would be found due to retention policy change")
 	}
 }
+
+func TestIndexManagementNamespacePruning(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				RetentionPolicy: &logging.RetentionPoliciesSpec{
+					App: &logging.RetentionPolicySpec{
+						MaxAge: elasticsearch.TimeUnit("12h"),
+					},
+				},
+			},
+		},
+	}
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR1 := cr.newElasticsearchCR("test-app-name", existing)
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				RetentionPolicy: &logging.RetentionPoliciesSpec{
+					App: &logging.RetentionPolicySpec{
+						MaxAge:                  "12h",
+						PruneNamespacesInterval: "15m",
+						Namespaces: []elasticsearch.IndexManagementDeleteNamespaceSpec{
+							{
+								Namespace: "openshift-*",
+								MinAge:    "1h",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
+	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR1, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to retention policy change")
+	}
+
+	if diffCR.Spec.IndexManagement.Policies[0].Name != indexmanagement.PolicyNameApp ||
+		diffCR.Spec.IndexManagement.Policies[0].Phases.Delete.PruneNamespacesInterval != cluster.Spec.LogStore.RetentionPolicy.App.PruneNamespacesInterval ||
+		diffCR.Spec.IndexManagement.Policies[0].Phases.Delete.Namespaces[0].Namespace != cluster.Spec.LogStore.RetentionPolicy.App.Namespaces[0].Namespace ||
+		diffCR.Spec.IndexManagement.Policies[0].Phases.Delete.Namespaces[0].MinAge != cluster.Spec.LogStore.RetentionPolicy.App.Namespaces[0].MinAge {
+		t.Errorf("Expected that difference would be found due to retention policy change")
+	}
+}

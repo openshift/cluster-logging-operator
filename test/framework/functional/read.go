@@ -80,7 +80,7 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName string, outputLog
 	if !ok {
 		return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
 	}
-	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
+	err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
 		result, err = f.RunCommand(outputName, "cat", file)
 		if result != "" && err == nil {
 			return true, nil

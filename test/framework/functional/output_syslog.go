@@ -25,7 +25,11 @@ func (f *CollectorFunctionalFramework) addSyslogOutput(b *runtime.PodBuilder, ou
 		baseRsyslogConfig = e2e.TcpSyslogInput
 	}
 	// using unsecure rsyslog conf
-	rsyslogConf := e2e.GenerateRsyslogConf(baseRsyslogConfig, e2e.RFC5424)
+	rfc := e2e.RFC5424
+	if output.Syslog != nil && output.Syslog.RFC != "" {
+		rfc = e2e.MustParseRFC(output.Syslog.RFC)
+	}
+	rsyslogConf := e2e.GenerateRsyslogConf(baseRsyslogConfig, rfc)
 	rsyslogConf = strings.Join([]string{IncreaseRsyslogMaxMessageSize, rsyslogConf}, "\n")
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"rsyslog.conf": rsyslogConf,

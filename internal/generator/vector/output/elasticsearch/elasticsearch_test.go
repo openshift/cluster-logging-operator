@@ -16,7 +16,7 @@ import (
 var _ = Describe("Generate Vector config", func() {
 	inputPipeline := []string{"application"}
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], generator.NoOptions)
+		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], op)
 	}
 	DescribeTable("For Elasticsearch output", generator.TestGenerateConfWith(f),
 		Entry("with username,password", generator.ConfGenerateTest{

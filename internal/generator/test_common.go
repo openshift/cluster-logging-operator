@@ -25,6 +25,9 @@ type GenerateFunc func(logging.ClusterLoggingSpec, map[string]*corev1.Secret, lo
 func TestGenerateConfWith(gf GenerateFunc) func(ConfGenerateTest) {
 	return func(testcase ConfGenerateTest) {
 		g := MakeGenerator()
+		if testcase.Options == nil {
+			testcase.Options = Options{}
+		}
 		e := gf(testcase.CLSpec, testcase.Secrets, testcase.CLFSpec, testcase.Options)
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())

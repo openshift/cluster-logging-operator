@@ -50,7 +50,7 @@ func (c *FluentdCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, 
 
 func (c *FluentdCollector) IsStarted(logs string) bool {
 	// if fluentd started successfully return success
-	return strings.Contains(logs, "flush_thread actually running")
+	return strings.Contains(logs, "fluentd worker is now running worker")
 }
 
 func adaptLogLevel() string {

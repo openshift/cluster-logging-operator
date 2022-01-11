@@ -47,8 +47,25 @@ type IndexManagementPhasesSpec struct {
 // +k8s:openapi-gen=true
 type IndexManagementDeletePhaseSpec struct {
 	// The minimum age of an index before it should be deleted (e.g. 10d)
-	//
 	MinAge TimeUnit `json:"minAge"`
+
+	// How often to run a new prune-namespaces job
+	// +optional
+	PruneNamespacesInterval TimeUnit `json:"pruneNamespacesInterval,omitempty"`
+
+	// The per namespace specification to delete documents older than a given minimum age
+	// +optional
+	Namespaces []IndexManagementDeleteNamespaceSpec `json:"namespaceSpec,omitempty"`
+}
+
+type IndexManagementDeleteNamespaceSpec struct {
+	// Target Namespace to delete logs older than MinAge (defaults to 7d)
+	// Can be one namespace name or a prefix (e.g., "openshift-" covers all namespaces with this prefix)
+	Namespace string `json:"namespace"`
+
+	// Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
+	// +optional
+	MinAge TimeUnit `json:"minAge,omitempty"`
 }
 
 // +k8s:openapi-gen=true

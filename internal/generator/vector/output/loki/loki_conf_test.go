@@ -163,7 +163,7 @@ password = "password"
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
-tenant_id = {foo.bar.baz}
+tenant_id = "{{foo.bar.baz}}"
 
 [sinks.loki_receiver.encoding]
 codec = "json"

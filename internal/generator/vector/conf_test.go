@@ -228,23 +228,38 @@ enabled = true
 							logging.InputNameApplication,
 							logging.InputNameInfrastructure,
 							logging.InputNameAudit},
-						OutputRefs: []string{"elastic-search"},
+						OutputRefs: []string{"es-1", "es-2"},
 						Name:       "pipeline",
 					},
 				},
 				Outputs: []logging.OutputSpec{
 					{
 						Type: logging.OutputTypeElasticsearch,
-						Name: "elastic-search",
-						URL:  "https://es.svc.messaging.cluster.local:9200",
+						Name: "es-1",
+						URL:  "https://es-1.svc.messaging.cluster.local:9200",
 						Secret: &logging.OutputSecretSpec{
-							Name: "secret",
+							Name: "es-1",
+						},
+					},
+					{
+						Type: logging.OutputTypeElasticsearch,
+						Name: "es-2",
+						URL:  "https://es-2.svc.messaging.cluster.local:9200",
+						Secret: &logging.OutputSecretSpec{
+							Name: "es-2",
 						},
 					},
 				},
 			},
 			Secrets: map[string]*corev1.Secret{
-				"elastic-search": {
+				"es-1": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+				"es-2": {
 					Data: map[string][]byte{
 						"tls.key":       []byte("junk"),
 						"tls.crt":       []byte("junk"),
@@ -392,19 +407,32 @@ if (.log_type == "audit"){
 ._id = encode_base64(uuid_v4())
 """
 
-[sinks.elastic_search]
+[sinks.es_1]
 type = "elasticsearch"
 inputs = ["elasticsearch_preprocess"]
-endpoint = "https://es.svc.messaging.cluster.local:9200"
+endpoint = "https://es-1.svc.messaging.cluster.local:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
 # TLS Config
-[sinks.elastic_search.tls]
-key_file = "/var/run/ocp-collector/secrets/secret/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/secret/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/secret/ca-bundle.crt"
+[sinks.es_1.tls]
+key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
+[sinks.es_2]
+type = "elasticsearch"
+inputs = ["elasticsearch_preprocess"]
+endpoint = "https://es-2.svc.messaging.cluster.local:9200"
+index = "{{ write-index }}"
+request.timeout_secs = 2147483648
+bulk_action = "create"
+id_key = "_id"
+# TLS Config
+[sinks.es_2.tls]
+key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 `,
 		}),
 	)

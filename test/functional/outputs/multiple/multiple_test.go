@@ -1,8 +1,9 @@
 package multiple
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"sort"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

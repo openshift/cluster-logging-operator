@@ -42,15 +42,17 @@ id_key = "_id"
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-	outputs := []Element{}
 
-	outputs = MergeElements(outputs,
-		[]Element{
-			Remap{
-				Desc:        "Adding _id field",
-				ComponentID: "elasticsearch_preprocess",
-				Inputs:      helpers.MakeInputs(inputs...),
-				VRL: strings.TrimSpace(`
+	outputs := []Element{}
+	id_key := "elasticsearch_preprocess"
+	if _, exists := op[id_key]; !exists {
+		outputs = MergeElements(outputs,
+			[]Element{
+				Remap{
+					Desc:        "Adding _id field",
+					ComponentID: id_key,
+					Inputs:      helpers.MakeInputs(inputs...),
+					VRL: strings.TrimSpace(`
 index = "default"
 if (.log_type == "application"){
   index = "app"
@@ -64,8 +66,14 @@ if (.log_type == "audit"){
 ."write-index"=index+"-write"
 ._id = encode_base64(uuid_v4())
 `),
-			},
-			Output(o, []string{"elasticsearch_preprocess"}, secret, op),
+				},
+			})
+		op[id_key] = true
+	}
+
+	outputs = MergeElements(outputs,
+		[]Element{
+			Output(o, []string{id_key}, secret, op),
 		},
 		TLSConf(o, secret),
 		BasicAuth(o, secret),

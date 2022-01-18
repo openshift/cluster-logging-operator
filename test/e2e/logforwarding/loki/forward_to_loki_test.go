@@ -15,10 +15,69 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
+const lokiReceiverName = "loki-receiver"
+
+var specs = []loggingv1.ClusterLogForwarderSpec{
+	{
+		Outputs: []loggingv1.OutputSpec{{
+			Name: lokiReceiverName,
+			Type: loggingv1.OutputTypeLoki,
+		}},
+		Pipelines: []loggingv1.PipelineSpec{
+			{
+				Name:       "test-app",
+				InputRefs:  []string{loggingv1.InputNameApplication},
+				OutputRefs: []string{lokiReceiverName},
+			},
+			{
+				Name:       "test-audit",
+				InputRefs:  []string{loggingv1.InputNameAudit},
+				OutputRefs: []string{lokiReceiverName},
+			},
+			{
+				Name:       "test-infra",
+				InputRefs:  []string{loggingv1.InputNameInfrastructure},
+				OutputRefs: []string{lokiReceiverName},
+			},
+		},
+	},
+	{
+		Outputs: []loggingv1.OutputSpec{{
+			Name: lokiReceiverName,
+			Type: loggingv1.OutputTypeLoki,
+			OutputTypeSpec: loggingv1.OutputTypeSpec{
+				Loki: &loggingv1.Loki{
+					TenantKey: "kubernetes.pod_name",
+				},
+			},
+		}},
+		Pipelines: []loggingv1.PipelineSpec{
+			{
+				Name:       "test-app",
+				InputRefs:  []string{loggingv1.InputNameApplication},
+				OutputRefs: []string{lokiReceiverName},
+			},
+			{
+				Name:       "test-audit",
+				InputRefs:  []string{loggingv1.InputNameAudit},
+				OutputRefs: []string{lokiReceiverName},
+			},
+			{
+				Name:       "test-infra",
+				InputRefs:  []string{loggingv1.InputNameInfrastructure},
+				OutputRefs: []string{lokiReceiverName},
+			},
+		},
+	},
+}
+
 func TestLogForwardingToLokiWithFluentd(t *testing.T) {
 	cl := runtime.NewClusterLogging()
 	clf := runtime.NewClusterLogForwarder()
-	testLogForwardingToLoki(t, cl, clf)
+	for _, spec := range specs {
+		clf.Spec = spec
+		testLogForwardingToLoki(t, cl, clf)
+	}
 }
 
 func TestLogForwardingToLokiWithVector(t *testing.T) {
@@ -26,7 +85,10 @@ func TestLogForwardingToLokiWithVector(t *testing.T) {
 	cl.Spec.Collection.Logs.Type = loggingv1.LogCollectionTypeVector
 	cl.Spec.Collection.Logs.FluentdSpec = loggingv1.FluentdSpec{}
 	clf := runtime.NewClusterLogForwarder()
-	testLogForwardingToLoki(t, cl, clf)
+	for _, spec := range specs {
+		clf.Spec = spec
+		testLogForwardingToLoki(t, cl, clf)
+	}
 }
 
 func testLogForwardingToLoki(t *testing.T, cl *loggingv1.ClusterLogging, clf *loggingv1.ClusterLogForwarder) {
@@ -34,30 +96,7 @@ func testLogForwardingToLoki(t *testing.T, cl *loggingv1.ClusterLogging, clf *lo
 	defer e2e.RunCleanupScript()
 	rcv := loki.NewReceiver(c.NS.Name, "loki-receiver")
 	gen := runtime.NewLogGenerator(c.NS.Name, rcv.Name, 100, 0, "I am Loki, of Asgard, and I am burdened with glorious purpose.")
-	clf.Spec = loggingv1.ClusterLogForwarderSpec{
-		Outputs: []loggingv1.OutputSpec{{
-			Name: rcv.Name,
-			Type: loggingv1.OutputTypeLoki,
-			URL:  rcv.InternalURL("").String(),
-		}},
-		Pipelines: []loggingv1.PipelineSpec{
-			{
-				Name:       "test-app",
-				InputRefs:  []string{loggingv1.InputNameApplication},
-				OutputRefs: []string{rcv.Name},
-			},
-			{
-				Name:       "test-audit",
-				InputRefs:  []string{loggingv1.InputNameAudit},
-				OutputRefs: []string{rcv.Name},
-			},
-			{
-				Name:       "test-infra",
-				InputRefs:  []string{loggingv1.InputNameInfrastructure},
-				OutputRefs: []string{rcv.Name},
-			},
-		},
-	}
+	clf.Spec.Outputs[0].URL = rcv.InternalURL("").String()
 
 	// Start independent components in parallel to speed up the test.
 	var g errgroup.Group

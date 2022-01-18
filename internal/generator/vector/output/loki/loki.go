@@ -183,7 +183,7 @@ func Tenant(l *logging.Loki) Element {
 	if l == nil || l.TenantKey == "" {
 		return Nil
 	}
-	return KV("tenant_id", fmt.Sprintf("{%s}", l.TenantKey))
+	return KV("tenant_id", fmt.Sprintf("%q", fmt.Sprintf("{{%s}}", l.TenantKey)))
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {

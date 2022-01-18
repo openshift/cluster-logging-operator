@@ -15,7 +15,7 @@ var ElasticIndex = map[string]string{
 	logging.InputNameInfrastructure: "app-infra",
 }
 
-func (f *FluentdFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string) (result string, err error) {
+func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string) (result string, err error) {
 	index, ok := ElasticIndex[outputLogType]
 	if !ok {
 		return "", fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
@@ -23,7 +23,7 @@ func (f *FluentdFunctionalFramework) GetLogsFromElasticSearch(outputName string,
 	return f.GetLogsFromElasticSearchIndex(outputName, index)
 }
 
-func (f *FluentdFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string) (result string, err error) {
+func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string) (result string, err error) {
 
 	buffer := []string{}
 	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {

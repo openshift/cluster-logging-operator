@@ -12,14 +12,14 @@ import (
 	"github.com/openshift/cluster-logging-operator/test"
 )
 
-var _ = Describe("[LogForwarding][Syslog] Functional tests", func() {
+var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 	})
 	AfterEach(func() {
 		framework.Cleanup()

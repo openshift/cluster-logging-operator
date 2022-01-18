@@ -1,8 +1,9 @@
 package multiple
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"sort"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,13 +14,13 @@ import (
 var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 	)
 
 	const SYSLOG_NAME = "asyslog"
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 	})
 	AfterEach(func() {
 		framework.Cleanup()

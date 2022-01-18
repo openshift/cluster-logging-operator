@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: cluster-logging-operator-metrics-monitor
+spec:
+  endpoints:
+  - path: /metrics
+    targetPort: 8686
+  selector:
+    matchLabels:
+      control-plane: cluster-logging-operator

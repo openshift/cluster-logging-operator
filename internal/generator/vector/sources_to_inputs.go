@@ -1,6 +1,8 @@
 package vector
 
 import (
+	"fmt"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
@@ -11,10 +13,13 @@ const (
 	AppContainerLogsExpr   = `'!(starts_with!(.kubernetes.pod_namespace,"kube") && starts_with!(.kubernetes.pod_namespace,"openshift") && .kubernetes.pod_namespace == "default")'`
 	InfraContainerLogsExpr = `'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'`
 
-	PassThrough = "."
+	SrcPassThrough = "."
 )
 
 var (
+	AddLogTypeApp      = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)
+	AddLogTypeInfra    = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
+	AddLogTypeAudit    = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
 	InputContainerLogs = "container_logs"
 	InputJournalLogs   = "journal_logs"
 )
@@ -46,7 +51,7 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			Desc:        `Rename log stream to "application"`,
 			ComponentID: "application",
 			Inputs:      helpers.MakeInputs("route_container_logs.app"),
-			VRL:         PassThrough,
+			VRL:         AddLogTypeApp,
 		}
 		el = append(el, r)
 	}
@@ -55,7 +60,7 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			Desc:        `Rename log stream to "infrastructure"`,
 			ComponentID: "infrastructure",
 			Inputs:      helpers.MakeInputs("route_container_logs.infra", InputJournalLogs),
-			VRL:         PassThrough,
+			VRL:         AddLogTypeInfra,
 		}
 		el = append(el, r)
 	}
@@ -64,7 +69,7 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			Desc:        `Rename log stream to "audit"`,
 			ComponentID: "audit",
 			Inputs:      helpers.MakeInputs("host_audit_logs", "k8s_audit_logs", "openshift_audit_logs"),
-			VRL:         PassThrough,
+			VRL:         AddLogTypeAudit,
 		}
 		el = append(el, r)
 	}

@@ -30,14 +30,14 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 	)
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 
 		// Template expected as output Log
 		outputLogTemplate = functional.NewApplicationLogTemplate()
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 	})
 	AfterEach(func() {
 		framework.Cleanup()

@@ -169,7 +169,7 @@ route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.k
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.
+.log_type = "application"
 """
 
 
@@ -178,7 +178,7 @@ source = """
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.
+.log_type = "infrastructure"
 """
 
 
@@ -187,7 +187,7 @@ source = """
 type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
 source = """
-.
+.log_type = "audit"
 """
 
 
@@ -215,6 +215,224 @@ key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 enabled = true
+`,
+		}),
+		Entry("with complex spec for elastic-search", generator.ConfGenerateTest{
+			CLSpec: logging.ClusterLoggingSpec{
+				Forwarder: &logging.ForwarderSpec{},
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							logging.InputNameApplication,
+							logging.InputNameInfrastructure,
+							logging.InputNameAudit},
+						OutputRefs: []string{"es-1", "es-2"},
+						Name:       "pipeline",
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeElasticsearch,
+						Name: "es-1",
+						URL:  "https://es-1.svc.messaging.cluster.local:9200",
+						Secret: &logging.OutputSecretSpec{
+							Name: "es-1",
+						},
+					},
+					{
+						Type: logging.OutputTypeElasticsearch,
+						Name: "es-2",
+						URL:  "https://es-2.svc.messaging.cluster.local:9200",
+						Secret: &logging.OutputSecretSpec{
+							Name: "es-2",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"es-1": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+				"es-2": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: `
+# Logs from containers (including openshift containers)
+[sources.raw_container_logs]
+type = "kubernetes_logs"
+auto_partial_merge = true
+exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+
+[sources.raw_journal_logs]
+type = "journald"
+
+# Logs from host audit
+[sources.host_audit_logs]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/audit/audit.log"]
+
+# Logs from kubernetes audit
+[sources.k8s_audit_logs]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/kube-apiserver/audit.log"]
+
+# Logs from openshift audit
+[sources.openshift_audit_logs]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/oauth-apiserver.audit.log"]
+
+[transforms.container_logs]
+type = "remap"
+inputs = ["raw_container_logs"]
+source = '''
+  level = "unknown"
+  if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
+	level = "warn"
+  } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
+	level = "info"
+  } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
+	level = "error"
+  } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
+	level = "debug"
+  }
+  .level = level
+
+  .pipeline_metadata.collector.name = "vector"
+  .pipeline_metadata.collector.version = "0.14.1"
+  ip4, err = get_env_var("NODE_IPV4")
+  .pipeline_metadata.collector.ipaddr4 = ip4
+  received, err = format_timestamp(now(),"%+")
+  .pipeline_metadata.collector.received_at = received
+  .pipeline_metadata.collector.error = err
+ '''
+
+[transforms.journal_logs]
+type = "remap"
+inputs = ["raw_journal_logs"]
+source = '''
+  level = "unknown"
+  if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
+	level = "warn"
+  } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
+	level = "info"
+  } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
+	level = "error"
+  } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
+	level = "debug"
+  }
+  .level = level
+
+  .pipeline_metadata.collector.name = "vector"
+  .pipeline_metadata.collector.version = "0.14.1"
+  ip4, err = get_env_var("NODE_IPV4")
+  .pipeline_metadata.collector.ipaddr4 = ip4
+  received, err = format_timestamp(now(),"%+")
+  .pipeline_metadata.collector.received_at = received
+  .pipeline_metadata.collector.error = err
+ '''
+
+
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") && starts_with!(.kubernetes.pod_namespace,"openshift") && .kubernetes.pod_namespace == "default")'
+route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+
+
+# Rename log stream to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = """
+.log_type = "application"
+"""
+
+
+# Rename log stream to "infrastructure"
+[transforms.infrastructure]
+type = "remap"
+inputs = ["route_container_logs.infra","journal_logs"]
+source = """
+.log_type = "infrastructure"
+"""
+
+
+# Rename log stream to "audit"
+[transforms.audit]
+type = "remap"
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
+source = """
+.log_type = "audit"
+"""
+
+
+[transforms.pipeline]
+type = "remap"
+inputs = ["application","infrastructure","audit"]
+source = """
+.
+"""
+
+
+# Adding _id field
+[transforms.elasticsearch_preprocess]
+type = "remap"
+inputs = ["pipeline"]
+source = """
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
+._id = encode_base64(uuid_v4())
+"""
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["elasticsearch_preprocess"]
+endpoint = "https://es-1.svc.messaging.cluster.local:9200"
+index = "{{ write-index }}"
+request.timeout_secs = 2147483648
+bulk_action = "create"
+id_key = "_id"
+# TLS Config
+[sinks.es_1.tls]
+key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
+[sinks.es_2]
+type = "elasticsearch"
+inputs = ["elasticsearch_preprocess"]
+endpoint = "https://es-2.svc.messaging.cluster.local:9200"
+index = "{{ write-index }}"
+request.timeout_secs = 2147483648
+bulk_action = "create"
+id_key = "_id"
+# TLS Config
+[sinks.es_2.tls]
+key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 `,
 		}),
 	)

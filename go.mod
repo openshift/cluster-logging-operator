@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go v0.83.0 // indirect
 	github.com/Azure/go-autorest/autorest v0.11.19 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.14 // indirect
-	github.com/ViaQ/logerr v1.0.10
+	github.com/ViaQ/logerr v1.0.11
 	github.com/aws/aws-sdk-go-v2 v1.9.0
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.7.0
 	github.com/coreos/prometheus-operator v0.38.1-0.20200424145508-7e176fda06cc

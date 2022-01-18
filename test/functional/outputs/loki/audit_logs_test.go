@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-var _ = Describe("Forwarding to Loki", func() {
+var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 	var (
-		f *functional.FluentdFunctionalFramework
+		f *functional.CollectorFunctionalFramework
 		l *loki.Receiver
 	)
 
 	BeforeEach(func() {
-		f = functional.NewFluentdFunctionalFramework()
+		f = functional.NewCollectorFunctionalFramework()
 		// Start a Loki server
 		l = loki.NewReceiver(f.Namespace, "loki-server")
 		Expect(l.Create(f.Test.Client)).To(Succeed())

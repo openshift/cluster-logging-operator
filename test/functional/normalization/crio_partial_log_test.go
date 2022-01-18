@@ -18,16 +18,16 @@ import (
 // 2021-03-31T12:59:28.573159188+00:00 stdout F Last line of the log entry
 //
 // Here we will emulate CRI-O split by direct writing formatted content
-var _ = Describe("Reassembly split by CRI-O logs ", func() {
+var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", func() {
 
 	const chunkSize = 1024 * 8
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 		timestamp = "2021-03-31T12:59:28.573159188+00:00"
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()

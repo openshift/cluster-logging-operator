@@ -228,6 +228,9 @@ bundle: regenerate $(KUSTOMIZE) ## Generate operator bundle.
 	@cp ${BUNDLE_DIR}/${CLF_CRD_FILE}  manifests/${LOGGING_VERSION}/${CLF_CRD_FILE}
 	@cp ${BUNDLE_DIR}/${CLO_CRD_FILE}  manifests/${LOGGING_VERSION}/${CLO_CRD_FILE}
 	@cp ${BUNDLE_DIR}/${CLO_CSV_FILE}  manifests/${LOGGING_VERSION}/${CLO_CSV_FILE}
+	@cp ${BUNDLE_DIR}/cluster-logging-operator-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml manifests/${LOGGING_VERSION}/cluster-logging-operator-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml
+	@cp ${BUNDLE_DIR}/log-collector-privileged_rbac.authorization.k8s.io_v1_role.yaml manifests/${LOGGING_VERSION}/log-collector-privileged_rbac.authorization.k8s.io_v1_role.yaml
+	@cp ${BUNDLE_DIR}/log-collector-privileged-binding_rbac.authorization.k8s.io_v1_rolebinding.yaml manifests/${LOGGING_VERSION}/log-collector-privileged-binding_rbac.authorization.k8s.io_v1_rolebinding.yaml
 	@rm ${BUNDLE_DIR}/leader-election-role_rbac.authorization.k8s.io_v1_role.yaml
 	@rm ${BUNDLE_DIR}/leader-election-rolebinding_rbac.authorization.k8s.io_v1_rolebinding.yaml
 .PHONY: bundle

@@ -437,7 +437,7 @@ spec:
           - create
         serviceAccountName: cluster-logging-operator
       deployments:
-      - name: cluster-logging-operator
+      - name: openshift-logging-operator
         spec:
           replicas: 1
           selector:

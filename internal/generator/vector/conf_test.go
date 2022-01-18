@@ -169,7 +169,7 @@ route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.k
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "app"
+.log_type = "application"
 """
 
 
@@ -178,7 +178,7 @@ source = """
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infra"
+.log_type = "infrastructure"
 """
 
 
@@ -228,23 +228,38 @@ enabled = true
 							logging.InputNameApplication,
 							logging.InputNameInfrastructure,
 							logging.InputNameAudit},
-						OutputRefs: []string{"elastic-search"},
+						OutputRefs: []string{"es-1", "es-2"},
 						Name:       "pipeline",
 					},
 				},
 				Outputs: []logging.OutputSpec{
 					{
 						Type: logging.OutputTypeElasticsearch,
-						Name: "elastic-search",
-						URL:  "https://es.svc.messaging.cluster.local:9200",
+						Name: "es-1",
+						URL:  "https://es-1.svc.messaging.cluster.local:9200",
 						Secret: &logging.OutputSecretSpec{
-							Name: "secret",
+							Name: "es-1",
+						},
+					},
+					{
+						Type: logging.OutputTypeElasticsearch,
+						Name: "es-2",
+						URL:  "https://es-2.svc.messaging.cluster.local:9200",
+						Secret: &logging.OutputSecretSpec{
+							Name: "es-2",
 						},
 					},
 				},
 			},
 			Secrets: map[string]*corev1.Secret{
-				"elastic-search": {
+				"es-1": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+				"es-2": {
 					Data: map[string][]byte{
 						"tls.key":       []byte("junk"),
 						"tls.crt":       []byte("junk"),
@@ -343,7 +358,7 @@ route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.k
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "app"
+.log_type = "application"
 """
 
 
@@ -352,7 +367,7 @@ source = """
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infra"
+.log_type = "infrastructure"
 """
 
 
@@ -372,18 +387,52 @@ source = """
 .
 """
 
-[sinks.elastic_search]
-type = "elasticsearch"
+
+# Adding _id field
+[transforms.elasticsearch_preprocess]
+type = "remap"
 inputs = ["pipeline"]
-endpoint = "https://es.svc.messaging.cluster.local:9200"
-index = "{{ log_type }}-write"
+source = """
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
+._id = encode_base64(uuid_v4())
+"""
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["elasticsearch_preprocess"]
+endpoint = "https://es-1.svc.messaging.cluster.local:9200"
+index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
+id_key = "_id"
 # TLS Config
-[sinks.elastic_search.tls]
-key_file = "/var/run/ocp-collector/secrets/secret/tls.key"
-crt_file = "/var/run/ocp-collector/secrets/secret/tls.crt"
-ca_file = "/var/run/ocp-collector/secrets/secret/ca-bundle.crt"
+[sinks.es_1.tls]
+key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
+[sinks.es_2]
+type = "elasticsearch"
+inputs = ["elasticsearch_preprocess"]
+endpoint = "https://es-2.svc.messaging.cluster.local:9200"
+index = "{{ write-index }}"
+request.timeout_secs = 2147483648
+bulk_action = "create"
+id_key = "_id"
+# TLS Config
+[sinks.es_2.tls]
+key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 `,
 		}),
 	)

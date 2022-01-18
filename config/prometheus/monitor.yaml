@@ -5,12 +5,13 @@ kind: ServiceMonitor
 metadata:
   labels:
     control-plane: controller-manager
-  name: controller-manager-metrics-monitor
-  namespace: system
+  name: cluster-logging-operator-metrics-monitor
+  namespace: openshift-logging
 spec:
   endpoints:
     - path: /metrics
-      port: https
+      targetPort: 8686
+      port: 8686
   selector:
     matchLabels:
-      control-plane: controller-manager
+      control-plane: cluster-logging-operator

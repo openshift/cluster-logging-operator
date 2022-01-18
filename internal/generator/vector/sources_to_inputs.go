@@ -1,6 +1,8 @@
 package vector
 
 import (
+	"fmt"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
@@ -11,13 +13,13 @@ const (
 	AppContainerLogsExpr   = `'!(starts_with!(.kubernetes.pod_namespace,"kube") && starts_with!(.kubernetes.pod_namespace,"openshift") && .kubernetes.pod_namespace == "default")'`
 	InfraContainerLogsExpr = `'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'`
 
-	SrcPassThrough  = "."
-	AddLogTypeApp   = ".log_type = \"app\""
-	AddLogTypeInfra = ".log_type = \"infra\""
-	AddLogTypeAudit = ".log_type = \"audit\""
+	SrcPassThrough = "."
 )
 
 var (
+	AddLogTypeApp      = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)
+	AddLogTypeInfra    = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
+	AddLogTypeAudit    = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
 	InputContainerLogs = "container_logs"
 	InputJournalLogs   = "journal_logs"
 )

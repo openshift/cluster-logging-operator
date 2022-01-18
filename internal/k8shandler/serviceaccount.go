@@ -2,7 +2,9 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -12,24 +14,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//NewServiceAccount stubs a new instance of ServiceAccount
-func NewServiceAccount(accountName string, namespace string) *core.ServiceAccount {
-	return &core.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceAccount",
-			APIVersion: core.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      accountName,
-			Namespace: namespace,
-		},
-	}
-}
-
 //CreateOrUpdateServiceAccount creates or updates a ServiceAccount for logging with the given name
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateServiceAccount(name string, annotations *map[string]string) error {
 
-	serviceAccount := NewServiceAccount(name, clusterRequest.Cluster.Namespace)
+	serviceAccount := runtime.NewServiceAccount(clusterRequest.Cluster.Namespace, name)
 	if annotations != nil {
 		if serviceAccount.GetObjectMeta().GetAnnotations() == nil {
 			serviceAccount.GetObjectMeta().SetAnnotations(make(map[string]string))
@@ -80,9 +68,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateServiceAccount(name s
 //RemoveServiceAccount of given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveServiceAccount(serviceAccountName string) error {
 
-	serviceAccount := NewServiceAccount(serviceAccountName, clusterRequest.Cluster.Namespace)
+	serviceAccount := runtime.NewServiceAccount(clusterRequest.Cluster.Namespace, serviceAccountName)
 
-	if serviceAccountName == "logcollector" {
+	if serviceAccountName == constants.CollectorServiceAccountName {
 		// remove our finalizer from the list and update it.
 		serviceAccount.ObjectMeta.Finalizers = utils.RemoveString(serviceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 	}
@@ -99,7 +87,7 @@ func NewLogCollectorServiceAccountRef(uid types.UID) metav1.OwnerReference {
 	return metav1.OwnerReference{
 		APIVersion:         "v1", // apiversion for serviceaccounts/finalizers in cluster-logging.<VER>.clusterserviceversion.yaml
 		Kind:               "ServiceAccount",
-		Name:               "logcollector",
+		Name:               constants.CollectorServiceAccountName,
 		UID:                uid,
 		BlockOwnerDeletion: utils.GetBool(true),
 		Controller:         utils.GetBool(true),

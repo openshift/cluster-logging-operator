@@ -1,0 +1,118 @@
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+  name: fluent-receiver-template
+objects:
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: config-${INSTANCE}
+    data:
+      fluent.conf: |-
+        <system>
+          log_level trace
+        </system>
+        <source>
+          @type forward
+          port 24224
+          <transport tls>
+            version TLSv1_2
+            insecure true
+          </transport>
+        </source>
+        <filter **>
+          @type stdout
+          include_time_key true 
+        </filter>
+        <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+          @type file
+          append true
+          path /tmp/infra.logs
+          symlink_path /tmp/infra-logs
+          <format>
+            @type json
+          </format>
+        </match>
+        <match kubernetes.** var.log.containers.**>
+          @type file
+          append true
+          path /tmp/app.logs
+          symlink_path /tmp/app-logs
+          <format>
+            @type json
+          </format>
+        </match>
+        <filter linux-audit.log**>
+          @type parser
+          key_name @timestamp
+          reserve_data true
+          <parse>
+          @type regexp
+          expression (?<time>[^\]]*)
+            time_type string
+          time_key time
+            time_format %Y-%m-%dT%H:%M:%S.%N%z
+          </parse>
+        </filter>
+        <match linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
+          @type file
+          path /tmp/audit.logs
+          append true
+          symlink_path /tmp/audit-logs
+          <format>
+            @type json
+          </format>
+        </match>
+        <match **>
+          @type stdout
+        </match>
+  - apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: receiver-${INSTANCE}
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: receiver-${INSTANCE}
+    spec:
+      ports:
+      - port: 24224
+        protocol: TCP
+        targetPort: 24224
+      selector:
+        component: receiver-${INSTANCE}
+  - kind: Deployment
+    apiVersion: apps/v1
+    metadata:
+      name: receiver-${INSTANCE}
+    spec:
+      selector:
+        matchLabels:
+          component: receiver-${INSTANCE}
+      replicas: 1
+      template:
+        metadata:
+          labels:
+            component: receiver-${INSTANCE}
+          name: receiver-${INSTANCE}
+        spec:
+          serviceAccountName: receiver-${INSTANCE}
+          containers:
+            - name: fluentd
+              command: ["fluentd","-c","/etc/fluent/configs.d/user/fluent.conf","--no-supervisor"] 
+              image: ${IMAGE}
+              imagePullPolicy: Always
+              volumeMounts:
+              - name: config
+                mountPath: /etc/fluent/configs.d/user
+          volumes:
+            - name: config
+              configMap:
+                name: config-${INSTANCE}
+parameters:
+  - name: IMAGE
+    displayName: Image
+    value: "quay.io/openshift-logging/fluentd:1.7.4"
+  - name: INSTANCE
+    displayName: Instance
+    value: "01"

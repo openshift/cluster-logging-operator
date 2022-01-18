@@ -6,6 +6,8 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
@@ -31,19 +33,47 @@ func (e Elasticsearch) Template() string {
 type = "elasticsearch"
 inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
-index = "{{ "{{ log_type }}-write" }}"
+index = "{{ "{{ write-index }}" }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
+id_key = "_id"
 {{- end}}
 `
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+
 	outputs := []Element{}
+	id_key := "elasticsearch_preprocess"
+	if _, exists := op[id_key]; !exists {
+		outputs = MergeElements(outputs,
+			[]Element{
+				Remap{
+					Desc:        "Adding _id field",
+					ComponentID: id_key,
+					Inputs:      helpers.MakeInputs(inputs...),
+					VRL: strings.TrimSpace(`
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
+._id = encode_base64(uuid_v4())
+`),
+				},
+			})
+		op[id_key] = true
+	}
 
 	outputs = MergeElements(outputs,
 		[]Element{
-			Output(o, inputs, secret, op),
+			Output(o, []string{id_key}, secret, op),
 		},
 		TLSConf(o, secret),
 		BasicAuth(o, secret),
@@ -69,7 +99,6 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			Desc:        "TLS Config",
 			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		})
-
 		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
 			hasTLS = true
 			kc := TLSKeyCert{
@@ -104,8 +133,8 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		if security.HasUsernamePassword(secret) {
 			hasBasicAuth = true
 			up := UserNamePass{
-				UsernamePath: security.SecretPath(o.Secret.Name, constants.ClientUsername),
-				PasswordPath: security.SecretPath(o.Secret.Name, constants.ClientPassword),
+				Username: security.GetFromSecret(secret, constants.ClientUsername),
+				Password: security.GetFromSecret(secret, constants.ClientPassword),
 			}
 			conf = append(conf, up)
 		}

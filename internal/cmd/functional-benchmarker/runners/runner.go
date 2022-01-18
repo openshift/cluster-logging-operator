@@ -14,7 +14,6 @@ type Runner interface {
 	Cleanup()
 	Namespace() string
 	Pod() string
-	DumpLoaderArtifacts()
 }
 
 func NewRunner(options config.Options) Runner {

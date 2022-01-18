@@ -50,6 +50,8 @@ type CollectorFunctionalFramework struct {
 	closeClient       func()
 
 	collector CollectorFramework
+	//VisitConfig allows the framework to modify the config after generating from logforwardering
+	VisitConfig func(string) string
 }
 
 func NewCollectorFunctionalFramework() *CollectorFunctionalFramework {
@@ -130,8 +132,11 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()
 	if strings.TrimSpace(f.Conf) == "" {
-		if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, &testClient); err != nil {
+		if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, testClient); err != nil {
 			return err
+		}
+		if f.VisitConfig != nil {
+			f.Conf = f.VisitConfig(f.Conf)
 		}
 	} else {
 		log.V(2).Info("Using provided collector conf instead of generating one")

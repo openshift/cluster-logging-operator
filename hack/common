@@ -13,7 +13,7 @@ ELASTICSEARCH_OP_REPO=${ELASTICSEARCH_OP_REPO:-${repo_dir}/../elasticsearch-oper
 ADMIN_USER=${ADMIN_USER:-kubeadmin}
 ADMIN_PSWD=${ADMIN_USER:-admin123}
 REMOTE_REGISTRY=${REMOTE_REGISTRY:-false}
-NAMESPACE=${NAMESPACE:-"openshift-logging"}
+LOGGING_NS=${LOGGING_NS:-"openshift-logging"}
 
 UBI_IMAGE=${UBI_IMAGE:-registry.ci.openshift.org/ocp/4.0:base}
 
@@ -202,24 +202,24 @@ function debug_print() {
   local interval=${2:-10}
   while [ $max -gt 0 ];
   do
-    clo=$( oc -n ${NAMESPACE} get pods -l name=cluster-logging-operator -o jsonpath='{.items[0].metadata.name}' )
+    clo=$( oc -n ${LOGGING_NS} get pods -l name=cluster-logging-operator -o jsonpath='{.items[0].metadata.name}' )
     if [ -n "$clo" ]; then
         date >> $ARTIFACT_DIR/$filename.clo.log || :
-        oc -n ${NAMESPACE} logs $clo >> $ARTIFACT_DIR/$filename.clo.log || :
+        oc -n ${LOGGING_NS} logs $clo >> $ARTIFACT_DIR/$filename.clo.log || :
         echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.clo.log || :
         date >> $ARTIFACT_DIR/$filename.clo.images || :
-        oc -n ${NAMESPACE} exec $clo -- env | egrep _IMAGE >> $ARTIFACT_DIR/$filename.clo.images || :
+        oc -n ${LOGGING_NS} exec $clo -- env | egrep _IMAGE >> $ARTIFACT_DIR/$filename.clo.images || :
         echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.clo.images || :
     else
         date >> $ARTIFACT_DIR/$filename.noclo.log || :
-        oc -n ${NAMESPACE} get deployments >> $ARTIFACT_DIR/$filename.noclo.log || :
+        oc -n ${LOGGING_NS} get deployments >> $ARTIFACT_DIR/$filename.noclo.log || :
         echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.noclo.log || :
     fi
     date >> $ARTIFACT_DIR/$filename.events.log || :
-    oc -n ${NAMESPACE} get events >> $ARTIFACT_DIR/$filename.events.log || :
+    oc -n ${LOGGING_NS} get events >> $ARTIFACT_DIR/$filename.events.log || :
     echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.events.log || :
     date >> $ARTIFACT_DIR/$filename.all.log || :
-    oc -n ${NAMESPACE} get all >> $ARTIFACT_DIR/$filename.all.log || :
+    oc -n ${LOGGING_NS} get all >> $ARTIFACT_DIR/$filename.all.log || :
     echo "-------------------------------------------------" >> $ARTIFACT_DIR/$filename.all.log || :
     sleep $interval
     max=$( expr $max - 1 ) || :

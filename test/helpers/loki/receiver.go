@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/ViaQ/logerr/log"
 	openshiftv1 "github.com/openshift/api/route/v1"
@@ -133,7 +134,7 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 	if qr.Data.ResultType != "streams" {
 		return nil, fmt.Errorf("expected 'resultType: streams' in %v", qr)
 	}
-	log.V(3).Error(err, "Loki Query done", "result", test.JSONString(qr.Data.Result))
+	log.V(3).Info("Loki Query done", "result", test.JSONString(qr.Data.Result))
 	return qr.Data.Result, nil
 }
 

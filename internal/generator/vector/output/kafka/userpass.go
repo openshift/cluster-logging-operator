@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 )
 
 type UserNamePass security.UserNamePass
@@ -12,8 +12,8 @@ func (up UserNamePass) Name() string {
 
 func (up UserNamePass) Template() string {
 	return `{{define "` + up.Name() + `" -}}
-username = "" # inject code to read from filename
-password = "" # inject code to read from filename
+user = "{{.Username}}"
+password = "{{.Password}}"
 {{- end}}
 `
 }

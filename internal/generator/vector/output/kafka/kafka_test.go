@@ -39,9 +39,9 @@ var _ = Describe("Generate vector config", func() {
 			Secrets: map[string]*corev1.Secret{
 				"kafka-receiver": {
 					Data: map[string][]byte{
-						"username":    []byte("junk"),
-						"password":    []byte("junk"),
-						"sasl.enable": []byte("junk"),
+						"username":    []byte("testuser"),
+						"password":    []byte("testpass"),
+						"sasl.enable": []byte("true"),
 					},
 				},
 			},
@@ -59,8 +59,8 @@ timestamp_format = "rfc3339"
 
 # Sasl Config
 [sinks.kafka_receiver.sasl]
-username = "" # inject code to read from filename
-password = "" # inject code to read from filename
+user = "testuser"
+password = "testpass"
 enabled = true
 `,
 		}),

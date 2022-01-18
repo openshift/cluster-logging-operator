@@ -61,6 +61,7 @@ const (
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
 
 	CollectorName             = "collector"
+	CollectorConfigSecretName = "collector-config"
 	CollectorMetricSecretName = "collector-metrics"
 	CollectorMonitorJobLabel  = "monitor-collector"
 	CollectorTrustedCAName    = "collector-trusted-ca-bundle"
@@ -75,6 +76,9 @@ const (
 	LogfilesmetricImageEnvVar     = "LOGFILEMETRICEXPORTER_IMAGE"
 	CertEventName                 = "cluster-logging-certs-generate"
 	ClusterInfrastructureInstance = "cluster"
+
+	ContainerLogDir = "/var/log/containers"
+	PodLogDir       = "/var/log/pods"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

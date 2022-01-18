@@ -3,12 +3,10 @@ kind: ServiceMonitor
 metadata:
   labels:
     control-plane: controller-manager
-    name: cluster-logging-operator
   name: cluster-logging-operator-metrics-monitor
 spec:
   endpoints:
   - path: /metrics
-    port: 8686
     targetPort: 8686
   selector:
     matchLabels:

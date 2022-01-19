@@ -1,12 +1,25 @@
-apiVersion: "logging.openshift.io/v1"
+apiVersion: logging.openshift.io/v1
 kind: ClusterLogForwarder
 metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  outputs:
+    - name: remote-elasticsearch
+      type: elasticsearch
+      url: remote.example.org:9200
+      secret:
+        name: elasticsearch
   pipelines:
-    - name: application-logs
+    - name: enable-default-log-store
+      inputRefs:
+        - application
+        - infrastructure
+        - audit
+      outputRefs:
+        - default
+    - name: forward-to-remote
       inputRefs:
         - application
       outputRefs:
-        - default
+        - remote-elasticsearch

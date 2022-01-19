@@ -125,15 +125,11 @@ fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
 	find test internal controllers apis -name '*.go' | xargs gofmt -s -l -w
 
-MANIFESTS=manifests/$(LOGGING_VERSION)
-
-# Do all code/CRD generation at once, with timestamp file to check out-of-date.
-GEN_TIMESTAMP=.target/codegen
-generate: $(GEN_TIMESTAMP)
-$(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE) .target
+GEN_TIMESTAMP=.zz_generate_timestamp
+generate: $(GEN_TIMESTAMP) $(OPERATOR_SDK) $(CONTROLLER_GEN) ## Generate APIs and CustomResourceDefinition objects.
+$(GEN_TIMESTAMP): $(shell find apis -name '*.go')
 	@$(CONTROLLER_GEN) object paths="./apis/..."
-	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
-	@bash ./hack/generate-crd.sh
+	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=cluster-logging paths="./..." output:crd:artifacts:config=config/crd/bases
 	@$(MAKE) fmt
 	@touch $@
 
@@ -189,13 +185,54 @@ test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
-CHANNELS="stable,stable-${LOGGING_VERSION}"
-DEFAULT_CHANNEL="stable"
-generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
-.PHONY: generate-bundle
+MANIFESTS=manifests/$(LOGGING_VERSION)
+BUNDLE_DIR=bundle/manifests
+CLF_CRD_FILE=logging.openshift.io_clusterlogforwarders.yaml
+CLO_CRD_FILE=logging.openshift.io_clusterloggings.yaml
+CLO_CSV_FILE=cluster-logging.clusterserviceversion.yaml
+CLO_PATCH_FILE=crd-v1-clusterloggings-patches.yaml
+CLF_PATCH_FILE=crd-v1-singleton-patch.yaml
+KUSTOMIZATIONS_FILE=kustomization.yaml
 
-bundle: generate-bundle
+patch-crds:
+	@cp manifests/patches/$(CLO_PATCH_FILE) $(BUNDLE_DIR)
+	@cp manifests/patches/$(CLF_PATCH_FILE) $(BUNDLE_DIR)
+	@cp manifests/patches/$(KUSTOMIZATIONS_FILE) $(BUNDLE_DIR)
+	@echo "---------------------------------------------------------------"
+	@echo "Kustomize: Patch CRDs for singeltons"
+	@echo "---------------------------------------------------------------"
+	@oc kustomize "$(BUNDLE_DIR)" | \
+		awk -v clf="$(BUNDLE_DIR)/$(CLF_CRD_FILE)" \
+			-v clo="$(BUNDLE_DIR)/$(CLO_CRD_FILE)"\
+			'BEGIN{filename = clf} /---/ {getline; filename = clo}{print $0> filename}'
+	@echo "---------------------------------------------------------------"
+	@echo "Cleanup operator-sdk generation folder"
+	@echo "---------------------------------------------------------------"
+	@rm -rf deploy
+	@rm ${BUNDLE_DIR}/${CLO_PATCH_FILE}
+	@rm ${BUNDLE_DIR}/${CLF_PATCH_FILE}
+	@rm ${BUNDLE_DIR}/${KUSTOMIZATIONS_FILE}
+
+# Generate bundle manifests and metadata, then validate generated files.
+BUNDLE_VERSION?=$(LOGGING_VERSION).0
+# Options for 'bundle-build'
+BUNDLE_CHANNELS := --channels=stable,stable-${LOGGING_VERSION}
+BUNDLE_DEFAULT_CHANNEL := --default-channel=stable
+BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
+
+bundle: regenerate $(KUSTOMIZE) ## Generate operator bundle.
+	$(OPERATOR_SDK) generate kustomize manifests -q
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle -q --overwrite --version $(BUNDLE_VERSION) $(BUNDLE_METADATA_OPTS)
+	$(OPERATOR_SDK) bundle validate ./bundle
+	@$(MAKE) patch-crds
+	@cp ${BUNDLE_DIR}/${CLF_CRD_FILE}  manifests/${LOGGING_VERSION}/${CLF_CRD_FILE}
+	@cp ${BUNDLE_DIR}/${CLO_CRD_FILE}  manifests/${LOGGING_VERSION}/${CLO_CRD_FILE}
+	@cp ${BUNDLE_DIR}/${CLO_CSV_FILE}  manifests/${LOGGING_VERSION}/${CLO_CSV_FILE}
+	@cp ${BUNDLE_DIR}/cluster-logging-operator-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml manifests/${LOGGING_VERSION}/cluster-logging-operator-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml
+	@cp ${BUNDLE_DIR}/log-collector-privileged_rbac.authorization.k8s.io_v1_role.yaml manifests/${LOGGING_VERSION}/log-collector-privileged_rbac.authorization.k8s.io_v1_role.yaml
+	@cp ${BUNDLE_DIR}/log-collector-privileged-binding_rbac.authorization.k8s.io_v1_rolebinding.yaml manifests/${LOGGING_VERSION}/log-collector-privileged-binding_rbac.authorization.k8s.io_v1_rolebinding.yaml
+	@rm ${BUNDLE_DIR}/leader-election-role_rbac.authorization.k8s.io_v1_role.yaml
+	@rm ${BUNDLE_DIR}/leader-election-rolebinding_rbac.authorization.k8s.io_v1_rolebinding.yaml
 .PHONY: bundle
 
 # NOTE: This is the CI e2e entry point.

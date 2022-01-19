@@ -84,6 +84,7 @@ type ClusterLoggingStatus struct {
 }
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)
+// +k8s:openapi-gen=true
 type VisualizationSpec struct {
 	// The type of Visualization to configure
 	Type VisualizationType `json:"type"`
@@ -92,20 +93,24 @@ type VisualizationSpec struct {
 	KibanaSpec `json:"kibana,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type KibanaSpec struct {
-	// The resource requirements for Kibana
+	// Resource requirements for the Kibana pods
 	//
 	// +nullable
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *v1.ResourceRequirements `json:"resources"`
 
 	// Define which Nodes the Pods are scheduled on.
-	//
+	// The node selector to use for the Kibana Visualization component
 	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:nodeSelector"
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 
-	// Number of instances to deploy for a Kibana deployment
+	// The desired number of Kibana Pods for the Visualization component
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Size",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	Replicas *int32 `json:"replicas"`
 
 	// Specification of the Kibana Proxy component
@@ -118,11 +123,13 @@ type ProxySpec struct {
 }
 
 // This is the struct that will contain information pertinent to Log storage (Elasticsearch)
+// +k8s:openapi-gen=true
 type LogStoreSpec struct {
 	// The type of Log Storage to configure
 	Type LogStoreType `json:"type"`
 
 	// Specification of the Elasticsearch Log Store component
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="ElasticsearchX"
 	ElasticsearchSpec `json:"elasticsearch,omitempty"`
 
 	// Retention policy defines the maximum age for an index after which it should be deleted
@@ -147,19 +154,23 @@ type RetentionPolicySpec struct {
 	MaxAge elasticsearch.TimeUnit `json:"maxAge"`
 }
 
+// +k8s:openapi-gen=true
 type ElasticsearchSpec struct {
-	// The resource requirements for Elasticsearch
+	// Resource requirements for each Elasticsearch node
 	//
 	// +nullable
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *v1.ResourceRequirements `json:"resources"`
 
-	// Number of nodes to deploy for Elasticsearch
+	// The desired number of Elasticsearch Nodes for the Log Storage component
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Size",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podCount"
 	NodeCount int32 `json:"nodeCount"`
 
-	// Define which Nodes the Pods are scheduled on.
+	// The node selector to use for the Elasticsearch Log Storage component
 	//
 	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:nodeSelector"
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 
@@ -182,6 +193,7 @@ type CollectionSpec struct {
 	Logs LogCollectionSpec `json:"logs,omitempty"`
 }
 
+// +k8s:openapi-gen=true
 type LogCollectionSpec struct {
 	// The type of Log Collection to configure
 	Type LogCollectionType `json:"type"`
@@ -195,15 +207,16 @@ type EventCollectionSpec struct {
 }
 
 type FluentdSpec struct {
-	// The resource requirements for Fluentd
-	//
+	// Resource requirements for the Fluentd pods
 	// +nullable
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Fluentd Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *v1.ResourceRequirements `json:"resources"`
 
-	// Define which Nodes the Pods are scheduled on.
+	// The node selector to use for the Fluentd log collection component
 	//
 	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Fluentd node selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:nodeSelector"
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 }
@@ -218,19 +231,22 @@ type CurationSpec struct {
 }
 
 type CuratorSpec struct {
-	// The resource requirements for Curator
+	// Resource requirements for the Curator pods
 	//
 	// +nullable
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Curator Resource Requirements",xDescriptors="urn:alm:descriptor:com.tectonic.ui:resourceRequirements"
 	Resources *v1.ResourceRequirements `json:"resources"`
 
-	// Define which Nodes the Pods are scheduled on.
+	// The node selector to use for the Curator component
 	//
 	// +nullable
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Curator Node Selector",xDescriptors="urn:alm:descriptor:com.tectonic.ui:nodeSelector"
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 
 	// The cron schedule that the Curator job is run. Defaults to "30 3 * * *"
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Curator Node Selector"
 	Schedule string `json:"schedule"`
 }
 
@@ -392,7 +408,9 @@ type KibanaStatus struct {
 	Deployment string `json:"deployment"`
 	// +optional
 	ReplicaSets []string `json:"replicaSets"`
+	// The status for each of the Kibana pods for the Visualization component
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Kibana Status",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podStatuses"
 	Pods PodStateMap `json:"pods"`
 	// +optional
 	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
@@ -414,18 +432,35 @@ type ElasticsearchStatus struct {
 	Deployments []string `json:"deployments,omitempty"`
 	// +optional
 	StatefulSets []string `json:"statefulSets,omitempty"`
+	// The cluster status for each of the Elasticsearch Clusters for the Log Storage component
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Elasticsearch Cluster Health",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podStatuses"
 	ClusterHealth string `json:"clusterHealth,omitempty"`
 	// +optional
 	Cluster elasticsearch.ClusterHealth `json:"cluster"`
 	// +optional
-	Pods map[ElasticsearchRoleType]PodStateMap `json:"pods,omitempty"`
+	Pods ElasticsearchPodStatuses `json:"pods,omitempty"`
 	// +optional
 	ShardAllocationEnabled elasticsearch.ShardAllocationState `json:"shardAllocationEnabled"`
 	// +optional
 	ClusterConditions ElasticsearchClusterConditions `json:"clusterConditions,omitempty"`
 	// +optional
 	NodeConditions map[string]ElasticsearchClusterConditions `json:"nodeConditions,omitempty"`
+}
+
+type ElasticsearchPodStatuses struct {
+	// The status for each of the Elasticsearch Client pods for the Log Storage component
+	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Elasticsearch Client Pod Status",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podStatuses"
+	Client PodStateMap `json:"client,omitempty"`
+	// The status for each of the Elasticsearch Data pods for the Log Storage component
+	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Elasticsearch Data Pod Status",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podStatuses"
+	Data PodStateMap `json:"data,omitempty"`
+	// The status for each of the Elasticsearch Master pods for the Log Storage component
+	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Elasticsearch Master Pod Status",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podStatuses"
+	Master PodStateMap `json:"master,omitempty"`
 }
 
 type CollectionStatus struct {
@@ -446,7 +481,9 @@ type FluentdCollectorStatus struct {
 	DaemonSet string `json:"daemonSet,omitempty"`
 	// +optional
 	Nodes map[string]string `json:"nodes,omitempty"`
+	// The status for each of the Fluentd pods for the Log Collection component
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=status,displayName="Fluentd status",xDescriptors="urn:alm:descriptor:com.tectonic.ui:podStatuses"
 	Pods PodStateMap `json:"pods,omitempty"`
 	// +optional
 	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
@@ -554,14 +591,13 @@ const (
 type ClusterConditions []Condition
 type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 
+// +kubebuilder:object:root=true
 // +k8s:openapi-gen=true
-// +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=logging,shortName=cl
 // +kubebuilder:printcolumn:name="Management State",JSONPath=".spec.managementState",type=string
-// +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// ClusterLogging is the Schema for the clusterloggings API
-// +operator-sdk:csv:customresourcedefinitions:displayName="ClusterLogging",resources={{Pod,v1},{Deployment,v1},{ReplicaSet,v1},{ConfigMap,v1},{Service,v1},{Route,v1},{CronJob,v1beta1},{Role,v1},{RoleBinding,v1},{ServiceAccount,v1},{ServiceMonitor,v1},{persistentvolumeclaims,v1}}
+// A Red Hat OpenShift Logging instance
+// +operator-sdk:csv:customresourcedefinitions:displayName="Cluster Logging",resources={{Pod,v1},{Deployment,v1},{DaemonSet,v1},{ReplicaSet,v1},{ConfigMap,v1},{CronJob,v1beta1},{Service,v1},{Secret,v1},{Route,v1},{Elasticsearch,v1},{ClusterLogForwarder,v1}}
 type ClusterLogging struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

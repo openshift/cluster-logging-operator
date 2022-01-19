@@ -87,14 +87,8 @@ func compareElasticsearchStatus(lhs, rhs []logging.ElasticsearchStatus) bool {
 				return false
 			}
 
-			if len(lhs[index].Pods) != len(rhs[index].Pods) {
+			if !reflect.DeepEqual(lhs[index].Pods, rhs[index].Pods) {
 				return false
-			}
-
-			if len(lhs[index].Pods) > 0 {
-				if !reflect.DeepEqual(lhs[index].Pods, rhs[index].Pods) {
-					return false
-				}
 			}
 
 			if len(lhs[index].ClusterConditions) != len(rhs[index].ClusterConditions) {

@@ -559,7 +559,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityCla
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccount() (*core.ServiceAccount, error) {
 
-	cluster := clusterRequest.Cluster
+	//cluster := clusterRequest.Cluster
 
 	collectorServiceAccount := runtime.NewServiceAccount(clusterRequest.Cluster.Namespace, constants.CollectorServiceAccountName)
 
@@ -591,26 +591,26 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 		return nil, fmt.Errorf("Failure creating Log collector SecurityContextConstraints: %v", err)
 	}
 
-	// Also create the role and role binding so that the service account has host read access
-	collectorRole := NewRole(
-		"log-collector-privileged",
-		cluster.Namespace,
-		NewPolicyRules(
-			NewPolicyRule(
-				[]string{"security.openshift.io"},
-				[]string{"securitycontextconstraints"},
-				[]string{LogCollectorSCCName},
-				[]string{"use"},
-			),
-		),
-	)
+	//// Also create the role and role binding so that the service account has host read access
+	//collectorRole := NewRole(
+	//	"log-collector-privileged",
+	//	cluster.Namespace,
+	//	NewPolicyRules(
+	//		NewPolicyRule(
+	//			[]string{"security.openshift.io"},
+	//			[]string{"securitycontextconstraints"},
+	//			[]string{LogCollectorSCCName},
+	//			[]string{"use"},
+	//		),
+	//	),
+	//)
+	//
+	//utils.AddOwnerRefToObject(collectorRole, utils.AsOwner(cluster))
 
-	utils.AddOwnerRefToObject(collectorRole, utils.AsOwner(cluster))
-
-	err = clusterRequest.Create(collectorRole)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating Log collector privileged role: %v", err)
-	}
+	//err = clusterRequest.Create(collectorRole)
+	//if err != nil && !errors.IsAlreadyExists(err) {
+	//	return nil, fmt.Errorf("Failure creating Log collector privileged role: %v", err)
+	//}
 
 	subject := NewSubject(
 		"ServiceAccount",
@@ -618,54 +618,54 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	)
 	subject.APIGroup = ""
 
-	collectorRoleBinding := NewRoleBinding(
-		"log-collector-privileged-binding",
-		cluster.Namespace,
-		"log-collector-privileged",
-		NewSubjects(
-			subject,
-		),
-	)
-
-	utils.AddOwnerRefToObject(collectorRoleBinding, utils.AsOwner(cluster))
-
-	err = clusterRequest.Create(collectorRoleBinding)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating Log collector privileged role binding: %v", err)
-	}
-
-	// create clusterrole for logcollector to retrieve metadata
-	clusterrules := NewPolicyRules(
-		NewPolicyRule(
-			[]string{""},
-			[]string{"pods", "namespaces"},
-			nil,
-			[]string{"get", "list", "watch"},
-		),
-	)
-	clusterRole, err := clusterRequest.CreateClusterRole("metadata-reader", clusterrules, cluster)
-	if err != nil {
-		return nil, err
-	}
-	subject = NewSubject(
-		"ServiceAccount",
-		constants.CollectorServiceAccountName,
-	)
-	subject.Namespace = cluster.Namespace
-	subject.APIGroup = ""
-
-	collectorReaderClusterRoleBinding := NewClusterRoleBinding(
-		"cluster-logging-metadata-reader",
-		clusterRole.Name,
-		NewSubjects(
-			subject,
-		),
-	)
-
-	err = clusterRequest.Create(collectorReaderClusterRoleBinding)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating Log collector %q cluster role binding: %v", collectorReaderClusterRoleBinding.Name, err)
-	}
+	//collectorRoleBinding := NewRoleBinding(
+	//	"log-collector-privileged-binding",
+	//	cluster.Namespace,
+	//	"log-collector-privileged",
+	//	NewSubjects(
+	//		subject,
+	//	),
+	//)
+	//
+	//utils.AddOwnerRefToObject(collectorRoleBinding, utils.AsOwner(cluster))
+	//
+	//err = clusterRequest.Create(collectorRoleBinding)
+	//if err != nil && !errors.IsAlreadyExists(err) {
+	//	return nil, fmt.Errorf("Failure creating Log collector privileged role binding: %v", err)
+	//}
+	//
+	//// create clusterrole for logcollector to retrieve metadata
+	//clusterrules := NewPolicyRules(
+	//	NewPolicyRule(
+	//		[]string{""},
+	//		[]string{"pods", "namespaces"},
+	//		nil,
+	//		[]string{"get", "list", "watch"},
+	//	),
+	//)
+	//clusterRole, err := clusterRequest.CreateClusterRole("metadata-reader", clusterrules, cluster)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//subject = NewSubject(
+	//	"ServiceAccount",
+	//	constants.CollectorServiceAccountName,
+	//)
+	//subject.Namespace = cluster.Namespace
+	//subject.APIGroup = ""
+	//
+	//collectorReaderClusterRoleBinding := NewClusterRoleBinding(
+	//	"cluster-logging-metadata-reader",
+	//	clusterRole.Name,
+	//	NewSubjects(
+	//		subject,
+	//	),
+	//)
+	//
+	//err = clusterRequest.Create(collectorReaderClusterRoleBinding)
+	//if err != nil && !errors.IsAlreadyExists(err) {
+	//	return nil, fmt.Errorf("Failure creating Log collector %q cluster role binding: %v", collectorReaderClusterRoleBinding.Name, err)
+	//}
 
 	if delfinalizer {
 		return collectorServiceAccount, nil

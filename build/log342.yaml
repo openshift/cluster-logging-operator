@@ -1,0 +1,123 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: '2021-11-17T15:36:13Z'
+  labels:
+    olm.owner: clusterlogging.v5.4.0
+    olm.owner.kind: ClusterServiceVersion
+    olm.owner.namespace: openshift-logging
+    operators.coreos.com/cluster-logging.openshift-logging: ''
+  managedFields:
+  - apiVersion: rbac.authorization.k8s.io/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:labels:
+          .: {}
+          f:olm.owner: {}
+          f:olm.owner.kind: {}
+          f:olm.owner.namespace: {}
+        f:ownerReferences:
+          .: {}
+          k:{"uid":"bcb75f0b-d451-402d-bb4c-0b5fa4ab5d39"}:
+            .: {}
+            f:apiVersion: {}
+            f:blockOwnerDeletion: {}
+            f:controller: {}
+            f:kind: {}
+            f:name: {}
+            f:uid: {}
+      f:rules: {}
+    manager: catalog
+    operation: Update
+    time: '2021-11-17T15:36:13Z'
+  - apiVersion: rbac.authorization.k8s.io/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:labels:
+          f:operators.coreos.com/cluster-logging.openshift-logging: {}
+    manager: olm
+    operation: Update
+    time: '2021-11-17T15:36:18Z'
+  name: clusterlogging.v5.4.0-cluster-logging-operator-7856cd755d
+  namespace: openshift-logging
+  ownerReferences:
+  - apiVersion: operators.coreos.com/v1alpha1
+    blockOwnerDeletion: false
+    controller: false
+    kind: ClusterServiceVersion
+    name: clusterlogging.v5.4.0
+    uid: bcb75f0b-d451-402d-bb4c-0b5fa4ab5d39
+  resourceVersion: '130285'
+  uid: 3cb4254b-2ac4-4b76-b414-fa0b1bff8118
+rules:
+- apiGroups:
+    - apps
+  resources:
+    - deployments
+    - daemonsets
+    - replicasets
+    - statefulsets
+  verbs:
+    - '*'
+- apiGroups:
+    - apps
+  resourceNames:
+    - cluster-logging-operator
+  resources:
+    - deployments/finalizers
+  verbs:
+    - update
+- apiGroups:
+    - batch
+  resources:
+    - cronjobs
+  verbs:
+    - '*'
+- apiGroups:
+    - ''
+  resources:
+    - pods
+    - services
+    - endpoints
+    - persistentvolumeclaims
+    - events
+    - configmaps
+    - secrets
+    - serviceaccounts
+    - serviceaccounts/finalizers
+    - services/finalizers
+  verbs:
+    - '*'
+- apiGroups:
+  - logging.openshift.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+    - monitoring.coreos.com
+  resources:
+    - servicemonitors
+    - prometheusrules
+  verbs:
+    - '*'
+- apiGroups:
+    - rbac.authorization.k8s.io
+  resources:
+    - roles
+    - rolebindings
+  verbs:
+    - '*'
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes
+  - routes/custom-host
+  verbs:
+  - '*'
+
+
+
+

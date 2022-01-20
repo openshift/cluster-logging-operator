@@ -208,7 +208,8 @@ test-e2e-local: $(JUNITREPORT) deploy-image
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
 	hack/test-e2e-olm.sh
-
+test-e2e-clo-metric: 
+	test/e2e/telemetry/clometrics_test.sh
 test-svt:
 	hack/svt/test-svt.sh
 

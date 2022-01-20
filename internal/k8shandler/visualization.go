@@ -25,11 +25,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err 
 		return clusterRequest.removeKibana()
 	}
 
-	if err = clusterRequest.createOrUpdateKibanaCR(); err != nil {
+	if err = clusterRequest.removeKibanaIfOwnedByCLO(); err != nil {
+		log.Error(err, "Can't fully clean up old version version for Kibana")
 		return
 	}
 
-	if err = clusterRequest.createOrUpdateKibanaSecret(); err != nil {
+	if err = clusterRequest.createOrUpdateKibanaCR(); err != nil {
 		return
 	}
 
@@ -37,6 +38,50 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err 
 		return
 	}
 
+	return nil
+}
+
+// need for smooth upgrade CLO to the 5.4 version, after moving certificates generation to the EO side
+// see details: https://issues.redhat.com/browse/LOG-1923
+func (clusterRequest *ClusterLoggingRequest) removeKibanaIfOwnedByCLO() (err error) {
+	secret, err := clusterRequest.GetSecret(constants.KibanaProxyName)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if utils.IsOwnedBy(secret.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
+		err = clusterRequest.RemoveSecret(constants.KibanaProxyName)
+		if err != nil {
+			log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.KibanaProxyName))
+			return err
+		}
+	}
+
+	secret, err = clusterRequest.GetSecret(constants.KibanaName)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if utils.IsOwnedBy(secret.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
+		err = clusterRequest.RemoveSecret(constants.KibanaName)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.KibanaName))
+			return err
+		}
+		err = clusterRequest.RemoveDeployment(constants.KibanaName)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s deployment", constants.KibanaName))
+			return err
+		}
+		err = clusterRequest.RemoveService(constants.KibanaName)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s service", constants.KibanaName))
+			return err
+		}
+		err = clusterRequest.RemoveRoute(constants.KibanaName)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s route", constants.KibanaName))
+			return err
+		}
+	}
 	return nil
 }
 
@@ -113,66 +158,19 @@ func compareKibanaStatus(lhs, rhs []es.KibanaStatus) bool {
 
 func (clusterRequest *ClusterLoggingRequest) removeKibana() (err error) {
 	if clusterRequest.isManaged() {
-		name := "kibana"
-		proxyName := "kibana-proxy"
 
 		if err = clusterRequest.removeKibanaCR(); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveSecret(name); err != nil {
+		if err = clusterRequest.RemoveSecret(constants.KibanaName); err != nil {
 			return
 		}
 
-		if err = clusterRequest.RemoveSecret(proxyName); err != nil {
+		if err = clusterRequest.RemoveSecret(constants.KibanaProxyName); err != nil {
 			return
 		}
 
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibanaSecret() error {
-	var secrets = map[string][]byte{}
-	_ = Syncronize(func() error {
-		secrets = map[string][]byte{
-			"ca":   utils.GetWorkingDirFileContents("ca.crt"),
-			"key":  utils.GetWorkingDirFileContents("system.logging.kibana.key"),
-			"cert": utils.GetWorkingDirFileContents("system.logging.kibana.crt"),
-		}
-		return nil
-	})
-	kibanaSecret := NewSecret(
-		"kibana",
-		clusterRequest.Cluster.Namespace,
-		secrets)
-
-	utils.AddOwnerRefToObject(kibanaSecret, utils.AsOwner(clusterRequest.Cluster))
-
-	err := clusterRequest.CreateOrUpdateSecret(kibanaSecret)
-	if err != nil {
-		return err
-	}
-
-	_ = Syncronize(func() error {
-		secrets = map[string][]byte{
-			"session-secret": utils.GetWorkingDirFileContents(constants.KibanaSessionSecretName),
-			"server-key":     utils.GetWorkingDirFileContents("kibana-internal.key"),
-			"server-cert":    utils.GetWorkingDirFileContents("kibana-internal.crt"),
-		}
-		return nil
-	})
-	proxySecret := NewSecret(
-		"kibana-proxy",
-		clusterRequest.Cluster.Namespace,
-		secrets)
-
-	utils.AddOwnerRefToObject(proxySecret, utils.AsOwner(clusterRequest.Cluster))
-
-	err = clusterRequest.CreateOrUpdateSecret(proxySecret)
-	if err != nil {
-		return err
 	}
 
 	return nil

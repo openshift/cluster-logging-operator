@@ -60,6 +60,16 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 	}
 }
 
+// IsOwnedBy Checking is given object owned by given OwnerReference
+func IsOwnedBy(references []metav1.OwnerReference, ownerRef metav1.OwnerReference) bool {
+	for _, reference := range references {
+		if reference.Name == ownerRef.Name && reference.Kind == ownerRef.Kind {
+			return true
+		}
+	}
+	return false
+}
+
 //CalculateMD5Hash returns a MD5 hash of the give text
 func CalculateMD5Hash(text string) (string, error) {
 	// #nosec G401

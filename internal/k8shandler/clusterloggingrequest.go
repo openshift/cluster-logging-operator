@@ -15,6 +15,7 @@ import (
 
 type ClusterLoggingRequest struct {
 	Client        client.Client
+	Reader        client.Reader
 	Cluster       *logging.ClusterLogging
 	EventRecorder record.EventRecorder
 	// ForwarderRequest is a logforwarder instance

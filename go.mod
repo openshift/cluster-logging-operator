@@ -16,7 +16,7 @@ require (
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.17.0
 	github.com/openshift/api v0.0.0-20210713130143-be21c6cb1bea
-	github.com/openshift/elasticsearch-operator v0.0.0-20210825140237-c3774595747e
+	github.com/openshift/elasticsearch-operator v0.0.0-20220110181307-4e889bb6cdcf
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5

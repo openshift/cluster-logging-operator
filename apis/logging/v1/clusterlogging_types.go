@@ -145,6 +145,14 @@ type RetentionPoliciesSpec struct {
 type RetentionPolicySpec struct {
 	// +optional
 	MaxAge elasticsearch.TimeUnit `json:"maxAge"`
+
+	// How often to run a new prune-namespaces job
+	// +optional
+	PruneNamespacesInterval elasticsearch.TimeUnit `json:"pruneNamespacesInterval"`
+
+	// The per namespace specification to delete documents older than a given minimum age
+	// +optional
+	Namespaces []elasticsearch.IndexManagementDeleteNamespaceSpec `json:"namespaceSpec,omitempty"`
 }
 
 type ElasticsearchSpec struct {

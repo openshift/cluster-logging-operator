@@ -163,7 +163,7 @@ github.com/openshift/api/console/v1
 github.com/openshift/api/oauth/v1
 github.com/openshift/api/route/v1
 github.com/openshift/api/security/v1
-# github.com/openshift/elasticsearch-operator v0.0.0-20210825140237-c3774595747e
+# github.com/openshift/elasticsearch-operator v0.0.0-20220110181307-4e889bb6cdcf
 ## explicit
 github.com/openshift/elasticsearch-operator/apis/logging/v1
 github.com/openshift/elasticsearch-operator/internal/constants

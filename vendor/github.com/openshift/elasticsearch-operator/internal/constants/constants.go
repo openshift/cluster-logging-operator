@@ -11,9 +11,9 @@ const (
 	TrustedCABundleHashName     = "logging.openshift.io/hash"
 	KibanaTrustedCAName         = "kibana-trusted-ca-bundle"
 	SecretHashPrefix            = "logging.openshift.io/"
-	ElasticsearchDefaultImage   = "quay.io/openshift-logging/elasticsearch6"
-	ProxyDefaultImage           = "quay.io/openshift-logging/elasticsearch-proxy:latest"
-	CuratorDefaultImage         = "quay.io/openshift-logging/curator5"
+	ElasticsearchDefaultImage   = "quay.io/openshift-logging/elasticsearch6:6.8.1"
+	ProxyDefaultImage           = "quay.io/openshift-logging/elasticsearch-proxy:1.0"
+	CuratorDefaultImage         = "quay.io/openshift-logging/curator5:5.8.1"
 	TheoreticalShardMaxSizeInMB = 40960
 
 	// OcpTemplatePrefix is the prefix all operator generated templates

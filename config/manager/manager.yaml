@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: openshift-logging-operator
+  name: cluster-logging-operator
   labels:
 spec:
   selector:

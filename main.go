@@ -110,6 +110,7 @@ func main() {
 
 	if err = (&clusterlogging.ReconcileClusterLogging{
 		Client: mgr.GetClient(),
+		Reader: mgr.GetAPIReader(),
 		//Log:    ctrl.Log.WithName("controllers").WithName("ClusterLogForwarder"),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),

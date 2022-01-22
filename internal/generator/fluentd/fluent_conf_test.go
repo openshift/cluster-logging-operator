@@ -240,8 +240,8 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
@@ -436,6 +436,7 @@ var _ = Describe("Generating fluentd config", func() {
   
   # Invoke kubernetes apiserver to get kunbernetes metadata
   <filter kubernetes.**>
+	@id kubernetes-metadata
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
     cache_size '1000'
@@ -452,14 +453,14 @@ var _ = Describe("Generating fluentd config", func() {
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.**>
+  <filter kubernetes.var.log.pods.**>
     @type parse_json_field
     merge_json_log 'false'
     preserve_json_log 'true'
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
+  <filter kubernetes.var.log.pods.**_eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
@@ -541,13 +542,13 @@ var _ = Describe("Generating fluentd config", func() {
       remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+      tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
       process_kubernetes_events 'true'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers**"
+      tag "kubernetes.var.log.pods**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
@@ -576,7 +577,7 @@ var _ = Describe("Generating fluentd config", func() {
     @type elasticsearch_genid_ext
     hash_id_key viaq_msg_id
     alt_key kubernetes.event.metadata.uid
-    alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
+    alt_tags 'kubernetes.var.log.pods.**_eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
   
   # Discard Infrastructure logs
@@ -1019,8 +1020,8 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
@@ -1215,6 +1216,7 @@ var _ = Describe("Generating fluentd config", func() {
   
   # Invoke kubernetes apiserver to get kunbernetes metadata
   <filter kubernetes.**>
+	@id kubernetes-metadata
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
     cache_size '1000'
@@ -1231,14 +1233,14 @@ var _ = Describe("Generating fluentd config", func() {
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.**>
+  <filter kubernetes.var.log.pods.**>
     @type parse_json_field
     merge_json_log 'false'
     preserve_json_log 'true'
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
+  <filter kubernetes.var.log.pods.**_eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
@@ -1320,13 +1322,13 @@ var _ = Describe("Generating fluentd config", func() {
       remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+      tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
       process_kubernetes_events 'true'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers**"
+      tag "kubernetes.var.log.pods**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
@@ -1355,7 +1357,7 @@ var _ = Describe("Generating fluentd config", func() {
     @type elasticsearch_genid_ext
     hash_id_key viaq_msg_id
     alt_key kubernetes.event.metadata.uid
-    alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
+    alt_tags 'kubernetes.var.log.pods.**_eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
   
   # Discard Infrastructure logs
@@ -1783,8 +1785,8 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
@@ -1979,6 +1981,7 @@ var _ = Describe("Generating fluentd config", func() {
   
   # Invoke kubernetes apiserver to get kunbernetes metadata
   <filter kubernetes.**>
+	@id kubernetes-metadata
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
     cache_size '1000'
@@ -1995,14 +1998,14 @@ var _ = Describe("Generating fluentd config", func() {
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.**>
+  <filter kubernetes.var.log.pods.**>
     @type parse_json_field
     merge_json_log 'false'
     preserve_json_log 'true'
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
+  <filter kubernetes.var.log.pods.**_eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
@@ -2084,13 +2087,13 @@ var _ = Describe("Generating fluentd config", func() {
       remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+      tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
       process_kubernetes_events 'true'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers**"
+      tag "kubernetes.var.log.pods**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
@@ -2119,7 +2122,7 @@ var _ = Describe("Generating fluentd config", func() {
     @type elasticsearch_genid_ext
     hash_id_key viaq_msg_id
     alt_key kubernetes.event.metadata.uid
-    alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
+    alt_tags 'kubernetes.var.log.pods.**_eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
   
   # Discard Infrastructure logs
@@ -2492,8 +2495,8 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
@@ -2688,6 +2691,7 @@ var _ = Describe("Generating fluentd config", func() {
   
   # Invoke kubernetes apiserver to get kunbernetes metadata
   <filter kubernetes.**>
+	@id kubernetes-metadata
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
     cache_size '1000'
@@ -2704,14 +2708,14 @@ var _ = Describe("Generating fluentd config", func() {
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.**>
+  <filter kubernetes.var.log.pods.**>
     @type parse_json_field
     merge_json_log 'false'
     preserve_json_log 'true'
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
+  <filter kubernetes.var.log.pods.**_eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
@@ -2793,13 +2797,13 @@ var _ = Describe("Generating fluentd config", func() {
       remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+      tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
       process_kubernetes_events 'true'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers**"
+      tag "kubernetes.var.log.pods**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
@@ -2828,7 +2832,7 @@ var _ = Describe("Generating fluentd config", func() {
     @type elasticsearch_genid_ext
     hash_id_key viaq_msg_id
     alt_key kubernetes.event.metadata.uid
-    alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
+    alt_tags 'kubernetes.var.log.pods.**_eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
   
   # Discard Infrastructure logs
@@ -2981,8 +2985,8 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
@@ -3240,6 +3244,7 @@ var _ = Describe("Generating fluentd config", func() {
   
   # Invoke kubernetes apiserver to get kunbernetes metadata
   <filter kubernetes.**>
+	@id kubernetes-metadata
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
     cache_size '1000'
@@ -3256,14 +3261,14 @@ var _ = Describe("Generating fluentd config", func() {
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.**>
+  <filter kubernetes.var.log.pods.**>
     @type parse_json_field
     merge_json_log 'false'
     preserve_json_log 'true'
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
+  <filter kubernetes.var.log.pods.**_eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
@@ -3345,13 +3350,13 @@ var _ = Describe("Generating fluentd config", func() {
       remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+      tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
       process_kubernetes_events 'true'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers**"
+      tag "kubernetes.var.log.pods**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
@@ -3380,7 +3385,7 @@ var _ = Describe("Generating fluentd config", func() {
     @type elasticsearch_genid_ext
     hash_id_key viaq_msg_id
     alt_key kubernetes.event.metadata.uid
-    alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
+    alt_tags 'kubernetes.var.log.pods.**_eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
   
   # Include Infrastructure logs
@@ -4044,8 +4049,8 @@ inputs:
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
-  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  path "/var/log/pods/**/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
@@ -4240,6 +4245,7 @@ inputs:
   
   # Invoke kubernetes apiserver to get kunbernetes metadata
   <filter kubernetes.**>
+	@id kubernetes-metadata
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
     cache_size '1000'
@@ -4256,14 +4262,14 @@ inputs:
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.**>
+  <filter kubernetes.var.log.pods.**>
     @type parse_json_field
     merge_json_log 'false'
     preserve_json_log 'true'
     json_fields 'log,MESSAGE'
   </filter>
   
-  <filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
+  <filter kubernetes.var.log.pods.**_eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
@@ -4345,13 +4351,13 @@ inputs:
       remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+      tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
       process_kubernetes_events 'true'
     </formatter>
     <formatter>
-      tag "kubernetes.var.log.containers**"
+      tag "kubernetes.var.log.pods**"
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
@@ -4380,7 +4386,7 @@ inputs:
     @type elasticsearch_genid_ext
     hash_id_key viaq_msg_id
     alt_key kubernetes.event.metadata.uid
-    alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
+    alt_tags 'kubernetes.var.log.pods.**_eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
   </filter>
   
   # Discard Infrastructure logs

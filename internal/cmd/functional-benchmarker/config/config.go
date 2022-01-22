@@ -9,7 +9,7 @@ const (
 <source>
   @type tail
   @id container-input
-  path "/var/log/containers/*.log"
+  path "/var/log/pods/*/*/*.log"
   pos_file "/var/lib/containers.log.pos"
   refresh_interval 5
   rotate_wait 5

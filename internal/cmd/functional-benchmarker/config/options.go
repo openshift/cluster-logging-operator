@@ -14,7 +14,7 @@ import (
 
 const (
 	LogStressorImage = "quay.io/openshift-logging/cluster-logging-load-client:latest"
-	ContainerLogDir  = "/var/log/containers"
+	ContainerLogDir  = "/var/log/pods"
 )
 
 type Options struct {

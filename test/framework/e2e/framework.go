@@ -334,7 +334,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 			clolog.Info("No pods found for label selection", "labels", labels)
 			return true, nil
 		}
-		clolog.V(3).Info("pods still running", "num", len(pods.Items))
+		clolog.V(5).Info("pods still running", "num", len(pods.Items))
 		return false, nil
 	})
 }
@@ -443,9 +443,11 @@ func (tc *E2ETestFramework) Cleanup() {
 	}
 	clolog.V(3).Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {
-		clolog.V(3).Info("Running an e2e cleanup function")
+		clolog.V(5).Info("Running an e2e cleanup function")
 		if err := cleanup(); err != nil {
-			clolog.V(2).Info("Error during cleanup ", "error", err)
+			if !apierrors.IsNotFound(err) {
+				clolog.V(2).Info("Error during cleanup ", "error", err)
+			}
 		}
 	}
 	tc.CleanFluentDBuffers()

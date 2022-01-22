@@ -21,7 +21,7 @@ var (
 	defaultRetryInterval time.Duration
 
 	fluentdLogPath = map[string]string{
-		applicationLog:    "/var/log/containers",
+		applicationLog:    "/var/log/pods",
 		auditLog:          "/var/log/audit",
 		ovnAuditLog:       "/var/log/ovn",
 		OpenshiftAuditLog: "/var/log/oauth-apiserver",

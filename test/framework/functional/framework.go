@@ -214,6 +214,9 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	if err = f.Test.Client.Create(f.Pod); err != nil {
 		return err
 	}
+	if err = f.Test.Client.Get(f.Pod); err != nil {
+		return err
+	}
 
 	log.V(2).Info("waiting for pod to be ready")
 	if err = oc.Literal().From("oc wait -n %s pod/%s --timeout=120s --for=condition=Ready", f.Test.NS.Name, f.Name).Output(); err != nil {

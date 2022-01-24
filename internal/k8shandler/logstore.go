@@ -2,7 +2,9 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"reflect"
+	"sync"
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
@@ -30,7 +32,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 
 		cluster := clusterRequest.Cluster
 
-		if err = clusterRequest.createOrUpdateElasticsearchSecret(); err != nil {
+		if err = clusterRequest.removeElasticsearchIfSecretOwnedByCLO(); err != nil {
+			log.Error(err, "Can't fully clean up old secret created by CLO")
 			return err
 		}
 
@@ -56,6 +59,21 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 		}
 	}
 
+	return nil
+}
+
+// need for smooth upgrade CLO to the 5.4 version, after moving certificates generation to the EO side
+// see details: https://issues.redhat.com/browse/LOG-1923
+func (clusterRequest *ClusterLoggingRequest) removeElasticsearchIfSecretOwnedByCLO() (err error) {
+	secret, err := clusterRequest.GetSecret(constants.ElasticsearchName)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if utils.IsOwnedBy(secret.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
+		if err = clusterRequest.removeElasticsearch(); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -146,22 +164,14 @@ func LoadElasticsearchSecretMap() map[string][]byte {
 	})
 	return results
 }
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticsearchSecret() error {
 
-	esSecret := NewSecret(
-		elasticsearchResourceName,
-		clusterRequest.Cluster.Namespace,
-		LoadElasticsearchSecretMap(),
-	)
+var mutex sync.Mutex
 
-	utils.AddOwnerRefToObject(esSecret, utils.AsOwner(clusterRequest.Cluster))
-
-	err := clusterRequest.CreateOrUpdateSecret(esSecret)
-	if err != nil {
-		return err
-	}
-
-	return nil
+//Syncronize blocks single threads access using the certificate mutex
+func Syncronize(action func() error) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+	return action()
 }
 
 func (cr *ClusterLoggingRequest) emptyElasticsearchCR(elasticsearchName string) *elasticsearch.Elasticsearch {
@@ -169,6 +179,10 @@ func (cr *ClusterLoggingRequest) emptyElasticsearchCR(elasticsearchName string) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      elasticsearchName,
 			Namespace: cr.Cluster.Namespace,
+			Annotations: map[string]string{
+				"logging.openshift.io/elasticsearch-cert-management": "true",
+				"logging.openshift.io/elasticsearch-cert.collector":  "system.logging.fluentd",
+			},
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
@@ -358,6 +372,12 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 	if current.Spec.RedundancyPolicy != desired.Spec.RedundancyPolicy {
 		log.Info("Elasticsearch redundancy policy change found, updating", "currentName", current.Name)
 		current.Spec.RedundancyPolicy = desired.Spec.RedundancyPolicy
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.ObjectMeta.Annotations, desired.ObjectMeta.Annotations) {
+		log.Info("Elasticsearch resources change found in Annotations, updating", "currentName", current.Name)
+		current.Annotations = desired.Annotations
 		different = true
 	}
 

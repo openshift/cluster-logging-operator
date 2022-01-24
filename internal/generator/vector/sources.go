@@ -62,7 +62,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []g
 }
 
 func ContainerLogPaths() string {
-	return fmt.Sprintf("%q", "/var/log/containers/*.log")
+	return fmt.Sprintf("%q", "/var/log/pods/**/*.log")
 }
 
 func CollectorLogsPath() string {

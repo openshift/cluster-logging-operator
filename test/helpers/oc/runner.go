@@ -49,6 +49,7 @@ func (r *runner) Run() (string, error) {
 }
 
 func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
+	log.V(2).Info("Running command", "cmd", CMD, "args", r.args)
 	// #nosec G204
 	r.Cmd = osexec.Command(CMD, r.args...)
 	var outbuf bytes.Buffer

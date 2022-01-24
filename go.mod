@@ -19,6 +19,7 @@ require (
 	github.com/openshift/elasticsearch-operator v0.0.0-20220110181307-4e889bb6cdcf
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/atomic v1.8.0 // indirect

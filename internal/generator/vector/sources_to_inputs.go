@@ -10,18 +10,19 @@ import (
 )
 
 const (
-	AppContainerLogsExpr   = `'!(starts_with!(.kubernetes.pod_namespace,"kube") && starts_with!(.kubernetes.pod_namespace,"openshift") && .kubernetes.pod_namespace == "default")'`
-	InfraContainerLogsExpr = `'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'`
+	IsInfraContainer = `starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"`
 
 	SrcPassThrough = "."
 )
 
 var (
-	AddLogTypeApp      = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)
-	AddLogTypeInfra    = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
-	AddLogTypeAudit    = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
-	InputContainerLogs = "container_logs"
-	InputJournalLogs   = "journal_logs"
+	AddLogTypeApp          = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)
+	AddLogTypeInfra        = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
+	AddLogTypeAudit        = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
+	InfraContainerLogsExpr = fmt.Sprintf(`'%s'`, IsInfraContainer)
+	AppContainerLogsExpr   = fmt.Sprintf(`'!(%s)'`, IsInfraContainer)
+	InputContainerLogs     = "container_logs"
+	InputJournalLogs       = "journal_logs"
 )
 
 // SourcesToInputs takes the raw log sources (container, journal, audit) and produces Inputs as defined by ClusterLogForwarder Api

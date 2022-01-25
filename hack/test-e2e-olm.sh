@@ -55,7 +55,7 @@ ${repo_dir}/olm_deploy/scripts/operator-install.sh
 
 get_setup_artifacts=false
 export JUNIT_REPORT_OUTPUT="/tmp/artifacts/junit/test-e2e-olm"
-for test in $( find "${current_dir}/testing-olm" -type f -name 'test-*.sh' | sort); do
+for test in $( find "${current_dir}/testing-olm" -type f -name 'test-367*.sh' | sort); do
   if [ -n $INCLUDES ] ; then
     if ! echo $test | grep -P -q "$INCLUDES" ; then
       os::log::info "==============================================================="

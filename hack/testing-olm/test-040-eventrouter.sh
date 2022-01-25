@@ -57,6 +57,25 @@ deploy_eventrouter() {
     fi
 }
 
+wait_elasticsearch() {
+  local tries=30
+  local i
+  for (( i=0; i<$tries; i++ ))
+    do
+       os::log::info "Checking deployment of elasticsearch... Attempt " $i
+       if [[ $(oc get pods -l component=elasticsearch -n $LOGGING_NS -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; then
+          sleep 2
+       else
+          break
+       fi
+    done
+  if [ $i -eq $tries ] ; then
+    os::log::error could not start elasticsearch pod after $tries*2 seconds
+    oc get pods -l component=elasticsearch -n $LOGGING_NS -oyaml
+    exit 1
+  fi
+}
+
 reset_logging(){
     for r in "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"; do
       oc delete $r --ignore-not-found --force --grace-period=0||:
@@ -128,8 +147,7 @@ spec:
 EOL
 
 deploy_eventrouter
-
-os::log::info "Checking deployment of elasticsearch..."
+wait_elasticsearch
 espod=$(oc -n $LOGGING_NS get pods -l component=elasticsearch -o jsonpath={.items[0].metadata.name})
 os::log::info "Testing Elasticsearch pod ${espod}..."
 os::cmd::try_until_text "oc -n $LOGGING_NS exec -c elasticsearch ${espod} -- es_util --query=/ --request HEAD --head --output /dev/null --write-out %{response_code}" "200" "$(( 1*$minute ))"

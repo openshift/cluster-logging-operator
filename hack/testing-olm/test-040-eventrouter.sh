@@ -58,19 +58,19 @@ deploy_eventrouter() {
 }
 
 wait_elasticsearch() {
-  local looptries=${MAX_DEPLOY_WAIT_SECONDS}
-  local ii
-  for (( ii=0; ii<$looptries; ii++ ))
+  local tries=30
+  local i
+  for (( i=0; i<$tries; i++ ))
     do
-       os::log::info "Checking deployment of elasticsearch..."
+       os::log::info "Checking deployment of elasticsearch... Attempt " $i
        if [[ $(oc get pods -l component=elasticsearch -n $LOGGING_NS -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; then
           sleep 2
        else
           break
        fi
     done
-  if [ $ii -eq $looptries ] ; then
-    os::log::error could not start elasticsearch pod after $looptries seconds
+  if [ $i -eq $tries ] ; then
+    os::log::error could not start elasticsearch pod after $tries*2 seconds
     oc get pods -l component=elasticsearch -n $LOGGING_NS -oyaml
     exit 1
   fi

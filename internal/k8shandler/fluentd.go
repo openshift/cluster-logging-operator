@@ -38,6 +38,8 @@ const (
 	logOauthapiserverValue = "/var/log/oauth-apiserver"
 	logOpenshiftapiserver  = "varlogopenshiftapiserver"
 
+	logJournalTransientValue = "/run/log/journal"
+
 	logOpenshiftapiserverValue = "/var/log/openshift-apiserver"
 	logKubeapiserver           = "varlogkubeapiserver"
 	logKubeapiserverValue      = "/var/log/kube-apiserver"

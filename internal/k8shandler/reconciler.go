@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
@@ -75,7 +74,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	}
 
 	// Reconcile metrics Dashboards
-	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader, utils.AsOwner(clusterLoggingRequest.Cluster)); err != nil {
+	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader); err != nil {
 		log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)
 	}
 

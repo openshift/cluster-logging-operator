@@ -100,7 +100,7 @@ func newVectorPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *corev1
 	vectorContainer.VolumeMounts = []corev1.VolumeMount{
 		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
 		{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
-		{Name: logJournal, ReadOnly: true, MountPath: logJournalValue},
+		{Name: logJournal, ReadOnly: true, MountPath: logJournalTransientValue},
 		{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
 		{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
 		{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},

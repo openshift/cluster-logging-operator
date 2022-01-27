@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"fmt"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -44,13 +45,15 @@ id_key = "_id"
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 
 	outputs := []Element{}
-	id_key := "elasticsearch_preprocess"
+	id_key := strings.Join(inputs, "_")
+	id := fmt.Sprint("elasticsearch_preprocess_", len(op)+1)
+
 	if _, exists := op[id_key]; !exists {
 		outputs = MergeElements(outputs,
 			[]Element{
 				Remap{
 					Desc:        "Adding _id field",
-					ComponentID: id_key,
+					ComponentID: id,
 					Inputs:      helpers.MakeInputs(inputs...),
 					VRL: strings.TrimSpace(`
 index = "default"
@@ -68,12 +71,13 @@ if (.log_type == "audit"){
 `),
 				},
 			})
-		op[id_key] = true
+		op[id_key] = id
 	}
 
+	id = fmt.Sprintf("%v", op[id_key])
 	outputs = MergeElements(outputs,
 		[]Element{
-			Output(o, []string{id_key}, secret, op),
+			Output(o, []string{id}, secret, op),
 		},
 		TLSConf(o, secret),
 		BasicAuth(o, secret),

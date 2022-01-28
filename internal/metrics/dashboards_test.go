@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -28,9 +27,8 @@ var _ = Describe("ReconcileDashboards", func() {
 				fakeClient = fake.NewClientBuilder().WithObjects(cm).Build()
 			}
 		}
-		exp      = newDashboardConfigMap()
-		initial  *corev1.ConfigMap
-		ownerRef = v1.OwnerReference{}
+		exp     = newDashboardConfigMap()
+		initial *corev1.ConfigMap
 	)
 
 	BeforeEach(func() {
@@ -43,7 +41,7 @@ var _ = Describe("ReconcileDashboards", func() {
 			setup(nil)
 		})
 		It("should create a new dashboard configmap", func() {
-			Expect(ReconcileDashboards(fakeClient, fakeClient, ownerRef)).To(Succeed())
+			Expect(ReconcileDashboards(fakeClient, fakeClient)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp))
 		})
 	})
@@ -54,13 +52,13 @@ var _ = Describe("ReconcileDashboards", func() {
 			initial := newDashboardConfigMap()
 			initial.Labels[constants.TrustedCABundleHashName] = "abc"
 			setup(initial)
-			Expect(ReconcileDashboards(fakeClient, fakeClient, ownerRef)).To(Succeed())
+			Expect(ReconcileDashboards(fakeClient, fakeClient)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp), "Exp the configmap to be updated")
 		})
 
 		It("should do nothing to the configmap when the dashboard is the same", func() {
 			setup(initial)
-			Expect(ReconcileDashboards(fakeClient, fakeClient, ownerRef)).To(Succeed())
+			Expect(ReconcileDashboards(fakeClient, fakeClient)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp))
 		})
 	})

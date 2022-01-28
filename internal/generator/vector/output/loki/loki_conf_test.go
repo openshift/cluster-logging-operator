@@ -85,7 +85,7 @@ log_type = "{{log_type}}"
 # Basic Auth Config
 [sinks.loki_receiver.auth]
 strategy = "basic"
-username = "username"
+user = "username"
 password = "password"
 `,
 		}),
@@ -130,7 +130,7 @@ kubernetes_labels_app = "{{kubernetes.labels.app}}"
 # Basic Auth Config
 [sinks.loki_receiver.auth]
 strategy = "basic"
-username = "username"
+user = "username"
 password = "password"
 `,
 		}),
@@ -178,7 +178,7 @@ log_type = "{{log_type}}"
 # Basic Auth Config
 [sinks.loki_receiver.auth]
 strategy = "basic"
-username = "username"
+user = "username"
 password = "password"
 
 `,

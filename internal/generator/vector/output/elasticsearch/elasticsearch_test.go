@@ -42,7 +42,7 @@ var _ = Describe("Generate Vector config", func() {
 			},
 			ExpectedConf: `
 # Adding _id field
-[transforms.elasticsearch_preprocess]
+[transforms.elasticsearch_preprocess_1]
 type = "remap"
 inputs = ["application"]
 source = """
@@ -62,7 +62,7 @@ if (.log_type == "audit"){
 
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess"]
+inputs = ["elasticsearch_preprocess_1"]
 endpoint = "https://es.svc.infra.cluster:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
@@ -99,7 +99,7 @@ password = "testpass"
 			},
 			ExpectedConf: `
 # Adding _id field
-[transforms.elasticsearch_preprocess]
+[transforms.elasticsearch_preprocess_1]
 type = "remap"
 inputs = ["application"]
 source = """
@@ -119,7 +119,7 @@ if (.log_type == "audit"){
 
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess"]
+inputs = ["elasticsearch_preprocess_1"]
 endpoint = "https://es.svc.infra.cluster:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
@@ -146,7 +146,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
 # Adding _id field
-[transforms.elasticsearch_preprocess]
+[transforms.elasticsearch_preprocess_1]
 type = "remap"
 inputs = ["application"]
 source = """
@@ -166,7 +166,7 @@ if (.log_type == "audit"){
 
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess"]
+inputs = ["elasticsearch_preprocess_1"]
 endpoint = "http://es.svc.infra.cluster:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648

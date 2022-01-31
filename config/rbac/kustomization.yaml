@@ -1,6 +1,11 @@
 resources:
 #- role.yaml
+#- clusterrole_binding.yaml
 #- role_binding.yaml
+- log-collector-privileged_role.yaml
+- log_collector_privileged_binding.yaml
+- metadata_reader_clusterrole.yaml
+- metadata_reader_clusterrolebinding.yaml
 #- leader_election_role.yaml
 #- leader_election_role_binding.yaml
 # Comment the following 4 lines if you want to disable

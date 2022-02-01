@@ -82,11 +82,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return err
 		}
 
-		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
-			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectionPriorityClass")
-			return
-		}
-
 		if err = clusterRequest.removeCollectorSecretIfOwnedByCLO(); err != nil {
 			log.Error(err, "Can't fully clean up old secret created by CLO")
 			return
@@ -527,20 +522,6 @@ func compareFluentdCollectorStatus(lhs, rhs logging.FluentdCollectorStatus) bool
 	}
 
 	return true
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityClass() error {
-
-	collectionPriorityClass := NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging collector")
-
-	utils.AddOwnerRefToObject(collectionPriorityClass, utils.AsOwner(clusterRequest.Cluster))
-
-	err := clusterRequest.Create(collectionPriorityClass)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure creating Collection priority class: %v", err)
-	}
-
-	return nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccount() (*core.ServiceAccount, error) {

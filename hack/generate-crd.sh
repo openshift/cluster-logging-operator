@@ -13,6 +13,7 @@ KUSTOMIZATIONS_FILE="kustomization.yaml"
 METRICS_SERVICEMONITOR="cluster-logging-operator-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml"
 METADATA_READER_CLUSTERROLEBINDING="cluster-logging-metadata-reader_rbac.authorization.k8s.io_v1_clusterrolebinding.yaml"
 METADATA_READER_CLUSTERROLE="metadata-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml"
+PRIORITY_CLASS="cluster-logging_scheduling.k8s.io_v1_priorityclass.yaml"
 
 
 BUNDLE_VERSION=${LOGGING_VERSION}.0
@@ -52,6 +53,7 @@ cp ${BUNDLE_DIR}/${CLO_CRD_FILE}  manifests/${LOGGING_VERSION}/${CLO_CRD_FILE}
 cp ${BUNDLE_DIR}/${METRICS_SERVICEMONITOR} manifests/${LOGGING_VERSION}/${METRICS_SERVICEMONITOR}
 cp ${BUNDLE_DIR}/${METADATA_READER_CLUSTERROLEBINDING} manifests/${LOGGING_VERSION}/${METADATA_READER_CLUSTERROLEBINDING}
 cp ${BUNDLE_DIR}/${METADATA_READER_CLUSTERROLE} manifests/${LOGGING_VERSION}/${METADATA_READER_CLUSTERROLE}
+cp ${BUNDLE_DIR}/${PRIORITY_CLASS} manifests/${LOGGING_VERSION}/${PRIORITY_CLASS}
 
 echo "---------------------------------------------------------------"
 echo "Cleanup operator-sdk generation folder"

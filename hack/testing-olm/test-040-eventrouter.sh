@@ -13,16 +13,32 @@ test_artifactdir="${ARTIFACT_DIR}/$(basename ${BASH_SOURCE[0]})"
 if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
-LOGGING_NS=${LOGGING_NS:-openshift-logging}
-IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"quay.io/openshift-logging/eventrouter:${VERSION}"}
+EVENT_ROUTER_VERSION="0.3"
+IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"quay.io/openshift-logging/eventrouter:${EVENT_ROUTER_VERSION}"}
 EVENT_ROUTER_TEMPLATE=${repo_dir}/hack/eventrouter-template.yaml
 MAX_DEPLOY_WAIT_SECONDS=${MAX_DEPLOY_WAIT_SECONDS:-120}
+GENERATOR_NS="clo-eventrouter-test-$RANDOM"
 mkdir -p /tmp/artifacts/junit
 os::test::junit::declare_suite_start "[ClusterLogging] event router e2e test"
 
+if [ "${DO_SETUP:-false}" == "true" ] ; then
+  if [ "${DO_EO_SETUP:-true}" == "true" ] ; then
+      pushd ../../elasticsearch-operator
+      # install the catalog containing the elasticsearch operator csv
+      ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/catalog-deploy.sh
+      # install the elasticsearch operator from that catalog
+      ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
+      popdgz
+  fi
+
+  os::log::info "Deploying cluster-logging-operator"
+  ${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
+  ${repo_dir}/olm_deploy/scripts/operator-install.sh
+fi
+
 deploy_eventrouter() {
-    oc process -p NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
-        -f $EVENT_ROUTER_TEMPLATE | oc create -f - 2>&1
+    oc process --local -p=SA_NAMESPACE=${LOGGING_NS} -p=IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
+        -f $EVENT_ROUTER_TEMPLATE | oc create -n ${LOGGING_NS} -f - 2>&1
 
     local looptries=${MAX_DEPLOY_WAIT_SECONDS}
     local ii
@@ -41,6 +57,32 @@ deploy_eventrouter() {
     fi
 }
 
+wait_elasticsearch() {
+  local tries=30
+  local i
+  for (( i=0; i<$tries; i++ ))
+    do
+       os::log::info "Checking deployment of elasticsearch... Attempt " $i
+       if [[ $(oc get pods -l component=elasticsearch -n $LOGGING_NS -o 'jsonpath={..status.conditions[?(@.type=="Ready")].status}') != "True" ]]; then
+          sleep 2
+       else
+          break
+       fi
+    done
+  if [ $i -eq $tries ] ; then
+    os::log::error could not start elasticsearch pod after $tries*2 seconds
+    oc get pods -l component=elasticsearch -n $LOGGING_NS -oyaml
+    exit 1
+  fi
+}
+
+reset_logging(){
+    for r in "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"; do
+      oc delete $r --ignore-not-found --force --grace-period=0||:
+      os::cmd::try_until_failure "oc get $r" "$((1 * $minute))"
+    done
+}
+
 cleanup() {
     local return_code="$?"
     local test_name=$(basename $0)
@@ -56,11 +98,10 @@ cleanup() {
         oc -n $LOGGING_NS get configmap fluentd -o jsonpath={.data} --ignore-not-found > $ARTIFACT_DIR/$test_name/fluent-configmap.log ||:
       fi
 
-      oc process -p NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
-         -f $EVENT_ROUTER_TEMPLATE | oc delete -f -
+      oc process -p SA_NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
+         -f $EVENT_ROUTER_TEMPLATE | oc -n ${LOGGING_NS} delete -f -
 
-      ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
-      ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
+      reset_logging
 
       os::cleanup::all "${return_code}"
     fi
@@ -82,9 +123,7 @@ function warn_nonformatted() {
 
 KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
-${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
-${repo_dir}/olm_deploy/scripts/operator-install.sh
-
+reset_logging
 cat <<EOL | oc -n ${LOGGING_NS} create -f -
 apiVersion: "logging.openshift.io/v1"
 kind: "ClusterLogging"
@@ -107,11 +146,8 @@ spec:
       fluentd: {}
 EOL
 
-os::cmd::try_until_text "oc -n ${LOGGING_NS} get clusterloggings/instance -o jsonpath={.status.logStore.elasticsearchStatus[0].cluster.status}" "green" "$((5 * $minute))" 10
-
 deploy_eventrouter
-
-os::log::info "Checking deployment of elasticsearch..."
+wait_elasticsearch
 espod=$(oc -n $LOGGING_NS get pods -l component=elasticsearch -o jsonpath={.items[0].metadata.name})
 os::log::info "Testing Elasticsearch pod ${espod}..."
 os::cmd::try_until_text "oc -n $LOGGING_NS exec -c elasticsearch ${espod} -- es_util --query=/ --request HEAD --head --output /dev/null --write-out %{response_code}" "200" "$(( 1*$minute ))"

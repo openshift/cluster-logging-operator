@@ -1,6 +1,7 @@
 package functional
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"strings"
 
@@ -11,19 +12,21 @@ import (
 )
 
 const (
-	unsecureFluentConf = `
+	defaultFluentdforwardPort = "24224"
+	unsecureFluentConf        = `
 <system>
   log_level debug
 </system>
 <source>
   @type forward
+  port 24224
 </source>
 <filter **>
 	@type stdout
 	include_time_key true 
 </filter>
 
-<match kubernetes.**>
+<match kubernetes.** var.log.**>
   @type file
   append true
   path /tmp/app.logs
@@ -60,9 +63,10 @@ const (
   @type stdout
 </match>`
 
-	unsecureFluentConfBenchmark = `
+	UnsecureFluentConfBenchmark = `
 <system>
   log_level debug
+  workers 4
 </system>
 <source>
   @type forward
@@ -72,7 +76,7 @@ const (
 	include_time_key true 
 </filter>
 
-<filter kubernetes.**>
+<filter kubernetes.** var.log.containers.**>
   @type record_transformer
   enable_ruby
   <record>
@@ -82,7 +86,7 @@ const (
   </record>
 </filter>
 
-<match kubernetes.**>
+<match kubernetes.** var.log.containers.**>
   @type file
   append true
   path /tmp/app.logs
@@ -120,7 +124,7 @@ const (
 </match>`
 )
 
-func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuilder, output logging.OutputSpec, conf string) error {
+func (f *CollectorFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuilder, output logging.OutputSpec, conf string) error {
 	log.V(2).Info("Adding forward output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
@@ -134,16 +138,21 @@ func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuil
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer(name, utils.GetComponentImage(constants.FluentdName)).
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
-		WithCmd("fluentd -c /tmp/config/fluent.conf").
+		WithCmd([]string{"fluentd", "-c", "/tmp/config/fluent.conf"}).
 		End().
 		AddConfigMapVolume(config.Name, config.Name)
 	return nil
 }
 
-func (f *FluentdFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	return f.addForwardOutputWithConf(b, output, unsecureFluentConf)
+func (f *CollectorFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+	outURL, err := url.Parse(output.URL)
+	if err != nil {
+		return err
+	}
+	config := strings.Replace(unsecureFluentConf, defaultFluentdforwardPort, outURL.Port(), 1)
+	return f.addForwardOutputWithConf(b, output, config)
 }
 
-func (f *FluentdFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	return f.addForwardOutputWithConf(b, output, unsecureFluentConfBenchmark)
+func (f *CollectorFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+	return f.addForwardOutputWithConf(b, output, UnsecureFluentConfBenchmark)
 }

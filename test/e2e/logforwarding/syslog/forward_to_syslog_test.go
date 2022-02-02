@@ -3,11 +3,12 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -26,6 +27,8 @@ import (
 const (
 	// grep "pod_name"=>"<generator-pod-name>" <syslog-log-filename>
 	rsyslogFormatStr = `grep %s %%s| grep pod_name | tail -n 1 | awk -F' ' '{print %s}'`
+
+	expectedTagPrefix = "kubernetes.var.log.pods"
 )
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
@@ -209,8 +212,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					// typical value of tag in this test case is: kubernetes.var.log.containers.log-generator-746f659fdf-qgclg_clo-test-5764_log-generator-fef2a7848f9741bc6aeb1325aac051c0734c5dc177839c6787da207dc95530ad.log
-					expectedAppNamePrefix := "kubernetes.var.log.containers"
-					Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedAppNamePrefix))
+					Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedTagPrefix))
 					expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
 					Expect(logStore.GrepLogs(grepmsgid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 					expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
@@ -487,7 +489,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					// typical value of tag in this test case is: kubernetes.var.log.containers.log-generator-746f659fdf-qgclg_clo-test-5764_log-generator-fef2a7848f9741bc6aeb1325aac051c0734c5dc177839c6787da207dc95530ad.log
-					expectedTagPrefix := "kubernetes.var.log.containers"
 					Expect(logStore.GrepLogs(greptag, framework.DefaultWaitForLogsTimeout)).To(HavePrefix(expectedTagPrefix))
 				})
 				It("should use values from parts of tag", func() {
@@ -647,40 +648,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ s = ""; for (i = 8; i <= NF; i++) s = s $i " "; print s }'`, "rec_tag")
 							_, err := logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)
 							Expect(err).To(BeNil())
-						})
-					})
-				})
-				Context("with addLogSourceToMessage flag", func() {
-					Context("for infra logs", func() {
-						BeforeEach(func() {
-							forwarder.Spec.Pipelines[0].InputRefs = []string{"infrastructure"}
-						})
-						It("should add the originating process name and id to journal log message", func() {
-							if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, framework.RFC3164); err != nil {
-								Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
-							}
-							forwarder.Spec.Outputs[0].URL = fmt.Sprintf("tls://%s.%s.svc:24224", syslogDeployment.ObjectMeta.Name, syslogDeployment.Namespace)
-							forwarder.Spec.Outputs[0].Syslog.RFC = framework.RFC3164.String()
-							forwarder.Spec.Outputs[0].Syslog.PayloadKey = "message"
-							forwarder.Spec.Outputs[0].Syslog.AddLogSource = true
-							if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
-								Fail(fmt.Sprintf("Unable to create an instance of logforwarder: %v", err))
-							}
-							components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
-							for _, component := range components {
-								if err := e2e.WaitFor(component); err != nil {
-									Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
-								}
-							}
-							logStore := e2e.LogStores[syslogDeployment.GetName()]
-							Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-							_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
-							grepMsgContent := fmt.Sprintf(`grep %s %%s | tail -n 1 | awk -F' ' '{ print $4; }'`, logGenPod)
-							Expect(logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)).To(Equal("mytag"), "Expected: mytag")
-							waitjournallogs := `[ $(grep -v pod_name %s | wc -l) -gt 0 ]`
-							_, _ = logStore.GrepLogs(waitjournallogs, framework.DefaultWaitForLogsTimeout)
-							grepMsgContent = `grep -v pod_name %s | tail -n 1 | awk -F' ' '{ print $4; }'`
-							Expect(logStore.GrepLogs(grepMsgContent, framework.DefaultWaitForLogsTimeout)).To(Not(Equal("mytag")), "Expected: not mytag")
 						})
 					})
 				})

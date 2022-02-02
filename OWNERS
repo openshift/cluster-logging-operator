@@ -3,7 +3,7 @@ filters:
   ".*":
     approvers:
       - jcantrill
-      - igor-karpukhin
+      - periklis
       - alanconway
       - vimalk78
     reviewers:
@@ -15,6 +15,7 @@ filters:
       - eranra
       - pmoogi-redhat
       - ajaygupta978
+      - cahartma
   "Dockerfile(?:\\.in)?$":   # matches Dockerfile, Dockerfile.in
     labels:
       - midstream/Dockerfile

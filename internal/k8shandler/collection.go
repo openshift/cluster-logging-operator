@@ -3,11 +3,13 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/components/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -54,6 +56,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	cluster := clusterRequest.Cluster
 	collectorConfig := ""
 	collectorConfHash := ""
+	log.V(9).Info("Entering CreateOrUpdateCollection")
+	defer func() {
+		log.V(9).Info("Leaving CreateOrUpdateCollection")
+	}()
 
 	var collectorServiceAccount *core.ServiceAccount
 
@@ -63,26 +69,36 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		(cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd ||
 			cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeVector) {
 
-		var collectorType logging.LogCollectionType = cluster.Spec.Collection.Logs.Type
+		var collectorType = cluster.Spec.Collection.Logs.Type
 
 		//TODO: Remove me once fully migrated to new collector naming
 		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
 			log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
 		}
+		enabled, present := os.LookupEnv("ENABLE_VECTOR_COLLECTOR")
+		if collectorType == logging.LogCollectionTypeVector && (!present || strings.ToLower(enabled) != "true") {
+			err = errors.NewBadRequest("Vector as collector not enabled via env variable ENABLE_VECTOR_COLLECTOR")
+			log.V(9).Error(err, "Vector as collector not enabled via env variable ENABLE_VECTOR_COLLECTOR")
+			return err
+		}
 
 		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectionPriorityClass")
+			return
+		}
+
+		if err = clusterRequest.removeCollectorSecretIfOwnedByCLO(); err != nil {
+			log.Error(err, "Can't fully clean up old secret created by CLO")
 			return
 		}
 
 		if collectorServiceAccount, err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
-			return
-		}
-
-		if err = clusterRequest.createOrUpdateCollectorSecret(); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorServiceAccount")
 			return
 		}
 
 		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
+			log.V(9).Error(err, "clusterRequest.generateCollectorConfig")
 			return
 		}
 
@@ -90,30 +106,35 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 		if err != nil {
 			log.Error(err, "unable to calculate MD5 hash")
+			log.V(9).Error(err, "Returning from unable to calculate MD5 hash")
 			return
 		}
 		if err = clusterRequest.reconcileCollectorService(); err != nil {
+			log.V(9).Error(err, "clusterRequest.reconcileCollectorService")
 			return
 		}
 
 		if err = clusterRequest.reconcileCollectorServiceMonitor(); err != nil {
+			log.V(9).Error(err, "clusterRequest.reconcileCollectorServiceMonitor")
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateCollectorPrometheusRule(); err != nil {
-			log.Error(err, "unable to create or update fluentd prometheus rule")
+			log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
-		if err = clusterRequest.createOrUpdateCollectorConfigMap(collectorType, collectorConfig); err != nil {
+		if err = clusterRequest.createOrUpdateCollectorConfig(collectorType, collectorConfig); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorConfig")
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateCollectorDaemonset(collectorType, collectorConfHash); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorDaemonset")
 			return
 		}
 
 		if err = clusterRequest.UpdateCollectorStatus(collectorType); err != nil {
-			log.Error(err, "unable to update status for the collector")
+			log.V(9).Error(err, "unable to update status for the collector")
 		}
 
 		if collectorServiceAccount != nil {
@@ -122,11 +143,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 			if err = clusterRequest.Update(collectorServiceAccount); err != nil {
 				log.Info("Unable to update the collector serviceaccount finalizers", "collectorServiceAccount.Name", collectorServiceAccount.Name)
+				log.V(9).Error(err, "Unable to update the collector serviceaccount finalizers")
 				return nil
 			}
 		}
 	} else {
-		if err = clusterRequest.RemoveServiceAccount("logcollector"); err != nil {
+		if err = clusterRequest.RemoveServiceAccount(constants.CollectorServiceAccountName); err != nil {
 			return
 		}
 
@@ -139,6 +161,23 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		}
 	}
 
+	return nil
+}
+
+// need for smooth upgrade CLO to the 5.4 version, after moving certificates generation to the EO side
+// see details: https://issues.redhat.com/browse/LOG-1923
+func (clusterRequest *ClusterLoggingRequest) removeCollectorSecretIfOwnedByCLO() (err error) {
+	secret, err := clusterRequest.GetSecret(constants.CollectorSecretName)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if utils.IsOwnedBy(secret.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
+		err = clusterRequest.RemoveSecret(constants.CollectorSecretName)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.CollectorSecretName))
+			return err
+		}
+	}
 	return nil
 }
 
@@ -172,36 +211,6 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err e
 
 		// Wait longer than the terminationGracePeriodSeconds
 		time.Sleep(12 * time.Second)
-
-		if err = clusterRequest.RemoveSecret(name); err != nil {
-			return
-		}
-
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorSecret() error {
-	var secrets = map[string][]byte{}
-	_ = Syncronize(func() error {
-		secrets = map[string][]byte{}
-		// Ignore errors, these files are optional depending on security settings.
-		secrets["ca-bundle.crt"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("ca.crt"))
-		secrets["tls.key"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("system.logging.fluentd.key"))
-		secrets["tls.crt"], _ = ioutil.ReadFile(utils.GetWorkingDirFilePath("system.logging.fluentd.crt"))
-		return nil
-	})
-	collectorSecret := NewSecret(
-		constants.CollectorName,
-		clusterRequest.Cluster.Namespace,
-		secrets)
-
-	utils.AddOwnerRefToObject(collectorSecret, utils.AsOwner(clusterRequest.Cluster))
-
-	err := clusterRequest.CreateOrUpdateSecret(collectorSecret)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -374,10 +383,11 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRu
 	})
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfigMap(collectorType logging.LogCollectionType, collectorConfig string) error {
-	var collectorConfigMap *corev1.ConfigMap = nil
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfig(collectorType logging.LogCollectionType, collectorConfig string) error {
+	log.V(3).Info("Updating ConfigMap and Secrets")
+	var err error = nil
 	if collectorType == logging.LogCollectionTypeFluentd {
-		collectorConfigMap = NewConfigMap(
+		collectorConfigMap := NewConfigMap(
 			constants.CollectorName,
 			clusterRequest.Cluster.Namespace,
 			map[string]string{
@@ -385,16 +395,26 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfigMap(co
 				"run.sh":      fluentd.RunScript,
 			},
 		)
+		err = clusterRequest.createConfigMap(collectorConfigMap)
+
 	} else if collectorType == logging.LogCollectionTypeVector {
-		collectorConfigMap = NewConfigMap(
-			constants.CollectorName,
-			clusterRequest.Cluster.Namespace,
-			map[string]string{
-				"vector.toml": collectorConfig,
-			},
-		)
+		var secrets = map[string][]byte{}
+		_ = Syncronize(func() error {
+			secrets = map[string][]byte{}
+			// Ignore errors, these files are optional depending on security settings.
+			secrets["vector.toml"] = []byte(collectorConfig)
+			return nil
+		})
+		err = clusterRequest.createSecret(constants.CollectorConfigSecretName, clusterRequest.Cluster.Namespace, secrets)
+	}
+	if err != nil {
+		return err
 	}
 
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createConfigMap(collectorConfigMap *corev1.ConfigMap) error {
 	utils.AddOwnerRefToObject(collectorConfigMap, utils.AsOwner(clusterRequest.Cluster))
 
 	err := clusterRequest.Create(collectorConfigMap)
@@ -416,8 +436,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfigMap(co
 		current.Data = collectorConfigMap.Data
 		return clusterRequest.Update(current)
 	})
-
 	return retryErr
+}
+
+func (clusterRequest *ClusterLoggingRequest) createSecret(secretName, namespace string, secrets map[string][]byte) error {
+	collectorSecret := NewSecret(secretName, namespace, secrets)
+	utils.AddOwnerRefToObject(collectorSecret, utils.AsOwner(clusterRequest.Cluster))
+	err := clusterRequest.CreateOrUpdateSecret(collectorSecret)
+	return err
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorDaemonset(collectorType logging.LogCollectionType, pipelineConfHash string) (err error) {
@@ -429,6 +455,8 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorDaemonset(co
 	}
 	if collectorType == logging.LogCollectionTypeFluentd {
 		return clusterRequest.createOrUpdateFluentdDaemonset(fluentdTrustBundle, pipelineConfHash)
+	} else if collectorType == logging.LogCollectionTypeVector {
+		return clusterRequest.createOrUpdateVectorDaemonset(fluentdTrustBundle, pipelineConfHash)
 	}
 	return nil
 }
@@ -456,7 +484,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 		return nil
 	})
 	if retryErr != nil {
-		return fmt.Errorf("Failed to update Cluster Logging Collector status: %v", retryErr)
+		return fmt.Errorf("Failed to update Cluster Logging collector status: %v", retryErr)
 	}
 
 	return nil
@@ -503,7 +531,7 @@ func compareFluentdCollectorStatus(lhs, rhs logging.FluentdCollectorStatus) bool
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectionPriorityClass() error {
 
-	collectionPriorityClass := NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging Collector")
+	collectionPriorityClass := NewPriorityClass(clusterLoggingPriorityClassName, 1000000, false, "This priority class is for the Cluster-Logging collector")
 
 	utils.AddOwnerRefToObject(collectionPriorityClass, utils.AsOwner(clusterRequest.Cluster))
 
@@ -519,7 +547,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	cluster := clusterRequest.Cluster
 
-	collectorServiceAccount := NewServiceAccount("logcollector", cluster.Namespace)
+	collectorServiceAccount := runtime.NewServiceAccount(clusterRequest.Cluster.Namespace, constants.CollectorServiceAccountName)
 
 	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(clusterRequest.Cluster))
 
@@ -531,7 +559,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 		}
 		err := clusterRequest.Create(collectorServiceAccount)
 		if err != nil && !errors.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("Failure creating Log Collector service account: %v", err)
+			return nil, fmt.Errorf("Failure creating Log collector service account: %v", err)
 		}
 		if len(collectorServiceAccount.ObjectMeta.UID) != 0 {
 			serviceAccountLogCollectorUID = collectorServiceAccount.ObjectMeta.UID
@@ -546,7 +574,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	scc := NewSCC(LogCollectorSCCName)
 	err := clusterRequest.Create(scc)
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating Log Collector SecurityContextConstraints: %v", err)
+		return nil, fmt.Errorf("Failure creating Log collector SecurityContextConstraints: %v", err)
 	}
 
 	// Also create the role and role binding so that the service account has host read access
@@ -572,7 +600,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 
 	subject := NewSubject(
 		"ServiceAccount",
-		"logcollector",
+		constants.CollectorServiceAccountName,
 	)
 	subject.APIGroup = ""
 
@@ -607,7 +635,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	}
 	subject = NewSubject(
 		"ServiceAccount",
-		"logcollector",
+		constants.CollectorServiceAccountName,
 	)
 	subject.Namespace = cluster.Namespace
 	subject.APIGroup = ""

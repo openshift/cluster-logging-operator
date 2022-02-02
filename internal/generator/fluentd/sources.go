@@ -2,12 +2,11 @@ package fluentd
 
 import (
 	"fmt"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	source2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	"strings"
-
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
 func Sources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
@@ -81,16 +80,13 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []ge
 }
 
 func ContainerLogPaths() string {
-	return fmt.Sprintf("%q", "/var/log/containers/*.log")
+	return fmt.Sprintf("%q", "/var/log/pods/**/*.log")
 }
 
 func ExcludeContainerPaths() string {
-	return fmt.Sprintf("[%s]", strings.Join(
-		[]string{
-			fmt.Sprintf("%q", fmt.Sprintf(generator.CollectorLogsPath(), constants.CollectorName)),
-			fmt.Sprintf("%q", fmt.Sprintf(generator.LogStoreLogsPath(), constants.ElasticsearchName)),
-			fmt.Sprintf("%q", generator.VisualizationLogsPath()),
-		},
-		", ",
-	))
+	paths := []string{}
+	for _, comp := range []string{constants.CollectorName, constants.ElasticsearchName, constants.KibanaName} {
+		paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_%s-*/*/*.log\"", constants.OpenshiftNS, comp))
+	}
+	return fmt.Sprintf("[%s]", strings.Join(paths, ", "))
 }

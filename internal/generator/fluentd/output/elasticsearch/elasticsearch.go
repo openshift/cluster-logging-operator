@@ -183,9 +183,8 @@ func FlattenLabels(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o 
 func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	// URL is parasable, checked at input sanitization
 	u, _ := url.Parse(o.URL)
-	conf := []Element{}
+	conf := append([]Element{}, TLS(url.IsTLSScheme(u.Scheme)))
 	if o.Secret != nil {
-		conf = append(conf, TLS(url.IsTLSScheme(u.Scheme)))
 		if security.HasUsernamePassword(secret) {
 			up := UserNamePass{
 				UsernamePath: security.SecretPath(o.Secret.Name, constants.ClientUsername),
@@ -206,8 +205,6 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			}
 			conf = append(conf, ca)
 		}
-	} else {
-		conf = append(conf, TLS(false))
 	}
 	return conf
 }

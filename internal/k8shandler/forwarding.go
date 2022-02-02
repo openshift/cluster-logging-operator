@@ -19,6 +19,15 @@ import (
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) logging.OutputSpec {
+	if outputDefaults != nil && outputDefaults.Elasticsearch != nil {
+		if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {
+			out.Elasticsearch = outputDefaults.Elasticsearch
+		}
+	}
+	return out
+}
+
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 
 	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
@@ -41,27 +50,6 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	spec, status := clusterRequest.NormalizeForwarder()
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
-
-	if clusterRequest.ForwarderSpec.OutputDefaults != nil {
-		defaultOutputSpecs := clusterRequest.ForwarderSpec.OutputDefaults
-		if defaultOutputSpecs.Elasticsearch != nil {
-			for i, out := range clusterRequest.ForwarderSpec.Outputs {
-				// copy from defaults if output specific spec not present
-				if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {
-					out.Elasticsearch = defaultOutputSpecs.Elasticsearch
-					out.Secret = &logging.OutputSecretSpec{
-						Name: constants.CollectorSecretName,
-					}
-					secret, err := clusterRequest.GetSecret(constants.CollectorSecretName)
-					if err != nil {
-						log.V(2).Info("no secret for default output type")
-					}
-					clusterRequest.OutputSecrets[out.Name] = secret
-					clusterRequest.ForwarderSpec.Outputs[i] = out
-				}
-			}
-		}
-	}
 
 	op := generator.Options{}
 	if clusterRequest.useOldRemoteSyslogPlugin() {
@@ -124,9 +112,7 @@ func (clusterRequest *ClusterLoggingRequest) readClusterName() (string, error) {
 
 // NormalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
 func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
-	if clusterRequest.CLFVerifier.VerifyOutputSecret == nil {
-		clusterRequest.CLFVerifier.VerifyOutputSecret = clusterRequest.verifyOutputSecret
-	}
+	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.ForwarderSpec.Outputs))
 
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
@@ -189,6 +175,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 		}
 		status.Conditions.SetCondition(condReady)
 	}
+
 	return spec, status
 }
 
@@ -266,11 +253,12 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 		}
 		status.Pipelines.Set(pipeline.Name, condReady) // Ready, possibly degraded.
 		spec.Pipelines = append(spec.Pipelines, logging.PipelineSpec{
-			Name:       pipeline.Name,
-			InputRefs:  goodIn.List(),
-			OutputRefs: goodOut.List(),
-			Labels:     pipeline.Labels,
-			Parse:      pipeline.Parse,
+			Name:                  pipeline.Name,
+			InputRefs:             goodIn.List(),
+			OutputRefs:            goodOut.List(),
+			Labels:                pipeline.Labels,
+			Parse:                 pipeline.Parse,
+			DetectMultilineErrors: pipeline.DetectMultilineErrors,
 		})
 	}
 }
@@ -301,7 +289,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
 	status.Outputs = logging.NamedConditions{}
-	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.ForwarderSpec.Outputs))
 	names := sets.NewString() // Collect pipeline names
 	for i, output := range clusterRequest.ForwarderSpec.Outputs {
 		i, output := i, output // Don't bind range variable.
@@ -327,8 +314,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
 		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
 			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
-		case !clusterRequest.CLFVerifier.VerifyOutputSecret(&output, status.Outputs):
-			break
 		case output.Type == logging.OutputTypeCloudwatch && output.Cloudwatch == nil:
 			log.V(3).Info("verifyOutputs failed", "reason", "Cloudwatch output requires type spec", "output name", output.Name)
 			status.Outputs.Set(output.Name, condInvalid("output %q: Cloudwatch output requires type spec", output.Name))
@@ -364,6 +349,11 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			})
 			status.Outputs.Set(name, condReady)
 		}
+	}
+
+	for i, out := range spec.Outputs {
+		out = applyOutputDefaults(clusterRequest.ForwarderSpec.OutputDefaults, out)
+		spec.Outputs[i] = out
 	}
 
 	if clusterRequest.ForwarderSpec.OutputDefaults != nil {

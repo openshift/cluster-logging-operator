@@ -15,6 +15,7 @@ import (
 
 type ClusterLoggingRequest struct {
 	Client        client.Client
+	Reader        client.Reader
 	Cluster       *logging.ClusterLogging
 	EventRecorder record.EventRecorder
 	// ForwarderRequest is a logforwarder instance
@@ -25,10 +26,6 @@ type ClusterLoggingRequest struct {
 
 	// OutputSecrets are retrieved during validation and used for generation.
 	OutputSecrets map[string]*corev1.Secret
-
-	//CLFVerifier is a collection of functions to control verification
-	//of ClusterLogForwarding
-	CLFVerifier ClusterLogForwarderVerifier
 }
 
 type ClusterLogForwarderVerifier struct {

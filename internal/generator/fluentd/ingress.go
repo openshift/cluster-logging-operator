@@ -21,7 +21,7 @@ func Concat(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 				Match{
 					MatchTags: "kubernetes.**",
 					MatchElement: Relabel{
-						OutLabel: helpers.LabelName("_MULITLINE_DETECT"),
+						OutLabel: helpers.LabelName("INGRESS"),
 					},
 				},
 			},
@@ -35,11 +35,6 @@ func Ingress(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 			InLabel: helpers.LabelName("INGRESS"),
 			Desc:    "Ingress pipeline",
 			SubElements: MergeElements([]Element{
-				ConfLiteral{
-					Desc:         "Fix tag removed by multiline exception detection",
-					TemplateName: "matchRetagContainerMultilineExceptions",
-					TemplateStr:  matchRetagContainerMultilineExceptions,
-				},
 				ConfLiteral{
 					Desc:         "Filter out PRIORITY from journal logs",
 					TemplateName: "filterJournalPRIORITY",
@@ -92,19 +87,6 @@ func Ingress(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 	}
 }
 
-const matchRetagContainerMultilineExceptions string = `
-{{define "matchRetagContainerMultilineExceptions" -}}
-# {{.Desc}}
-<match var.log.containers.**>
-  @type rewrite_tag_filter
-  <rule>
-    key log
-    pattern /.*/
-    tag kubernetes.${tag}
-  </rule>
-</match>
-{{end}}
-`
 const FilterJournalPRIORITY string = `
 {{define "filterJournalPRIORITY" -}}
 # {{.Desc}}
@@ -211,6 +193,7 @@ const KubernetesMetadataPlugin string = `
 {{define "kubernetesMetadata" -}}
 # {{.Desc}}
 <filter kubernetes.**>
+  @id kubernetes-metadata
   @type kubernetes_metadata
   kubernetes_url 'https://kubernetes.default.svc'
   cache_size '1000'
@@ -231,14 +214,14 @@ const ParseJsonFields string = `
   json_fields 'log,MESSAGE'
 </filter>
 
-<filter kubernetes.var.log.containers.**>
+<filter kubernetes.var.log.pods.**>
   @type parse_json_field
   merge_json_log 'false'
   preserve_json_log 'true'
   json_fields 'log,MESSAGE'
 </filter>
 
-<filter kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-**>
+<filter kubernetes.var.log.pods.**_eventrouter-**>
   @type parse_json_field
   merge_json_log true
   preserve_json_log true
@@ -332,13 +315,13 @@ const ViaQDataModel string = `
     remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
   </formatter>
   <formatter>
-    tag "kubernetes.var.log.containers.eventrouter-** kubernetes.var.log.containers.cluster-logging-eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+    tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
     type k8s_json_file
     remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     process_kubernetes_events 'true'
   </formatter>
   <formatter>
-    tag "kubernetes.var.log.containers**"
+    tag "kubernetes.var.log.pods**"
     type k8s_json_file
     remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
   </formatter>
@@ -371,7 +354,7 @@ const GenElasticsearchID string = `
   @type elasticsearch_genid_ext
   hash_id_key viaq_msg_id
   alt_key kubernetes.event.metadata.uid
-  alt_tags 'kubernetes.var.log.containers.logging-eventrouter-*.** kubernetes.var.log.containers.eventrouter-*.** kubernetes.var.log.containers.cluster-logging-eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
+  alt_tags 'kubernetes.var.log.pods.**_eventrouter-*.** kubernetes.journal.container._default_.kubernetes-event'
 </filter>
 {{end}}
 `

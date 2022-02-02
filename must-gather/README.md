@@ -5,8 +5,14 @@ cluster-logging must-gather
 that expands its capabilities to gather Openshift Cluster Logging information.
 
 ### Usage
+To gather only Openshift Cluster Logging information: 
 ```sh
 oc adm must-gather --image=quay.io/openshift-logging/cluster-logging-operator:latest -- /usr/bin/gather
+```
+
+To gather default [OpenShift must-gather](https://github.com/openshift/must-gather) in addition to Openshift Cluster Logging information: 
+```sh
+oc adm must-gather --image-stream=openshift/must-gather --image=quay.io/openshift/origin-cluster-logging-operator -- /usr/bin/gather
 ```
 
 The command above will create a local directory with a dump of the cluster-logging state.

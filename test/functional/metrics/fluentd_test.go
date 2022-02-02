@@ -10,18 +10,18 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
 
-var _ = Describe("[Metrics] Function testing of fluentd metrics", func() {
+var _ = Describe("[Functional][Metrics]Function testing of fluentd metrics", func() {
 
 	const (
 		sampleMetric = "# HELP fluentd_output_status_buffer_total_bytes"
 	)
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()

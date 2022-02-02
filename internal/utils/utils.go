@@ -35,6 +35,7 @@ var COMPONENT_IMAGES = map[string]string{
 	constants.CollectorName:              constants.FluentdImageEnvVar,
 	"curator":                            "CURATOR_IMAGE",
 	constants.FluentdName:                constants.FluentdImageEnvVar,
+	constants.VectorName:                 constants.VectorImageEnvVar,
 	"kibana":                             "KIBANA_IMAGE",
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,
 }
@@ -57,6 +58,16 @@ func AsOwner(o *logging.ClusterLogging) metav1.OwnerReference {
 		UID:        o.UID,
 		Controller: GetBool(true),
 	}
+}
+
+// IsOwnedBy Checking is given object owned by given OwnerReference
+func IsOwnedBy(references []metav1.OwnerReference, ownerRef metav1.OwnerReference) bool {
+	for _, reference := range references {
+		if reference.Name == ownerRef.Name && reference.Kind == ownerRef.Kind {
+			return true
+		}
+	}
+	return false
 }
 
 //CalculateMD5Hash returns a MD5 hash of the give text
@@ -190,14 +201,18 @@ const defaultShareDir = "/usr/share/logging"
 func GetShareDir() string {
 	// shareDir is <repo-root>/files - try to find from working dir.
 	const sep = string(os.PathSeparator)
-	const repoRoot = sep + "cluster-logging-operator" + sep
+	const repoRoot = sep + "cluster-logging-operator"
 	wd, err := os.Getwd()
 	if err != nil {
+		log.V(3).Error(err, "Error determining share directory. Returning default", "default", defaultShareDir)
 		return defaultShareDir
 	}
+	log.V(5).Info("GetShareDir", "workingdir", wd)
 	i := strings.LastIndex(wd, repoRoot)
 	if i >= 0 {
-		return filepath.Join(wd[0:i+len(repoRoot)] + "files")
+		shareDir := filepath.Join(wd, "files")
+		log.V(5).Info("GetShareDir", "sharedir", shareDir)
+		return shareDir
 	}
 	return defaultShareDir
 }

@@ -47,13 +47,14 @@ runtime.goexit()
 	/usr/local/go/src/runtime/asm_amd64.s:2337 +0x1 fp=0xc42003f7e0 sp=0xc42003f7d8 pc=0x44b4d1
 created by main.main
 	foo.go:5 +0x58`
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
+			WithMultineErrorDetection().
 			ToFluentForwardOutput()
 		Expect(framework.Deploy()).To(BeNil())
 	})

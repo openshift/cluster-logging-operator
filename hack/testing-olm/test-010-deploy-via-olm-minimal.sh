@@ -26,19 +26,18 @@ version=$(basename $(find $manifest -type d | sort -r | head -n 1))
 cleanup(){
   local return_code="$?"
 
-  os::test::junit::declare_suite_end
-  
   set +e
   if [ "$return_code" != "0" ] ; then 
     gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
   fi
 
-  if [ "${DO_CLEANUP:-true}" == "true" ] ; then
-      ${repo_dir}/olm_deploy/scripts/operator-uninstall.sh
-      ${repo_dir}/olm_deploy/scripts/catalog-uninstall.sh
-      os::cleanup::all "${return_code}"
-  fi
-  
+  for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
+    oc delete $r --ignore-not-found --force --grace-period=0||:
+    os::cmd::try_until_failure "oc get $r" "$((1 * $minute))"
+  done
+
+  os::test::junit::declare_suite_end
+
   set -e
   exit ${return_code}
 }
@@ -46,8 +45,20 @@ trap cleanup exit
 
 KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
 
-${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
-${repo_dir}/olm_deploy/scripts/operator-install.sh
+if [ "${DO_SETUP:-false}" == "true" ] ; then
+  if [ "${DO_EO_SETUP:-true}" == "true" ] ; then
+      pushd ../../elasticsearch-operator
+      # install the catalog containing the elasticsearch operator csv
+      ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/catalog-deploy.sh
+      # install the elasticsearch operator from that catalog
+      ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
+      popd
+  fi
+
+  os::log::info "Deploying cluster-logging-operator"
+  ${repo_dir}/olm_deploy/scripts/catalog-deploy.sh
+  ${repo_dir}/olm_deploy/scripts/operator-install.sh
+fi
 
 TIMEOUT_MIN=$((2 * $minute))
 
@@ -62,6 +73,21 @@ os::cmd::try_until_text "oc -n $NAMESPACE get deployment cluster-logging-operato
 # test the validation of an invalid cr
 os::cmd::expect_failure_and_text "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr_invalid.yaml" "invalid: metadata.name: Unsupported value"
 
+# deploy cluster logging with unmanaged state
+os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr-unmanaged.yaml"
+
+# wait few seconds
+sleep 10
+# assert does not exist
+assert_resources_does_not_exist
+# assert kibana instance does not exists
+assert_kibana_instance_does_not_exists
+
+# wait few seconds
+sleep 10
+# delete cluster logging
+os::cmd::expect_success "oc -n $NAMESPACE delete -f ${repo_dir}/hack/cr-unmanaged.yaml"
+
 # deploy cluster logging
 os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
 
@@ -73,12 +99,3 @@ assert_kibana_instance_exists
 # delete cluster logging
 os::cmd::expect_success "oc -n $NAMESPACE delete -f ${repo_dir}/hack/cr.yaml"
 
-# deploy cluster logging with unmanaged state
-os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr-unmanaged.yaml"
-
-# wait few seconds
-sleep 10
-# assert does not exist
-assert_resources_does_not_exist
-# assert kibana instance does not exists
-assert_kibana_instance_does_not_exists

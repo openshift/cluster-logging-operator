@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -209,7 +210,7 @@ func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 	switch component {
 	case helpers.ComponentTypeVisualization:
 		return tc.waitForDeployment(constants.OpenshiftNS, "kibana", defaultRetryInterval, defaultTimeout)
-	case helpers.ComponentTypeCollector:
+	case helpers.ComponentTypeCollector, helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeCollectorVector:
 		clolog.V(3).Info("Waiting for ", "component", component)
 		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeStore:
@@ -333,7 +334,7 @@ func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string
 			clolog.Info("No pods found for label selection", "labels", labels)
 			return true, nil
 		}
-		clolog.V(3).Info("pods still running", "num", len(pods.Items))
+		clolog.V(5).Info("pods still running", "num", len(pods.Items))
 		return false, nil
 	})
 }
@@ -360,12 +361,16 @@ func (tc *E2ETestFramework) waitForStatefulSet(namespace, name string, retryInte
 	return nil
 }
 
-func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...helpers.LogComponentType) error {
+func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...helpers.LogComponentType) (err error) {
 	tc.ClusterLogging = helpers.NewClusterLogging(componentTypes...)
 	tc.LogStores["elasticsearch"] = &ElasticLogStore{
 		Framework: tc,
 	}
-	return tc.CreateClusterLogging(tc.ClusterLogging)
+	if err = tc.CreateClusterLogging(tc.ClusterLogging); apierrors.IsAlreadyExists(err) {
+		clolog.Info("cluster logging instance already exists. Ignoring AlreadyExists error")
+		return nil
+	}
+	return err
 }
 
 func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLogging) error {
@@ -373,19 +378,24 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	if err != nil {
 		return err
 	}
-	clolog.V(3).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterLoggingURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do(context.TODO())
 	tc.AddCleanup(func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
 	})
-	return result.Error()
+	clolog.V(3).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
+	result := tc.KubeClient.RESTClient().Post().
+		RequestURI(clusterLoggingURI).
+		SetHeader("Content-Type", "application/json").
+		Body(body).
+		Do(context.TODO())
+	err = result.Error()
+	if apierrors.IsAlreadyExists(err) {
+		clolog.Info("clusterlogging instance already exists. Reusing deployment...")
+		return nil
+	}
+	return err
 }
 
 func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.ClusterLogForwarder) error {
@@ -393,18 +403,30 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 	if err != nil {
 		return err
 	}
-	clolog.V(3).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterlogforwarderURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do(context.TODO())
-	tc.AddCleanup(func() error {
+	deleteCLF := func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterlogforwarderURI)).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
-	})
+	}
+	tc.AddCleanup(deleteCLF)
+	clolog.V(3).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
+	createCLF := func() rest.Result {
+		return tc.KubeClient.RESTClient().Post().
+			RequestURI(clusterlogforwarderURI).
+			SetHeader("Content-Type", "application/json").
+			Body(body).
+			Do(context.TODO())
+	}
+	result := createCLF()
+	if err := result.Error(); err != nil && apierrors.IsAlreadyExists(err) {
+		clolog.Info("clusterlogforwarder instance already exists. Removing and trying to recreate...")
+		if err := deleteCLF(); err != nil {
+			return err
+		}
+		result = createCLF()
+	}
+
 	return result.Error()
 }
 
@@ -421,9 +443,11 @@ func (tc *E2ETestFramework) Cleanup() {
 	}
 	clolog.V(3).Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {
-		clolog.V(3).Info("Running an e2e cleanup function")
+		clolog.V(5).Info("Running an e2e cleanup function")
 		if err := cleanup(); err != nil {
-			clolog.V(2).Info("Error during cleanup ", "error", err)
+			if !apierrors.IsNotFound(err) {
+				clolog.V(2).Info("Error during cleanup ", "error", err)
+			}
 		}
 	}
 	tc.CleanFluentDBuffers()

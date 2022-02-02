@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -166,13 +168,17 @@ func (syslog *syslogReceiverLogStore) ClusterLocalEndpoint() string {
 
 func (tc *E2ETestFramework) createSyslogServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
 	opts := metav1.CreateOptions{}
-	serviceAccount = k8shandler.NewServiceAccount("syslog-receiver", constants.OpenshiftNS)
+	serviceAccount = runtime.NewServiceAccount(constants.OpenshiftNS, "syslog-receiver")
 	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Create(context.TODO(), serviceAccount, opts); err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Delete(context.TODO(), serviceAccount.Name, opts)
+		err := tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Delete(context.TODO(), serviceAccount.Name, opts)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	})
 	return serviceAccount, nil
 }
@@ -192,7 +198,11 @@ func (tc *E2ETestFramework) CreateLegacySyslogConfigMap(namespace, conf string) 
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ConfigMaps(namespace).Delete(context.TODO(), fluentdConfigMap.Name, opts)
+		err := tc.KubeClient.CoreV1().ConfigMaps(namespace).Delete(context.TODO(), fluentdConfigMap.Name, opts)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	})
 	return nil
 }
@@ -218,7 +228,11 @@ func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
+		err := tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	})
 
 	rbOpts := metav1.CreateOptions{}
@@ -243,7 +257,11 @@ func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
+		err := tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	})
 	return nil
 }
@@ -314,7 +332,11 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		}
 		tc.AddCleanup(func() error {
 			opts := metav1.DeleteOptions{}
-			return tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Delete(context.TODO(), SyslogReceiverName, opts)
+			err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Delete(context.TODO(), SyslogReceiverName, opts)
+			if apierrors.IsNotFound(err) {
+				return nil
+			}
+			return err
 		})
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 			Name:      "certs",
@@ -343,7 +365,11 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Delete(context.TODO(), config.Name, opts)
+		err := tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Delete(context.TODO(), config.Name, opts)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	})
 
 	dOpts := metav1.CreateOptions{}
@@ -376,7 +402,11 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		deleteopts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Delete(context.TODO(), syslogDeployment.Name, deleteopts)
+		err := tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Delete(context.TODO(), syslogDeployment.Name, deleteopts)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	})
 
 	sOpts := metav1.CreateOptions{}
@@ -386,7 +416,11 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Delete(context.TODO(), service.Name, opts)
+		err := tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Delete(context.TODO(), service.Name, opts)
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	})
 	logStore.deployment = syslogDeployment
 

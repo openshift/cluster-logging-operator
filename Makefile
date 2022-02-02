@@ -15,7 +15,8 @@ export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
 export APP_NAME=cluster-logging-operator
-export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):latest
+export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
+export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):$(CURRENT_BRANCH)
 
 export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
@@ -146,14 +147,14 @@ deploy-image: image
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
 
 install:
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
 	$(MAKE) cluster-logging-operator-install
 
-deploy-catalog:
-	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/cluster-logging-operator-registry \
+deploy-catalog: .target
+	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
 	$(MAKE) cluster-logging-catalog-build
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
 	$(MAKE) cluster-logging-catalog-deploy
 
 deploy-elasticsearch-operator:
@@ -168,7 +169,7 @@ test-functional: test-functional-benchmarker
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
-	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m
+	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
@@ -177,7 +178,7 @@ test-forwarder-generator: bin/forwarder-generator
 .PHONY: test-forwarder-generator
 
 test-functional-benchmarker: bin/functional-benchmarker
-	@out=$$(bin/functional-benchmarker 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
+	@out=$$(bin/functional-benchmarker --artifact-dir=/tmp/benchmark-test 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 .PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator
@@ -199,15 +200,16 @@ bundle: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" hack/test-e2e-olm.sh
+	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
-	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
-	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:latest \
+	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
+	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
 	hack/test-e2e-olm.sh
-
+test-e2e-clo-metric: 
+	test/e2e/telemetry/clometrics_test.sh
 test-svt:
 	hack/svt/test-svt.sh
 

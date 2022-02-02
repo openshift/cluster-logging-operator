@@ -11,7 +11,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 )
 
-const PipelineLabels = `
+const (
+	JSONParseType               = "json"
+	MultilineExceptionParseType = "multilineException"
+
+	PipelineLabels = `
 {{define "PipelineLabels" -}}
 # {{.Desc}}
 <filter **>
@@ -22,7 +26,7 @@ const PipelineLabels = `
 </filter>
 {{end}}`
 
-const JsonParseTemplate = `{{define "JsonParse" -}}
+	JsonParseTemplate = `{{define "JsonParse" -}}
 # {{.Desc}}
 <filter **>
   @type parser
@@ -35,6 +39,7 @@ const JsonParseTemplate = `{{define "JsonParse" -}}
   </parse>
 </filter>
 {{end}}`
+)
 
 func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Element {
 	var e []Element = []Element{}
@@ -57,7 +62,14 @@ func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Elem
 					TemplateStr:  fmt.Sprintf(PipelineLabels, string(s)),
 				})
 		}
-		if p.Parse == "json" {
+		if p.DetectMultilineErrors {
+			po.SubElements = append(po.SubElements,
+				ConfLiteral{
+					TemplateName: "matchMultilineDetectException",
+					TemplateStr:  MultilineDetectExceptionTemplate,
+				})
+		}
+		if p.Parse == JSONParseType {
 			po.SubElements = append(po.SubElements,
 				ConfLiteral{
 					Desc:         "Parse the logs into json",

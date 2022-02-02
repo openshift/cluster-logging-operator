@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-var _ = PDescribe("Vector Config Generation", func() {
+var _ = Describe("Vector Config Generation", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return generator.MergeElements(
 			LogSources(&clfspec, op),
@@ -29,9 +29,10 @@ var _ = PDescribe("Vector Config Generation", func() {
 			},
 			ExpectedConf: `
 # Logs from containers (including openshift containers)
-[sources.container_logs]
-  auto_partial_merge = true
-  exclude_paths_glob_patterns = ["/var/log/containers/vector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+[sources.raw_container_logs]
+type = "kubernetes_logs"
+auto_partial_merge = true
+exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 `,
 		}),
 		Entry("Only Infrastructure", generator.ConfGenerateTest{
@@ -48,12 +49,13 @@ var _ = PDescribe("Vector Config Generation", func() {
 			},
 			ExpectedConf: `
 # Logs from containers (including openshift containers)
-[sources.container_logs]
-  auto_partial_merge = true
-  exclude_paths_glob_patterns = ["/var/log/containers/vector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+[sources.raw_container_logs]
+type = "kubernetes_logs"
+auto_partial_merge = true
+exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 
-[sources.journal_logs]
-  type = "journald"
+[sources.raw_journal_logs]
+type = "journald"
 `,
 		}),
 		Entry("Only Audit", generator.ConfGenerateTest{
@@ -71,21 +73,21 @@ var _ = PDescribe("Vector Config Generation", func() {
 			ExpectedConf: `
 # Logs from host audit
 [sources.host_audit_logs]
-  type = "file"
-  ignore_older_secs = 600
-  include = ["/var/log/audit/audit.log"]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/audit/audit.log"]
 
 # Logs from kubernetes audit
 [sources.k8s_audit_logs]
-  type = "file"
-  ignore_older_secs = 600
-  include = ["/var/log/kube-apiserver/audit.log"]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/kube-apiserver/audit.log"]
 
 # Logs from openshift audit
 [sources.openshift_audit_logs]
-  type = "file"
-  ignore_older_secs = 600
-  include = ["/var/log/oauth-apiserver.audit.log"]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/oauth-apiserver.audit.log"]
 `,
 		}),
 		Entry("All Log Sources", generator.ConfGenerateTest{
@@ -104,29 +106,31 @@ var _ = PDescribe("Vector Config Generation", func() {
 			},
 			ExpectedConf: `
 # Logs from containers (including openshift containers)
-[sources.container_logs]
-  auto_partial_merge = true
-  exclude_paths_glob_patterns = ["/var/log/containers/vector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+[sources.raw_container_logs]
+type = "kubernetes_logs"
+auto_partial_merge = true
+exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 
-[sources.journal_logs]
-  type = "journald"
+[sources.raw_journal_logs]
+type = "journald"
 
 # Logs from host audit
 [sources.host_audit_logs]
-  type = "file"
-  ignore_older_secs = 600
-  include = ["/var/log/audit/audit.log"]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/audit/audit.log"]
 
 # Logs from kubernetes audit
 [sources.k8s_audit_logs]
-  type = "file"
-  ignore_older_secs = 600
-  include = ["/var/log/kube-apiserver/audit.log"]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/kube-apiserver/audit.log"]
 
 # Logs from openshift audit
 [sources.openshift_audit_logs]
-  type = "file"
-  ignore_older_secs = 600
-  include = ["/var/log/oauth-apiserver.audit.log"]`,
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/oauth-apiserver.audit.log"]
+`,
 		}))
 })

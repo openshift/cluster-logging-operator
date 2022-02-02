@@ -48,6 +48,7 @@ const (
 	ElasticsearchName          = "elasticsearch"
 	ElasticsearchPort          = "9200"
 	FluentdName                = "fluentd"
+	VectorName                 = "vector"
 	KibanaName                 = "kibana"
 	KibanaProxyName            = "kibana-proxy"
 	CuratorName                = "curator"
@@ -60,17 +61,24 @@ const (
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
 
 	CollectorName             = "collector"
+	CollectorConfigSecretName = "collector-config"
 	CollectorMetricSecretName = "collector-metrics"
 	CollectorMonitorJobLabel  = "monitor-collector"
 	CollectorTrustedCAName    = "collector-trusted-ca-bundle"
+
+	CollectorServiceAccountName = "logcollector"
 
 	LegacySecureforward = "_LEGACY_SECUREFORWARD"
 	LegacySyslog        = "_LEGACY_SYSLOG"
 
 	FluentdImageEnvVar            = "FLUENTD_IMAGE"
+	VectorImageEnvVar             = "VECTOR_IMAGE"
 	LogfilesmetricImageEnvVar     = "LOGFILEMETRICEXPORTER_IMAGE"
 	CertEventName                 = "cluster-logging-certs-generate"
 	ClusterInfrastructureInstance = "cluster"
+
+	ContainerLogDir = "/var/log/containers"
+	PodLogDir       = "/var/log/pods"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

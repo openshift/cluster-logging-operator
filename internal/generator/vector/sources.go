@@ -2,11 +2,11 @@ package vector
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
-	source2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/source"
-	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
@@ -23,54 +23,66 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []g
 	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
 			source.KubernetesLogs{
-				ComponentID:  "container_logs",
+				ComponentID:  "raw_container_logs",
 				Desc:         "Logs from containers (including openshift containers)",
 				ExcludePaths: ExcludeContainerPaths(),
 			})
 	}
 	if types.Has(logging.InputNameInfrastructure) {
 		el = append(el,
-			source2.JournalLog{
-				ComponentID:  "journal_logs",
+			source.JournalLog{
+				ComponentID:  "raw_journal_logs",
 				Desc:         "Logs from linux journal",
 				TemplateName: "inputSourceJournalTemplate",
-				TemplateStr:  source2.JournalLogTemplate,
+				TemplateStr:  source.JournalLogTemplate,
 			})
 	}
 	if types.Has(logging.InputNameAudit) {
 		el = append(el,
-			source2.HostAuditLog{
+			source.HostAuditLog{
 				ComponentID:  "host_audit_logs",
 				Desc:         "Logs from host audit",
 				TemplateName: "inputSourceHostAuditTemplate",
-				TemplateStr:  source2.HostAuditLogTemplate,
+				TemplateStr:  source.HostAuditLogTemplate,
 			},
-			source2.K8sAuditLog{
+			source.K8sAuditLog{
 				ComponentID:  "k8s_audit_logs",
 				Desc:         "Logs from kubernetes audit",
 				TemplateName: "inputSourceK8sAuditTemplate",
-				TemplateStr:  source2.K8sAuditLogTemplate,
+				TemplateStr:  source.K8sAuditLogTemplate,
 			},
-			source2.OpenshiftAuditLog{
+			source.OpenshiftAuditLog{
 				ComponentID:  "openshift_audit_logs",
 				Desc:         "Logs from openshift audit",
 				TemplateName: "inputSourceOpenShiftAuditTemplate",
-				TemplateStr:  source2.OpenshiftAuditLogTemplate,
+				TemplateStr:  source.OpenshiftAuditLogTemplate,
 			})
 	}
 	return el
 }
 
 func ContainerLogPaths() string {
-	return fmt.Sprintf("%q", "/var/log/containers/*.log")
+	return fmt.Sprintf("%q", "/var/log/pods/**/*.log")
+}
+
+func CollectorLogsPath() string {
+	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", constants.OpenshiftNS)
+}
+
+func LogStoreLogsPath() string {
+	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", constants.OpenshiftNS)
+}
+
+func VisualizationLogsPath() string {
+	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", constants.OpenshiftNS)
 }
 
 func ExcludeContainerPaths() string {
 	return fmt.Sprintf("[%s]", strings.Join(
 		[]string{
-			fmt.Sprintf("%q", fmt.Sprintf(generator.CollectorLogsPath(), constants.CollectorName)),
-			fmt.Sprintf("%q", fmt.Sprintf(generator.LogStoreLogsPath(), constants.ElasticsearchName)),
-			fmt.Sprintf("%q", generator.VisualizationLogsPath()),
+			fmt.Sprintf("%q", fmt.Sprintf(CollectorLogsPath(), constants.CollectorName)),
+			fmt.Sprintf("%q", fmt.Sprintf(LogStoreLogsPath(), constants.ElasticsearchName)),
+			fmt.Sprintf("%q", fmt.Sprintf(VisualizationLogsPath(), constants.KibanaName)),
 		},
 		", ",
 	))

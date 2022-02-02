@@ -1,9 +1,6 @@
 package generator
 
 import (
-	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -53,16 +50,4 @@ func InputsToPipelines(fwdspec *logging.ClusterLogForwarderSpec) logging.RouteMa
 		}
 	}
 	return result
-}
-
-func CollectorLogsPath() string {
-	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", constants.OpenshiftNS)
-}
-
-func LogStoreLogsPath() string {
-	return fmt.Sprintf("/var/log/containers/%%s-*_%s_*.log", constants.OpenshiftNS)
-}
-
-func VisualizationLogsPath() string {
-	return fmt.Sprintf("/var/log/containers/%s-*_%s_*.log", constants.KibanaName, constants.OpenshiftNS)
 }

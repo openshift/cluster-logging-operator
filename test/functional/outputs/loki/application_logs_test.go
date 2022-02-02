@@ -21,16 +21,15 @@ import (
 // that isn't a requirement for tests in general.
 func TestLokiOutput(t *testing.T) {
 	var (
-		f      *functional.FluentdFunctionalFramework
+		f      *functional.CollectorFunctionalFramework
 		l      *loki.Receiver
 		tsTime = time.Now()
 		ts     = functional.CRIOTime(tsTime)
 
-		containerTag = func(f *functional.FluentdFunctionalFramework) string {
+		containerTag = func(f *functional.CollectorFunctionalFramework) string {
 			for _, s := range f.Pod.Status.ContainerStatuses {
 				if s.Name == constants.CollectorName {
-					containerId := s.ContainerID[len("cri-o://"):]
-					return fmt.Sprintf("kubernetes.var.log.containers.%s_%s_%s-%s.log", f.Pod.Name, f.Pod.Namespace, f.Pod.Spec.Containers[0].Name, containerId)
+					return fmt.Sprintf("kubernetes.var.log.pods.%s_%s_%s.%s.0.log", f.Pod.Namespace, f.Pod.Name, f.Pod.UID, f.Pod.Spec.Containers[0].Name)
 				}
 			}
 			assert.Fail(t, "Unable to find the container id to create a tag for the test")

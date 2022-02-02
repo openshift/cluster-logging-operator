@@ -38,6 +38,8 @@ const (
 	logOauthapiserverValue = "/var/log/oauth-apiserver"
 	logOpenshiftapiserver  = "varlogopenshiftapiserver"
 
+	logJournalTransientValue = "/run/log/journal"
+
 	logOpenshiftapiserverValue = "/var/log/openshift-apiserver"
 	logKubeapiserver           = "varlogkubeapiserver"
 	logKubeapiserverValue      = "/var/log/kube-apiserver"
@@ -88,7 +90,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 			},
 		}
 	}
-	fluentdContainer := NewContainer(constants.CollectorName, constants.CollectorName, v1.PullIfNotPresent, *resources)
+	fluentdContainer := NewContainer(constants.CollectorName, constants.FluentdName, v1.PullIfNotPresent, *resources)
 	// deliberately not passing any resources for running the below container process, let it have cpu and memory as the process requires
 	exporterresources := &v1.ResourceRequirements{}
 
@@ -224,7 +226,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 	)
 
 	fluentdPodSpec := NewPodSpec(
-		"logcollector",
+		constants.CollectorServiceAccountName,
 		[]v1.Container{fluentdContainer, exporterContainer},
 		[]v1.Volume{
 			{Name: logVolumeMountName, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logVolumePath}}},
@@ -288,7 +290,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(flue
 	fluentdPodSpec := newFluentdPodSpec(cluster, fluentdTrustBundle, clusterRequest.ForwarderSpec)
 
 	fluentdDaemonset := NewDaemonSet(constants.CollectorName, cluster.Namespace, constants.CollectorName, constants.CollectorName, fluentdPodSpec)
-	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "FLUENT_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
+	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "COLLECTOR_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
 
 	trustedCAHashValue, err := clusterRequest.getTrustedCABundleHash()
 	if err != nil {
@@ -381,7 +383,8 @@ func (clusterRequest *ClusterLoggingRequest) getTrustedCABundleHash() (string, e
 	}
 
 	if _, ok := fluentdTrustBundle.Data[constants.TrustedCABundleKey]; !ok {
-		return "", fmt.Errorf("%v does not yet contain expected key %v", fluentdTrustBundle.Name, constants.TrustedCABundleKey)
+		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key", "configmapName", fluentdTrustBundle.Name, "key", constants.TrustedCABundleKey)
+		return "", nil
 	}
 
 	trustedCAHashValue, err := calcTrustedCAHashValue(fluentdTrustBundle)
@@ -390,7 +393,8 @@ func (clusterRequest *ClusterLoggingRequest) getTrustedCABundleHash() (string, e
 	}
 
 	if trustedCAHashValue == "" {
-		return "", fmt.Errorf("Did not receive hashvalue for trusted CA value")
+		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain a ca bundle", "configmapName", fluentdTrustBundle.Name)
+		return "", nil
 	}
 
 	return trustedCAHashValue, nil

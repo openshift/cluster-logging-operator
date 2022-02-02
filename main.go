@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"os"
 	"runtime"
+	"strconv"
+
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"strconv"
 
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/apis"
@@ -28,6 +29,7 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/controllers/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
+	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 
@@ -57,8 +59,10 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8686", "The address the metric endpoint binds to.")
 	//flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe end point binds to.")
+
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -106,11 +110,13 @@ func main() {
 
 	if err = (&clusterlogging.ReconcileClusterLogging{
 		Client: mgr.GetClient(),
+		Reader: mgr.GetAPIReader(),
 		//Log:    ctrl.Log.WithName("controllers").WithName("ClusterLogForwarder"),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
+		telemetry.Data.CLInfo.M["healthStatus"] = "1"
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
@@ -120,6 +126,7 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
+		telemetry.Data.CLFInfo.M["healthStatus"] = "1"
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -133,13 +140,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Info("Starting the Cmd.")
+	// updating clo Telemetry Data - to be published by prometheus
+	errr := telemetry.RegisterMetrics()
+	if errr != nil {
+		log.Error(err, "Error in registering clo metrics for telemetry")
+	}
+	erru := telemetry.UpdateMetrics()
+	if erru != nil {
+		log.Error(err, "Error in registering clo metrics for telemetry")
+	}
 
+	log.Info("Starting the Cmd.")
 	// Start the Cmd
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
+
 }
 
 // getWatchNamespace get the namespace name of the scoped operator

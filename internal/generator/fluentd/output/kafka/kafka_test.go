@@ -58,8 +58,8 @@ var _ = Describe("Generate fluentd config", func() {
     brokers broker1-kafka.svc.messaging.cluster.local:9092
     default_topic build_complete
     use_event_time true
-    sasl_plain_username "#{File.exists?('/var/run/ocp-collector/secrets/kafka-receiver-1/username') ? open('/var/run/ocp-collector/secrets/kafka-receiver-1/username','r') do |f|f.read end : ''}"
-    sasl_plain_password "#{File.exists?('/var/run/ocp-collector/secrets/kafka-receiver-1/password') ? open('/var/run/ocp-collector/secrets/kafka-receiver-1/password','r') do |f|f.read end : ''}"
+    username "#{File.exists?('/var/run/ocp-collector/secrets/kafka-receiver-1/username') ? open('/var/run/ocp-collector/secrets/kafka-receiver-1/username','r') do |f|f.read end : ''}"
+    password "#{File.exists?('/var/run/ocp-collector/secrets/kafka-receiver-1/password') ? open('/var/run/ocp-collector/secrets/kafka-receiver-1/password','r') do |f|f.read end : ''}"
     sasl_over_ssl false
     <format>
       @type json

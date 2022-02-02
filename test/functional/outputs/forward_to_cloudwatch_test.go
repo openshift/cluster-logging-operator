@@ -36,7 +36,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to Clo
 	)
 
 	var (
-		framework *functional.FluentdFunctionalFramework
+		framework *functional.CollectorFunctionalFramework
 
 		addMotoContainerVisitor = func(b *runtime.PodBuilder) error {
 			log.V(2).Info("Adding AWS CloudWatch Logs mock container")
@@ -61,7 +61,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] FluentdForward Output to Clo
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewFluentdFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFramework()
 
 		log.V(2).Info("Creating service moto")
 		service := runtime.NewService(framework.Namespace, "moto")

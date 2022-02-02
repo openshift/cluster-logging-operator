@@ -13,7 +13,7 @@ func (up UserNamePass) Name() string {
 func (up UserNamePass) Template() string {
 	return `{{define "` + up.Name() + `" -}}
 strategy = "basic"
-username = "{{.Username}}"
+user = "{{.Username}}"
 password = "{{.Password}}"
 {{- end}}
 `

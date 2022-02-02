@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/configmaps"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -39,9 +38,8 @@ func newDashboardConfigMap() *corev1.ConfigMap {
 	return cm
 }
 
-func ReconcileDashboards(writer client.Writer, reader client.Reader, owner metav1.OwnerReference) (err error) {
+func ReconcileDashboards(writer client.Writer, reader client.Reader) (err error) {
 	cm := newDashboardConfigMap()
-	utils.AddOwnerRefToObject(cm, owner)
 	if err := reconcile.ReconcileConfigmap(writer, reader, cm, configmaps.CompareLabels); err != nil {
 		return err
 	}

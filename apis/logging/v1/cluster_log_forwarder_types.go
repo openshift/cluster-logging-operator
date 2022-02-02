@@ -145,11 +145,15 @@ type OutputSpec struct {
 	OutputTypeSpec `json:",inline"`
 
 	// Secret for authentication.
-	// Name of a secret in the same namespace as the cluster logging operator.
 	//
-	// All sensitive authentication information is provided via a kubernetes Secret object.
-	// A Secret is a key:value map, common keys are described here.
-	// Some output types support additional specialized keys, documented with the output-specific configuration field.
+	// Names a secret in the same namespace as the ClusterLogForwarder.
+	//
+	// Sensitive authentication information is stored in a separate Secret object.
+	// A Secret is like a ConfigMap, where the keys are strings and the values are
+	// base64-encoded binary data, for example TLS certificates.
+	//
+	// Common keys are described here.
+	// Some output types support additional keys, documented with the output-specific configuration field.
 	// All secret keys are optional, enable the security features you want by setting the relevant keys.
 	//
 	// Transport Layer Security (TLS)
@@ -157,26 +161,24 @@ type OutputSpec struct {
 	// Using a TLS URL ('https://...' or 'ssl://...') without any secret enables basic TLS:
 	// client authenticates server using system default certificate authority.
 	//
-	// Additional TLS features are enabled by including a Secret and setting the following optional fields:
+	// Additional TLS features are enabled by referencing a Secret with the following optional fields in its spec.data.
+	// All data fields are base64 encoded.
 	//
-	//   `tls.crt`: (string) File name containing a client certificate.
-	//     Enables mutual authentication. Requires `tls.key`.
-	//   `tls.key`: (string) File name containing the private key to unlock the client certificate.
-	//     Requires `tls.crt`
-	//   `passphrase`: (string) Passphrase to decode an encoded TLS private key.
-	//     Requires tls.key.
-	//   `ca-bundle.crt`: (string) File name of a custom CA for server authentication.
+	//   `tls.crt`: A client certificate, for mutual authentication. Requires `tls.key`.
+	//   `tls.key`: Private key to unlock the client certificate. Requires `tls.crt`
+	//   `passphrase`: Passphrase to decode an encoded TLS private key. Requires tls.key.
+	//   `ca-bundle.crt`: Custom CA to validate certificates.
 	//
 	// Username and Password
 	//
-	//   `username`: (string) Authentication user name. Requires `password`.
-	//   `password`: (string) Authentication password. Requires `username`.
+	//   `username`: Authentication user name. Requires `password`.
+	//   `password`: Authentication password. Requires `username`.
 	//
 	// Simple Authentication Security Layer (SASL)
 	//
 	//   `sasl.enable`: (boolean) Explicitly enable or disable SASL.
-	//     If missing, SASL is automatically enabled when any of the other `sasl.` keys are set.
-	//   `sasl.mechanisms`: (array) List of allowed SASL mechanism names.
+	//     If missing, SASL is automatically enabled if any `sasl.*` keys are set.
+	//   `sasl.mechanisms`: (array of string) List of allowed SASL mechanism names.
 	//     If missing or empty, the system defaults are used.
 	//   `sasl.allow-insecure`: (boolean) Allow mechanisms that send clear-text passwords.
 	//     Default false.
@@ -216,10 +218,12 @@ type PipelineSpec struct {
 	// +required
 	InputRefs []string `json:"inputRefs"`
 
-	// Labels lists labels applied to this pipeline
+	// Labels applied to log records passing through this pipeline.
+	// These labels appear in the `openshift.labels` map in the log record.
 	//
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+
 	// Name is optional, but must be unique in the `pipelines` list if provided.
 	//
 	// +optional

@@ -219,4 +219,43 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
 
+	It("should verify LOG-2105 parses json message into structured field and writes to Elasticsearch", func() {
+		framework = functional.NewFluentdFunctionalFramework()
+		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+			FromInput(logging.InputNameApplication).
+			ToElasticSearchOutput()
+
+		structuredTypeName := "kubernetes.namespace_name"
+		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+		clfb.Forwarder.Spec.Outputs[0].Elasticsearch = &logging.Elasticsearch{
+			StructuredTypeName: structuredTypeName,
+		}
+
+		ExpectOK(framework.Deploy())
+
+		// Log message data
+		sample := `{"@timestamp":"2021-12-14T15:12:47.645Z","message":"Building mime message for recipient 'auser@somedomain.com' and sender 'Sympany <no-reply@somedomain>'.","level":"DEBUG","logger_name":"ch.sympany.backend.notificationservice.mail.MailServiceBean","thread_name":"default task-4","mdc":{}}`
+		expectedMessage = normalizeJson(sample)
+		expected = map[string]interface{}{}
+		_ = json.Unmarshal([]byte(sample), &expected)
+
+		applicationLogLine := functional.CreateAppLogFromJson(sample)
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+		// Read line from Log Forward output
+		raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, fmt.Sprintf("app-%s-write", structuredTypeName))
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		Expect(raw).To(Not(BeEmpty()))
+
+		// Parse log line
+		var logs []types.ApplicationLog
+		err = types.StrictlyParseLogs(raw, &logs)
+		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+		Expect(logs).To(HaveLen(1), "Expected to receive the log message")
+		Expect(logs[0].Structured).To(Equal(expected), "structured field with parsed json message not matching")
+		log.V(2).Info("Received", "Message", logs[0].Message)
+		diff := cmp.Diff(logs[0].Message, expectedMessage)
+		log.V(2).Info("Received", "Diff", diff)
+		Expect(normalizeJson(logs[0].Message)).To(Equal(expectedMessage), "message field not matching")
+	})
 })

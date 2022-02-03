@@ -28,6 +28,7 @@ var specs = []loggingv1.ClusterLogForwarderSpec{
 				Name:       "test-app",
 				InputRefs:  []string{loggingv1.InputNameApplication},
 				OutputRefs: []string{lokiReceiverName},
+				Labels:     map[string]string{"key1": "value1", "key2": "value2"},
 			},
 			{
 				Name:       "test-audit",

@@ -5,7 +5,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 )
 
-func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op generator.Options) logging.RouteMap {
+func RouteMap(spec *logging.ClusterLogForwarderSpec, op generator.Options) logging.RouteMap {
 	r := logging.RouteMap{}
 	for _, p := range spec.Pipelines {
 		for _, o := range p.OutputRefs {

@@ -59,7 +59,7 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
   
-  <filter **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type record_modifier
     <record>
       cw_group_name infrastructure
@@ -113,7 +113,7 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
   
-  <filter **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type record_modifier
     <record>
       cw_group_name infrastructure
@@ -170,7 +170,7 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
   
-  <filter **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type record_modifier
     <record>
       cw_group_name foo.infrastructure

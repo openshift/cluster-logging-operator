@@ -554,7 +554,7 @@ var _ = Describe("Generating fluentd config", func() {
     </formatter>
     <elasticsearch_index_name>
       enabled 'true'
-      tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -581,7 +581,7 @@ var _ = Describe("Generating fluentd config", func() {
   </filter>
   
   # Discard Infrastructure logs
-  <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type null
   </match>
   
@@ -1334,7 +1334,7 @@ var _ = Describe("Generating fluentd config", func() {
     </formatter>
     <elasticsearch_index_name>
       enabled 'true'
-      tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -1361,7 +1361,7 @@ var _ = Describe("Generating fluentd config", func() {
   </filter>
   
   # Discard Infrastructure logs
-  <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type null
   </match>
   
@@ -2099,7 +2099,7 @@ var _ = Describe("Generating fluentd config", func() {
     </formatter>
     <elasticsearch_index_name>
       enabled 'true'
-      tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -2126,7 +2126,7 @@ var _ = Describe("Generating fluentd config", func() {
   </filter>
   
   # Discard Infrastructure logs
-  <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type null
   </match>
   
@@ -2809,7 +2809,7 @@ var _ = Describe("Generating fluentd config", func() {
     </formatter>
     <elasticsearch_index_name>
       enabled 'true'
-      tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -2836,7 +2836,7 @@ var _ = Describe("Generating fluentd config", func() {
   </filter>
   
   # Discard Infrastructure logs
-  <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type null
   </match>
   
@@ -3362,7 +3362,7 @@ var _ = Describe("Generating fluentd config", func() {
     </formatter>
     <elasticsearch_index_name>
       enabled 'true'
-      tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -3389,7 +3389,7 @@ var _ = Describe("Generating fluentd config", func() {
   </filter>
   
   # Include Infrastructure logs
-  <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type relabel
     @label @_INFRASTRUCTURE
   </match>
@@ -4363,7 +4363,7 @@ inputs:
     </formatter>
     <elasticsearch_index_name>
       enabled 'true'
-      tag "journal.system** system.var.log** **_default_** **_kube-*_** **_openshift-*_** **_openshift_**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -4390,7 +4390,7 @@ inputs:
   </filter>
   
   # Discard Infrastructure logs
-  <match **_default_** **_kube-*_** **_openshift-*_** **_openshift_** journal.** system.var.log**>
+  <match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
     @type null
   </match>
   

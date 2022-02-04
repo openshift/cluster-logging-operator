@@ -58,7 +58,7 @@ deploy_eventrouter() {
 }
 
 wait_elasticsearch() {
-  local tries=30
+  local tries=90
   local i
   for (( i=0; i<$tries; i++ ))
     do

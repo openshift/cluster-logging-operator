@@ -6,7 +6,7 @@ const RunScript = `
 
 CFG_DIR=/etc/fluent/configs.d
 
-fluentdargs="--no-supervisor"
+fluentdargs="--umask 0077 --no-supervisor"
 # find the sniffer class file
 sniffer=$( gem contents fluent-plugin-elasticsearch|grep elasticsearch_simple_sniffer.rb )
 if [ -z "$sniffer" ] ; then

@@ -59,6 +59,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 							logging.InputNameAudit},
 						OutputRefs: []string{"kafka-receiver"},
 						Name:       "pipeline",
+						Labels:     map[string]string{"key1": "value1", "key2": "value2"},
 					},
 				},
 				Outputs: []logging.OutputSpec{
@@ -198,7 +199,7 @@ source = """
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = """
-.
+.openshift.labels = {"key1":"value1","key2":"value2"}
 """
 
 # Kafka config

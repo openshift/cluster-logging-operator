@@ -11,7 +11,7 @@ import (
 
 func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	outputs := []generator.Element{}
-	route := PipelineToOutputs(clfspec, op)
+	route := RouteMap(clfspec, op)
 
 	for _, o := range clfspec.Outputs {
 		secret := secrets[o.Name]

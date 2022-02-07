@@ -22,6 +22,7 @@ export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.7.4
+IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.14.1
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
@@ -172,6 +173,14 @@ test-functional: test-functional-benchmarker
 	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
+
+test-functional-vector:
+	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
+	LOGGING_SHARE_DIR=$(CURDIR)/files \
+	SCRIPTS_DIR=$(CURDIR)/scripts \
+	COLLECTOR_IMPL=vector \
+	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.focus '\[VECTOR_READY\]'
+.PHONY: test-functional-vector
 
 test-forwarder-generator: bin/forwarder-generator
 	@bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null

@@ -9,7 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
-var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to ElasticSearch", func() {
+var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForward Output to ElasticSearch", func() {
 
 	var (
 		framework *functional.CollectorFunctionalFramework

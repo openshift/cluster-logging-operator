@@ -106,8 +106,11 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	}
 	return &containerBuilder
 }
-
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
+	return builder.AddConfigMapVolumeWithPermissions(name, configMapName, utils.GetInt32(0644))
+}
+
+func (builder *PodBuilder) AddConfigMapVolumeWithPermissions(name, configMapName string, permissions *int32) *PodBuilder {
 	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
 		Name: name,
 		VolumeSource: corev1.VolumeSource{
@@ -115,6 +118,7 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: configMapName,
 				},
+				DefaultMode: permissions,
 			},
 		},
 	})

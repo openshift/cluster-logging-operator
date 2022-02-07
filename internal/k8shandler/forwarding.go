@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
@@ -10,8 +11,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/url"
 	corev1 "k8s.io/api/core/v1"
@@ -56,7 +55,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		op[generator.UseOldRemoteSyslogPlugin] = ""
 	}
 
-	err = fluentd.Verify(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
+	var collectorType = clusterRequest.Cluster.Spec.Collection.Logs.Type
+	g := forwardergenerator.New(collectorType)
+	err = g.Verify(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		return "",
@@ -68,16 +69,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 			)
 	}
 
-	g := generator.MakeGenerator()
-	var collectorType = clusterRequest.Cluster.Spec.Collection.Logs.Type
-	var confSections []generator.Section
-	switch collectorType {
-	case logging.LogCollectionTypeFluentd:
-		confSections = fluentd.Conf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
-	case logging.LogCollectionTypeVector:
-		confSections = vector.Conf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
-	}
-	generatedConfig, err := g.GenerateConf(generator.MergeSections(confSections)...)
+	generatedConfig, err := g.GenerateConf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

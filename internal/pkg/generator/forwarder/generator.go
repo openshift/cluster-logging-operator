@@ -3,7 +3,7 @@ package forwarder
 import (
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
+	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -16,8 +16,6 @@ import (
 )
 
 const (
-	//these are fixed at the moment
-	logCollectorType         = logging.LogCollectionTypeFluentd
 	useOldRemoteSyslogPlugin = false
 )
 
@@ -32,17 +30,9 @@ func UnMarshalClusterLogForwarder(clfYaml string) (forwarder *logging.ClusterLog
 	return forwarder, err
 }
 
-func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client client.Client) (string, error) {
+func Generate(collectionType logging.LogCollectionType, clfYaml string, includeDefaultLogStore, debugOutput bool, client *client.Client) (string, error) {
 
-	g := generator.MakeGenerator()
-	op := generator.Options{}
-	if useOldRemoteSyslogPlugin {
-		op[generator.UseOldRemoteSyslogPlugin] = ""
-	}
-	if debugOutput {
-		op["debug_output"] = ""
-	}
-
+	var err error
 	forwarder, err := UnMarshalClusterLogForwarder(clfYaml)
 	if err != nil {
 		return "", fmt.Errorf("Error Unmarshalling %q: %v", clfYaml, err)
@@ -60,7 +50,7 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client c
 	}
 
 	if client != nil {
-		clRequest.Client = client
+		clRequest.Client = *client
 	}
 
 	if includeDefaultLogStore {
@@ -77,17 +67,16 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client c
 	clspec := logging.ClusterLoggingSpec{
 		Forwarder: tunings,
 	}
-	if logCollectorType == logging.LogCollectionTypeFluentd {
-
-		sections := fluentd.Conf(&clspec, clRequest.OutputSecrets, spec, op)
-		es := generator.MergeSections(sections)
-		generatedConfig, err := g.GenerateConf(es...)
-		if err != nil {
-			return "", fmt.Errorf("Unable to generate log configuration: %v", err)
-		}
-		return generatedConfig, nil
-
-	} else {
-		return "", errors.New("Only fluentd Log collector supported")
+	op := generator.Options{}
+	if useOldRemoteSyslogPlugin {
+		op[generator.UseOldRemoteSyslogPlugin] = ""
 	}
+	if debugOutput {
+		op["debug_output"] = ""
+	}
+	configGenerator := forwardergenerator.New(collectionType)
+	if configGenerator == nil {
+		return "", errors.New("unsupported collector implementation")
+	}
+	return configGenerator.GenerateConf(&clspec, clRequest.OutputSecrets, spec, op)
 }

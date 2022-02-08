@@ -36,7 +36,12 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		}
 
 		BeforeEach(func() {
-			if err := e2e.DeployLogGenerator(); err != nil {
+			ns := e2e.CreateTestNamespace()
+			appLabels := map[string]string{
+				"app":                    "cluster-monitoring-operator",
+				"app.kubernetes.io/name": "cluster-monitoring-operator",
+			}
+			if err := e2e.DeployLogGeneratorWithNamespaceAndLabels(ns, appLabels); err != nil {
 				Fail(fmt.Sprintf("Timed out waiting for the log generator to deploy: %v", err))
 			}
 		})

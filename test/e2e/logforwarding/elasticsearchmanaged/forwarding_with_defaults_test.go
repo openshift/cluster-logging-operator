@@ -42,7 +42,11 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			}
 		}
 		SetupLogGeneratorWithLabels := func() {
-			appLabels := map[string]string{"logFormat": "redhat"}
+			appLabels := map[string]string{
+				"app":                    "cluster-monitoring-operator",
+				"app.kubernetes.io/name": "cluster-monitoring-operator",
+				"logFormat":              "redhat",
+			}
 			generatorNS, generatorPod, err = e2e.DeployJsonLogGenerator(map[string]string{
 				"level":   "debug",
 				"logtext": "hey, this is a log line",

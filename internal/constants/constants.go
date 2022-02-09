@@ -77,8 +77,9 @@ const (
 	CertEventName                 = "cluster-logging-certs-generate"
 	ClusterInfrastructureInstance = "cluster"
 
-	ContainerLogDir = "/var/log/containers"
-	PodLogDir       = "/var/log/pods"
+	ContainerLogDir                = "/var/log/containers"
+	PodLogDir                      = "/var/log/pods"
+	ClusterLoggingCollectorMetrics = "clusterlogging-collector-metrics"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

@@ -92,6 +92,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
+		clusterRequest.cleanUpClusterWindRoleBinding()
+
 		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
 			log.V(9).Error(err, "clusterRequest.generateCollectorConfig")
 			return
@@ -170,6 +172,33 @@ func (clusterRequest *ClusterLoggingRequest) removeCollectorSecretIfOwnedByCLO()
 		err = clusterRequest.RemoveSecret(constants.CollectorSecretName)
 		if err != nil && !errors.IsNotFound(err) {
 			log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.CollectorSecretName))
+			return err
+		}
+	}
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) cleanUpClusterWindRoleBinding() (err error) {
+	role, err := clusterRequest.GetClusterRole(constants.ClusterLoggingCollectorMetrics)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if utils.IsOwnedBy(role.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
+		err = clusterRequest.RemoveClusterRole(constants.ClusterLoggingCollectorMetrics)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s role", constants.ClusterLoggingCollectorMetrics))
+			return err
+		}
+	}
+
+	roleBinding, err := clusterRequest.GetClusterRoleBinding(constants.ClusterLoggingCollectorMetrics)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if utils.IsOwnedBy(roleBinding.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
+		err = clusterRequest.RemoveClusterRoleBinding(constants.ClusterLoggingCollectorMetrics)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s rolebinding", constants.ClusterLoggingCollectorMetrics))
 			return err
 		}
 	}

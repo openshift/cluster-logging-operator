@@ -129,3 +129,41 @@ func (clusterRequest *ClusterLoggingRequest) RemoveClusterRoleBinding(name strin
 
 	return nil
 }
+
+//RemoveClusterRole removes a cluster role
+func (clusterRequest *ClusterLoggingRequest) RemoveClusterRole(name string) error {
+	clusterRole := &rbac.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ClusterRole",
+			APIVersion: rbac.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	err := clusterRequest.Delete(clusterRole)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("failure deleting %q clusterrole: %v", name, err)
+	}
+	return nil
+}
+
+// GetClusterRole removes a cluster role
+func (clusterRequest *ClusterLoggingRequest) GetClusterRole(name string) (*rbac.ClusterRole, error) {
+	clusterRole := &rbac.ClusterRole{}
+	err := clusterRequest.Get(name, clusterRole)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, fmt.Errorf("failure getting %q clusterrole: %v", name, err)
+	}
+	return clusterRole, nil
+}
+
+// GetClusterRoleBinding removes a cluster role
+func (clusterRequest *ClusterLoggingRequest) GetClusterRoleBinding(name string) (*rbac.ClusterRoleBinding, error) {
+	clusterRoleBinding := &rbac.ClusterRoleBinding{}
+	err := clusterRequest.Get(name, clusterRoleBinding)
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, fmt.Errorf("failure getting %q clusterrolebindong: %v", name, err)
+	}
+	return clusterRoleBinding, nil
+}

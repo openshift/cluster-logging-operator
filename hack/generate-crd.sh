@@ -14,6 +14,8 @@ METRICS_SERVICEMONITOR="cluster-logging-operator-metrics-monitor_monitoring.core
 METADATA_READER_CLUSTERROLEBINDING="cluster-logging-metadata-reader_rbac.authorization.k8s.io_v1_clusterrolebinding.yaml"
 METADATA_READER_CLUSTERROLE="metadata-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml"
 PRIORITY_CLASS="cluster-logging_scheduling.k8s.io_v1_priorityclass.yaml"
+COLLECTOR_METRICS_ROLE="clusterlogging-collector-metrics_rbac.authorization.k8s.io_v1_role.yaml"
+COLLECTOR_METRICS_ROLEBINDING="clusterlogging-collector-metrics_rbac.authorization.k8s.io_v1_rolebinding.yaml"
 
 
 BUNDLE_VERSION=${LOGGING_VERSION}.0
@@ -54,6 +56,8 @@ cp ${BUNDLE_DIR}/${METRICS_SERVICEMONITOR} manifests/${LOGGING_VERSION}/${METRIC
 cp ${BUNDLE_DIR}/${METADATA_READER_CLUSTERROLEBINDING} manifests/${LOGGING_VERSION}/${METADATA_READER_CLUSTERROLEBINDING}
 cp ${BUNDLE_DIR}/${METADATA_READER_CLUSTERROLE} manifests/${LOGGING_VERSION}/${METADATA_READER_CLUSTERROLE}
 cp ${BUNDLE_DIR}/${PRIORITY_CLASS} manifests/${LOGGING_VERSION}/${PRIORITY_CLASS}
+cp ${BUNDLE_DIR}/${COLLECTOR_METRICS_ROLE} manifests/${LOGGING_VERSION}/${COLLECTOR_METRICS_ROLE}
+cp ${BUNDLE_DIR}/${COLLECTOR_METRICS_ROLEBINDING} manifests/${LOGGING_VERSION}/${COLLECTOR_METRICS_ROLEBINDING}
 
 echo "---------------------------------------------------------------"
 echo "Cleanup operator-sdk generation folder"

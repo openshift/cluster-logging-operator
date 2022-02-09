@@ -36,6 +36,8 @@ const (
 
 	FluentdImageEnvVar = "FLUENTD_IMAGE"
 	CertEventName      = "cluster-logging-certs-generate"
+
+	ClusterLoggingCollectorMetrics = "clusterlogging-collector-metrics"
 )
 
 var ReconcileForGlobalProxyList = []string{FluentdTrustedCAName}

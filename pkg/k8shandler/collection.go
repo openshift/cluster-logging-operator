@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"reflect"
 	"strings"
 	"time"
@@ -88,6 +89,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 		if err = clusterRequest.UpdateFluentdStatus(); err != nil {
 			log.Error(err, "unable to update status for fluentd")
+		}
+
+		if err = clusterRequest.cleanUpClusterWidthRoleBinding(); err != nil {
+			log.Error(err, "unable to remove cluster width role")
 		}
 
 		if collectorServiceAccount != nil {
@@ -354,4 +359,31 @@ func isBufferFlushRequired(current *apps.DaemonSet, desired *apps.DaemonSet) boo
 
 func getServiceAccountLogCollectorUID() types.UID {
 	return serviceAccountLogCollectorUID
+}
+
+func (clusterRequest *ClusterLoggingRequest) cleanUpClusterWidthRoleBinding() (err error) {
+	role, err := clusterRequest.GetClusterRole(constants.ClusterLoggingCollectorMetrics)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if utils.IsOwnedBy(role.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
+		err = clusterRequest.RemoveClusterRole(constants.ClusterLoggingCollectorMetrics)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s role", constants.ClusterLoggingCollectorMetrics))
+			return err
+		}
+	}
+
+	roleBinding, err := clusterRequest.GetClusterRoleBinding(constants.ClusterLoggingCollectorMetrics)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+	if utils.IsOwnedBy(roleBinding.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
+		err = clusterRequest.RemoveClusterRoleBinding(constants.ClusterLoggingCollectorMetrics)
+		if err != nil && !errors.IsNotFound(err) {
+			log.Error(err, fmt.Sprintf("Can't remove %s rolebinding", constants.ClusterLoggingCollectorMetrics))
+			return err
+		}
+	}
+	return nil
 }

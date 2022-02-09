@@ -34,4 +34,4 @@ oc -n openshift-logging exec -c elasticsearch \
 
 oc -n $NAMESPACE get deployment elasticsearch-operator -o wide > ${eo_folder}/eo-deployment.txt 2>&1
 oc -n $NAMESPACE describe deployment elasticsearch-operator > ${eo_folder}/eo-deployment.describe 2>&1
-oc -n $NAMESPACE logs deployment/elasticsearch-operator > ${eo_folder}/elasticsearch-operator.logs 2>&1
+oc -n $NAMESPACE logs deployment/elasticsearch-operator -c elasticsearch-operator > ${eo_folder}/elasticsearch-operator.logs 2>&1

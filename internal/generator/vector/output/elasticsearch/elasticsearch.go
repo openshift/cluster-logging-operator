@@ -42,20 +42,12 @@ id_key = "_id"
 `
 }
 
-func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-
-	outputs := []Element{}
-	id_key := strings.Join(inputs, "_")
-	id := fmt.Sprint("elasticsearch_preprocess_", len(op)+1)
-
-	if _, exists := op[id_key]; !exists {
-		outputs = MergeElements(outputs,
-			[]Element{
-				Remap{
-					Desc:        "Adding _id field",
-					ComponentID: id,
-					Inputs:      helpers.MakeInputs(inputs...),
-					VRL: strings.TrimSpace(`
+func AddEsID(id string, inputs []string) Element {
+	return Remap{
+		Desc:        "Adding _id field",
+		ComponentID: id,
+		Inputs:      helpers.MakeInputs(inputs...),
+		VRL: strings.TrimSpace(`
 index = "default"
 if (.log_type == "application"){
   index = "app"
@@ -69,15 +61,79 @@ if (.log_type == "audit"){
 ."write-index"=index+"-write"
 ._id = encode_base64(uuid_v4())
 `),
-				},
-			})
-		op[id_key] = id
 	}
+}
 
-	id = fmt.Sprintf("%v", op[id_key])
+func DeDotAndFlattenLabels(id string, inputs []string) Element {
+	return ConfLiteral{
+		ComponentID:  id,
+		InLabel:      helpers.MakeInputs(inputs...),
+		TemplateName: "dedotTemplate",
+		TemplateStr: `
+{{define "dedotTemplate" -}}
+[transforms.{{.ComponentID}}]
+type = "lua"
+inputs = {{.InLabel}}
+version = "2"
+hooks.process = "process"
+source = """
+    function process(event, emit)
+        if event.log.kubernetes == nil then
+            return
+        end
+        dedot(event.log.kubernetes.pod_labels)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.pod_labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+        -- delete the "pod_labels" key
+        event.log.kubernetes["pod_labels"] = nil
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+"""
+{{end}}
+`,
+	}
+}
+
+func ID(id1, id2 string) string {
+	return fmt.Sprintf("%s_%s", id1, id2)
+}
+
+func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+
+	outputs := []Element{}
+	outputName := strings.ToLower(vectorhelpers.Replacer.Replace(o.Name))
 	outputs = MergeElements(outputs,
 		[]Element{
-			Output(o, []string{id}, secret, op),
+			AddEsID(ID(outputName, "add_es_id"), inputs),
+			DeDotAndFlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_id")}),
+			Output(o, []string{ID(outputName, "dedot_and_flatten")}, secret, op),
 		},
 		TLSConf(o, secret),
 		BasicAuth(o, secret),

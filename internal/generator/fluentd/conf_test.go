@@ -622,7 +622,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
 # Copying pipeline pipeline to outputs
 <label @PIPELINE>
   <match kubernetes.**>
-    @id multiline-detect-except
     @type detect_exceptions
     remove_tag_prefix 'kubernetes'
     message message

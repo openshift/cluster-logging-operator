@@ -32,7 +32,7 @@ type ContainerLog struct {
 	PipelineMetadata PipelineMetadata       `json:"pipeline_metadata"`
 	ViaqIndexName    string                 `json:"viaq_index_name"`
 	ViaqMsgID        string                 `json:"viaq_msg_id"`
-	OpenshiftLabels  OpenshiftMeta          `json:"openshift"`
+	Openshift        OpenshiftMeta          `json:"openshift"`
 	Structured       map[string]interface{} `json:"structured"`
 }
 
@@ -78,7 +78,8 @@ type PipelineMetadata struct {
 }
 
 type OpenshiftMeta struct {
-	Labels map[string]string `json:"labels,omitempty"`
+	Labels   map[string]string `json:"labels,omitempty"`
+	Sequence OptionalInt       `json:"sequence,omitempty"`
 }
 
 // Application Logs are container logs from all namespaces except "openshift" and "openshift-*" namespaces

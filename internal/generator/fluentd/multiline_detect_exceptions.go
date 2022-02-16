@@ -4,7 +4,6 @@ const (
 	MultilineDetectExceptionTemplate = `
 {{define "matchMultilineDetectException" -}}
 <match kubernetes.**>
-  @id multiline-detect-except
   @type detect_exceptions
   remove_tag_prefix 'kubernetes'
   message message

@@ -34,14 +34,17 @@ var (
 
 func NewApplicationLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
-		Timestamp:        time.Time{},
-		Message:          "*",
-		LogType:          "application",
-		ViaqIndexName:    "app-write",
-		Level:            "*",
-		Hostname:         "*",
-		ViaqMsgID:        "*",
-		OpenshiftLabels:  types.OpenshiftMeta{Labels: map[string]string{"*": "*"}},
+		Timestamp:     time.Time{},
+		Message:       "*",
+		LogType:       "application",
+		ViaqIndexName: "app-write",
+		Level:         "*",
+		Hostname:      "*",
+		ViaqMsgID:     "*",
+		Openshift: types.OpenshiftMeta{
+			Labels:   map[string]string{"*": "*"},
+			Sequence: types.NewOptionalInt(""),
+		},
 		PipelineMetadata: TemplateForAnyPipelineMetadata,
 		Docker: types.Docker{
 			ContainerID: "*",

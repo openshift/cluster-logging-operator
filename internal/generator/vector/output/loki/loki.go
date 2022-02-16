@@ -17,17 +17,22 @@ import (
 )
 
 const (
-	lokiLabelKubernetesHost = "kubernetes.host"
+	logType                          = "log_type"
+	lokiLabelKubernetesNamespaceName = "kubernetes.namespace_name"
+	lokiLabelKubernetesPodName       = "kubernetes.pod_name"
+	lokiLabelKubernetesHost          = "kubernetes.host"
+	lokiLabelKubernetesContainerName = "kubernetes.container_name"
+	podNamespace                     = "kubernetes.pod_namespace"
 )
 
 var (
 	defaultLabelKeys = []string{
-		"log_type",
+		logType,
 
 		//container labels
-		"kubernetes.namespace_name",
-		"kubernetes.pod_name",
-		"kubernetes.container_name",
+		lokiLabelKubernetesNamespaceName,
+		lokiLabelKubernetesPodName,
+		lokiLabelKubernetesContainerName,
 	}
 	requiredLabelKeys = []string{
 		lokiLabelKubernetesHost,
@@ -165,7 +170,10 @@ func lokiLabels(lo *logging.Loki) []Label {
 			Value: fmt.Sprintf("{{%s}}", k),
 		}
 		if k == lokiLabelKubernetesHost {
-			l.Value = "${NODE_NAME}"
+			l.Value = "${VECTOR_SELF_NODE_NAME}"
+		}
+		if k == lokiLabelKubernetesNamespaceName {
+			l.Value = fmt.Sprintf("{{%s}}", podNamespace)
 		}
 		ls = append(ls, l)
 	}

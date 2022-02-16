@@ -77,8 +77,8 @@ codec = "json"
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.pod_namespace}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
@@ -124,7 +124,7 @@ codec = "json"
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${NODE_NAME}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
 kubernetes_labels_app = "{{kubernetes.labels.app}}"
 
 # Basic Auth Config
@@ -170,8 +170,8 @@ codec = "json"
 
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
-kubernetes_host = "${NODE_NAME}"
-kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.pod_namespace}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 

@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -52,6 +53,9 @@ type CollectorFunctionalFramework struct {
 	collector CollectorFramework
 	//VisitConfig allows the framework to modify the config after generating from logforwardering
 	VisitConfig func(string) string
+
+	//MaxReadDuration is the max duration to wait to read logs from the receiver
+	MaxReadDuration *time.Duration
 }
 
 func NewCollectorFunctionalFramework() *CollectorFunctionalFramework {
@@ -97,6 +101,13 @@ func (f *CollectorFunctionalFramework) Cleanup() {
 	f.closeClient()
 }
 
+func (f *CollectorFunctionalFramework) GetMaxReadDuration() time.Duration {
+	if f.MaxReadDuration != nil {
+		return *f.MaxReadDuration
+	}
+	return maxDuration
+}
+
 func (f *CollectorFunctionalFramework) RunCommand(container string, cmd ...string) (string, error) {
 	log.V(2).Info("Running", "container", container, "cmd", cmd)
 	out, err := testruntime.ExecOc(f.Pod, strings.ToLower(container), cmd[0], cmd[1:]...)
@@ -135,6 +146,9 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, testClient); err != nil {
 			return err
 		}
+		//remove journal for now since we can not mimic it
+		re := regexp.MustCompile(`(?msU).*<source>.*type.*systemd.*</source>`)
+		f.Conf = string(re.ReplaceAll([]byte(f.Conf), []byte{}))
 		if f.VisitConfig != nil {
 			f.Conf = f.VisitConfig(f.Conf)
 		}

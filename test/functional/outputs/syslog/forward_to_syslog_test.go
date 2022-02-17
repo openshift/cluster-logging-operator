@@ -1,15 +1,14 @@
-package outputs
+package syslog
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"strings"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	"strings"
 )
 
 var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
@@ -20,6 +19,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
+
 	})
 	AfterEach(func() {
 		framework.Cleanup()

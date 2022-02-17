@@ -52,10 +52,18 @@ created by main.main
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+		b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			WithMultineErrorDetection().
 			ToFluentForwardOutput()
+		//LOG-2241
+		b.FromInput(logging.InputNameApplication).
+			Named("other").
+			WithMultineErrorDetection().
+			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+				spec.Type = logging.OutputTypeFluentdForward
+				spec.URL = "tcp://0.0.0.0:24234"
+			}, "missing")
 		Expect(framework.Deploy()).To(BeNil())
 	})
 	AfterEach(func() {

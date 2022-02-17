@@ -2,6 +2,7 @@ package vector
 
 import (
 	"fmt"
+	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -11,6 +12,7 @@ import (
 
 const (
 	IsInfraContainer = `starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"`
+	IsNamespaceLog   = `(.kubernetes.pod_namespace == "%s")`
 
 	SrcPassThrough = "."
 )
@@ -23,6 +25,11 @@ var (
 	AppContainerLogsExpr   = fmt.Sprintf(`'!(%s)'`, IsInfraContainer)
 	InputContainerLogs     = "container_logs"
 	InputJournalLogs       = "journal_logs"
+	RouteApplicationLogs   = "route_application_logs"
+
+	OR = func(nsExpr ...string) string {
+		return fmt.Sprintf("'%s'", strings.Join(nsExpr, " || "))
+	}
 )
 
 // SourcesToInputs takes the raw log sources (container, journal, audit) and produces Inputs as defined by ClusterLogForwarder Api
@@ -74,7 +81,31 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 		}
 		el = append(el, r)
 	}
-	//TODO add user defined routing
+	//TODO add labels based routing
+	userDefined := spec.InputMap()
+	for _, pipeline := range spec.Pipelines {
+		for _, inRef := range pipeline.InputRefs {
+			if input, ok := userDefined[inRef]; ok {
+				// user defined input
+				if input.Application != nil {
+					app := input.Application
+					if len(app.Namespaces) != 0 {
+						matchNS := []string{}
+						for _, ns := range app.Namespaces {
+							matchNS = append(matchNS, fmt.Sprintf(IsNamespaceLog, ns))
+						}
+						el = append(el, Route{
+							ComponentID: RouteApplicationLogs,
+							Inputs:      helpers.MakeInputs("application"),
+							Routes: map[string]string{
+								input.Name: OR(matchNS...),
+							},
+						})
+					}
+				}
+			}
+		}
+	}
 
 	return el
 }

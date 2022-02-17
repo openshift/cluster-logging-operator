@@ -9,6 +9,7 @@ import (
 	logger "github.com/ViaQ/logerr/log"
 	"github.com/onsi/gomega/types"
 	"github.com/openshift/cluster-logging-operator/test"
+	testtypes "github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
 type LogMatcher struct {
@@ -100,6 +101,11 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 	templateValueString := fmt.Sprintf("%v", templateValue)
 	valueString := fmt.Sprintf("%v", value)
 
+	if reflect.TypeOf(templateValue).Name() == "OptionalInt" {
+		expValue := templateValue.(testtypes.OptionalInt)
+		actValue := value.(testtypes.OptionalInt)
+		return expValue.IsSatisfiedBy(actValue)
+	}
 	if templateValueString == valueString { // Same value is ok
 		logger.V(3).Info("CompareLogLogic: Same value for", "name", name, "value", valueString)
 		return true
@@ -172,6 +178,7 @@ func CompareLog(template interface{}, log interface{}) (string, bool, error) {
 						logger.V(3).Info("CompareLog: skipping skeleton", "name", templateFieldName)
 						break
 					}
+
 					if compareLogLogic(templateFieldName, templateFieldValue, logFieldValue) {
 						break
 					}

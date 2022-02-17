@@ -87,7 +87,7 @@ func newVectorPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *corev1
 	}
 
 	vectorContainer.Env = []corev1.EnvVar{
-		{Name: "LOG", Value: "debug"},
+		{Name: "LOG", Value: "info"},
 		{Name: "VECTOR_SELF_NODE_NAME", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"}}},
 		{Name: "METRICS_CERT", Value: "/etc/vector/metrics/tls.crt"},
 		{Name: "METRICS_KEY", Value: "/etc/vector/metrics/tls.key"},

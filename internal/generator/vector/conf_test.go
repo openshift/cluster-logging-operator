@@ -51,10 +51,18 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "mytestapp",
+						Application: &logging.Application{
+							Namespaces: []string{"test-ns"},
+						},
+					},
+				},
 				Pipelines: []logging.PipelineSpec{
 					{
 						InputRefs: []string{
-							logging.InputNameApplication,
+							"mytestapp",
 							logging.InputNameInfrastructure,
 							logging.InputNameAudit},
 						OutputRefs: []string{"kafka-receiver"},
@@ -195,9 +203,15 @@ source = """
 """
 
 
+[transforms.route_application_logs]
+type = "route"
+inputs = ["application"]
+route.mytestapp = '(.kubernetes.pod_namespace == "test-ns")'
+
+
 [transforms.pipeline]
 type = "remap"
-inputs = ["application","infrastructure","audit"]
+inputs = ["route_application_logs.mytestapp","infrastructure","audit"]
 source = """
 .openshift.labels = {"key1":"value1","key2":"value2"}
 """

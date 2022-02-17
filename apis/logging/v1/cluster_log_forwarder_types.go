@@ -1,6 +1,4 @@
 /*
-
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -93,14 +91,20 @@ type InputSpec struct {
 	Audit *Audit `json:"audit,omitempty"`
 }
 
+// Application log selector.
+// All conditions in the selector must be satisfied (logical AND) to select logs.
 type Application struct {
-	// Namespaces is a list of namespaces from which to collect application logs.
-	// If the list is empty, logs are collected from all namespaces.
+	// Namespaces from which to collect application logs.
+	// Only messages from these namespaces are collected.
+	// If absent or empty, logs are collected from all namespaces.
 	//
 	// +optional
 	Namespaces []string `json:"namespaces,omitempty"`
-	// Selector selects logs from all pods with matching labels.
-	// For testing purpose, MatchLabels is only supported.
+
+	// Selector for logs from pods with matching labels.
+	// Only messages from pods with these labels are collected.
+	// If absent or empty, logs are collected regardless of labels.
+	//
 	// +optional
 	Selector *metav1.LabelSelector `json:"selector,omitempty"`
 }

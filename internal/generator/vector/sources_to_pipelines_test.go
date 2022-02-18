@@ -7,6 +7,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Testing Config Generation", func() {
@@ -35,8 +36,8 @@ var _ = Describe("Testing Config Generation", func() {
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
-route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
 
 
 # Rename log stream to "application"
@@ -99,8 +100,8 @@ source = """
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
-route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
 
 
 # Rename log stream to "application"
@@ -168,7 +169,7 @@ source = """
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
 
 
 # Rename log stream to "application"
@@ -184,6 +185,60 @@ source = """
 type = "route"
 inputs = ["application"]
 route.myapplogs = '(.kubernetes.pod_namespace == "test-ns1") || (.kubernetes.pod_namespace == "test-ns2")'
+
+
+[transforms.pipeline]
+type = "remap"
+inputs = ["route_application_logs.myapplogs"]
+source = """
+.
+"""
+`,
+		}),
+		Entry("Route Logs by Namespaces(s), and Labels(s)", generator.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "myapplogs",
+						Application: &logging.Application{
+							Namespaces: []string{"myapp1", "myapp2"},
+							Selector: &v1.LabelSelector{
+								MatchLabels: map[string]string{
+									"key1": "value1",
+									"key2": "value2",
+								},
+							},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs:  []string{"myapplogs"},
+						OutputRefs: []string{logging.OutputNameDefault},
+						Name:       "pipeline",
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+
+
+# Rename log stream to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = """
+.log_type = "application"
+"""
+
+
+[transforms.route_application_logs]
+type = "route"
+inputs = ["application"]
+route.myapplogs = '((.kubernetes.pod_namespace == "myapp1") || (.kubernetes.pod_namespace == "myapp2")) && ((.kubernetes.pod_labels.key1 == "value1") && (.kubernetes.pod_labels.key2 == "value2"))'
 
 
 [transforms.pipeline]

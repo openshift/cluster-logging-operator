@@ -2,7 +2,7 @@ package vector
 
 import (
 	"fmt"
-	"strings"
+	"sort"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -11,24 +11,39 @@ import (
 )
 
 const (
-	IsInfraContainer = `starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"`
-	IsNamespaceLog   = `(.kubernetes.pod_namespace == "%s")`
+	NsKube      = "kube"
+	NsOpenshift = "openshift"
+	NsDefault   = "default"
+
+	K8sPodNamespace = ".kubernetes.pod_namespace"
+	K8sLabelKeyExpr = ".kubernetes.pod_labels.%s"
+
+	InputContainerLogs   = "container_logs"
+	InputJournalLogs     = "journal_logs"
+	RouteApplicationLogs = "route_application_logs"
 
 	SrcPassThrough = "."
 )
 
 var (
-	AddLogTypeApp          = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)
-	AddLogTypeInfra        = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
-	AddLogTypeAudit        = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
-	InfraContainerLogsExpr = fmt.Sprintf(`'%s'`, IsInfraContainer)
-	AppContainerLogsExpr   = fmt.Sprintf(`'!(%s)'`, IsInfraContainer)
-	InputContainerLogs     = "container_logs"
-	InputJournalLogs       = "journal_logs"
-	RouteApplicationLogs   = "route_application_logs"
+	InfraContainerLogs = OR(
+		StartWith(K8sPodNamespace, NsKube),
+		StartWith(K8sPodNamespace, NsOpenshift),
+		Eq(K8sPodNamespace, NsDefault))
+	AppContainerLogs = Neg(Paren(InfraContainerLogs))
 
-	OR = func(nsExpr ...string) string {
-		return fmt.Sprintf("'%s'", strings.Join(nsExpr, " || "))
+	AddLogTypeApp   = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)
+	AddLogTypeInfra = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
+	AddLogTypeAudit = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
+
+	MatchNS = func(ns string) string {
+		return Eq(K8sPodNamespace, ns)
+	}
+	K8sLabelKey = func(k string) string {
+		return fmt.Sprintf(K8sLabelKeyExpr, k)
+	}
+	MatchLabel = func(k, v string) string {
+		return Eq(K8sLabelKey(k), v)
 	}
 )
 
@@ -45,19 +60,18 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			Routes:      map[string]string{},
 		}
 		if types.Has(logging.InputNameApplication) {
-			r.Routes["app"] = AppContainerLogsExpr
+			r.Routes["app"] = Quote(AppContainerLogs)
 		}
 		if types.Has(logging.InputNameInfrastructure) {
-			r.Routes["infra"] = InfraContainerLogsExpr
+			r.Routes["infra"] = Quote(InfraContainerLogs)
 		}
-		//TODO Add handling of user-defined inputs
 		el = append(el, r)
 	}
 
 	if types.Has(logging.InputNameApplication) {
 		r := Remap{
 			Desc:        `Rename log stream to "application"`,
-			ComponentID: "application",
+			ComponentID: logging.InputNameApplication,
 			Inputs:      helpers.MakeInputs("route_container_logs.app"),
 			VRL:         AddLogTypeApp,
 		}
@@ -66,7 +80,7 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 	if types.Has(logging.InputNameInfrastructure) {
 		r := Remap{
 			Desc:        `Rename log stream to "infrastructure"`,
-			ComponentID: "infrastructure",
+			ComponentID: logging.InputNameInfrastructure,
 			Inputs:      helpers.MakeInputs("route_container_logs.infra", InputJournalLogs),
 			VRL:         AddLogTypeInfra,
 		}
@@ -75,13 +89,12 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 	if types.Has(logging.InputNameAudit) {
 		r := Remap{
 			Desc:        `Rename log stream to "audit"`,
-			ComponentID: "audit",
+			ComponentID: logging.InputNameAudit,
 			Inputs:      helpers.MakeInputs("host_audit_logs", "k8s_audit_logs", "openshift_audit_logs"),
 			VRL:         AddLogTypeAudit,
 		}
 		el = append(el, r)
 	}
-	//TODO add labels based routing
 	userDefined := spec.InputMap()
 	for _, pipeline := range spec.Pipelines {
 		for _, inRef := range pipeline.InputRefs {
@@ -89,16 +102,30 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 				// user defined input
 				if input.Application != nil {
 					app := input.Application
+					matchNS := []string{}
 					if len(app.Namespaces) != 0 {
-						matchNS := []string{}
 						for _, ns := range app.Namespaces {
-							matchNS = append(matchNS, fmt.Sprintf(IsNamespaceLog, ns))
+							matchNS = append(matchNS, MatchNS(ns))
 						}
+					}
+					matchLabels := []string{}
+					if app.Selector != nil && len(app.Selector.MatchLabels) != 0 {
+						labels := app.Selector.MatchLabels
+						keys := make([]string, 0, len(labels))
+						for k := range labels {
+							keys = append(keys, k)
+						}
+						sort.Strings(keys)
+						for _, k := range keys {
+							matchLabels = append(matchLabels, MatchLabel(k, labels[k]))
+						}
+					}
+					if len(matchNS) != 0 || len(matchLabels) != 0 {
 						el = append(el, Route{
 							ComponentID: RouteApplicationLogs,
-							Inputs:      helpers.MakeInputs("application"),
+							Inputs:      helpers.MakeInputs(logging.InputNameApplication),
 							Routes: map[string]string{
-								input.Name: OR(matchNS...),
+								input.Name: Quote(AND(OR(matchNS...), AND(matchLabels...))),
 							},
 						})
 					}

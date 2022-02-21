@@ -172,8 +172,8 @@ source = '''
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
-route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
 
 
 # Rename log stream to "application"
@@ -206,7 +206,7 @@ source = """
 [transforms.route_application_logs]
 type = "route"
 inputs = ["application"]
-route.mytestapp = '(.kubernetes.pod_namespace == "test-ns")'
+route.mytestapp = '.kubernetes.pod_namespace == "test-ns"'
 
 
 [transforms.pipeline]
@@ -367,8 +367,8 @@ source = '''
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
-route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
 
 
 # Rename log stream to "application"
@@ -703,8 +703,8 @@ source = '''
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
-route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
 
 
 # Rename log stream to "application"

@@ -6,7 +6,6 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
@@ -105,22 +104,7 @@ func (l LokiLabels) Template() string {
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			generator.ConfLiteral{
-				Desc:         "Sending records to stdout for debug purposes",
-				ComponentID:  strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-				InLabel:      vectorhelpers.MakeInputs(inputs...),
-				TemplateName: "lokidebug",
-				TemplateStr: `
-{{define "lokidebug" -}}
-[sinks.{{.ComponentID}}]
-inputs = {{.InLabel}}
-type = "console"
-target = "stdout"
-[sinks.{{.ComponentID}}.encoding]
-codec = "json"
-{{end}}
-`,
-			},
+			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	return MergeElements(

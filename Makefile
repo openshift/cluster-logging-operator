@@ -10,7 +10,7 @@ export PATH:=$(GOBIN):$(PATH)
 include .bingo/Variables.mk
 
 export GOROOT=$(shell go env GOROOT)
-export GOFLAGS=-mod=vendor
+export GOFLAGS=
 export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
@@ -109,7 +109,7 @@ clean:
 
 PATCH?=Dockerfile.patch
 image: .target/image
-.target/image: .target $(shell find must-gather version scripts files vendor manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
+.target/image: .target $(shell find must-gather version scripts files manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
 	patch -o Dockerfile.local Dockerfile $(PATCH)
 	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
 	touch $@

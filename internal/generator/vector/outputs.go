@@ -3,6 +3,7 @@ package vector
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/kafka"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
@@ -25,5 +26,14 @@ func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secr
 			outputs = generator.MergeElements(outputs, elasticsearch.Conf(o, inputs, secret, op))
 		}
 	}
+	outputs = append(outputs, PrometheusOutput(PrometheusOutputSinkName, []string{InternalMetricsSourceName}))
 	return outputs
+}
+
+func PrometheusOutput(id string, inputs []string) generator.Element {
+	return PrometheusExporter{
+		ID:      id,
+		Inputs:  helpers.MakeInputs(inputs...),
+		Address: PrometheusExporterAddress,
+	}
 }

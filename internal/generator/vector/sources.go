@@ -14,6 +14,7 @@ import (
 func Sources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	return generator.MergeElements(
 		LogSources(spec, op),
+		MetricsSources(InternalMetricsSourceName),
 	)
 }
 
@@ -86,4 +87,13 @@ func ExcludeContainerPaths() string {
 		},
 		", ",
 	))
+}
+
+func MetricsSources(id string) []generator.Element {
+	return []generator.Element{
+		InternalMetrics{
+			ID:                id,
+			ScrapeIntervalSec: 2,
+		},
+	}
 }

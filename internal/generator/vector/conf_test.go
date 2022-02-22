@@ -118,6 +118,9 @@ type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver.audit.log"]
 
+[sources.internal_metrics]
+type = "internal_metrics"
+
 [transforms.container_logs]
 type = "remap"
 inputs = ["raw_container_logs"]
@@ -233,6 +236,12 @@ key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 enabled = true
+
+[sinks.prometheus_output]
+type = "prometheus_exporter"
+inputs = ["internal_metrics"]
+address = "0.0.0.0:24231"
+default_namespace = "collector"
 `,
 		}),
 		Entry("with complex spec for elastic-search", generator.ConfGenerateTest{
@@ -312,6 +321,9 @@ include = ["/var/log/kube-apiserver/audit.log"]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver.audit.log"]
+
+[sources.internal_metrics]
+type = "internal_metrics"
 
 [transforms.container_logs]
 type = "remap"
@@ -563,6 +575,11 @@ id_key = "_id"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
+[sinks.prometheus_output]
+type = "prometheus_exporter"
+inputs = ["internal_metrics"]
+address = "0.0.0.0:24231"
+default_namespace = "collector"
 `,
 		}),
 		Entry("with multiple pipelines for elastic-search", generator.ConfGenerateTest{
@@ -648,6 +665,9 @@ include = ["/var/log/kube-apiserver/audit.log"]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver.audit.log"]
+
+[sources.internal_metrics]
+type = "internal_metrics"
 
 [transforms.container_logs]
 type = "remap"
@@ -907,6 +927,11 @@ id_key = "_id"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
+[sinks.prometheus_output]
+type = "prometheus_exporter"
+inputs = ["internal_metrics"]
+address = "0.0.0.0:24231"
+default_namespace = "collector"
 `,
 		}),
 	)

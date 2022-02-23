@@ -96,6 +96,7 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 		el = append(el, r)
 	}
 	userDefined := spec.InputMap()
+	routeMap := map[string]string{}
 	for _, pipeline := range spec.Pipelines {
 		for _, inRef := range pipeline.InputRefs {
 			if input, ok := userDefined[inRef]; ok {
@@ -121,17 +122,18 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 						}
 					}
 					if len(matchNS) != 0 || len(matchLabels) != 0 {
-						el = append(el, Route{
-							ComponentID: RouteApplicationLogs,
-							Inputs:      helpers.MakeInputs(logging.InputNameApplication),
-							Routes: map[string]string{
-								input.Name: Quote(AND(OR(matchNS...), AND(matchLabels...))),
-							},
-						})
+						routeMap[input.Name] = Quote(AND(OR(matchNS...), AND(matchLabels...)))
 					}
 				}
 			}
 		}
+	}
+	if len(routeMap) != 0 {
+		el = append(el, Route{
+			ComponentID: RouteApplicationLogs,
+			Inputs:      helpers.MakeInputs(logging.InputNameApplication),
+			Routes:      routeMap,
+		})
 	}
 
 	return el

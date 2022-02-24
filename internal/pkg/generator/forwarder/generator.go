@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
+	"strings"
 
 	"github.com/ViaQ/logerr/log"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,9 +86,39 @@ func Generate(clfYaml string, includeDefaultLogStore, debugOutput bool, client c
 		if err != nil {
 			return "", fmt.Errorf("Unable to generate log configuration: %v", err)
 		}
-		return generatedConfig, nil
+		return formatFluentConf(generatedConfig), nil
 
 	} else {
 		return "", errors.New("Only fluentd Log collector supported")
 	}
+}
+func formatFluentConf(conf string) string {
+	indent := 0
+	lines := strings.Split(conf, "\n")
+	for i, l := range lines {
+		trimmed := strings.TrimSpace(l)
+		switch {
+		case strings.HasPrefix(trimmed, "</") && strings.HasSuffix(trimmed, ">"):
+			indent--
+			trimmed = pad(trimmed, indent)
+		case strings.HasPrefix(trimmed, "<") && strings.HasSuffix(trimmed, ">"):
+			trimmed = pad(trimmed, indent)
+			indent++
+		default:
+			trimmed = pad(trimmed, indent)
+		}
+		if len(strings.TrimSpace(trimmed)) == 0 {
+			trimmed = ""
+		}
+		lines[i] = trimmed
+	}
+	return strings.Join(lines, "\n")
+}
+
+func pad(line string, indent int) string {
+	prefix := ""
+	if indent >= 0 {
+		prefix = strings.Repeat("  ", indent)
+	}
+	return prefix + line
 }

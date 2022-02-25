@@ -21,7 +21,7 @@ export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):$(CURRENT_BRANCH)
 export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
-IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.7.4
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.5
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.14.1
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
@@ -171,7 +171,7 @@ test-functional: test-functional-benchmarker
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
 	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
-	go test -cover -race ./test/helpers/...
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
 test-functional-vector:
@@ -209,9 +209,10 @@ bundle: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \

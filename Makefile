@@ -183,7 +183,8 @@ test-functional-vector:
 .PHONY: test-functional-vector
 
 test-forwarder-generator: bin/forwarder-generator
-	@bin/forwarder-generator --file hack/logforwarder.yaml > /dev/null
+	@bin/forwarder-generator --file hack/logforwarder.yaml --collector=fluentd > /dev/null
+	@bin/forwarder-generator --file hack/logforwarder.yaml --collector=vector > /dev/null
 .PHONY: test-forwarder-generator
 
 test-functional-benchmarker: bin/functional-benchmarker

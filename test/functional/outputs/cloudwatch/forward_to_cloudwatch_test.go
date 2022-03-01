@@ -41,7 +41,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		framework *functional.CollectorFunctionalFramework
 
 		addMotoContainerVisitor = func(b *runtime.PodBuilder) error {
-			log.V(2).Info("Adding AWS CloudWatch Logs mock container")
+			log.V(3).Info("Adding AWS CloudWatch Logs mock container")
 			b.AddContainer(logging.OutputTypeCloudwatch, cloudwatchMotoImage).
 				WithCmdArgs([]string{"-s"}).
 				End()
@@ -49,7 +49,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		}
 
 		mountCloudwatchSecretVisitor = func(b *runtime.PodBuilder) error {
-			log.V(2).Info("Mounting cloudwatch secret to the collector container")
+			log.V(3).Info("Mounting cloudwatch secret to the collector container")
 			b.AddSecretVolume("cloudwatch", "cloudwatch").
 				GetContainer(constants.CollectorName).
 				AddVolumeMount("cloudwatch", "/var/run/ocp-collector/secrets/cloudwatch", "", true)
@@ -64,7 +64,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
 
-		log.V(2).Info("Creating service moto")
+		log.V(3).Info("Creating service moto")
 		service = runtime.NewService(framework.Namespace, "moto")
 		runtime.NewServiceBuilder(service).
 			AddServicePort(5000, 5000).
@@ -106,7 +106,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				}),
 			})
 
-		log.V(2).Info("Creating secret cloudwatch with AWS example credentials")
+		log.V(3).Info("Creating secret cloudwatch with AWS example credentials")
 		secret := runtime.NewSecret(framework.Namespace, "cloudwatch",
 			map[string][]byte{
 				"aws_access_key_id":     []byte(awsAccessKeyID),

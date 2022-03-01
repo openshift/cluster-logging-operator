@@ -37,8 +37,21 @@ type Remap struct {
 	VRL         string
 }
 
+type RemapCW struct {
+	ComponentID    string
+	Desc           string
+	Inputs         string
+	GroupBy        string
+	LogGroupPrefix string
+	VRL            string
+}
+
 func (r Remap) Name() string {
 	return "remapTemplate"
+}
+
+func (r RemapCW) Name() string {
+	return "remapTemplateCW"
 }
 
 func (r Remap) Template() string {
@@ -50,6 +63,23 @@ func (r Remap) Template() string {
 type = "remap"
 inputs = {{.Inputs}}
 source = """
+{{.VRL | indent 2}}
+"""
+{{end}}
+`
+}
+
+func (r RemapCW) Template() string {
+	return `{{define "remapTemplateCW" -}}
+{{if .Desc -}}
+# {{.Desc}}
+{{end -}}
+[transforms.{{.ComponentID}}]
+type = "remap"
+inputs = {{.Inputs}}
+source = """
+.GroupBy = "{{.GroupBy}}"
+.LogGroupPrefix = "{{.LogGroupPrefix}}"
 {{.VRL | indent 2}}
 """
 {{end}}

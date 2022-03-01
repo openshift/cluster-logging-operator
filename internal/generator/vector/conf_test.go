@@ -146,13 +146,9 @@ source = """
   }
   .level = level
   
-  del(.file)
-  
   del(.source_type)
   
   del(.stream)
-  
-  del(.kubernetes.pod_ips)
 """
 
 [transforms.journal_logs]
@@ -340,13 +336,9 @@ source = """
   }
   .level = level
   
-  del(.file)
-  
   del(.source_type)
   
   del(.stream)
-  
-  del(.kubernetes.pod_ips)
 """
 
 [transforms.journal_logs]

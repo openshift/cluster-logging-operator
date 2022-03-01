@@ -57,10 +57,8 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				FixLogLevel,
-				RemoveFile,
 				RemoveSourceType,
 				RemoveStream,
-				RemovePodIPs,
 			}), "\n\n"),
 		},
 	}

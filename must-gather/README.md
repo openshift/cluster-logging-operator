@@ -4,6 +4,8 @@ cluster-logging must-gather
 `cluster-logging-must-gather` is a tool built on top of [OpenShift must-gather](https://github.com/openshift/must-gather)
 that expands its capabilities to gather Openshift Cluster Logging information.
 
+**Note:** This image is only built for x86_64 architecture
+
 ### Usage
 To gather only Openshift Cluster Logging information: 
 ```sh

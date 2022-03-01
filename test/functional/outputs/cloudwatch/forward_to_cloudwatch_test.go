@@ -64,7 +64,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		defaultRetryInterval, _ = time.ParseDuration("10s")
 
 		getRawCloudwatchApplicationLogs = func(f *functional.CollectorFunctionalFramework, cwlClient *cwl.Client) ([]string, error) {
-			log.V(3).Info("Retrieving cloudwatch LogGroups")
+			log.V(2).Info("Retrieving cloudwatch LogGroups")
 			var logGroupsOutput *cwl.DescribeLogGroupsOutput
 			err := wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
 				logGroupsOutput, err = cwlClient.DescribeLogGroups(context.TODO(), nil)
@@ -77,9 +77,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			if err != nil {
 				return nil, err
 			}
-			log.V(3).Info("Results", "logGroups", logGroupsOutput.LogGroups)
+			log.V(2).Info("Results", "logGroups", logGroupsOutput.LogGroups)
 
-			log.V(3).Info("Retrieving cloudwatch LogStreams")
+			log.V(2).Info("Retrieving cloudwatch LogStreams")
 			var logStreamsOutput *cwl.DescribeLogStreamsOutput
 			err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
 				logStreamsOutput, err = cwlClient.DescribeLogStreams(
@@ -95,9 +95,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			if err != nil {
 				return nil, err
 			}
-			log.V(3).Info("Results", "logStreams", logStreamsOutput.LogStreams)
+			log.V(2).Info("Results", "logStreams", logStreamsOutput.LogStreams)
 
-			log.V(3).Info("Retrieving cloudwatch LogEvents")
+			log.V(2).Info("Retrieving cloudwatch LogEvents")
 			var logEventsOutput *cwl.GetLogEventsOutput
 			err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
 				logEventsOutput, err = cwlClient.GetLogEvents(
@@ -168,7 +168,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				}),
 			})
 
-		log.V(2).Info("Creating secret cloudwatch with AWS example credentials")
+		log.V(0).Info("Creating secret cloudwatch with AWS example credentials")
 		secret := runtime.NewSecret(framework.Namespace, "cloudwatch",
 			map[string][]byte{
 				"aws_access_key_id":     []byte(awsAccessKeyID),

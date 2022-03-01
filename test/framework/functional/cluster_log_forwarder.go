@@ -87,6 +87,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 	outputs := clf.Spec.OutputMap()
 	var output *logging.OutputSpec
 	var found bool
+
 	if output, found = outputs[outputName]; !found {
 		switch outputName {
 		case logging.OutputTypeFluentdForward:

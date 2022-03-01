@@ -12,7 +12,7 @@ import (
 const entrypointScript = `#!/bin/bash
 mkdir -p /var/lib/vector
 
-/usr/bin/vector
+/usr/bin/vector -v
 `
 
 type VectorCollector struct {
@@ -43,6 +43,7 @@ func (c *VectorCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, n
 		AddEnvVar("VECTOR_SELF_NODE_NAME", nodeName).
 		AddVolumeMount("config", "/etc/vector", "", true).
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
+		AddVolumeMount("certs", "/etc/fluent/metrics", "", true).
 		WithCmd([]string{"/opt/app-root/src/run.sh"})
 }
 

@@ -61,6 +61,9 @@ func HasTLSCertAndKey(secret *corev1.Secret) bool {
 	return HasKeys(secret, constants.ClientCertKey, constants.ClientPrivateKey)
 }
 
+func HasAwsCredentials(secret *corev1.Secret) bool {
+	return HasAwsKey(secret, constants.AWSAccessKeyID, constants.AWSSecretAccessKey)
+}
 func HasCABundle(secret *corev1.Secret) bool {
 	return HasKeys(secret, constants.TrustedCABundleKey)
 }
@@ -88,6 +91,17 @@ func GetKey(secret *corev1.Secret, key string) (data []byte, ok bool) {
 
 // HasKeys true if all keys are present.
 func HasKeys(secret *corev1.Secret, keys ...string) bool {
+	for _, k := range keys {
+		_, ok := GetKey(secret, k)
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// HasKeys true if all keys are present.
+func HasAwsKey(secret *corev1.Secret, keys ...string) bool {
 	for _, k := range keys {
 		_, ok := GetKey(secret, k)
 		if !ok {

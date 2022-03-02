@@ -30,4 +30,16 @@ for f in $(ls $bundleDir); do
   fi
 done
 
+set +e
+fitCheck=$(grep -nEIr --include=*_test.go 'FContext|FEntry|FDescribe|FDescribeTable|FIt')
+if [ "$fitCheck" != "" ]; then
+    rc=1
+    echo "Focused tests were found in the code base"
+    echo "Please remove any of FIt, FEntry, FDescribeTable, etc. from:"
+    echo ""
+    echo "$fitCheck"
+    echo ""
+fi
+set -e
+
 exit $rc

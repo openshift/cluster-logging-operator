@@ -13,6 +13,5 @@ func (ca CAFile) Name() string {
 func (ca CAFile) Template() string {
 	return `{{define "` + ca.Name() + `" -}}
 ca_file = {{.CAFilePath}}
-{{- end}}
-`
+{{end}}`
 }

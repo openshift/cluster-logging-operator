@@ -15,7 +15,7 @@ const (
 	NsOpenshift = "openshift"
 	NsDefault   = "default"
 
-	K8sPodNamespace = ".kubernetes.pod_namespace"
+	K8sPodNamespace = ".kubernetes.namespace_name"
 	K8sLabelKeyExpr = ".kubernetes.pod_labels.%s"
 
 	InputContainerLogs   = "container_logs"

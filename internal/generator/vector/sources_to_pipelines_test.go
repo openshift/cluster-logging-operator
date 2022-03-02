@@ -36,42 +36,38 @@ var _ = Describe("Testing Config Generation", func() {
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
-route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
-
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default")'
 
 # Rename log stream to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "application"
+  .log_type = "application"
 """
-
 
 # Rename log stream to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infrastructure"
+  .log_type = "infrastructure"
 """
-
 
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
 source = """
-.log_type = "audit"
+  .log_type = "audit"
 """
-
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = """
-.
+  .
 """
 `,
 		}),
@@ -100,50 +96,45 @@ source = """
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
-route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
-
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default")'
 
 # Rename log stream to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "application"
+  .log_type = "application"
 """
-
 
 # Rename log stream to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infrastructure"
+  .log_type = "infrastructure"
 """
-
 
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
 source = """
-.log_type = "audit"
+  .log_type = "audit"
 """
-
 
 [transforms.pipeline1]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = """
-.
+  .
 """
-
 
 [transforms.pipeline2]
 type = "remap"
 inputs = ["application"]
 source = """
-.
+  .
 """
 `,
 		}),
@@ -169,29 +160,26 @@ source = """
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
-
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
 
 # Rename log stream to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "application"
+  .log_type = "application"
 """
-
 
 [transforms.route_application_logs]
 type = "route"
 inputs = ["application"]
-route.myapplogs = '(.kubernetes.pod_namespace == "test-ns1") || (.kubernetes.pod_namespace == "test-ns2")'
-
+route.myapplogs = '(.kubernetes.namespace_name == "test-ns1") || (.kubernetes.namespace_name == "test-ns2")'
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["route_application_logs.myapplogs"]
 source = """
-.
+  .
 """
 `,
 		}),
@@ -223,29 +211,26 @@ source = """
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
-
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
 
 # Rename log stream to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "application"
+  .log_type = "application"
 """
-
 
 [transforms.route_application_logs]
 type = "route"
 inputs = ["application"]
-route.myapplogs = '((.kubernetes.pod_namespace == "myapp1") || (.kubernetes.pod_namespace == "myapp2")) && ((.kubernetes.pod_labels.key1 == "value1") && (.kubernetes.pod_labels.key2 == "value2"))'
-
+route.myapplogs = '((.kubernetes.namespace_name == "myapp1") || (.kubernetes.namespace_name == "myapp2")) && ((.kubernetes.pod_labels.key1 == "value1") && (.kubernetes.pod_labels.key2 == "value2"))'
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["route_application_logs.myapplogs"]
 source = """
-.
+  .
 """
 `,
 		}),

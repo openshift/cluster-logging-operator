@@ -16,11 +16,10 @@ func (r Route) Name() string {
 }
 
 func (r Route) Template() string {
-	return `
-{{define "routeTemplate" -}}
-{{- if .Desc}}
+	return `{{define "routeTemplate" -}}
+{{if .Desc -}}
 # {{.Desc}}
-{{- end}}
+{{end -}}
 [transforms.{{.ComponentID}}]
 type = "route"
 inputs = {{.Inputs}}
@@ -43,16 +42,15 @@ func (r Remap) Name() string {
 }
 
 func (r Remap) Template() string {
-	return `
-{{define "remapTemplate" -}}
-{{- if .Desc}}
+	return `{{define "remapTemplate" -}}
+{{if .Desc -}}
 # {{.Desc}}
-{{- end}}
+{{end -}}
 [transforms.{{.ComponentID}}]
 type = "remap"
 inputs = {{.Inputs}}
 source = """
-{{.VRL}}
+{{.VRL | indent 2}}
 """
 {{end}}
 `

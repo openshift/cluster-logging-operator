@@ -466,5 +466,8 @@ func WrapError(err error) error {
 }
 
 func ToJsonLogs(logs []string) string {
+	if len(logs) == 1 && strings.HasPrefix(logs[0], "[") && strings.HasSuffix(logs[0], "]") {
+		return logs[0]
+	}
 	return fmt.Sprintf("[%s]", strings.Join(logs, ","))
 }

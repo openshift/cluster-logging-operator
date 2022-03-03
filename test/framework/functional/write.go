@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLogInNamespace(msg, namespace string, numOfLogs int) error {
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	return f.WriteMessagesToLog(msg, numOfLogs, filename)
+}
 func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
 	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)

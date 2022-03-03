@@ -10,7 +10,8 @@ const (
 )
 
 type ClusterLogForwarderBuilder struct {
-	Forwarder *logging.ClusterLogForwarder
+	Forwarder  *logging.ClusterLogForwarder
+	inputSpecs map[string]*logging.InputSpec
 }
 
 type PipelineBuilder struct {
@@ -27,16 +28,22 @@ type PipelineSpecVisitor func(spec *logging.PipelineSpec)
 
 func NewClusterLogForwarderBuilder(clf *logging.ClusterLogForwarder) *ClusterLogForwarderBuilder {
 	return &ClusterLogForwarderBuilder{
-		Forwarder: clf,
+		Forwarder:  clf,
+		inputSpecs: map[string]*logging.InputSpec{},
 	}
 }
 
 func (b *ClusterLogForwarderBuilder) FromInput(inputName string) *PipelineBuilder {
+	inputSpec := &logging.InputSpec{Name: inputName}
+	if _, ok := b.inputSpecs[inputName]; ok {
+		inputSpec = b.inputSpecs[inputName]
+	}
 	pipelineBuilder := &PipelineBuilder{
 		clfb:      b,
 		inputName: inputName,
-		input:     &logging.InputSpec{Name: inputName},
+		input:     inputSpec,
 	}
+	b.inputSpecs[inputName] = inputSpec
 	return pipelineBuilder
 }
 func (b *ClusterLogForwarderBuilder) FromInputWithVisitor(inputName string, visit InputSpecVisitor) *PipelineBuilder {
@@ -140,7 +147,15 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 	}
 
 	if p.input != nil {
-		clf.Spec.Inputs = append(clf.Spec.Inputs, *p.input)
+		found = false
+		for _, input := range clf.Spec.Inputs {
+			if input.Name == p.input.Name {
+				found = true
+			}
+		}
+		if !found {
+			clf.Spec.Inputs = append(clf.Spec.Inputs, *p.input)
+		}
 	}
 
 	added := false

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/ViaQ/logerr/log"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
@@ -65,34 +66,49 @@ func (f *CollectorFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) (
 	return f.ReadLogsFrom(outputName, ovnAuditLog)
 }
 
-func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName string, outputLogType string) (results []string, err error) {
+func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType string) (results []string, err error) {
 	outputSpecs := f.Forwarder.Spec.OutputMap()
-	outputLog := outputName
+	outputType := outputName
 	if output, found := outputSpecs[outputName]; found {
-		outputLog = output.Type
+		outputType = output.Type
 	}
-	var result string
-	outputType, ok := outputLogFile[outputLog]
-	if !ok {
-		return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
-	}
-	file, ok := outputType[outputLogType]
-	if !ok {
-		return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
-	}
-	err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
-		result, err = f.RunCommand(outputName, "cat", file)
-		if result != "" && err == nil {
-			return true, nil
+	readLogs := func() ([]string, error) {
+		var result string
+		outputFiles, ok := outputLogFile[outputType]
+		if !ok {
+			return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
 		}
-		log.V(4).Error(err, "Polling logs")
-		return false, nil
-	})
-	if err == nil {
-		results = strings.Split(strings.TrimSpace(result), "\n")
+		file, ok := outputFiles[sourceType]
+		if !ok {
+			return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", sourceType))
+		}
+		err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
+			result, err = f.RunCommand(outputName, "cat", file)
+			if result != "" && err == nil {
+				return true, nil
+			}
+			log.V(4).Error(err, "Polling logs")
+			return false, nil
+		})
+		if err == nil {
+			results = strings.Split(strings.TrimSpace(result), "\n")
+		}
+		log.V(4).Info("Returning", "logs", result)
+		return results, err
 	}
-	log.V(4).Info("Returning", "logs", result)
-	return results, err
+	if outputType == logging.OutputTypeElasticsearch {
+		readLogs = func() ([]string, error) {
+			result, err := f.GetLogsFromElasticSearch(outputName, sourceType)
+			if err == nil {
+				result = result[1:]
+				result = result[:len(result)-1]
+				return strings.Split(result, ","), nil
+			}
+			return nil, err
+		}
+	}
+
+	return readLogs()
 }
 
 func (f *CollectorFunctionalFramework) ReadNApplicationLogsFrom(n uint64, outputName string) ([]string, error) {

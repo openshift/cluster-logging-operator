@@ -54,7 +54,7 @@ var _ = Describe("Reassembly split by CRI-O logs ", func() {
 		msg = functional.NewCRIOLogMessage(timestamp, "you", false)
 		matchers.ExpectOK(framework.WriteMessagesToApplicationLog(msg, 1),
 			"Expected no errors writing the logs")
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
@@ -79,7 +79,7 @@ var _ = Describe("Reassembly split by CRI-O logs ", func() {
 		matchers.ExpectOK(framework.WriteMessagesToApplicationLog(msg, 1),
 			"Expected no errors writing the logs")
 
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")

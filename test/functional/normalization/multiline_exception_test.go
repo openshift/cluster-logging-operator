@@ -48,44 +48,93 @@ runtime.goexit()
 created by main.main
 	foo.go:5 +0x58`
 		framework *functional.CollectorFunctionalFramework
+
+		appNamespace = "multi-line-test"
 	)
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
-		b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInput(logging.InputNameApplication).
-			WithMultineErrorDetection().
-			ToFluentForwardOutput()
-		//LOG-2241
-		b.FromInput(logging.InputNameApplication).
-			Named("other").
-			WithMultineErrorDetection().
-			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-				spec.Type = logging.OutputTypeFluentdForward
-				spec.URL = "tcp://0.0.0.0:24234"
-			}, "missing")
-		Expect(framework.Deploy()).To(BeNil())
 	})
 	AfterEach(func() {
 		framework.Cleanup()
 	})
 
-	DescribeTable("should reassemble multi-line stacktraces", func(exception string) {
+	DescribeTable("should reassemble multi-line stacktraces", func(exception string, buildLogForwarder func(framework *functional.CollectorFunctionalFramework)) {
+
+		if buildLogForwarder == nil {
+			buildLogForwarder = func(framework *functional.CollectorFunctionalFramework) {
+				functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+					FromInput(logging.InputNameApplication).
+					WithMultineErrorDetection().
+					ToFluentForwardOutput()
+			}
+		}
+		buildLogForwarder(framework)
+		framework.VisitConfig = func(conf string) string {
+			conf = strings.Replace(conf, "@type kubernetes_metadata", "@type kubernetes_metadata\ntest_api_adapter  KubernetesMetadata::TestApiAdapter\n", 1)
+			return conf
+		}
+		Expect(framework.Deploy()).To(BeNil())
+
 		buffer := []string{}
 		for _, line := range strings.Split(exception, "\n") {
 			crioLine := functional.NewCRIOLogMessage(timestamp, line, false)
 			buffer = append(buffer, crioLine)
 		}
-		Expect(framework.WriteMessagesToApplicationLog(strings.Join(buffer, "\n"), 1)).To(Succeed())
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
-		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		Expect(logs[0].Message).To(Equal(exception))
+		Expect(framework.WriteMessagesToApplicationLogInNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
+
+		for _, output := range framework.Forwarder.Spec.Outputs {
+			outputType := output.Type
+			raw, err := framework.ReadRawApplicationLogsFrom(outputType)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs for type %s", outputType)
+			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs for type %s: %s", outputType, raw)
+			Expect(logs[0].Message).To(Equal(exception))
+		}
 	},
-		Entry("of Java services", javaException),
-		Entry("of NodeJS services", nodeJSException),
-		Entry("of GoLang services", goLangException),
+		Entry("of Java services", javaException, nil),
+		Entry("of NodeJS services", nodeJSException, nil),
+		Entry("of GoLang services", goLangException, nil),
+		Entry("of single application NS to single pipeline", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInputWithVisitor("forward-pipeline", func(spec *logging.InputSpec) {
+					spec.Application = &logging.Application{
+						Namespaces: []string{appNamespace},
+					}
+				}).
+				WithMultineErrorDetection().
+				ToFluentForwardOutput()
+		}),
+		Entry("of single application NS sources with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
+					spec.Application = &logging.Application{
+						Namespaces: []string{appNamespace},
+					}
+				}).
+				WithMultineErrorDetection().
+				ToFluentForwardOutput()
+			//LOG-2241
+			b.FromInput("multiline-log-ns").
+				Named("other").
+				WithMultineErrorDetection().
+				ToElasticSearchOutput()
+		}),
+		Entry("of multiple application NS source with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
+					spec.Application = &logging.Application{
+						Namespaces: []string{appNamespace, "multi-line-test-2"},
+					}
+				}).
+				WithMultineErrorDetection().
+				ToFluentForwardOutput()
+			//LOG-2241
+			b.FromInput("multiline-log-ns").
+				Named("other").
+				WithMultineErrorDetection().
+				ToElasticSearchOutput()
+		}),
 	)
 
 })

@@ -21,7 +21,7 @@ const (
 	lokiLabelKubernetesPodName       = "kubernetes.pod_name"
 	lokiLabelKubernetesHost          = "kubernetes.host"
 	lokiLabelKubernetesContainerName = "kubernetes.container_name"
-	podNamespace                     = "kubernetes.pod_namespace"
+	podNamespace                     = "kubernetes.namespace_name"
 )
 
 var (

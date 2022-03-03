@@ -124,99 +124,101 @@ type = "internal_metrics"
 [transforms.container_logs]
 type = "remap"
 inputs = ["raw_container_logs"]
-source = '''
+source = """
   level = "unknown"
   if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-	level = "warn"
+    level = "warn"
   } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-	level = "info"
+    level = "info"
   } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-	level = "error"
+    level = "error"
   } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-	level = "debug"
+    level = "debug"
   }
   .level = level
-
-  .pipeline_metadata.collector.name = "vector"
-  .pipeline_metadata.collector.version = "0.14.1"
-  ip4, err = get_env_var("NODE_IPV4")
-  .pipeline_metadata.collector.ipaddr4 = ip4
-  received, err = format_timestamp(now(),"%+")
-  .pipeline_metadata.collector.received_at = received
-  .pipeline_metadata.collector.error = err
- '''
+  
+  namespace_name = .kubernetes.pod_namespace
+  del(.kubernetes.pod_namespace)
+  .kubernetes.namespace_name = namespace_name
+  
+  del(.file)
+  
+  del(.source_type)
+  
+  del(.stream)
+  
+  del(.kubernetes.pod_ips)
+"""
 
 [transforms.journal_logs]
 type = "remap"
 inputs = ["raw_journal_logs"]
-source = '''
+source = """
   level = "unknown"
   if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-	level = "warn"
+    level = "warn"
   } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-	level = "info"
+    level = "info"
   } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-	level = "error"
+    level = "error"
   } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-	level = "debug"
+    level = "debug"
   }
   .level = level
-
-  .pipeline_metadata.collector.name = "vector"
-  .pipeline_metadata.collector.version = "0.14.1"
-  ip4, err = get_env_var("NODE_IPV4")
-  .pipeline_metadata.collector.ipaddr4 = ip4
-  received, err = format_timestamp(now(),"%+")
-  .pipeline_metadata.collector.received_at = received
-  .pipeline_metadata.collector.error = err
- '''
-
+  
+  namespace_name = .kubernetes.pod_namespace
+  del(.kubernetes.pod_namespace)
+  .kubernetes.namespace_name = namespace_name
+  
+  del(.file)
+  
+  del(.source_type)
+  
+  del(.stream)
+  
+  del(.kubernetes.pod_ips)
+"""
 
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
-route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
-
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default")'
 
 # Rename log stream to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "application"
+  .log_type = "application"
 """
-
 
 # Rename log stream to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infrastructure"
+  .log_type = "infrastructure"
 """
-
 
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
 source = """
-.log_type = "audit"
+  .log_type = "audit"
 """
-
 
 [transforms.route_application_logs]
 type = "route"
 inputs = ["application"]
-route.mytestapp = '.kubernetes.pod_namespace == "test-ns"'
-
+route.mytestapp = '.kubernetes.namespace_name == "test-ns"'
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["route_application_logs.mytestapp","infrastructure","audit"]
 source = """
-.openshift.labels = {"key1":"value1","key2":"value2"}
+  .openshift.labels = {"key1":"value1","key2":"value2"}
 """
 
 # Kafka config
@@ -328,113 +330,115 @@ type = "internal_metrics"
 [transforms.container_logs]
 type = "remap"
 inputs = ["raw_container_logs"]
-source = '''
+source = """
   level = "unknown"
   if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-	level = "warn"
+    level = "warn"
   } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-	level = "info"
+    level = "info"
   } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-	level = "error"
+    level = "error"
   } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-	level = "debug"
+    level = "debug"
   }
   .level = level
-
-  .pipeline_metadata.collector.name = "vector"
-  .pipeline_metadata.collector.version = "0.14.1"
-  ip4, err = get_env_var("NODE_IPV4")
-  .pipeline_metadata.collector.ipaddr4 = ip4
-  received, err = format_timestamp(now(),"%+")
-  .pipeline_metadata.collector.received_at = received
-  .pipeline_metadata.collector.error = err
- '''
+  
+  namespace_name = .kubernetes.pod_namespace
+  del(.kubernetes.pod_namespace)
+  .kubernetes.namespace_name = namespace_name
+  
+  del(.file)
+  
+  del(.source_type)
+  
+  del(.stream)
+  
+  del(.kubernetes.pod_ips)
+"""
 
 [transforms.journal_logs]
 type = "remap"
 inputs = ["raw_journal_logs"]
-source = '''
+source = """
   level = "unknown"
   if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-	level = "warn"
+    level = "warn"
   } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-	level = "info"
+    level = "info"
   } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-	level = "error"
+    level = "error"
   } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-	level = "debug"
+    level = "debug"
   }
   .level = level
-
-  .pipeline_metadata.collector.name = "vector"
-  .pipeline_metadata.collector.version = "0.14.1"
-  ip4, err = get_env_var("NODE_IPV4")
-  .pipeline_metadata.collector.ipaddr4 = ip4
-  received, err = format_timestamp(now(),"%+")
-  .pipeline_metadata.collector.received_at = received
-  .pipeline_metadata.collector.error = err
- '''
-
+  
+  namespace_name = .kubernetes.pod_namespace
+  del(.kubernetes.pod_namespace)
+  .kubernetes.namespace_name = namespace_name
+  
+  del(.file)
+  
+  del(.source_type)
+  
+  del(.stream)
+  
+  del(.kubernetes.pod_ips)
+"""
 
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
-route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
-
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default")'
 
 # Rename log stream to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "application"
+  .log_type = "application"
 """
-
 
 # Rename log stream to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infrastructure"
+  .log_type = "infrastructure"
 """
-
 
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
 source = """
-.log_type = "audit"
+  .log_type = "audit"
 """
-
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
 source = """
-.
+  .
 """
-
 
 # Adding _id field
 [transforms.es_1_add_es_id]
 type = "remap"
 inputs = ["pipeline"]
 source = """
-index = "default"
-if (.log_type == "application"){
-  index = "app"
-}
-if (.log_type == "infrastructure"){
-  index = "infra"
-}
-if (.log_type == "audit"){
-  index = "audit"
-}
-."write-index"=index+"-write"
-._id = encode_base64(uuid_v4())
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  ."write-index"=index+"-write"
+  ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -491,10 +495,12 @@ index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
+
 # TLS Config
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
+
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 
 # Adding _id field
@@ -502,18 +508,18 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 type = "remap"
 inputs = ["pipeline"]
 source = """
-index = "default"
-if (.log_type == "application"){
-  index = "app"
-}
-if (.log_type == "infrastructure"){
-  index = "infra"
-}
-if (.log_type == "audit"){
-  index = "audit"
-}
-."write-index"=index+"-write"
-._id = encode_base64(uuid_v4())
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  ."write-index"=index+"-write"
+  ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_2_dedot_and_flatten]
@@ -570,11 +576,14 @@ index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
+
 # TLS Config
 [sinks.es_2.tls]
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
+
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
+
 [sinks.prometheus_output]
 type = "prometheus_exporter"
 inputs = ["internal_metrics"]
@@ -672,121 +681,122 @@ type = "internal_metrics"
 [transforms.container_logs]
 type = "remap"
 inputs = ["raw_container_logs"]
-source = '''
+source = """
   level = "unknown"
   if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-	level = "warn"
+    level = "warn"
   } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-	level = "info"
+    level = "info"
   } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-	level = "error"
+    level = "error"
   } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-	level = "debug"
+    level = "debug"
   }
   .level = level
-
-  .pipeline_metadata.collector.name = "vector"
-  .pipeline_metadata.collector.version = "0.14.1"
-  ip4, err = get_env_var("NODE_IPV4")
-  .pipeline_metadata.collector.ipaddr4 = ip4
-  received, err = format_timestamp(now(),"%+")
-  .pipeline_metadata.collector.received_at = received
-  .pipeline_metadata.collector.error = err
- '''
+  
+  namespace_name = .kubernetes.pod_namespace
+  del(.kubernetes.pod_namespace)
+  .kubernetes.namespace_name = namespace_name
+  
+  del(.file)
+  
+  del(.source_type)
+  
+  del(.stream)
+  
+  del(.kubernetes.pod_ips)
+"""
 
 [transforms.journal_logs]
 type = "remap"
 inputs = ["raw_journal_logs"]
-source = '''
+source = """
   level = "unknown"
   if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-	level = "warn"
+    level = "warn"
   } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-	level = "info"
+    level = "info"
   } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-	level = "error"
+    level = "error"
   } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-	level = "debug"
+    level = "debug"
   }
   .level = level
-
-  .pipeline_metadata.collector.name = "vector"
-  .pipeline_metadata.collector.version = "0.14.1"
-  ip4, err = get_env_var("NODE_IPV4")
-  .pipeline_metadata.collector.ipaddr4 = ip4
-  received, err = format_timestamp(now(),"%+")
-  .pipeline_metadata.collector.received_at = received
-  .pipeline_metadata.collector.error = err
- '''
-
+  
+  namespace_name = .kubernetes.pod_namespace
+  del(.kubernetes.pod_namespace)
+  .kubernetes.namespace_name = namespace_name
+  
+  del(.file)
+  
+  del(.source_type)
+  
+  del(.stream)
+  
+  del(.kubernetes.pod_ips)
+"""
 
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
-route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
-
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default")'
 
 # Rename log stream to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
 source = """
-.log_type = "application"
+  .log_type = "application"
 """
-
 
 # Rename log stream to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
 source = """
-.log_type = "infrastructure"
+  .log_type = "infrastructure"
 """
-
 
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
 source = """
-.log_type = "audit"
+  .log_type = "audit"
 """
-
 
 [transforms.pipeline1]
 type = "remap"
 inputs = ["application","infrastructure"]
 source = """
-.
+  .
 """
-
 
 [transforms.pipeline2]
 type = "remap"
 inputs = ["audit"]
 source = """
-.
+  .
 """
-
 
 # Adding _id field
 [transforms.es_1_add_es_id]
 type = "remap"
 inputs = ["pipeline1","pipeline2"]
 source = """
-index = "default"
-if (.log_type == "application"){
-  index = "app"
-}
-if (.log_type == "infrastructure"){
-  index = "infra"
-}
-if (.log_type == "audit"){
-  index = "audit"
-}
-."write-index"=index+"-write"
-._id = encode_base64(uuid_v4())
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  ."write-index"=index+"-write"
+  ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -843,10 +853,12 @@ index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
+
 # TLS Config
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
+
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 
 # Adding _id field
@@ -854,18 +866,18 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 type = "remap"
 inputs = ["pipeline2"]
 source = """
-index = "default"
-if (.log_type == "application"){
-  index = "app"
-}
-if (.log_type == "infrastructure"){
-  index = "infra"
-}
-if (.log_type == "audit"){
-  index = "audit"
-}
-."write-index"=index+"-write"
-._id = encode_base64(uuid_v4())
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  ."write-index"=index+"-write"
+  ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_2_dedot_and_flatten]
@@ -922,11 +934,14 @@ index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
+
 # TLS Config
 [sinks.es_2.tls]
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
+
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
+
 [sinks.prometheus_output]
 type = "prometheus_exporter"
 inputs = ["internal_metrics"]

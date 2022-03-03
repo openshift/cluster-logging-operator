@@ -29,7 +29,6 @@ func (e Elasticsearch) Name() string {
 
 func (e Elasticsearch) Template() string {
 	return `{{define "` + e.Name() + `" -}}
-
 [sinks.{{.ComponentID}}]
 type = "elasticsearch"
 inputs = {{.Inputs}}
@@ -38,8 +37,7 @@ index = "{{ "{{ write-index }}" }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
-{{- end}}
-`
+{{end}}`
 }
 
 func AddEsID(id string, inputs []string) Element {
@@ -69,8 +67,7 @@ func DeDotAndFlattenLabels(id string, inputs []string) Element {
 		ComponentID:  id,
 		InLabel:      helpers.MakeInputs(inputs...),
 		TemplateName: "dedotTemplate",
-		TemplateStr: `
-{{define "dedotTemplate" -}}
+		TemplateStr: `{{define "dedotTemplate" -}}
 [transforms.{{.ComponentID}}]
 type = "lua"
 inputs = {{.InLabel}}
@@ -116,8 +113,7 @@ source = """
         end
     end
 """
-{{end}}
-`,
+{{end}}`,
 	}
 }
 

@@ -46,18 +46,18 @@ var _ = Describe("Generate Vector config", func() {
 type = "remap"
 inputs = ["application"]
 source = """
-index = "default"
-if (.log_type == "application"){
-  index = "app"
-}
-if (.log_type == "infrastructure"){
-  index = "infra"
-}
-if (.log_type == "audit"){
-  index = "audit"
-}
-."write-index"=index+"-write"
-._id = encode_base64(uuid_v4())
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  ."write-index"=index+"-write"
+  ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -114,6 +114,7 @@ index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
+
 # Basic Auth Config
 [sinks.es_1.auth]
 strategy = "basic"
@@ -149,18 +150,18 @@ password = "testpass"
 type = "remap"
 inputs = ["application"]
 source = """
-index = "default"
-if (.log_type == "application"){
-  index = "app"
-}
-if (.log_type == "infrastructure"){
-  index = "infra"
-}
-if (.log_type == "audit"){
-  index = "audit"
-}
-."write-index"=index+"-write"
-._id = encode_base64(uuid_v4())
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  ."write-index"=index+"-write"
+  ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -217,10 +218,12 @@ index = "{{ write-index }}"
 request.timeout_secs = 2147483648
 bulk_action = "create"
 id_key = "_id"
+
 # TLS Config
 [sinks.es_1.tls]
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
+
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 `,
 		}),
@@ -242,18 +245,18 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 type = "remap"
 inputs = ["application"]
 source = """
-index = "default"
-if (.log_type == "application"){
-  index = "app"
-}
-if (.log_type == "infrastructure"){
-  index = "infra"
-}
-if (.log_type == "audit"){
-  index = "audit"
-}
-."write-index"=index+"-write"
-._id = encode_base64(uuid_v4())
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  ."write-index"=index+"-write"
+  ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_1_dedot_and_flatten]

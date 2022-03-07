@@ -11,7 +11,7 @@ import (
 func TestClusterLogForwarder(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	tc := "ClusterLogForwarder E2E Suite - Syslog Legacy"
-	jr := reporters.NewJUnitReporter("/tmp/artifacts/junit/junit-syslog-legacy.xml")
+	tc := "[Functional][Outputs][Multiple] Test Suite"
+	jr := reporters.NewJUnitReporter("/tmp/artifacts/junit/junit-functional-outputs-multiple.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, tc, []Reporter{jr})
 }

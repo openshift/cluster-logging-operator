@@ -159,7 +159,7 @@ test-functional: test-functional-benchmarker
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
-	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m
+	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 

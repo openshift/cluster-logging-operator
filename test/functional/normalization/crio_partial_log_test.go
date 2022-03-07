@@ -3,12 +3,9 @@ package normalization
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"github.com/openshift/cluster-logging-operator/test/matchers"
-
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/functional"
+	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
 //Fast test for checking reassembly logic for split log by CRI-O.
@@ -54,9 +51,7 @@ var _ = Describe("Reassembly split by CRI-O logs ", func() {
 		msg = functional.NewCRIOLogMessage(timestamp, "you", false)
 		matchers.ExpectOK(framework.WriteMessagesToApplicationLog(msg, 1),
 			"Expected no errors writing the logs")
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
-		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(logs[0].Message).Should(Equal("May the force be with you"))
 	})
@@ -79,11 +74,10 @@ var _ = Describe("Reassembly split by CRI-O logs ", func() {
 		matchers.ExpectOK(framework.WriteMessagesToApplicationLog(msg, 1),
 			"Expected no errors writing the logs")
 
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
-		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(logs[0].Message).Should(Equal("Run, Forest, Run!"))
 		Expect(logs[1].Message).Should(Equal("Freedom!!!"))
 	})
+
 })

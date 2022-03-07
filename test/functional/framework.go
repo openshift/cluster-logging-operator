@@ -3,6 +3,8 @@ package functional
 import (
 	"context"
 	"fmt"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -80,7 +82,7 @@ type FluentdFunctionalFramework struct {
 }
 
 func init() {
-	maxDuration, _ = time.ParseDuration("10m")
+	maxDuration, _ = time.ParseDuration("5m")
 	defaultRetryInterval, _ = time.ParseDuration("10s")
 }
 
@@ -378,7 +380,20 @@ func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs in
 	return err
 }
 
-func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]string, error) {
+func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]types.ApplicationLog, error) {
+	raw, err := f.ReadLogsFrom(outputName, applicationLog)
+	if err != nil {
+		return nil, err
+	}
+
+	var logs []types.ApplicationLog
+	if err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs); err != nil {
+		return nil, err
+	}
+	return logs, nil
+}
+
+func (f *FluentdFunctionalFramework) ReadRawApplicationLogsFrom(outputName string) ([]string, error) {
 	return f.ReadLogsFrom(outputName, applicationLog)
 }
 

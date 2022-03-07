@@ -1,11 +1,11 @@
 package functional
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -23,7 +23,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
-	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 	corev1 "k8s.io/api/core/v1"
@@ -106,11 +105,19 @@ type FluentdFunctionalFramework struct {
 	fluentContainerId string
 	receiverBuilders  []receiverBuilder
 	closeClient       func()
+	MaxReadDuration   *time.Duration
 }
 
 func init() {
 	maxDuration, _ = time.ParseDuration("10m")
 	defaultRetryInterval, _ = time.ParseDuration("10s")
+}
+
+func (f *FluentdFunctionalFramework) GetMaxReadDuration() time.Duration {
+	if f.MaxReadDuration != nil {
+		return *f.MaxReadDuration
+	}
+	return maxDuration
 }
 
 func NewFluentdFunctionalFramework() *FluentdFunctionalFramework {
@@ -206,6 +213,9 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	if f.Conf, err = forwarder.Generate(string(clfYaml), false, false); err != nil {
 		return err
 	}
+	//remove journal for now since we can not mimic it
+	re := regexp.MustCompile(`(?msU).*<source>.*type.*systemd.*</source>`)
+	f.Conf = string(re.ReplaceAll([]byte(f.Conf), []byte{}))
 	log.V(2).Info("Generating Certificates")
 	if err, _, _ = certificates.GenerateCertificates(f.Test.NS.Name,
 		test.GitRoot("scripts"), "elasticsearch",
@@ -330,7 +340,7 @@ done
 		}
 
 		// if fluentd started successfully return success
-		if strings.Contains(output, "flush_thread actually running") {
+		if strings.Contains(output, "fluentd worker is now running worker") {
 			return true, nil
 		}
 		return false, nil
@@ -471,78 +481,4 @@ func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs in
 	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", cmd)
 	log.V(3).Info("FluentdFunctionalFramework.WriteMessagesToLog", "result", result, "err", err)
 	return err
-}
-
-func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, applicationLog)
-}
-
-func (f *FluentdFunctionalFramework) ReadAuditLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, auditLog)
-}
-
-func (f *FluentdFunctionalFramework) Readk8sAuditLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, k8sAuditLog)
-}
-
-func (f *FluentdFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, infraLog)
-}
-
-func (f *FluentdFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, ovnAuditLog)
-}
-
-func (f *FluentdFunctionalFramework) ReadLogsFrom(outputName string, outputLogType string) (results []string, err error) {
-	outputSpecs := f.Forwarder.Spec.OutputMap()
-	outputLog := outputName
-	if output, found := outputSpecs[outputName]; found {
-		outputLog = output.Type
-	}
-	var result string
-	outputType, ok := outputLogFile[outputLog]
-	if !ok {
-		return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s", outputName))
-	}
-	file, ok := outputType[outputLogType]
-	if !ok {
-		return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
-	}
-	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
-		result, err = f.RunCommand(outputName, "cat", file)
-		if result != "" && err == nil {
-			return true, nil
-		}
-		log.V(4).Error(err, "Polling logs")
-		return false, nil
-	})
-	if err == nil {
-		results = strings.Split(strings.TrimSpace(result), "\n")
-	}
-	log.V(4).Info("Returning", "logs", result)
-	return results, err
-}
-
-func (f *FluentdFunctionalFramework) ReadNApplicationLogsFrom(n uint64, outputName string) ([]string, error) {
-	lines := []string{}
-	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
-	defer cancel()
-	reader, err := cmd.TailReaderForContainer(f.Pod, outputName, ApplicationLogFile)
-	if err != nil {
-		log.V(3).Error(err, "Error creating tail reader")
-		return nil, err
-	}
-	for {
-		line, err := reader.ReadLineContext(ctx)
-		if err != nil {
-			log.V(3).Error(err, "Error readlinecontext")
-			return nil, err
-		}
-		lines = append(lines, line)
-		n--
-		if n == 0 {
-			break
-		}
-	}
-	return lines, err
 }

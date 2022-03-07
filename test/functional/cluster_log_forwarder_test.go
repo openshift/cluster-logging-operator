@@ -23,6 +23,7 @@ var _ = Describe("ClustLogForwarderBuilder", func() {
   type: elasticsearch
   url: https://0.0.0.0:9200
 - name: syslog
+  syslog: {}
   type: syslog
   url: tcp://0.0.0.0:24224
 pipelines:

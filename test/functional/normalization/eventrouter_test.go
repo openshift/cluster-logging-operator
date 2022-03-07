@@ -99,7 +99,7 @@ var _ = Describe("[Functional][Normalization] Fluentd normalization for EventRou
 		err = framework.WriteMessagesToApplicationLog(msg, 1)
 		Expect(err).To(BeNil())
 
-		raw, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		var logs []types.EventRouterLog
 		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)

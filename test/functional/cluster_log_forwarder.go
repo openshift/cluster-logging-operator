@@ -70,6 +70,9 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				Name: logging.OutputTypeSyslog,
 				Type: logging.OutputTypeSyslog,
 				URL:  "tcp://0.0.0.0:24224",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Syslog: &logging.Syslog{},
+				},
 			}
 		}
 

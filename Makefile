@@ -162,8 +162,9 @@ test-functional: test-functional-benchmarker
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
+	ACK_GINKGO_DEPRECATIONS=1.16.4 \
 	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m
-	go test -cover -race ./test/helpers/...
+	ACK_GINKGO_DEPRECATIONS=1.16.4 go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
 test-forwarder-generator: bin/forwarder-generator
@@ -176,6 +177,7 @@ test-functional-benchmarker: bin/functional-benchmarker
 
 test-unit: test-forwarder-generator
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	ACK_GINKGO_DEPRECATIONS=1.16.4 \
 	go test -cover -race ./pkg/... ./test ./test/helpers ./test/matchers ./test/runtime
 
 test-cluster:
@@ -193,9 +195,11 @@ bundle: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
+	ACK_GINKGO_DEPRECATIONS=1.16.4 \
 	INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
+	ACK_GINKGO_DEPRECATIONS=1.16.4 \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \

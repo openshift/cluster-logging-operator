@@ -126,13 +126,13 @@ type = "remap"
 inputs = ["raw_container_logs"]
 source = """
   level = "unknown"
-  if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
+  if match!(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
     level = "warn"
-  } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
+  } else if match!(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
     level = "info"
-  } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
+  } else if match!(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
     level = "error"
-  } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
+  } else if match!(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
     level = "debug"
   }
   .level = level
@@ -154,29 +154,7 @@ source = """
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = """
-  level = "unknown"
-  if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-    level = "warn"
-  } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-    level = "info"
-  } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-    level = "error"
-  } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-    level = "debug"
-  }
-  .level = level
-  
-  namespace_name = .kubernetes.pod_namespace
-  del(.kubernetes.pod_namespace)
-  .kubernetes.namespace_name = namespace_name
-  
-  del(.file)
-  
-  del(.source_type)
-  
-  del(.stream)
-  
-  del(.kubernetes.pod_ips)
+  .
 """
 
 [transforms.route_container_logs]
@@ -332,13 +310,13 @@ type = "remap"
 inputs = ["raw_container_logs"]
 source = """
   level = "unknown"
-  if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
+  if match!(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
     level = "warn"
-  } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
+  } else if match!(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
     level = "info"
-  } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
+  } else if match!(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
     level = "error"
-  } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
+  } else if match!(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
     level = "debug"
   }
   .level = level
@@ -360,29 +338,7 @@ source = """
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = """
-  level = "unknown"
-  if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-    level = "warn"
-  } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-    level = "info"
-  } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-    level = "error"
-  } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-    level = "debug"
-  }
-  .level = level
-  
-  namespace_name = .kubernetes.pod_namespace
-  del(.kubernetes.pod_namespace)
-  .kubernetes.namespace_name = namespace_name
-  
-  del(.file)
-  
-  del(.source_type)
-  
-  del(.stream)
-  
-  del(.kubernetes.pod_ips)
+  .
 """
 
 [transforms.route_container_logs]
@@ -449,6 +405,7 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
             return
         end
         dedot(event.log.kubernetes.pod_labels)
@@ -530,6 +487,7 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
             return
         end
         dedot(event.log.kubernetes.pod_labels)
@@ -683,13 +641,13 @@ type = "remap"
 inputs = ["raw_container_logs"]
 source = """
   level = "unknown"
-  if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
+  if match!(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
     level = "warn"
-  } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
+  } else if match!(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
     level = "info"
-  } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
+  } else if match!(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
     level = "error"
-  } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
+  } else if match!(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
     level = "debug"
   }
   .level = level
@@ -711,29 +669,7 @@ source = """
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = """
-  level = "unknown"
-  if match(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-    level = "warn"
-  } else if match(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
-    level = "info"
-  } else if match(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
-    level = "error"
-  } else if match(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-    level = "debug"
-  }
-  .level = level
-  
-  namespace_name = .kubernetes.pod_namespace
-  del(.kubernetes.pod_namespace)
-  .kubernetes.namespace_name = namespace_name
-  
-  del(.file)
-  
-  del(.source_type)
-  
-  del(.stream)
-  
-  del(.kubernetes.pod_ips)
+  .
 """
 
 [transforms.route_container_logs]
@@ -807,6 +743,7 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
             return
         end
         dedot(event.log.kubernetes.pod_labels)
@@ -888,6 +825,7 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
             return
         end
         dedot(event.log.kubernetes.pod_labels)

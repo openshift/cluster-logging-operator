@@ -9,6 +9,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
@@ -83,6 +84,7 @@ func TestLogForwardingToLokiWithFluentd(t *testing.T) {
 
 func TestLogForwardingToLokiWithVector(t *testing.T) {
 	cl := runtime.NewClusterLogging()
+	cl.Annotations = map[string]string{k8shandler.PreviewVectorCollector: "enabled"}
 	cl.Spec.Collection.Logs.Type = loggingv1.LogCollectionTypeVector
 	cl.Spec.Collection.Logs.FluentdSpec = loggingv1.FluentdSpec{}
 	clf := runtime.NewClusterLogForwarder()

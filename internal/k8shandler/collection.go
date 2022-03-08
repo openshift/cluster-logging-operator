@@ -3,7 +3,6 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -75,10 +74,10 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
 			log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
 		}
-		enabled, present := os.LookupEnv("ENABLE_VECTOR_COLLECTOR")
-		if collectorType == logging.LogCollectionTypeVector && (!present || strings.ToLower(enabled) != "true") {
-			err = errors.NewBadRequest("Vector as collector not enabled via env variable ENABLE_VECTOR_COLLECTOR")
-			log.V(9).Error(err, "Vector as collector not enabled via env variable ENABLE_VECTOR_COLLECTOR")
+		enabled, found := clusterRequest.Cluster.Annotations[PreviewVectorCollector]
+		if collectorType == logging.LogCollectionTypeVector && (!found || enabled != "enabled") {
+			err = errors.NewBadRequest(fmt.Sprintf("Vector as collector not enabled via annotation on ClusterLogging %s", PreviewVectorCollector))
+			log.V(9).Error(err, "Vector as collector not enabled via annotation on ClusterLogging")
 			return err
 		}
 

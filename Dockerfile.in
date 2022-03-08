@@ -62,7 +62,6 @@ COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-g
 
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
-ENV ENABLE_VECTOR_COLLECTOR=true
 CMD ["/usr/bin/cluster-logging-operator"]
 
 LABEL \

@@ -8,6 +8,7 @@ import (
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -75,7 +76,7 @@ func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 	return found && enabled == "enabled"
 }
 
-func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.ConfigMap, pipelineSpec logging.ClusterLogForwarderSpec) v1.PodSpec {
+func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.ConfigMap, clfspec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret) v1.PodSpec {
 	collectionSpec := logging.CollectionSpec{}
 	if cluster.Spec.Collection != nil {
 		collectionSpec = *cluster.Spec.Collection
@@ -170,7 +171,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 
 	// List of _unique_ output secret names, several outputs may use the same secret.
 	unique := sets.NewString()
-	for _, o := range pipelineSpec.Outputs {
+	for _, o := range clfspec.Outputs {
 		if o.Secret != nil && o.Secret.Name != "" {
 			unique.Insert(o.Secret.Name)
 		}
@@ -191,6 +192,18 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 				Name:      constants.CollectorTrustedCAName,
 				ReadOnly:  true,
 				MountPath: constants.TrustedCABundleMountDir,
+			})
+	}
+
+	// Append any additional volumes based on attributes of the secret and forwarder spec
+	addProjectServiceAccountVolume := false
+	if CloudwatchSecretWithRoleArnKey(secrets, &clfspec) {
+		addProjectServiceAccountVolume = true
+		fluentdContainer.VolumeMounts = append(fluentdContainer.VolumeMounts,
+			v1.VolumeMount{
+				Name:      constants.AWSWebIdentityTokenName,
+				ReadOnly:  true,
+				MountPath: constants.AWSWebIdentityTokenMount,
 			})
 	}
 
@@ -277,6 +290,25 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 			})
 	}
 
+	if addProjectServiceAccountVolume {
+		fluentdPodSpec.Volumes = append(fluentdPodSpec.Volumes,
+			v1.Volume{
+				Name: constants.AWSWebIdentityTokenName,
+				VolumeSource: v1.VolumeSource{
+					Projected: &v1.ProjectedVolumeSource{
+						Sources: []v1.VolumeProjection{
+							{
+								ServiceAccountToken: &v1.ServiceAccountTokenProjection{
+									Audience: "openshift",
+									Path:     constants.AWSWebIdentityTokenFilePath,
+								},
+							},
+						},
+					},
+				},
+			})
+	}
+
 	fluentdPodSpec.PriorityClassName = clusterLoggingPriorityClassName
 	// Shorten the termination grace period from the default 30 sec to 10 sec.
 	fluentdPodSpec.TerminationGracePeriodSeconds = utils.GetInt64(10)
@@ -287,7 +319,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateFluentdDaemonset(flue
 
 	cluster := clusterRequest.Cluster
 
-	fluentdPodSpec := newFluentdPodSpec(cluster, fluentdTrustBundle, clusterRequest.ForwarderSpec)
+	fluentdPodSpec := newFluentdPodSpec(cluster, fluentdTrustBundle, clusterRequest.ForwarderSpec, clusterRequest.OutputSecrets)
 
 	fluentdDaemonset := NewDaemonSet(constants.CollectorName, cluster.Namespace, constants.CollectorName, constants.CollectorName, fluentdPodSpec)
 	fluentdDaemonset.Spec.Template.Spec.Containers[0].Env = updateEnvVar(v1.EnvVar{Name: "COLLECTOR_CONF_HASH", Value: pipelineConfHash}, fluentdDaemonset.Spec.Template.Spec.Containers[0].Env)
@@ -435,4 +467,18 @@ func updateEnvVar(value v1.EnvVar, values []v1.EnvVar) []v1.EnvVar {
 		values = append(values, value)
 	}
 	return values
+}
+
+// CloudwatchSecretWithRoleArnKey return true if secret has 'role_arn' key and output type is cloudwatch
+func CloudwatchSecretWithRoleArnKey(secrets map[string]*v1.Secret, clfspec *logging.ClusterLogForwarderSpec) bool {
+	if secrets == nil {
+		return false
+	}
+	for _, o := range clfspec.Outputs {
+		secret := secrets[o.Name]
+		if security.HasAwsRoleArnKey(secret) && o.Type == logging.OutputTypeCloudwatch {
+			return true
+		}
+	}
+	return false
 }

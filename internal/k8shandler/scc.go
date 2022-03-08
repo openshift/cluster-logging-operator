@@ -33,7 +33,7 @@ func NewSCC(name string) *SecurityContextConstraints {
 			"KILL",
 		},
 		AllowHostDirVolumePlugin:        true,
-		Volumes:                         []FSType{"configMap", "secret", "emptyDir"},
+		Volumes:                         []FSType{"configMap", "secret", "emptyDir", "projected"},
 		DefaultAllowPrivilegeEscalation: utils.GetBool(false),
 		AllowPrivilegeEscalation:        utils.GetBool(false),
 		RunAsUser: RunAsUserStrategyOptions{

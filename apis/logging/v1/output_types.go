@@ -32,10 +32,12 @@ type OutputTypeSpec struct {
 
 // Cloudwatch provides configuration for the output type `cloudwatch`
 //
-// Note: the cloudwatch output recognizes the following additional keys in the Secret:
+// Note: the cloudwatch output recognizes the following keys in the Secret:
 //
 //	`aws_secret_access_key`: AWS secret access key.
-// 	`aws_access_key_id`:AWS secret access key ID.
+// 	`aws_access_key_id`: AWS secret access key ID.
+//
+// Or for sts-enabled clusters `role_arn` key specifying a properly formatted role arn
 //
 type Cloudwatch struct {
 	// +required

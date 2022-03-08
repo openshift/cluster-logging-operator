@@ -25,7 +25,7 @@ var _ = Describe("fluentd.go#newFluentdPodSpec", func() {
 		container v1.Container
 	)
 	BeforeEach(func() {
-		podSpec = newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+		podSpec = newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 		container = podSpec.Containers[0]
 	})
 	Describe("when creating of the collector container", func() {
@@ -43,7 +43,7 @@ var _ = Describe("fluentd.go#newFluentdPodSpec", func() {
 func TestNewFluentdPodSpecWhenFieldsAreUndefined(t *testing.T) {
 
 	cluster := &logging.ClusterLogging{}
-	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 
 	if len(podSpec.Containers) != 2 {
 		t.Error("Exp. there to be 2 fluentd container")
@@ -79,7 +79,7 @@ func TestNewFluentdPodSpecWhenResourcesAreDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 
 	if len(podSpec.Containers) != 2 {
 		t.Error("Exp. there to be 2 fluentd container")
@@ -121,7 +121,7 @@ func TestFluentdPodSpecHasTaintTolerations(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 
 	if !reflect.DeepEqual(podSpec.Tolerations, expectedTolerations) {
 		t.Errorf("Exp. the tolerations to be %v but was %v", expectedTolerations, podSpec.Tolerations)
@@ -144,7 +144,7 @@ func TestNewFluentdPodSpecWhenSelectorIsDefined(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 
 	if !reflect.DeepEqual(podSpec.NodeSelector, expSelector) {
 		t.Errorf("Exp. the nodeSelector to be %q but was %q", expSelector, podSpec.NodeSelector)
@@ -176,7 +176,7 @@ func TestNewFluentdPodNoTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -221,7 +221,7 @@ func TestNewFluentdPodWithTolerations(t *testing.T) {
 		},
 	}
 
-	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 	tolerations := podSpec.Tolerations
 
 	if !utils.AreTolerationsSame(tolerations, expTolerations) {
@@ -256,7 +256,7 @@ func TestNewFluentdPodSpecWhenProxyConfigExists(t *testing.T) {
 		Data: map[string]string{
 			constants.TrustedCABundleKey: caBundle,
 		},
-	}, logging.ClusterLogForwarderSpec{})
+	}, logging.ClusterLogForwarderSpec{}, nil)
 
 	if len(podSpec.Containers) != 2 {
 		t.Error("Exp. there to be 2 fluentd container")
@@ -334,7 +334,7 @@ func TestNewFluentdPodWhenChunkLimitSizeExists(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 
 	if len(podSpec.Containers) != 2 {
 		t.Error("Exp. there to be 2 fluentd container")
@@ -362,7 +362,7 @@ func TestNewFluentdPodWhenTotalLimitSizeExists(t *testing.T) {
 			},
 		},
 	}
-	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{})
+	podSpec := newFluentdPodSpec(cluster, nil, logging.ClusterLogForwarderSpec{}, nil)
 
 	if len(podSpec.Containers) != 2 {
 		t.Error("Exp. there to be 2 fluentd container")

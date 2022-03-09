@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
+	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
@@ -46,6 +47,11 @@ topic = {{.Topic}}
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	if genhelper.IsDebugOutput(op) {
+		return []Element{
+			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
+		}
+	}
 	return MergeElements(
 		[]Element{
 			Output(o, inputs, secret, op),

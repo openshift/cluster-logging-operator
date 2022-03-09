@@ -42,6 +42,8 @@ const (
 	metricsPortName                 = "metrics"
 	metricsVolumeName               = "collector-metrics"
 	prometheusCAFile                = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
+
+	AnnotationDebugOutput = "logging.openshift.io/debug-output"
 )
 
 var (

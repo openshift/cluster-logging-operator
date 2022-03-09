@@ -67,12 +67,12 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 		FromLabel{
 			InLabel: helpers.LabelName(o.Name),
 			SubElements: []Element{
-				GroupNameStreamName(fmt.Sprintf("%s%s", logGroupPrefix, logGroupName),
-					"${tag}",
-					source.ApplicationTags),
 				GroupNameStreamName(fmt.Sprintf("%sinfrastructure", logGroupPrefix),
 					"${record['hostname']}.${tag}",
-					source.InfraTags),
+					source.InfraTagsForMultilineEx),
+				GroupNameStreamName(fmt.Sprintf("%s%s", logGroupPrefix, logGroupName),
+					"${tag}",
+					source.ApplicationTagsForMultilineEx),
 				GroupNameStreamName(fmt.Sprintf("%saudit", logGroupPrefix),
 					"${record['hostname']}.${tag}",
 					source.AuditTags),

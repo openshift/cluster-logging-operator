@@ -375,13 +375,13 @@ type FluentdBufferSpec struct {
 	// +optional
 	RetryType RetryTypeType `json:"retryType"`
 
-	// RetryMaxInterval represents the maxixum time interval for exponential backoff
+	// RetryMaxInterval represents the maximum time interval for exponential backoff
 	// between retries. Takes only effect if used together with `retryType: exponential_backoff`.
 	//
 	// +optional
 	RetryMaxInterval FluentdTimeUnit `json:"retryMaxInterval"`
 
-	// RetryTimeout represents the maxixum time interval to attempt retries before giving up
+	// RetryTimeout represents the maximum time interval to attempt retries before giving up
 	// and the record is disguarded.  If unspecified, the default will be used
 	//
 	// +optional

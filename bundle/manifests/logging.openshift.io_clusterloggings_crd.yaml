@@ -292,14 +292,14 @@ spec:
                             - drop_oldest_chunk
                             type: string
                           retryMaxInterval:
-                            description: 'RetryMaxInterval represents the maxixum
+                            description: 'RetryMaxInterval represents the maximum
                               time interval for exponential backoff between retries.
                               Takes only effect if used together with `retryType:
                               exponential_backoff`.'
                             pattern: ^([0-9]+)([smhd]{0,1})$
                             type: string
                           retryTimeout:
-                            description: RetryTimeout represents the maxixum time
+                            description: RetryTimeout represents the maximum time
                               interval to attempt retries before giving up and the
                               record is disguarded.  If unspecified, the default will
                               be used

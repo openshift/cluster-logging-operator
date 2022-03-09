@@ -19,15 +19,15 @@ RUN go mod download
 
 COPY ${REMOTE_SOURCE}/.bingo .bingo
 COPY ${REMOTE_SOURCE}/Makefile ./Makefile
-COPY ${REMOTE_SOURCE}/main.go .
-COPY ${REMOTE_SOURCE}/apis ./apis
-COPY ${REMOTE_SOURCE}/controllers ./controllers
-COPY ${REMOTE_SOURCE}/internal ./internal
 COPY ${REMOTE_SOURCE}/must-gather ./must-gather
 COPY ${REMOTE_SOURCE}/version ./version
 COPY ${REMOTE_SOURCE}/scripts ./scripts
 COPY ${REMOTE_SOURCE}/files ./files
 COPY ${REMOTE_SOURCE}/manifests ./manifests
+COPY ${REMOTE_SOURCE}/main.go .
+COPY ${REMOTE_SOURCE}/apis ./apis
+COPY ${REMOTE_SOURCE}/controllers ./controllers
+COPY ${REMOTE_SOURCE}/internal ./internal
 
 RUN make build
 

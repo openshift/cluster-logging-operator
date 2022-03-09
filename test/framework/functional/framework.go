@@ -30,6 +30,11 @@ import (
 
 type receiverBuilder func(f *CollectorFunctionalFramework, b *runtime.PodBuilder, output logging.OutputSpec) error
 
+var TestAPIAdapterConfigVisitor = func(conf string) string {
+	conf = strings.Replace(conf, "@type kubernetes_metadata", "@type kubernetes_metadata\ntest_api_adapter  KubernetesMetadata::TestApiAdapter\n", 1)
+	return conf
+}
+
 type CollectorFramework interface {
 	DeployConfigMapForConfig(name, config, clfYaml string) error
 	BuildCollectorContainer(*runtime.ContainerBuilder, string) *runtime.ContainerBuilder

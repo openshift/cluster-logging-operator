@@ -298,7 +298,7 @@ func (tc *E2ETestFramework) waitForDeployment(namespace, name string, retryInter
 			return false, nil
 		}
 		replicas := int(*deployment.Spec.Replicas)
-		if int(deployment.Status.AvailableReplicas) == replicas {
+		if int(deployment.Status.ReadyReplicas) == replicas {
 			return true, nil
 		}
 		return false, nil

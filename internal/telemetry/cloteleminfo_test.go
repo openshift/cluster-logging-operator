@@ -52,8 +52,8 @@ var _ = Describe("telemetry", func() {
 			})
 			It("Info metric must have version, managedStatus, healthStatus as default values", func() {
 				Expect(CLinfo["version"]).To(Equal(version.Version))
-				Expect(CLFinputType["application"]).To(Equal("1"))
-				Expect(CLFoutputType["default"]).To(Equal("1"))
+				Expect(CLFinputType["application"]).To(Equal("0"))
+				Expect(CLFoutputType["elasticsearch"]).To(Equal("0"))
 			})
 		})
 	})
@@ -72,9 +72,12 @@ var _ = Describe("telemetry", func() {
 		Context("Updating metrics for prometheus", func() {
 			It("Show metrics updated without throwing any errors", func() {
 				CLinfo["version"] = "0.0.2"
-				err := UpdateMetrics()
-				fmt.Printf("UpdateMetrics call returns %v", err)
-				Expect(err).Should(BeNil())
+				err1 := UpdateCLMetrics()
+				fmt.Printf("UpdateMetrics call returns %v", err1)
+				err2 := UpdateCLFMetrics()
+				fmt.Printf("UpdateMetrics call returns %v", err2)
+				Expect(err1).Should(BeNil())
+				Expect(err2).Should(BeNil())
 			})
 
 		})

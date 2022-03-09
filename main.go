@@ -145,10 +145,6 @@ func main() {
 	if errr != nil {
 		log.Error(err, "Error in registering clo metrics for telemetry")
 	}
-	erru := telemetry.UpdateMetrics()
-	if erru != nil {
-		log.Error(err, "Error in registering clo metrics for telemetry")
-	}
 
 	log.Info("Starting the Cmd.")
 	// Start the Cmd

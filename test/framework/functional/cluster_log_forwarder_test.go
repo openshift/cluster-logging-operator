@@ -58,6 +58,7 @@ pipelines:
 						}
 					},
 				).Named("app-1").
+				WithMultineErrorDetection().
 				ToFluentForwardOutput()
 			builder.FromInputWithVisitor("application-logs2",
 				func(spec *logging.InputSpec) {
@@ -95,7 +96,8 @@ outputs:
   type: fluentdForward
   url: tcp://0.0.0.0:24225
 pipelines:
-- inputRefs:
+- detectMultilineErrors: true
+  inputRefs:
   - application-logs1
   name: app-1
   outputRefs:

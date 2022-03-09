@@ -51,19 +51,19 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.**>
+ <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
+     @type record_modifier
+    <record>
+      cw_group_name infrastructure
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+  
+  <filter kubernetes.** var.log.pods.**>
     @type record_modifier
     <record>
       cw_group_name application
       cw_stream_name ${tag}
-    </record>
-  </filter>
-  
-  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
-    @type record_modifier
-    <record>
-      cw_group_name infrastructure
-      cw_stream_name ${record['hostname']}.${tag}
     </record>
   </filter>
   
@@ -105,22 +105,22 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.**>
-    @type record_modifier
-    <record>
-      cw_group_name ${record['kubernetes']['namespace_name']}
-      cw_stream_name ${tag}
-    </record>
-  </filter>
-  
-  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
     @type record_modifier
     <record>
       cw_group_name infrastructure
       cw_stream_name ${record['hostname']}.${tag}
     </record>
   </filter>
-  
+
+  <filter kubernetes.** var.log.pods.**>
+    @type record_modifier
+    <record>
+      cw_group_name ${record['kubernetes']['namespace_name']}
+      cw_stream_name ${tag}
+    </record>
+  </filter>
+
   <filter linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
     @type record_modifier
     <record>
@@ -162,22 +162,22 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.**>
-    @type record_modifier
-    <record>
-      cw_group_name foo.${record['kubernetes']['namespace_id']}
-      cw_stream_name ${tag}
-    </record>
-  </filter>
-  
-  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
     @type record_modifier
     <record>
       cw_group_name foo.infrastructure
       cw_stream_name ${record['hostname']}.${tag}
     </record>
   </filter>
-  
+
+  <filter kubernetes.** var.log.pods.**>
+    @type record_modifier
+    <record>
+      cw_group_name foo.${record['kubernetes']['namespace_id']}
+      cw_stream_name ${tag}
+    </record>
+  </filter>
+
   <filter linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
     @type record_modifier
     <record>

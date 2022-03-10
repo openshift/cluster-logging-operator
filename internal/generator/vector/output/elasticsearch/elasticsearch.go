@@ -7,6 +7,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
+	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -123,9 +124,15 @@ func ID(id1, id2 string) string {
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
-
 	outputs := []Element{}
 	outputName := strings.ToLower(vectorhelpers.Replacer.Replace(o.Name))
+	if genhelper.IsDebugOutput(op) {
+		return []Element{
+			AddEsID(ID(outputName, "add_es_id"), inputs),
+			DeDotAndFlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_id")}),
+			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs([]string{ID(outputName, "dedot_and_flatten")}...)),
+		}
+	}
 	outputs = MergeElements(outputs,
 		[]Element{
 			AddEsID(ID(outputName, "add_es_id"), inputs),

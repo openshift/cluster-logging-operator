@@ -3,8 +3,10 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	"strings"
+
+	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 
 	"github.com/ViaQ/logerr/log"
 	configv1 "github.com/openshift/api/config/v1"
@@ -53,6 +55,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	op := generator.Options{}
 	if clusterRequest.useOldRemoteSyslogPlugin() {
 		op[generator.UseOldRemoteSyslogPlugin] = ""
+	}
+	if debug, ok := clusterRequest.ForwarderRequest.Annotations[AnnotationDebugOutput]; ok && strings.ToLower(debug) == "true" {
+		op[helpers.EnableDebugOutput] = "true"
 	}
 
 	var collectorType = clusterRequest.Cluster.Spec.Collection.Logs.Type

@@ -5,8 +5,12 @@ import (
 	elements2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 )
 
+const (
+	EnableDebugOutput = "debug-output"
+)
+
 func IsDebugOutput(op generator.Options) bool {
-	_, ok := op["debug_output"]
+	_, ok := op[EnableDebugOutput]
 	return ok
 }
 

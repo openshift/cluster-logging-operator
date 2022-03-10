@@ -3,7 +3,9 @@ package forwarder
 import (
 	"errors"
 	"fmt"
+
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -72,7 +74,7 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 		op[generator.UseOldRemoteSyslogPlugin] = ""
 	}
 	if debugOutput {
-		op["debug_output"] = ""
+		op[helpers.EnableDebugOutput] = ""
 	}
 	configGenerator := forwardergenerator.New(collectionType)
 	if configGenerator == nil {

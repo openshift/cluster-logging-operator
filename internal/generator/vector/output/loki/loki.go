@@ -6,7 +6,6 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
@@ -17,17 +16,22 @@ import (
 )
 
 const (
-	lokiLabelKubernetesHost = "kubernetes.host"
+	logType                          = "log_type"
+	lokiLabelKubernetesNamespaceName = "kubernetes.namespace_name"
+	lokiLabelKubernetesPodName       = "kubernetes.pod_name"
+	lokiLabelKubernetesHost          = "kubernetes.host"
+	lokiLabelKubernetesContainerName = "kubernetes.container_name"
+	podNamespace                     = "kubernetes.pod_namespace"
 )
 
 var (
 	defaultLabelKeys = []string{
-		"log_type",
+		logType,
 
 		//container labels
-		"kubernetes.namespace_name",
-		"kubernetes.pod_name",
-		"kubernetes.container_name",
+		lokiLabelKubernetesNamespaceName,
+		lokiLabelKubernetesPodName,
+		lokiLabelKubernetesContainerName,
 	}
 	requiredLabelKeys = []string{
 		lokiLabelKubernetesHost,
@@ -100,22 +104,7 @@ func (l LokiLabels) Template() string {
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			generator.ConfLiteral{
-				Desc:         "Sending records to stdout for debug purposes",
-				ComponentID:  strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-				InLabel:      vectorhelpers.MakeInputs(inputs...),
-				TemplateName: "lokidebug",
-				TemplateStr: `
-{{define "lokidebug" -}}
-[sinks.{{.ComponentID}}]
-inputs = {{.InLabel}}
-type = "console"
-target = "stdout"
-[sinks.{{.ComponentID}}.encoding]
-codec = "json"
-{{end}}
-`,
-			},
+			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	return MergeElements(
@@ -165,7 +154,10 @@ func lokiLabels(lo *logging.Loki) []Label {
 			Value: fmt.Sprintf("{{%s}}", k),
 		}
 		if k == lokiLabelKubernetesHost {
-			l.Value = "${NODE_NAME}"
+			l.Value = "${VECTOR_SELF_NODE_NAME}"
+		}
+		if k == lokiLabelKubernetesNamespaceName {
+			l.Value = fmt.Sprintf("{{%s}}", podNamespace)
 		}
 		ls = append(ls, l)
 	}

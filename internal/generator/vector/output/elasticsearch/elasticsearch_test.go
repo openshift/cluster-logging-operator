@@ -42,7 +42,7 @@ var _ = Describe("Generate Vector config", func() {
 			},
 			ExpectedConf: `
 # Adding _id field
-[transforms.elasticsearch_preprocess_1]
+[transforms.es_1_add_es_id]
 type = "remap"
 inputs = ["application"]
 source = """
@@ -60,9 +60,55 @@ if (.log_type == "audit"){
 ._id = encode_base64(uuid_v4())
 """
 
+[transforms.es_1_dedot_and_flatten]
+type = "lua"
+inputs = ["es_1_add_es_id"]
+version = "2"
+hooks.process = "process"
+source = """
+    function process(event, emit)
+        if event.log.kubernetes == nil then
+            return
+        end
+        dedot(event.log.kubernetes.pod_labels)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.pod_labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+        -- delete the "pod_labels" key
+        event.log.kubernetes["pod_labels"] = nil
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+"""
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess_1"]
+inputs = ["es_1_dedot_and_flatten"]
 endpoint = "https://es.svc.infra.cluster:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
@@ -99,7 +145,7 @@ password = "testpass"
 			},
 			ExpectedConf: `
 # Adding _id field
-[transforms.elasticsearch_preprocess_1]
+[transforms.es_1_add_es_id]
 type = "remap"
 inputs = ["application"]
 source = """
@@ -117,9 +163,55 @@ if (.log_type == "audit"){
 ._id = encode_base64(uuid_v4())
 """
 
+[transforms.es_1_dedot_and_flatten]
+type = "lua"
+inputs = ["es_1_add_es_id"]
+version = "2"
+hooks.process = "process"
+source = """
+    function process(event, emit)
+        if event.log.kubernetes == nil then
+            return
+        end
+        dedot(event.log.kubernetes.pod_labels)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.pod_labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+        -- delete the "pod_labels" key
+        event.log.kubernetes["pod_labels"] = nil
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+"""
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess_1"]
+inputs = ["es_1_dedot_and_flatten"]
 endpoint = "https://es.svc.infra.cluster:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
@@ -146,7 +238,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
 # Adding _id field
-[transforms.elasticsearch_preprocess_1]
+[transforms.es_1_add_es_id]
 type = "remap"
 inputs = ["application"]
 source = """
@@ -164,9 +256,55 @@ if (.log_type == "audit"){
 ._id = encode_base64(uuid_v4())
 """
 
+[transforms.es_1_dedot_and_flatten]
+type = "lua"
+inputs = ["es_1_add_es_id"]
+version = "2"
+hooks.process = "process"
+source = """
+    function process(event, emit)
+        if event.log.kubernetes == nil then
+            return
+        end
+        dedot(event.log.kubernetes.pod_labels)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.pod_labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+        -- delete the "pod_labels" key
+        event.log.kubernetes["pod_labels"] = nil
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+"""
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess_1"]
+inputs = ["es_1_dedot_and_flatten"]
 endpoint = "http://es.svc.infra.cluster:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648

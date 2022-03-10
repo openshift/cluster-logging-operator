@@ -51,14 +51,23 @@ var _ = Describe("Testing Complete Config Generation", func() {
 				},
 			},
 			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "mytestapp",
+						Application: &logging.Application{
+							Namespaces: []string{"test-ns"},
+						},
+					},
+				},
 				Pipelines: []logging.PipelineSpec{
 					{
 						InputRefs: []string{
-							logging.InputNameApplication,
+							"mytestapp",
 							logging.InputNameInfrastructure,
 							logging.InputNameAudit},
 						OutputRefs: []string{"kafka-receiver"},
 						Name:       "pipeline",
+						Labels:     map[string]string{"key1": "value1", "key2": "value2"},
 					},
 				},
 				Outputs: []logging.OutputSpec{
@@ -108,6 +117,9 @@ include = ["/var/log/kube-apiserver/audit.log"]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver.audit.log"]
+
+[sources.internal_metrics]
+type = "internal_metrics"
 
 [transforms.container_logs]
 type = "remap"
@@ -163,8 +175,8 @@ source = '''
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
-route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
 
 
 # Rename log stream to "application"
@@ -194,11 +206,17 @@ source = """
 """
 
 
+[transforms.route_application_logs]
+type = "route"
+inputs = ["application"]
+route.mytestapp = '.kubernetes.pod_namespace == "test-ns"'
+
+
 [transforms.pipeline]
 type = "remap"
-inputs = ["application","infrastructure","audit"]
+inputs = ["route_application_logs.mytestapp","infrastructure","audit"]
 source = """
-.
+.openshift.labels = {"key1":"value1","key2":"value2"}
 """
 
 # Kafka config
@@ -218,6 +236,12 @@ key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 enabled = true
+
+[sinks.prometheus_output]
+type = "prometheus_exporter"
+inputs = ["internal_metrics"]
+address = "0.0.0.0:24231"
+default_namespace = "collector"
 `,
 		}),
 		Entry("with complex spec for elastic-search", generator.ConfGenerateTest{
@@ -298,6 +322,9 @@ type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver.audit.log"]
 
+[sources.internal_metrics]
+type = "internal_metrics"
+
 [transforms.container_logs]
 type = "remap"
 inputs = ["raw_container_logs"]
@@ -352,8 +379,8 @@ source = '''
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
-route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
 
 
 # Rename log stream to "application"
@@ -392,7 +419,7 @@ source = """
 
 
 # Adding _id field
-[transforms.elasticsearch_preprocess_1]
+[transforms.es_1_add_es_id]
 type = "remap"
 inputs = ["pipeline"]
 source = """
@@ -410,9 +437,55 @@ if (.log_type == "audit"){
 ._id = encode_base64(uuid_v4())
 """
 
+[transforms.es_1_dedot_and_flatten]
+type = "lua"
+inputs = ["es_1_add_es_id"]
+version = "2"
+hooks.process = "process"
+source = """
+    function process(event, emit)
+        if event.log.kubernetes == nil then
+            return
+        end
+        dedot(event.log.kubernetes.pod_labels)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.pod_labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+        -- delete the "pod_labels" key
+        event.log.kubernetes["pod_labels"] = nil
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+"""
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess_1"]
+inputs = ["es_1_dedot_and_flatten"]
 endpoint = "https://es-1.svc.messaging.cluster.local:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
@@ -423,9 +496,75 @@ id_key = "_id"
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
+
+# Adding _id field
+[transforms.es_2_add_es_id]
+type = "remap"
+inputs = ["pipeline"]
+source = """
+index = "default"
+if (.log_type == "application"){
+  index = "app"
+}
+if (.log_type == "infrastructure"){
+  index = "infra"
+}
+if (.log_type == "audit"){
+  index = "audit"
+}
+."write-index"=index+"-write"
+._id = encode_base64(uuid_v4())
+"""
+
+[transforms.es_2_dedot_and_flatten]
+type = "lua"
+inputs = ["es_2_add_es_id"]
+version = "2"
+hooks.process = "process"
+source = """
+    function process(event, emit)
+        if event.log.kubernetes == nil then
+            return
+        end
+        dedot(event.log.kubernetes.pod_labels)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.pod_labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+        -- delete the "pod_labels" key
+        event.log.kubernetes["pod_labels"] = nil
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+"""
+
 [sinks.es_2]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess_1"]
+inputs = ["es_2_dedot_and_flatten"]
 endpoint = "https://es-2.svc.messaging.cluster.local:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
@@ -436,6 +575,11 @@ id_key = "_id"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
+[sinks.prometheus_output]
+type = "prometheus_exporter"
+inputs = ["internal_metrics"]
+address = "0.0.0.0:24231"
+default_namespace = "collector"
 `,
 		}),
 		Entry("with multiple pipelines for elastic-search", generator.ConfGenerateTest{
@@ -522,6 +666,9 @@ type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver.audit.log"]
 
+[sources.internal_metrics]
+type = "internal_metrics"
+
 [transforms.container_logs]
 type = "remap"
 inputs = ["raw_container_logs"]
@@ -576,8 +723,8 @@ source = '''
 [transforms.route_container_logs]
 type = "route"
 inputs = ["container_logs"]
-route.app = '!(starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default")'
-route.infra = 'starts_with!(.kubernetes.pod_namespace,"kube") || starts_with!(.kubernetes.pod_namespace,"openshift") || .kubernetes.pod_namespace == "default"'
+route.app = '!((starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default"))'
+route.infra = '(starts_with!(.kubernetes.pod_namespace,"kube")) || (starts_with!(.kubernetes.pod_namespace,"openshift")) || (.kubernetes.pod_namespace == "default")'
 
 
 # Rename log stream to "application"
@@ -624,7 +771,7 @@ source = """
 
 
 # Adding _id field
-[transforms.elasticsearch_preprocess_1]
+[transforms.es_1_add_es_id]
 type = "remap"
 inputs = ["pipeline1","pipeline2"]
 source = """
@@ -642,9 +789,55 @@ if (.log_type == "audit"){
 ._id = encode_base64(uuid_v4())
 """
 
+[transforms.es_1_dedot_and_flatten]
+type = "lua"
+inputs = ["es_1_add_es_id"]
+version = "2"
+hooks.process = "process"
+source = """
+    function process(event, emit)
+        if event.log.kubernetes == nil then
+            return
+        end
+        dedot(event.log.kubernetes.pod_labels)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.pod_labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+        -- delete the "pod_labels" key
+        event.log.kubernetes["pod_labels"] = nil
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+"""
+
 [sinks.es_1]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess_1"]
+inputs = ["es_1_dedot_and_flatten"]
 endpoint = "https://es-1.svc.messaging.cluster.local:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
@@ -657,7 +850,7 @@ crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 
 # Adding _id field
-[transforms.elasticsearch_preprocess_2]
+[transforms.es_2_add_es_id]
 type = "remap"
 inputs = ["pipeline2"]
 source = """
@@ -675,9 +868,55 @@ if (.log_type == "audit"){
 ._id = encode_base64(uuid_v4())
 """
 
+[transforms.es_2_dedot_and_flatten]
+type = "lua"
+inputs = ["es_2_add_es_id"]
+version = "2"
+hooks.process = "process"
+source = """
+    function process(event, emit)
+        if event.log.kubernetes == nil then
+            return
+        end
+        dedot(event.log.kubernetes.pod_labels)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.pod_labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+        -- delete the "pod_labels" key
+        event.log.kubernetes["pod_labels"] = nil
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+"""
+
 [sinks.es_2]
 type = "elasticsearch"
-inputs = ["elasticsearch_preprocess_2"]
+inputs = ["es_2_dedot_and_flatten"]
 endpoint = "https://es-2.svc.messaging.cluster.local:9200"
 index = "{{ write-index }}"
 request.timeout_secs = 2147483648
@@ -688,6 +927,11 @@ id_key = "_id"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
+[sinks.prometheus_output]
+type = "prometheus_exporter"
+inputs = ["internal_metrics"]
+address = "0.0.0.0:24231"
+default_namespace = "collector"
 `,
 		}),
 	)

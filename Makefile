@@ -107,11 +107,9 @@ clean:
 	find -name .kube | xargs rm -rf
 	go clean -cache -testcache ./...
 
-PATCH?=Dockerfile.patch
 image: .target/image
 .target/image: .target $(shell find must-gather version scripts files manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
-	patch -o Dockerfile.local Dockerfile $(PATCH)
-	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
+	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 
 lint: $(GOLANGCI_LINT) lint-dockerfile

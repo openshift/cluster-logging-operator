@@ -1,6 +1,6 @@
 FROM quay.io/operator-framework/upstream-registry-builder AS registry-builder
 
-FROM registry.ci.openshift.org/ocp/4.7:base
+FROM registry.redhat.io/ubi8:8.5
 
 WORKDIR /
 COPY manifests/ /manifests

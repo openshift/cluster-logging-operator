@@ -17,6 +17,8 @@ const (
 	vectorConfigValue = "/etc/vector"
 	dataDir           = "datadir"
 	vectorDataDir     = "/var/lib/vector"
+
+	PreviewVectorCollector = "logging.openshift.io/preview-vector-collector"
 )
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateVectorDaemonset(fluentdTrustBundle *corev1.ConfigMap, pipelineConfHash string) (err error) {

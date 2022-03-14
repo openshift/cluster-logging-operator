@@ -1,0 +1,19 @@
+apiVersion: "logging.openshift.io/v1"
+kind: "ClusterLogging"
+metadata:
+  name: "instance"
+  namespace: "openshift-logging"
+spec:
+  logStore:
+    type: lokistack
+    lokistack:
+      size: 1x.small
+      storage:
+        secret:
+          name: test
+          type: s3
+      storageClassName: gp2
+  collection:
+    logs:
+      type: "fluentd"
+      fluentd: {}

@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	lokiv1beta1 "github.com/grafana/loki/operator/api/v1beta1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"reflect"
 	"sync"
@@ -22,6 +23,8 @@ import (
 const (
 	elasticsearchResourceName       = "elasticsearch"
 	maximumElasticsearchMasterCount = int32(3)
+
+	lokiResourceName = "lokistack"
 )
 
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
@@ -56,6 +59,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 		})
 		if retryErr != nil {
 			return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
+		}
+	} else if clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeLokiStack {
+
+		if err = clusterRequest.createOrUpdateLokiCR(); err != nil {
+			return err
 		}
 	}
 
@@ -515,4 +523,181 @@ func isNodeDifferent(current, desired elasticsearch.ElasticsearchNode) (elastics
 	}
 
 	return current, different
+}
+
+func (clusterRequest *ClusterLoggingRequest) updateLokiCRIfRequired(desired *lokiv1beta1.LokiStack) (err error) {
+	current := &lokiv1beta1.LokiStack{}
+
+	if err = clusterRequest.Get(desired.Name, current); err != nil {
+		if apierrors.IsNotFound(err) {
+			// the object doesn't exist yet
+			// recreate it on the next time
+			return nil
+		}
+		return fmt.Errorf("failed to get LokiStack CR: %v", err)
+	}
+
+	different := false
+	if current.Spec.Size != desired.Spec.Size {
+		log.Info("LokiStack size policy change found, updating", "currentName", current.Name)
+		current.Spec.Size = desired.Spec.Size
+		different = true
+	}
+
+	if current.Spec.StorageClassName != desired.Spec.StorageClassName {
+		log.Info("LokiStack storage class name policy change found, updating", "currentName", current.Name)
+		current.Spec.StorageClassName = desired.Spec.StorageClassName
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.Spec.Storage, desired.Spec.Storage) {
+		log.Info("LokiStack object storage spec change found, updating", "currentName", current.Name)
+		current.Spec.Storage = desired.Spec.Storage
+		different = true
+	}
+
+	if !reflect.DeepEqual(current.Spec.Template, desired.Spec.Template) {
+		log.Info("LokiStack template spec change found, updating", "currentName", current.Name)
+		current.Spec.Template = desired.Spec.Template
+		different = true
+	}
+
+	if different {
+		if err = clusterRequest.Update(current); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (cr *ClusterLoggingRequest) emptyLokiCR() *lokiv1beta1.LokiStack {
+	return &lokiv1beta1.LokiStack{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      lokiResourceName,
+			Namespace: cr.Cluster.Namespace,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "LokiStack",
+			APIVersion: lokiv1beta1.GroupVersion.String(),
+		},
+		Spec: lokiv1beta1.LokiStackSpec{},
+	}
+}
+
+func (cr *ClusterLoggingRequest) newLokiCR() *lokiv1beta1.LokiStack {
+
+	logStoreSpec := logging.LogStoreSpec{}
+	if cr.Cluster.Spec.LogStore != nil {
+		logStoreSpec = *cr.Cluster.Spec.LogStore
+	}
+
+	var (
+		size              lokiv1beta1.LokiStackSizeType
+		replicationFactor int32
+		template          lokiv1beta1.LokiTemplateSpec
+	)
+	switch logStoreSpec.LokiStackSpec.Size {
+	case logging.SizeOneXMedium:
+		size = lokiv1beta1.SizeOneXMedium
+		replicationFactor = 3
+	default:
+		size = lokiv1beta1.SizeOneXSmall
+		replicationFactor = 2
+	}
+
+	if logStoreSpec.LokiStackSpec.Template != nil {
+		if logStoreSpec.LokiStackSpec.Template.Compactor != nil {
+			template.Compactor = &lokiv1beta1.LokiComponentSpec{
+				NodeSelector: logStoreSpec.LokiStackSpec.Template.Compactor.NodeSelector,
+				Tolerations:  logStoreSpec.LokiStackSpec.Template.Compactor.Tolerations,
+			}
+		}
+		if logStoreSpec.LokiStackSpec.Template.Gateway != nil {
+			template.Gateway = &lokiv1beta1.LokiComponentSpec{
+				NodeSelector: logStoreSpec.LokiStackSpec.Template.Gateway.NodeSelector,
+				Tolerations:  logStoreSpec.LokiStackSpec.Template.Gateway.Tolerations,
+			}
+		}
+		if logStoreSpec.LokiStackSpec.Template.Distributor != nil {
+			template.Distributor = &lokiv1beta1.LokiComponentSpec{
+				NodeSelector: logStoreSpec.LokiStackSpec.Template.Distributor.NodeSelector,
+				Tolerations:  logStoreSpec.LokiStackSpec.Template.Distributor.Tolerations,
+			}
+		}
+		if logStoreSpec.LokiStackSpec.Template.IndexGateway != nil {
+			template.IndexGateway = &lokiv1beta1.LokiComponentSpec{
+				NodeSelector: logStoreSpec.LokiStackSpec.Template.IndexGateway.NodeSelector,
+				Tolerations:  logStoreSpec.LokiStackSpec.Template.IndexGateway.Tolerations,
+			}
+		}
+		if logStoreSpec.LokiStackSpec.Template.Ingester != nil {
+			template.Ingester = &lokiv1beta1.LokiComponentSpec{
+				NodeSelector: logStoreSpec.LokiStackSpec.Template.Ingester.NodeSelector,
+				Tolerations:  logStoreSpec.LokiStackSpec.Template.Ingester.Tolerations,
+			}
+		}
+		if logStoreSpec.LokiStackSpec.Template.Querier != nil {
+			template.Querier = &lokiv1beta1.LokiComponentSpec{
+				NodeSelector: logStoreSpec.LokiStackSpec.Template.Querier.NodeSelector,
+				Tolerations:  logStoreSpec.LokiStackSpec.Template.Querier.Tolerations,
+			}
+		}
+		if logStoreSpec.LokiStackSpec.Template.QueryFrontend != nil {
+			template.QueryFrontend = &lokiv1beta1.LokiComponentSpec{
+				NodeSelector: logStoreSpec.LokiStackSpec.Template.QueryFrontend.NodeSelector,
+				Tolerations:  logStoreSpec.LokiStackSpec.Template.QueryFrontend.Tolerations,
+			}
+		}
+	}
+
+	lokiCR := cr.emptyLokiCR()
+	lokiCR.Spec = lokiv1beta1.LokiStackSpec{
+		ManagementState:   lokiv1beta1.ManagementStateManaged,
+		Size:              size,
+		Storage:           logStoreSpec.LokiStackSpec.Storage,
+		StorageClassName:  logStoreSpec.LokiStackSpec.StorageClassName,
+		ReplicationFactor: replicationFactor,
+		Limits:            nil,
+		Template:          &template,
+		Tenants: &lokiv1beta1.TenantsSpec{
+			Mode: lokiv1beta1.OpenshiftLogging,
+		},
+	}
+
+	utils.AddOwnerRefToObject(lokiCR, utils.AsOwner(cr.Cluster))
+
+	return lokiCR
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiCR() (err error) {
+
+	if !clusterRequest.isManaged() {
+		return nil
+	}
+
+	// get existing CR first
+	existingCR := &lokiv1beta1.LokiStack{}
+	if err = clusterRequest.Get(lokiResourceName, existingCR); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to get LokiStack CR: %v", err)
+		}
+	}
+
+	lokiCR := clusterRequest.newLokiCR()
+
+	err = clusterRequest.Create(lokiCR)
+	if err == nil {
+		return nil
+	}
+
+	if !errors.IsAlreadyExists(err) {
+		return fmt.Errorf("failure creating LokiStack CR: %v", err)
+	}
+
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		return clusterRequest.updateLokiCRIfRequired(lokiCR)
+	})
+
+	return retryErr
 }

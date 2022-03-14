@@ -357,6 +357,274 @@ spec:
                     required:
                     - nodeCount
                     type: object
+                  lokistack:
+                    description: Specification of the Loki Log Store component
+                    properties:
+                      size:
+                        description: Size defines one of the support Loki deployment scale out sizes.
+                        enum:
+                        - 1x.small
+                        - 1x.medium
+                        type: string
+                      storage:
+                        description: Storage defines the spec for the object storage endpoint to store logs.
+                        properties:
+                          secret:
+                            description: Secret for object storage authentication. Name of a secret in the same namespace as the cluster logging operator.
+                            properties:
+                              name:
+                                description: Name of a secret in the namespace configured for object storage secrets.
+                                type: string
+                              type:
+                                description: Type of object storage that should be used
+                                enum:
+                                - azure
+                                - gcs
+                                - s3
+                                - swift
+                                type: string
+                            required:
+                            - name
+                            - type
+                            type: object
+                        required:
+                        - secret
+                        type: object
+                      storageClassName:
+                        description: Storage class name defines the storage class for ingester/querier PVCs.
+                        type: string
+                      template:
+                        description: Template defines the resource/limits/tolerations/nodeselectors per component
+                        properties:
+                          compactor:
+                            description: Compactor defines the compaction component spec.
+                            properties:
+                              nodeSelector:
+                                additionalProperties:
+                                  type: string
+                                description: NodeSelector defines the labels required by a node to schedule the component onto it.
+                                type: object
+                              tolerations:
+                                description: Tolerations defines the tolerations required by a node to schedule the component onto it.
+                                items:
+                                  description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                                  properties:
+                                    effect:
+                                      description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                                      type: string
+                                    key:
+                                      description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                                      type: string
+                                    operator:
+                                      description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                                      type: string
+                                    tolerationSeconds:
+                                      description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                                      format: int64
+                                      type: integer
+                                    value:
+                                      description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          distributor:
+                            description: Distributor defines the distributor component spec.
+                            properties:
+                              nodeSelector:
+                                additionalProperties:
+                                  type: string
+                                description: NodeSelector defines the labels required by a node to schedule the component onto it.
+                                type: object
+                              tolerations:
+                                description: Tolerations defines the tolerations required by a node to schedule the component onto it.
+                                items:
+                                  description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                                  properties:
+                                    effect:
+                                      description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                                      type: string
+                                    key:
+                                      description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                                      type: string
+                                    operator:
+                                      description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                                      type: string
+                                    tolerationSeconds:
+                                      description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                                      format: int64
+                                      type: integer
+                                    value:
+                                      description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          gateway:
+                            description: Gateway defines the lokistack gateway component spec.
+                            properties:
+                              nodeSelector:
+                                additionalProperties:
+                                  type: string
+                                description: NodeSelector defines the labels required by a node to schedule the component onto it.
+                                type: object
+                              tolerations:
+                                description: Tolerations defines the tolerations required by a node to schedule the component onto it.
+                                items:
+                                  description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                                  properties:
+                                    effect:
+                                      description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                                      type: string
+                                    key:
+                                      description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                                      type: string
+                                    operator:
+                                      description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                                      type: string
+                                    tolerationSeconds:
+                                      description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                                      format: int64
+                                      type: integer
+                                    value:
+                                      description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          indexGateway:
+                            description: IndexGateway defines the index gateway component spec.
+                            properties:
+                              nodeSelector:
+                                additionalProperties:
+                                  type: string
+                                description: NodeSelector defines the labels required by a node to schedule the component onto it.
+                                type: object
+                              tolerations:
+                                description: Tolerations defines the tolerations required by a node to schedule the component onto it.
+                                items:
+                                  description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                                  properties:
+                                    effect:
+                                      description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                                      type: string
+                                    key:
+                                      description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                                      type: string
+                                    operator:
+                                      description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                                      type: string
+                                    tolerationSeconds:
+                                      description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                                      format: int64
+                                      type: integer
+                                    value:
+                                      description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          ingester:
+                            description: Ingester defines the ingester component spec.
+                            properties:
+                              nodeSelector:
+                                additionalProperties:
+                                  type: string
+                                description: NodeSelector defines the labels required by a node to schedule the component onto it.
+                                type: object
+                              tolerations:
+                                description: Tolerations defines the tolerations required by a node to schedule the component onto it.
+                                items:
+                                  description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                                  properties:
+                                    effect:
+                                      description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                                      type: string
+                                    key:
+                                      description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                                      type: string
+                                    operator:
+                                      description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                                      type: string
+                                    tolerationSeconds:
+                                      description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                                      format: int64
+                                      type: integer
+                                    value:
+                                      description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          querier:
+                            description: Querier defines the querier component spec.
+                            properties:
+                              nodeSelector:
+                                additionalProperties:
+                                  type: string
+                                description: NodeSelector defines the labels required by a node to schedule the component onto it.
+                                type: object
+                              tolerations:
+                                description: Tolerations defines the tolerations required by a node to schedule the component onto it.
+                                items:
+                                  description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                                  properties:
+                                    effect:
+                                      description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                                      type: string
+                                    key:
+                                      description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                                      type: string
+                                    operator:
+                                      description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                                      type: string
+                                    tolerationSeconds:
+                                      description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                                      format: int64
+                                      type: integer
+                                    value:
+                                      description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                          queryFrontend:
+                            description: QueryFrontend defines the query frontend component spec.
+                            properties:
+                              nodeSelector:
+                                additionalProperties:
+                                  type: string
+                                description: NodeSelector defines the labels required by a node to schedule the component onto it.
+                                type: object
+                              tolerations:
+                                description: Tolerations defines the tolerations required by a node to schedule the component onto it.
+                                items:
+                                  description: The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+                                  properties:
+                                    effect:
+                                      description: Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.
+                                      type: string
+                                    key:
+                                      description: Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.
+                                      type: string
+                                    operator:
+                                      description: Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.
+                                      type: string
+                                    tolerationSeconds:
+                                      description: TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.
+                                      format: int64
+                                      type: integer
+                                    value:
+                                      description: Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
+                        type: object
+                    required:
+                    - storage
+                    - storageClassName
+                    type: object
                   retentionPolicy:
                     description: Retention policy defines the maximum age for an index after which it should be deleted
                     nullable: true

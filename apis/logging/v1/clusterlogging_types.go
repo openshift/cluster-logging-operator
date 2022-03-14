@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	lokiv1beta1 "github.com/grafana/loki/operator/api/v1beta1"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
@@ -125,6 +126,9 @@ type LogStoreSpec struct {
 	// Specification of the Elasticsearch Log Store component
 	ElasticsearchSpec `json:"elasticsearch,omitempty"`
 
+	// Specification of the Loki Log Store component
+	LokiStackSpec `json:"lokistack,omitempty"`
+
 	// Retention policy defines the maximum age for an index after which it should be deleted
 	//
 	// +nullable
@@ -182,6 +186,126 @@ type ElasticsearchSpec struct {
 
 	// Specification of the Elasticsearch Proxy component
 	ProxySpec `json:"proxy,omitempty"`
+}
+
+// LokiStackSizeType declares the type for loki cluster scale outs.
+//
+// +kubebuilder:validation:Enum="1x.small";"1x.medium"
+type LokiStackSizeType string
+
+const (
+	// SizeOneXSmall defines the size of a single Loki deployment
+	// with small resources/limits requirements and HA support for all
+	// Loki components. This size is dedicated for setup **without** the
+	// requirement for single replication factor and auto-compaction.
+	SizeOneXSmall LokiStackSizeType = "1x.small"
+
+	// SizeOneXMedium defines the size of a single Loki deployment
+	// with small resources/limits requirements and HA support for all
+	// Loki components. This size is dedicated for setup **with** the
+	// requirement for single replication factor and auto-compaction.
+	SizeOneXMedium LokiStackSizeType = "1x.medium"
+)
+
+type LokiStackSpec struct {
+	// Size defines one of the support Loki deployment scale out sizes.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:1x.small","urn:alm:descriptor:com.tectonic.ui:select:1x.medium"},displayName="LokiStack Size"
+	Size LokiStackSizeType `json:"size,omitempty"`
+
+	// Storage defines the spec for the object storage endpoint to store logs.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Storage lokiv1beta1.ObjectStorageSpec `json:"storage"`
+
+	// Storage class name defines the storage class for ingester/querier PVCs.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors="urn:alm:descriptor:io.kubernetes:StorageClass",displayName="Storage Class Name"
+	StorageClassName string `json:"storageClassName"`
+
+	// Template defines the resource/limits/tolerations/nodeselectors per component
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors="urn:alm:descriptor:com.tectonic.ui:advanced",displayName="Node Placement"
+	Template *LokiTemplateSpec `json:"template,omitempty"`
+}
+
+// LokiComponentSpec defines the requirements to configure scheduling
+// of each loki component individually.
+type LokiComponentSpec struct {
+	// NodeSelector defines the labels required by a node to schedule
+	// the component onto it.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// Tolerations defines the tolerations required by a node to schedule
+	// the component onto it.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
+}
+
+// LokiTemplateSpec defines the template of all requirements to configure
+// scheduling of all Loki components to be deployed.
+type LokiTemplateSpec struct {
+
+	// Compactor defines the compaction component spec.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Compactor pods"
+	Compactor *LokiComponentSpec `json:"compactor,omitempty"`
+
+	// Distributor defines the distributor component spec.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Distributor pods"
+	Distributor *LokiComponentSpec `json:"distributor,omitempty"`
+
+	// Ingester defines the ingester component spec.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Ingester pods"
+	Ingester *LokiComponentSpec `json:"ingester,omitempty"`
+
+	// Querier defines the querier component spec.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Querier pods"
+	Querier *LokiComponentSpec `json:"querier,omitempty"`
+
+	// QueryFrontend defines the query frontend component spec.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Query Frontend pods"
+	QueryFrontend *LokiComponentSpec `json:"queryFrontend,omitempty"`
+
+	// Gateway defines the lokistack gateway component spec.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Gateway pods"
+	Gateway *LokiComponentSpec `json:"gateway,omitempty"`
+
+	// IndexGateway defines the index gateway component spec.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Index Gateway pods"
+	IndexGateway *LokiComponentSpec `json:"indexGateway,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection
@@ -506,6 +630,7 @@ type LogStoreType string
 
 const (
 	LogStoreTypeElasticsearch LogStoreType = "elasticsearch"
+	LogStoreTypeLokiStack     LogStoreType = "lokistack"
 )
 
 type ElasticsearchRoleType string

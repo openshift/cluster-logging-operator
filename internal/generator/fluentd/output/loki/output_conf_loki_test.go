@@ -173,7 +173,7 @@ func TestLokiOutput(t *testing.T) {
 				Loki: &v1.Loki{TenantKey: "foo.bar.baz"},
 			},
 		}}
-		config.content = `url https://logs-us-west1.grafana.net
+		config.content = `url https://logs-us-west1.grafana.net/a-tenant
     tenant ${record.dig("foo","bar","baz")}
 `
 		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)

@@ -113,14 +113,37 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
-		if clusterRequest.Cluster.Spec.LogStore != nil && clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
-			log.V(2).Info("ClusterLogForwarder forwarding to default store")
-			defaultPipeline := logging.PipelineSpec{
-				InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
-				OutputRefs: []string{logging.OutputNameDefault},
+		if clusterRequest.Cluster.Spec.LogStore != nil {
+			switch clusterRequest.Cluster.Spec.LogStore.Type {
+			case logging.LogStoreTypeElasticsearch:
+				log.V(2).Info("ClusterLogForwarder forwarding to default elasticsearch store")
+				defaultPipeline := logging.PipelineSpec{
+					InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
+					OutputRefs: []string{logging.OutputNameDefault},
+				}
+				clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{defaultPipeline}
+				// Continue with normalization to fill out spec and status.
+			case logging.LogStoreTypeLokiStack:
+				log.V(2).Info("ClusterLogForwarder forwarding to default loki store")
+				defaultPipelineApp := logging.PipelineSpec{
+					InputRefs:  []string{logging.InputNameApplication},
+					OutputRefs: []string{logging.OutputNameDefaultApp},
+				}
+				defaultPipelineAudit := logging.PipelineSpec{
+					InputRefs:  []string{logging.InputNameAudit},
+					OutputRefs: []string{logging.OutputNameDefaultAudit},
+				}
+				defaultPipelineInfra := logging.PipelineSpec{
+					InputRefs:  []string{logging.InputNameInfrastructure},
+					OutputRefs: []string{logging.OutputNameDefaultInfra},
+				}
+				clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
+					defaultPipelineApp,
+					defaultPipelineAudit,
+					defaultPipelineInfra,
+				}
+				// Continue with normalization to fill out spec and status.
 			}
-			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{defaultPipeline}
-			// Continue with normalization to fill out spec and status.
 		} else if clusterRequest.ForwarderRequest == nil {
 			log.V(3).Info("ClusterLogForwarder disabled")
 			return &logging.ClusterLogForwarderSpec{}, &logging.ClusterLogForwarderStatus{}
@@ -333,10 +356,9 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 
 	// Add the default output if required and available.
 	routes := logging.NewRoutes(clusterRequest.ForwarderSpec.Pipelines)
-	name := logging.OutputNameDefault
-	if _, ok := routes.ByOutput[name]; ok {
+	if _, ok := routes.ByOutput[logging.OutputNameDefault]; ok {
 		if clusterRequest.Cluster.Spec.LogStore == nil {
-			status.Outputs.Set(name, condMissing("no default log store specified"))
+			status.Outputs.Set(logging.OutputNameDefault, condMissing("no default log store specified"))
 		} else {
 			spec.Outputs = append(spec.Outputs, logging.OutputSpec{
 				Name:   logging.OutputNameDefault,
@@ -344,8 +366,32 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 				URL:    constants.LogStoreURL,
 				Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
 			})
-			status.Outputs.Set(name, condReady)
+			status.Outputs.Set(logging.OutputNameDefault, condReady)
 		}
+	}
+	if _, ok := routes.ByOutput[logging.OutputNameDefaultApp]; ok {
+		spec.Outputs = append(spec.Outputs, logging.OutputSpec{
+			Name: logging.OutputNameDefaultApp,
+			Type: logging.OutputTypeLoki,
+			URL:  constants.LogStoreLokiAppURL,
+		})
+		status.Outputs.Set(logging.OutputNameDefaultApp, condReady)
+	}
+	if _, ok := routes.ByOutput[logging.OutputNameDefaultAudit]; ok {
+		spec.Outputs = append(spec.Outputs, logging.OutputSpec{
+			Name: logging.OutputNameDefaultAudit,
+			Type: logging.OutputTypeLoki,
+			URL:  constants.LogStoreLokiAuditURL,
+		})
+		status.Outputs.Set(logging.OutputNameDefaultAudit, condReady)
+	}
+	if _, ok := routes.ByOutput[logging.OutputNameDefaultInfra]; ok {
+		spec.Outputs = append(spec.Outputs, logging.OutputSpec{
+			Name: logging.OutputNameDefaultInfra,
+			Type: logging.OutputTypeLoki,
+			URL:  constants.LogStoreLokiInfraURL,
+		})
+		status.Outputs.Set(logging.OutputNameDefaultInfra, condReady)
 	}
 
 	for i, out := range spec.Outputs {

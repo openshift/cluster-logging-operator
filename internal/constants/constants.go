@@ -8,10 +8,12 @@ const (
 
 	// TLS keys, used by any output that supports TLS.
 
-	ClientCertKey      = "tls.crt"
-	ClientPrivateKey   = "tls.key"
-	TrustedCABundleKey = "ca-bundle.crt"
-	Passphrase         = "passphrase"
+	ClientCertKey       = "tls.crt"
+	ClientPrivateKey    = "tls.key"
+	TrustedCABundleKey  = "ca-bundle.crt"
+	Passphrase          = "passphrase"
+	BearerTokenFile     = "bearer_token_file"
+	BearerTokenFilePath = "/var/run/secrets/kubernetes.io/serviceaccount/token" //nolint:gosec
 
 	// Username/Password keys, used by any output with username/password authentication.
 
@@ -79,6 +81,13 @@ const (
 
 	ContainerLogDir = "/var/log/containers"
 	PodLogDir       = "/var/log/pods"
+
+	// internal loki FQDN
+	LokiFQDN             = "lokistack-gateway-http-lokistack.openshift-logging.svc"
+	LokiPort             = "8080"
+	LogStoreLokiAppURL   = "http://" + LokiFQDN + ":" + LokiPort + "/api/logs/v1/application"
+	LogStoreLokiAuditURL = "http://" + LokiFQDN + ":" + LokiPort + "/api/logs/v1/audit"
+	LogStoreLokiInfraURL = "http://" + LokiFQDN + ":" + LokiPort + "/api/logs/v1/infrastructure"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

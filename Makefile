@@ -21,6 +21,12 @@ export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):$(CURRENT_BRANCH)
 export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
+# Required by Loki Operator for local development and testing
+export VERSION?=v0.0.1
+export REGISTRY_ORG?=openshift-logging
+export REGION?=us-west-1
+export BUCKET_NAME?=loki
+
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.5
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.14.1
 REPLICAS?=0
@@ -147,6 +153,8 @@ deploy-image: image
 
 deploy:  deploy-image deploy-elasticsearch-operator deploy-catalog install
 
+deploy-loki: deploy-image deploy-loki-operator deploy-catalog install deploy-loki-example-secret
+
 install:
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
 	$(MAKE) cluster-logging-operator-install
@@ -162,6 +170,16 @@ deploy-elasticsearch-operator:
 	hack/deploy-eo.sh
 undeploy-elasticsearch-operator:
 	make -C ../elasticsearch-operator elasticsearch-cleanup
+
+# Set variable REGISTRY_ORG and VERSION to use a custom container registry org account for local development
+deploy-loki-operator:
+	hack/deploy-lo.sh $(REGISTRY_ORG) $(VERSION)
+
+deploy-loki-example-secret:
+	REGION=$(REGION) ../../grafana/loki/operator/hack/deploy-aws-storage-secret.sh $(BUCKET_NAME)
+
+undeploy-loki-operator:
+	make -C ../../grafana/loki/operator olm-undeploy
 
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
@@ -231,7 +249,9 @@ redeploy:
 	$(MAKE) undeploy
 	$(MAKE) deploy
 
-undeploy-all: undeploy undeploy-elasticsearch-operator
+undeploy-elasticsearch: undeploy undeploy-elasticsearch-operator
+
+undeploy-loki: undeploy undeploy-loki-operator
 
 cluster-logging-catalog: cluster-logging-catalog-build cluster-logging-catalog-deploy
 

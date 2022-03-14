@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: loki-tenant-logs
+rules:
+- apiGroups:
+  - 'loki.grafana.com'
+  resources:
+  - application
+  - infrastructure
+  - audit
+  resourceNames:
+  - logs
+  verbs:
+  - get
+  - create

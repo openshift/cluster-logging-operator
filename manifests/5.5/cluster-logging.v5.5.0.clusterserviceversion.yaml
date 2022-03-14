@@ -234,6 +234,32 @@ spec:
           - "cluster-logging-operator"
           verbs:
           - "update"
+        - apiGroups:
+            - loki.grafana.com
+          resources:
+            - lokistacks
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - patch
+            - update
+            - watch
+        - apiGroups:
+            - loki.grafana.com
+          resources:
+            - lokistacks/finalizers
+          verbs:
+            - update
+        - apiGroups:
+            - loki.grafana.com
+          resources:
+            - lokistacks/status
+          verbs:
+            - get
+            - patch
+            - update
       clusterPermissions:
       - serviceAccountName: cluster-logging-operator
         rules:
@@ -294,6 +320,32 @@ spec:
           - get
           - list
           - watch
+        - apiGroups:
+            - loki.grafana.com
+          resources:
+            - lokistacks
+          verbs:
+            - create
+            - delete
+            - get
+            - list
+            - patch
+            - update
+            - watch
+        - apiGroups:
+            - loki.grafana.com
+          resources:
+            - lokistacks/finalizers
+          verbs:
+            - update
+        - apiGroups:
+            - loki.grafana.com
+          resources:
+            - lokistacks/status
+          verbs:
+            - get
+            - patch
+            - update
       deployments:
       - name: cluster-logging-operator
         spec:

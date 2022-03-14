@@ -13,9 +13,10 @@ require (
 	github.com/coreos/prometheus-operator v0.38.1-0.20200424145508-7e176fda06cc
 	github.com/go-logr/logr v0.4.0
 	github.com/google/go-cmp v0.5.6
+	github.com/grafana/loki/operator v0.0.0-20220303173640-9e16ffbd3b35
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.17.0
-	github.com/openshift/api v0.0.0-20210713130143-be21c6cb1bea
+	github.com/openshift/api v0.0.0-20210901140736-d8ed1449662d
 	github.com/openshift/elasticsearch-operator v0.0.0-20220110181307-4e889bb6cdcf
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/pkg/errors v0.9.1

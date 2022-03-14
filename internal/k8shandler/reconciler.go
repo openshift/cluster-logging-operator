@@ -46,8 +46,10 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		}
 
 		// Reconcile Visualization
-		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
-			return fmt.Errorf("unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		if clusterLoggingRequest.Cluster.Spec.LogStore.Type != logging.LogStoreTypeLokiStack {
+			if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
+				return fmt.Errorf("unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			}
 		}
 
 	} else {

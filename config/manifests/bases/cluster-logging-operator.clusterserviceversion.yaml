@@ -155,6 +155,46 @@ spec:
       - kind: persistentvolumeclaims
         name: ""
         version: v1
+      specDescriptors:
+      - description: Size defines one of the support Loki deployment scale out sizes.
+        displayName: LokiStack Size
+        path: logStore.size
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:1x.small
+        - urn:alm:descriptor:com.tectonic.ui:select:1x.medium
+      - description: Storage class name defines the storage class for ingester/querier
+          PVCs.
+        displayName: Storage Class Name
+        path: logStore.storageClassName
+        x-descriptors:
+        - urn:alm:descriptor:io.kubernetes:StorageClass
+      - description: Template defines the resource/limits/tolerations/nodeselectors
+          per component
+        displayName: Node Placement
+        path: logStore.template
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:advanced
+      - description: Compactor defines the compaction component spec.
+        displayName: Compactor pods
+        path: logStore.template.compactor
+      - description: Distributor defines the distributor component spec.
+        displayName: Distributor pods
+        path: logStore.template.distributor
+      - description: Gateway defines the lokistack gateway component spec.
+        displayName: Gateway pods
+        path: logStore.template.gateway
+      - description: IndexGateway defines the index gateway component spec.
+        displayName: Index Gateway pods
+        path: logStore.template.indexGateway
+      - description: Ingester defines the ingester component spec.
+        displayName: Ingester pods
+        path: logStore.template.ingester
+      - description: Querier defines the querier component spec.
+        displayName: Querier pods
+        path: logStore.template.querier
+      - description: QueryFrontend defines the query frontend component spec.
+        displayName: Query Frontend pods
+        path: logStore.template.queryFrontend
       version: v1
   description: |
     # Red Hat OpenShift Logging

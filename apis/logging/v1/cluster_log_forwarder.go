@@ -20,9 +20,17 @@ func IsInputTypeName(s string) bool { return ReservedInputNames.Has(s) }
 
 // Default log store output name.
 const OutputNameDefault = "default"
+const OutputNameDefaultApp = "defaultApp"
+const OutputNameDefaultAudit = "defaultAudit"
+const OutputNameDefaultInfra = "defaultInfra"
 
 // IsReservedOutputName returns true if s is a reserved output name.
-func IsReservedOutputName(s string) bool { return s == OutputNameDefault }
+func IsReservedOutputName(s string) bool {
+	return s == OutputNameDefault ||
+		s == OutputNameDefaultApp ||
+		s == OutputNameDefaultAudit ||
+		s == OutputNameDefaultInfra
+}
 
 // IsOutputTypeName returns true if s capitalized is a field name in OutputTypeSpec
 func IsOutputTypeName(s string) bool {

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	lokiv1beta1 "github.com/grafana/loki/operator/api/v1beta1"
 	"os"
 	"runtime"
 	"strconv"
@@ -44,6 +45,7 @@ func init() {
 
 	utilruntime.Must(apis.AddToScheme(scheme))
 	utilruntime.Must(elasticsearch.AddToScheme(scheme))
+	utilruntime.Must(lokiv1beta1.AddToScheme(scheme))
 	utilruntime.Must(routev1.AddToScheme(scheme))
 	utilruntime.Must(consolev1.AddToScheme(scheme))
 	utilruntime.Must(oauth.AddToScheme(scheme))

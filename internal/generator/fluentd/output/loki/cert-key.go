@@ -7,7 +7,7 @@ import (
 type TLSKeyCert security.TLSCertKey
 
 func (kc TLSKeyCert) Name() string {
-	return "elasticsearchCertKeyTemplate"
+	return "lokiCertKeyTemplate"
 }
 
 func (kc TLSKeyCert) Template() string {

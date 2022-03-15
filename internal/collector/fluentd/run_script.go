@@ -132,6 +132,45 @@ do
     fi
 done
 
+FILE="/var/lib/fluentd/pos/journal_pos.json"
+
+if test -f "$FILE"; then
+    echo "$FILE exists, checking if yajl parser able to parse this json file without any error."
+
+    ruby -v /etc/fluent/configs.d/user/cleanInValidJson.rb  $FILE || 
+    if [ $? -ne 0 ]; then
+      echo "$FILE contains invalid json content so removing it as leads to crashloopbackoff error in fluentd pod"
+      rm $FILE
+    fi
+fi
+
 exec fluentd $fluentdargs
+
+`
+
+const CleanInValidJson = `
+#!/usr/bin/env ruby
+
+require 'yajl'
+require 'json'
+
+
+#example pos file where issue was reported - FILE = "/var/lib/fluentd/pos/journal_pos.json"
+
+ARGV.each do |filename|
+
+ input = File.read(filename)
+
+ puts "checking if #{filename} a valid json by calling yajl parser"
+
+ @default_options ||= {:symbolize_keys => false}
+
+ begin
+   Yajl::Parser.parse(input, @default_options )
+ rescue Yajl::ParseError => e
+   raise e.message
+ end
+
+end
 
 `

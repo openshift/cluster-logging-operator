@@ -244,6 +244,7 @@ type ForwarderSpec struct {
 
 // FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
 type FluentdForwarderSpec struct {
+	InFile *FluentdInFileSpec `json:"inFile,omitempty"`
 	Buffer *FluentdBufferSpec `json:"buffer,omitempty"`
 }
 
@@ -299,6 +300,17 @@ type FluentdSizeUnit string
 // (See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md#properties)
 // +kubebuilder:validation:Pattern:="^([0-9]+)([smhd]{0,1})$"
 type FluentdTimeUnit string
+
+// FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
+// to tune the configuration for all fluentd in-tail inputs.
+//
+// For general parameters refer to:
+// https://docs.fluentd.org/input/tail#parameters
+type FluentdInFileSpec struct {
+	//ReadLinesLimit represents the number of lines to read with each I/O operation
+	// +optional
+	ReadLinesLimit int `json:"readLinesLimit"`
+}
 
 // FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
 // the buffer configuration for all fluentd outputs. It supports a subset of

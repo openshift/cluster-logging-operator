@@ -10,7 +10,11 @@ import (
 
 var _ = Describe("Testing Config Generation", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-		return LogSources(&clfspec, op)
+		var tuning *logging.FluentdInFileSpec
+		if clspec.Forwarder != nil && clspec.Forwarder.Fluentd != nil && clspec.Forwarder.Fluentd.InFile != nil {
+			tuning = clspec.Forwarder.Fluentd.InFile
+		}
+		return LogSources(&clfspec, tuning, op)
 	}
 	DescribeTable("Source(s)", generator.TestGenerateConfWith(f),
 		Entry("Only Application", generator.ConfGenerateTest{
@@ -37,6 +41,59 @@ var _ = Describe("Testing Config Generation", func() {
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
+  skip_refresh_on_startup true
+  @label @MEASURE
+  <parse>
+    @type multi_format
+    <pattern>
+      format json
+      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
+      keep_time_key true
+    </pattern>
+    <pattern>
+      format regexp
+      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
+      keep_time_key true
+    </pattern>
+  </parse>
+</source>
+`,
+		}),
+		Entry("Only Application with InTail tuning", generator.ConfGenerateTest{
+			CLSpec: logging.ClusterLoggingSpec{
+				Forwarder: &logging.ForwarderSpec{
+					Fluentd: &logging.FluentdForwarderSpec{
+						InFile: &logging.FluentdInFileSpec{
+							ReadLinesLimit: 1500,
+						},
+					},
+				},
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							logging.InputNameApplication,
+						},
+						OutputRefs: []string{logging.OutputNameDefault},
+						Name:       "pipeline",
+					},
+				},
+			},
+			ExpectedConf: `
+# Logs from containers (including openshift containers)
+<source>
+  @type tail
+  @id container-input
+  path "/var/log/containers/*.log"
+  exclude_path ["/var/log/containers/collector-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+  pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
+  refresh_interval 5
+  rotate_wait 5
+  tag kubernetes.*
+  read_from_head "true"
+  read_lines_limit 1500
   skip_refresh_on_startup true
   @label @MEASURE
   <parse>
@@ -184,6 +241,96 @@ var _ = Describe("Testing Config Generation", func() {
   @label @MEASURE
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
+  tag ovn-audit.log
+  refresh_interval 5
+  rotate_wait 5
+  read_from_head true
+  <parse>
+    @type none
+  </parse>
+</source>
+`,
+		}),
+		Entry("Only Audit with InTail tuning", generator.ConfGenerateTest{
+			CLSpec: logging.ClusterLoggingSpec{
+				Forwarder: &logging.ForwarderSpec{
+					Fluentd: &logging.FluentdForwarderSpec{
+						InFile: &logging.FluentdInFileSpec{
+							ReadLinesLimit: 1500,
+						},
+					},
+				},
+			},
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							logging.InputNameAudit,
+						},
+						OutputRefs: []string{logging.OutputNameDefault},
+						Name:       "pipeline",
+					},
+				},
+			},
+			ExpectedConf: `
+# linux audit logs
+<source>
+  @type tail
+  @id audit-input
+  @label @MEASURE
+  path "/var/log/audit/audit.log"
+  pos_file "/var/lib/fluentd/pos/audit.log.pos"
+  read_lines_limit 1500
+  tag linux-audit.log
+  <parse>
+    @type viaq_host_audit
+  </parse>
+</source>
+
+# k8s audit logs
+<source>
+  @type tail
+  @id k8s-audit-input
+  @label @MEASURE
+  path "/var/log/kube-apiserver/audit.log"
+  pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
+  read_lines_limit 1500
+  tag k8s-audit.log
+  <parse>
+    @type json
+    time_key requestReceivedTimestamp
+    # In case folks want to parse based on the requestReceivedTimestamp key
+    keep_time_key true
+    time_format %Y-%m-%dT%H:%M:%S.%N%z
+  </parse>
+</source>
+
+# Openshift audit logs
+<source>
+  @type tail
+  @id openshift-audit-input
+  @label @MEASURE
+  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+  pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
+  read_lines_limit 1500
+  tag openshift-audit.log
+  <parse>
+    @type json
+    time_key requestReceivedTimestamp
+    # In case folks want to parse based on the requestReceivedTimestamp key
+    keep_time_key true
+    time_format %Y-%m-%dT%H:%M:%S.%N%z
+  </parse>
+</source>
+
+# Openshift Virtual Network (OVN) audit logs
+<source>
+  @type tail
+  @id ovn-audit-input
+  @label @MEASURE
+  path "/var/log/ovn/acl-audit-log.log"
+  pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
+  read_lines_limit 1500
   tag ovn-audit.log
   refresh_interval 5
   rotate_wait 5

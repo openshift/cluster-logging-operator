@@ -10,10 +10,14 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
-func Sources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
+func Sources(clspec *logging.ClusterLoggingSpec, spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
+	var tunings *logging.FluentdInFileSpec
+	if clspec != nil && clspec.Forwarder != nil && clspec.Forwarder.Fluentd != nil && clspec.Forwarder.Fluentd.InFile != nil {
+		tunings = clspec.Forwarder.Fluentd.InFile
+	}
 	return generator.MergeElements(
 		MetricSources(spec, o),
-		LogSources(spec, o),
+		LogSources(spec, tunings, o),
 	)
 }
 
@@ -27,7 +31,7 @@ func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) [
 	}
 }
 
-func LogSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
+func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdInFileSpec, o generator.Options) []generator.Element {
 	var el []generator.Element = make([]generator.Element, 0)
 	types := generator.GatherSources(spec, o)
 	if types.Has(logging.InputNameInfrastructure) {
@@ -47,33 +51,46 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []ge
 				ExcludePaths: ExcludeContainerPaths(),
 				PosFile:      "/var/lib/fluentd/pos/es-containers.log.pos",
 				OutLabel:     "MEASURE",
+				Tunings:      tunings,
 			})
 	}
 	if types.Has(logging.InputNameAudit) {
 		el = append(el,
-			source2.HostAuditLog{
-				Desc:         "linux audit logs",
-				OutLabel:     "MEASURE",
-				TemplateName: "inputSourceHostAuditTemplate",
-				TemplateStr:  source2.HostAuditLogTemplate,
+			source2.AuditLog{
+				AuditLogLiteral: source2.AuditLogLiteral{
+					Desc:         "linux audit logs",
+					OutLabel:     "MEASURE",
+					TemplateName: "inputSourceHostAuditTemplate",
+					TemplateStr:  source2.HostAuditLogTemplate,
+				},
+				Tunings: tunings,
 			},
-			source2.K8sAuditLog{
-				Desc:         "k8s audit logs",
-				OutLabel:     "MEASURE",
-				TemplateName: "inputSourceK8sAuditTemplate",
-				TemplateStr:  source2.K8sAuditLogTemplate,
+			source2.AuditLog{
+				AuditLogLiteral: source2.AuditLogLiteral{
+					Desc:         "k8s audit logs",
+					OutLabel:     "MEASURE",
+					TemplateName: "inputSourceK8sAuditTemplate",
+					TemplateStr:  source2.K8sAuditLogTemplate,
+				},
+				Tunings: tunings,
 			},
-			source2.OpenshiftAuditLog{
-				Desc:         "Openshift audit logs",
-				OutLabel:     "MEASURE",
-				TemplateName: "inputSourceOpenShiftAuditTemplate",
-				TemplateStr:  source2.OpenshiftAuditLogTemplate,
+			source2.AuditLog{
+				AuditLogLiteral: source2.AuditLogLiteral{
+					Desc:         "Openshift audit logs",
+					OutLabel:     "MEASURE",
+					TemplateName: "inputSourceOpenShiftAuditTemplate",
+					TemplateStr:  source2.OpenshiftAuditLogTemplate,
+				},
+				Tunings: tunings,
 			},
-			source2.OVNAuditLogs{
-				Desc:         "Openshift Virtual Network (OVN) audit logs",
-				OutLabel:     "MEASURE",
-				TemplateName: "inputSourceOVNAuditTemplate",
-				TemplateStr:  source2.OVNAuditLogTemplate,
+			source2.AuditLog{
+				AuditLogLiteral: source2.AuditLogLiteral{
+					Desc:         "Openshift Virtual Network (OVN) audit logs",
+					OutLabel:     "MEASURE",
+					TemplateName: "inputSourceOVNAuditTemplate",
+					TemplateStr:  source2.OVNAuditLogTemplate,
+				},
+				Tunings: tunings,
 			},
 		)
 	}

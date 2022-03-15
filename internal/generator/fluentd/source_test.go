@@ -17,6 +17,7 @@ var _ = Describe("generating source", func() {
 		op      generator.Options
 		fwd     logging.ClusterLogForwarderSpec
 		e       []generator.Element
+		tuning  *logging.FluentdInFileSpec
 	)
 
 	BeforeEach(func() {
@@ -35,7 +36,7 @@ var _ = Describe("generating source", func() {
 	Context("for only logs.app source", func() {
 		BeforeEach(func() {
 			fwd.Pipelines[0].InputRefs = []string{logging.InputNameApplication}
-			e = LogSources(&fwd, op)
+			e = LogSources(&fwd, tuning, op)
 			Expect(len(e)).To(Equal(1))
 			results, err = g.GenerateConf(e...)
 			Expect(err).To(BeNil())
@@ -77,7 +78,7 @@ var _ = Describe("generating source", func() {
 	Context("for only logs.infra source", func() {
 		BeforeEach(func() {
 			fwd.Pipelines[0].InputRefs = []string{logging.InputNameInfrastructure}
-			e = LogSources(&fwd, op)
+			e = LogSources(&fwd, tuning, op)
 			Expect(len(e) == 2).To(BeTrue())
 		})
 
@@ -149,7 +150,7 @@ var _ = Describe("generating source", func() {
 	Context("for only logs.audit source", func() {
 		BeforeEach(func() {
 			fwd.Pipelines[0].InputRefs = []string{logging.InputNameAudit}
-			e = LogSources(&fwd, op)
+			e = LogSources(&fwd, tuning, op)
 			Expect(len(e)).To(Equal(4))
 		})
 
@@ -236,7 +237,7 @@ var _ = Describe("generating source", func() {
 
 		BeforeEach(func() {
 			fwd.Pipelines[0].InputRefs = []string{logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit}
-			e = LogSources(&fwd, op)
+			e = LogSources(&fwd, tuning, op)
 			Expect(len(e)).To(Equal(6))
 		})
 		Context("for journal input", func() {

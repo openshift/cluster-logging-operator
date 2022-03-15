@@ -23,7 +23,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs.app source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication))
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results) == 1).To(BeTrue())
 		})
@@ -60,10 +60,53 @@ var _ = Describe("generating source", func() {
 		  `))
 		})
 	})
+	Context("for only logs.app source with in-tail tuning", func() {
+		BeforeEach(func() {
+			tuning := &logging.FluentdInFileSpec{
+				ReadLinesLimit: 1500,
+			}
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication), tuning)
+			Expect(err).To(BeNil())
+			Expect(len(results) == 1).To(BeTrue())
+		})
+
+		It("should produce a container config", func() {
+			Expect(results[0]).To(EqualTrimLines(`# container logs
+		  <source>
+			@type tail
+			@id container-input
+			path "/var/log/containers/*.log"
+			exclude_path ["/var/log/containers/fluentd-*_openshift-logging_*.log", "/var/log/containers/elasticsearch-*_openshift-logging_*.log", "/var/log/containers/kibana-*_openshift-logging_*.log"]
+			pos_file "/var/log/es-containers.log.pos"
+			refresh_interval 5
+			rotate_wait 5
+			tag kubernetes.*
+			read_from_head "true"
+		    read_lines_limit 1500
+			skip_refresh_on_startup true
+			@label @MEASURE
+			<parse>
+			  @type multi_format
+			  <pattern>
+				format json
+				time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
+				keep_time_key true
+			  </pattern>
+			  <pattern>
+				format regexp
+				expression /^(?<time>.+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
+				time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
+				keep_time_key true
+			  </pattern>
+			</parse>
+		  </source>
+		  `))
+		})
+	})
 
 	Context("for only logs.infra source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure))
+			results, err = generator.generateSource(sets.NewString(logging.InputNameInfrastructure), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results) == 2).To(BeTrue())
 		})
@@ -131,7 +174,7 @@ var _ = Describe("generating source", func() {
 
 	Context("for only logs.audit source", func() {
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit))
+			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(3))
 		})
@@ -189,11 +232,77 @@ var _ = Describe("generating source", func() {
 		  `))
 		})
 	})
+	Context("for only logs.audit source with in-tail tunings", func() {
+		BeforeEach(func() {
+			tuning := &logging.FluentdInFileSpec{
+				ReadLinesLimit: 1500,
+			}
+			results, err = generator.generateSource(sets.NewString(logging.InputNameAudit), tuning)
+			Expect(err).To(BeNil())
+			Expect(len(results)).To(Equal(3))
+		})
+
+		It("should produce configs for the audit logs", func() {
+			Expect(results[0]).To(EqualTrimLines(`
+            # linux audit logs
+            <source>
+              @type tail
+              @id audit-input
+              @label @MEASURE
+              path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
+              pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+			  read_lines_limit 1500
+              tag linux-audit.log
+              <parse>
+                @type viaq_host_audit
+              </parse>
+            </source>
+		  `))
+			Expect(results[1]).To(EqualTrimLines(`
+            # k8s audit logs
+            <source>
+              @type tail
+              @id k8s-audit-input
+              @label @MEASURE
+              path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
+              pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+			  read_lines_limit 1500
+              tag k8s-audit.log
+              <parse>
+                @type json
+                time_key requestReceivedTimestamp
+                # In case folks want to parse based on the requestReceivedTimestamp key
+                keep_time_key true
+                time_format %Y-%m-%dT%H:%M:%S.%N%z
+              </parse>
+            </source>
+		  `))
+			Expect(results[2]).To(EqualTrimLines(`
+            # Openshift audit logs
+            <source>
+              @type tail
+              @id openshift-audit-input
+              @label @MEASURE
+              path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+              pos_file /var/log/oauth-apiserver.audit.log
+			  read_lines_limit 1500
+              tag openshift-audit.log
+              <parse>
+                @type json
+                time_key requestReceivedTimestamp
+                # In case folks want to parse based on the requestReceivedTimestamp key
+                keep_time_key true
+                time_format %Y-%m-%dT%H:%M:%S.%N%z
+              </parse>
+            </source>
+		  `))
+		})
+	})
 
 	Context("for all log sources", func() {
 
 		BeforeEach(func() {
-			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit))
+			results, err = generator.generateSource(sets.NewString(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit), nil)
 			Expect(err).To(BeNil())
 			Expect(len(results)).To(Equal(5))
 		})
@@ -313,4 +422,30 @@ var _ = Describe("generating source", func() {
 		})
 	})
 
+	Describe("sourceConfData", func() {
+		var (
+			conf sourceConfData
+		)
+		Context("#ReadLinesLimit", func() {
+			BeforeEach(func() {
+				conf = sourceConfData{}
+			})
+
+			It("should return nothing when there are no InFile tuning", func() {
+				Expect(conf.ReadLinesLimit()).To(BeEmpty())
+			})
+			It("should return nothing when the InFile tuning is a negative number", func() {
+				conf.Tunings = &logging.FluentdInFileSpec{ReadLinesLimit: -1}
+				Expect(conf.ReadLinesLimit()).To(BeEmpty())
+			})
+			It("should return nothing when the InFile tuning is equal to zero", func() {
+				conf.Tunings = &logging.FluentdInFileSpec{ReadLinesLimit: 0}
+				Expect(conf.ReadLinesLimit()).To(BeEmpty())
+			})
+			It("should return a proper config parameter when the InFile tuning is greater then zero", func() {
+				conf.Tunings = &logging.FluentdInFileSpec{ReadLinesLimit: 12}
+				Expect(conf.ReadLinesLimit()).To(Equal("\n  read_lines_limit 12"))
+			})
+		})
+	})
 })

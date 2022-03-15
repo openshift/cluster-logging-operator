@@ -2,6 +2,7 @@ package fluentd
 
 import (
 	"fmt"
+	"strconv"
 
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
@@ -12,7 +13,7 @@ import (
 // We need to also filter them per-user-SourceSpec since different SourceSpecs
 // might request different namespaces.
 
-func (engine *ConfigGenerator) generateSource(sources sets.String) (results []string, err error) {
+func (engine *ConfigGenerator) generateSource(sources sets.String, tunings *logging.FluentdInFileSpec) (results []string, err error) {
 	// Order of templates matters.
 	var templates []string
 	if sources.Has(logging.InputNameInfrastructure) {
@@ -29,16 +30,12 @@ func (engine *ConfigGenerator) generateSource(sources sets.String) (results []st
 	if len(templates) == 0 {
 		return results, fmt.Errorf("No recognized input types: %v", sources.List())
 	}
-	data := struct {
-		LoggingNamespace           string
-		CollectorPodNamePrefix     string
-		LogStorePodNamePrefix      string
-		VisualizationPodNamePrefix string
-	}{
-		constants.OpenshiftNS,
-		constants.FluentdName,
-		constants.ElasticsearchName,
-		constants.KibanaName,
+	data := sourceConfData{
+		LoggingNamespace:           constants.OpenshiftNS,
+		CollectorPodNamePrefix:     constants.FluentdName,
+		LogStorePodNamePrefix:      constants.ElasticsearchName,
+		VisualizationPodNamePrefix: constants.KibanaName,
+		Tunings:                    tunings,
 	}
 	for _, template := range templates {
 		result, err := engine.Execute(template, data)
@@ -48,4 +45,19 @@ func (engine *ConfigGenerator) generateSource(sources sets.String) (results []st
 		results = append(results, result)
 	}
 	return results, nil
+}
+
+type sourceConfData struct {
+	LoggingNamespace           string
+	CollectorPodNamePrefix     string
+	LogStorePodNamePrefix      string
+	VisualizationPodNamePrefix string
+	Tunings                    *logging.FluentdInFileSpec
+}
+
+func (cl sourceConfData) ReadLinesLimit() string {
+	if cl.Tunings == nil || cl.Tunings.ReadLinesLimit <= 0 {
+		return ""
+	}
+	return "\n  read_lines_limit " + strconv.Itoa(cl.Tunings.ReadLinesLimit)
 }

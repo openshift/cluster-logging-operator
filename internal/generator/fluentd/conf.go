@@ -14,7 +14,7 @@ func Conf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret,
 			`Generated fluentd conf Header`,
 		},
 		{
-			Sources(clfspec, op),
+			Sources(clspec, clfspec, op),
 			"Set of all input sources",
 		},
 		{

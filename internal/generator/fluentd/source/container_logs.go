@@ -1,7 +1,9 @@
 package source
 
 import (
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"strconv"
 )
 
 type ContainerLogs struct {
@@ -10,6 +12,14 @@ type ContainerLogs struct {
 	Paths        string
 	ExcludePaths string
 	PosFile      string
+	Tunings      *logging.FluentdInFileSpec
+}
+
+func (cl ContainerLogs) ReadLinesLimit() string {
+	if cl.Tunings == nil || cl.Tunings.ReadLinesLimit <= 0 {
+		return ""
+	}
+	return "\n  read_lines_limit " + strconv.Itoa(cl.Tunings.ReadLinesLimit)
 }
 
 func (cl ContainerLogs) Name() string {
@@ -29,6 +39,7 @@ func (cl ContainerLogs) Template() string {
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
+  {{- .ReadLinesLimit }}
   skip_refresh_on_startup true
   @label @{{.OutLabel}}
   <parse>

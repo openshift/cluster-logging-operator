@@ -238,6 +238,13 @@ spec:
                             pattern: ^([0-9]+)([kmgtKMGT]{0,1})$
                             type: string
                         type: object
+                      inFile:
+                        description: "FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters to tune the configuration for all fluentd in-tail inputs. \n For general parameters refer to: https://docs.fluentd.org/input/tail#parameters"
+                        properties:
+                          readLinesLimit:
+                            description: ReadLinesLimit represents the number of lines to read with each I/O operation
+                            type: integer
+                        type: object
                     type: object
                 type: object
               logStore:

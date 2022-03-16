@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"github.com/ViaQ/logerr/log"
 	"regexp"
 	"strconv"
@@ -9,8 +8,12 @@ import (
 )
 
 //OptionalInt allows passing an arbitrary int as well matching conditional values
-//for message comparison (e.g. >=6)
+//for message comparison (e.g. >=6).  A value of '' matches:
+// - missing field
+// - any value
 type OptionalInt string
+
+var emptyOptionalInt = NewOptionalInt("")
 
 func (oi *OptionalInt) MarshalJSON() ([]byte, error) {
 	return []byte(*oi), nil
@@ -26,6 +29,7 @@ func (oi OptionalInt) getParts() (string, int) {
 	value := 0
 	optionalIntRE := regexp.MustCompile(`(?P<comparison>[><=]{1,2})?(?P<value>\d*)`)
 	parts := optionalIntRE.FindStringSubmatch(strings.TrimSpace(string(oi)))
+	log.V(4).Info("Evaluating optionalInt", "value", oi)
 	for i, name := range optionalIntRE.SubexpNames() {
 		if name == "comparison" {
 			comparison = parts[i]
@@ -34,7 +38,7 @@ func (oi OptionalInt) getParts() (string, int) {
 			var err error
 			value, err = strconv.Atoi(parts[i])
 			if err != nil {
-				log.V(4).Error(err, fmt.Sprintf("Unable to parse expected value %q into an OptionalInt. Expected a comparator and number (e.g. >12) and defaulting to 0", oi))
+				log.V(4).Error(err, "Unable to convert value into an OptionalInt. Expected a comparator and number (e.g. >12): defaulting to 0", "value", parts[i])
 			}
 		}
 
@@ -45,12 +49,17 @@ func (oi OptionalInt) getParts() (string, int) {
 
 //IsSatisfiedBy returns true/false if the comparison needed is satisfied by other
 func (oi OptionalInt) IsSatisfiedBy(other OptionalInt) bool {
+	log.V(4).Info("Comparing", "value", oi, "IsSatisfiedByArg", other)
+	if oi == emptyOptionalInt {
+		return true
+	}
 	var err error
 	actValue := 0
 	comparison, expValue := oi.getParts()
 	actValue, err = strconv.Atoi(string(other))
 	if err != nil {
-		log.V(4).Error(err, fmt.Sprintf("Unable to parse the actual value %q into an OptionalInt. Expected a number (e.g. 12) and defaulting to 0", other))
+		log.V(4).Error(err, "Unable to parse actual value. returning false")
+		return false
 	}
 	log.V(4).Info("Expected", "comp", comparison, "value", expValue)
 	switch comparison {
@@ -69,7 +78,7 @@ func (oi OptionalInt) IsSatisfiedBy(other OptionalInt) bool {
 
 func NewOptionalInt(value string) OptionalInt {
 	if strings.TrimSpace(value) == "" {
-		return OptionalInt("")
+		return ""
 	}
 	return OptionalInt(value)
 }

@@ -53,6 +53,44 @@ var _ = Describe("Log Format matcher tests", func() {
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 		Expect(types.AllLog{Timestamp: nanoTime}).To(FitLogFormatTemplate(types.AllLog{}))
 	})
+	Context("for optional ints", func() {
+		It("it should pass when field is missing and value is optional", func() {
+			Expect(types.AllLog{}).To(FitLogFormatTemplate(types.AllLog{
+				OpenshiftLabels: types.OpenshiftMeta{
+					Sequence: types.NewOptionalInt(""),
+				},
+			}))
+		})
+		It("it should pass when field exists and value is optional", func() {
+			Expect(types.AllLog{
+				OpenshiftLabels: types.OpenshiftMeta{
+					Sequence: types.NewOptionalInt("5"),
+				},
+			}).To(FitLogFormatTemplate(types.AllLog{
+				OpenshiftLabels: types.OpenshiftMeta{
+					Sequence: types.NewOptionalInt(""),
+				},
+			}))
+		})
+		It("it should fail when field is missing and match expected", func() {
+			Expect(types.AllLog{}).ToNot(FitLogFormatTemplate(types.AllLog{
+				OpenshiftLabels: types.OpenshiftMeta{
+					Sequence: types.NewOptionalInt("=8"),
+				},
+			}))
+		})
+		It("it should fail when field exists and value does not match spec", func() {
+			Expect(types.AllLog{
+				OpenshiftLabels: types.OpenshiftMeta{
+					Sequence: types.NewOptionalInt("5"),
+				},
+			}).ToNot(FitLogFormatTemplate(types.AllLog{
+				OpenshiftLabels: types.OpenshiftMeta{
+					Sequence: types.NewOptionalInt("=8"),
+				},
+			}))
+		})
+	})
 
 	It("do not match wrong time value", func() {
 		timestamp1 := "2013-03-28T14:36:03.243000+00:00"

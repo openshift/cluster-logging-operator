@@ -35,7 +35,7 @@ func Conf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret,
 func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	types := generator.GatherSources(spec, op)
 	var el []generator.Element = make([]generator.Element, 0)
-	if types.Has(logging.InputNameApplication) {
+	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
 		el = append(el, Normalize("raw_container_logs", "container_logs")...)
 	}
 	if types.Has(logging.InputNameInfrastructure) {

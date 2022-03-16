@@ -1,8 +1,23 @@
 package source
 
 import (
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"strconv"
 )
+
+type AuditLogLiteral = generator.ConfLiteral
+type AuditLog struct {
+	AuditLogLiteral
+	Tunings *logging.FluentdInFileSpec
+}
+
+func (cl AuditLog) ReadLinesLimit() string {
+	if cl.Tunings == nil || cl.Tunings.ReadLinesLimit <= 0 {
+		return ""
+	}
+	return "\n  read_lines_limit " + strconv.Itoa(cl.Tunings.ReadLinesLimit)
+}
 
 const HostAuditLogTemplate = `
 {{define "inputSourceHostAuditTemplate" -}}
@@ -13,14 +28,13 @@ const HostAuditLogTemplate = `
   @label @{{.OutLabel}}
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
+  {{- .ReadLinesLimit }}
   tag linux-audit.log
   <parse>
     @type viaq_host_audit
   </parse>
 </source>
 {{end}}`
-
-type HostAuditLog = generator.ConfLiteral
 
 const OpenshiftAuditLogTemplate = `
 {{define "inputSourceOpenShiftAuditTemplate" -}}
@@ -31,6 +45,7 @@ const OpenshiftAuditLogTemplate = `
   @label @{{.OutLabel}}
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
+  {{- .ReadLinesLimit }}
   tag openshift-audit.log
   <parse>
     @type json
@@ -43,8 +58,6 @@ const OpenshiftAuditLogTemplate = `
 {{end}}
 `
 
-type OpenshiftAuditLog = generator.ConfLiteral
-
 const K8sAuditLogTemplate = `
 {{define "inputSourceK8sAuditTemplate" -}}
 # {{.Desc}}
@@ -54,6 +67,7 @@ const K8sAuditLogTemplate = `
   @label @{{.OutLabel}}
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
+  {{- .ReadLinesLimit }}
   tag k8s-audit.log
   <parse>
     @type json
@@ -66,8 +80,6 @@ const K8sAuditLogTemplate = `
 {{end}}
 `
 
-type K8sAuditLog = generator.ConfLiteral
-
 const OVNAuditLogTemplate = `
 {{define "inputSourceOVNAuditTemplate" -}}  
 # {{.Desc}}
@@ -77,6 +89,7 @@ const OVNAuditLogTemplate = `
   @label @MEASURE
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
+  {{- .ReadLinesLimit }}
   tag ovn-audit.log
   refresh_interval 5
   rotate_wait 5
@@ -87,5 +100,3 @@ const OVNAuditLogTemplate = `
 </source>
 {{end}}
 `
-
-type OVNAuditLogs = generator.ConfLiteral

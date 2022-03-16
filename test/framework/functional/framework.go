@@ -1,14 +1,13 @@
 package functional
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -26,7 +25,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
-	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/rbac/v1"
@@ -114,6 +112,12 @@ type FluentdFunctionalFramework struct {
 	fluentContainerId string
 	receiverBuilders  []receiverBuilder
 	closeClient       func()
+
+	//VisitConfig allows the framework to modify the config after generating from logforwardering
+	VisitConfig func(string) string
+
+	//MaxReadDuration is the max duration to wait to read logs from the receiver
+	MaxReadDuration *time.Duration
 }
 
 func init() {
@@ -180,6 +184,13 @@ func (f *FluentdFunctionalFramework) Cleanup() {
 	f.closeClient()
 }
 
+func (f *FluentdFunctionalFramework) GetMaxReadDuration() time.Duration {
+	if f.MaxReadDuration != nil {
+		return *f.MaxReadDuration
+	}
+	return maxDuration
+}
+
 func (f *FluentdFunctionalFramework) RunCommand(container string, cmd ...string) (string, error) {
 	log.V(2).Info("Running", "container", container, "cmd", cmd)
 	out, err := testruntime.ExecOc(f.Pod, strings.ToLower(container), cmd[0], cmd[1:]...)
@@ -217,6 +228,12 @@ func (f *FluentdFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBu
 	if strings.TrimSpace(f.Conf) == "" {
 		if f.Conf, err = forwarder.Generate(string(clfYaml), false, debugOutput, testClient); err != nil {
 			return err
+		}
+		//remove journal for now since we can not mimic it
+		re := regexp.MustCompile(`(?msU).*<source>.*type.*systemd.*</source>`)
+		f.Conf = string(re.ReplaceAll([]byte(f.Conf), []byte{}))
+		if f.VisitConfig != nil {
+			f.Conf = f.VisitConfig(f.Conf)
 		}
 	} else {
 		log.V(2).Info("Using provided collector conf instead of generating one")
@@ -347,7 +364,7 @@ done
 		}
 
 		// if fluentd started successfully return success
-		if strings.Contains(output, "flush_thread actually running") || debugOutput {
+		if strings.Contains(output, "fluentd worker is now running worker") || debugOutput {
 			return true, nil
 		}
 		return false, nil
@@ -406,7 +423,7 @@ func (f *FluentdFunctionalFramework) WriteMessagesToApplicationLog(msg string, n
 }
 
 func (f *FluentdFunctionalFramework) WriteMessagesInfraContainerLog(msg string, numOfLogs int) error {
-	filename := fmt.Sprintf("%s/%s_%s_%s-%s.log", fluentdLogPath[applicationLog], f.Pod.Name, "openshift-fake-infra", constants.FluentdName, f.fluentContainerId)
+	filename := fmt.Sprintf("%s/%s_%s_%s-%s.log", fluentdLogPath[applicationLog], f.Pod.Name, "openshift-fake-infra", constants.CollectorName, f.fluentContainerId)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
@@ -492,111 +509,4 @@ func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs in
 	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
 	log.V(3).Info("FluentdFunctionalFramework.WriteMessagesToLog", "result", result, "err", err)
 	return err
-}
-
-func (f *FluentdFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]types.ApplicationLog, error) {
-	raw, err := f.ReadLogsFrom(outputName, applicationLog)
-	if err != nil {
-		return nil, err
-	}
-
-	var logs []types.ApplicationLog
-	if err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs); err != nil {
-		return nil, err
-	}
-	return logs, nil
-}
-
-func (f *FluentdFunctionalFramework) ReadRawApplicationLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, applicationLog)
-}
-
-func (f *FluentdFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, infraLog)
-}
-func (f *FluentdFunctionalFramework) ReadApplicationLogsFromKafka(topic string, brokerlistener string, consumercontainername string) (results []string, err error) {
-	//inter broker zookeeper connect is plaintext so use plaintext port to check on sent messages from kafka producer ie. fluent-kafka plugin
-	//till this step it must be ensured that a topic is created and published in kafka-consumer-clo-app-topic container within functional pod
-	var result string
-	outputFilename := "/shared/consumed.logs"
-	cmd := fmt.Sprintf("tail -1 %s", outputFilename)
-	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
-		result, err = f.RunCommand(consumercontainername, "/bin/bash", "-c", cmd)
-		if result != "" && err == nil {
-			return true, nil
-		}
-		log.V(4).Error(err, "Polling logs from kafka")
-		return false, nil
-	})
-	if err == nil {
-		results = strings.Split(strings.TrimSpace(result), "\n")
-	}
-	log.V(4).Info("Returning", "logs", result)
-	return results, err
-}
-
-func (f *FluentdFunctionalFramework) ReadAuditLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, auditLog)
-}
-
-func (f *FluentdFunctionalFramework) Readk8sAuditLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, k8sAuditLog)
-}
-
-func (f *FluentdFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, ovnAuditLog)
-}
-
-func (f *FluentdFunctionalFramework) ReadLogsFrom(outputName string, outputLogType string) (results []string, err error) {
-	outputSpecs := f.Forwarder.Spec.OutputMap()
-	outputLog := outputName
-	if output, found := outputSpecs[outputName]; found {
-		outputLog = output.Type
-	}
-	var result string
-	outputType, ok := outputLogFile[outputLog]
-	if !ok {
-		return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
-	}
-	file, ok := outputType[outputLogType]
-	if !ok {
-		return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
-	}
-	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
-		result, err = f.RunCommand(outputName, "cat", file)
-		if result != "" && err == nil {
-			return true, nil
-		}
-		log.V(4).Error(err, "Polling logs")
-		return false, nil
-	})
-	if err == nil {
-		results = strings.Split(strings.TrimSpace(result), "\n")
-	}
-	log.V(4).Info("Returning", "logs", result)
-	return results, err
-}
-
-func (f *FluentdFunctionalFramework) ReadNApplicationLogsFrom(n uint64, outputName string) ([]string, error) {
-	lines := []string{}
-	ctx, cancel := context.WithTimeout(context.Background(), test.SuccessTimeout())
-	defer cancel()
-	reader, err := cmd.TailReaderForContainer(f.Pod, outputName, ApplicationLogFile)
-	if err != nil {
-		log.V(3).Error(err, "Error creating tail reader")
-		return nil, err
-	}
-	for {
-		line, err := reader.ReadLineContext(ctx)
-		if err != nil {
-			log.V(3).Error(err, "Error readlinecontext")
-			return nil, err
-		}
-		lines = append(lines, line)
-		n--
-		if n == 0 {
-			break
-		}
-	}
-	return lines, err
 }

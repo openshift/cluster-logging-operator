@@ -168,6 +168,7 @@ test-functional: test-functional-benchmarker
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
+	ACK_GINKGO_DEPRECATIONS=1.16.4 \
 	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
@@ -182,6 +183,7 @@ test-functional-benchmarker: bin/functional-benchmarker
 
 test-unit: test-forwarder-generator
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	ACK_GINKGO_DEPRECATIONS=1.16.4 \
 	go test -cover -race ./internal/... ./test ./test/helpers ./test/matchers ./test/runtime
 
 test-cluster:

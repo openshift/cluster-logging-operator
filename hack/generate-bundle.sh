@@ -24,7 +24,5 @@ LABEL \\
     maintainer="AOS Logging <aos-logging@redhat.com>"
 EOF
 
-find bundle/manifests/ -type f ! \( -name "cluster-logging*" -o -name "*crd.yaml" \) -delete
-
 echo "validating bundle..."
 $OPERATOR_SDK bundle validate --verbose bundle

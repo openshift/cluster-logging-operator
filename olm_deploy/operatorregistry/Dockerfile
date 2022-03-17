@@ -6,7 +6,7 @@ WORKDIR /
 COPY manifests/ /manifests
 
 RUN chmod -R g+w /manifests && \
-  rm /manifests/*/image-references /manifests/*/kustomization.yaml /manifests/*/crd-v1-singleton-patch.yaml /manifests/*/crd-v1-clusterloggings-patches.yaml
+  rm /manifests/*/kustomization.yaml /manifests/*/crd-v1-singleton-patch.yaml /manifests/*/crd-v1-clusterloggings-patches.yaml
 
 COPY olm_deploy/scripts/registry-init.sh olm_deploy/scripts/env.sh /scripts/
 

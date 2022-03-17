@@ -6,8 +6,8 @@ metadata:
   name: cluster-logging-operator-metrics-monitor
 spec:
   endpoints:
-  - path: /metrics
-    targetPort: 8686
+  - port: http-metrics
+  namespaceSelector: {}
   selector:
     matchLabels:
       control-plane: cluster-logging-operator

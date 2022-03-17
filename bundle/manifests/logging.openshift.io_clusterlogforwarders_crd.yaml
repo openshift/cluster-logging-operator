@@ -64,15 +64,16 @@ spec:
                         logs.
                       properties:
                         namespaces:
-                          description: Namespaces is a list of namespaces from which
-                            to collect application logs. If the list is empty, logs
-                            are collected from all namespaces.
+                          description: Namespaces from which to collect application
+                            logs. Only messages from these namespaces are collected.
+                            If absent or empty, logs are collected from all namespaces.
                           items:
                             type: string
                           type: array
                         selector:
-                          description: Selector selects logs from all pods with matching
-                            labels. For testing purpose, MatchLabels is only supported.
+                          description: Selector for logs from pods with matching labels.
+                            Only messages from pods with these labels are collected.
+                            If absent or empty, logs are collected regardless of labels.
                           properties:
                             matchExpressions:
                               description: matchExpressions is a list of label selector
@@ -252,35 +253,35 @@ spec:
                       description: Name used to refer to the output from a `pipeline`.
                       type: string
                     secret:
-                      description: "Secret for authentication. Name of a secret in
-                        the same namespace as the cluster logging operator. \n All
-                        sensitive authentication information is provided via a kubernetes
-                        Secret object. A Secret is a key:value map, common keys are
-                        described here. Some output types support additional specialized
-                        keys, documented with the output-specific configuration field.
-                        All secret keys are optional, enable the security features
-                        you want by setting the relevant keys. \n Transport Layer
-                        Security (TLS) \n Using a TLS URL ('https://...' or 'ssl://...')
-                        without any secret enables basic TLS: client authenticates
-                        server using system default certificate authority. \n Additional
-                        TLS features are enabled by including a Secret and setting
-                        the following optional fields: \n   `tls.crt`: (string) File
-                        name containing a client certificate.     Enables mutual authentication.
-                        Requires `tls.key`.   `tls.key`: (string) File name containing
-                        the private key to unlock the client certificate.     Requires
-                        `tls.crt`   `passphrase`: (string) Passphrase to decode an
-                        encoded TLS private key.     Requires tls.key.   `ca-bundle.crt`:
-                        (string) File name of a custom CA for server authentication.
-                        \n Username and Password \n   `username`: (string) Authentication
-                        user name. Requires `password`.   `password`: (string) Authentication
-                        password. Requires `username`. \n Simple Authentication Security
-                        Layer (SASL) \n   `sasl.enable`: (boolean) Explicitly enable
-                        or disable SASL.     If missing, SASL is automatically enabled
-                        when any of the other `sasl.` keys are set.   `sasl.mechanisms`:
-                        (array) List of allowed SASL mechanism names.     If missing
-                        or empty, the system defaults are used.   `sasl.allow-insecure`:
-                        (boolean) Allow mechanisms that send clear-text passwords.
-                        \    Default false."
+                      description: "Secret for authentication. \n Names a secret in
+                        the same namespace as the ClusterLogForwarder. \n Sensitive
+                        authentication information is stored in a separate Secret
+                        object. A Secret is like a ConfigMap, where the keys are strings
+                        and the values are base64-encoded binary data, for example
+                        TLS certificates. \n Common keys are described here. Some
+                        output types support additional keys, documented with the
+                        output-specific configuration field. All secret keys are optional,
+                        enable the security features you want by setting the relevant
+                        keys. \n Transport Layer Security (TLS) \n Using a TLS URL
+                        ('https://...' or 'ssl://...') without any secret enables
+                        basic TLS: client authenticates server using system default
+                        certificate authority. \n Additional TLS features are enabled
+                        by referencing a Secret with the following optional fields
+                        in its spec.data. All data fields are base64 encoded. \n   `tls.crt`:
+                        A client certificate, for mutual authentication. Requires
+                        `tls.key`.   `tls.key`: Private key to unlock the client certificate.
+                        Requires `tls.crt`   `passphrase`: Passphrase to decode an
+                        encoded TLS private key. Requires tls.key.   `ca-bundle.crt`:
+                        Custom CA to validate certificates. \n Username and Password
+                        \n   `username`: Authentication user name. Requires `password`.
+                        \  `password`: Authentication password. Requires `username`.
+                        \n Simple Authentication Security Layer (SASL) \n   `sasl.enable`:
+                        (boolean) Explicitly enable or disable SASL.     If missing,
+                        SASL is automatically enabled if any `sasl.*` keys are set.
+                        \  `sasl.mechanisms`: (array of string) List of allowed SASL
+                        mechanism names.     If missing or empty, the system defaults
+                        are used.   `sasl.allow-insecure`: (boolean) Allow mechanisms
+                        that send clear-text passwords.     Default false."
                       properties:
                         name:
                           description: Name of a secret in the namespace configured
@@ -400,7 +401,9 @@ spec:
                     labels:
                       additionalProperties:
                         type: string
-                      description: Labels lists labels applied to this pipeline
+                      description: Labels applied to log records passing through this
+                        pipeline. These labels appear in the `openshift.labels` map
+                        in the log record.
                       type: object
                     name:
                       description: Name is optional, but must be unique in the `pipelines`

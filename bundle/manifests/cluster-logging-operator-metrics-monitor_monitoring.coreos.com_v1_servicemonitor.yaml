@@ -6,7 +6,7 @@ metadata:
   name: cluster-logging-operator-metrics-monitor
 spec:
   endpoints:
-    - port: http-metrics
+  - port: http-metrics
   namespaceSelector: {}
   selector:
     matchLabels:

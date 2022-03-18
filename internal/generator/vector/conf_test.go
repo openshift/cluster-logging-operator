@@ -224,7 +224,7 @@ address = "0.0.0.0:24231"
 default_namespace = "collector"
 `,
 		}),
-		Entry("with complex spec for elastic-search", generator.ConfGenerateTest{
+		Entry("with complex spec for elasticsearch", generator.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{},
 			},
@@ -408,6 +408,10 @@ source = """
             emit(event)
             return
         end
+        if event.log.kubernetes.pod_labels == nil then
+            emit(event)
+            return
+        end
         dedot(event.log.kubernetes.pod_labels)
         -- create "flat_labels" key
         event.log.kubernetes.flat_labels = {}
@@ -487,6 +491,10 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.pod_labels == nil then
             emit(event)
             return
         end

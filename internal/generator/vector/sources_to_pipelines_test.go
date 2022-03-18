@@ -234,5 +234,94 @@ source = """
 """
 `,
 		}),
+		Entry("Add Openshift Label(s)", generator.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
+						OutputRefs: []string{logging.OutputNameDefault},
+						Name:       "pipeline",
+						Labels: map[string]string{
+							"label1": "value1",
+						},
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default")'
+
+# Rename log stream to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = """
+  .log_type = "application"
+"""
+
+# Rename log stream to "infrastructure"
+[transforms.infrastructure]
+type = "remap"
+inputs = ["route_container_logs.infra","journal_logs"]
+source = """
+  .log_type = "infrastructure"
+"""
+
+[transforms.pipeline]
+type = "remap"
+inputs = ["application","infrastructure"]
+source = """
+  .openshift.labels = {"label1":"value1"}
+"""
+`,
+		}),
+		Entry("Parse log message as Jaon", generator.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
+						OutputRefs: []string{logging.OutputNameDefault},
+						Name:       "pipeline",
+						Parse:      "json",
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube")) || (starts_with!(.kubernetes.namespace_name,"openshift")) || (.kubernetes.namespace_name == "default")'
+
+# Rename log stream to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = """
+  .log_type = "application"
+"""
+
+# Rename log stream to "infrastructure"
+[transforms.infrastructure]
+type = "remap"
+inputs = ["route_container_logs.infra","journal_logs"]
+source = """
+  .log_type = "infrastructure"
+"""
+
+[transforms.pipeline]
+type = "remap"
+inputs = ["application","infrastructure"]
+source = """
+  parsed, err = parse_json(.message)
+  if err == null {
+    .structured = parsed
+  }
+"""
+`,
+		}),
 	)
 })

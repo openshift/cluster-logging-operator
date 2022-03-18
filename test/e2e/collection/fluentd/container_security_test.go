@@ -5,10 +5,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -33,6 +35,40 @@ var _ = Describe("Tests of collector container security stance", func() {
 	e2e := framework.NewE2ETestFramework()
 
 	BeforeEach(func() {
+		forwarder := &logging.ClusterLogForwarder{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       logging.ClusterLogForwarderKind,
+				APIVersion: logging.GroupVersion.String(),
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "instance",
+			},
+			Spec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name:           "infra-input",
+						Infrastructure: &logging.Infrastructure{},
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Name: "_infrastructure",
+						Type: logging.OutputTypeFluentdForward,
+						URL:  "tcp://foo.bar.svc:24224",
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						Name:       "infra-pipe",
+						OutputRefs: []string{"_infrastructure"},
+						InputRefs:  []string{"infra-input"},
+					},
+				},
+			},
+		}
+		if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
+		}
 		components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
 		if err := e2e.SetupClusterLogging(components...); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
@@ -82,6 +118,13 @@ var _ = Describe("Tests of collector container security stance", func() {
 			result, err := oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").
 				OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 			g.Expect(result).To(BeEmpty())
+			g.Expect(err).NotTo(HaveOccurred())
+		}, timeout, pollingInterval).Should(Succeed())
+
+		By("making sure on disk footprint is readable only to the collector")
+		Eventually(func(g Gomega) {
+			result, err := runInFluentdContainer("bash", "-c", "stat --format=%a /var/lib/fluentd/_infrastructure/* | sort -u")
+			g.Expect(result).To(Equal("600"))
 			g.Expect(err).NotTo(HaveOccurred())
 		}, timeout, pollingInterval).Should(Succeed())
 	})

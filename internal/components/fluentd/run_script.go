@@ -4,6 +4,8 @@ package fluentd
 const RunScript = `
 #!/bin/bash
 
+umask 0077
+
 CFG_DIR=/etc/fluent/configs.d
 
 fluentdargs="--no-supervisor"

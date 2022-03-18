@@ -47,8 +47,8 @@ var (
 	}
 )
 
-// SourcesToInputs takes the raw log sources (container, journal, audit) and produces Inputs as defined by ClusterLogForwarder Api
-func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
+// Inputs takes the raw log sources (container, journal, audit) and produces Inputs as defined by ClusterLogForwarder Api
+func Inputs(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
 	el := []generator.Element{}
 
 	types := generator.GatherSources(spec, o)
@@ -95,6 +95,19 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 		}
 		el = append(el, r)
 	}
+	userDefinedAppRouteMap := UserDefinedAppRouting(spec, o)
+	if len(userDefinedAppRouteMap) != 0 {
+		el = append(el, Route{
+			ComponentID: RouteApplicationLogs,
+			Inputs:      helpers.MakeInputs(logging.InputNameApplication),
+			Routes:      userDefinedAppRouteMap,
+		})
+	}
+
+	return el
+}
+
+func UserDefinedAppRouting(spec *logging.ClusterLogForwarderSpec, o generator.Options) map[string]string {
 	userDefined := spec.InputMap()
 	routeMap := map[string]string{}
 	for _, pipeline := range spec.Pipelines {
@@ -128,13 +141,5 @@ func SourcesToInputs(spec *logging.ClusterLogForwarderSpec, o generator.Options)
 			}
 		}
 	}
-	if len(routeMap) != 0 {
-		el = append(el, Route{
-			ComponentID: RouteApplicationLogs,
-			Inputs:      helpers.MakeInputs(logging.InputNameApplication),
-			Routes:      routeMap,
-		})
-	}
-
-	return el
+	return routeMap
 }

@@ -14,7 +14,7 @@ var (
 	UserDefinedInput = fmt.Sprintf("%s.%%s", RouteApplicationLogs)
 )
 
-func InputsToPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	el := []generator.Element{}
 	userDefined := spec.InputMap()
 	for _, p := range spec.Pipelines {

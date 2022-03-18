@@ -13,8 +13,8 @@ import (
 var _ = Describe("Testing Config Generation", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return generator.MergeElements(
-			SourcesToInputs(&clfspec, op),
-			InputsToPipelines(&clfspec, op),
+			Inputs(&clfspec, op),
+			Pipelines(&clfspec, op),
 		)
 	}
 	DescribeTable("Source(s) to Pipeline(s)", generator.TestGenerateConfWith(f),

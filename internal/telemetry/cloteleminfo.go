@@ -10,7 +10,7 @@ import (
 // placeholder for keeping clo info which will be used for clo metrics update
 type TData struct {
 	CLInfo              utils.StringMap
-	CLOutputType        utils.StringMap
+	CLLogStoreType      utils.StringMap
 	CollectorErrorCount utils.Float64Map
 	CLFInfo             utils.StringMap
 	CLFInputType        utils.StringMap
@@ -21,11 +21,11 @@ type TData struct {
 func NewTD() *TData {
 	return &TData{
 		CLInfo:              utils.StringMap{M: map[string]string{"version": version.Version, "managedStatus": "0", "healthStatus": "0"}},
-		CLOutputType:        utils.StringMap{M: map[string]string{"elasticsearch": "0"}},
+		CLLogStoreType:      utils.StringMap{M: map[string]string{"elasticsearch": "0", "loki": "0"}},
 		CollectorErrorCount: utils.Float64Map{M: map[string]float64{"CollectorErrorCount": 0}},
-		CLFInfo:             utils.StringMap{M: map[string]string{"healthStatus": "0", "pipelineInfo": "1"}},
-		CLFInputType:        utils.StringMap{M: map[string]string{"application": "1", "audit": "0", "infrastructure": "0"}},
-		CLFOutputType:       utils.StringMap{M: map[string]string{"default": "1", "elasticsearch": "0", "fluentdForward": "0", "syslog": "0", "kafka": "0", "loki": "0", "cloudwatch": "0"}},
+		CLFInfo:             utils.StringMap{M: map[string]string{"healthStatus": "0", "pipelineInfo": "0"}},
+		CLFInputType:        utils.StringMap{M: map[string]string{"application": "0", "audit": "0", "infrastructure": "0"}},
+		CLFOutputType:       utils.StringMap{M: map[string]string{"elasticsearch": "0", "fluentdForward": "0", "syslog": "0", "kafka": "0", "loki": "0", "cloudwatch": "0"}},
 	}
 }
 
@@ -60,8 +60,11 @@ var (
 		[]string{"default", "elasticsearch", "fluentdForward", "syslog", "kafka", "loki", "cloudwatch"},
 	)
 
-	MetricList = []prometheus.Collector{
+	MetricCLList = []prometheus.Collector{
 		mCLInfo,
+	}
+
+	MetricCLFList = []prometheus.Collector{
 		mCollectorErrorCount,
 		mCLFInfo,
 		mCLFInputType,
@@ -71,25 +74,36 @@ var (
 
 func RegisterMetrics() error {
 
-	for _, metric := range MetricList {
+	for _, metric := range MetricCLList {
+		metrics.Registry.MustRegister(metric)
+	}
+
+	for _, metric := range MetricCLFList {
 		metrics.Registry.MustRegister(metric)
 	}
 
 	return nil
 }
 
-func UpdateMetrics() error {
+func UpdateCLMetrics() error {
+
+	CLInfo := Data.CLInfo.M
+
+	mCLInfo.With(prometheus.Labels{
+		"version":       CLInfo["version"],
+		"managedStatus": CLInfo["managedStatus"],
+		"healthStatus":  CLInfo["healthStatus"]}).Set(1)
+
+	return nil
+}
+
+func UpdateCLFMetrics() error {
 
 	CLInfo := Data.CLInfo.M
 	CErrorCount := Data.CollectorErrorCount.M
 	CLFInfo := Data.CLFInfo.M
 	CLFInputType := Data.CLFInputType.M
 	CLFOutputType := Data.CLFOutputType.M
-
-	mCLInfo.With(prometheus.Labels{
-		"version":       CLInfo["version"],
-		"managedStatus": CLInfo["managedStatus"],
-		"healthStatus":  CLInfo["healthStatus"]}).Set(1)
 
 	mCollectorErrorCount.With(prometheus.Labels{
 		"version": CLInfo["version"]}).Set(CErrorCount["CollectorErrorCount"])
@@ -114,7 +128,6 @@ func UpdateMetrics() error {
 
 	return nil
 }
-
 func NewInfoVec(metricname string, metrichelp string, labelNames []string) *prometheus.GaugeVec {
 
 	return prometheus.NewGaugeVec(

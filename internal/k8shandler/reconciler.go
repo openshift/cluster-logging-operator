@@ -83,7 +83,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		if updateCLInfo != nil {
 			log.V(1).Info("Error in updating clusterlogging info for updating metrics", "updateCLInfo", updateCLInfo)
 		}
-		erru := telemetry.UpdateMetrics()
+		erru := telemetry.UpdateCLMetrics()
 		if erru != nil {
 			log.V(1).Error(erru, "Error in updating clo metrics for telemetry")
 		}
@@ -139,7 +139,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	if updateCLFInfo != nil {
 		log.V(1).Info("Error in updating CLF Info for CLF specific metrics", "updateCLFInfo", updateCLFInfo)
 	}
-	erru := telemetry.UpdateMetrics()
+	erru := telemetry.UpdateCLFMetrics()
 	if erru != nil {
 		log.V(0).Error(erru, "Error in updating clo metrics for telemetry")
 	}
@@ -241,9 +241,9 @@ func UpdateInfofromCL(request *ClusterLoggingRequest) (err error) {
 	if clspec.LogStore != nil {
 		log.V(1).Info("LogStore Type", "clspecLogStoreType", clspec.LogStore.Type)
 		if clspec.LogStore.Type == "elasticsearch" {
-			telemetry.Data.CLOutputType.Set("elasticsearch", "1")
+			telemetry.Data.CLLogStoreType.Set("elasticsearch", "1")
 		} else {
-			telemetry.Data.CLOutputType.Set("elasticsearch", "0")
+			telemetry.Data.CLLogStoreType.Set("elasticsearch", "0")
 		}
 	}
 

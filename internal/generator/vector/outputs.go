@@ -10,13 +10,23 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+func OutputFromPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) logging.RouteMap {
+	r := logging.RouteMap{}
+	for _, p := range spec.Pipelines {
+		for _, o := range p.OutputRefs {
+			r.Insert(o, p.Name)
+		}
+	}
+	return r
+}
+
 func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	outputs := []generator.Element{}
-	route := RouteMap(clfspec, op)
+	ofp := OutputFromPipelines(clfspec, op)
 
 	for _, o := range clfspec.Outputs {
 		secret := secrets[o.Name]
-		inputs := route[o.Name].List()
+		inputs := ofp[o.Name].List()
 		switch o.Type {
 		case logging.OutputTypeKafka:
 			outputs = generator.MergeElements(outputs, kafka.Conf(o, inputs, secret, op))

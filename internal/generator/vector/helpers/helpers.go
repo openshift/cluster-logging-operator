@@ -18,3 +18,11 @@ func MakeInputs(in ...string) string {
 	}
 	return fmt.Sprintf("[%s]", strings.Join(out, ","))
 }
+
+func TrimSpaces(in []string) []string {
+	o := make([]string, len(in))
+	for i, s := range in {
+		o[i] = strings.TrimSpace(s)
+	}
+	return o
+}

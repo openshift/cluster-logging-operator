@@ -3,6 +3,7 @@ package vector
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -10,18 +11,31 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 )
 
+const (
+	ParseJson = "json"
+)
+
 var (
 	UserDefinedInput = fmt.Sprintf("%s.%%s", RouteApplicationLogs)
 )
 
-func InputsToPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	el := []generator.Element{}
 	userDefined := spec.InputMap()
 	for _, p := range spec.Pipelines {
-		vrl := SrcPassThrough
+		vrls := []string{}
 		if p.Labels != nil && len(p.Labels) != 0 {
 			s, _ := json.Marshal(p.Labels)
-			vrl = fmt.Sprintf(".openshift.labels = %s", s)
+			vrls = append(vrls, fmt.Sprintf(".openshift.labels = %s", s))
+		}
+		if p.Parse == ParseJson {
+			parse := `
+parsed, err = parse_json(.message)
+if err == null {
+  .structured = parsed
+}
+`
+			vrls = append(vrls, parse)
 		}
 		inputs := []string{}
 		for _, i := range p.InputRefs {
@@ -30,6 +44,10 @@ func InputsToPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Optio
 			} else {
 				inputs = append(inputs, i)
 			}
+		}
+		vrl := SrcPassThrough
+		if len(vrls) != 0 {
+			vrl = strings.Join(helpers.TrimSpaces(vrls), "\n\n")
 		}
 		r := Remap{
 			ComponentID: p.Name,

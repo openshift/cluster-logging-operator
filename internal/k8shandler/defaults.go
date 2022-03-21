@@ -16,7 +16,4 @@ var (
 
 	defaultKibanaProxyMemory     resource.Quantity = resource.MustParse("256Mi")
 	defaultKibanaProxyCpuRequest resource.Quantity = resource.MustParse("100m")
-
-	defaultFluentdMemory     resource.Quantity = resource.MustParse("736Mi")
-	defaultFluentdCpuRequest resource.Quantity = resource.MustParse("100m")
 )

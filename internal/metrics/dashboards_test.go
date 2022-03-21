@@ -4,7 +4,6 @@ import (
 	"context"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -50,7 +49,7 @@ var _ = Describe("ReconcileDashboards", func() {
 
 		It("should update the configmap when the dashboard is different", func() {
 			initial := newDashboardConfigMap()
-			initial.Labels[constants.TrustedCABundleHashName] = "abc"
+			initial.Labels[DashboardHashName] = "abc"
 			setup(initial)
 			Expect(ReconcileDashboards(fakeClient, fakeClient)).To(Succeed())
 			Expect(GetDashboard()).To(Equal(exp), "Exp the configmap to be updated")

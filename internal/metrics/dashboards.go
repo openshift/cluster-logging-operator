@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"github.com/ViaQ/logerr/log"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -17,6 +16,7 @@ const (
 	DashboardName               = "grafana-dashboard-cluster-logging"
 	DashboardNS                 = "openshift-config-managed"
 	DashboardFileName           = "openshift-logging.json"
+	DashboardHashName           = "contentHash"
 )
 
 func newDashboardConfigMap() *corev1.ConfigMap {
@@ -33,7 +33,7 @@ func newDashboardConfigMap() *corev1.ConfigMap {
 	)
 	runtime.NewConfigMapBuilder(cm).
 		AddLabel("console.openshift.io/dashboard", "true").
-		AddLabel(constants.TrustedCABundleHashName, hash)
+		AddLabel(DashboardHashName, hash)
 
 	return cm
 }

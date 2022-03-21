@@ -43,14 +43,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap
 	return configMap, err
 }
 
-func hasTrustedCABundle(configMap *corev1.ConfigMap) bool {
-	if configMap == nil {
-		return false
-	}
-	caBundle, ok := configMap.Data[constants.TrustedCABundleKey]
-	return ok && caBundle != ""
-}
-
 func calcTrustedCAHashValue(configMap *corev1.ConfigMap) (string, error) {
 	hashValue := ""
 	var err error

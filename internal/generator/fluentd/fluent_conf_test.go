@@ -203,8 +203,8 @@ var _ = Describe("Generating fluentd config", func() {
   @type prometheus
   bind "#{ENV['POD_IP']}"
   <transport tls>
-    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
-    private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
+    cert_path /etc/collector/metrics/tls.crt
+    private_key_path /etc/collector/metrics/tls.key
   </transport>
 </source>
 
@@ -986,8 +986,8 @@ var _ = Describe("Generating fluentd config", func() {
   @type prometheus
   bind "#{ENV['POD_IP']}"
   <transport tls>
-    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
-    private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
+    cert_path /etc/collector/metrics/tls.crt
+    private_key_path /etc/collector/metrics/tls.key
   </transport>
 </source>
 
@@ -1754,8 +1754,8 @@ var _ = Describe("Generating fluentd config", func() {
   @type prometheus
   bind "#{ENV['POD_IP']}"
   <transport tls>
-    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
-    private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
+    cert_path /etc/collector/metrics/tls.crt
+    private_key_path /etc/collector/metrics/tls.key
   </transport>
 </source>
 
@@ -2467,8 +2467,8 @@ var _ = Describe("Generating fluentd config", func() {
   @type prometheus
   bind "#{ENV['POD_IP']}"
   <transport tls>
-    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
-    private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
+    cert_path /etc/collector/metrics/tls.crt
+    private_key_path /etc/collector/metrics/tls.key
   </transport>
 </source>
 
@@ -2942,8 +2942,8 @@ var _ = Describe("Generating fluentd config", func() {
   @type prometheus
   bind "#{ENV['POD_IP']}"
   <transport tls>
-    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
-    private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
+    cert_path /etc/collector/metrics/tls.crt
+    private_key_path /etc/collector/metrics/tls.key
   </transport>
 </source>
 
@@ -4027,8 +4027,8 @@ inputs:
   @type prometheus
   bind "#{ENV['POD_IP']}"
   <transport tls>
-    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
-    private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
+    cert_path /etc/collector/metrics/tls.crt
+    private_key_path /etc/collector/metrics/tls.key
   </transport>
 </source>
 

@@ -30,6 +30,8 @@ const (
 	LinuxValue        = "linux"
 )
 
+var DefaultNodeSelector = map[string]string{OsNodeLabel: LinuxValue}
+
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
 	constants.CollectorName:              constants.FluentdImageEnvVar,
@@ -275,6 +277,16 @@ func GetInt32(value int32) *int32 {
 func GetInt64(value int64) *int64 {
 	i := value
 	return &i
+}
+
+// GetEnvVar returns EnvVar entry that matches the given name
+func GetEnvVar(name string, envVars []v1.EnvVar) (v1.EnvVar, bool) {
+	for _, env := range envVars {
+		if env.Name == name {
+			return env, true
+		}
+	}
+	return v1.EnvVar{}, false
 }
 
 func CheckFileExists(filePath string) error {

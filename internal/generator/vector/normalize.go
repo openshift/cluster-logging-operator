@@ -55,20 +55,12 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) 
 	return el
 }
 
-func TrimSpaces(in []string) []string {
-	o := make([]string, len(in))
-	for i, s := range in {
-		o[i] = strings.TrimSpace(s)
-	}
-	return o
-}
-
 func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 	return []generator.Element{
 		Remap{
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
-			VRL: strings.Join(TrimSpaces([]string{
+			VRL: strings.Join(helpers.TrimSpaces([]string{
 				FixLogLevel,
 				ChangeNSNameField,
 				RemoveFile,

@@ -11,23 +11,42 @@ func Conf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret,
 	return []generator.Section{
 		{
 			Sources(clfspec, op),
-			"Set of all input sources",
+			`
+			Set of all input sources, as defined in CLF spec
+			 - kubernetes_logs
+			 - journald
+			 - file
+			 - internal_metrics
+			`,
 		},
 		{
 			NormalizeLogs(clfspec, op),
-			"set 'level' field, add metadata",
+			`
+			- set 'level' field 
+			- rename fields as per data model
+			- remove unused fields
+			`,
 		},
 		{
-			SourcesToInputs(clfspec, op),
-			"",
+			Inputs(clfspec, op),
+			`
+			- Route logs by log types (app, infra, audit)
+			- Handle user defined inputs
+			`,
 		},
 		{
-			InputsToPipelines(clfspec, op),
-			"",
+			Pipelines(clfspec, op),
+			`
+			- Add pipeline labels
+			`,
 		},
 		{
 			Outputs(clspec, secrets, clfspec, op),
-			"vector outputs",
+			`Set of all output sinks, as defined by CLF spec
+			- elasticsearch
+			- loki
+			- kafka
+			`,
 		},
 	}
 }

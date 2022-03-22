@@ -7,7 +7,7 @@ import (
 type UserNamePass security2.UserNamePass
 
 func (up UserNamePass) Name() string {
-	return "elasticsearchUsernamePasswordTemplate"
+	return "lokiUsernamePasswordTemplate"
 }
 
 func (up UserNamePass) Template() string {

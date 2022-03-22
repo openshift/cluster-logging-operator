@@ -87,7 +87,7 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 	}
 	// url is parasable, checked at input sanitization
 	u, _ := urlhelper.Parse(o.URL)
-	urlBase := fmt.Sprintf("%v://%v", u.Scheme, u.Host)
+	urlBase := fmt.Sprintf("%v://%v%v", u.Scheme, u.Host, u.Path)
 	storeID := helpers.StoreID("", o.Name, "")
 	return Match{
 		MatchTags: "**",
@@ -124,6 +124,12 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
 			}
 			conf = append(conf, ca)
+		}
+		if security.HasBearerTokenFileKey(secret) {
+			bt := BearerTokenFile{
+				BearerTokenFilePath: security.GetFromSecret(secret, constants.BearerTokenFileKey),
+			}
+			conf = append(conf, bt)
 		}
 	}
 	return conf

@@ -12,6 +12,7 @@ const (
 	ClientPrivateKey   = "tls.key"
 	TrustedCABundleKey = "ca-bundle.crt"
 	Passphrase         = "passphrase"
+	BearerTokenFileKey = "token"
 
 	// Username/Password keys, used by any output with username/password authentication.
 

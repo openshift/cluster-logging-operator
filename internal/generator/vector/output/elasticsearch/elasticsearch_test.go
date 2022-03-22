@@ -71,6 +71,10 @@ source = """
             emit(event)
             return
         end
+        if event.log.kubernetes.pod_labels == nil then
+            emit(event)
+            return
+        end
         dedot(event.log.kubernetes.pod_labels)
         -- create "flat_labels" key
         event.log.kubernetes.flat_labels = {}
@@ -175,6 +179,10 @@ source = """
             emit(event)
             return
         end
+        if event.log.kubernetes.pod_labels == nil then
+            emit(event)
+            return
+        end
         dedot(event.log.kubernetes.pod_labels)
         -- create "flat_labels" key
         event.log.kubernetes.flat_labels = {}
@@ -266,6 +274,10 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.pod_labels == nil then
             emit(event)
             return
         end

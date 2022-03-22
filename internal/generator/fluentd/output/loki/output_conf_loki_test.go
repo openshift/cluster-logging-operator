@@ -94,6 +94,10 @@ func TestLokiOutput(t *testing.T) {
 						"tls.crt":       []byte("my-tls"),
 						"tls.key":       []byte("my-tls-key"),
 						"ca-bundle.crt": []byte("my-bundle"),
+					}},
+				"loki-receiver-token": {
+					Data: map[string][]byte{
+						"token": []byte("/path/to/token"),
 					}}}
 
 			var err error
@@ -173,13 +177,28 @@ func TestLokiOutput(t *testing.T) {
 				Loki: &v1.Loki{TenantKey: "foo.bar.baz"},
 			},
 		}}
-		config.content = `url https://logs-us-west1.grafana.net
+		config.content = `url https://logs-us-west1.grafana.net/a-tenant
     tenant ${record.dig("foo","bar","baz")}
 `
 		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
 		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results))
+	})
+
+	testCase("forward with bearer token", func(t *testing.T) {
+		outputs := []v1.OutputSpec{{
+			Type:   v1.OutputTypeLoki,
+			Name:   "loki-receiver",
+			URL:    "https://logs-us-west1.grafana.net",
+			Secret: &v1.OutputSecretSpec{Name: "a-secret-ref"},
+		}}
+		es := Conf(nil, secrets["loki-receiver-token"], outputs[0], generator.NoOptions)
+		results, err := g.GenerateConf(es...)
+		require.NoError(t, err)
+		config.content = `url https://logs-us-west1.grafana.net
+    bearer_token_file "/path/to/token"`
+		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results), results)
 	})
 
 }

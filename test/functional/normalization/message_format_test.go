@@ -194,11 +194,14 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 
 		// Template expected as output Log
 		var outputLogTemplate = types.OVNAuditLog{
-			Message:          ovnLogLine,
-			Level:            level,
-			Hostname:         functional.FunctionalNodeName,
-			Timestamp:        time.Time{},
-			LogType:          "audit",
+			Message:   ovnLogLine,
+			Level:     level,
+			Hostname:  functional.FunctionalNodeName,
+			Timestamp: time.Time{},
+			LogType:   "audit",
+			Openshift: types.OpenshiftMeta{
+				Sequence: types.NewOptionalInt(""),
+			},
 			ViaqIndexName:    "audit-write",
 			ViaqMsgID:        "*",
 			PipelineMetadata: functional.TemplateForAnyPipelineMetadata,

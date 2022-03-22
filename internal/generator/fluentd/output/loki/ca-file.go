@@ -7,7 +7,7 @@ import (
 type CAFile security.CAFile
 
 func (ca CAFile) Name() string {
-	return "elasticsearchCAFileTemplate"
+	return "lokiCAFileTemplate"
 }
 
 func (ca CAFile) Template() string {

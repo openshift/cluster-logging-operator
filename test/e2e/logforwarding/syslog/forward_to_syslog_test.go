@@ -2,13 +2,13 @@ package syslog
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"path/filepath"
-	"runtime"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	"path/filepath"
+	"runtime"
 
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,7 +31,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	var (
 		err              error
 		syslogDeployment *apps.Deployment
-		e2e              = helpers.NewE2ETestFramework()
+		e2e              = framework.NewE2ETestFramework()
 		testDir          string
 		forwarder        *logging.ClusterLogForwarder
 		generatorPayload map[string]string
@@ -104,7 +104,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				}
 			})
 			DescribeTable("should be able to send logs to syslog receiver", func(tls bool, protocol corev1.Protocol) {
-				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, protocol, tls, helpers.RFC5424); err != nil {
+				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, protocol, tls, framework.RFC5424); err != nil {
 					Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 				}
 				if protocol == corev1.ProtocolTCP {
@@ -128,14 +128,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					}
 				}
 				logStore := e2e.LogStores[syslogDeployment.GetName()]
-				Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+				Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 				expectedAppName := forwarder.Spec.Outputs[0].Syslog.AppName
-				Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
+				Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
 				expectedMsgID := forwarder.Spec.Outputs[0].Syslog.MsgID
-				Expect(logStore.GrepLogs(grepmsgid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
+				Expect(logStore.GrepLogs(grepmsgid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedMsgID), "Expected: "+expectedMsgID)
 				expectedProcID := forwarder.Spec.Outputs[0].Syslog.ProcID
-				Expect(logStore.GrepLogs(grepprocid, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
+				Expect(logStore.GrepLogs(grepprocid, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedProcID), "Expected: "+expectedProcID)
 			},
 				Entry("with TLS disabled, with TCP", false, corev1.ProtocolTCP),
 				Entry("with TLS disabled, with UDP", false, corev1.ProtocolUDP),
@@ -179,7 +179,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				}
 			})
 			DescribeTable("should be able to send logs to syslog receiver", func(useOldPlugin bool, tls bool, protocol corev1.Protocol) {
-				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, protocol, tls, helpers.RFC3164); err != nil {
+				if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, protocol, tls, framework.RFC3164); err != nil {
 					Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 				}
 				if protocol == corev1.ProtocolTCP {
@@ -208,11 +208,11 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					}
 				}
 				logStore := e2e.LogStores[syslogDeployment.GetName()]
-				Expect(logStore.HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				if !useOldPlugin {
-					_, _ = logStore.GrepLogs(waitlogs, helpers.DefaultWaitForLogsTimeout)
+					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					expectedAppName := forwarder.Spec.Outputs[0].Syslog.Tag
-					Expect(logStore.GrepLogs(grepappname, helpers.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
+					Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
 				}
 			},
 				// old syslog plugin does not support TLS, so set false for tls

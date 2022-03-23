@@ -2,12 +2,12 @@ package metrics
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"github.com/openshift/cluster-logging-operator/test/functional"
 )
 
 var _ = Describe("[Metrics] Function testing of fluentd metrics", func() {

@@ -1,9 +1,10 @@
-package helpers
+package e2e
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"log"
 	"math/rand"
 	"os"
@@ -88,7 +89,7 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	options := metav1.ListOptions{
 		LabelSelector: "component=syslog-receiver",
 	}
-	pods, err := syslog.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
+	pods, err := syslog.tc.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
 	if err != nil {
 		return false, err
 	}
@@ -99,7 +100,7 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, podName, "syslog-receiver", []string{"bash", "-c", cmd})
+		output, err := syslog.tc.PodExec(constants.OpenshiftNS, podName, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
 			clolog.Error(err, "failed to fetch logs from syslog-receiver")
 			return false, nil
@@ -122,7 +123,7 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	options := metav1.ListOptions{
 		LabelSelector: "component=syslog-receiver",
 	}
-	pods, err := syslog.tc.KubeClient.CoreV1().Pods(OpenshiftLoggingNS).List(context.TODO(), options)
+	pods, err := syslog.tc.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
 	if err != nil {
 		return NotFound, err
 	}
@@ -135,7 +136,7 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	var value string
 
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (bool, error) {
-		output, err := syslog.tc.PodExec(OpenshiftLoggingNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
+		output, err := syslog.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
 			clolog.Error(err, "failed to fetch logs from syslog-receiver")
 			return false, nil
@@ -179,13 +180,13 @@ func (syslog *syslogReceiverLogStore) ClusterLocalEndpoint() string {
 
 func (tc *E2ETestFramework) createSyslogServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
 	opts := metav1.CreateOptions{}
-	serviceAccount = k8shandler.NewServiceAccount("syslog-receiver", OpenshiftLoggingNS)
-	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(OpenshiftLoggingNS).Create(context.TODO(), serviceAccount, opts); err != nil {
+	serviceAccount = k8shandler.NewServiceAccount("syslog-receiver", constants.OpenshiftNS)
+	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Create(context.TODO(), serviceAccount, opts); err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ServiceAccounts(OpenshiftLoggingNS).Delete(context.TODO(), serviceAccount.Name, opts)
+		return tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Delete(context.TODO(), serviceAccount.Name, opts)
 	})
 	return serviceAccount, nil
 }
@@ -214,7 +215,7 @@ func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 	opts := metav1.CreateOptions{}
 	saRole := k8shandler.NewRole(
 		name,
-		OpenshiftLoggingNS,
+		constants.OpenshiftNS,
 		k8shandler.NewPolicyRules(
 			k8shandler.NewPolicyRule(
 				[]string{"security.openshift.io"},
@@ -225,13 +226,13 @@ func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 		),
 	)
 
-	if _, err = tc.KubeClient.RbacV1().Roles(OpenshiftLoggingNS).Create(context.TODO(), saRole, opts); err != nil {
+	if _, err = tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Create(context.TODO(), saRole, opts); err != nil {
 		return err
 	}
 
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().Roles(OpenshiftLoggingNS).Delete(context.TODO(), name, opts)
+		return tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
 	})
 
 	rbOpts := metav1.CreateOptions{}
@@ -244,19 +245,19 @@ func (tc *E2ETestFramework) createSyslogRbac(name string) (err error) {
 
 	roleBinding := k8shandler.NewRoleBinding(
 		name,
-		OpenshiftLoggingNS,
+		constants.OpenshiftNS,
 		saRole.Name,
 		k8shandler.NewSubjects(
 			subject,
 		),
 	)
 
-	if _, err = tc.KubeClient.RbacV1().RoleBindings(OpenshiftLoggingNS).Create(context.TODO(), roleBinding, rbOpts); err != nil {
+	if _, err = tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Create(context.TODO(), roleBinding, rbOpts); err != nil {
 		return err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().RoleBindings(OpenshiftLoggingNS).Delete(context.TODO(), name, opts)
+		return tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
 	})
 	return nil
 }
@@ -327,7 +328,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 		}
 		tc.AddCleanup(func() error {
 			opts := metav1.DeleteOptions{}
-			return tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Delete(context.TODO(), SyslogReceiverName, opts)
+			return tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Delete(context.TODO(), SyslogReceiverName, opts)
 		})
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 			Name:      "certs",
@@ -347,34 +348,34 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	rsyslogConf = GenerateRsyslogConf(rsyslogConf, rfc)
 
 	cOpts := metav1.CreateOptions{}
-	config := k8shandler.NewConfigMap(container.Name, OpenshiftLoggingNS, map[string]string{
+	config := k8shandler.NewConfigMap(container.Name, constants.OpenshiftNS, map[string]string{
 		"rsyslog.conf": rsyslogConf,
 	})
-	config, err = tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Create(context.TODO(), config, cOpts)
+	config, err = tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Create(context.TODO(), config, cOpts)
 	if err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ConfigMaps(OpenshiftLoggingNS).Delete(context.TODO(), config.Name, opts)
+		return tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Delete(context.TODO(), config.Name, opts)
 	})
 
 	dOpts := metav1.CreateOptions{}
 	syslogDeployment := k8shandler.NewDeployment(
 		container.Name,
-		OpenshiftLoggingNS,
+		constants.OpenshiftNS,
 		container.Name,
 		serviceAccount.Name,
 		podSpec,
 	)
 
-	syslogDeployment, err = tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Create(context.TODO(), syslogDeployment, dOpts)
+	syslogDeployment, err = tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Create(context.TODO(), syslogDeployment, dOpts)
 	if err != nil {
 		return nil, err
 	}
 	service := factory.NewService(
 		serviceAccount.Name,
-		OpenshiftLoggingNS,
+		constants.OpenshiftNS,
 		serviceAccount.Name,
 		[]corev1.ServicePort{
 			{
@@ -383,28 +384,29 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 			},
 		},
 	)
+
 	tc.AddCleanup(func() error {
 		var zerograce int64
 		deleteopts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.AppsV1().Deployments(OpenshiftLoggingNS).Delete(context.TODO(), syslogDeployment.Name, deleteopts)
+		return tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Delete(context.TODO(), syslogDeployment.Name, deleteopts)
 	})
 
 	sOpts := metav1.CreateOptions{}
-	service, err = tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Create(context.TODO(), service, sOpts)
+	service, err = tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Create(context.TODO(), service, sOpts)
 	if err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().Services(OpenshiftLoggingNS).Delete(context.TODO(), service.Name, opts)
+		return tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Delete(context.TODO(), service.Name, opts)
 	})
 	logStore.deployment = syslogDeployment
 
 	name := syslogDeployment.GetName()
 	tc.LogStores[name] = logStore
-	return syslogDeployment, tc.waitForDeployment(OpenshiftLoggingNS, syslogDeployment.Name, defaultRetryInterval, defaultTimeout)
+	return syslogDeployment, tc.waitForDeployment(constants.OpenshiftNS, syslogDeployment.Name, defaultRetryInterval, defaultTimeout)
 }
 
 func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, secretName string) (*corev1.Secret, error) {
@@ -419,8 +421,8 @@ func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, s
 		return nil, err
 	}
 	script := fmt.Sprintf("%s/syslog_cert_generation.sh", testDir)
-	clolog.Info("Running script '%s %s %s %s'", "script", script, "workingdir", workingDir, "namespace", OpenshiftLoggingNS, "logStore", logStoreName)
-	cmd := exec.Command(script, workingDir, OpenshiftLoggingNS, logStoreName)
+	clolog.Info("Running script '%s %s %s %s'", "script", script, "workingdir", workingDir, "namespace", constants.OpenshiftNS, "logStore", logStoreName)
+	cmd := exec.Command(script, workingDir, constants.OpenshiftNS, logStoreName)
 	result, err := cmd.Output()
 
 	if clolog.V(3).Enabled() {
@@ -440,11 +442,11 @@ func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, s
 	sOpts := metav1.CreateOptions{}
 	secret := k8shandler.NewSecret(
 		secretName,
-		OpenshiftLoggingNS,
+		constants.OpenshiftNS,
 		data,
 	)
 	clolog.V(3).Info("Creating secret for logStore", "secret", secret.Name, "logStore", logStoreName)
-	if secret, err = tc.KubeClient.CoreV1().Secrets(OpenshiftLoggingNS).Create(context.TODO(), secret, sOpts); err != nil {
+	if secret, err = tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), secret, sOpts); err != nil {
 		return nil, err
 	}
 	return secret, nil

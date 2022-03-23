@@ -2,6 +2,8 @@ package fluentd
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
 
@@ -23,7 +25,7 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 		err              error
 		fluentDeployment *apps.Deployment
 		app              *apps.StatefulSet
-		e2e              = helpers.NewE2ETestFramework()
+		e2e              = framework.NewE2ETestFramework()
 		rootDir          string
 	)
 	appNamespace1 := "application-ns1"
@@ -135,9 +137,9 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 			})
 
 			It("should send logs from specific applications by using labels", func() {
-				Expect(e2e.LogStores[fluentDeployment.GetName()].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs with ")
+				Expect(e2e.LogStores[fluentDeployment.GetName()].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs with ")
 
-				logs, err := e2e.LogStores[fluentDeployment.GetName()].ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
+				logs, err := e2e.LogStores[fluentDeployment.GetName()].ApplicationLogs(framework.DefaultWaitForLogsTimeout)
 				Expect(err).To(BeNil(), fmt.Sprintf("Error fetching logs: %v", err))
 				Expect(len(logs)).To(Not(Equal(0)), "There were no documents returned in the logs")
 
@@ -148,9 +150,9 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env1"))
 				}
 
-				Expect(e2e.LogStores[app.Name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs with ")
+				Expect(e2e.LogStores[app.Name].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs with ")
 
-				logs, err = e2e.LogStores[app.Name].ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
+				logs, err = e2e.LogStores[app.Name].ApplicationLogs(framework.DefaultWaitForLogsTimeout)
 				Expect(err).To(BeNil(), fmt.Sprintf("Error fetching logs: %v", err))
 				Expect(len(logs)).To(Not(Equal(0)), "There were no documents returned in the logs")
 
@@ -172,8 +174,8 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				e2e.WaitForCleanupCompletion(appNamespace1, []string{"test"})
 				e2e.WaitForCleanupCompletion(appNamespace2, []string{"test"})
 				e2e.Cleanup()
-				e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd"})
-			}, helpers.DefaultCleanUpTimeout)
+				e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{"fluent-receiver", "fluentd"})
+			}, framework.DefaultCleanUpTimeout)
 
 		})
 		Describe("from pods identified by labels and namespaces", func() {
@@ -247,9 +249,9 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 			})
 
 			It("should send logs with labels name:app1 and env:env1 from namespace application-ns1 to fluentd only", func() {
-				Expect(e2e.LogStores[fluentDeployment.GetName()].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs with ")
+				Expect(e2e.LogStores[fluentDeployment.GetName()].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs with ")
 
-				logs, err := e2e.LogStores[fluentDeployment.GetName()].ApplicationLogs(helpers.DefaultWaitForLogsTimeout)
+				logs, err := e2e.LogStores[fluentDeployment.GetName()].ApplicationLogs(framework.DefaultWaitForLogsTimeout)
 				Expect(err).To(BeNil(), fmt.Sprintf("Error fetching logs: %v", err))
 				Expect(len(logs)).To(Not(Equal(0)), "There were no documents returned in the logs")
 
@@ -271,8 +273,8 @@ var _ = Describe("[Collection] InputSelector filtering", func() {
 				e2e.WaitForCleanupCompletion(appNamespace1, []string{"test"})
 				e2e.WaitForCleanupCompletion(appNamespace2, []string{"test"})
 				e2e.Cleanup()
-				e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd"})
-			}, helpers.DefaultCleanUpTimeout)
+				e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{"fluent-receiver", "fluentd"})
+			}, framework.DefaultCleanUpTimeout)
 
 		})
 

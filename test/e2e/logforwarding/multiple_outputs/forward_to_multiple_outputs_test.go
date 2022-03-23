@@ -2,6 +2,7 @@ package multiple_outputs
 
 import (
 	"fmt"
+	. "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/ViaQ/logerr/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/constants"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	. "github.com/openshift/cluster-logging-operator/test/helpers"
 	eologgingv1 "github.com/openshift/elasticsearch-operator/pkg/apis/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -130,7 +130,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, selectors)
+			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, selectors)
 		})
 	})
 })

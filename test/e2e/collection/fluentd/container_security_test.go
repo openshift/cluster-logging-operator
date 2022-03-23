@@ -4,6 +4,8 @@ import (
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -14,7 +16,7 @@ const (
 )
 
 func runInFluentdContainer(command string, args ...string) (string, error) {
-	return oc.Exec().WithNamespace(helpers.OpenshiftLoggingNS).WithPodGetter(oc.Get().WithNamespace(helpers.OpenshiftLoggingNS).Pod().Selector("component=fluentd").OutputJsonpath("{.items[0].metadata.name}")).Container("fluentd").WithCmd(command, args...).Run()
+	return oc.Exec().WithNamespace(constants.OpenshiftNS).WithPodGetter(oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=fluentd").OutputJsonpath("{.items[0].metadata.name}")).Container("fluentd").WithCmd(command, args...).Run()
 }
 
 func checkMountReadOnly(mount string) {
@@ -26,8 +28,8 @@ func checkMountReadOnly(mount string) {
 	}, timeout, pollingInterval).Should(Succeed())
 }
 
-var _ = Describe("Tests of fluentd container security stance", func() {
-	e2e := helpers.NewE2ETestFramework()
+var _ = Describe("Tests of collector container security stance", func() {
+	e2e := framework.NewE2ETestFramework()
 
 	BeforeEach(func() {
 		components := []helpers.LogComponentType{helpers.ComponentTypeCollector}
@@ -41,8 +43,8 @@ var _ = Describe("Tests of fluentd container security stance", func() {
 
 	AfterEach(func() {
 		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd"})
-	}, helpers.DefaultCleanUpTimeout)
+		e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.FluentdName})
+	}, framework.DefaultCleanUpTimeout)
 
 	It("fluentd containers should have tight security settings", func() {
 		By("having all Linux capabilities disabled")
@@ -76,7 +78,7 @@ var _ = Describe("Tests of fluentd container security stance", func() {
 
 		By("not running as a privileged container")
 		Eventually(func(g Gomega) {
-			result, err := oc.Get().WithNamespace(helpers.OpenshiftLoggingNS).Pod().Selector("component=fluentd").
+			result, err := oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=fluentd").
 				OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 			g.Expect(result).To(BeEmpty())
 			g.Expect(err).NotTo(HaveOccurred())

@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"strings"
 	"time"
 )
@@ -36,7 +36,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 				spec.Syslog.AppName = appName
 				spec.Syslog.ProcID = procId
 				spec.Syslog.MsgID = msgId
-				spec.Syslog.RFC = helpers.RFC5424.String()
+				spec.Syslog.RFC = e2e.RFC5424.String()
 			}, logging.OutputTypeSyslog)
 		Expect(framework.Deploy()).To(BeNil())
 
@@ -63,7 +63,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 					spec.Syslog.Facility = "$.message.facility_key"
 					spec.Syslog.Severity = "$.message.severity_key"
-					spec.Syslog.RFC = helpers.RFC5424.String()
+					spec.Syslog.RFC = e2e.RFC5424.String()
 				}, logging.OutputTypeSyslog)
 			Expect(framework.Deploy()).To(BeNil())
 
@@ -85,7 +85,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-				spec.Syslog.RFC = helpers.RFC5424.String()
+				spec.Syslog.RFC = e2e.RFC5424.String()
 			}, logging.OutputTypeSyslog)
 		Expect(framework.Deploy()).To(BeNil())
 

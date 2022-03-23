@@ -2,15 +2,15 @@ package normalization
 
 import (
 	"encoding/json"
-	"fmt"
-	"strings"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
-	"github.com/openshift/cluster-logging-operator/test/functional"
+
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/tools/reference"
 )
 
-var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages", func() {
+var _ = Describe("[Functional][Normalization] Fluentd normalization for EventRouter messages", func() {
 
 	const timestamp string = "1985-10-21T09:00:00.00000+00:00"
 	var (
@@ -88,27 +88,27 @@ var _ = Describe("[Normalization] Fluentd normalization for EventRouter messages
 		framework.Cleanup()
 	})
 
-	for _, val := range []string{"ADDED", "UPDATED"} {
-		verb := val
-		It(fmt.Sprintf("Should parse EventRouter %s message and check values", verb), func() {
-			podRef, err := reference.GetReference(scheme.Scheme, pod)
-			Expect(err).To(BeNil())
-			newEventData := NewEventDataBuilder(verb, podRef)
-			jsonBytes, _ := json.Marshal(newEventData)
-			jsonStr := string(jsonBytes)
-			msg := strings.ReplaceAll(fmt.Sprintf("%s stdout F %s", timestamp, jsonStr), "\"", "\\\"")
-			err = framework.WriteMessagesToApplicationLog(msg, 1)
-			Expect(err).To(BeNil())
+	DescribeTable("when normalizing events", func(verb string) {
+		podRef, err := reference.GetReference(scheme.Scheme, pod)
+		Expect(err).To(BeNil())
+		newEventData := NewEventDataBuilder(verb, podRef)
+		jsonBytes, _ := json.Marshal(newEventData)
+		jsonStr := string(jsonBytes)
+		msg := functional.NewCRIOLogMessage(timestamp, jsonStr, false)
+		err = framework.WriteMessagesToApplicationLog(msg, 1)
+		Expect(err).To(BeNil())
 
-			raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			var logs []types.EventRouterLog
-			err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-			var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
-			outputTestLog := logs[0]
+		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+		var logs []types.EventRouterLog
+		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
+		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+		var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
+		outputTestLog := logs[0]
+		Expect(outputTestLog).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
+	},
+		Entry("It should normalize 'ADDED' events", "ADDED"),
+		Entry("It should normalize 'UPDATED' events", "UPDATED"),
+	)
 
-			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
-		})
-	}
 })

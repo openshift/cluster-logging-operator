@@ -3,6 +3,8 @@ package fluentlegacy
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -26,7 +28,7 @@ var _ = Describe("[ClusterLogging] Forwards logs", func() {
 	var (
 		err              error
 		fluentDeployment *apps.Deployment
-		e2e              = helpers.NewE2ETestFramework()
+		e2e              = framework.NewE2ETestFramework()
 		rootDir          string
 	)
 	BeforeEach(func() {
@@ -100,14 +102,14 @@ var _ = Describe("[ClusterLogging] Forwards logs", func() {
 			})
 			It("should send logs to the forward.Output logstore", func() {
 				name := fluentDeployment.GetName()
-				Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-				Expect(e2e.LogStores[name].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+				Expect(e2e.LogStores[name].HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+				Expect(e2e.LogStores[name].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 			})
 		})
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluent-receiver", "fluentd", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{"fluent-receiver", "fluentd", "elasticsearch"})
 		})
 	})
 

@@ -78,7 +78,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		if collectorType == logging.LogCollectionTypeVector && (!found || enabled != "enabled") {
 			err = errors.NewBadRequest(fmt.Sprintf("Vector as collector not enabled via annotation on ClusterLogging %s", PreviewVectorCollector))
 			log.V(9).Error(err, "Vector as collector not enabled via annotation on ClusterLogging")
-			return err
+			return clusterRequest.UpdateCondition(
+				logging.CollectorDeadEnd,
+				"Add annotation \"logging.openshift.io/preview-vector-collector: enabled\" to ClusterLogging CR",
+				"Vector as collector not enabled via annotation on ClusterLogging",
+				corev1.ConditionTrue,
+			)
 		}
 
 		if err = clusterRequest.createOrUpdateCollectionPriorityClass(); err != nil {

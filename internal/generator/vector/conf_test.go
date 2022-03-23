@@ -445,6 +445,7 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
             return
         end
         dedot(event.log.kubernetes.pod_labels)
@@ -524,6 +525,7 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
             return
         end
         dedot(event.log.kubernetes.pod_labels)
@@ -797,6 +799,7 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
             return
         end
         dedot(event.log.kubernetes.pod_labels)
@@ -876,6 +879,7 @@ hooks.process = "process"
 source = """
     function process(event, emit)
         if event.log.kubernetes == nil then
+            emit(event)
             return
         end
         dedot(event.log.kubernetes.pod_labels)

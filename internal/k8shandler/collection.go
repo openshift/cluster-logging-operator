@@ -153,10 +153,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.RemovePriorityClass(clusterLoggingPriorityClassName); err != nil {
-			return
-		}
-
 		if err = clusterRequest.removeCollector(constants.CollectorName); err != nil {
 			return
 		}

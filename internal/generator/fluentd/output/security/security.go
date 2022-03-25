@@ -34,6 +34,10 @@ type Passphrase struct {
 	PassphrasePath string
 }
 
+type BearerTokenFile struct {
+	BearerTokenFilePath string
+}
+
 var NoSecrets = map[string]*corev1.Secret{}
 
 func HasUsernamePassword(secret *corev1.Secret) bool {
@@ -54,6 +58,10 @@ func HasSharedKey(secret *corev1.Secret) bool {
 
 func HasPassphrase(secret *corev1.Secret) bool {
 	return HasKeys(secret, constants.Passphrase)
+}
+
+func HasBearerTokenFileKey(secret *corev1.Secret) bool {
+	return HasKeys(secret, constants.BearerTokenFileKey)
 }
 
 // GetKey if found return value and ok=true, else ok=false

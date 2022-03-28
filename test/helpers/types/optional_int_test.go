@@ -18,7 +18,7 @@ var _ = Describe("OptionalInt", func() {
 	DescribeTable("#IsSatisfiedBy", func(expOptInt, otherValue string, satisfied bool) {
 		exp := NewOptionalInt(expOptInt)
 		other := NewOptionalInt(otherValue)
-		Expect(exp.IsSatisfiedBy(other)).To(Equal(satisfied), "Exp. %s to satisfy %s", otherValue, expOptInt)
+		Expect(exp.IsSatisfiedBy(other)).To(Equal(satisfied), "Exp. %q to satisfy %q", otherValue, expOptInt)
 	},
 		Entry("GreaterThan ", ">6", "7", true),
 		Entry("GreaterThan Equal ", ">=6", "6", true),
@@ -29,5 +29,7 @@ var _ = Describe("OptionalInt", func() {
 		Entry("LessThan Equal ", "<=6", "6", true),
 		Entry("LessThan Equal ", "<=6", "5", true),
 		Entry("Fail LessThan Equal ", "<=6", "8", false),
+		Entry("Equal empty values", "", "", true),
+		Entry("Optional provided but not required", "", "6", true),
 	)
 })

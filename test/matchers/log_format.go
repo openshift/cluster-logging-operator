@@ -104,6 +104,7 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 	if reflect.TypeOf(templateValue).Name() == "OptionalInt" {
 		expValue := templateValue.(testtypes.OptionalInt)
 		actValue := value.(testtypes.OptionalInt)
+		logger.V(3).Info("CompareLogLogic: OptionalInt for", "name", name, "value", valueString, "exp", expValue, "act", actValue)
 		return expValue.IsSatisfiedBy(actValue)
 	}
 	if templateValueString == valueString { // Same value is ok

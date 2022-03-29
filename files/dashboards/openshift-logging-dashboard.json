@@ -249,7 +249,7 @@
           "tableColumn": "",
           "targets": [
             {
-              "expr": "max(es_cluster_shards_number{type=\"active_primary\"})",
+              "expr": "max(es_cluster_shards_number{type=\"active\"})",
               "instant": true,
               "refId": "A"
             }

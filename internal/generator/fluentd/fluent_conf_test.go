@@ -522,6 +522,10 @@ var _ = Describe("Generating fluentd config", func() {
       match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
+      name critical
+      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+    </level>
+    <level>
       name debug
       match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
@@ -1301,6 +1305,10 @@ var _ = Describe("Generating fluentd config", func() {
       match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
+      name critical
+      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+    </level>
+    <level>
       name debug
       match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
@@ -2065,6 +2073,10 @@ var _ = Describe("Generating fluentd config", func() {
       match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
+      name critical
+      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+    </level>
+    <level>
       name debug
       match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
@@ -2774,6 +2786,10 @@ var _ = Describe("Generating fluentd config", func() {
       match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
+      name critical
+      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+    </level>
+    <level>
       name debug
       match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
@@ -3324,6 +3340,10 @@ var _ = Describe("Generating fluentd config", func() {
     <level>
       name error
       match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+    </level>
+    <level>
+      name critical
+      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
     </level>
     <level>
       name debug
@@ -4324,6 +4344,10 @@ inputs:
     <level>
       name error
       match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+    </level>
+    <level>
+      name critical
+      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
     </level>
     <level>
       name debug

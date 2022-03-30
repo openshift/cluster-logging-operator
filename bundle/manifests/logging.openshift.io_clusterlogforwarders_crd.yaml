@@ -260,7 +260,7 @@ spec:
                         keys, documented with the output-specific configuration field.
                         All secret keys are optional, enable the security features
                         you want by setting the relevant keys. \n Transport Layer
-                        Security (TLS) \n Using a TLS URL ('https://...' or 'ssl://...')
+                        Security (TLS) \n Using a TLS URL ('https://...' or 'tls://...')
                         without any secret enables basic TLS: client authenticates
                         server using system default certificate authority. \n Additional
                         TLS features are enabled by including a Secret and setting
@@ -271,16 +271,21 @@ spec:
                         `tls.crt`   `passphrase`: (string) Passphrase to decode an
                         encoded TLS private key.     Requires tls.key.   `ca-bundle.crt`:
                         (string) File name of a custom CA for server authentication.
-                        \n Username and Password \n   `username`: (string) Authentication
-                        user name. Requires `password`.   `password`: (string) Authentication
-                        password. Requires `username`. \n Simple Authentication Security
-                        Layer (SASL) \n   `sasl.enable`: (boolean) Explicitly enable
-                        or disable SASL.     If missing, SASL is automatically enabled
-                        when any of the other `sasl.` keys are set.   `sasl.mechanisms`:
-                        (array) List of allowed SASL mechanism names.     If missing
-                        or empty, the system defaults are used.   `sasl.allow-insecure`:
-                        (boolean) Allow mechanisms that send clear-text passwords.
-                        \    Default false."
+                        \n   `tls.insecure`: If this key is present (with any value)
+                        accept server certificates that are self-signed or have an
+                        incorrect hostname.     This is INSECURE, the connection is
+                        susceptible to man-in-the-middle attacks.     This is ONLY
+                        for development and testing when valid certificates are not
+                        available. \n Username and Password \n   `username`: (string)
+                        Authentication user name. Requires `password`.   `password`:
+                        (string) Authentication password. Requires `username`. \n
+                        Simple Authentication Security Layer (SASL) \n   `sasl.enable`:
+                        (boolean) Explicitly enable or disable SASL.     If missing,
+                        SASL is automatically enabled when any of the other `sasl.`
+                        keys are set.   `sasl.mechanisms`: (array) List of allowed
+                        SASL mechanism names.     If missing or empty, the system
+                        defaults are used.   `sasl.allow-insecure`: (boolean) Allow
+                        mechanisms that send clear-text passwords.     Default false."
                       properties:
                         name:
                           description: Name of a secret in the namespace configured

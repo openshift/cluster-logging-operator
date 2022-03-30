@@ -162,7 +162,7 @@ type OutputSpec struct {
 	//
 	// Transport Layer Security (TLS)
 	//
-	// Using a TLS URL ('https://...' or 'ssl://...') without any secret enables basic TLS:
+	// Using a TLS URL ('https://...' or 'tls://...') without any secret enables basic TLS:
 	// client authenticates server using system default certificate authority.
 	//
 	// Additional TLS features are enabled by referencing a Secret with the following optional fields in its spec.data.
@@ -172,6 +172,10 @@ type OutputSpec struct {
 	//   `tls.key`: Private key to unlock the client certificate. Requires `tls.crt`
 	//   `passphrase`: Passphrase to decode an encoded TLS private key. Requires tls.key.
 	//   `ca-bundle.crt`: Custom CA to validate certificates.
+	//
+	//   `tls.insecure`: If this key is present (with any value) accept server certificates that are self-signed or have an incorrect hostname.
+	//     This is INSECURE, the connection is susceptible to man-in-the-middle attacks.
+	//     This is ONLY for development and testing when valid certificates are not available.
 	//
 	// Username and Password
 	//

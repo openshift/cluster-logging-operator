@@ -2,7 +2,7 @@ package constants
 
 const (
 	// Keys used in ClusterLogForwarder.Output Secrets keys.
-	// Documented with OutputSpec.Secret in /apis/logging/v1/cluster_log_forwarder_types.go
+	// Documented with OutputSpec.Secret in ../../apis/logging/v1/cluster_log_forwarder_types.go
 	//
 	// WARNING: changing or removing values here is a breaking API change.
 
@@ -13,6 +13,7 @@ const (
 	TrustedCABundleKey = "ca-bundle.crt"
 	Passphrase         = "passphrase"
 	BearerTokenFileKey = "token"
+	TLSInsecure        = "tls.insecure"
 
 	// Username/Password keys, used by any output with username/password authentication.
 
@@ -32,6 +33,7 @@ const (
 	AWSSecretAccessKey    = "aws_secret_access_key" //nolint:gosec
 	AWSAccessKeyID        = "aws_access_key_id"
 )
+
 const (
 	SingletonName = "instance"
 	OpenshiftNS   = "openshift-logging"

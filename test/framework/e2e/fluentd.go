@@ -277,7 +277,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	}
 	container := corev1.Container{
 		Name:            receiverName,
-		Image:           "quay.io/openshift-logging/fluentd:1.7.4",
+		Image:           utils.GetComponentImage(constants.FluentdName),
 		ImagePullPolicy: corev1.PullAlways,
 		Args:            []string{"fluentd", "-c", "/fluentd/etc/fluent.conf"},
 		VolumeMounts: []corev1.VolumeMount{

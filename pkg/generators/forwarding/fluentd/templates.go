@@ -460,6 +460,7 @@ const inputSourceContainerTemplate = `{{- define "inputSourceContainerTemplate" 
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
+  {{- .ReadLinesLimit }}
   skip_refresh_on_startup true
   @label @MEASURE
   <parse>
@@ -487,6 +488,7 @@ const inputSourceHostAuditTemplate = `{{- define "inputSourceHostAuditTemplate" 
   @label @MEASURE
   path "#{ENV['AUDIT_FILE'] || '/var/log/audit/audit.log'}"
   pos_file "#{ENV['AUDIT_POS_FILE'] || '/var/log/audit/audit.log.pos'}"
+  {{- .ReadLinesLimit }}
   tag linux-audit.log
   <parse>
     @type viaq_host_audit
@@ -502,6 +504,7 @@ const inputSourceK8sAuditTemplate = `{{- define "inputSourceK8sAuditTemplate" -}
   @label @MEASURE
   path "#{ENV['K8S_AUDIT_FILE'] || '/var/log/kube-apiserver/audit.log'}"
   pos_file "#{ENV['K8S_AUDIT_POS_FILE'] || '/var/log/kube-apiserver/audit.log.pos'}"
+  {{- .ReadLinesLimit }}
   tag k8s-audit.log
   <parse>
     @type json
@@ -521,6 +524,7 @@ const inputSourceOpenShiftAuditTemplate = `{{- define "inputSourceOpenShiftAudit
   @label @MEASURE
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/log/oauth-apiserver.audit.log
+  {{- .ReadLinesLimit }}
   tag openshift-audit.log
   <parse>
     @type json

@@ -217,7 +217,7 @@ var _ = Describe("Generating source to pipeline label", func() {
 		}
 		nsMap := logging.RouteMap{
 			"project-1": sets.NewString("pipeline-1"),
-			"": sets.NewString("pipeline-2"),
+			"":          sets.NewString("pipeline-2"),
 		}
 		got, err := configGenerator.generateSourceToPipelineLabels(pipelines, nsMap)
 		Expect(err).To(BeNil())
@@ -253,7 +253,7 @@ var _ = Describe("Generating source to pipeline label", func() {
 		nsMap := logging.RouteMap{
 			"project-1": sets.NewString("pipeline-1"),
 			"project-2": sets.NewString("pipeline-2"),
-			"": sets.NewString("pipeline-2"),
+			"":          sets.NewString("pipeline-2"),
 		}
 		got, err := configGenerator.generateSourceToPipelineLabels(pipelines, nsMap)
 		Expect(err).To(BeNil())
@@ -296,7 +296,7 @@ var _ = Describe("Generating source to pipeline label", func() {
 		nsMap := logging.RouteMap{
 			"project-1": sets.NewString("pipeline-1"),
 			"project-2": sets.NewString("pipeline-2"),
-			"": sets.NewString("pipeline-2", "pipeline-3"),
+			"":          sets.NewString("pipeline-2", "pipeline-3"),
 		}
 		got, err := configGenerator.generateSourceToPipelineLabels(pipelines, nsMap)
 		Expect(err).To(BeNil())

@@ -81,7 +81,11 @@ func (engine *ConfigGenerator) Generate(clfSpec *logging.ClusterLogForwarderSpec
 		}
 	}
 
-	sourceInputLabels, err = engine.generateSource(inputs)
+	var inTailTuning *logging.FluentdInFileSpec
+	if fwSpec != nil && fwSpec.Fluentd != nil && fwSpec.Fluentd.InFile != nil {
+		inTailTuning = fwSpec.Fluentd.InFile
+	}
+	sourceInputLabels, err = engine.generateSource(inputs, inTailTuning)
 	if err != nil {
 
 		log.V(3).Error(err, "Error generating source blocks")

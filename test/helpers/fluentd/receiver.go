@@ -3,7 +3,6 @@ package fluentd
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"path/filepath"
@@ -96,7 +95,7 @@ func NewReceiver(ns, name string) *Receiver {
 	runtime.Labels(r.Pod)[appName] = name
 	r.Pod.Spec.Containers = []corev1.Container{{
 		Name:  name,
-		Image: utils.GetComponentImage(constants.FluentdName),
+		Image: "quay.io/openshift-logging/fluentd:1.7.4",
 		Args:  []string{"fluentd", "-c", filepath.Join(configDir, "fluent.conf")},
 		VolumeMounts: []corev1.VolumeMount{
 			{

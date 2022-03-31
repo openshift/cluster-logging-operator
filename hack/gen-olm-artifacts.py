@@ -193,7 +193,7 @@ csv = loadFile(csvFile)
 06-deployment
 '''
 
-excludes = "(?!.*\.clusterserviceversion\.yaml)"
+excludes = "(?!.*\.clusterserviceversion\.yaml|image-references)"
 staticFiles = [f for f in os.listdir(csvDir) if re.match(excludes, f)]
 staticFiles.sort()
 for f in staticFiles:

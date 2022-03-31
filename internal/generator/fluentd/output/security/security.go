@@ -64,6 +64,10 @@ func HasBearerTokenFileKey(secret *corev1.Secret) bool {
 	return HasKeys(secret, constants.BearerTokenFileKey)
 }
 
+func HasAwsRoleArnKey(secret *corev1.Secret) bool {
+	return HasKeys(secret, constants.AWSWebIdentityRoleKey)
+}
+
 // GetKey if found return value and ok=true, else ok=false
 func GetKey(secret *corev1.Secret, key string) (data []byte, ok bool) {
 	if secret == nil {

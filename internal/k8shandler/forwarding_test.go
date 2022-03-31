@@ -341,7 +341,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				})
 
 				Context("for writing to Cloudwatch", func() {
-					const missingMessage = "aws_access_key_id and aws_secret_access_key are required"
+					const missingMessage = "auth keys: " + constants.AWSAccessKeyID + " and " + constants.AWSSecretAccessKey + " are required"
 					BeforeEach(func() {
 						output = logging.OutputSpec{
 							Name: "aName",
@@ -353,49 +353,64 @@ var _ = Describe("Normalizing forwarder", func() {
 						}
 						request.ForwarderSpec.Outputs = []logging.OutputSpec{output}
 					})
-					It("should drop outputs with secrets that are missing aws_access_key_id and aws_secret_access_key", func() {
+					It("should drop outputs with secrets that are missing aws_access_key_id and aws_secret_access_key and role_arn", func() {
 						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should drop outputs with secrets that is missing aws_secret_access_id", func() {
-						secret.Data["aws_secret_access_key"] = []byte{0, 1, 2}
+						secret.Data[constants.AWSSecretAccessKey] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should drop outputs with secrets that has empty aws_secret_access_key", func() {
-						secret.Data["aws_secret_access_key"] = []byte{}
-						secret.Data["aws_access_key_id"] = []byte{1, 2, 3}
+						secret.Data[constants.AWSSecretAccessKey] = []byte{}
+						secret.Data[constants.AWSAccessKeyID] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should drop outputs with secrets that is missing aws_secret_access_key", func() {
-						secret.Data["aws_access_key_id"] = []byte{0, 1, 2}
+						secret.Data[constants.AWSAccessKeyID] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should drop outputs with secrets that have empty aws_access_key_id", func() {
-						secret.Data["aws_access_key_id"] = []byte{}
-						secret.Data["aws_secret_access_key"] = []byte{1, 2, 3}
+						secret.Data[constants.AWSAccessKeyID] = []byte{}
+						secret.Data[constants.AWSSecretAccessKey] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should accept outputs with secrets that have aws_secret_access_key and aws_access_key_id", func() {
-						secret.Data["aws_secret_access_key"] = []byte{0, 1, 2}
-						secret.Data["aws_access_key_id"] = []byte{0, 1, 2}
+						secret.Data[constants.AWSSecretAccessKey] = []byte{0, 1, 2}
+						secret.Data[constants.AWSAccessKeyID] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
 						spec, status := request.NormalizeForwarder()
 						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
+					})
+					It("should accept outputs with secrets that have role_arn key with valid arn specified", func() {
+						secret.Data[constants.AWSWebIdentityRoleKey] = []byte("arn:aws:iam::123456789012:role/my-role")
+						request.Client = fake.NewFakeClient(secret)  //nolint
+						spec, status := request.NormalizeForwarder() //
+						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
+					})
+					It("should drop outputs with role_arn key but without formatted arn specified", func() {
+						secret.Data[constants.AWSWebIdentityRoleKey] = []byte("role/my-role")
+						request.Client = fake.NewFakeClient(secret)  //nolint
+						spec, status := request.NormalizeForwarder() //
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						stsMessage := "auth keys: a 'role_arn' key is required containing a valid arn value"
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", stsMessage))
 					})
 				})
 

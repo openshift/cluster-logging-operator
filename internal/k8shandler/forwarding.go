@@ -13,6 +13,8 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/cloudwatch"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/url"
 	corev1 "k8s.io/api/core/v1"
@@ -432,17 +434,26 @@ func verifySecretKeysForTLS(output *logging.OutputSpec, conds logging.NamedCondi
 	}
 	return true
 }
+
 func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool {
 	log.V(3).Info("V")
 	fail := func(c status.Condition) bool {
 		conds.Set(output.Name, c)
 		return false
 	}
-	hasID := len(secret.Data[constants.AWSAccessKeyID]) > 0
-	hasKey := len(secret.Data[constants.AWSSecretAccessKey]) > 0
-	missingMessage := "aws_access_key_id and aws_secret_access_key are required"
-	if !hasID || !hasKey {
-		return fail(condMissing(missingMessage))
+
+	// Ensure we have secrets for valid cloudwatch config
+	hasKeyID := len(secret.Data[constants.AWSAccessKeyID]) > 0
+	hasSecretKey := len(secret.Data[constants.AWSSecretAccessKey]) > 0
+	hasRoleArnKey := security.HasAwsRoleArnKey(secret)
+	hasValidRoleArn := len(cloudwatch.ParseRoleArn(secret)) > 0
+	switch {
+	case hasValidRoleArn: // Sts secret format is the first check
+		return true
+	case hasRoleArnKey && !hasValidRoleArn:
+		return fail(condMissing("auth keys: a 'role_arn' key is required containing a valid arn value"))
+	case !hasKeyID || !hasSecretKey:
+		return fail(condMissing("auth keys: " + constants.AWSAccessKeyID + " and " + constants.AWSSecretAccessKey + " are required"))
 	}
 	return true
 }

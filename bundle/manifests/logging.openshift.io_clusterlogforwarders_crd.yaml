@@ -163,9 +163,10 @@ spec:
                     cloudwatch:
                       description: "Cloudwatch provides configuration for the output
                         type `cloudwatch` \n Note: the cloudwatch output recognizes
-                        the following additional keys in the Secret: \n \t`aws_secret_access_key`:
-                        AWS secret access key. \t`aws_access_key_id`:AWS secret access
-                        key ID."
+                        the following keys in the Secret: \n \t`aws_secret_access_key`:
+                        AWS secret access key. \t`aws_access_key_id`: AWS secret access
+                        key ID. \n Or for sts-enabled clusters `role_arn` key specifying
+                        a properly formatted role arn"
                       properties:
                         groupBy:
                           description: GroupBy defines the strategy for grouping logstreams

@@ -35,6 +35,10 @@ type Passphrase struct {
 	PassphrasePath string
 }
 
+type BearerToken struct {
+	Token string
+}
+
 type TLSConf generator.ConfLiteral
 
 func (t TLSConf) Name() string {
@@ -69,6 +73,10 @@ func HasSharedKey(secret *corev1.Secret) bool {
 
 func HasPassphrase(secret *corev1.Secret) bool {
 	return HasKeys(secret, constants.Passphrase)
+}
+
+func HasBearerTokenFileKey(secret *corev1.Secret) bool {
+	return HasKeys(secret, constants.BearerTokenFileKey)
 }
 
 // GetKey if found return value and ok=true, else ok=false

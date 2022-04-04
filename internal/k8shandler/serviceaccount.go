@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"

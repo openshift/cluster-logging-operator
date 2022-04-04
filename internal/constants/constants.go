@@ -36,6 +36,9 @@ const (
 	AWSWebIdentityTokenName     = "collector-sts-token"                       //nolint:gosec // token name for pod
 	AWSWebIdentityTokenMount    = "/var/run/secrets/openshift/serviceaccount" //nolint:gosec // default location for volume mount
 	AWSWebIdentityTokenFilePath = "token"                                     // file containing token relative to mount
+
+	TokenKey          = "token"
+	LogCollectorToken = "logcollector-token"
 )
 const (
 	SingletonName = "instance"

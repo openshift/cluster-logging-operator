@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -50,6 +51,11 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	spec, status := clusterRequest.NormalizeForwarder()
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
+
+	tokenSecret, err := clusterRequest.getLogCollectorServiceAccountTokenSecret()
+	if err == nil {
+		clusterRequest.OutputSecrets[constants.LogCollectorToken] = tokenSecret
+	}
 
 	op := generator.Options{}
 	if clusterRequest.useOldRemoteSyslogPlugin() {
@@ -448,4 +454,32 @@ func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.Nam
 		return fail(condMissing(missingMessage))
 	}
 	return true
+}
+
+func (clusterRequest *ClusterLoggingRequest) getLogCollectorServiceAccountTokenSecret() (*corev1.Secret, error) {
+	log.V(9).Info("Entered getServiceAccountToken")
+	sa := corev1.ServiceAccount{}
+	err := clusterRequest.Client.Get(context.Background(), client.ObjectKey{Name: constants.CollectorServiceAccountName, Namespace: constants.OpenshiftNS}, &sa)
+	if err != nil {
+		log.V(3).Error(err, "Could not find serviceAccount", "ServiceAccoutName", constants.CollectorServiceAccountName)
+		return nil, err
+	}
+	log.V(9).Info("Found secrets", "Count", len(sa.Secrets))
+	for _, sref := range sa.Secrets {
+		s := corev1.Secret{}
+		log.V(9).Info("Fetching Secret", "Name", sref.Name)
+		err = clusterRequest.Client.Get(context.Background(), client.ObjectKey{Name: sref.Name, Namespace: constants.OpenshiftNS}, &s)
+		if err != nil {
+			log.V(3).Error(err, "Could not find Secret", "Name", sref.Name)
+		} else {
+			if t, ok := s.Data[constants.TokenKey]; ok {
+				log.V(9).Info("found token", constants.TokenKey, t)
+				return &s, nil
+			} else {
+				log.V(9).Info("did not find token in secret", "Name", s.Name)
+			}
+		}
+	}
+	log.V(9).Info("Exited getServiceAccountToken")
+	return nil, errors.New("Could not retrieve ServiceAccount token")
 }

@@ -31,10 +31,12 @@ cleanup(){
     gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
   fi
 
-  for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
-    oc delete $r --ignore-not-found --force --grace-period=0||:
-    os::cmd::try_until_failure "oc get $r" "$((1 * $minute))"
-  done
+  if [ "${DO_TEST_CLEANUP:-true}" == "true" ] ; then
+    for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
+      oc delete $r --ignore-not-found --force --grace-period=0||:
+      os::cmd::try_until_failure "oc get $r" "$((1 * $minute))"
+    done
+  fi
 
   os::test::junit::declare_suite_end
 
@@ -96,6 +98,11 @@ assert_resources_exist
 # assert kibana instance exists
 assert_kibana_instance_exists
 
-# delete cluster logging
-os::cmd::expect_success "oc -n $NAMESPACE delete -f ${repo_dir}/hack/cr.yaml"
+# modify the collector
+os::cmd::expect_success "oc  -n $NAMESPACE patch clusterlogging instance --type='json' -p '[{\"op\":\"replace\",\"path\":\"/spec/collection/logs/type\",\"value\":\"fluentd\"}]'"
 
+# wait few seconds since CLO reconciles every 30
+sleep 40
+
+# assert deployment
+assert_resources_exist

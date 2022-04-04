@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"testing"
 
@@ -750,10 +751,10 @@ func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
 								FluentdSpec: logging.FluentdSpec{
 									Resources: &core.ResourceRequirements{
 										Limits: core.ResourceList{
-											"Memory": defaultFluentdMemory,
+											"Memory": fluentd.DefaultMemory,
 										},
 										Requests: core.ResourceList{
-											"Memory": defaultFluentdMemory,
+											"Memory": fluentd.DefaultMemory,
 										},
 									},
 									NodeSelector: map[string]string{"123": "123"},

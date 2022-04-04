@@ -2,6 +2,8 @@ package k8shandler
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	. "github.com/onsi/ginkgo"
@@ -127,8 +129,9 @@ var _ = Describe("Reconciling", func() {
 				ds := &appsv1.DaemonSet{}
 				Expect(client.Get(context.TODO(), key, ds)).Should(Succeed())
 
-				trustedCABundleHash := ds.Spec.Template.Annotations[constants.TrustedCABundleHashName]
-				Expect(calcTrustedCAHashValue(injectedCABundle)).To(Equal(trustedCABundleHash))
+				bundleVar, found := utils.GetEnvVar(common.TrustedCABundleHashName, ds.Spec.Template.Spec.Containers[0].Env)
+				Expect(found).To(BeTrue(), "Exp. the trusted bundle CA hash to be added to the collector container")
+				Expect(calcTrustedCAHashValue(injectedCABundle)).To(Equal(bundleVar.Value))
 				Expect(ds.Spec.Template.Spec.Volumes).To(ContainElement(trustedCABundleVolume))
 				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(ContainElement(trustedCABundleVolumeMount))
 			})
@@ -182,8 +185,9 @@ var _ = Describe("Reconciling", func() {
 				ds := &appsv1.DaemonSet{}
 				Expect(client.Get(context.TODO(), key, ds)).Should(Succeed())
 
-				trustedCABundleHash := ds.Spec.Template.Annotations[constants.TrustedCABundleHashName]
-				Expect(trustedCABundleHash).To(BeEmpty())
+				bundleVar, found := utils.GetEnvVar(common.TrustedCABundleHashName, ds.Spec.Template.Spec.Containers[0].Env)
+				Expect(found).To(BeTrue(), "Exp. the trusted bundle CA hash to be added to the collector container")
+				Expect(bundleVar.Value).To(BeEmpty())
 				Expect(ds.Spec.Template.Spec.Volumes).To(Not(ContainElement(trustedCABundleVolume)))
 				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(Not(ContainElement(trustedCABundleVolumeMount)))
 			})

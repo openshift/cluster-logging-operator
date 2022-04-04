@@ -1,4 +1,4 @@
-package k8shandler
+package factory
 
 import (
 	"reflect"

@@ -1,6 +1,7 @@
 package functional
 
 import (
+	"github.com/openshift/cluster-logging-operator/pkg/url"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
@@ -11,12 +12,14 @@ import (
 )
 
 const (
-	unsecureFluentConf = `
+	defaultFluentdforwardPort = "24224"
+	unsecureFluentConf        = `
 <system>
   log_level debug
 </system>
 <source>
   @type forward
+  port 24224
 </source>
 <filter **>
 	@type stdout
@@ -134,14 +137,19 @@ func (f *FluentdFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuil
 	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer(name, utils.GetComponentImage(constants.FluentdName)).
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
-		WithCmd("fluentd -c /tmp/config/fluent.conf").
+		WithCmd([]string{"fluentd", "-c", "/tmp/config/fluent.conf"}).
 		End().
 		AddConfigMapVolume(config.Name, config.Name)
 	return nil
 }
 
 func (f *FluentdFunctionalFramework) AddForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	return f.addForwardOutputWithConf(b, output, unsecureFluentConf)
+	outURL, err := url.Parse(output.URL)
+	if err != nil {
+		return err
+	}
+	config := strings.Replace(unsecureFluentConf, defaultFluentdforwardPort, outURL.Port(), 1)
+	return f.addForwardOutputWithConf(b, output, config)
 }
 
 func (f *FluentdFunctionalFramework) AddBenchmarkForwardOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {

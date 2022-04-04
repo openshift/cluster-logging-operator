@@ -163,7 +163,7 @@ test-functional: test-functional-benchmarker
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
 	ACK_GINKGO_DEPRECATIONS=1.16.4 \
-	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m
+	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 	ACK_GINKGO_DEPRECATIONS=1.16.4 go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 

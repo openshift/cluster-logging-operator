@@ -2,6 +2,7 @@ package normalization
 
 import (
 	"encoding/json"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -10,7 +11,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/pkg/utils"
 
-	"github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
@@ -106,7 +106,6 @@ var _ = Describe("[Functional][Normalization] Fluentd normalization for EventRou
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		var expectedLogTemplate = ExpectedLogTemplateBuilder(jsonStr, nanoTime)
 		outputTestLog := logs[0]
-
 		Expect(outputTestLog).To(matchers.FitLogFormatTemplate(expectedLogTemplate))
 	},
 		Entry("It should normalize 'ADDED' events", "ADDED"),

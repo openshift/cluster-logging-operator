@@ -2,6 +2,8 @@ package elasticsearchmanaged
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"runtime"
 	"strings"
 
@@ -16,7 +18,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	log.Info("Running ", "filename", filename)
 	var (
-		e2e = helpers.NewE2ETestFramework()
+		e2e = framework.NewE2ETestFramework()
 	)
 
 	Describe("when the output is a CLO managed elasticsearch and no explicit forwarder is configured", func() {
@@ -40,15 +42,15 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "elasticsearch"})
-		}, helpers.DefaultCleanUpTimeout)
+			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{"fluentd", "elasticsearch"})
+		}, framework.DefaultCleanUpTimeout)
 
 		It("should default to forwarding logs to the spec'd logstore", func() {
-			Expect(e2e.LogStores["elasticsearch"].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
-			Expect(e2e.LogStores["elasticsearch"].HasApplicationLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
+			Expect(e2e.LogStores["elasticsearch"].HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+			Expect(e2e.LogStores["elasticsearch"].HasApplicationLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored application logs")
 
 			//verify infra namespaces are not stored to their own index
-			elasticSearch := helpers.ElasticLogStore{Framework: e2e}
+			elasticSearch := framework.ElasticLogStore{Framework: e2e}
 			if indices, err := elasticSearch.Indices(); err != nil {
 				Fail(fmt.Sprintf("Error fetching indices: %v", err))
 			} else {

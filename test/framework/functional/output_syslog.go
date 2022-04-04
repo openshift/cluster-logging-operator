@@ -1,12 +1,12 @@
 package functional
 
 import (
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"net/url"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
@@ -20,16 +20,16 @@ func (f *FluentdFunctionalFramework) addSyslogOutput(b *runtime.PodBuilder, outp
 	var baseRsyslogConfig string
 	u, _ := url.Parse(output.URL)
 	if strings.ToLower(u.Scheme) == "udp" {
-		baseRsyslogConfig = helpers.UdpSyslogInput
+		baseRsyslogConfig = e2e.UdpSyslogInput
 	} else {
-		baseRsyslogConfig = helpers.TcpSyslogInput
+		baseRsyslogConfig = e2e.TcpSyslogInput
 	}
-	// using unsecure rsyslog conf
-	rfc := helpers.RFC5424
+	//using unsecure rsyslog conf
+	rfc := e2e.RFC5424
 	if output.Syslog != nil && output.Syslog.RFC != "" {
-		rfc = helpers.MustParseRFC(output.Syslog.RFC)
+		rfc = e2e.MustParseRFC(output.Syslog.RFC)
 	}
-	rsyslogConf := helpers.GenerateRsyslogConf(baseRsyslogConfig, rfc)
+	rsyslogConf := e2e.GenerateRsyslogConf(baseRsyslogConfig, rfc)
 	rsyslogConf = strings.Join([]string{IncreaseRsyslogMaxMessageSize, rsyslogConf}, "\n")
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"rsyslog.conf": rsyslogConf,

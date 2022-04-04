@@ -2,6 +2,8 @@ package sysloglegacy
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
 
@@ -20,7 +22,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	var (
 		err              error
 		syslogDeployment *apps.Deployment
-		e2e              = helpers.NewE2ETestFramework()
+		e2e              = framework.NewE2ETestFramework()
 		testDir          string
 	)
 	BeforeEach(func() {
@@ -36,7 +38,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			Context("and tcp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, helpers.RFC3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolTCP, false, framework.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `
@@ -86,14 +88,14 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 				It("should send logs to the forward.Output logstore", func() {
 					name := syslogDeployment.GetName()
-					Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					Expect(e2e.LogStores[name].HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				})
 			})
 
 			Context("and udp receiver", func() {
 
 				BeforeEach(func() {
-					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false, helpers.RFC3164); err != nil {
+					if syslogDeployment, err = e2e.DeploySyslogReceiver(testDir, corev1.ProtocolUDP, false, framework.RFC3164); err != nil {
 						Fail(fmt.Sprintf("Unable to deploy syslog receiver: %v", err))
 					}
 					const conf = `
@@ -129,7 +131,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 				It("should send logs to the forward.Output logstore", func() {
 					name := syslogDeployment.GetName()
-					Expect(e2e.LogStores[name].HasInfraStructureLogs(helpers.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
+					Expect(e2e.LogStores[name].HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				})
 			})
 
@@ -137,7 +139,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(helpers.OpenshiftLoggingNS, []string{"fluentd", "syslog-receiver", "elasticsearch"})
+			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{"fluentd", "syslog-receiver", "elasticsearch"})
 		})
 
 	})

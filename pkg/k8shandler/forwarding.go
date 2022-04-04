@@ -299,6 +299,9 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
 	status.Outputs = logging.NamedConditions{}
 	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.ForwarderSpec.Outputs))
+	if clusterRequest.CLFVerifier.VerifyOutputSecret == nil {
+		clusterRequest.CLFVerifier.VerifyOutputSecret = clusterRequest.verifyOutputSecret
+	}
 	names := sets.NewString() // Collect pipeline names
 	for i, output := range clusterRequest.ForwarderSpec.Outputs {
 		i, output := i, output // Don't bind range variable.
@@ -322,8 +325,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
 		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
 			log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
-		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
-			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
 		case !clusterRequest.CLFVerifier.VerifyOutputSecret(&output, status.Outputs):
 			break
 		case output.Type == logging.OutputTypeCloudwatch && output.Cloudwatch == nil:

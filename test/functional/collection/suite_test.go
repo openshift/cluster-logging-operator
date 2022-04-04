@@ -1,4 +1,4 @@
-package kafka
+package collection
 
 import (
 	"testing"
@@ -11,7 +11,7 @@ import (
 func TestLogForwarding(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	tc := "ClusterLogForwarder E2E Suite - Kafka"
-	jr := reporters.NewJUnitReporter("/tmp/artifacts/junit/junit-kafka.xml")
+	tc := "[Functional][Collection] Suite"
+	jr := reporters.NewJUnitReporter("/tmp/artifacts/junit/junit-functional-collection.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, tc, []Reporter{jr})
 }

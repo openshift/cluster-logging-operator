@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/pkg/constants"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -122,7 +123,7 @@ func LoggingNamespace() string {
 	if ns := os.Getenv("NAMESPACE"); ns != "" {
 		return ns
 	}
-	return OpenshiftLoggingNS
+	return constants.OpenshiftNS
 }
 
 // LogBeginEnd logs an  l.V(3) begin message, returns func to log an lV(2) end message.

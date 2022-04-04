@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/pkg/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test/functional"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"time"
 )
 
@@ -34,7 +34,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 				spec.Syslog.Facility = "user"
 				spec.Syslog.Severity = "debug"
 				spec.Syslog.PayloadKey = "message"
-				spec.Syslog.RFC = helpers.RFC3164.String()
+				spec.Syslog.RFC = e2e.RFC3164.String()
 				spec.Syslog.Tag = tagSpec
 			}, logging.OutputTypeSyslog)
 		Expect(framework.Deploy()).To(BeNil())
@@ -62,7 +62,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 				ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 					spec.Syslog.Facility = "$.message.facility_key"
 					spec.Syslog.Severity = "$.message.severity_key"
-					spec.Syslog.RFC = helpers.RFC3164.String()
+					spec.Syslog.RFC = e2e.RFC3164.String()
 					spec.Syslog.Tag = "myTag"
 				}, logging.OutputTypeSyslog)
 			Expect(framework.Deploy()).To(BeNil())
@@ -95,7 +95,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 				spec.Syslog.Facility = "user"
 				spec.Syslog.Severity = "debug"
 				spec.Syslog.PayloadKey = "message"
-				spec.Syslog.RFC = helpers.RFC3164.String()
+				spec.Syslog.RFC = e2e.RFC3164.String()
 				spec.Syslog.Tag = "mytag"
 				spec.Syslog.AddLogSource = true
 			}, logging.OutputTypeSyslog)

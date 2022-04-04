@@ -3,7 +3,7 @@ package fluentd
 import (
 	"fmt"
 	"github.com/ViaQ/logerr/log"
-	"github.com/openshift/cluster-logging-operator/internal/components/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -51,7 +51,7 @@ func (c *FluentdCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, 
 		AddEnvVar("NODE_NAME", nodeName).
 		AddVolumeMount("config", "/etc/fluent/configs.d/user", "", true).
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
-		AddVolumeMount("certs", "/etc/fluent/metrics", "", true)
+		AddVolumeMount("certs", "/etc/collector/metrics", "", true)
 }
 
 func (c *FluentdCollector) IsStarted(logs string) bool {

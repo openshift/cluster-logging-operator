@@ -3,14 +3,16 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/collector/common"
+	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
 	"path"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	"github.com/openshift/cluster-logging-operator/internal/components/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/servicemonitor"
@@ -21,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -34,23 +35,14 @@ import (
 )
 
 const (
-	clusterLoggingPriorityClassName = "cluster-logging"
-	exporterPort                    = int32(2112)
-	exporterPortName                = "logfile-metrics"
-	metricsPort                     = int32(24231)
-	metricsPortName                 = "metrics"
-	metricsVolumeName               = "collector-metrics"
-	prometheusCAFile                = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
+	exporterPort     = int32(2112)
+	exporterPortName = "logfile-metrics"
+	metricsPort      = int32(24231)
+	metricsPortName  = "metrics"
+	prometheusCAFile = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
 
 	AnnotationDebugOutput = "logging.openshift.io/debug-output"
 )
-
-var (
-	retryInterval = time.Second * 30
-	timeout       = time.Second * 1800
-)
-
-var serviceAccountLogCollectorUID types.UID
 
 //CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
@@ -76,9 +68,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
 			log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
 		}
-		enabled, found := clusterRequest.Cluster.Annotations[PreviewVectorCollector]
+		enabled, found := clusterRequest.Cluster.Annotations[common.PreviewVectorCollector]
 		if collectorType == logging.LogCollectionTypeVector && (!found || enabled != "enabled") {
-			err = errors.NewBadRequest(fmt.Sprintf("Vector as collector not enabled via annotation on ClusterLogging %s", PreviewVectorCollector))
+			err = errors.NewBadRequest(fmt.Sprintf("Vector as collector not enabled via annotation on ClusterLogging %s", common.PreviewVectorCollector))
 			log.V(9).Error(err, "Vector as collector not enabled via annotation on ClusterLogging")
 			return clusterRequest.UpdateCondition(
 				logging.CollectorDeadEnd,
@@ -129,8 +121,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.createOrUpdateCollectorDaemonset(collectorType, collectorConfHash); err != nil {
-			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorDaemonset")
+		if err = clusterRequest.reconcileCollectorDaemonset(collectorType, collectorConfHash); err != nil {
+			log.V(9).Error(err, "clusterRequest.reconcileCollectorDaemonset")
 			return
 		}
 
@@ -443,18 +435,51 @@ func (clusterRequest *ClusterLoggingRequest) createSecret(secretName, namespace 
 	return err
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorDaemonset(collectorType logging.LogCollectionType, pipelineConfHash string) (err error) {
-	var fluentdTrustBundle *v1.ConfigMap
+func (clusterRequest *ClusterLoggingRequest) reconcileCollectorDaemonset(collectorType logging.LogCollectionType, configHash string) (err error) {
+	if !clusterRequest.isManaged() {
+		return nil
+	}
+	var caTrustBundle *v1.ConfigMap
 	// Create or update cluster proxy trusted CA bundle.
-	fluentdTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.CollectorTrustedCAName)
+	caTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.CollectorTrustedCAName)
 	if err != nil {
 		return
 	}
-	if collectorType == logging.LogCollectionTypeFluentd {
-		return clusterRequest.createOrUpdateFluentdDaemonset(fluentdTrustBundle, pipelineConfHash)
-	} else if collectorType == logging.LogCollectionTypeVector {
-		return clusterRequest.createOrUpdateVectorDaemonset(fluentdTrustBundle, pipelineConfHash)
+	caTrustHash, err := calcTrustedCAHashValue(caTrustBundle)
+	if err != nil || caTrustHash == "" {
+		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key or does not contain ca bundle", "configmapName", constants.CollectorTrustedCAName, "key", constants.TrustedCABundleKey, "err", err)
 	}
+
+	instance := clusterRequest.Cluster
+	desired := collector.NewDaemonSet(instance.Namespace, configHash, caTrustHash, collectorType, caTrustBundle, *instance.Spec.Collection, clusterRequest.ForwarderSpec, clusterRequest.OutputSecrets)
+	utils.AddOwnerRefToObject(desired, utils.AsOwner(instance))
+
+	current := &apps.DaemonSet{}
+	err = clusterRequest.Get(desired.Name, current)
+	if errors.IsNotFound(err) {
+		if err = clusterRequest.Create(desired); err != nil {
+			return fmt.Errorf("Failure creating collector Daemonset %v", err)
+		}
+		return nil
+	}
+	if daemonsets.AreSame(current, desired) {
+		return nil
+	}
+	//With this PR: https://github.com/kubernetes-sigs/controller-runtime/pull/919
+	//we have got new behaviour: Reset resource version if fake client Create call failed.
+	//So if object already exist version will be reset, going to get before try to create.
+	desired.ResourceVersion = current.GetResourceVersion()
+	current.Spec = desired.Spec
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if err = clusterRequest.Update(desired); err != nil {
+			return err
+		}
+		return nil
+	})
+	if retryErr != nil {
+		return retryErr
+	}
+
 	return nil
 }
 
@@ -464,6 +489,7 @@ func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus(collectorType
 	}
 	return nil
 }
+
 func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
 
 	cluster := clusterRequest.Cluster
@@ -541,9 +567,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return nil, fmt.Errorf("Failure creating Log collector service account: %v", err)
 		}
-		if len(collectorServiceAccount.ObjectMeta.UID) != 0 {
-			serviceAccountLogCollectorUID = collectorServiceAccount.ObjectMeta.UID
-		}
 	} else if utils.ContainsString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents) {
 		// This object is being deleted.
 		// our finalizer is present, so lets handle any dependency
@@ -568,58 +591,4 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	} else {
 		return nil, nil
 	}
-}
-
-func (clusterRequest *ClusterLoggingRequest) waitForDaemonSetReady(ds *apps.DaemonSet) error {
-
-	err := wait.Poll(retryInterval, timeout, func() (done bool, err error) {
-		err = clusterRequest.Get(ds.Name, ds)
-		if err != nil {
-			if errors.IsNotFound(err) {
-				return false, fmt.Errorf("Failed to get Fluentd daemonset: %v", err)
-			}
-			return false, err
-		}
-
-		if int(ds.Status.DesiredNumberScheduled) == int(ds.Status.NumberReady) {
-			return true, nil
-		}
-
-		return false, nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func isBufferFlushRequired(current *apps.DaemonSet, desired *apps.DaemonSet) bool {
-
-	currImage := strings.Split(current.Spec.Template.Spec.Containers[0].Image, ":")
-	desImage := strings.Split(desired.Spec.Template.Spec.Containers[0].Image, ":")
-
-	if len(currImage) != 2 || len(desImage) != 2 {
-		// we don't have versions here -- not sure how we would compare versions to determine
-		// need to flush buffers
-		return false
-	}
-
-	currVersion := currImage[1]
-	desVersion := desImage[1]
-
-	if strings.HasPrefix(currVersion, "v") {
-		currVersion = strings.Split(currVersion, "v")[1]
-	}
-
-	if strings.HasPrefix(desVersion, "v") {
-		desVersion = strings.Split(desVersion, "v")[1]
-	}
-
-	return (currVersion == "3.11" && desVersion == "4.0.0")
-}
-
-func getServiceAccountLogCollectorUID() types.UID {
-	return serviceAccountLogCollectorUID
 }

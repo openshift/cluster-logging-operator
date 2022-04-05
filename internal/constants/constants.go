@@ -31,6 +31,9 @@ const (
 	DeprecatedSaslOverSSL = "sasl_over_ssl"         // Kafka
 	AWSSecretAccessKey    = "aws_secret_access_key" //nolint:gosec
 	AWSAccessKeyID        = "aws_access_key_id"
+
+	TokenKey          = "token"
+	LogCollectorToken = "logcollector-token"
 )
 const (
 	SingletonName = "instance"

@@ -196,6 +196,7 @@ const KubernetesMetadataPlugin string = `
   @id kubernetes-metadata
   @type kubernetes_metadata
   kubernetes_url 'https://kubernetes.default.svc'
+  annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
   cache_size '1000'
   watch 'false'
   use_journal 'nil'
@@ -329,24 +330,6 @@ const ViaQDataModel string = `
     type k8s_json_file
     remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
   </formatter>
-  <elasticsearch_index_name>
-    enabled 'true'
-    tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
-    name_type static
-    static_index_name infra-write
-  </elasticsearch_index_name>
-  <elasticsearch_index_name>
-    enabled 'true'
-    tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
-    name_type static
-    static_index_name audit-write
-  </elasticsearch_index_name>
-  <elasticsearch_index_name>
-    enabled 'true'
-    tag "**"
-    name_type static
-    static_index_name app-write
-  </elasticsearch_index_name>
 </filter>
 {{end}}
 `

@@ -3,15 +3,13 @@ kind: Role
 metadata:
   name: prometheus
 rules:
-- apiGroups: [""]
-  resources:
-  - pods
-  - services
-  - endpoints
-  verbs: ["get", "list", "watch"]
-- apiGroups: [""]
-  resources:
-  - configmaps
-  verbs: ["get"]
-- nonResourceURLs: ["/metrics"]
-  verbs: ["get"]
+  - apiGroups: [ "" ]
+    resources:
+      - pods
+      - services
+      - endpoints
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources:
+      - configmaps
+    verbs: [ "get" ]

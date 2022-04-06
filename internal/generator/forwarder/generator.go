@@ -8,10 +8,10 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector"
 	corev1 "k8s.io/api/core/v1"
 	"net/url"
-	"strings"
 )
 
 var (
@@ -35,7 +35,7 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 	}
 	switch collectorType {
 	case logging.LogCollectionTypeFluentd:
-		g.format = formatFluentConf
+		g.format = helpers.FormatFluentConf
 		g.conf = fluentd.Conf
 	case logging.LogCollectionTypeVector:
 		g.conf = vector.Conf
@@ -72,35 +72,4 @@ func (cg *ConfigGenerator) Verify(clspec *logging.ClusterLoggingSpec, secrets ma
 		}
 	}
 	return err
-}
-
-func formatFluentConf(conf string) string {
-	indent := 0
-	lines := strings.Split(conf, "\n")
-	for i, l := range lines {
-		trimmed := strings.TrimSpace(l)
-		switch {
-		case strings.HasPrefix(trimmed, "</") && strings.HasSuffix(trimmed, ">"):
-			indent--
-			trimmed = pad(trimmed, indent)
-		case strings.HasPrefix(trimmed, "<") && strings.HasSuffix(trimmed, ">"):
-			trimmed = pad(trimmed, indent)
-			indent++
-		default:
-			trimmed = pad(trimmed, indent)
-		}
-		if len(strings.TrimSpace(trimmed)) == 0 {
-			trimmed = ""
-		}
-		lines[i] = trimmed
-	}
-	return strings.Join(lines, "\n")
-}
-
-func pad(line string, indent int) string {
-	prefix := ""
-	if indent >= 0 {
-		prefix = strings.Repeat("  ", indent)
-	}
-	return prefix + line
 }

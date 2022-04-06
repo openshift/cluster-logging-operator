@@ -23,6 +23,15 @@ type ConfGenerateTest struct {
 type GenerateFunc func(logging.ClusterLoggingSpec, map[string]*corev1.Secret, logging.ClusterLogForwarderSpec, Options) []Element
 
 func TestGenerateConfWith(gf GenerateFunc) func(ConfGenerateTest) {
+	return TestGenerateConfAndFormatWith(gf, nil)
+}
+
+func TestGenerateConfAndFormatWith(gf GenerateFunc, format func(string) string) func(ConfGenerateTest) {
+	if format == nil {
+		format = func(conf string) string {
+			return conf
+		}
+	}
 	return func(testcase ConfGenerateTest) {
 		g := MakeGenerator()
 		if testcase.Options == nil {
@@ -32,11 +41,12 @@ func TestGenerateConfWith(gf GenerateFunc) func(ConfGenerateTest) {
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
 		diff := cmp.Diff(
-			strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"),
-			strings.Split(strings.TrimSpace(conf), "\n"))
+			strings.Split(strings.TrimSpace(format(testcase.ExpectedConf)), "\n"),
+			strings.Split(strings.TrimSpace(format(conf)), "\n"))
 		if diff != "" {
 			//b, _ := json.MarshalIndent(e, "", " ")
 			//fmt.Printf("elements:\n%s\n", string(b))
+			fmt.Println("ACTUAL:")
 			fmt.Println(conf)
 			fmt.Printf("diff: %s", diff)
 		}

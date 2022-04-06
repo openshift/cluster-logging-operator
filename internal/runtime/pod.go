@@ -158,6 +158,14 @@ func (builder *ContainerBuilder) AddRunAsUser(uid int64) *ContainerBuilder {
 	return builder
 }
 
+func (builder *PodBuilder) AddAnnotation(key, value string) *PodBuilder {
+	if builder.Pod.Annotations == nil {
+		builder.Pod.Annotations = map[string]string{}
+	}
+	builder.Pod.Annotations[key] = value
+	return builder
+}
+
 func (builder *PodBuilder) WithLabels(labels map[string]string) *PodBuilder {
 	builder.Pod.Labels = labels
 	return builder

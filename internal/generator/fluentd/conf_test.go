@@ -3,15 +3,15 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"strings"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -23,8 +23,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
 		diff := cmp.Diff(
-			strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"),
-			strings.Split(strings.TrimSpace(conf), "\n"))
+			strings.Split(strings.TrimSpace(helpers.FormatFluentConf(testcase.ExpectedConf)), "\n"),
+			strings.Split(strings.TrimSpace(helpers.FormatFluentConf(conf)), "\n"))
 		if diff != "" {
 			b, _ := json.MarshalIndent(e, "", " ")
 			fmt.Printf("elements:\n%s\n", string(b))
@@ -408,6 +408,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
     @id kubernetes-metadata
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
+    annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
     cache_size '1000'
     watch 'false'
     use_journal 'nil'
@@ -525,24 +526,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
       type k8s_json_file
       remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
     </formatter>
-    <elasticsearch_index_name>
-      enabled 'true'
-      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
-      name_type static
-      static_index_name infra-write
-    </elasticsearch_index_name>
-    <elasticsearch_index_name>
-      enabled 'true'
-      tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
-      name_type static
-      static_index_name audit-write
-    </elasticsearch_index_name>
-    <elasticsearch_index_name>
-      enabled 'true'
-      tag "**"
-      name_type static
-      static_index_name app-write
-    </elasticsearch_index_name>
   </filter>
   
   # Generate elasticsearch id
@@ -639,10 +622,34 @@ var _ = Describe("Testing Complete Config Generation", func() {
 
 # Ship logs to specific outputs
 <label @ES_1>
+  # Viaq Data Model
+  <filter **>
+	@type viaq_data_model
+	elasticsearch_index_prefix_field 'viaq_index_name'
+	<elasticsearch_index_name>
+	  enabled 'true'
+	  tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+	  name_type structured
+	  static_index_name infra-write
+	</elasticsearch_index_name>
+	<elasticsearch_index_name>
+	  enabled 'true'
+	  tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+	  name_type static
+	  static_index_name audit-write
+	</elasticsearch_index_name>
+	<elasticsearch_index_name>
+	  enabled 'true'
+	  tag "**"
+	  name_type structured
+	  static_index_name app-write
+	</elasticsearch_index_name>
+  </filter>
+  
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES

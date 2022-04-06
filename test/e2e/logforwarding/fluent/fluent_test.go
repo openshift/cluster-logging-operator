@@ -42,7 +42,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 			for i := 0; i < 10; {
 				l, err := r.ReadLine()
 				ExpectOK(err)
-				Expect(l).To(ContainSubstring(`"viaq_index_name":"app`)) // Only app logs
+				Expect(l).To(ContainSubstring(`"log_type":"app`)) // Only app logs
 				if strings.Contains(l, message) {
 					i++ // Count our own app messages, ignore others.
 				}
@@ -59,7 +59,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 			r := f.Receiver.Sources["infrastructure"].TailReader()
 			l, err := r.ReadLine()
 			ExpectOK(err)
-			Expect(l).To(ContainSubstring(`"viaq_index_name":"inf`)) // Only infra logs
+			Expect(l).To(ContainSubstring(`"log_type":"inf`)) // Only infra logs
 		})
 
 		It("forwards different types to different outputs with labels", func() {

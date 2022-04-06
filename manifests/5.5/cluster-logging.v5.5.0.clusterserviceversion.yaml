@@ -24,7 +24,7 @@ metadata:
     createdAt: 2018-08-01T08:00:00Z
     support: AOS Logging
     # The version value is substituted by the ART pipeline
-    olm.skipRange: ">=4.6.0-0 <5.5.0"
+    olm.skipRange: ">=4.6.0-0 <5.6.0"
     # This annotation injection is a workaround for BZ-1950047, since the associated
     # annotation in spec.install.spec.deployments.template.metadata is presently ignored.
     # TODO: remove the next line after BZ-1950047 is resolved.

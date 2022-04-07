@@ -51,8 +51,7 @@ const (
 	TrustedCABundleMountDir    = "/etc/pki/ca-trust/extracted/pem/"
 	SecretHashPrefix           = "logging.openshift.io/"
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
-	// internal elasticsearch FQDN to prevent to connect to the global proxy
-	ElasticsearchFQDN          = "elasticsearch.openshift-logging.svc"
+	ElasticsearchFQDN          = "elasticsearch"
 	ElasticsearchName          = "elasticsearch"
 	ElasticsearchPort          = "9200"
 	FluentdName                = "fluentd"

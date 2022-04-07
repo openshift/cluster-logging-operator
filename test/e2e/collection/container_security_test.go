@@ -1,4 +1,4 @@
-package fluentd
+package collection
 
 import (
 	"fmt"

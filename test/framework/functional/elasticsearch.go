@@ -3,11 +3,11 @@ package functional
 import (
 	"encoding/json"
 	"fmt"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"strings"
 
 	"github.com/ViaQ/logerr/log"
-	"k8s.io/apimachinery/pkg/util/wait"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	elastichelper "github.com/openshift/cluster-logging-operator/test/helpers/elasticsearch"
 )
 
 var ElasticIndex = map[string]string{
@@ -26,48 +26,20 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName strin
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string) (result string, err error) {
 
 	buffer := []string{}
-	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
-		cmd := `curl -X GET "localhost:9200/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
-{
-	"query": {
-	"match_all": {}
-}
-}
-'`
-		result, err = f.RunCommand(outputName, "bash", "-c", cmd)
-		if result != "" && err == nil {
-			//var elasticResult ElasticSearchResult
-			var elasticResult map[string]interface{}
-			err = json.Unmarshal([]byte(result), &elasticResult)
-			if err == nil {
-				if elasticResult["timed_out"] == false {
-					resultHits := elasticResult["hits"].(map[string]interface{})
-					total := resultHits["total"].(map[string]interface{})
-					if int(total["value"].(float64)) == 0 {
-						return false, nil
-					}
-					hits := resultHits["hits"].([]interface{})
-					for i := 0; i < len(hits); i++ {
-						hit := hits[i].(map[string]interface{})
-						jsonHit, err := json.Marshal(hit["_source"])
-						if err == nil {
-							buffer = append(buffer, string(jsonHit))
-						} else {
-							log.V(4).Info("Marshall failed", "err", err)
-						}
-					}
-					return true, nil
-				}
-			} else {
-				log.V(4).Info("Unmarshall failed", "err", err)
-			}
-		}
-		log.V(4).Info("Polling from ElasticSearch", "err", err, "result", result)
-		return false, nil
-	})
-	if err == nil {
-		result = fmt.Sprintf("[%s]", strings.Join(buffer, ","))
+	hits, err := elastichelper.GetDocsFromElasticSearch(f.Test.NS.Name, f.Pod, outputName, index, false)
+	if err != nil {
+		return "", err
 	}
+	for i := 0; i < len(hits); i++ {
+		hit := hits[i].(map[string]interface{})
+		jsonHit, err := json.Marshal(hit["_source"])
+		if err == nil {
+			buffer = append(buffer, string(jsonHit))
+		} else {
+			log.V(4).Info("Marshall failed", "err", err)
+		}
+	}
+	result = fmt.Sprintf("[%s]", strings.Join(buffer, ","))
 	log.V(4).Info("Returning", "logs", result)
 	return result, err
 }

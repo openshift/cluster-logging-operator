@@ -5,24 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+
+	clolog "github.com/ViaQ/logerr/log"
+	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
+	elastichelper "github.com/openshift/cluster-logging-operator/test/helpers/elasticsearch"
+	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-
-	clolog "github.com/ViaQ/logerr/log"
-	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 
 const (
@@ -93,7 +96,42 @@ type ElasticLogStore struct {
 }
 
 func (es *ElasticLogStore) ApplicationLogs(timeToWait time.Duration) (types.Logs, error) {
-	panic("Method not implemented")
+	app_index := "app-000001"
+	client, _ := NewKubeClient()
+	options := metav1.ListOptions{
+		LabelSelector: "component=elasticsearch",
+	}
+	pods, err := client.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
+	if err != nil {
+		return nil, err
+	}
+	if len(pods.Items) == 0 {
+		return nil, errors.New("No pods found for elasticsearch")
+	}
+
+	hits, err := elastichelper.GetDocsFromElasticSearch(constants.OpenshiftNS, &pods.Items[0], "elasticsearch", app_index, true)
+
+	if err != nil {
+		return nil, err
+	}
+	var allLogs types.Logs
+	var logDoc types.AllLog
+	for i := 0; i < len(hits); i++ {
+		hit := hits[i].(map[string]interface{})
+		jsonHit, err := json.Marshal(hit["_source"])
+		if err == nil {
+			err = json.Unmarshal(jsonHit, &logDoc)
+			if err == nil {
+				allLogs = append(allLogs, logDoc)
+			} else {
+				clolog.V(3).Info("UnMarshall failed", "err", err)
+			}
+		} else {
+			clolog.V(3).Info("Marshall failed", "err", err)
+		}
+	}
+	clolog.V(3).Info("Returning", "logs", allLogs)
+	return allLogs, err
 }
 
 func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool, error) {

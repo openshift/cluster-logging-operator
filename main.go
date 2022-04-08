@@ -141,6 +141,7 @@ func main() {
 	}
 
 	// updating clo Telemetry Data - to be published by prometheus
+	telemetry.Data.CLInfo.M["version"] = version.Version
 	errr := telemetry.RegisterMetrics()
 	if errr != nil {
 		log.Error(err, "Error in registering clo metrics for telemetry")

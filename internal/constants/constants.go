@@ -40,6 +40,13 @@ const (
 
 	TokenKey          = "token"
 	LogCollectorToken = "logcollector-token"
+
+	UnHealthyStatus = "0"
+	HealthyStatus   = "1"
+	UnManagedStatus = "0"
+	ManagedStatus   = "1"
+	IsPresent       = "1"
+	IsNotPresent    = "0"
 )
 
 const (

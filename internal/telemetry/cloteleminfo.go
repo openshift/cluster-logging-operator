@@ -1,10 +1,16 @@
 package telemetry
 
 import (
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
 	"github.com/prometheus/client_golang/prometheus"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
+)
+
+const (
+	IsPresent    = "1"
+	IsNotPresent = "0"
 )
 
 // placeholder for keeping clo info which will be used for clo metrics update
@@ -17,15 +23,15 @@ type TData struct {
 	CLFOutputType       utils.StringMap
 }
 
-// "0" stands for managedStatus and healthStatus true and healthy
+// IsNotPresent stands for managedStatus and healthStatus true and healthy
 func NewTD() *TData {
 	return &TData{
-		CLInfo:              utils.StringMap{M: map[string]string{"version": version.Version, "managedStatus": "0", "healthStatus": "0"}},
-		CLLogStoreType:      utils.StringMap{M: map[string]string{"elasticsearch": "0", "loki": "0"}},
+		CLInfo:              utils.StringMap{M: map[string]string{"version": version.Version, "managedStatus": IsNotPresent, "healthStatus": IsNotPresent}},
+		CLLogStoreType:      utils.StringMap{M: map[string]string{"elasticsearch": IsNotPresent, "loki": IsNotPresent}},
 		CollectorErrorCount: utils.Float64Map{M: map[string]float64{"CollectorErrorCount": 0}},
-		CLFInfo:             utils.StringMap{M: map[string]string{"healthStatus": "0", "pipelineInfo": "0"}},
-		CLFInputType:        utils.StringMap{M: map[string]string{"application": "0", "audit": "0", "infrastructure": "0"}},
-		CLFOutputType:       utils.StringMap{M: map[string]string{"elasticsearch": "0", "fluentdForward": "0", "syslog": "0", "kafka": "0", "loki": "0", "cloudwatch": "0"}},
+		CLFInfo:             utils.StringMap{M: map[string]string{"healthStatus": IsNotPresent, "pipelineInfo": IsNotPresent}},
+		CLFInputType:        utils.StringMap{M: map[string]string{"application": IsNotPresent, "audit": IsNotPresent, "infrastructure": IsNotPresent}},
+		CLFOutputType:       utils.StringMap{M: map[string]string{"default": IsNotPresent, "elasticsearch": IsNotPresent, "fluentdForward": IsNotPresent, "syslog": IsNotPresent, "kafka": IsNotPresent, "loki": IsNotPresent, "cloudwatch": IsNotPresent}},
 	}
 }
 
@@ -83,6 +89,19 @@ func RegisterMetrics() error {
 	}
 
 	return nil
+}
+
+func UpdateCLMetricsNoErr() {
+	erru := UpdateCLMetrics()
+	if erru != nil {
+		log.V(1).Error(erru, "Error in updating CL metrics for telemetry")
+	}
+}
+func UpdateCLFMetricsNoErr() {
+	erru := UpdateCLFMetrics()
+	if erru != nil {
+		log.V(1).Error(erru, "Error in updating CLF metrics for telemetry")
+	}
 }
 
 func UpdateCLMetrics() error {

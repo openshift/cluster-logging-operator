@@ -68,7 +68,7 @@ bin/forwarder-generator: force
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator
 
 bin/cluster-logging-operator: force
-	go build $(BUILD_OPTS) -o $@
+	go build -mod=mod $(BUILD_OPTS) -o $@
 
 openshift-client:
 	@type -p oc > /dev/null || bash hack/get-openshift-client.sh

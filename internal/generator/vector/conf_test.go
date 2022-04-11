@@ -222,6 +222,11 @@ type = "prometheus_exporter"
 inputs = ["internal_metrics"]
 address = "0.0.0.0:24231"
 default_namespace = "collector"
+
+[sinks.prometheus_output.tls]
+enabled = true
+key_file = "/etc/collector/metrics/tls.key"
+crt_file = "/etc/collector/metrics/tls.crt"
 `,
 		}),
 		Entry("with complex spec for elasticsearch", generator.ConfGenerateTest{
@@ -555,6 +560,11 @@ type = "prometheus_exporter"
 inputs = ["internal_metrics"]
 address = "0.0.0.0:24231"
 default_namespace = "collector"
+
+[sinks.prometheus_output.tls]
+enabled = true
+key_file = "/etc/collector/metrics/tls.key"
+crt_file = "/etc/collector/metrics/tls.crt"
 `,
 		}),
 	)

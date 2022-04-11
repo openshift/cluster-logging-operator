@@ -43,5 +43,10 @@ type = "prometheus_exporter"
 inputs = {{.Inputs}}
 address = "{{.Address}}"
 default_namespace = "collector"
+
+[sinks.{{.ID}}.tls]
+enabled = true
+key_file = "/etc/collector/metrics/tls.key"
+crt_file = "/etc/collector/metrics/tls.crt"
 {{end}}`
 }

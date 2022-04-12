@@ -37,7 +37,7 @@ var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForw
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
 
-			// Parse log line
+			// Parse log lines to application log
 			var logs []types.ApplicationLog
 			err = types.StrictlyParseLogs(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")

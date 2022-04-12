@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -83,34 +84,16 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 //valid URLs. If none provided the target URL from the OutputSpec is used as fallback.
 //Finally, if neither approach works the current collector process will be terminated.
 func Brokers(o logging.OutputSpec) string {
-	parseBroker := func(b string) string {
-		url, _ := url.Parse(b)
-		return url.Host
+	brokers := []string{o.URL} // Put o.URL first in the list.
+	if o.Kafka != nil {        // Add optional extra broker URLs.
+		brokers = append(brokers, o.Kafka.Brokers...)
 	}
-
-	if o.Kafka != nil {
-		if o.Kafka.Brokers != nil {
-			brokers := []string{}
-			for _, broker := range o.Kafka.Brokers {
-				b := parseBroker(broker)
-				if b != "" {
-					brokers = append(brokers, b)
-				}
-			}
-
-			if len(brokers) > 0 {
-				return strings.Join(brokers, ",")
-			}
-		}
+	for i, s := range brokers { // Convert URLs to hostnames
+		// FIXME URL parse error is being ignored.
+		u, _ := url.Parse(s)
+		brokers[i] = u.Host
 	}
-
-	// Fallback to parse a single broker from target's URL
-	fallback := parseBroker(o.URL)
-	if fallback == "" {
-		panic("Failed to parse any Kafka broker from output spec")
-	}
-
-	return fallback
+	return strings.Join(brokers, ",")
 }
 
 //Topic returns the name of an existing kafka topic.
@@ -147,21 +130,24 @@ timestamp_format = "rfc3339"
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
+	// FIXME ignored URL parse error.
+	u, _ := url.Parse(o.URL)
+	if !urlhelper.IsTLSScheme(u.Scheme) { // Not a TLS URL
+		// FIXME error if not TLS but has secret, probable misconfiguration.
+		return conf
+	}
+	conf = append(conf, security.TLSConf{
+		Desc:        "TLS Config",
+		ComponentID: strings.ToLower(helpers.Replacer.Replace(o.Name)),
+	})
 	if o.Secret != nil {
-		hasTLS := false
-		conf = append(conf, security.TLSConf{
-			Desc:        "TLS Config",
-			ComponentID: strings.ToLower(helpers.Replacer.Replace(o.Name)),
-		})
 		if security.HasPassphrase(secret) {
-			hasTLS = true
 			pp := Passphrase{
 				PassphrasePath: security.SecretPath(o.Secret.Name, constants.Passphrase),
 			}
 			conf = append(conf, pp)
 		}
 		if security.HasTLSCertAndKey(secret) {
-			hasTLS = true
 			kc := TLSKeyCert{
 				CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
 				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
@@ -169,17 +155,17 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			conf = append(conf, kc)
 		}
 		if security.HasCABundle(secret) {
-			hasTLS = true
 			ca := CAFile{
 				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
 			}
 			conf = append(conf, ca)
 		}
-		conf = append(conf, TLS(true))
-		if !hasTLS {
-			return []Element{}
+		if security.HasKeys(secret, constants.TLSInsecure) {
+			conf = append(conf, TLSInsecure(true))
+			log.Info("Insecure TLS selected for output %q", o.Name)
 		}
 	}
+	conf = append(conf, TLS(true))
 	return conf
 }
 

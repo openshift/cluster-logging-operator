@@ -264,7 +264,7 @@ spec:
                         output-specific configuration field. All secret keys are optional,
                         enable the security features you want by setting the relevant
                         keys. \n Transport Layer Security (TLS) \n Using a TLS URL
-                        ('https://...' or 'ssl://...') without any secret enables
+                        ('https://...' or 'tls://...') without any secret enables
                         basic TLS: client authenticates server using system default
                         certificate authority. \n Additional TLS features are enabled
                         by referencing a Secret with the following optional fields
@@ -273,7 +273,12 @@ spec:
                         `tls.key`.   `tls.key`: Private key to unlock the client certificate.
                         Requires `tls.crt`   `passphrase`: Passphrase to decode an
                         encoded TLS private key. Requires tls.key.   `ca-bundle.crt`:
-                        Custom CA to validate certificates. \n Username and Password
+                        Custom CA to validate certificates. \n   `tls.insecure`: If
+                        this key is present (with any value) accept server certificates
+                        that are self-signed or have an incorrect hostname.     This
+                        is INSECURE, the connection is susceptible to man-in-the-middle
+                        attacks.     This is ONLY for development and testing when
+                        valid certificates are not available. \n Username and Password
                         \n   `username`: Authentication user name. Requires `password`.
                         \  `password`: Authentication password. Requires `username`.
                         \n Simple Authentication Security Layer (SASL) \n   `sasl.enable`:

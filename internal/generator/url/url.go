@@ -24,6 +24,7 @@ var secureSchemes = map[string]string{
 	"https": "http",
 	"udps":  "udp",
 	"tls":   "tcp",
+	"ssl":   "tcp",
 }
 
 // IsTLSScheme returns true if scheme is recognized as needing TLS security,

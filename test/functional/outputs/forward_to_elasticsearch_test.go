@@ -32,10 +32,10 @@ var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForw
 	})
 
 	Context("when sending to ElasticSearch "+functional.ElasticSearchTag+" protocol", func() {
-		It("should  be compatible", func() {
+		FIt("should  be compatible", func() {
 			raw, err := framework.GetLogsFromElasticSearch(logging.OutputTypeElasticsearch, logging.InputNameApplication)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(raw).To(Not(BeEmpty()))
+			Expect(raw).To((BeEmpty()))
 
 			// Parse log line
 			var logs []types.ApplicationLog

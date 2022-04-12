@@ -39,7 +39,7 @@ import (
 const (
 	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
 	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterlogforwarders"
-	DefaultCleanUpTimeout  = 60.0 * 2
+	DefaultCleanUpTimeout  = 60.0 * 5
 
 	defaultRetryInterval      = 1 * time.Second
 	defaultTimeout            = 10 * time.Minute
@@ -123,7 +123,7 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace s
 		return err
 	}
 	for k, v := range labels {
-		if _, err2 := oc.Literal().From("oc label pod -n %s --all %s=%s", namespace, k, v).Run(); err != nil {
+		if _, err2 := oc.Literal().From("oc label pod -n %s --all %s=%s --overwrite", namespace, k, v).Run(); err2 != nil {
 			return err2
 		}
 	}
@@ -450,6 +450,7 @@ func (tc *E2ETestFramework) Cleanup() {
 			}
 		}
 	}
+	tc.CleanupFns = [](func() error){}
 	tc.CleanFluentDBuffers()
 }
 

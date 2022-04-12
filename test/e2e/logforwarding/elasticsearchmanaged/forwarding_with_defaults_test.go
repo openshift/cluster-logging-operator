@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +16,6 @@ import (
 	"github.com/ViaQ/logerr/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
-	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
@@ -43,9 +43,9 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		}
 		SetupLogGeneratorWithLabels := func() {
 			appLabels := map[string]string{
-				"app":                    "cluster-monitoring-operator",
-				"app.kubernetes.io/name": "cluster-monitoring-operator",
-				"logFormat":              "redhat",
+				"myapp":                    "test-log-generator",
+				"myapp.kubernetes.io/name": "test-log-generator",
+				"logFormat":                "redhat",
 			}
 			generatorNS, generatorPod, err = e2e.DeployJsonLogGenerator(map[string]string{
 				"level":   "debug",
@@ -66,6 +66,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		AfterEach(func() {
 			e2e.Cleanup()
 			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "elasticsearch"})
+			e2e.WaitForCleanupCompletion(generatorNS, []string{"component", "test"})
 		}, framework.DefaultCleanUpTimeout)
 
 		Context("forwarding logs to default output", func() {
@@ -137,7 +138,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					})
 					AssertBehaviours()
 				})
-				/* UnComment after Handeling User Defined Inputs for Vector
 				Describe("for vector collector", func() {
 					BeforeEach(func() {
 						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorVector, helpers.ComponentTypeStore})
@@ -145,7 +145,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					})
 					AssertBehaviours()
 				})
-				*/
 			})
 			Context("with IndexName set in outputDefaults", func() {
 				IndexName := "testindex"
@@ -222,7 +221,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					})
 					AssertBehaviours()
 				})
-				/* UnComment after Handeling User Defined Inputs for Vector
 				Describe("for vector collector", func() {
 					BeforeEach(func() {
 						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorVector, helpers.ComponentTypeStore})
@@ -230,7 +228,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					})
 					AssertBehaviours()
 				})
-				*/
 			})
 		})
 	})

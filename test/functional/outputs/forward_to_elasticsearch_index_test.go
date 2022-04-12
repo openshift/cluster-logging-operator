@@ -139,7 +139,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			err = types.StrictlyParseLogs(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			Expect(logs).To(Not(BeEmpty()), "Expected to find logs indexed")
-			// Compare to expected template
+			// Compare with expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
    Expect(outputTestLog).To((BeEmpty()))

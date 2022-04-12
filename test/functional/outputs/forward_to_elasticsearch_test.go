@@ -35,7 +35,7 @@ var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForw
 		FIt("should  be compatible", func() {
 			raw, err := framework.GetLogsFromElasticSearch(logging.OutputTypeElasticsearch, logging.InputNameApplication)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(raw).To((BeEmpty()))
+			Expect(raw).To(Not(BeEmpty()))
 
 			// Parse log line
 			var logs []types.ApplicationLog

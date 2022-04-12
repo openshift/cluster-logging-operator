@@ -110,10 +110,11 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			var logs []types.ApplicationLog
 			err = types.StrictlyParseLogs(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-   Expect(raw).To((BeEmpty()))
+   //Expect(raw).To((BeEmpty()))
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
+   Expect(outputTestLog).To((BeEmpty()))
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should send to openshift label structuredTypeKey", func() {
@@ -137,11 +138,11 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			var logs []types.ApplicationLog
 			err = types.StrictlyParseLogs(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-   Expect(raw).To((BeEmpty()))
 			Expect(logs).To(Not(BeEmpty()), "Expected to find logs indexed")
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
+   Expect(outputTestLog).To((BeEmpty()))
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		Context("if structured type name/key not configured", func() {

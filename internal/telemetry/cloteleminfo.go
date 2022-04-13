@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
 	"github.com/prometheus/client_golang/prometheus"
@@ -83,6 +84,19 @@ func RegisterMetrics() error {
 	}
 
 	return nil
+}
+
+func UpdateCLMetricsNoErr() {
+	erru := UpdateCLMetrics()
+	if erru != nil {
+		log.V(1).Error(erru, "Error in updating CL metrics for telemetry")
+	}
+}
+func UpdateCLFMetricsNoErr() {
+	erru := UpdateCLFMetrics()
+	if erru != nil {
+		log.V(1).Error(erru, "Error in updating CLF metrics for telemetry")
+	}
 }
 
 func UpdateCLMetrics() error {

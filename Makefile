@@ -59,6 +59,10 @@ ci-check: check
 .target:
 	mkdir -p .target
 
+# clo version update
+version-update:
+	sed -i 's/"[0-9]*\.[0-9]*\.[0-9]*"/\"${LOGGING_VERSION}\"/g' version/version.go
+
 # Note: Go has built-in build caching, so always run `go build`.
 # It will do a better job than using source dependencies to decide if we need to build.
 bin/functional-benchmarker: force
@@ -67,7 +71,7 @@ bin/functional-benchmarker: force
 bin/forwarder-generator: force
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator
 
-bin/cluster-logging-operator: force
+bin/cluster-logging-operator: version-update force
 	go build $(BUILD_OPTS) -o $@
 
 openshift-client:

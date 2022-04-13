@@ -116,7 +116,7 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
-		telemetry.Data.CLInfo.M["healthStatus"] = "1"
+		telemetry.Data.CLInfo.M["healthStatus"] = "0"
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
@@ -126,7 +126,7 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
-		telemetry.Data.CLFInfo.M["healthStatus"] = "1"
+		telemetry.Data.CLFInfo.M["healthStatus"] = "0"
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

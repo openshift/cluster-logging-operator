@@ -30,15 +30,17 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	}
 
 	if !clusterLoggingRequest.isManaged() {
-		telemetry.Data.CLInfo.Set("managedStatus", "1")
-		erru := telemetry.UpdateCLMetrics()
-		if erru != nil {
-			log.V(1).Error(erru, "Error in updating clo metrics for telemetry")
-		}
+		// if cluster is set to unmanaged then set managedStatus as 0
+		telemetry.Data.CLInfo.Set("managedStatus", "0")
+		telemetry.UpdateCLMetricsNoErr()
 		return nil
 	}
-	// CL is managed by default
-	telemetry.Data.CLInfo.Set("managedStatus", "0")
+	// CL is managed by default set it as 1
+	telemetry.Data.CLInfo.Set("managedStatus", "1")
+	updateCLInfo := UpdateInfofromCL(&clusterLoggingRequest)
+	if updateCLInfo != nil {
+		log.V(1).Info("Error in updating CL Info for CL specific metrics", "updateCLInfo", updateCLInfo)
+	}
 
 	forwarder := clusterLoggingRequest.getLogForwarder()
 	if forwarder != nil {
@@ -49,21 +51,15 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	if clusterLoggingRequest.IncludesManagedStorage() {
 		// Reconcile Log Store
 		if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
-			telemetry.Data.CLInfo.Set("healthStatus", "1")
-			erru := telemetry.UpdateCLMetrics()
-			if erru != nil {
-				log.V(1).Error(erru, "Error in updating clo metrics for telemetry")
-			}
+			telemetry.Data.CLInfo.Set("healthStatus", "0")
+			telemetry.UpdateCLMetricsNoErr()
 			return fmt.Errorf("unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
 		// Reconcile Visualization
 		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
-			telemetry.Data.CLInfo.Set("healthStatus", "1")
-			erru := telemetry.UpdateCLMetrics()
-			if erru != nil {
-				log.V(1).Error(erru, "Error in updating clo metrics for telemetry")
-			}
+			telemetry.Data.CLInfo.Set("healthStatus", "0")
+			telemetry.UpdateCLMetricsNoErr()
 			return fmt.Errorf("unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
@@ -84,31 +80,22 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
-		telemetry.Data.CLInfo.Set("healthStatus", "1")
+		telemetry.Data.CLInfo.Set("healthStatus", "0")
 		telemetry.Data.CollectorErrorCount.Inc("CollectorErrorCount")
-		erru := telemetry.UpdateCLMetrics()
-		if erru != nil {
-			log.V(1).Error(erru, "Error in updating clo metrics for telemetry")
-		}
+		telemetry.UpdateCLMetricsNoErr()
 		return fmt.Errorf("unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	// Reconcile metrics Dashboards
 	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader); err != nil {
-		telemetry.Data.CLInfo.Set("healthStatus", "1")
-		erru := telemetry.UpdateCLMetrics()
-		if erru != nil {
-			log.V(1).Error(erru, "Error in updating clo metrics for telemetry")
-		}
+		telemetry.Data.CLInfo.Set("healthStatus", "0")
+		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)
 	}
 
-	//if there is no early exit from reconciler then new CL spec is applied successfully hence healthStatus is set to true or 0
-	telemetry.Data.CLInfo.Set("healthStatus", "0")
-	erru := telemetry.UpdateCLMetrics()
-	if erru != nil {
-		log.V(1).Error(erru, "Error in updating clo metrics for telemetry")
-	}
+	//if there is no early exit from reconciler then new CL spec is applied successfully hence healthStatus is set to true or 1
+	telemetry.Data.CLInfo.Set("healthStatus", "1")
+	telemetry.UpdateCLMetricsNoErr()
 
 	return nil
 }
@@ -116,6 +103,8 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	log.V(0).Info("Removing managed store components...")
 	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana} {
+		telemetry.Data.CLInfo.Set("healthStatus", "0")
+		telemetry.UpdateCLMetricsNoErr()
 		if err := remove(); err != nil {
 			log.V(0).Error(err, "Error removing component")
 		}
@@ -138,6 +127,8 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		telemetry.Data.CLInfo.Set("managedStatus", "0")
+		telemetry.UpdateCLMetricsNoErr()
 		return nil
 	}
 
@@ -148,25 +139,19 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		telemetry.Data.CLFInfo.Set("healthStatus", "0")
-		erru := telemetry.UpdateCLFMetrics()
-		if erru != nil {
-			log.V(0).Error(erru, "Error in updating clo metrics for telemetry")
-		}
+		telemetry.UpdateCLFMetricsNoErr()
 		log.Error(err, msg)
 		return errors.New(msg)
 	}
 
 	///////
-	// if it reaches to this point without throwing any errors than mark CLF in healthy state
-	telemetry.Data.CLFInfo.Set("healthStatus", "0")
+	// if it reaches to this point without throwing any errors than mark CLF in healthy state as with '1' value and also CL in healthy state with '1' value
+	telemetry.Data.CLFInfo.Set("healthStatus", "1")
 	updateCLFInfo := UpdateInfofromCLF(&clusterLoggingRequest)
 	if updateCLFInfo != nil {
 		log.V(1).Info("Error in updating CLF Info for CLF specific metrics", "updateCLFInfo", updateCLFInfo)
 	}
-	erru := telemetry.UpdateCLFMetrics()
-	if erru != nil {
-		log.V(0).Error(erru, "Error in updating clo metrics for telemetry")
-	}
+	telemetry.UpdateCLFMetricsNoErr()
 	///////
 
 	return nil
@@ -186,6 +171,8 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		telemetry.Data.CLInfo.Set("managedStatus", "0")
+		telemetry.UpdateCLMetricsNoErr()
 		return nil
 	}
 
@@ -197,6 +184,8 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
+		telemetry.Data.CLInfo.Set("healthStatus", "0")
+		telemetry.UpdateCLMetricsNoErr()
 		return fmt.Errorf("unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
@@ -216,6 +205,8 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		telemetry.Data.CLInfo.Set("managedStatus", "0")
+		telemetry.UpdateCLMetricsNoErr()
 		return nil
 	}
 
@@ -268,14 +259,6 @@ func UpdateInfofromCL(request *ClusterLoggingRequest) (err error) {
 		} else {
 			telemetry.Data.CLLogStoreType.Set("elasticsearch", "0")
 		}
-	}
-
-	if request.Cluster.Spec.ManagementState == logging.ManagementStateManaged || request.Cluster.Spec.ManagementState == "" {
-		log.V(1).Info("managedStatus : Managed")
-		telemetry.Data.CLInfo.Set("managedStatus", "1") //Managed state indicator
-	} else {
-		log.V(1).Info("managedStatus : Unmanaged")
-		telemetry.Data.CLInfo.Set("managedStatus", "0") //Unmanaged state indicator
 	}
 
 	return nil

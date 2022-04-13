@@ -219,7 +219,7 @@ func newLogMetricsExporterContainer() *v1.Container {
 			Protocol:      v1.ProtocolTCP,
 		},
 	}
-	exporter.Command = []string{"/usr/local/bin/log-file-metric-exporter", "-verbosity=2", " -dir=/var/log/containers", "-http=:2112", "-keyFile=/etc/fluent/metrics/tls.key", "-crtFile=/etc/fluent/metrics/tls.crt"}
+	exporter.Command = []string{"/usr/local/bin/log-file-metric-exporter", "-verbosity=2", "-http=:2112", "-keyFile=/etc/fluent/metrics/tls.key", "-crtFile=/etc/fluent/metrics/tls.crt"}
 
 	exporter.VolumeMounts = []v1.VolumeMount{
 		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},

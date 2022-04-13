@@ -143,7 +143,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			// Compare with expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
-   Expect(outputTestLog).To((BeEmpty()))
+   //Expect(outputTestLog).To((BeEmpty()))
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		Context("if structured type name/key not configured", func() {

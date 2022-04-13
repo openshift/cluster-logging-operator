@@ -112,9 +112,10 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
    //Expect(raw).To((BeEmpty()))
 			// Compare to expected template
+   
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
-   Expect(outputTestLog).To((BeEmpty()))
+   //Expect(outputTestLog).To((BeEmpty()))
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should send to openshift label structuredTypeKey", func() {

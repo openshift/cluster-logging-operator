@@ -32,7 +32,7 @@ var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForw
 	})
 
 	Context("when sending to ElasticSearch "+functional.ElasticSearchTag+" protocol", func() {
-		It("should  be compatible", func() {
+		FIt("should  be compatible", func() {
 			raw, err := framework.GetLogsFromElasticSearch(logging.OutputTypeElasticsearch, logging.InputNameApplication)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
@@ -42,7 +42,7 @@ var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForw
 			err = types.StrictlyParseLogs(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			// Compare to expected template
-   Expect(raw).To((BeEmpty()))
+   //Expect(raw).To((BeEmpty()))
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))

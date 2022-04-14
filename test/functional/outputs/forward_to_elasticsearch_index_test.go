@@ -133,7 +133,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, ESIndexName)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(raw).To(Not(BeEmpty()))
+			Expect(raw).To((BeEmpty()))
 
 			// Parse log line
 			var logs []types.ApplicationLog

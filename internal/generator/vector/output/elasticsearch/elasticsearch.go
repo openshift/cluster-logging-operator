@@ -34,9 +34,9 @@ func (e Elasticsearch) Template() string {
 type = "elasticsearch"
 inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
-index = "{{ "{{ write-index }}" }}"
+bulk.index = "{{ "{{ write_index }}" }}"
+bulk.action = "create"
 request.timeout_secs = 2147483648
-bulk_action = "create"
 id_key = "_id"
 {{end}}`
 }
@@ -57,7 +57,7 @@ if (.log_type == "infrastructure"){
 if (.log_type == "audit"){
   index = "audit"
 }
-."write-index"=index+"-write"
+.write_index = index + "-write"
 ._id = encode_base64(uuid_v4())
 `),
 	}

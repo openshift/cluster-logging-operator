@@ -393,7 +393,7 @@ source = """
   if (.log_type == "audit"){
     index = "audit"
   }
-  ."write-index"=index+"-write"
+  .write_index = index + "-write"
   ._id = encode_base64(uuid_v4())
 """
 
@@ -452,9 +452,9 @@ source = """
 type = "elasticsearch"
 inputs = ["es_1_dedot_and_flatten"]
 endpoint = "https://es-1.svc.messaging.cluster.local:9200"
-index = "{{ write-index }}"
+bulk.index = "{{ write_index }}"
+bulk.action = "create"
 request.timeout_secs = 2147483648
-bulk_action = "create"
 id_key = "_id"
 
 # TLS Config
@@ -479,7 +479,7 @@ source = """
   if (.log_type == "audit"){
     index = "audit"
   }
-  ."write-index"=index+"-write"
+  .write_index = index + "-write"
   ._id = encode_base64(uuid_v4())
 """
 
@@ -538,9 +538,9 @@ source = """
 type = "elasticsearch"
 inputs = ["es_2_dedot_and_flatten"]
 endpoint = "https://es-2.svc.messaging.cluster.local:9200"
-index = "{{ write-index }}"
+bulk.index = "{{ write_index }}"
+bulk.action = "create"
 request.timeout_secs = 2147483648
-bulk_action = "create"
 id_key = "_id"
 
 # TLS Config

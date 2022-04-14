@@ -88,6 +88,7 @@ created by main.main
 			raw, err := framework.ReadRawApplicationLogsFrom(outputType)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs for type %s", outputType)
 			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+   Expect(raw).To((BeEmpty()), "Expected to find logs indexed")
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs for type %s: %s", outputType, raw)
 			Expect(logs[0].Message).To(Equal(exception))
 		}

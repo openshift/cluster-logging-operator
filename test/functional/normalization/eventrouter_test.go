@@ -70,7 +70,6 @@ var _ = Describe("[Functional][Normalization] Fluentd normalization for EventRou
 				PipelineMetadata: templateForAnyCollector,
 				Timestamp:        timestamp,
 				LogType:          "application",
-				ViaqIndexName:    "app-write",
 				ViaqMsgID:        "*",
 				OpenshiftLabels:  types.OpenshiftMeta{},
 			}

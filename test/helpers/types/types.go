@@ -42,6 +42,7 @@ type Docker struct {
 }
 
 type Kubernetes struct {
+	Annotations       map[string]string `json:"annotations,omitempty"`
 	ContainerName     string            `json:"container_name,omitempty"`
 	NamespaceName     string            `json:"namespace_name,omitempty"`
 	PodName           string            `json:"pod_name,omitempty"`

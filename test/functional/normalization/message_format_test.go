@@ -44,7 +44,6 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 				Kind:             "Event",
 				Hostname:         functional.FunctionalNodeName,
 				LogType:          "audit",
-				ViaqIndexName:    "audit-write",
 				Level:            "debug",
 				Timestamp:        time.Time{},
 				ViaqMsgID:        "*",
@@ -73,10 +72,9 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		auditLogLine := functional.NewAuditHostLog(testTime)
 		// Template expected as output Log
 		var outputLogTemplate = types.LinuxAuditLog{
-			Message:       auditLogLine,
-			LogType:       "audit",
-			Hostname:      functional.FunctionalNodeName,
-			ViaqIndexName: "audit-write",
+			Message:  auditLogLine,
+			LogType:  "audit",
+			Hostname: functional.FunctionalNodeName,
 			AuditLinux: types.AuditLinux{
 				Type:     "DAEMON_START",
 				RecordID: "*",
@@ -203,7 +201,6 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 			Openshift: types.OpenshiftMeta{
 				Sequence: types.NewOptionalInt(""),
 			},
-			ViaqIndexName:    "audit-write",
 			ViaqMsgID:        "*",
 			PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 		}

@@ -14,7 +14,10 @@ func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLogInNamespace(
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
-	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	return f.WriteMessagesToApplicationLogForContainer(msg, constants.CollectorName, numOfLogs)
+}
+func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLogForContainer(msg, container string, numOfLogs int) error {
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, container)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 

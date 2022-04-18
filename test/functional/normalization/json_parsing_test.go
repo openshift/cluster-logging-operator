@@ -234,7 +234,7 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		ExpectOK(framework.Deploy())
 
 		// Log message data
-		sample := `{"@timestamp":"2021-12-14T15:12:47.645Z","message":"Building mime message for recipient 'auser@somedomain.com' and sender 'Sympany <no-reply@somedomain>'.","level":"DEBUG","logger_name":"ch.sympany.backend.notificationservice.mail.MailServiceBean","thread_name":"default task-4","mdc":{}}`
+		sample := `{"@timestamp":"2021-12-14T15:12:47.645Z","message":"Building mime message for recipient 'auser@somedomain.com' and sender 'Sympany <no-reply@somedomain>'.","level":"DEBUG","logger_name":"ch.sympany.backend.notificationservice.mail.MailServiceBean","thread_name":"default task-4"}`
 		expectedMessage = normalizeJson(sample)
 		expected = map[string]interface{}{}
 		_ = json.Unmarshal([]byte(sample), &expected)

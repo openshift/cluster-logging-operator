@@ -112,7 +112,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 				for i := 0; i < 10; {
 					l, err := r.ReadLine()
 					ExpectOK(err)
-					Expect(l).To(ContainSubstring(`"viaq_index_name":"app`)) // Only app logs
+					Expect(l).To(ContainSubstring(`"log_type":"app`)) // Only app logs
 					if strings.Contains(l, secureMessage) {
 						i++ // Count our own app messages, ignore others.
 					}
@@ -177,7 +177,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		for i := 0; i < 10; {
 			l, err := r.ReadLine()
 			ExpectOK(err)
-			Expect(l).To(ContainSubstring(`"viaq_index_name":"app`)) // Only app logs
+			Expect(l).To(ContainSubstring(`"log_type":"app`)) // Only app logs
 			if strings.Contains(l, secureMessage) {
 				i++ // Count our own app messages, ignore others.
 			}

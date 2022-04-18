@@ -188,6 +188,15 @@ type Elasticsearch struct {
 	//
 	// +optional
 	StructuredTypeName string `json:"structuredTypeName,omitempty"`
+
+	// EnableStructuredContainerLogs enables multi-container structured logs to allow
+	// forwarding logs from containers within a pod to separate indices.  Annotating
+	// the pod with key 'containerType.logging.openshift.io/<container-name>' and value
+	// '<structure-type-name>' will forward those container logs to an alternate index
+	// from that defined by the other 'structured' keys here
+	//
+	// +optional
+	EnableStructuredContainerLogs bool `json:"enableStructuredContainerLogs,omitempty"`
 }
 
 // Loki provides optional extra properties for `type: loki`

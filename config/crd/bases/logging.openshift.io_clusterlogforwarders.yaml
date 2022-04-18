@@ -99,6 +99,9 @@ spec:
                   elasticsearch:
                     description: "Elasticsearch OutputSpec default values \n Values specified here will be used as default values for Elasticsearch Output spec"
                     properties:
+                      enableStructuredContainerLogs:
+                        description: EnableStructuredContainerLogs enables multi-container structured logs to allow forwarding logs from containers within a pod to separate indices.  Annotating the pod with key 'containerType.logging.openshift.io/<container-name>' and value '<structure-type-name>' will forward those container logs to an alternate index from that defined by the other 'structured' keys here
+                        type: boolean
                       structuredTypeKey:
                         description: StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index It takes precedence over StructuredTypeName
                         type: string
@@ -130,6 +133,9 @@ spec:
                       type: object
                     elasticsearch:
                       properties:
+                        enableStructuredContainerLogs:
+                          description: EnableStructuredContainerLogs enables multi-container structured logs to allow forwarding logs from containers within a pod to separate indices.  Annotating the pod with key 'containerType.logging.openshift.io/<container-name>' and value '<structure-type-name>' will forward those container logs to an alternate index from that defined by the other 'structured' keys here
+                          type: boolean
                         structuredTypeKey:
                           description: StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index It takes precedence over StructuredTypeName
                           type: string

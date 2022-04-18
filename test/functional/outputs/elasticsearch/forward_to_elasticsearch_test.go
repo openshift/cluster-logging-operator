@@ -1,4 +1,4 @@
-package outputs
+package elasticsearch
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -19,7 +19,7 @@ var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForw
 	)
 
 	BeforeEach(func() {
-
+		outputLogTemplate.ViaqIndexName = "app-write"
 		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).

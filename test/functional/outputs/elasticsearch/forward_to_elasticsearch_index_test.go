@@ -1,10 +1,11 @@
-package outputs
+package elasticsearch
 
 import (
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -31,12 +32,12 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 
 	var (
 		framework *functional.CollectorFunctionalFramework
-
 		// Template expected as output Log
 		outputLogTemplate = functional.NewApplicationLogTemplate()
 	)
 
 	BeforeEach(func() {
+		outputLogTemplate.ViaqIndexName = "app-write"
 		framework = functional.NewCollectorFunctionalFramework()
 	})
 	AfterEach(func() {
@@ -142,6 +143,48 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			outputLogTemplate.ViaqIndexName = ""
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
+		Context("and enabling sending each container log to different indices", func() {
+			It("should send one container's log as defined by the annotation and the other defined by structuredTypeKey", func() {
+				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+					FromInput(logging.InputNameApplication).
+					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+						spec.OutputTypeSpec = logging.OutputTypeSpec{
+							Elasticsearch: &logging.Elasticsearch{
+								EnableStructuredContainerLogs: true,
+							},
+						}
+					}, logging.OutputTypeElasticsearch)
+				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+
+				containerStructuredIndexValue := "bar"
+				visitors := framework.AddOutputContainersVisitors()
+				visitors = append(visitors, func(builder *runtime.PodBuilder) error {
+					builder.AddAnnotation(fmt.Sprintf("containerType.logging.openshift.io/%s", constants.CollectorName), containerStructuredIndexValue)
+					return nil
+				})
+				Expect(framework.DeployWithVisitors(visitors)).To(BeNil())
+
+				applicationLogLine := functional.CreateAppLogFromJson(jsonLog)
+				Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+				Expect(framework.WriteMessagesToApplicationLogForContainer(applicationLogLine, "other", 1)).To(BeNil())
+
+				for index, containerName := range map[string]string{fmt.Sprintf("app-%s-write", containerStructuredIndexValue): constants.CollectorName, "app-write": "other"} {
+					raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, index)
+					Expect(err).To(BeNil(), "Expected no errors reading the logs from index ", index)
+					Expect(raw).To(Not(BeEmpty()))
+
+					// Parse log line
+					var logs []types.ApplicationLog
+					err = types.StrictlyParseLogs(raw, &logs)
+					Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+					Expect(logs).To(Not(BeEmpty()), "Expected to find a log in index", index)
+					// Compare to expected template
+					Expect(logs[0].Kubernetes.ContainerName).To(Equal(containerName), "Exp. to find a log entry for container", containerName, "in index", index)
+				}
+
+			})
+		})
+
 		Context("if structured type name/key not configured", func() {
 			It("should send logs to app-write", func() {
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).

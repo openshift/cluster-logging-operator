@@ -190,12 +190,10 @@ var _ = Describe("[LogForwarding] Json log parsing", func() {
 
 		// Log message data
 		invalidJson := `{"key":"v}`
-		timestamp := "2020-11-04T18:13:59.061892+00:00"
 
 		// Write log line as input to fluentd
 		expectedMessage := invalidJson
-		message := strings.ReplaceAll(invalidJson, "\"", "\\\"")
-		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, message)
+		applicationLogLine := functional.CreateAppLogFromJson(invalidJson)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output

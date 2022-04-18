@@ -90,15 +90,15 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				Name: logging.OutputTypeSyslog,
 				Type: logging.OutputTypeSyslog,
 				URL:  "tcp://0.0.0.0:24224",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Syslog: &logging.Syslog{},
+				},
 			}
 		case logging.OutputTypeKafka:
 			output = &logging.OutputSpec{
 				Name: logging.OutputTypeKafka,
 				Type: logging.OutputTypeKafka,
-				URL:  "https://localhost:9092",
-				Secret: &logging.OutputSecretSpec{
-					Name: "kafka",
-				},
+				URL:  "http://0.0.0.0:9092",
 				OutputTypeSpec: logging.OutputTypeSpec{
 					Kafka: &logging.Kafka{
 						Topic: kafka.AppLogsTopic,

@@ -1,6 +1,7 @@
 package functional
 
 import (
+	"encoding/base64"
 	"fmt"
 
 	"github.com/openshift/cluster-logging-operator/test/runtime"
@@ -357,7 +358,6 @@ func (f *FluentdFunctionalFramework) WaitForPodToBeReady() error {
 
 func CreateAppLogFromJson(jsonstr string) string {
 	jsonMsg := strings.ReplaceAll(jsonstr, "\n", "")
-	jsonMsg = strings.ReplaceAll(jsonMsg, "\"", "\\\"")
 	timestamp := "2020-11-04T18:13:59.061892+00:00"
 
 	return fmt.Sprintf("%s stdout F %s", timestamp, jsonMsg)
@@ -399,10 +399,11 @@ func (f *FluentdFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, siz
 
 func (f *FluentdFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs int, filename string) error {
 	logPath := filepath.Dir(filename)
-	cmd := fmt.Sprintf("bash -c 'mkdir -p %s;for n in {1..%d};do echo \"%s\" >> %s;sleep 1s;done'", logPath, numOfLogs, msg, filename)
-	log.V(3).Info("Writing mesages to log with command", "cmd", cmd)
+	encoded := base64.StdEncoding.EncodeToString([]byte(msg))
+	cmd := fmt.Sprintf("mkdir -p %s;for n in {1..%d};do echo \"$(echo %s|base64 -d)\" >> %s;sleep 1s;done", logPath, numOfLogs, encoded, filename)
+	log.V(3).Info("Writing messages to log with command", "cmd", cmd)
 	result, err := f.RunCommand(constants.FluentdName, "bash", "-c", cmd)
-	log.V(3).Info("FluentdFunctionalFramework.WriteMessagesToLog", "result", result, "err", err)
+	log.V(3).Info("CollectorFunctionalFramework.WriteMessagesToLog", "result", result, "err", err)
 	return err
 }
 

@@ -36,21 +36,21 @@ var _ = Describe("[LogForwarding] Functional tests for message format", func() {
 		// Log message data
 		timestamp := "2013-03-28T14:36:03.243000+00:00"
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
-		kind := fmt.Sprintf("audit(%.3f:24287)", float64(nanoTime.UnixNano())/float64(time.Second))
 
 		// Define a template for test format (used for input, and expected output)
 		var outputLogTemplate = types.K8sAuditLog{
 			AuditLogCommon: types.AuditLogCommon{
-				Kind:             kind,
+				Kind:             "Event",
 				ViaqIndexName:    "audit-write",
 				Level:            "info",
 				Timestamp:        time.Time{},
 				ViaqMsgID:        "*",
 				PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 			},
+			K8SAuditLevel: "debug",
 		}
 		// Template expected as output Log
-		k8sAuditLogLine := "{\\\"kind\\\":\\\"" + kind + "\\\"}"
+		k8sAuditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"debug"}`, functional.CRIOTime(nanoTime))
 		Expect(framework.WriteMessagesTok8sAuditLog(k8sAuditLogLine, 10)).To(BeNil())
 		// Read line from Log Forward output
 		raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeFluentdForward)

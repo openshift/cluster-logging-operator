@@ -11,6 +11,7 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
@@ -53,7 +54,7 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
- <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
+  <filter ` + source.InfraTagsForMultilineEx + `>
      @type record_modifier
     <record>
       cw_group_name infrastructure
@@ -61,7 +62,7 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
   
-  <filter kubernetes.** var.log.pods.**>
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name application
@@ -69,7 +70,7 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
   
-  <filter linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
+  <filter ` + source.AuditTags + `>
     @type record_modifier
     <record>
       cw_group_name audit
@@ -106,7 +107,7 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
+  <filter ` + source.InfraTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name infrastructure
@@ -114,7 +115,7 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
 
-  <filter kubernetes.** var.log.pods.**>
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name ${record['kubernetes']['namespace_name']}
@@ -122,7 +123,7 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
 
-  <filter linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
+  <filter ` + source.AuditTags + `>
     @type record_modifier
     <record>
       cw_group_name audit
@@ -162,15 +163,15 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
-    @type record_modifier
+  <filter ` + source.InfraTagsForMultilineEx + `>
+   @type record_modifier
     <record>
       cw_group_name foo.infrastructure
       cw_stream_name ${record['hostname']}.${tag}
     </record>
   </filter>
 
-  <filter kubernetes.** var.log.pods.**>
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name foo.${record['kubernetes']['namespace_id']}
@@ -178,7 +179,7 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
 
-  <filter linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
+  <filter ` + source.AuditTags + `>
     @type record_modifier
     <record>
       cw_group_name foo.audit
@@ -251,7 +252,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
 			It("should provide a valid configuration for sts", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
- <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
+  <filter ` + source.InfraTagsForMultilineEx + `>
      @type record_modifier
     <record>
       cw_group_name infrastructure
@@ -259,7 +260,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </record>
   </filter>
   
-  <filter kubernetes.** var.log.pods.**>
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name application
@@ -267,7 +268,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </record>
   </filter>
   
-  <filter linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
+  <filter ` + source.AuditTags + `>
     @type record_modifier
     <record>
       cw_group_name audit
@@ -307,7 +308,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
 			It("should provide a valid configuration for sts", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
+  <filter ` + source.InfraTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name infrastructure
@@ -315,7 +316,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </record>
   </filter>
 
-  <filter kubernetes.** var.log.pods.**>
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name ${record['kubernetes']['namespace_name']}
@@ -323,7 +324,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </record>
   </filter>
 
-  <filter linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
+  <filter ` + source.AuditTags + `>
     @type record_modifier
     <record>
       cw_group_name audit
@@ -366,7 +367,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
 			It("should provide a valid configuration for sts", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
-  <filter kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_**>
+  <filter ` + source.InfraTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name foo.infrastructure
@@ -374,7 +375,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </record>
   </filter>
 
-  <filter kubernetes.** var.log.pods.**>
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
     @type record_modifier
     <record>
       cw_group_name foo.${record['kubernetes']['namespace_id']}
@@ -382,7 +383,7 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </record>
   </filter>
 
-  <filter linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**>
+  <filter ` + source.AuditTags + `>
     @type record_modifier
     <record>
       cw_group_name foo.audit

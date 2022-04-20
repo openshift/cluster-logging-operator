@@ -83,7 +83,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC3164 tests", func() {
 	})
 
 	DescribeTable("configured to addLogSourceToMessage should add namespace, pod, container name", func(source string) {
-		writeLogs := framework.WriteMessagesInfraContainerLog
+		writeLogs := framework.WriteMessagesToInfraContainerLog
 		readLogsFrom := framework.ReadInfrastructureLogsFrom
 		if source == logging.InputNameApplication {
 			writeLogs = framework.WriteMessagesToApplicationLog

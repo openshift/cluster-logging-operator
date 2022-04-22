@@ -27,7 +27,7 @@ var _ = Describe("Indexmanagement", func() {
 		}
 	})
 
-	Describe("IndexManagemet Policy with 0 minutes, hours, days, weeks, months", func() {
+	Describe("IndexManagemet Policy with 0 minutes, hours, days, weeks", func() {
 		It("should correctly parse 0m", func() {
 			retentionPolicy = &logging.RetentionPoliciesSpec{
 				App: &logging.RetentionPolicySpec{
@@ -103,25 +103,6 @@ var _ = Describe("Indexmanagement", func() {
 			Expect(spec.Policies[0].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0w")))
 			Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0w")))
 			Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0w")))
-		})
-		It("should correctly parse 0M", func() {
-			retentionPolicy = &logging.RetentionPoliciesSpec{
-				App: &logging.RetentionPolicySpec{
-					MaxAge: esapi.TimeUnit("0M"),
-				},
-				Infra: &logging.RetentionPolicySpec{
-					MaxAge: esapi.TimeUnit("0M"),
-				},
-				Audit: &logging.RetentionPolicySpec{
-					MaxAge: esapi.TimeUnit("0M"),
-				},
-			}
-			spec := NewSpec(retentionPolicy)
-			Expect(len(spec.Policies)).To(Equal(3))
-			Expect(len(spec.Mappings)).To(Equal(3))
-			Expect(spec.Policies[0].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0M")))
-			Expect(spec.Policies[1].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0M")))
-			Expect(spec.Policies[2].Phases.Delete.MinAge).To(Equal(esapi.TimeUnit("0M")))
 		})
 	})
 
@@ -248,18 +229,6 @@ var _ = Describe("Indexmanagement", func() {
 			err  error
 		)
 		Context("converting to lower units", func() {
-			It("year to days", func() {
-				time, unit, err = convertToLowerUnits(1, 'y')
-				Expect(time).To(Equal(365), "time is incorrect")
-				Expect(unit).To(Equal(byte('d')), "unit is incorrect")
-				Expect(err).To(BeNil(), "error must be nil")
-			})
-			It("month to days", func() {
-				time, unit, err = convertToLowerUnits(1, 'M')
-				Expect(time).To(Equal(30), "time is incorrect")
-				Expect(unit).To(Equal(byte('d')), "unit is incorrect")
-				Expect(err).To(BeNil(), "error must be nil")
-			})
 			It("week to days", func() {
 				time, unit, err = convertToLowerUnits(1, 'w')
 				Expect(time).To(Equal(7), "time is incorrect")

@@ -2,6 +2,7 @@ package collector
 
 import (
 	"fmt"
+
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -219,13 +220,13 @@ func newLogMetricsExporterContainer() *v1.Container {
 			Protocol:      v1.ProtocolTCP,
 		},
 	}
-	exporter.Command = []string{"/usr/local/bin/log-file-metric-exporter", "-verbosity=2", "-http=:2112", "-keyFile=/etc/fluent/metrics/tls.key", "-crtFile=/etc/fluent/metrics/tls.crt"}
+	exporter.Command = []string{"/bin/bash"}
+	exporter.Args = []string{"-c", "/usr/local/bin/log-file-metric-exporter -verbosity=2 -dir=/var/log/pods -http=:2112 -keyFile=/etc/collector/metrics/tls.key -crtFile=/etc/collector/metrics/tls.crt"}
 
 	exporter.VolumeMounts = []v1.VolumeMount{
 		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
 		{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
-		//TODO fix error in metric exporter that does not recognize certs args
-		{Name: metricsVolumeName, ReadOnly: true, MountPath: "/etc/fluent/metrics"},
+		{Name: metricsVolumeName, ReadOnly: true, MountPath: metricsVolumePath},
 	}
 
 	addSecurityContextTo(&exporter)

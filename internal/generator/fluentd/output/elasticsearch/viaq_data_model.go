@@ -13,6 +13,9 @@ type IndexModel struct {
 }
 
 const (
+	//AnnotationPrefix is modified to use underscores because the fluentd kubernetes metadata
+	//plugin replaces dots for annotation and labels with underscores. Users should annotate
+	//their pods with containerType.logging.openshift.io
 	AnnotationPrefix = "containerType_logging_openshift_io"
 )
 

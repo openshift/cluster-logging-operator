@@ -45,6 +45,7 @@ func (ff FluentdForward) Template() string {
 </server>
 heartbeat_type none
 keepalive true
+keepalive_timeout 30s
 {{compose .SecurityConfig}}
 {{compose .BufferConfig}}
 {{- end}}

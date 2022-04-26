@@ -96,6 +96,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
 type = "kubernetes_logs"
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+pod_annotation_fields.pod_labels = "kubernetes.labels"
+pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 
 [sources.raw_journal_logs]
 type = "journald"
@@ -136,10 +138,6 @@ source = """
     level = "debug"
   }
   .level = level
-  
-  namespace_name = .kubernetes.pod_namespace
-  del(.kubernetes.pod_namespace)
-  .kubernetes.namespace_name = namespace_name
   
   del(.file)
   
@@ -285,6 +283,8 @@ crt_file = "/etc/collector/metrics/tls.crt"
 type = "kubernetes_logs"
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+pod_annotation_fields.pod_labels = "kubernetes.labels"
+pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 
 [sources.raw_journal_logs]
 type = "journald"
@@ -325,10 +325,6 @@ source = """
     level = "debug"
   }
   .level = level
-  
-  namespace_name = .kubernetes.pod_namespace
-  del(.kubernetes.pod_namespace)
-  .kubernetes.namespace_name = namespace_name
   
   del(.file)
   
@@ -383,8 +379,8 @@ source = """
   .
 """
 
-# Adding _id field
-[transforms.es_1_add_es_id]
+# Set Elasticsearch index
+[transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["pipeline"]
 source = """
@@ -399,12 +395,13 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
+  
   ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
-inputs = ["es_1_add_es_id"]
+inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
 source = """
@@ -413,21 +410,21 @@ source = """
             emit(event)
             return
         end
-        if event.log.kubernetes.pod_labels == nil then
+        if event.log.kubernetes.labels == nil then
             emit(event)
             return
         end
-        dedot(event.log.kubernetes.pod_labels)
+        dedot(event.log.kubernetes.labels)
         -- create "flat_labels" key
         event.log.kubernetes.flat_labels = {}
         i = 1
         -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.pod_labels) do
+        for k,v in pairs(event.log.kubernetes.labels) do
           event.log.kubernetes.flat_labels[i] = k.."="..v
           i=i+1
         end
-        -- delete the "pod_labels" key
-        event.log.kubernetes["pod_labels"] = nil
+        -- delete the "labels" key
+        event.log.kubernetes["labels"] = nil
         emit(event)
     end
 
@@ -469,8 +466,8 @@ crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 
-# Adding _id field
-[transforms.es_2_add_es_id]
+# Set Elasticsearch index
+[transforms.es_2_add_es_index]
 type = "remap"
 inputs = ["pipeline"]
 source = """
@@ -485,12 +482,13 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
+  
   ._id = encode_base64(uuid_v4())
 """
 
 [transforms.es_2_dedot_and_flatten]
 type = "lua"
-inputs = ["es_2_add_es_id"]
+inputs = ["es_2_add_es_index"]
 version = "2"
 hooks.process = "process"
 source = """
@@ -499,21 +497,21 @@ source = """
             emit(event)
             return
         end
-        if event.log.kubernetes.pod_labels == nil then
+        if event.log.kubernetes.labels == nil then
             emit(event)
             return
         end
-        dedot(event.log.kubernetes.pod_labels)
+        dedot(event.log.kubernetes.labels)
         -- create "flat_labels" key
         event.log.kubernetes.flat_labels = {}
         i = 1
         -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.pod_labels) do
+        for k,v in pairs(event.log.kubernetes.labels) do
           event.log.kubernetes.flat_labels[i] = k.."="..v
           i=i+1
         end
-        -- delete the "pod_labels" key
-        event.log.kubernetes["pod_labels"] = nil
+        -- delete the "labels" key
+        event.log.kubernetes["labels"] = nil
         emit(event)
     end
 

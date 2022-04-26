@@ -41,12 +41,9 @@ id_key = "_id"
 {{end}}`
 }
 
-func AddEsID(id string, inputs []string) Element {
-	return Remap{
-		Desc:        "Adding _id field",
-		ComponentID: id,
-		Inputs:      helpers.MakeInputs(inputs...),
-		VRL: strings.TrimSpace(`
+func SetESIndex(id string, inputs []string, o logging.OutputSpec, op Options) Element {
+
+	setESIndex := `
 index = "default"
 if (.log_type == "application"){
   index = "app"
@@ -58,8 +55,41 @@ if (.log_type == "audit"){
   index = "audit"
 }
 .write_index = index + "-write"
+`
+
+	addESId := `
 ._id = encode_base64(uuid_v4())
-`),
+`
+
+	vrls := []string{setESIndex, addESId}
+
+	if o.Elasticsearch != nil {
+		if o.Elasticsearch.StructuredTypeKey != "" {
+			changeIndexName := `
+if .log_type == "application" && .structured != null {
+  val = .%s
+  if val != null {
+    .write_index, err = "app-" + val + "-write"
+  }
+}  
+`
+			vrls = append(vrls, fmt.Sprintf(changeIndexName, o.Elasticsearch.StructuredTypeKey))
+
+		} else if o.Elasticsearch.StructuredTypeName != "" {
+			changeIndexName := `
+if .log_type == "application" && .structured != null {
+  .write_index = "app-%s-write"
+}
+`
+			vrls = append(vrls, fmt.Sprintf(changeIndexName, o.Elasticsearch.StructuredTypeName))
+		}
+	}
+
+	return Remap{
+		Desc:        "Set Elasticsearch index",
+		ComponentID: id,
+		Inputs:      helpers.MakeInputs(inputs...),
+		VRL:         strings.Join(helpers.TrimSpaces(vrls), "\n\n"),
 	}
 }
 
@@ -80,21 +110,21 @@ source = """
             emit(event)
             return
         end
-        if event.log.kubernetes.pod_labels == nil then
+        if event.log.kubernetes.labels == nil then
             emit(event)
             return
         end
-        dedot(event.log.kubernetes.pod_labels)
+        dedot(event.log.kubernetes.labels)
         -- create "flat_labels" key
         event.log.kubernetes.flat_labels = {}
         i = 1
         -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.pod_labels) do
+        for k,v in pairs(event.log.kubernetes.labels) do
           event.log.kubernetes.flat_labels[i] = k.."="..v
           i=i+1
         end
-        -- delete the "pod_labels" key
-        event.log.kubernetes["pod_labels"] = nil
+        -- delete the "labels" key
+        event.log.kubernetes["labels"] = nil
         emit(event)
     end
 
@@ -132,15 +162,15 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	outputName := strings.ToLower(vectorhelpers.Replacer.Replace(o.Name))
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			AddEsID(ID(outputName, "add_es_id"), inputs),
-			DeDotAndFlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_id")}),
+			SetESIndex(ID(outputName, "add_es_index"), inputs, o, op),
+			DeDotAndFlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_index")}),
 			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs([]string{ID(outputName, "dedot_and_flatten")}...)),
 		}
 	}
 	outputs = MergeElements(outputs,
 		[]Element{
-			AddEsID(ID(outputName, "add_es_id"), inputs),
-			DeDotAndFlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_id")}),
+			SetESIndex(ID(outputName, "add_es_index"), inputs, o, op),
+			DeDotAndFlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_index")}),
 			Output(o, []string{ID(outputName, "dedot_and_flatten")}, secret, op),
 		},
 		TLSConf(o, secret),

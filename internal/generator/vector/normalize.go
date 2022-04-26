@@ -24,11 +24,6 @@ if match!(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")
 .level = level
 `
 
-	ChangeNSNameField = `
-namespace_name = .kubernetes.pod_namespace
-del(.kubernetes.pod_namespace)
-.kubernetes.namespace_name = namespace_name
-`
 	RemoveFile = `
 del(.file)
 `
@@ -62,7 +57,6 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				FixLogLevel,
-				ChangeNSNameField,
 				RemoveFile,
 				RemoveSourceType,
 				RemoveStream,

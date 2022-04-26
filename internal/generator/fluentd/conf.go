@@ -18,6 +18,10 @@ func Conf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret,
 			"Set of all input sources",
 		},
 		{
+			Elements: RetryError(),
+			Comment:  "Try to resend message in case error",
+		},
+		{
 			PrometheusMetrics(clfspec, op),
 			"Section to add measurement, and dispatch to Concat or Ingress pipelines",
 		},

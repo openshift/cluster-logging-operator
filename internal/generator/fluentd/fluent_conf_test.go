@@ -264,6 +264,22 @@ var _ = Describe("Generating fluentd config", func() {
   </parse>
 </source>
 
+# Try to resend message in case error
+<label @ERROR>
+  <filter **>
+    @type record_transformer
+    enable_ruby
+    <record>
+      message ${record['message'].encode!('UTF-8', :undef => :replace, :invalid => :replace, :replace => "?")}
+    </record>
+  </filter>
+
+  <match **>
+    @type relabel
+    @label @DEFAULT
+  </match>
+</label>
+
 # Increment Prometheus metrics
 <label @MEASURE>
   <filter **>
@@ -1078,6 +1094,22 @@ var _ = Describe("Generating fluentd config", func() {
   </parse>
 </source>
 
+# Try to resend message in case error
+<label @ERROR>
+  <filter **>
+    @type record_transformer
+    enable_ruby
+    <record>
+       message ${record['message'].encode!('UTF-8', :undef => :replace, :invalid => :replace, :replace => "?")}
+    </record>
+   </filter>
+	
+   <match **>
+     @type relabel
+     @label @DEFAULT
+   </match>
+</label>
+
 # Increment Prometheus metrics
 <label @MEASURE>
   <filter **>
@@ -1877,6 +1909,22 @@ var _ = Describe("Generating fluentd config", func() {
   </parse>
 </source>
 
+# Try to resend message in case error
+<label @ERROR>
+  <filter **>
+    @type record_transformer
+    enable_ruby
+    <record>
+       message ${record['message'].encode!('UTF-8', :undef => :replace, :invalid => :replace, :replace => "?")}
+    </record>
+   </filter>
+	
+   <match **>
+     @type relabel
+     @label @DEFAULT
+   </match>
+</label>
+
 # Increment Prometheus metrics
 <label @MEASURE>
   <filter **>
@@ -2621,6 +2669,22 @@ var _ = Describe("Generating fluentd config", func() {
   </parse>
 </source>
 
+# Try to resend message in case error
+<label @ERROR>
+  <filter **>
+    @type record_transformer
+    enable_ruby
+    <record>
+       message ${record['message'].encode!('UTF-8', :undef => :replace, :invalid => :replace, :replace => "?")}
+    </record>
+   </filter>
+	
+   <match **>
+     @type relabel
+     @label @DEFAULT
+   </match>
+</label>
+
 # Increment Prometheus metrics
 <label @MEASURE>
   <filter **>
@@ -3159,6 +3223,22 @@ var _ = Describe("Generating fluentd config", func() {
     @type none
   </parse>
 </source>
+
+# Try to resend message in case error
+<label @ERROR>
+  <filter **>
+    @type record_transformer
+    enable_ruby
+    <record>
+       message ${record['message'].encode!('UTF-8', :undef => :replace, :invalid => :replace, :replace => "?")}
+    </record>
+   </filter>
+	
+   <match **>
+     @type relabel
+     @label @DEFAULT
+   </match>
+</label>
 
 # Increment Prometheus metrics
 <label @MEASURE>
@@ -4242,6 +4322,22 @@ inputs:
     </pattern>
   </parse>
 </source>
+
+# Try to resend message in case error
+<label @ERROR>
+  <filter **>
+    @type record_transformer
+    enable_ruby
+    <record>
+       message ${record['message'].encode!('UTF-8', :undef => :replace, :invalid => :replace, :replace => "?")}
+    </record>
+   </filter>
+	
+   <match **>
+     @type relabel
+     @label @DEFAULT
+   </match>
+</label>
 
 # Increment Prometheus metrics
 <label @MEASURE>

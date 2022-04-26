@@ -502,6 +502,7 @@ var _ = Describe("Generating fluentd config", func() {
             </server>
             heartbeat_type none
             keepalive true
+            keepalive_timeout 30s
             <buffer>
             @type file
             path '/var/lib/fluentd/secureforward_receiver'
@@ -539,6 +540,7 @@ var _ = Describe("Generating fluentd config", func() {
           </server>
           heartbeat_type none
           keepalive true
+          keepalive_timeout 30s
 
           <buffer>
           @type file

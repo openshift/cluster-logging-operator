@@ -60,6 +60,7 @@ var _ = Describe("fluentd conf generation", func() {
     </server>
     heartbeat_type none
     keepalive true
+    keepalive_timeout 30s
     transport tls
     tls_verify_hostname false
     tls_version 'TLSv1_2'
@@ -116,6 +117,7 @@ var _ = Describe("fluentd conf generation", func() {
     </server>
     heartbeat_type none
     keepalive true
+    keepalive_timeout 30s
     transport tls
     tls_verify_hostname false
     tls_version 'TLSv1_2'
@@ -167,6 +169,7 @@ var _ = Describe("fluentd conf generation", func() {
     </server>
     heartbeat_type none
     keepalive true
+    keepalive_timeout 30s
     
     <buffer>
       @type file

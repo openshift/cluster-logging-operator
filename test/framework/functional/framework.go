@@ -190,9 +190,9 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 
-	role := runtime.NewRole(f.Test.NS.Name, f.Name,
+	role := runtime.NewClusterRole(fmt.Sprintf("%s-%s", f.Test.NS.Name, f.Name),
 		v1.PolicyRule{
-			Verbs:     []string{"list", "get"},
+			Verbs:     []string{"list", "get", "watch"},
 			Resources: []string{"pods", "namespaces"},
 			APIGroups: []string{""},
 		},
@@ -200,15 +200,16 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	if err = f.Test.Client.Create(role); err != nil {
 		return err
 	}
-	rolebinding := runtime.NewRoleBinding(f.Test.NS.Name, f.Name,
+	rolebinding := runtime.NewClusterRoleBinding(fmt.Sprintf("%s-%s", f.Test.NS.Name, f.Name),
 		v1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
+			Kind:     "ClusterRole",
 			Name:     role.Name,
 		},
 		v1.Subject{
-			Kind: "ServiceAccount",
-			Name: "default",
+			Kind:      "ServiceAccount",
+			Name:      "default",
+			Namespace: f.Test.NS.Name,
 		},
 	)
 	if err = f.Test.Client.Create(rolebinding); err != nil {

@@ -1,40 +1,27 @@
 package fluentd
 
 import (
-	"encoding/json"
-	"fmt"
-	"strings"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-
-	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/test/framework/unit"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
 
 //TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
-	var f = func(testcase generator.ConfGenerateTest) {
+	var f = func(testcase unit.ConfGenerateTest) {
 		g := generator.MakeGenerator()
 		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, generator.NoOptions))
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
-		diff := cmp.Diff(
-			strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"),
-			strings.Split(strings.TrimSpace(conf), "\n"))
-		if diff != "" {
-			b, _ := json.MarshalIndent(e, "", " ")
-			fmt.Printf("elements:\n%s\n", string(b))
-			fmt.Println(conf)
-			fmt.Printf("diff: %s", diff)
-		}
-		Expect(diff).To(Equal(""))
+		Expect(conf).To(EqualTrimLines(testcase.ExpectedConf))
 	}
 	DescribeTable("Generate full fluent.conf", f,
-		Entry("with complex spec", generator.ConfGenerateTest{
+		Entry("with complex spec", unit.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{
 					Fluentd: &logging.FluentdForwarderSpec{
@@ -409,8 +396,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
     @id kubernetes-metadata
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
+    allow_orphans false
     cache_size '1000'
-    watch 'false'
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -640,6 +627,30 @@ var _ = Describe("Testing Complete Config Generation", func() {
 
 # Ship logs to specific outputs
 <label @ES_1>
+  # Viaq Data Model
+  <filter **>
+	@type viaq_data_model
+	elasticsearch_index_prefix_field 'viaq_index_name'
+	<elasticsearch_index_name>
+	  enabled 'true'
+	  tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+	  name_type static
+	  static_index_name infra-write
+	</elasticsearch_index_name>
+	<elasticsearch_index_name>
+	  enabled 'true'
+	  tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+	  name_type static
+	  static_index_name audit-write
+	</elasticsearch_index_name>
+	<elasticsearch_index_name>
+	  enabled 'true'
+	  tag "**"
+	  name_type structured
+	  static_index_name app-write
+	</elasticsearch_index_name>
+  </filter>
+  
   #remove structured field if present
   <filter **>
     @type record_modifier

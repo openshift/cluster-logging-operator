@@ -1,6 +1,7 @@
 package fluentdforward
 
 import (
+	"github.com/openshift/cluster-logging-operator/test/framework/unit"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -23,8 +24,8 @@ var _ = Describe("fluentd conf generation", func() {
 		}
 		return Conf(bufspec, secrets[clfspec.Outputs[0].Name], clfspec.Outputs[0], op)
 	}
-	DescribeTable("for fluentdforward output", generator.TestGenerateConfWith(f),
-		Entry("with tls key,cert,ca-bundle", generator.ConfGenerateTest{
+	DescribeTable("for fluentdforward output", unit.TestGenerateConfWith(f),
+		Entry("with tls key,cert,ca-bundle", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -86,7 +87,7 @@ var _ = Describe("fluentd conf generation", func() {
 </label>
 `,
 		}),
-		Entry("with shared_key", generator.ConfGenerateTest{
+		Entry("with shared_key", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -144,7 +145,7 @@ var _ = Describe("fluentd conf generation", func() {
 </label>
 `,
 		}),
-		Entry("with unsecured, and default port", generator.ConfGenerateTest{
+		Entry("with unsecured, and default port", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{

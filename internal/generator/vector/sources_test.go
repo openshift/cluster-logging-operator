@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/test/framework/unit"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -14,8 +15,8 @@ var _ = Describe("Vector Config Generation", func() {
 			LogSources(&clfspec, op),
 		)
 	}
-	DescribeTable("Source(s)", generator.TestGenerateConfWith(f),
-		Entry("Only Application", generator.ConfGenerateTest{
+	DescribeTable("Source(s)", unit.TestGenerateConfWith(f),
+		Entry("Only Application", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -35,7 +36,7 @@ auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 `,
 		}),
-		Entry("Only Infrastructure", generator.ConfGenerateTest{
+		Entry("Only Infrastructure", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -58,7 +59,7 @@ exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.
 type = "journald"
 `,
 		}),
-		Entry("Only Audit", generator.ConfGenerateTest{
+		Entry("Only Audit", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -90,7 +91,7 @@ ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver.audit.log"]
 `,
 		}),
-		Entry("All Log Sources", generator.ConfGenerateTest{
+		Entry("All Log Sources", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{

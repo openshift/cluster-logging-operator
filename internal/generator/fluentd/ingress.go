@@ -196,8 +196,8 @@ const KubernetesMetadataPlugin string = `
   @id kubernetes-metadata
   @type kubernetes_metadata
   kubernetes_url 'https://kubernetes.default.svc'
+  allow_orphans false
   cache_size '1000'
-  watch 'false'
   use_journal 'nil'
   ssl_partial_chain 'true'
 </filter>

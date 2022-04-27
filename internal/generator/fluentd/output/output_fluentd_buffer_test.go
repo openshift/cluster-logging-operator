@@ -85,6 +85,30 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should provide a default buffer configuration", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+		  # Viaq Data Model
+		  <filter **>
+			@type viaq_data_model
+			elasticsearch_index_prefix_field 'viaq_index_name'
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+			  name_type static
+			  static_index_name infra-write
+			</elasticsearch_index_name>
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+			  name_type static
+			  static_index_name audit-write
+			</elasticsearch_index_name>
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "**"
+			  name_type structured
+			  static_index_name app-write
+			</elasticsearch_index_name>
+		  </filter>
+		  
 		  #remove structured field if present
 		  <filter **>
 		    @type record_modifier
@@ -201,6 +225,30 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should provide a default buffer configuration", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
+		  # Viaq Data Model
+		  <filter **>
+			@type viaq_data_model
+			elasticsearch_index_prefix_field 'viaq_index_name'
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+			  name_type static
+			  static_index_name infra-write
+			</elasticsearch_index_name>
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+			  name_type static
+			  static_index_name audit-write
+			</elasticsearch_index_name>
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "**"
+			  name_type structured
+			  static_index_name app-write
+			</elasticsearch_index_name>
+		  </filter>
+		  
 		  #remove structured field if present
 		  <filter **>
 		    @type record_modifier
@@ -303,11 +351,37 @@ var _ = Describe("Generating fluentd config", func() {
 		It("should override buffer configuration for given tuning parameters", func() {
 			esConf := `
         <label @OTHER_ELASTICSEARCH>
-		#remove structured field if present
-		<filter **>
-		  @type record_modifier
-		  remove_keys structured
-		</filter>
+
+		  # Viaq Data Model
+		  <filter **>
+			@type viaq_data_model
+			elasticsearch_index_prefix_field 'viaq_index_name'
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+			  name_type static
+			  static_index_name infra-write
+			</elasticsearch_index_name>
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+			  name_type static
+			  static_index_name audit-write
+			</elasticsearch_index_name>
+			<elasticsearch_index_name>
+			  enabled 'true'
+			  tag "**"
+			  name_type structured
+			  static_index_name app-write
+			</elasticsearch_index_name>
+		  </filter>
+		  
+		  #remove structured field if present
+		  <filter **>
+			@type record_modifier
+			remove_keys structured
+		  </filter>
+		  
 		  #flatten labels to prevent field explosion in ES
 		  <filter **>
 			  @type record_transformer

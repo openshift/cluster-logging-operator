@@ -3,9 +3,9 @@ package vector
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/test/framework/unit"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -17,8 +17,8 @@ var _ = Describe("Testing Config Generation", func() {
 			InputsToPipelines(&clfspec, op),
 		)
 	}
-	DescribeTable("Source(s) to Pipeline(s)", generator.TestGenerateConfWith(f),
-		Entry("Send all log types to output by name", generator.ConfGenerateTest{
+	DescribeTable("Source(s) to Pipeline(s)", unit.TestGenerateConfWith(f),
+		Entry("Send all log types to output by name", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -75,7 +75,7 @@ source = """
 """
 `,
 		}),
-		Entry("Send same logtype to multiple output", generator.ConfGenerateTest{
+		Entry("Send same logtype to multiple output", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -147,7 +147,7 @@ source = """
 """
 `,
 		}),
-		Entry("Route Logs by Namespace(s)", generator.ConfGenerateTest{
+		Entry("Route Logs by Namespace(s)", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{
@@ -195,7 +195,7 @@ source = """
 """
 `,
 		}),
-		Entry("Route Logs by Namespaces(s), and Labels(s)", generator.ConfGenerateTest{
+		Entry("Route Logs by Namespaces(s), and Labels(s)", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{

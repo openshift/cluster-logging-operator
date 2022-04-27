@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"github.com/openshift/cluster-logging-operator/test/framework/unit"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -17,8 +18,8 @@ var _ = Describe("Generate vector config", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return Conf(clfspec.Outputs[0], []string{"pipeline_1", "pipeline_2"}, secrets[clfspec.Outputs[0].Name], op)
 	}
-	DescribeTable("for kafka output", generator.TestGenerateConfWith(f),
-		Entry("with username,password to single topic", generator.ConfGenerateTest{
+	DescribeTable("for kafka output", unit.TestGenerateConfWith(f),
+		Entry("with username,password to single topic", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -64,7 +65,7 @@ password = "testpass"
 enabled = true
 `,
 		}),
-		Entry("with tls key,cert,ca-bundle", generator.ConfGenerateTest{
+		Entry("with tls key,cert,ca-bundle", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -106,7 +107,7 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 enabled = true
 `,
 		}),
-		Entry("without security", generator.ConfGenerateTest{
+		Entry("without security", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{

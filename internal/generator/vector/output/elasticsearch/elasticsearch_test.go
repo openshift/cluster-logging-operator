@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"github.com/openshift/cluster-logging-operator/test/framework/unit"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -18,8 +19,8 @@ var _ = Describe("Generate Vector config", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], op)
 	}
-	DescribeTable("For Elasticsearch output", generator.TestGenerateConfWith(f),
-		Entry("with username,password", generator.ConfGenerateTest{
+	DescribeTable("For Elasticsearch output", unit.TestGenerateConfWith(f),
+		Entry("with username,password", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -126,7 +127,7 @@ user = "testuser"
 password = "testpass"
 `,
 		}),
-		Entry("with tls key,cert,ca-bundle", generator.ConfGenerateTest{
+		Entry("with tls key,cert,ca-bundle", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -234,7 +235,7 @@ crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 `,
 		}),
-		Entry("without security", generator.ConfGenerateTest{
+		Entry("without security", unit.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{

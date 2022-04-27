@@ -1,12 +1,10 @@
-package generator
+package unit
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -16,30 +14,21 @@ type ConfGenerateTest struct {
 	CLSpec  logging.ClusterLoggingSpec
 	// key:Output Name, value: secret for the Output
 	Secrets      map[string]*corev1.Secret
-	Options      Options
+	Options      generator.Options
 	ExpectedConf string
 }
 
-type GenerateFunc func(logging.ClusterLoggingSpec, map[string]*corev1.Secret, logging.ClusterLogForwarderSpec, Options) []Element
+type GenerateFunc func(logging.ClusterLoggingSpec, map[string]*corev1.Secret, logging.ClusterLogForwarderSpec, generator.Options) []generator.Element
 
 func TestGenerateConfWith(gf GenerateFunc) func(ConfGenerateTest) {
 	return func(testcase ConfGenerateTest) {
-		g := MakeGenerator()
+		g := generator.MakeGenerator()
 		if testcase.Options == nil {
-			testcase.Options = Options{}
+			testcase.Options = generator.Options{}
 		}
 		e := gf(testcase.CLSpec, testcase.Secrets, testcase.CLFSpec, testcase.Options)
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
-		diff := cmp.Diff(
-			strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"),
-			strings.Split(strings.TrimSpace(conf), "\n"))
-		if diff != "" {
-			//b, _ := json.MarshalIndent(e, "", " ")
-			//fmt.Printf("elements:\n%s\n", string(b))
-			fmt.Println(conf)
-			fmt.Printf("diff: %s", diff)
-		}
-		Expect(diff).To(Equal(""))
+		Expect(conf).To(EqualTrimLines(testcase.ExpectedConf))
 	}
 }

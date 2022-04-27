@@ -30,6 +30,21 @@ var (
 		FlatLabels:       []string{"*"},
 		NamespaceLabels:  map[string]string{"*": "*"},
 	}
+	templateForInfraKubernetes = types.Kubernetes{
+		ContainerName:     "*",
+		PodName:           "*",
+		NamespaceName:     "*",
+		NamespaceID:       "**optional**",
+		OrphanedNamespace: "**optional**",
+		ContainerImage:    "**optional**",
+		ContainerImageID:  "**optional**",
+		PodID:             "**optional**",
+		PodIP:             "**optional**",
+		Host:              "**optional**",
+		MasterURL:         "**optional**",
+		FlatLabels:        []string{"*"},
+		NamespaceLabels:   map[string]string{"*": "*"},
+	}
 )
 
 func NewApplicationLogTemplate() types.ApplicationLog {
@@ -50,5 +65,24 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 			ContainerID: "*",
 		},
 		Kubernetes: templateForAnyKubernetes,
+	}
+}
+
+// NewContainerInfrastructureLogTemplate creates a generally expected template for infrastructure container logs
+func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
+	return types.ApplicationLog{
+		Timestamp: time.Time{},
+		Message:   "*",
+		LogType:   "infrastructure",
+		Level:     "*",
+		Hostname:  "*",
+		ViaqMsgID: "*",
+		Openshift: types.OpenshiftMeta{
+			Labels:   map[string]string{"*": "*"},
+			Sequence: types.NewOptionalInt(""),
+		},
+		PipelineMetadata: TemplateForAnyPipelineMetadata,
+		Docker:           types.Docker{},
+		Kubernetes:       templateForInfraKubernetes,
 	}
 }

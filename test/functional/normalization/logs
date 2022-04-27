@@ -1,0 +1,150 @@
+Setting each total_size_limit for 1 buffers to 19245088972 bytes
+Setting queued_chunks_limit_size for each buffer to 2294
+Setting chunk_limit_size for each buffer to 8388608
+2022-05-02 14:42:25 +0000 [warn]: '@' is the system reserved prefix. It works in the nested configuration for now but it will be rejected: @timestamp
+2022-05-02 14:42:25 +0000 [info]: parsing config file is succeeded path="/etc/fluent/fluent.conf"
+/usr/local/share/gems/gems/fluent-plugin-elasticsearch-5.2.1/lib/fluent/plugin/elasticsearch_compat.rb:8: warning: already initialized constant TRANSPORT_CLASS
+/usr/local/share/gems/gems/fluent-plugin-elasticsearch-5.2.1/lib/fluent/plugin/elasticsearch_compat.rb:3: warning: previous definition of TRANSPORT_CLASS was here
+/usr/local/share/gems/gems/fluent-plugin-elasticsearch-5.2.1/lib/fluent/plugin/elasticsearch_compat.rb:25: warning: already initialized constant SELECTOR_CLASS
+/usr/local/share/gems/gems/fluent-plugin-elasticsearch-5.2.1/lib/fluent/plugin/elasticsearch_compat.rb:20: warning: previous definition of SELECTOR_CLASS was here
+2022-05-02 14:42:26 +0000 [info]: starting fluentd-1.14.5 without supervision pid=1 ruby="2.5.9"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @MEASURE pattern="**" type="record_transformer"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @MEASURE pattern="**" type="prometheus"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @MEASURE pattern="**" type="prometheus"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @MEASURE pattern="**" type="record_transformer"
+2022-05-02 14:42:26 +0000 [info]: adding match in @MEASURE pattern="journal" type="relabel"
+2022-05-02 14:42:26 +0000 [info]: adding match in @MEASURE pattern="*audit.log" type="relabel"
+2022-05-02 14:42:26 +0000 [info]: adding match in @MEASURE pattern="kubernetes.**" type="relabel"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @CONCAT pattern="kubernetes.**" type="concat"
+2022-05-02 14:42:26 +0000 [info]: adding match in @CONCAT pattern="kubernetes.**" type="relabel"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @INGRESS pattern="journal" type="grep"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @INGRESS pattern="ovn-audit.log**" type="record_modifier"
+2022-05-02 14:42:26 +0000 [info]: adding match in @INGRESS pattern="journal" type="rewrite_tag_filter"
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: CONTAINER_NAME [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488b1670 @keys="CONTAINER_NAME">, /^k8s_kibana\./, "", "kubernetes.journal.container.kibana", nil]
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: CONTAINER_NAME [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488b02c0 @keys="CONTAINER_NAME">, /^k8s_[^_]+_logging-eventrouter-[^_]+_/, "", "kubernetes.journal.container._default_.kubernetes-event", nil]
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: CONTAINER_NAME [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488ba298 @keys="CONTAINER_NAME">, /^k8s_[^_]+_[^_]+_default_/, "", "kubernetes.journal.container._default_", nil]
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: CONTAINER_NAME [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488b8a38 @keys="CONTAINER_NAME">, /^k8s_[^_]+_[^_]+_kube-(.+)_/, "", "kubernetes.journal.container._kube-$1_", nil]
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: CONTAINER_NAME [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488c3960 @keys="CONTAINER_NAME">, /^k8s_[^_]+_[^_]+_openshift-(.+)_/, "", "kubernetes.journal.container._openshift-$1_", nil]
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: CONTAINER_NAME [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488c2dd0 @keys="CONTAINER_NAME">, /^k8s_[^_]+_[^_]+_openshift_/, "", "kubernetes.journal.container._openshift_", nil]
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: CONTAINER_NAME [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488c1f70 @keys="CONTAINER_NAME">, /^k8s_.*fluentd/, "", "kubernetes.journal.container.fluentd", nil]
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: CONTAINER_NAME [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488c1340 @keys="CONTAINER_NAME">, /^k8s_/, "", "kubernetes.journal.container", nil]
+2022-05-02 14:42:26 +0000 [info]: adding rewrite_tag_filter rule: _TRANSPORT [#<Fluent::PluginHelper::RecordAccessor::Accessor:0x00007f26488c0530 @keys="_TRANSPORT">, /.+/, "", "journal.system", nil]
+2022-05-02 14:42:26 +0000 [info]: adding filter in @INGRESS pattern="kubernetes.**" type="kubernetes_metadata"
+2022-05-02 14:42:26 +0000 [debug]: [kubernetes-metadata] Found directory with secrets: /var/run/secrets/kubernetes.io/serviceaccount
+2022-05-02 14:42:26 +0000 [debug]: [kubernetes-metadata] Found CA certificate: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+2022-05-02 14:42:26 +0000 [debug]: [kubernetes-metadata] Found pod token: /var/run/secrets/kubernetes.io/serviceaccount/token
+2022-05-02 14:42:26 +0000 [debug]: [kubernetes-metadata] Creating K8S client
+2022-05-02 14:42:26 +0000 [info]: [kubernetes-metadata] Extending client with test api adaper KubernetesMetadata::TestApiAdapter
+2022-05-02 14:42:26 +0000 [warn]: [kubernetes-metadata] !! The environment variable 'K8S_NODE_NAME' is not set to the node name which can affect the API server and watch efficiency !!
+2022-05-02 14:42:26 +0000 [info]: adding filter in @INGRESS pattern="kubernetes.journal.**" type="parse_json_field"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @INGRESS pattern="kubernetes.var.log.pods.**" type="parse_json_field"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @INGRESS pattern="kubernetes.var.log.pods.**_eventrouter-**" type="parse_json_field"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @INGRESS pattern="**kibana**" type="record_transformer"
+2022-05-02 14:42:26 +0000 [info]: adding filter in @INGRESS pattern="k8s-audit.log**" type="record_modifier"
+2022-05-02 14:42:27 +0000 [info]: adding filter in @INGRESS pattern="openshift-audit.log**" type="record_modifier"
+2022-05-02 14:42:27 +0000 [info]: adding filter in @INGRESS pattern="**" type="viaq_data_model"
+2022-05-02 14:42:27 +0000 [info]: adding filter in @INGRESS pattern="**" type="elasticsearch_genid_ext"
+2022-05-02 14:42:27 +0000 [info]: adding match in @INGRESS pattern="kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**" type="null"
+2022-05-02 14:42:27 +0000 [info]: adding match in @INGRESS pattern="kubernetes.**" type="relabel"
+2022-05-02 14:42:27 +0000 [info]: adding match in @INGRESS pattern="linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**" type="null"
+2022-05-02 14:42:27 +0000 [info]: adding match in @INGRESS pattern="**" type="stdout"
+2022-05-02 14:42:27 +0000 [info]: adding filter in @_APPLICATION pattern="**" type="record_modifier"
+2022-05-02 14:42:27 +0000 [info]: adding match in @_APPLICATION pattern="**" type="label_router"
+2022-05-02 14:42:27 +0000 [info]: adding match in @FORWARD_PIPELINE pattern="kubernetes.**" type="detect_exceptions"
+2022-05-02 14:42:27 +0000 [info]: adding match in @FORWARD_PIPELINE pattern="**" type="relabel"
+2022-05-02 14:42:27 +0000 [info]: adding match in @FLUENTDFORWARD pattern="**" type="forward"
+2022-05-02 14:42:27 +0000 [info]: [fluentdforward] adding forwarding server '0.0.0.0:24224' host="0.0.0.0" port=24224 weight=60 plugin_id="fluentdforward"
+2022-05-02 14:42:27 +0000 [debug]: [fluentdforward] rebuilding weight array lost_weight=0
+2022-05-02 14:42:27 +0000 [info]: adding match in @ERROR pattern="**" type="stdout"
+2022-05-02 14:42:27 +0000 [info]: adding source type="prometheus"
+2022-05-02 14:42:27 +0000 [info]: adding source type="prometheus_monitor"
+2022-05-02 14:42:27 +0000 [info]: adding source type="collected_tail_monitor"
+2022-05-02 14:42:27 +0000 [info]: adding source type="prometheus_output_monitor"
+2022-05-02 14:42:27 +0000 [info]: adding source type="tail"
+2022-05-02 14:42:27 +0000 [debug]: No fluent logger for internal event
+2022-05-02 14:42:27 +0000 [info]: starting fluentd worker pid=1 ppid=0 worker=0
+2022-05-02 14:42:27 +0000 [debug]: [fluentdforward] buffer started instance=69901144147080 stage_size=0 queue_size=0
+2022-05-02 14:42:27 +0000 [debug]: listening prometheus http server on https:://10.131.0.13:24231//metrics for worker0
+2022-05-02 14:42:27 +0000 [debug]: [fluentdforward] enqueue_thread actually running
+2022-05-02 14:42:27 +0000 [debug]: [fluentdforward] flush_thread actually running
+2022-05-02 14:42:27 +0000 [warn]: For security reason, setting private_key_passphrase is recommended when cert_path is specified
+2022-05-02 14:42:27 +0000 [debug]: [fluentdforward] flush_thread actually running
+2022-05-02 14:42:27 +0000 [debug]: Start async HTTP server listening https://10.131.0.13:24231
+2022-05-02 14:42:27 +0000 [debug]: Async::IO::SocketBinding to #<Addrinfo: 10.131.0.13:24231 TCP>
+2022-05-02 14:42:27 +0000 [info]: fluentd worker is now running worker=0
+2022-05-02 14:42:32 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = 
+2022-05-02 14:42:32 +0000 [info]: [container-input] following tail of /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:42:32 +0000 [info]: disable filter chain optimization because [Fluent::Plugin::RecordTransformerFilter, Fluent::Plugin::RecordTransformerFilter] uses `#filter_stream` method.
+2022-05-02 14:42:32 +0000 [info]: disable filter chain optimization because [Fluent::Plugin::KubernetesMetadataFilter, Fluent::Plugin::ParseJSONFieldFilter] uses `#filter_stream` method.
+2022-05-02 14:42:32 +0000 [debug]: [kubernetes-metadata] Exception 'HTTP status code 404, pods "functional" not found for GET https://kubernetes.default.svc/api/v1/namespaces/multi-line-test/pods/functional' encountered fetching pod metadata from Kubernetes API v1 endpoint https://kubernetes.default.svc
+2022-05-02 14:42:32 +0000 [debug]: [kubernetes-metadata] Exception 'HTTP status code 404, namespaces "multi-line-test" not found for GET https://kubernetes.default.svc/api/v1/namespaces/multi-line-test' encountered fetching namespace metadata from Kubernetes API v1 endpoint https://kubernetes.default.svc
+2022-05-02 14:42:37 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:42:42 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:42:47 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:42:52 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:42:57 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:02 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:07 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:12 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:17 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:22 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:27 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:32 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:37 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:42 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:47 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:52 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:43:57 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:02 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:07 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:12 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:17 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:22 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:27 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:32 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:37 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:42 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:47 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:52 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:44:57 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:02 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:07 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:12 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:17 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:22 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:27 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:32 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:37 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:42 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:47 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:52 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:45:57 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:02 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:07 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:12 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:17 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:22 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:27 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:32 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:37 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:42 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:47 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:52 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:46:57 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:02 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:07 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:12 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:17 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:22 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:27 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:32 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:37 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:42 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:47 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:52 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:47:57 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:48:02 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:48:07 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:48:12 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:48:17 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log
+2022-05-02 14:48:22 +0000 [debug]: [container-input] tailing paths: target = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log | existing = /var/log/pods/multi-line-test_functional_91aae67c-576f-4fe3-9f99-04f4795958ec/collector/0.log

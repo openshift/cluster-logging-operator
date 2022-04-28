@@ -31,12 +31,13 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 	)
 
 	var (
-		framework *functional.CollectorFunctionalFramework
-		// Template expected as output Log
-		outputLogTemplate = functional.NewApplicationLogTemplate()
+		framework         *functional.CollectorFunctionalFramework
+		outputLogTemplate types.ApplicationLog
 	)
 
 	BeforeEach(func() {
+		// Template expected as output Log
+		outputLogTemplate = functional.NewApplicationLogTemplate()
 		outputLogTemplate.ViaqIndexName = "app-write"
 		framework = functional.NewCollectorFunctionalFramework()
 	})
@@ -80,6 +81,57 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, ESIndexName)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(raw).To(Not(BeEmpty()))
+
+			// Parse log line
+			var logs []types.ApplicationLog
+			err = types.StrictlyParseLogs(raw, &logs)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			// Compare to expected template
+			outputTestLog := logs[0]
+			outputLogTemplate.ViaqIndexName = ""
+			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+		})
+		It("should not send logs to structuredTypeName for infrastructure sources", func() {
+			outputLogTemplate = functional.NewContainerInfrastructureLogTemplate()
+			outputLogTemplate.ViaqIndexName = "infra-write"
+			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameInfrastructure).
+				ToOutputWithVisitor(withStructuredTypeName,
+					logging.OutputTypeElasticsearch)
+			clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+			Expect(framework.Deploy()).To(BeNil())
+
+			applicationLogLine := functional.CreateAppLogFromJson(jsonLog)
+			Expect(framework.WriteMessagesToInfraContainerLog(applicationLogLine, 10)).To(BeNil())
+
+			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, outputLogTemplate.ViaqIndexName)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(raw).To(Not(BeEmpty()))
+
+			// Parse log line
+			var logs []types.ApplicationLog
+			err = types.StrictlyParseLogs(raw, &logs)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			// Compare to expected template
+			outputTestLog := logs[0]
+			outputLogTemplate.ViaqIndexName = ""
+			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+		})
+		It("should not send to k8s label structuredTypeKey for infrastructure sources", func() {
+			outputLogTemplate = functional.NewContainerInfrastructureLogTemplate()
+			outputLogTemplate.ViaqIndexName = "infra-write"
+			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameInfrastructure).
+				ToOutputWithVisitor(withK8sLabelsTypeKey, logging.OutputTypeElasticsearch)
+			clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+			visitors := append(framework.AddOutputContainersVisitors(), setPodLabelsVisitor)
+			Expect(framework.DeployWithVisitors(visitors)).To(BeNil())
+
+			applicationLogLine := functional.CreateAppLogFromJson(jsonLog)
+			Expect(framework.WriteMessagesToInfraContainerLog(applicationLogLine, 10)).To(BeNil())
+			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, "infra-write")
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
 

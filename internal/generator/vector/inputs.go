@@ -90,7 +90,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o generator.Options) []genera
 		r := Remap{
 			Desc:        `Rename log stream to "audit"`,
 			ComponentID: logging.InputNameAudit,
-			Inputs:      helpers.MakeInputs("host_audit_logs", "k8s_audit_logs", "openshift_audit_logs"),
+			Inputs:      helpers.MakeInputs("host_audit_logs", "k8s_audit_logs", "openshift_audit_logs", "ovn_audit_logs"),
 			VRL:         AddLogTypeAudit,
 		}
 		el = append(el, r)

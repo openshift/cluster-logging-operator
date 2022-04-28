@@ -68,28 +68,33 @@ type CollectorFunctionalFramework struct {
 
 func NewCollectorFunctionalFramework() *CollectorFunctionalFramework {
 	test := client.NewTest()
-	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0)
+	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0, logging.LogCollectionTypeFluentd)
+}
+
+func NewCollectorFunctionalFrameworkUsingCollector(logCollectorType logging.LogCollectionType) *CollectorFunctionalFramework {
+	test := client.NewTest()
+	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0, logCollectorType)
 }
 
 func NewFluentdFunctionalFrameworkForTest(t *testing.T) *CollectorFunctionalFramework {
-	return NewCollectorFunctionalFrameworkUsing(client.ForTest(t), func() {}, 0)
+	return NewCollectorFunctionalFrameworkUsing(client.ForTest(t), func() {}, 0, logging.LogCollectionTypeFluentd)
 }
 
-func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosity int) *CollectorFunctionalFramework {
+func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbosity int, collectorType logging.LogCollectionType) *CollectorFunctionalFramework {
 	if level, found := os.LookupEnv("LOG_LEVEL"); found {
 		if i, err := strconv.Atoi(level); err == nil {
 			verbosity = i
 		}
 	}
-
 	var collectorImpl CollectorFramework = &frameworkfluent.FluentdCollector{
 		Test: t,
 	}
-	if collectorType, found := os.LookupEnv("COLLECTOR_IMPL"); found && collectorType == string(logging.LogCollectionTypeVector) {
+	if collectorType == logging.LogCollectionTypeVector {
 		collectorImpl = &frameworkvector.VectorCollector{
 			Test: t,
 		}
 	}
+
 	log.Info("Using collector", "impl", collectorImpl.String())
 
 	log.MustInit("functional-framework")

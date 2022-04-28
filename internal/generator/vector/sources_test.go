@@ -60,6 +60,7 @@ pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 
 [sources.raw_journal_logs]
 type = "journald"
+journal_directory = "/var/log/journal"
 `,
 		}),
 		Entry("Only Audit", generator.ConfGenerateTest{
@@ -119,6 +120,7 @@ pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 
 [sources.raw_journal_logs]
 type = "journald"
+journal_directory = "/var/log/journal"
 
 # Logs from host audit
 [sources.host_audit_logs]

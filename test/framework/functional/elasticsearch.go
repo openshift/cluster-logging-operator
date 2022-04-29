@@ -12,7 +12,8 @@ import (
 
 var ElasticIndex = map[string]string{
 	logging.InputNameApplication:    "app-write",
-	logging.InputNameInfrastructure: "app-infra",
+	logging.InputNameAudit:          "audit-write",
+	logging.InputNameInfrastructure: "infra-write",
 }
 
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string) (result string, err error) {

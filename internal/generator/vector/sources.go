@@ -57,6 +57,12 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []g
 				Desc:         "Logs from openshift audit",
 				TemplateName: "inputSourceOpenShiftAuditTemplate",
 				TemplateStr:  source.OpenshiftAuditLogTemplate,
+			},
+			source.OVNAuditLog{
+				ComponentID:  "ovn_audit_logs",
+				Desc:         "Logs from ovn audit",
+				TemplateName: "inputSourceOVNAuditTemplate",
+				TemplateStr:  source.OVNAuditLogTemplate,
 			})
 	}
 	return el

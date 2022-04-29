@@ -42,7 +42,7 @@ func (r *ClusterRunner) Pod() string {
 
 func (r *ClusterRunner) Deploy() {
 	testclient := client.NewNamesapceClient()
-	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity)
+	r.framework = functional.NewCollectorFunctionalFrameworkUsing(&testclient.Test, testclient.Close, r.Verbosity, logging.LogCollectionTypeFluentd)
 	r.framework.Conf = r.CollectorConfig
 
 	functional.NewClusterLogForwarderBuilder(r.framework.Forwarder).

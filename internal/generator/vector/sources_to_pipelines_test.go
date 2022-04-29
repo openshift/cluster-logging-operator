@@ -58,7 +58,7 @@ source = """
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
 source = """
   .log_type = "audit"
 """
@@ -118,7 +118,7 @@ source = """
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
 source = """
   .log_type = "audit"
 """

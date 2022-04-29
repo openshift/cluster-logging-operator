@@ -119,7 +119,13 @@ include = ["/var/log/kube-apiserver/audit.log"]
 [sources.openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
-include = ["/var/log/oauth-apiserver.audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log"]
+
+# Logs from ovn audit
+[sources.ovn_audit_logs]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/ovn/acl-audit-log.log"]
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -181,7 +187,7 @@ source = """
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
 source = """
   .log_type = "audit"
 """
@@ -307,7 +313,13 @@ include = ["/var/log/kube-apiserver/audit.log"]
 [sources.openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
-include = ["/var/log/oauth-apiserver.audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log"]
+
+# Logs from ovn audit
+[sources.ovn_audit_logs]
+type = "file"
+ignore_older_secs = 600
+include = ["/var/log/ovn/acl-audit-log.log"]
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -369,7 +381,7 @@ source = """
 # Rename log stream to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs"]
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
 source = """
   .log_type = "audit"
 """

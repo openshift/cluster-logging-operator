@@ -512,19 +512,19 @@ var _ = Describe("Generating fluentd config", func() {
     process_kubernetes_events 'false'
     <level>
       name warn
-      match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+      match 'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"'
     </level>
     <level>
       name info
-      match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+      match 'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"'
     </level>
     <level>
       name error
-      match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+      match 'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
       name debug
-      match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      match 'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
     <formatter>
       tag "system.var.log**"
@@ -1292,19 +1292,19 @@ var _ = Describe("Generating fluentd config", func() {
     process_kubernetes_events 'false'
     <level>
       name warn
-      match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+      match 'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"'
     </level>
     <level>
       name info
-      match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+      match 'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"'
     </level>
     <level>
       name error
-      match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+      match 'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
       name debug
-      match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      match 'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
     <formatter>
       tag "system.var.log**"
@@ -2057,19 +2057,19 @@ var _ = Describe("Generating fluentd config", func() {
     process_kubernetes_events 'false'
     <level>
       name warn
-      match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+      match 'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"'
     </level>
     <level>
       name info
-      match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+      match 'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"'
     </level>
     <level>
       name error
-      match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+      match 'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
       name debug
-      match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      match 'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
     <formatter>
       tag "system.var.log**"
@@ -2767,19 +2767,19 @@ var _ = Describe("Generating fluentd config", func() {
     process_kubernetes_events 'false'
     <level>
       name warn
-      match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+      match 'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"'
     </level>
     <level>
       name info
-      match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+      match 'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"'
     </level>
     <level>
       name error
-      match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+      match 'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
       name debug
-      match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      match 'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
     <formatter>
       tag "system.var.log**"
@@ -3321,19 +3321,19 @@ var _ = Describe("Generating fluentd config", func() {
     process_kubernetes_events 'false'
     <level>
       name warn
-      match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+      match 'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"'
     </level>
     <level>
       name info
-      match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+      match 'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"'
     </level>
     <level>
       name error
-      match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+      match 'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
       name debug
-      match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      match 'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
     <formatter>
       tag "system.var.log**"
@@ -4322,19 +4322,19 @@ inputs:
     process_kubernetes_events 'false'
     <level>
       name warn
-      match 'Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn"'
+      match 'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"'
     </level>
     <level>
       name info
-      match 'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'
+      match 'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"'
     </level>
     <level>
       name error
-      match 'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'
+      match 'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'
     </level>
     <level>
       name debug
-      match 'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'
+      match 'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
     <formatter>
       tag "system.var.log**"

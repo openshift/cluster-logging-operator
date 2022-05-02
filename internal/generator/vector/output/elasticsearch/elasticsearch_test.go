@@ -820,6 +820,8 @@ source = """
     val = .kubernetes.labels.mylabel
     if val != null {
       .write_index, err = "app-" + val + "-write"
+    } else {
+      .write_index = "app-myindex-write"
     }
   }
 """

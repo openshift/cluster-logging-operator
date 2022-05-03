@@ -12,13 +12,13 @@ import (
 const (
 	FixLogLevel = `
 level = "unknown"
-if match!(.message,r'(Warning|WARN|W[0-9]+|level=warn|Value:warn|"level":"warn")'){
+if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn")'){
   level = "warn"
-} else if match!(.message, r'Info|INFO|I[0-9]+|level=info|Value:info|"level":"info"'){
+} else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"'){
   level = "info"
-} else if match!(.message, r'Error|ERROR|E[0-9]+|level=error|Value:error|"level":"error"'){
+} else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
   level = "error"
-} else if match!(.message, r'Debug|DEBUG|D[0-9]+|level=debug|Value:debug|"level":"debug"'){
+} else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
   level = "debug"
 }
 .level = level

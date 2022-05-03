@@ -3,6 +3,7 @@ package fluent_test
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -126,31 +127,34 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		clf := f.ClusterLogForwarder
 		// Secure URL without secret is invalid - need CAr to authenticate server.
 		s := f.Receiver.Sources["server-auth"]
-		clf.Spec.Outputs = append(clf.Spec.Outputs, loggingv1.OutputSpec{
-			Name: s.Name,
-			Type: "fluentdForward",
-			URL:  fmt.Sprintf("tls://%v:%v", s.Host(), s.Port),
-		})
+		builder := functional.NewClusterLogForwarderBuilder(clf)
+		builder.FromInput(loggingv1.InputNameApplication).
+			ToOutputWithVisitor(func(spec *loggingv1.OutputSpec) {
+				spec.Name = s.Name
+				spec.Type = loggingv1.OutputTypeFluentdForward
+				spec.URL = fmt.Sprintf("tls://%v:%v", s.Host(), s.Port)
+			}, s.Name)
 
 		// shared-key server but no shared-key on Output.
 		s = f.Receiver.Sources["server-auth-shared"]
-		clf.Spec.Outputs = append(clf.Spec.Outputs, loggingv1.OutputSpec{
-			Name: s.Name,
-			Type: "fluentdForward",
-			URL:  fmt.Sprintf("tls://%v:%v", s.Host(), s.Port),
-			// Secret lacks sharedKey
-			Secret: &loggingv1.OutputSecretSpec{Name: "server-auth"},
-		})
+		builder.FromInput(loggingv1.InputNameApplication).
+			ToOutputWithVisitor(func(spec *loggingv1.OutputSpec) {
+				spec.Name = s.Name
+				spec.Type = loggingv1.OutputTypeFluentdForward
+				spec.URL = fmt.Sprintf("tls://%v:%v", s.Host(), s.Port)
+				spec.Secret = &loggingv1.OutputSecretSpec{Name: "server-auth"}
+			}, s.Name)
 
 		// Mutual-auth server but no client certificate.
 		s = f.Receiver.Sources["mutual-auth"]
-		clf.Spec.Outputs = append(clf.Spec.Outputs, loggingv1.OutputSpec{
-			Name: s.Name,
-			Type: "fluentdForward",
-			URL:  fmt.Sprintf("tls://%v:%v", s.Host(), s.Port),
-			// Secret lacks client certificate
-			Secret: &loggingv1.OutputSecretSpec{Name: "server-auth"},
-		})
+		builder.FromInput(loggingv1.InputNameApplication).
+			ToOutputWithVisitor(func(spec *loggingv1.OutputSpec) {
+				spec.Name = s.Name
+				spec.Type = loggingv1.OutputTypeFluentdForward
+				spec.URL = fmt.Sprintf("tls://%v:%v", s.Host(), s.Port)
+				spec.Secret = &loggingv1.OutputSecretSpec{Name: "server-auth"}
+			}, s.Name)
+
 		f.Create(c.Client)
 		for _, s := range f.Receiver.Sources {
 			Expect(s.HasOutput()).To(BeFalse(), s.Name)

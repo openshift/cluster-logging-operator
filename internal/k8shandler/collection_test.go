@@ -35,6 +35,9 @@ var _ = Describe("Reconciling", func() {
 			},
 			Spec: loggingv1.ClusterLoggingSpec{
 				ManagementState: loggingv1.ManagementStateManaged,
+				LogStore: &loggingv1.LogStoreSpec{
+					Type: loggingv1.LogStoreTypeElasticsearch,
+				},
 				Collection: &loggingv1.CollectionSpec{
 					Logs: loggingv1.LogCollectionSpec{
 						Type:        loggingv1.LogCollectionTypeFluentd,

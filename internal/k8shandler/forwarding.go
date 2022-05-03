@@ -73,26 +73,30 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	err = g.Verify(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
-		return "",
-			clusterRequest.UpdateCondition(
-				logging.CollectorDeadEnd,
-				"ClusterLogForwarder input validation error",
-				"ClusterLogForwarder input validation error",
-				corev1.ConditionTrue,
-			)
+		if updateError := clusterRequest.UpdateCondition(
+			logging.CollectorDeadEnd,
+			"ClusterLogForwarder input validation error",
+			"ClusterLogForwarder input validation error",
+			corev1.ConditionTrue,
+		); updateError != nil {
+			log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
+		}
+		return "", err
 	}
 
 	generatedConfig, err := g.GenerateConf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
-		return "",
-			clusterRequest.UpdateCondition(
-				logging.CollectorDeadEnd,
-				"Collectors are defined but there is no defined LogStore or LogForward destinations",
-				"No defined logstore destination",
-				corev1.ConditionTrue,
-			)
+		if updateError := clusterRequest.UpdateCondition(
+			logging.CollectorDeadEnd,
+			"Collectors are defined but there is no defined LogStore or LogForward destinations",
+			"No defined logstore destination",
+			corev1.ConditionTrue,
+		); updateError != nil {
+			log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
+		}
+		return "", err
 	}
 	// else
 	err = clusterRequest.UpdateCondition(

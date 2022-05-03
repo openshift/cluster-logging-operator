@@ -18,7 +18,6 @@ import (
 	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/yaml"
@@ -720,112 +719,76 @@ var _ = Describe("#applyOutputDefaults", func() {
 	})
 })
 
-func TestClusterLoggingRequest_generateCollectorConfig(t *testing.T) {
-	_ = logging.SchemeBuilder.AddToScheme(scheme.Scheme)
+var _ = DescribeTable("#generateCollectorConfig",
+	func(cluster logging.ClusterLogging, forwardSpec logging.ClusterLogForwarderSpec) {
+		clusterRequest := &ClusterLoggingRequest{
+			Cluster: &cluster,
+			ForwarderRequest: &logging.ClusterLogForwarder{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      constants.SingletonName,
+					Namespace: constants.OpenshiftNS,
+				},
+			},
+			ForwarderSpec: forwardSpec,
+		}
 
-	type fields struct {
-		client           client.Client
-		cluster          *logging.ClusterLogging
-		ForwarderRequest *logging.ClusterLogForwarder
-		ForwarderSpec    logging.ClusterLogForwarderSpec
-	}
-	tests := []struct {
-		name       string
-		fields     fields
-		wantConfig string
-		wantErr    bool
-	}{
-		{
-			name: "Valid collector config",
-			fields: fields{
-				cluster: &logging.ClusterLogging{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "instance",
-						Namespace: "openshift-logging",
-					},
-					Spec: logging.ClusterLoggingSpec{
-						LogStore: nil,
-						Collection: &logging.CollectionSpec{
-							Logs: logging.LogCollectionSpec{
-								Type: "fluentd",
-								FluentdSpec: logging.FluentdSpec{
-									Resources: &core.ResourceRequirements{
-										Limits: core.ResourceList{
-											"Memory": fluentd.DefaultMemory,
-										},
-										Requests: core.ResourceList{
-											"Memory": fluentd.DefaultMemory,
-										},
-									},
-									NodeSelector: map[string]string{"123": "123"},
-								},
+		clusterRequest.Client = fake.NewFakeClient(clusterRequest.Cluster) //nolint
+
+		_, err := clusterRequest.generateCollectorConfig()
+		Expect(err).To(BeNil(), "Generating the collector config should not produce an error: %s=%s %s=%s", "clusterRequest", test.YAMLString(clusterRequest))
+	},
+	Entry("Valid collector config", logging.ClusterLogging{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.SingletonName,
+			Namespace: constants.OpenshiftNS,
+		},
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: nil,
+			Collection: &logging.CollectionSpec{
+				Logs: logging.LogCollectionSpec{
+					Type: "fluentd",
+					FluentdSpec: logging.FluentdSpec{
+						Resources: &core.ResourceRequirements{
+							Limits: core.ResourceList{
+								"Memory": fluentd.DefaultMemory,
+							},
+							Requests: core.ResourceList{
+								"Memory": fluentd.DefaultMemory,
 							},
 						},
+						NodeSelector: map[string]string{"123": "123"},
 					},
 				},
-				ForwarderRequest: &logging.ClusterLogForwarder{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "instance",
-						Namespace: "openshift-logging",
-					},
-				},
-				ForwarderSpec: logging.ClusterLogForwarderSpec{},
 			},
 		},
-		{
-			name: "Collection not specified. Shouldn't crash",
-			fields: fields{
-				cluster: &logging.ClusterLogging{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "instance",
-						Namespace: "openshift-logging",
-					},
-					Spec: logging.ClusterLoggingSpec{
-						LogStore: nil,
-					},
-				},
-				ForwarderRequest: &logging.ClusterLogForwarder{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "instance",
-						Namespace: "openshift-logging",
-					},
-				},
-				ForwarderSpec: logging.ClusterLogForwarderSpec{},
+	}, logging.ClusterLogForwarderSpec{
+		Inputs: []logging.InputSpec{
+			{Name: logging.InputNameInfrastructure},
+		},
+		Outputs: []logging.OutputSpec{
+			{
+				Name: "foo",
+				Type: logging.OutputTypeFluentdForward,
+				URL:  "tcp://someplace.domain.com",
 			},
 		},
-	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			clusterRequest := &ClusterLoggingRequest{
-				Client:           tt.fields.client,
-				Cluster:          tt.fields.cluster,
-				ForwarderRequest: tt.fields.ForwarderRequest,
-				ForwarderSpec:    tt.fields.ForwarderSpec,
-			}
-
-			config := &core.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "secure-forward",
-					Namespace: tt.fields.cluster.Namespace,
-				},
-				Data:       map[string]string{},
-				BinaryData: nil,
-			}
-
-			clusterRequest.Client = fake.NewFakeClient(tt.fields.cluster, config) //nolint
-
-			gotConfig, err := clusterRequest.generateCollectorConfig()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("generateCollectorConfig() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if gotConfig != tt.wantConfig {
-				t.Errorf("generateCollectorConfig() gotConfig = %v, want %v", gotConfig, tt.wantConfig)
-			}
-		})
-	}
-}
+		Pipelines: []logging.PipelineSpec{
+			{
+				InputRefs:  []string{logging.InputNameInfrastructure},
+				OutputRefs: []string{"foo"},
+			},
+		},
+	}),
+	Entry("Collection not specified. Shouldn't crash", logging.ClusterLogging{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      constants.SingletonName,
+			Namespace: constants.OpenshiftNS,
+		},
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: nil,
+		},
+	}, logging.ClusterLogForwarderSpec{}),
+)
 
 var _ = DescribeTable("Normalizing round trip of valid YAML specs",
 

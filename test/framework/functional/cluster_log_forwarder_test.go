@@ -26,11 +26,14 @@ var _ = Describe("ClustLogForwarderBuilder", func() {
 			pipelineBuilder.ToElasticSearchOutput()
 			pipelineBuilder.ToSyslogOutput()
 
-			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`outputs:
+			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:
+- name: application
+outputs:
 - name: elasticsearch
   type: elasticsearch
   url: http://0.0.0.0:9200
 - name: syslog
+  syslog: {}
   type: syslog
   url: tcp://0.0.0.0:24224
 pipelines:

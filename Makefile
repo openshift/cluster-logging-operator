@@ -183,7 +183,7 @@ test-functional-benchmarker: bin/functional-benchmarker
 
 test-unit: test-forwarder-generator
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	go test -cover -race ./internal/... ./test ./test/helpers ./test/matchers ./test/runtime
+	go test -cover -race ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'`
 
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)

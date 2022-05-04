@@ -48,6 +48,7 @@ mkdir -p /var/log/pods/%s_functional_123456789-0/loader-0
 func (c *FluentdCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, nodeName string) *runtime.ContainerBuilder {
 	return b.AddEnvVar("LOG_LEVEL", adaptLogLevel()).
 		AddEnvVarFromFieldRef("POD_IP", "status.podIP").
+		AddEnvVarFromFieldRef("K8S_NODE_NAME", "spec.nodeName").
 		AddEnvVar("NODE_NAME", nodeName).
 		AddVolumeMount("config", "/etc/fluent/configs.d/user", "", true).
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).

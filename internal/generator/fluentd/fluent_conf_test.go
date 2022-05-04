@@ -439,8 +439,8 @@ var _ = Describe("Generating fluentd config", func() {
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
     annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
+    allow_orphans false
     cache_size '1000'
-    watch 'false'
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -1253,8 +1253,8 @@ var _ = Describe("Generating fluentd config", func() {
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
+    allow_orphans false
     cache_size '1000'
-    watch 'false'
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -2052,8 +2052,8 @@ var _ = Describe("Generating fluentd config", func() {
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
+    allow_orphans false
     cache_size '1000'
-    watch 'false'
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -2796,8 +2796,8 @@ var _ = Describe("Generating fluentd config", func() {
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
+    allow_orphans false
     cache_size '1000'
-    watch 'false'
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -3336,8 +3336,8 @@ var _ = Describe("Generating fluentd config", func() {
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
+    allow_orphans false
     cache_size '1000'
-    watch 'false'
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -4419,8 +4419,8 @@ inputs:
     @type kubernetes_metadata
     kubernetes_url 'https://kubernetes.default.svc'
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
+	allow_orphans false
     cache_size '1000'
-    watch 'false'
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>

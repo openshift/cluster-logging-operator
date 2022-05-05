@@ -103,7 +103,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		corev1.ConditionFalse,
 	)
 	log.V(3).Info("ClusterLogForwarder generated config", generatedConfig)
-	return generatedConfig, err
+	return fluentd.FormatFluentConf(generatedConfig), err
 }
 
 func (clusterRequest *ClusterLoggingRequest) readClusterName() (string, error) {

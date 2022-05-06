@@ -1,4 +1,4 @@
-package forwarder
+package fluentd
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -13,11 +13,11 @@ var _ = Describe("formatFluentConf", func() {
 		"  #flatten labels to prevent field explosion in ES\n  <filter **>\n    @type record_transformer\n" +
 		"    enable_ruby true\n    <record>\n      foo bar\n    </record>\n  </filter>\n</label>"
 	It("should do nothing for and empty string", func() {
-		Expect(formatFluentConf("")).To(BeEmpty())
+		Expect(FormatFluentConf("")).To(BeEmpty())
 	})
 
 	It("should format the fluent configuration", func() {
-		Expect(formatFluentConf(unformatted)).To(Equal(`
+		Expect(FormatFluentConf(unformatted)).To(Equal(`
 <system>
   log_level "#{ENV['LOG_LEVEL'] || 'warn'}"
 </system>

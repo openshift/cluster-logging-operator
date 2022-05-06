@@ -2,8 +2,6 @@ package cloudwatch
 
 import (
 	"fmt"
-	"strings"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
@@ -11,6 +9,7 @@ import (
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
+	"strings"
 )
 
 type CloudWatch struct {
@@ -24,8 +23,6 @@ type CloudWatch struct {
 	Host           string
 	GroupBy        string
 	LogGroupPrefix string
-	SecurityConfig Element
-	EndpointConfig Element
 }
 
 func (e CloudWatch) Name() string {
@@ -51,7 +48,7 @@ stream_name = "{{"{{ Cw_streamName }}"}}"
 `
 }
 
-func AddCwGroupNameCw_streamName(groupbytype string, logGroupPrefix string, id string, inputs []string) Element {
+func AddCWGroupNameAndStreamName(groupbytype string, logGroupPrefix string, id string, inputs []string) Element {
 	return RemapCW{
 		Desc:           "Adding group_name and stream_name field",
 		ComponentID:    id,
@@ -110,7 +107,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		}
 		Region = o.Cloudwatch.Region
 		if Region == "" {
-			Region = "us-east-1"
+			return nil
 		}
 	}
 
@@ -121,11 +118,10 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 	outputs = MergeElements(outputs,
 		[]Element{
-			AddCwGroupNameCw_streamName(groupbytype, logGroupPrefix, ID(outputName, "add_grpandstream"), inputs),
+			AddCWGroupNameAndStreamName(groupbytype, logGroupPrefix, ID(outputName, "add_grpandstream"), inputs),
 			Output(o, []string{ID(outputName, "add_grpandstream")}, secret, op, Region),
 		},
 		AWSConf(o, secret),
-		BasicAuth(o, secret),
 	)
 
 	return outputs
@@ -144,36 +140,20 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 func AWSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
 	if o.Secret != nil {
-		hasTLS := false
+		hasAWScred := false
 		if o.Name == logging.OutputNameDefault || security.HasAwsCredentials(secret) {
-			hasTLS = true
+			hasAWScred = true
+			keyId := security.GetFromSecret(secret, "aws_access_key_id")
+			keySecret := security.GetFromSecret(secret, "aws_secret_access_key")
 			kc := AWSKey{
-				AWSAccessKeyID:     security.GetFromSecret(secret, "aws_access_key_id"),
-				AWSSecretAccessKey: security.GetFromSecret(secret, "aws_secret_access_key"),
+				AWSAccessKeyID:     strings.TrimSpace(keyId),
+				AWSSecretAccessKey: strings.TrimSpace(keySecret),
 			}
 			conf = append(conf, kc)
 		}
-		if !hasTLS {
+		if !hasAWScred {
 			return []Element{}
 		}
 	}
-	return conf
-}
-
-//not sure if required for cloudwatch?
-func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
-	conf := []Element{}
-
-	if o.Secret != nil {
-		hasBasicAuth := false
-		conf = append(conf, BasicAuthConf{
-			Desc:        "Basic Auth Config",
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-		})
-		if !hasBasicAuth {
-			return []Element{}
-		}
-	}
-
 	return conf
 }

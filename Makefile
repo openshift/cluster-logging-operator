@@ -23,6 +23,7 @@ export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.5
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.21-rh
+IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.0
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
@@ -85,7 +86,7 @@ run:
 	@mkdir -p $(CURDIR)/tmp
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
-	LOGFILEMETRICEXPORTER_IMAGE=quay.io/openshift-logging/log-file-metric-exporter:1.0 \
+	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -168,8 +169,12 @@ deploy-example: deploy
 test-functional: test-functional-benchmarker
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) go test -cover -race ./test/helpers/...
+	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
 test-forwarder-generator: bin/forwarder-generator
@@ -182,7 +187,9 @@ test-functional-benchmarker: bin/functional-benchmarker
 .PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator
+	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -cover -race ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'`
 
 test-cluster:

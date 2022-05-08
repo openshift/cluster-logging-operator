@@ -88,6 +88,8 @@ const (
 
 	ContainerLogDir = "/var/log/containers"
 	PodLogDir       = "/var/log/pods"
+
+	EnableMetrics = "enable-metrics"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

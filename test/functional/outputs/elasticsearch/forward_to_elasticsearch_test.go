@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -9,30 +10,25 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
-var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForward Output to ElasticSearch", func() {
+var _ = Describe("[Functional][Outputs][ElasticSearch] Output to ElasticSearch", func() {
 
 	var (
 		framework *functional.CollectorFunctionalFramework
-
-		// Template expected as output Log
-		outputLogTemplate = functional.NewApplicationLogTemplate()
 	)
+	AfterEach(func() {
+		framework.Cleanup()
+	})
+	DescribeTable("Functional test", func(collectorType logging.LogCollectionType) {
+		// Template expected as output Log
+		outputLogTemplate := functional.NewApplicationLogTemplate(collectorType)
 
-	BeforeEach(func() {
-		outputLogTemplate.ViaqIndexName = "app-write"
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(collectorType)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToElasticSearchOutput()
 		Expect(framework.Deploy()).To(BeNil())
 		Expect(framework.WritesApplicationLogs(1)).To(BeNil())
-	})
-	AfterEach(func() {
-		framework.Cleanup()
-	})
-
-	Context("when sending to ElasticSearch "+functional.ElasticSearchTag+" protocol", func() {
-		It("should  be compatible", func() {
+		Context("when sending to ElasticSearch "+functional.ElasticSearchTag+" protocol", func() {
 			raw, err := framework.GetLogsFromElasticSearch(logging.OutputTypeElasticsearch, logging.InputNameApplication)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))
@@ -46,5 +42,8 @@ var _ = Describe("[VECTOR_READY][Functional][Outputs][ElasticSearch] FluentdForw
 			outputLogTemplate.ViaqIndexName = ""
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
-	})
+	},
+		Entry("with fluentd collector", logging.LogCollectionTypeFluentd),
+		Entry("with vector collector", logging.LogCollectionTypeVector),
+	)
 })

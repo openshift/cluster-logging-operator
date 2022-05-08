@@ -1,8 +1,10 @@
 package normalization
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional/fluentd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -37,10 +39,11 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 
 		// Template expected as output Log
-		var outputLogTemplate = functional.NewApplicationLogTemplate()
+		var outputLogTemplate = fluentd.NewApplicationLogTemplate()
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = message
 		outputLogTemplate.Level = expLevel
+		outputLogTemplate.ViaqIndexName = ""
 
 		// Write log line as input to fluentd
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)

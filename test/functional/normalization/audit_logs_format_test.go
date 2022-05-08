@@ -2,9 +2,11 @@ package normalization
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional/fluentd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -43,7 +45,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					Level:            "debug",
 					Timestamp:        time.Time{},
 					ViaqMsgID:        "*",
-					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+					PipelineMetadata: fluentd.TemplateForAnyPipelineMetadata,
 				},
 				K8SAuditLevel: "debug",
 			}
@@ -77,7 +79,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				},
 				Timestamp:        testTime,
 				ViaqMsgID:        "*",
-				PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+				PipelineMetadata: fluentd.TemplateForAnyPipelineMetadata,
 			}
 			// Write log line as input to fluentd
 			Expect(framework.WriteMessagesToAuditLog(auditLogLine, 10)).To(BeNil())
@@ -108,7 +110,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					Sequence: types.NewOptionalInt(""),
 				},
 				ViaqMsgID:        "*",
-				PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+				PipelineMetadata: fluentd.TemplateForAnyPipelineMetadata,
 			}
 			outputLogTemplate.PipelineMetadata.Collector.ReceivedAt = time.Time{}
 			// Write log line as input to fluentd

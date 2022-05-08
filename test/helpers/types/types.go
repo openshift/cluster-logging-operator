@@ -31,7 +31,8 @@ type ContainerLog struct {
 	Hostname         string                 `json:"hostname"`
 	PipelineMetadata PipelineMetadata       `json:"pipeline_metadata"`
 	LogType          string                 `json:"log_type,omitempty"`
-	ViaqIndexName    string                 `json:"viaq_index_name"`
+	ViaqIndexName    string                 `json:"viaq_index_name,omitempty"`
+	WriteIndex       string                 `json:"write_index,omitempty"`
 	ViaqMsgID        string                 `json:"viaq_msg_id"`
 	Openshift        OpenshiftMeta          `json:"openshift"`
 	Structured       map[string]interface{} `json:"structured"`
@@ -44,12 +45,14 @@ type Docker struct {
 type Kubernetes struct {
 	Annotations       map[string]string `json:"annotations,omitempty"`
 	ContainerName     string            `json:"container_name,omitempty"`
+	ContainerID       string            `json:"container_id,omitempty"`
 	NamespaceName     string            `json:"namespace_name,omitempty"`
 	PodName           string            `json:"pod_name,omitempty"`
-	ContainerImage    string            `json:"container_image,omitempty"`
-	ContainerImageID  string            `json:"container_image_id,omitempty"`
+	PodNodeName       string            `json:"pod_node_name,omitempty"`
 	PodID             string            `json:"pod_id,omitempty"`
 	PodIP             string            `json:"pod_ip,omitempty"`
+	ContainerImage    string            `json:"container_image,omitempty"`
+	ContainerImageID  string            `json:"container_image_id,omitempty"`
 	Host              string            `json:"host,omitempty"`
 	MasterURL         string            `json:"master_url,omitempty"`
 	NamespaceID       string            `json:"namespace_id,omitempty"`

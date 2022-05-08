@@ -49,7 +49,9 @@ func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secr
 			outputs = generator.MergeElements(outputs, elasticsearch.Conf(o, inputs, secret, op))
 		}
 	}
-	outputs = append(outputs, PrometheusOutput(PrometheusOutputSinkName, []string{InternalMetricsSourceName}))
+	if _, ok := op[constants.EnableMetrics]; ok {
+		outputs = append(outputs, PrometheusOutput(PrometheusOutputSinkName, []string{InternalMetricsSourceName}))
+	}
 	return outputs
 }
 

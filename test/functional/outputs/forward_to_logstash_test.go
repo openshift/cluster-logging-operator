@@ -1,9 +1,11 @@
 package outputs
 
 import (
+	"path"
+
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"path"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional/fluentd"
 
 	"github.com/ViaQ/logerr/log"
 	. "github.com/onsi/ginkgo"
@@ -78,7 +80,7 @@ output {
 
 		// Template expected as output Log
 		outputLogTemplate = LogstashApplicationLog{
-			ApplicationLog: functional.NewApplicationLogTemplate(),
+			ApplicationLog: fluentd.NewApplicationLogTemplate(),
 			Tags:           []string{},
 			Version:        "1",
 			Host:           "*",
@@ -102,6 +104,7 @@ output {
 
 	Context("when sending to Logstash using fluent's forward protocol", func() {
 		It("should  be compatible", func() {
+			outputLogTemplate.ApplicationLog.ViaqIndexName = ""
 			raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(raw).To(Not(BeEmpty()))

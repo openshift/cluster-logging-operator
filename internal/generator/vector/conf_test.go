@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 
@@ -21,7 +22,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 	var f = func(testcase generator.ConfGenerateTest) {
 		g := generator.MakeGenerator()
 		if testcase.Options == nil {
-			testcase.Options = generator.Options{}
+			testcase.Options = generator.Options{constants.EnableMetrics: "true"}
 		}
 		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, testcase.Options))
 		conf, err := g.GenerateConf(e...)
@@ -98,6 +99,8 @@ auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
+pod_annotation_fields.pod_annotations = ""
+pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 
 [sources.raw_journal_logs]
 type = "journald"
@@ -153,6 +156,10 @@ source = """
   del(.stream)
   
   del(.kubernetes.pod_ips)
+  
+  ts = .timestamp
+  del(.timestamp)
+  ."@timestamp" = ts
 """
 
 [transforms.journal_logs]
@@ -292,6 +299,8 @@ auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
+pod_annotation_fields.pod_annotations = ""
+pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 
 [sources.raw_journal_logs]
 type = "journald"
@@ -347,6 +356,10 @@ source = """
   del(.stream)
   
   del(.kubernetes.pod_ips)
+  
+  ts = .timestamp
+  del(.timestamp)
+  ."@timestamp" = ts
 """
 
 [transforms.journal_logs]

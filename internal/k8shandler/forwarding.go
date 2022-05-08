@@ -67,6 +67,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	if debug, ok := clusterRequest.ForwarderRequest.Annotations[AnnotationDebugOutput]; ok && strings.ToLower(debug) == "true" {
 		op[helpers.EnableDebugOutput] = "true"
 	}
+	op[constants.EnableMetrics] = true
 
 	var collectorType = clusterRequest.Cluster.Spec.Collection.Logs.Type
 	g := forwardergenerator.New(collectorType)

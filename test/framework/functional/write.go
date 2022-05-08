@@ -3,14 +3,19 @@ package functional
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/ViaQ/logerr/log"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"path/filepath"
 	"time"
+
+	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+)
+
+const (
+	logGenContainerName = constants.CollectorName
 )
 
 func (f *CollectorFunctionalFramework) WriteMessagesToNamespace(msg, namespace string, numOfLogs int) error {
-	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], namespace, f.Pod.Name, f.Pod.UID, logGenContainerName)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
@@ -25,7 +30,7 @@ func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLogForContainer
 // enabling the mock api adapter to get metadata for infrastructure logs since the path does not match a pod
 // running on the cluster (e.g framework.VisitConfig = functional.TestAPIAdapterConfigVisitor)
 func (f *CollectorFunctionalFramework) WriteMessagesToInfraContainerLog(msg string, numOfLogs int) error {
-	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], "openshift-fake-infra", f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], "openshift-fake-infra", f.Pod.Name, f.Pod.UID, logGenContainerName)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
@@ -99,7 +104,7 @@ func (f *CollectorFunctionalFramework) WritesApplicationLogs(numOfLogs int) erro
 
 func (f *CollectorFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size int) error {
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
-	file := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	file := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, logGenContainerName)
 	logPath := filepath.Dir(file)
 	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", logPath, size, numOfLogs, msg, file))
 	log.V(3).Info("CollectorFunctionalFramework.WritesNApplicationLogsOfSize", "result", result, "err", err)

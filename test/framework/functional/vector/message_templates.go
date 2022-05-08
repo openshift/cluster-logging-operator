@@ -1,4 +1,4 @@
-package functional
+package vector
 
 import (
 	"time"
@@ -17,32 +17,28 @@ var (
 		},
 	}
 	templateForAnyKubernetes = types.Kubernetes{
-		ContainerName:    "*",
-		PodName:          "*",
-		NamespaceName:    "*",
-		NamespaceID:      "*",
-		ContainerImage:   "*",
-		ContainerImageID: "*",
-		PodID:            "*",
-		PodIP:            "**optional**",
-		Host:             "*",
-		MasterURL:        "*",
-		FlatLabels:       []string{"*"},
-		NamespaceLabels:  map[string]string{"*": "*"},
-		Annotations:      map[string]string{"*": "*"},
+		ContainerName:   "*",
+		PodName:         "*",
+		PodNodeName:     "*",
+		NamespaceName:   "*",
+		ContainerID:     "*",
+		ContainerImage:  "*",
+		PodID:           "*",
+		PodIP:           "**optional**",
+		FlatLabels:      []string{"*"},
+		NamespaceLabels: map[string]string{"*": "*"},
+		Annotations:     map[string]string{"*": "*"},
 	}
 	templateForInfraKubernetes = types.Kubernetes{
 		ContainerName:     "*",
 		PodName:           "*",
+		PodNodeName:       "*",
 		NamespaceName:     "*",
-		NamespaceID:       "**optional**",
+		ContainerID:       "*",
 		OrphanedNamespace: "**optional**",
-		ContainerImage:    "**optional**",
-		ContainerImageID:  "**optional**",
+		ContainerImage:    "*",
 		PodID:             "**optional**",
 		PodIP:             "**optional**",
-		Host:              "**optional**",
-		MasterURL:         "**optional**",
 		FlatLabels:        []string{"*"},
 		NamespaceLabels:   map[string]string{"*": "*"},
 		Annotations:       map[string]string{"*": "*"},
@@ -55,17 +51,16 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 		Message:   "*",
 		LogType:   "application",
 		Level:     "*",
-		Hostname:  "*",
-		ViaqMsgID: "*",
+		Hostname:  "",
+		ViaqMsgID: "",
 		Openshift: types.OpenshiftMeta{
 			Labels:   map[string]string{"*": "*"},
 			Sequence: types.NewOptionalInt(""),
 		},
-		PipelineMetadata: TemplateForAnyPipelineMetadata,
-		Docker: types.Docker{
-			ContainerID: "*",
-		},
-		Kubernetes: templateForAnyKubernetes,
+		PipelineMetadata: types.PipelineMetadata{},
+		Docker:           types.Docker{},
+		Kubernetes:       templateForAnyKubernetes,
+		WriteIndex:       "app-write",
 	}
 }
 
@@ -82,8 +77,9 @@ func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 			Labels:   map[string]string{"*": "*"},
 			Sequence: types.NewOptionalInt(""),
 		},
-		PipelineMetadata: TemplateForAnyPipelineMetadata,
+		PipelineMetadata: types.PipelineMetadata{},
 		Docker:           types.Docker{},
 		Kubernetes:       templateForInfraKubernetes,
+		WriteIndex:       "infra-write",
 	}
 }

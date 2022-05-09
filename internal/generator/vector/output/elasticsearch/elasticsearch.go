@@ -64,7 +64,9 @@ if (.log_type == "audit"){
 	vrls := []string{setESIndex, addESId}
 
 	if o.Elasticsearch != nil {
-		if o.Elasticsearch.StructuredTypeKey != "" {
+		es := o.Elasticsearch
+		switch {
+		case es.StructuredTypeKey != "" && es.StructuredTypeName == "":
 			changeIndexName := `
 if .log_type == "application" && .structured != null {
   val = .%s
@@ -74,14 +76,25 @@ if .log_type == "application" && .structured != null {
 }  
 `
 			vrls = append(vrls, fmt.Sprintf(changeIndexName, o.Elasticsearch.StructuredTypeKey))
-
-		} else if o.Elasticsearch.StructuredTypeName != "" {
+		case es.StructuredTypeKey == "" && es.StructuredTypeName != "":
 			changeIndexName := `
 if .log_type == "application" && .structured != null {
   .write_index = "app-%s-write"
 }
 `
 			vrls = append(vrls, fmt.Sprintf(changeIndexName, o.Elasticsearch.StructuredTypeName))
+		case es.StructuredTypeKey != "" && es.StructuredTypeName != "":
+			changeIndexName := `
+if .log_type == "application" && .structured != null {
+  val = .%s
+  if val != null {
+    .write_index, err = "app-" + val + "-write"
+  } else {
+    .write_index = "app-%s-write"
+  }
+}
+`
+			vrls = append(vrls, fmt.Sprintf(changeIndexName, o.Elasticsearch.StructuredTypeKey, o.Elasticsearch.StructuredTypeName))
 		}
 	}
 

@@ -3,13 +3,13 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/collector"
-	"github.com/openshift/cluster-logging-operator/internal/collector/common"
-	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
-	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
 	"path"
 	"reflect"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
@@ -67,17 +67,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 		//TODO: Remove me once fully migrated to new collector naming
 		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
 			log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
-		}
-		enabled, found := clusterRequest.Cluster.Annotations[common.PreviewVectorCollector]
-		if collectorType == logging.LogCollectionTypeVector && (!found || enabled != "enabled") {
-			err = errors.NewBadRequest(fmt.Sprintf("Vector as collector not enabled via annotation on ClusterLogging %s", common.PreviewVectorCollector))
-			log.V(9).Error(err, "Vector as collector not enabled via annotation on ClusterLogging")
-			return clusterRequest.UpdateCondition(
-				logging.CollectorDeadEnd,
-				"Add annotation \"logging.openshift.io/preview-vector-collector: enabled\" to ClusterLogging CR",
-				"Vector as collector not enabled via annotation on ClusterLogging",
-				corev1.ConditionTrue,
-			)
 		}
 
 		if err = clusterRequest.removeCollectorSecretIfOwnedByCLO(); err != nil {

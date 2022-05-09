@@ -3,8 +3,6 @@ kind: "ClusterLogging"
 metadata:
   name: "instance"
   namespace: "openshift-logging"
-  annotations:
-    logging.openshift.io/preview-vector-collector: enabled
 spec:
   logStore:
     type: "elasticsearch"

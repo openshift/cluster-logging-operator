@@ -2,7 +2,6 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -84,7 +83,6 @@ func TestLogForwardingToLokiWithFluentd(t *testing.T) {
 
 func TestLogForwardingToLokiWithVector(t *testing.T) {
 	cl := runtime.NewClusterLogging()
-	cl.Annotations = map[string]string{common.PreviewVectorCollector: "enabled"}
 	cl.Spec.Collection.Logs.Type = loggingv1.LogCollectionTypeVector
 	cl.Spec.Collection.Logs.FluentdSpec = loggingv1.FluentdSpec{}
 	clf := runtime.NewClusterLogForwarder()

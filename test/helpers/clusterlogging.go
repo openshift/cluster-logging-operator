@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -77,7 +76,6 @@ func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
 				},
 			}
 		case ComponentTypeCollectorVector:
-			instance.Annotations = map[string]string{common.PreviewVectorCollector: "enabled"}
 			instance.Spec.Collection = &cl.CollectionSpec{
 				Logs: cl.LogCollectionSpec{
 					Type: cl.LogCollectionTypeVector,

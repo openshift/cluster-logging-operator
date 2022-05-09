@@ -25,6 +25,15 @@ f(x)=m*x+b
 fit f(x) 'latency.data' using 1:2 via m,b
 plot 'latency.data' using 1:2 with lines title 'Data', f(x) title 'Trend'`
 
+	lossPlotPNG = `set term png size 1024,768
+set output 'loss.png';
+set xlabel 'SeqId';
+set ylabel 'Lost Count'`
+
+	lossPlotDumb = `set term dumb
+set xlabel 'SeqId';
+set ylabel 'Lost Count'`
+
 	cpuPlotDumb = `set term dumb
 set timefmt '%s'
 set xdata time
@@ -96,6 +105,18 @@ plot 'latency.data' using 1:2 with lines`
     <img src="latency.png">
   </div>
   <div>
+    <img src="loss.png">
+  </div>
+  <div>
+	<table>
+	  <tr>
+		<th>Stream</th>
+		<th>Percent Lost</th>
+	  </tr>
+	  <tr>
+      %s
+  </div>
+  <div>
     %s
   </div>
 </html>
@@ -120,6 +141,13 @@ Total Msg| Size | Elapsed (s) | Mean (s)| Min(s) | Max (s)| Median (s)
 ![](mem.png)
 
 ![](latency.png)
+
+![](loss.png)
+
+## Percent logs lost between first and last collected sequence ids
+Stream | Percent Lost
+-------| ------------
+%s
 
 ## Config
 <code style="white-space:pre;">

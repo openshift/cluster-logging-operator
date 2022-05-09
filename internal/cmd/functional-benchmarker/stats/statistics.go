@@ -10,6 +10,7 @@ type Statistics struct {
 	MsgSize   int
 	TimeDiffs []float64
 	Elapsed   time.Duration
+	Losses    LossStats
 }
 
 func NewStatisics(logs PerfLogs, msgSize int, elapsed time.Duration) *Statistics {
@@ -18,6 +19,7 @@ func NewStatisics(logs PerfLogs, msgSize int, elapsed time.Duration) *Statistics
 		msgSize,
 		sortLogsByTimeDiff(logs),
 		elapsed,
+		NewLossStats(logs),
 	}
 }
 func (stats *Statistics) TotMessages() int {

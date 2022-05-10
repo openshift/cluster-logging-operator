@@ -9,16 +9,19 @@ import (
 	"time"
 )
 
-func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLogInNamespace(msg, namespace string, numOfLogs int) error {
+func (f *CollectorFunctionalFramework) WriteMessagesToNamespace(msg, namespace string, numOfLogs int) error {
 	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLog(msg string, numOfLogs int) error {
-	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
+	return f.WriteMessagesToApplicationLogForContainer(msg, constants.CollectorName, numOfLogs)
+}
+func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLogForContainer(msg, container string, numOfLogs int) error {
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, container)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
-func (f *CollectorFunctionalFramework) WriteMessagesInfraContainerLog(msg string, numOfLogs int) error {
+func (f *CollectorFunctionalFramework) WriteMessagesToInfraContainerLog(msg string, numOfLogs int) error {
 	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], "openshift-fake-infra", f.Pod.Name, f.Pod.UID, constants.CollectorName)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
@@ -27,6 +30,7 @@ func (f *CollectorFunctionalFramework) WriteMessagesToAuditLog(msg string, numOf
 	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[auditLog])
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
+
 func (f *CollectorFunctionalFramework) WriteAuditHostLog(numOfLogs int) error {
 	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[auditLog])
 	msg := NewAuditHostLog(time.Now())
@@ -37,6 +41,7 @@ func (f *CollectorFunctionalFramework) WriteMessagesTok8sAuditLog(msg string, nu
 	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[k8sAuditLog])
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
+
 func (f *CollectorFunctionalFramework) WriteK8sAuditLog(numOfLogs int) error {
 	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[k8sAuditLog])
 	for numOfLogs > 0 {
@@ -48,6 +53,7 @@ func (f *CollectorFunctionalFramework) WriteK8sAuditLog(numOfLogs int) error {
 	}
 	return nil
 }
+
 func (f *CollectorFunctionalFramework) WriteOpenshiftAuditLog(numOfLogs int) error {
 	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[OpenshiftAuditLog])
 	for numOfLogs > 0 {
@@ -71,6 +77,7 @@ func (f *CollectorFunctionalFramework) WriteMessagesToOVNAuditLog(msg string, nu
 	filename := fmt.Sprintf("%s/acl-audit-log.log", fluentdLogPath[ovnAuditLog])
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
+
 func (f *CollectorFunctionalFramework) WriteOVNAuditLog(numOfLogs int) error {
 	filename := fmt.Sprintf("%s/acl-audit-log.log", fluentdLogPath[ovnAuditLog])
 	for numOfLogs > 0 {

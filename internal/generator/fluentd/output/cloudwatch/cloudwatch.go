@@ -51,7 +51,6 @@ log_group_name_key cw_group_name
 log_stream_name_key cw_stream_name
 remove_log_stream_name_key true
 remove_log_group_name_key true
-auto_create_stream true
 concurrency 2
 {{compose_one .SecurityConfig}}
 include_time_key true

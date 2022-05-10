@@ -3,6 +3,12 @@ package cloudwatch
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
+	"github.com/ViaQ/logerr/log"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	cwl "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -11,14 +17,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/ViaQ/logerr/log"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	cwl "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 
 	openshiftv1 "github.com/openshift/api/route/v1"
 
@@ -58,69 +56,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			return nil
 		}
 
-		cwlClient               *cwl.Client
-		service                 *v1.Service
-		route                   *openshiftv1.Route
-		defaultRetryInterval, _ = time.ParseDuration("10s")
-
-		getRawCloudwatchApplicationLogs = func(f *functional.CollectorFunctionalFramework, cwlClient *cwl.Client) ([]string, error) {
-			log.V(3).Info("Retrieving cloudwatch LogGroups")
-			var logGroupsOutput *cwl.DescribeLogGroupsOutput
-			err := wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
-				logGroupsOutput, err = cwlClient.DescribeLogGroups(context.TODO(), nil)
-				if err != nil || len(logGroupsOutput.LogGroups) == 0 {
-					return false, err
-				}
-				return true, nil
-			})
-
-			if err != nil {
-				return nil, err
-			}
-			log.V(3).Info("Results", "logGroups", logGroupsOutput.LogGroups)
-
-			log.V(3).Info("Retrieving cloudwatch LogStreams")
-			var logStreamsOutput *cwl.DescribeLogStreamsOutput
-			err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
-				logStreamsOutput, err = cwlClient.DescribeLogStreams(
-					context.TODO(),
-					&cwl.DescribeLogStreamsInput{LogGroupName: logGroupsOutput.LogGroups[0].LogGroupName},
-				)
-				if err != nil || len(logStreamsOutput.LogStreams) == 0 {
-					return false, err
-				}
-				return true, nil
-			})
-
-			if err != nil {
-				return nil, err
-			}
-			log.V(3).Info("Results", "logStreams", logStreamsOutput.LogStreams)
-
-			log.V(3).Info("Retrieving cloudwatch LogEvents")
-			var logEventsOutput *cwl.GetLogEventsOutput
-			err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
-				logEventsOutput, err = cwlClient.GetLogEvents(
-					context.TODO(),
-					&cwl.GetLogEventsInput{
-						LogGroupName:  logGroupsOutput.LogGroups[0].LogGroupName,
-						LogStreamName: logStreamsOutput.LogStreams[0].LogStreamName,
-					})
-				if err != nil || len(logEventsOutput.Events) == 0 {
-					return false, err
-				}
-				return true, nil
-			})
-			if err != nil {
-				return nil, err
-			}
-			log.V(3).Info("Results", "LogEvents", logEventsOutput.Events)
-			buffer := []string{}
-			for i := 0; i < len(logEventsOutput.Events); i++ {
-				buffer = append(buffer, *logEventsOutput.Events[i].Message)
-			}
-			return buffer, nil
-		}
+		cwlClient *cwl.Client
+		service   *v1.Service
+		route     *openshiftv1.Route
 	)
 
 	BeforeEach(func() {
@@ -185,8 +123,8 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		framework.Cleanup()
 	})
 
-	Context("When sending a sequence of log messages to CloudWatch", func() {
-		It("should get there", func() {
+	Context("When sending a sequence of app log messages to CloudWatch", func() {
+		It("should be able to read messages from application log group", func() {
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToCloudwatchOutput()
@@ -198,49 +136,100 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize)).To(BeNil())
 
-			logs, err := getRawCloudwatchApplicationLogs(framework, cwlClient)
+			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
 			Expect(err).To(BeNil())
 			Expect(logs).To(HaveLen(numOfLogs))
 			Expect(len(logs)).To(Equal(numOfLogs))
 
 		})
+
+		It("should reassemble multi-line stacktraces (e.g. LOG-2275)", func() {
+			appNamespace := "multi-line-test"
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInputWithVisitor("applogs-one", func(spec *logging.InputSpec) {
+					spec.Application = &logging.Application{
+						Namespaces: []string{appNamespace},
+					}
+				}).
+				WithMultineErrorDetection().
+				ToCloudwatchOutput()
+			framework.VisitConfig = functional.TestAPIAdapterConfigVisitor
+
+			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+				addMotoContainerVisitor,
+				mountCloudwatchSecretVisitor,
+			})).To(BeNil())
+
+			exception := `java.lang.NullPointerException: Cannot invoke "String.toString()" because "<parameter1>" is null
+	        at testjava.Main.printMe(Main.java:19)
+	        at testjava.Main.main(Main.java:10)`
+			timestamp := "2021-03-31T12:59:28.573159188+00:00"
+
+			buffer := []string{}
+			for _, line := range strings.Split(exception, "\n") {
+				crioLine := functional.NewCRIOLogMessage(timestamp, line, false)
+				buffer = append(buffer, crioLine)
+			}
+
+			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
+
+			raw, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
+			Expect(logs[0].Message).To(Equal(exception))
+		})
 	})
 
-	It("should reassemble multi-line stacktraces (e.g. LOG-2275)", func() {
-		appNamespace := "multi-line-test"
-		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-			FromInputWithVisitor("applogs-one", func(spec *logging.InputSpec) {
-				spec.Application = &logging.Application{
-					Namespaces: []string{appNamespace},
-				}
-			}).
-			WithMultineErrorDetection().
-			ToCloudwatchOutput()
-		framework.VisitConfig = functional.TestAPIAdapterConfigVisitor
+	Context("When sending infrastructure log messages to CloudWatch", func() {
+		const (
+			numLogsSent = 2
+			readLogType = logging.InputNameApplication
+		)
+		It("should not appear in the application log_group (e.g. LOG-2455)", func() {
+			// Must include at least app and infra inputs
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToCloudwatchOutput().
+				FromInput(logging.InputNameAudit).
+				ToCloudwatchOutput().
+				FromInput(logging.InputNameInfrastructure).
+				ToCloudwatchOutput()
 
-		Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
-			addMotoContainerVisitor,
-			mountCloudwatchSecretVisitor,
-		})).To(BeNil())
+			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+				addMotoContainerVisitor,
+				mountCloudwatchSecretVisitor,
+			})).To(BeNil())
 
-		exception := `java.lang.NullPointerException: Cannot invoke "String.toString()" because "<parameter1>" is null
-        at testjava.Main.printMe(Main.java:19)
-        at testjava.Main.main(Main.java:10)`
-		timestamp := "2021-03-31T12:59:28.573159188+00:00"
+			// Write audit log line
+			tstamp, _ := time.Parse(time.RFC3339Nano, "2021-03-28T14:36:03.243000+00:00")
+			auditLogLine := functional.NewAuditHostLog(tstamp)
+			writeAuditLogs := framework.WriteMessagesToAuditLog(auditLogLine, 3)
+			Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing logs")
 
-		buffer := []string{}
-		for _, line := range strings.Split(exception, "\n") {
-			crioLine := functional.NewCRIOLogMessage(timestamp, line, false)
-			buffer = append(buffer, crioLine)
-		}
+			// Use specific namespace from ticket LOG-2455
+			infraNamespace := "openshift-authentication-operator"
+			payload := functional.NewFullCRIOLogMessage(functional.CRIOTime(time.Now()), `{"index":1,"timestamp":1}`)
+			writeTicketLogs := framework.WriteMessagesToNamespace(payload, infraNamespace, 5)
+			Expect(writeTicketLogs).To(BeNil(), "Expect no errors writing logs")
 
-		Expect(framework.WriteMessagesToApplicationLogInNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
+			// Write other fake infra messages (namespace: "openshift-fake-infra")
+			writeInfraLogs := framework.WriteMessagesToInfraContainerLog(payload, 5)
+			Expect(writeInfraLogs).To(BeNil(), "Expect no errors writing logs")
 
-		raw, err := getRawCloudwatchApplicationLogs(framework, cwlClient)
-		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
-		Expect(logs[0].Message).To(Equal(exception))
+			// Write a single app log just to be sure its picked up ("test-xyz123" namespace)
+			writeAppLogs := framework.WritesApplicationLogs(numLogsSent)
+			Expect(writeAppLogs).To(BeNil(), "Expect no errors writing logs")
+
+			// Get application logs from Cloudwatch
+			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
+			log.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
+
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(logs).To(HaveLen(numLogsSent), "Expected the receiver to receive only the app log messages")
+			expMatch := fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)
+			Expect(logs[0]).To(MatchRegexp(expMatch), "Expected log_type to be correct")
+		})
 	})
 
 })

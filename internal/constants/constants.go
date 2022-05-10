@@ -91,3 +91,4 @@ const (
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}
+var ExtraNoProxyList = []string{ElasticsearchFQDN}

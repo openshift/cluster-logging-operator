@@ -171,7 +171,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 
 				verifyEnvVar(collector, "HTTP_PROXY", httpproxy)
 				verifyEnvVar(collector, "HTTPS_PROXY", httpproxy)
-				verifyEnvVar(collector, "NO_PROXY", noproxy)
+				verifyEnvVar(collector, "NO_PROXY", "elasticsearch,"+noproxy)
 				verifyProxyVolumesAndVolumeMounts(collector, podSpec, constants.CollectorTrustedCAName)
 			})
 		})

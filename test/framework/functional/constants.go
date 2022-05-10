@@ -11,6 +11,7 @@ const (
 	ovnAuditLog        = "ovn"
 	k8sAuditLog        = "k8s"
 	infraLog           = "infra"
+	oauthAuditLog      = "oauth-audit-logs"
 	OpenshiftAuditLog  = "openshift-audit-logs"
 	ApplicationLogFile = "/tmp/app-logs"
 	FunctionalNodeName = "functional-test-node"
@@ -24,7 +25,8 @@ var (
 		applicationLog:    "/var/log/pods",
 		auditLog:          "/var/log/audit",
 		ovnAuditLog:       "/var/log/ovn",
-		OpenshiftAuditLog: "/var/log/oauth-apiserver",
+		oauthAuditLog:     "/var/log/oauth-apiserver",
+		OpenshiftAuditLog: "/var/log/openshift-apiserver",
 		k8sAuditLog:       "/var/log/kube-apiserver",
 	}
 	outputLogFile = map[string]map[string]string{

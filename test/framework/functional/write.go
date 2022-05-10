@@ -74,6 +74,10 @@ func (f *CollectorFunctionalFramework) WriteMessagesToOpenshiftAuditLog(msg stri
 	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[OpenshiftAuditLog])
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
+func (f *CollectorFunctionalFramework) WriteMessagesToOAuthAuditLog(msg string, numOfLogs int) error {
+	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[oauthAuditLog])
+	return f.WriteMessagesToLog(msg, numOfLogs, filename)
+}
 
 func (f *CollectorFunctionalFramework) WriteMessagesToOVNAuditLog(msg string, numOfLogs int) error {
 

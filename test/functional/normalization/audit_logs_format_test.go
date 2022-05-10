@@ -174,6 +174,75 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 
 		})
 		//TODO: fix me when audit formatting is enabled
+		It("should parse openshift audit log format correctly", func() {
+			// Log message data
+			timestamp := "2013-03-28T14:36:03.243000+00:00"
+			nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
+
+			// Define a template for test format (used for input, and expected output)
+			//var outputLogTemplate = types.K8sAuditLog{
+			//AuditLogCommon: types.AuditLogCommon{
+			//	Kind:             "Event",
+			//	Hostname:         functional.FunctionalNodeName,
+			//	LogType:          "audit",
+			//	Level:            "debug",
+			//	Timestamp:        time.Time{},
+			//	ViaqMsgID:        "*",
+			//	PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+			//},
+			//K8SAuditLevel: "debug",
+			//}
+			// Template expected as output Log
+			auditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"debug"}`, functional.CRIOTime(nanoTime))
+			Expect(framework.WriteMessagesToOpenshiftAuditLog(auditLogLine, 10)).To(BeNil())
+			// Read line from Log Forward output
+			raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			//var logs []types.K8sAuditLog
+			//err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
+			//Expect(err).To(BeNil(), "Expected no errors parsing the logs: %v", raw)
+			//// Compare to expected template
+			//outputTestLog := logs[0]
+			//Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+			results := strings.Join(raw, " ")
+			Expect(results).To(MatchRegexp("kind.*Event.*level.*debug"), "Message should contain the audit log: %v", raw)
+
+		})
+		It("should parse oauth audit log format correctly", func() {
+			// Log message data
+			timestamp := "2013-03-28T14:36:03.243000+00:00"
+			nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
+
+			// Define a template for test format (used for input, and expected output)
+			//var outputLogTemplate = types.K8sAuditLog{
+			//AuditLogCommon: types.AuditLogCommon{
+			//	Kind:             "Event",
+			//	Hostname:         functional.FunctionalNodeName,
+			//	LogType:          "audit",
+			//	Level:            "debug",
+			//	Timestamp:        time.Time{},
+			//	ViaqMsgID:        "*",
+			//	PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+			//},
+			//K8SAuditLevel: "debug",
+			//}
+			// Template expected as output Log
+			auditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"debug"}`, functional.CRIOTime(nanoTime))
+			Expect(framework.WriteMessagesToOAuthAuditLog(auditLogLine, 10)).To(BeNil())
+			// Read line from Log Forward output
+			raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			//var logs []types.K8sAuditLog
+			//err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
+			//Expect(err).To(BeNil(), "Expected no errors parsing the logs: %v", raw)
+			//// Compare to expected template
+			//outputTestLog := logs[0]
+			//Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
+			results := strings.Join(raw, " ")
+			Expect(results).To(MatchRegexp("kind.*Event.*level.*debug"), "Message should contain the audit log: %v", raw)
+
+		})
+		//TODO: fix me when audit formatting is enabled
 		It("should parse linux audit log format correctly", func() {
 			// Log message data
 			timestamp := "2013-03-28T14:36:03.243000+00:00"

@@ -21,7 +21,7 @@ const OpenshiftAuditLogTemplate = `
 [sources.{{.ComponentID}}]
 type = "file"
 ignore_older_secs = 600
-include = ["/var/log/oauth-apiserver/audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 {{end}}
 `
 

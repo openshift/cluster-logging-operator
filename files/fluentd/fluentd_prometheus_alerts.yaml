@@ -6,7 +6,7 @@
       "message": "Prometheus could not scrape fluentd {{ $labels.instance }} for more than 10m."
       "summary": "Fluentd cannot be scraped"
     "expr": |
-      absent(up{job="collector"} == 1)
+      up{job="collector"} == 0 or absent(up{job="collector"}) == 1
     "for": "10m"
     "labels":
       "service": "fluentd"

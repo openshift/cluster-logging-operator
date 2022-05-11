@@ -159,7 +159,11 @@ var _ = Describe("GetProxyEnvVars", func() {
 		envvars := GetProxyEnvVars()
 		Expect(envvars).To(HaveLen(6)) //proxy,noproxy vars
 		for _, envvar := range envvars {
-			Expect(envvar.Name).To(Equal(envvar.Value), "Exp. the value to be set to the name for the test")
+			if envvar.Name == "NO_PROXY" || envvar.Name == "no_proxy" {
+				Expect(envvar.Value).To(Equal("elasticsearch,"+envvar.Name), "Exp. the value to be set to the name for the test with elasticsearch prepended")
+			} else {
+				Expect(envvar.Name).To(Equal(envvar.Value), "Exp. the value to be set to the name for the test")
+			}
 		}
 	})
 })

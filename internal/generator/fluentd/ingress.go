@@ -269,6 +269,7 @@ const ViaQDataModel string = `
 # {{.Desc}}
 <filter **>
   @type viaq_data_model
+  enable_flatten_labels true
   elasticsearch_index_prefix_field 'viaq_index_name'
   default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
   extra_keep_fields ''

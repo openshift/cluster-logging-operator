@@ -2,6 +2,7 @@ package functional
 
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -131,9 +132,14 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 			output = &logging.OutputSpec{
 				Name: logging.OutputTypeKafka,
 				Type: logging.OutputTypeKafka,
-				URL:  "https://0.0.0.0:9093",
+				URL:  "https://localhost:9093",
 				Secret: &logging.OutputSecretSpec{
 					Name: "kafka",
+				},
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Kafka: &logging.Kafka{
+						Topic: kafka.AppLogsTopic,
+					},
 				},
 			}
 		default:

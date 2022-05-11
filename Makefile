@@ -183,7 +183,7 @@ test-functional-fluentd:
 test-functional-vector:
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
 	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test --tags=vector -race ./test/functional/outputs/elasticsearch/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
+	go test --tags=vector -race ./test/functional/outputs/elasticsearch/... ./test/functional/normalization -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 test-forwarder-generator: bin/forwarder-generator
 	@bin/forwarder-generator --file hack/logforwarder.yaml --collector=fluentd > /dev/null

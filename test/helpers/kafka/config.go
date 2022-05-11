@@ -61,7 +61,7 @@ const (
 
       min.insync.replicas=1
 
-      auto.create.topics.enable=false
+      auto.create.topics.enable=true
 
       # Max Messages in Bytes set to 10M > fluentd buffer chunk_limit_size config
       message.max.bytes=10000000
@@ -330,7 +330,7 @@ const (
 
       min.insync.replicas=1
 
-      auto.create.topics.enable=false
+      auto.create.topics.enable=true
 
       # Max Messages in Bytes set to 10M > fluentd buffer chunk_limit_size config
       message.max.bytes=10000000

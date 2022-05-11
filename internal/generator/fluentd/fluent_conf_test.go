@@ -495,6 +495,7 @@ var _ = Describe("Generating fluentd config", func() {
   # Viaq Data Model
   <filter **>
     @type viaq_data_model
+    enable_flatten_labels true
     elasticsearch_index_prefix_field 'viaq_index_name'
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
     extra_keep_fields ''
@@ -696,22 +697,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_apps_es_1>
@@ -824,22 +820,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_apps_es_2>
@@ -1311,6 +1302,7 @@ var _ = Describe("Generating fluentd config", func() {
   # Viaq Data Model
   <filter **>
     @type viaq_data_model
+    enable_flatten_labels true
     elasticsearch_index_prefix_field 'viaq_index_name'
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
     extra_keep_fields ''
@@ -1495,22 +1487,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_apps_es_1>
@@ -1623,22 +1610,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_apps_es_2>
@@ -2112,6 +2094,7 @@ var _ = Describe("Generating fluentd config", func() {
   # Viaq Data Model
   <filter **>
     @type viaq_data_model
+    enable_flatten_labels true
     elasticsearch_index_prefix_field 'viaq_index_name'
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
     extra_keep_fields ''
@@ -2298,22 +2281,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_apps_es_1>
@@ -2426,22 +2404,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_apps_es_2>
@@ -2858,6 +2831,7 @@ var _ = Describe("Generating fluentd config", func() {
   # Viaq Data Model
   <filter **>
     @type viaq_data_model
+    enable_flatten_labels true
     elasticsearch_index_prefix_field 'viaq_index_name'
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
     extra_keep_fields ''
@@ -3398,6 +3372,7 @@ var _ = Describe("Generating fluentd config", func() {
   # Viaq Data Model
   <filter **>
     @type viaq_data_model
+    enable_flatten_labels true
     elasticsearch_index_prefix_field 'viaq_index_name'
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
     extra_keep_fields ''
@@ -3596,22 +3571,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_infra_es>
@@ -3724,22 +3694,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_apps_es_1>
@@ -3852,22 +3817,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_apps_es_2>
@@ -3980,22 +3940,17 @@ var _ = Describe("Generating fluentd config", func() {
 	  static_index_name app-write
 	</elasticsearch_index_name>
   </filter>
+  <filter **>
+	@type viaq_data_model
+	enable_prune_labels true
+	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  </filter>
   
   #remove structured field if present
   <filter **>
 	@type record_modifier
     char_encoding ascii-8bit:utf-8
 	remove_keys structured
-  </filter>
-  
-  #flatten labels to prevent field explosion in ES
-  <filter **>
-    @type record_transformer
-    enable_ruby true
-    <record>
-      kubernetes ${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }
-    </record>
-    remove_keys $.kubernetes.labels
   </filter>
   
   <match retry_audit_es>
@@ -4485,6 +4440,7 @@ inputs:
   # Viaq Data Model
   <filter **>
     @type viaq_data_model
+    enable_flatten_labels true
     elasticsearch_index_prefix_field 'viaq_index_name'
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
     extra_keep_fields ''

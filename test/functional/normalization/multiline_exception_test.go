@@ -81,7 +81,8 @@ created by main.main
 			crioLine := functional.NewCRIOLogMessage(timestamp, line, false)
 			buffer = append(buffer, crioLine)
 		}
-		Expect(framework.WriteMessagesToApplicationLogInNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
+		// Application log in namespace
+		Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
 
 		for _, output := range framework.Forwarder.Spec.Outputs {
 			outputType := output.Type

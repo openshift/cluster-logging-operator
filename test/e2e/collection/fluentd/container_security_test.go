@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	timeout         = `3m`
+	timeout         = `6m`
 	pollingInterval = `10s`
 )
 

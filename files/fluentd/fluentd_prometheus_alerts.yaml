@@ -50,4 +50,11 @@
     for: 15m
     labels:
       severity: critical
-
+- "name": "logging_clusterlogging_telemetry.rules"
+  "rules":
+  - "expr": |
+      sum by(cluster)(log_collected_bytes_total)
+    "record": "cluster:log_collected_bytes_total:sum"
+  - "expr": |
+      sum by(cluster)(log_logged_bytes_total)
+    "record": "cluster:log_logged_bytes_total:sum"

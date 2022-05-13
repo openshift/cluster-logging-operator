@@ -2,12 +2,14 @@ package elasticsearch
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 )
@@ -39,7 +41,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 		// Template expected as output Log
 		outputLogTemplate = functional.NewApplicationLogTemplate()
 		outputLogTemplate.ViaqIndexName = "app-write"
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 	})
 	AfterEach(func() {
 		framework.Cleanup()
@@ -94,6 +96,9 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should not send logs to structuredTypeName for infrastructure sources", func() {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("infrastructure logs tests not supported for vector")
+			}
 			outputLogTemplate = functional.NewContainerInfrastructureLogTemplate()
 			outputLogTemplate.ViaqIndexName = "infra-write"
 			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -120,6 +125,9 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should not send to k8s label structuredTypeKey for infrastructure sources", func() {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("infrastructure logs tests not supported for vector")
+			}
 			outputLogTemplate = functional.NewContainerInfrastructureLogTemplate()
 			outputLogTemplate.ViaqIndexName = "infra-write"
 			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -197,6 +205,9 @@ var _ = Describe("[Functional][Outputs][ElasticSearch][Index] FluentdForward Out
 		})
 		Context("and enabling sending each container log to different indices", func() {
 			It("should send one container's log as defined by the annotation and the other defined by structuredTypeKey", func() {
+				if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+					Skip("sending each container log to different indices not supported for vector")
+				}
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(func(spec *logging.OutputSpec) {

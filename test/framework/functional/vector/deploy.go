@@ -1,12 +1,13 @@
 package vector
 
 import (
+	"strings"
+
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
-	"strings"
 )
 
 const entrypointScript = `#!/bin/bash
@@ -37,10 +38,10 @@ func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfYaml string)
 }
 
 func (c *VectorCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, nodeName string) *runtime.ContainerBuilder {
-	return b.AddEnvVar("LOG_LEVEL", "debug").
+	return b.AddEnvVar("LOG", "debug").
 		AddEnvVarFromFieldRef("POD_IP", "status.podIP").
 		AddEnvVar("NODE_NAME", nodeName).
-		AddEnvVar("VECTOR_SELF_NODE_NAME", nodeName).
+		AddEnvVarFromFieldRef("VECTOR_SELF_NODE_NAME", "spec.nodeName").
 		AddVolumeMount("config", "/etc/vector", "", true).
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).
 		WithCmd([]string{"/opt/app-root/src/run.sh"})

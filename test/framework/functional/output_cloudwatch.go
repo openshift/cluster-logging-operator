@@ -2,6 +2,8 @@ package functional
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/ViaQ/logerr/log"
 	cwl "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -49,11 +51,16 @@ func (f *CollectorFunctionalFramework) GetLogGroupsByType(client *cwl.Client, in
 	}
 	log.V(3).Info("Results", "logGroups", logGroupsOutput.LogGroups)
 
+	found := false
 	for _, l := range logGroupsOutput.LogGroups {
 		// Filter by type and get all
 		if *l.LogGroupName == "group-prefix."+inputName {
+			found = true
 			myGroups = append(myGroups, *l.LogGroupName)
 		}
+	}
+	if !found {
+		return nil, fmt.Errorf("%s log type not found", inputName)
 	}
 	return myGroups, nil
 }

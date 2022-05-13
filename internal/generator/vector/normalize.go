@@ -36,6 +36,9 @@ del(.stream)
 	RemovePodIPs = `
 del(.kubernetes.pod_ips)
 `
+	FixTimestampField = `
+."@timestamp" = del(.timestamp)
+`
 )
 
 func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
@@ -61,6 +64,7 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 				RemoveSourceType,
 				RemoveStream,
 				RemovePodIPs,
+				FixTimestampField,
 			}), "\n\n"),
 		},
 	}

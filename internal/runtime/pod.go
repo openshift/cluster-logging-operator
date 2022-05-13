@@ -100,7 +100,7 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 			Name:            strings.ToLower(name),
 			Image:           image,
 			Env:             []corev1.EnvVar{},
-			ImagePullPolicy: corev1.PullAlways,
+			ImagePullPolicy: corev1.PullIfNotPresent,
 		},
 		podBuilder: builder,
 	}

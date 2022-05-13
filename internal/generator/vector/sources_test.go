@@ -35,6 +35,9 @@ auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
+pod_annotation_fields.pod_annotations = ""
+pod_annotation_fields.pod_uid = "kubernetes.pod_id"
+pod_annotation_fields.pod_node_name = "hostname"
 `,
 		}),
 		Entry("Only Infrastructure", generator.ConfGenerateTest{
@@ -57,6 +60,9 @@ auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
+pod_annotation_fields.pod_annotations = ""
+pod_annotation_fields.pod_uid = "kubernetes.pod_id"
+pod_annotation_fields.pod_node_name = "hostname"
 
 [sources.raw_journal_logs]
 type = "journald"
@@ -123,6 +129,9 @@ auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
+pod_annotation_fields.pod_annotations = ""
+pod_annotation_fields.pod_uid = "kubernetes.pod_id"
+pod_annotation_fields.pod_node_name = "hostname"
 
 [sources.raw_journal_logs]
 type = "journald"

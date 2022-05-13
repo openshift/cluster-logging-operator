@@ -23,7 +23,7 @@ export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.5
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.21-rh
-IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.0
+IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=

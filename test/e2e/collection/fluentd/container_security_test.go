@@ -91,7 +91,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		By("having all Linux capabilities disabled")
 		Eventually(func(g Gomega) {
 			result, err := runInFluentdContainer("bash", "-c", "getpcaps 1 2>&1")
-			g.Expect(result).To(MatchRegexp(`^Capabilities\sfor\s.1':\s=$`))
+			g.Expect(result).To(MatchRegexp(`^(Capabilities\sfor\s.)?1'?:\s=$`))
 			g.Expect(err).NotTo(HaveOccurred())
 		}, timeout, pollingInterval).Should(Succeed())
 

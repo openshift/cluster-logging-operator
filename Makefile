@@ -1,5 +1,4 @@
-# Define the target to run if make is called with no arguments.
-default: pre-commit
+# Define the target to run if make is called with no arguments.  default: pre-commit
 
 export LOG_LEVEL?=9
 export KUBECONFIG?=$(HOME)/.kube/config
@@ -10,7 +9,7 @@ export PATH:=$(GOBIN):$(PATH)
 include .bingo/Variables.mk
 
 export GOROOT=$(shell go env GOROOT)
-export GOFLAGS=-mod=vendor
+export GOFLAGS=-mod=mod
 export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
@@ -26,6 +25,7 @@ IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.14.1
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
+
 
 .PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
@@ -107,11 +107,9 @@ clean:
 	find -name .kube | xargs rm -rf
 	go clean -cache -testcache ./...
 
-PATCH?=Dockerfile.patch
 image: .target/image
 .target/image: .target $(shell find must-gather version scripts files vendor manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
-	patch -o Dockerfile.local Dockerfile $(PATCH)
-	podman build -t $(IMAGE_TAG) . -f Dockerfile.local
+	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 
 lint: $(GOLANGCI_LINT) lint-dockerfile

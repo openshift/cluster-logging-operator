@@ -1,3 +1,0 @@
-22a23,24
-> RUN rm /etc/yum.repos.d/*
-> ADD art.repo /etc/yum.repos.d

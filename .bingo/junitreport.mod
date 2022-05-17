@@ -4,5 +4,5 @@ go 1.14
 
 require (
 	github.com/openshift/origin v4.1.0+incompatible // indirect
-	github.com/openshift/release v0.0.0-20201103150245-a5287ef1495b // tools/junitreport
+	github.com/openshift/release v0.0.0-20220531132329-92dee95b5da2 // tools/junitreport
 )

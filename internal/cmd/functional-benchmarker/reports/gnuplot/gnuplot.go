@@ -2,9 +2,6 @@ package gnuplot
 
 import (
 	"fmt"
-	"github.com/ViaQ/logerr/log"
-	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
-	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
 	htmllib "html"
 	"io"
 	"io/ioutil"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/ViaQ/logerr/v2/log"
+	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
+	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
 )
 
 type GNUPlotReporter struct {
@@ -30,46 +31,49 @@ func exportResourceMetricTo(outDir string, rm stats.ResourceMetrics) {
 
 /* #nosec G306*/
 func exportLatency(outDir string, logs stats.PerfLogs) {
-	log.V(3).Info("Exporting latency")
+	logger := log.NewLogger("")
+	logger.V(3).Info("Exporting latency")
 	buffer := []string{}
 	for i, log := range logs {
 		value := log.ElapsedEpoc()
 		buffer = append(buffer, fmt.Sprintf("%d %.3f", i, value))
 	}
-	log.V(3).Info("Writing latency data", "outDir", outDir, "data", buffer)
+	logger.V(3).Info("Writing latency data", "outDir", outDir, "data", buffer)
 	err := ioutil.WriteFile(path.Join(outDir, "latency.data"), []byte(strings.Join(buffer, "\n")), 0755)
 	if err != nil {
-		log.Error(err, "Error writing latency data")
+		logger.Error(err, "Error writing latency data")
 	}
 }
 
 /* #nosec G306*/
 func exportMemory(outDir string, samples []stats.Sample) {
-	log.V(3).Info("Exporting memory", "samples", samples)
+	logger := log.NewLogger("")
+	logger.V(3).Info("Exporting memory", "samples", samples)
 	buffer := []string{}
 	for _, sample := range samples {
 		value := sample.MemoryBytesAsFloat()
 		buffer = append(buffer, fmt.Sprintf("%d %.3f", sample.Time, value/1024/1024))
 	}
-	log.V(3).Info("Writing resource metric data", "outDir", outDir, "memoryInMb", buffer)
+	logger.V(3).Info("Writing resource metric data", "outDir", outDir, "memoryInMb", buffer)
 	err := ioutil.WriteFile(path.Join(outDir, "mem.data"), []byte(strings.Join(buffer, "\n")), 0755)
 	if err != nil {
-		log.Error(err, "Error writing resource Memory Metrics")
+		logger.Error(err, "Error writing resource Memory Metrics")
 	}
 }
 
 /* #nosec G306*/
 func exportCPU(outDir string, samples []stats.Sample) {
-	log.V(3).Info("Exporting cpu", "samples", samples)
+	logger := log.NewLogger("")
+	logger.V(3).Info("Exporting cpu", "samples", samples)
 	buffer := []string{}
 	for _, sample := range samples {
 		cpu := sample.CPUCoresAsFloat()
 		buffer = append(buffer, fmt.Sprintf("%d %.3f", sample.Time, cpu))
 	}
-	log.V(3).Info("Writing resource metric data", "outDir", outDir, "cpu", buffer)
+	logger.V(3).Info("Writing resource metric data", "outDir", outDir, "cpu", buffer)
 	err := ioutil.WriteFile(path.Join(outDir, "cpu.data"), []byte(strings.Join(buffer, "\n")), 0755)
 	if err != nil {
-		log.Error(err, "Error writing resource CPU Metrics")
+		logger.Error(err, "Error writing resource CPU Metrics")
 	}
 }
 
@@ -87,7 +91,8 @@ func (r *GNUPlotReporter) Generate() {
 
 func plotData(plot, dir string, writer io.Writer) {
 	plot = strings.Join(strings.Split(plot, "\n"), ";")
-	log.V(3).Info("running gnuplot", "cmd", plot)
+	logger := log.NewLogger("")
+	logger.V(3).Info("running gnuplot", "cmd", plot)
 	cmd := exec.Command("gnuplot", "-e", plot)
 	cmd.Dir = dir
 	if writer != nil {
@@ -95,23 +100,23 @@ func plotData(plot, dir string, writer io.Writer) {
 	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		log.Error(err, "Unable to create StderrPipe")
+		logger.Error(err, "Unable to create StderrPipe")
 	}
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		log.Error(err, "Unable to create StdOutPipe")
+		logger.Error(err, "Unable to create StdOutPipe")
 	}
 	if err := cmd.Run(); err != nil {
-		log.Error(err, "Error running command", "dir", cmd.Dir, "cmd", cmd.String())
+		logger.Error(err, "Error running command", "dir", cmd.Dir, "cmd", cmd.String())
 
 		if stderr != nil {
 			raw, err := ioutil.ReadAll(stderr)
-			log.Info("Reading stderr", "stderr", raw, "err", err)
+			logger.Info("Reading stderr", "stderr", raw, "err", err)
 		}
 
 		if stdout != nil {
 			raw, err := ioutil.ReadAll(stdout)
-			log.Info("Reading stdout", "stdout", raw, "stdout", err)
+			logger.Info("Reading stdout", "stdout", raw, "stdout", err)
 		}
 	}
 }
@@ -148,7 +153,7 @@ func (r *GNUPlotReporter) generateStats() {
 		)
 		err := ioutil.WriteFile(path.Join(r.ArtifactDir, file), []byte(out), 0755)
 		if err != nil {
-			log.Error(err, "Error writing file")
+			log.NewLogger("").Error(err, "Error writing file")
 		}
 	}
 	writeStatsToConsole(s)

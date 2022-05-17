@@ -6,7 +6,9 @@ package normalization
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ViaQ/logerr/log"
+	"strings"
+
+	"github.com/ViaQ/logerr/v2/log"
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,7 +18,6 @@ import (
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"strings"
 )
 
 const (
@@ -93,6 +94,7 @@ const (
 
 var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 	var (
+		logger          = log.NewLogger("json-parsing-testing")
 		framework       *functional.CollectorFunctionalFramework
 		clfb            *functional.ClusterLogForwarderBuilder
 		expected        map[string]interface{}
@@ -142,9 +144,9 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 			fmt.Printf("diff %s\n", diff)
 		}
 		Expect(same).To(BeTrue(), "parsed json message not matching")
-		log.V(2).Info("Received", "Message", logs[0].Message)
+		logger.V(2).Info("Received", "Message", logs[0].Message)
 		diff := cmp.Diff(logs[0].Message, expectedMessage)
-		log.V(2).Info("Received", "Diff", diff)
+		logger.V(2).Info("Received", "Diff", diff)
 		Expect(normalizeJson(logs[0].Message)).To(Equal(expectedMessage), "received message not matching")
 	})
 	It("should not parse non json message into structured", func() {
@@ -170,7 +172,7 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		same := cmp.Equal(logs[0].Structured, empty)
 		if !same {
 			diff := cmp.Diff(logs[0].Structured, empty)
-			log.V(3).Info("Parsed json not as expected", "diff", diff)
+			logger.V(3).Info("Parsed json not as expected", "diff", diff)
 		}
 		Expect(same).To(BeTrue(), "parsed json message not matching")
 		Expect(logs[0].Message).To(Equal(message), "received message not matching")
@@ -218,7 +220,7 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		same := cmp.Equal(logs[0].Structured, empty)
 		if !same {
 			diff := cmp.Diff(logs[0].Structured, empty)
-			log.V(3).Info("Parsed json not as expected", "diff", diff)
+			logger.V(3).Info("Parsed json not as expected", "diff", diff)
 		}
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
@@ -257,9 +259,9 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(logs).To(HaveLen(1), "Expected to receive the log message")
 		Expect(logs[0].Structured).To(Equal(expected), "structured field with parsed json message not matching")
-		log.V(2).Info("Received", "Message", logs[0].Message)
+		logger.V(2).Info("Received", "Message", logs[0].Message)
 		diff := cmp.Diff(logs[0].Message, expectedMessage)
-		log.V(2).Info("Received", "Diff", diff)
+		logger.V(2).Info("Received", "Diff", diff)
 		Expect(normalizeJson(logs[0].Message)).To(Equal(expectedMessage), "message field not matching")
 	})
 })

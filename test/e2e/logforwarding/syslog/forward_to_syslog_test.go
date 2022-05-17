@@ -2,10 +2,11 @@ package syslog
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"path/filepath"
 	"runtime"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -14,7 +15,7 @@ import (
 	apps "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
@@ -28,7 +29,8 @@ const (
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	log.Info("Running ", "filename", filename)
+	logger := log.NewLogger("e2e-logforwarding")
+	logger.Info("Running ", "filename", filename)
 	var (
 		err              error
 		syslogDeployment *apps.Deployment
@@ -50,9 +52,9 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	})
 	JustBeforeEach(func() {
 		if logGenNS, logGenPod, err = e2e.DeployJsonLogGenerator(generatorPayload); err != nil {
-			log.Error(err, "unable to deploy log generator.")
+			logger.Error(err, "unable to deploy log generator.")
 		}
-		log.Info("log generator pod: ", "podname", logGenPod)
+		logger.Info("log generator pod: ", "podname", logGenPod)
 		testDir = filepath.Dir(filename)
 		// wait for current log-generator's logs to appear in syslog
 		waitlogs = fmt.Sprintf(`[ $(grep %s %%s |grep pod_name| wc -l) -gt 0 ]`, logGenPod)

@@ -7,7 +7,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,7 +19,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+
+	"github.com/ViaQ/logerr/v2/log"
 	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/format"
@@ -34,9 +35,9 @@ func init() {
 		format.TruncatedDiff = false
 	}
 	// Set up logging for tests.
-	log.MustInit("test")
-	if level, err := strconv.Atoi(os.Getenv("LOG_LEVEL")); err == nil {
-		log.SetLogLevel(level)
+	level, err := strconv.Atoi(os.Getenv("LOG_LEVEL"))
+	if err == nil {
+		log.NewLogger("test", log.WithVerbosity(level))
 	}
 }
 

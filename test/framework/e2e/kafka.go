@@ -3,13 +3,14 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"strings"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
-	clolog "github.com/ViaQ/logerr/log"
+	clolog "github.com/ViaQ/logerr/v2/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	apps "k8s.io/api/apps/v1"
@@ -34,20 +35,21 @@ func (kr *kafkaReceiver) ApplicationLogs(timeToWait time.Duration) (types.Logs, 
 func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, error) {
 	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameInfrastructure)
+		logger := clolog.NewLogger("e2e-kafka-testing")
 		if err != nil {
 			if err == types.ErrParse {
-				clolog.Error(err, "error occurred while parsing fetched infra logs from kafka topic. Please check the collected test artifact.")
+				logger.Error(err, "error occurred while parsing fetched infra logs from kafka topic. Please check the collected test artifact.")
 				// return error here else loop will keep on parsing
 				return false, err
 			}
-			clolog.Error(err, "error occurred while fetching infra logs")
+			logger.Error(err, "error occurred while fetching infra logs")
 			return false, nil
 		}
 		l := logs.ByIndex(InfraIndexPrefix)
 		if l.NonEmpty() {
-			clolog.Info("found infra logs")
+			logger.Info("found infra logs")
 		} else {
-			clolog.Info("could not find infra logs")
+			logger.Info("could not find infra logs")
 		}
 		return l.NonEmpty(), nil
 	})
@@ -57,20 +59,21 @@ func (kr *kafkaReceiver) HasInfraStructureLogs(timeout time.Duration) (bool, err
 func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error) {
 	err := wait.PollImmediate(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameApplication)
+		logger := clolog.NewLogger("e2e-kafka-testing")
 		if err != nil {
 			if err == types.ErrParse {
-				clolog.Error(err, "error occurred while parsing fetched application logs from kafka topic. Please check the collected test artifact.")
+				logger.Error(err, "error occurred while parsing fetched application logs from kafka topic. Please check the collected test artifact.")
 				// return error here else loop will keep on parsing
 				return false, err
 			}
-			clolog.Error(err, "error occurred while fetching application logs")
+			logger.Error(err, "error occurred while fetching application logs")
 			return false, nil
 		}
 		l := logs.ByIndex(ProjectIndexPrefix)
 		if l.NonEmpty() {
-			clolog.Info("found app logs")
+			logger.Info("found app logs")
 		} else {
-			clolog.Info("could not find app logs")
+			logger.Info("could not find app logs")
 		}
 		return l.NonEmpty(), nil
 	})
@@ -80,20 +83,21 @@ func (kr *kafkaReceiver) HasApplicationLogs(timeout time.Duration) (bool, error)
 func (kr *kafkaReceiver) HasAuditLogs(timeout time.Duration) (bool, error) {
 	err := wait.Poll(defaultRetryInterval, timeout, func() (done bool, err error) {
 		logs, err := kr.tc.consumedLogs(kr.app.Name, loggingv1.InputNameAudit)
+		logger := clolog.NewLogger("e2e-kafka-testing")
 		if err != nil {
 			if err == types.ErrParse {
-				clolog.Error(err, "error occurred while parsing fetched audit logs from kafka topic. Please check the collected test artifact.")
+				logger.Error(err, "error occurred while parsing fetched audit logs from kafka topic. Please check the collected test artifact.")
 				// return error here else loop will keep on parsing
 				return false, err
 			}
-			clolog.Error(err, "error occurred while fetching audit logs")
+			logger.Error(err, "error occurred while fetching audit logs")
 			return false, nil
 		}
 		l := logs.ByIndex(AuditIndexPrefix)
 		if l.NonEmpty() {
-			clolog.Info("found audit logs")
+			logger.Info("found audit logs")
 		} else {
-			clolog.Info("could not find audit logs")
+			logger.Info("could not find audit logs")
 		}
 		return l.NonEmpty(), nil
 	})

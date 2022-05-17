@@ -11,13 +11,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 )
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	log.Info("Running ", "filename", filename)
+	log.NewLogger("e2e-logforwarding").Info("Running ", "filename", filename)
 	var (
 		e2e = framework.NewE2ETestFramework()
 	)

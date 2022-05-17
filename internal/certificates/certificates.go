@@ -6,7 +6,8 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
+	"github.com/go-logr/logr"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -17,27 +18,29 @@ func GenerateCertificates(namespace, scriptsDir, logStoreName, workDir string) (
 
 func RunCertificatesScript(namespace, logStoreName, workDir, script string) (err error, updated bool, output []interface{}) {
 	updated = false
-	log.V(3).Info("Running script", "script", script, "workDir", workDir, "namespace", namespace, "logStoreName", logStoreName)
+	logger := log.NewLogger("")
+
+	logger.V(3).Info("Running script", "script", script, "workDir", workDir, "namespace", namespace, "logStoreName", logStoreName)
 	cmd := exec.Command(script, workDir, namespace, logStoreName)
 	out, err := cmd.Output()
 	result := string(out)
 	// get error string from certificate generation script
 	err = utils.WrapError(err)
-	log.V(3).Info("Cert generation", "out", result, "err", err)
+	logger.V(3).Info("Cert generation", "out", result, "err", err)
 	if result != "" {
 		updated = true
-		output = readOutput(result)
+		output = readOutput(result, logger)
 	}
-	log.V(3).Info("Returning", "err", err, "updated", updated)
+	logger.V(3).Info("Returning", "err", err, "updated", updated)
 	return err, updated, output
 }
 
-func readOutput(raw string) []interface{} {
+func readOutput(raw string, logger logr.Logger) []interface{} {
 	genLogs := []map[string]string{}
 	err := yaml.Unmarshal([]byte(raw), &genLogs)
 	if err != nil {
-		log.Error(err, "Unable to unmarshal cert_generation to structured output")
-		log.Info("cert_generation output", "output", raw)
+		logger.Error(err, "Unable to unmarshal cert_generation to structured output")
+		logger.Info("cert_generation output", "output", raw)
 		return nil
 	}
 
@@ -48,7 +51,7 @@ func readOutput(raw string) []interface{} {
 			keyvalues = append(keyvalues, k, v)
 		}
 		result = append(result, keyvalues)
-		log.Info("cert_generation output", keyvalues...)
+		logger.Info("cert_generation output", keyvalues...)
 	}
 
 	return result

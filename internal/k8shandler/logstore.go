@@ -2,11 +2,12 @@ package k8shandler
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"reflect"
 	"sync"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+
+	"github.com/ViaQ/logerr/v2/log"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -33,7 +34,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error
 		cluster := clusterRequest.Cluster
 
 		if err = clusterRequest.removeElasticsearchIfSecretOwnedByCLO(); err != nil {
-			log.Error(err, "Can't fully clean up old secret created by CLO")
+			log.NewLogger("").Error(err, "Can't fully clean up old secret created by CLO")
 			return err
 		}
 
@@ -357,56 +358,58 @@ func isElasticsearchCRDifferent(current *elasticsearch.Elasticsearch, desired *e
 
 	different := false
 
+	logger := log.NewLogger("logstore")
+
 	if !utils.AreMapsSame(current.Spec.Spec.NodeSelector, desired.Spec.Spec.NodeSelector) {
-		log.Info("Elasticsearch nodeSelector change found, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch nodeSelector change found, updating", "currentName", current.Name)
 		current.Spec.Spec.NodeSelector = desired.Spec.Spec.NodeSelector
 		different = true
 	}
 
 	if !utils.AreTolerationsSame(current.Spec.Spec.Tolerations, desired.Spec.Spec.Tolerations) {
-		log.Info("Elasticsearch tolerations change found, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch tolerations change found, updating", "currentName", current.Name)
 		current.Spec.Spec.Tolerations = desired.Spec.Spec.Tolerations
 		different = true
 	}
 
 	if current.Spec.Spec.Image != desired.Spec.Spec.Image {
-		log.Info("Elasticsearch image change found, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch image change found, updating", "currentName", current.Name)
 		current.Spec.Spec.Image = desired.Spec.Spec.Image
 		different = true
 	}
 
 	if current.Spec.RedundancyPolicy != desired.Spec.RedundancyPolicy {
-		log.Info("Elasticsearch redundancy policy change found, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch redundancy policy change found, updating", "currentName", current.Name)
 		current.Spec.RedundancyPolicy = desired.Spec.RedundancyPolicy
 		different = true
 	}
 
 	if !reflect.DeepEqual(current.ObjectMeta.Annotations, desired.ObjectMeta.Annotations) {
-		log.Info("Elasticsearch resources change found in Annotations, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch resources change found in Annotations, updating", "currentName", current.Name)
 		current.Annotations = desired.Annotations
 		different = true
 	}
 
 	if !reflect.DeepEqual(current.Spec.Spec.Resources, desired.Spec.Spec.Resources) {
-		log.Info("Elasticsearch resources change found, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch resources change found, updating", "currentName", current.Name)
 		current.Spec.Spec.Resources = desired.Spec.Spec.Resources
 		different = true
 	}
 
 	if !reflect.DeepEqual(current.Spec.Spec.ProxyResources, desired.Spec.Spec.ProxyResources) {
-		log.Info("Elasticsearch Proxy resources change found, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch Proxy resources change found, updating", "currentName", current.Name)
 		current.Spec.Spec.ProxyResources = desired.Spec.Spec.ProxyResources
 		different = true
 	}
 
 	if nodes, ok := areNodesDifferent(current.Spec.Nodes, desired.Spec.Nodes); ok {
-		log.Info("Elasticsearch node configuration change found, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch node configuration change found, updating", "currentName", current.Name)
 		current.Spec.Nodes = nodes
 		different = true
 	}
 
 	if !reflect.DeepEqual(current.Spec.IndexManagement, desired.Spec.IndexManagement) {
-		log.Info("Elasticsearch IndexManagement change found, updating", "currentName", current.Name)
+		logger.Info("Elasticsearch IndexManagement change found, updating", "currentName", current.Name)
 		current.Spec.IndexManagement = desired.Spec.IndexManagement
 		different = true
 	}

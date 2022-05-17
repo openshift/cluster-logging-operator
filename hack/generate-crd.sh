@@ -4,7 +4,7 @@ source .bingo/variables.env
 
 set -euo pipefail
 
-BUNDLE_DIR=${1:-"bundle/manifests"}
+BUNDLE_DIR=${2:-"bundle/manifests"}
 CLF_CRD_FILE="logging.openshift.io_clusterlogforwarders_crd.yaml"
 CLO_CRD_FILE="logging.openshift.io_clusterloggings_crd.yaml"
 CLO_PATCH_FILE="crd-v1-clusterloggings-patches.yaml"
@@ -15,23 +15,13 @@ METADATA_READER_CLUSTERROLEBINDING="cluster-logging-metadata-reader_rbac.authori
 METADATA_READER_CLUSTERROLE="metadata-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml"
 PRIORITY_CLASS="cluster-logging_scheduling.k8s.io_v1_priorityclass.yaml"
 
-
-BUNDLE_VERSION=${LOGGING_VERSION}.0
-BUNDLE_CHANNELS=" --channels=stable,stable-${LOGGING_VERSION}"
-BUNDLE_DEFAULT_CHANNEL=" --default-channel=stable"
-BUNDLE_METADATA_OPTS=" ${BUNDLE_CHANNELS} ${BUNDLE_DEFAULT_CHANNEL}"
-
-
-#echo "--------------------------------------------------------------"
-#echo "Generate k8s golang code"
-#echo "--------------------------------------------------------------"
-#$OPERATOR_SDK generate k8s
+BUNDLE_GEN_FLAGS=$1
 
 echo "--------------------------------------------------------------"
 echo "Generate CRDs for apiVersion v1"
 echo "--------------------------------------------------------------"
 $OPERATOR_SDK generate kustomize manifests -q
-	$KUSTOMIZE build config/manifests | $OPERATOR_SDK generate bundle -q --overwrite --version ${BUNDLE_VERSION} ${BUNDLE_METADATA_OPTS}
+	$KUSTOMIZE build config/manifests | $OPERATOR_SDK generate bundle $BUNDLE_GEN_FLAGS
 rm ${BUNDLE_DIR}/cluster-logging-operator.clusterserviceversion.yaml
 mv ${BUNDLE_DIR}/logging.openshift.io_clusterlogforwarders.yaml ${BUNDLE_DIR}/${CLF_CRD_FILE}
 mv ${BUNDLE_DIR}/logging.openshift.io_clusterloggings.yaml ${BUNDLE_DIR}/${CLO_CRD_FILE}

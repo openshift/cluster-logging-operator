@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -30,10 +30,12 @@ const (
 )
 
 func (f *CollectorFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	log.V(2).Info("Adding kafka output", "name", output.Name)
+	logger := log.NewLogger("output-kafka-testing")
+
+	logger.V(2).Info("Adding kafka output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 
-	log.V(2).Info("Standing up Kafka instance", "name", name)
+	logger.V(2).Info("Standing up Kafka instance", "name", name)
 	//steps to deploy kafka single node cluster a. Deploy Zookeeper b. Deploy Broker c. Deploy kafka Consumer
 
 	//step a
@@ -41,7 +43,7 @@ func (f *CollectorFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, out
 
 	//zookeeperm - configmap with zookeeperDeploymentName being "zookeeper", in b.Pod.Namespace
 	zookeepercm := kafka.NewZookeeperConfigMapFunctionalTestPod(b.Pod.Namespace)
-	log.V(2).Info("Creating zookeeper configmap", "namespace", zookeepercm.Namespace, "name", zookeepercm.Name)
+	logger.V(2).Info("Creating zookeeper configmap", "namespace", zookeepercm.Namespace, "name", zookeepercm.Name)
 	if err := f.Test.Client.Create(zookeepercm); err != nil {
 		return err
 	}
@@ -55,7 +57,7 @@ func (f *CollectorFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, out
 		End()
 
 	//standup container running zookeeper
-	log.V(2).Info("Adding container", "name", name)
+	logger.V(2).Info("Adding container", "name", name)
 	b.AddContainer(kafkaZookeeperContainerName, ImageRemoteKafka).
 		AddEnvVar("KAFKA_LOG4J_OPTS", "-Dlog4j.configuration=file:/etc/kafka/log4j.properties").
 		AddContainerPort("client", zookeeperClientPort).
@@ -78,7 +80,7 @@ func (f *CollectorFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, out
 
 	// configmap for broker with DeploymentName=kafka, b.Pod.Namespace, and data specific to broker
 	brokercm := kafka.NewBrokerConfigMapFunctionalTestPod(b.Pod.Namespace)
-	log.V(2).Info("Creating Broker ConfigMap", "namespace", brokercm.Namespace, "name", brokercm.Name)
+	logger.V(2).Info("Creating Broker ConfigMap", "namespace", brokercm.Namespace, "name", brokercm.Name)
 	if err := f.Test.Client.Create(brokercm); err != nil {
 		return err
 	}
@@ -105,7 +107,7 @@ func (f *CollectorFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, out
 
 	cmdCreateTopicAndDeployBroker := "./bin/kafka-server-start.sh /etc/kafka-configmap/server.properties"
 
-	log.V(2).Info("Adding container", "name", name)
+	logger.V(2).Info("Adding container", "name", name)
 	b.AddContainer(kafkaBrokerContainerName, ImageRemoteKafka).
 		AddEnvVar("CLASSPATH", "/opt/kafka/libs/extensions/*").
 		AddEnvVar("KAFKA_LOG4J_OPTS", "-Dlog4j.configuration=file:/etc/kafka/log4j.properties").
@@ -134,7 +136,7 @@ func (f *CollectorFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, out
 		// Deploy consumer  - reference implementation followed from the e2e kafka test as below
 		//consumerapp := kafka.NewKafkaConsumerDeployment(OpenshiftLoggingNS, topic)
 
-		log.V(2).Info("Creating a Topic and Deploying Consumer app")
+		logger.V(2).Info("Creating a Topic and Deploying Consumer app")
 		//create topic and deploy consumer app
 		cmdCreateTopic := fmt.Sprintf(`./bin/kafka-topics.sh --zookeeper localhost:2181 --create --if-not-exists --topic %s --partitions 1 --replication-factor 1 ;`, topic)
 		cmdRunConsumer := fmt.Sprintf(`./bin/kafka-console-consumer.sh --bootstrap-server %s --topic %s --from-beginning > /shared/consumed.logs ;`, "localhost:9092", topic)

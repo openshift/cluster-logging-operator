@@ -1,10 +1,11 @@
 package stats
 
 import (
-	"github.com/ViaQ/logerr/log"
 	"math"
 	"regexp"
 	"strconv"
+
+	"github.com/ViaQ/logerr/v2/log"
 )
 
 var (
@@ -25,7 +26,7 @@ func (s *Sample) CPUCoresAsFloat() float64 {
 		}
 		intVar, err := strconv.Atoi(value)
 		if err != nil {
-			log.Error(err, "Error converting value", "value", value)
+			log.NewLogger("stats-testing").Error(err, "Error converting value", "value", value)
 			return 0.0
 		}
 		if index := re.SubexpIndex("unit"); index > 0 {
@@ -45,7 +46,7 @@ func (s *Sample) MemoryBytesAsFloat() float64 {
 		}
 		intVar, err := strconv.Atoi(value)
 		if err != nil {
-			log.Error(err, "Error converting value", "value", value)
+			log.NewLogger("stats-testing").Error(err, "Error converting value", "value", value)
 			return 0.0
 		}
 		if index := re.SubexpIndex("unit"); index > 0 {
@@ -80,7 +81,7 @@ func NewResourceMetrics() *ResourceMetrics {
 }
 
 func (rm *ResourceMetrics) AddSample(sample *Sample) {
-	log.V(3).Info("Adding resource metric", "sample", sample)
+	log.NewLogger("stats-testing").V(3).Info("Adding resource metric", "sample", sample)
 	if sample == nil {
 		return
 	}

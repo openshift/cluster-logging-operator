@@ -8,13 +8,11 @@ import (
 	"strings"
 	"time"
 
-	logger "github.com/ViaQ/logerr/log"
+	log "github.com/ViaQ/logerr/v2/log"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/ViaQ/logerr/log"
 
 	"github.com/openshift/cluster-logging-operator/test"
 )
@@ -347,6 +345,7 @@ type AllLog struct {
 }
 
 func StrictlyParseLogs(in string, logs interface{}) error {
+	logger := log.NewLogger("types-testing")
 	logger.V(3).Info("ParseLogs", "content", in)
 	if in == "" {
 		return nil
@@ -355,7 +354,7 @@ func StrictlyParseLogs(in string, logs interface{}) error {
 	dec.DisallowUnknownFields()
 	err := dec.Decode(&logs)
 	if err != nil {
-		log.V(1).Error(err, "Error decoding", "log", in)
+		logger.V(1).Error(err, "Error decoding", "log", in)
 		return err
 	}
 

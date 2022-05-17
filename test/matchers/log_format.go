@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	logger "github.com/ViaQ/logerr/log"
+	log "github.com/ViaQ/logerr/v2/log"
 	"github.com/onsi/gomega/types"
 	"github.com/openshift/cluster-logging-operator/test"
 	testtypes "github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -101,6 +101,8 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 	templateValueString := fmt.Sprintf("%v", templateValue)
 	valueString := fmt.Sprintf("%v", value)
 
+	logger := log.NewLogger("matchers-testing")
+
 	if reflect.TypeOf(templateValue).Name() == "OptionalInt" {
 		expValue := templateValue.(testtypes.OptionalInt)
 		actValue := value.(testtypes.OptionalInt)
@@ -154,8 +156,8 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 	return false
 }
 
-func CompareLog(template interface{}, log interface{}) (string, bool, error) {
-	logFieldValues, logFieldNames := DeepFields(log, "")
+func CompareLog(template interface{}, actual interface{}) (string, bool, error) {
+	logFieldValues, logFieldNames := DeepFields(actual, "")
 
 	// templateString := test.JSONLine(template)
 	// logger.V(3).Info("Marshalled", "template", templateString)
@@ -163,6 +165,7 @@ func CompareLog(template interface{}, log interface{}) (string, bool, error) {
 	// test.MustUnmarshal(templateString, allLog)
 	// logger.V(3).Info("Unmarshled", "template", template)
 	templateFieldValues, templateFieldNames := DeepFields(template, "")
+	logger := log.NewLogger("matchers-testing")
 	logger.V(3).Info("Template", "names", templateFieldNames)
 	for i := range templateFieldNames {
 		templateFieldValue := templateFieldValues[i].Interface()

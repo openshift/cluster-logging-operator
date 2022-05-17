@@ -11,7 +11,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 	openshiftv1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
@@ -105,7 +105,8 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 	q.Add("limit", strconv.Itoa(limit))
 	q.Add("direction", "FORWARD")
 	u.RawQuery = q.Encode()
-	log.V(3).Info("Loki Query", "url", u.String(), "org-id", orgID)
+	newLogger := log.NewLogger("loki-testing")
+	newLogger.V(3).Info("Loki Query", "url", u.String(), "org-id", orgID)
 	header := http.Header{}
 	if orgID != "" {
 		header.Add("X-Scope-OrgID", orgID)
@@ -120,7 +121,7 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 		err = test.HTTPError(resp)
 	}
 	if err != nil {
-		log.V(3).Error(err, "Loki Query", "url", u.String())
+		newLogger.V(3).Error(err, "Loki Query", "url", u.String())
 		return nil, fmt.Errorf("%w\nURL: %v", err, u)
 	}
 	defer resp.Body.Close()
@@ -134,13 +135,14 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 	if qr.Data.ResultType != "streams" {
 		return nil, fmt.Errorf("expected 'resultType: streams' in %v", qr)
 	}
-	log.V(3).Info("Loki Query done", "result", test.JSONString(qr.Data.Result))
+	newLogger.V(3).Info("Loki Query done", "result", test.JSONString(qr.Data.Result))
 	return qr.Data.Result, nil
 }
 
 // QueryUntil repeats the query until at least n lines are received.
 func (r *Receiver) QueryUntil(logQL string, orgID string, n int) (values []StreamValues, err error) {
-	log.V(2).Info("Loki QueryUntil", "query", logQL, "n", n)
+	newLogger := log.NewLogger("loki-testing")
+	newLogger.V(2).Info("Loki QueryUntil", "query", logQL, "n", n)
 	err = wait.PollImmediate(time.Second, r.timeout, func() (bool, error) {
 		var err error
 		values, err = r.Query(logQL, orgID, n)

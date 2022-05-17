@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	v1 "k8s.io/api/core/v1"
@@ -99,7 +99,7 @@ func EnsureLinuxNodeSelector(selectors map[string]string) map[string]string {
 			return selectors
 		}
 		// Selector is provided but is not "linux"
-		log.Info("Overriding node selector value", "OsNodeLabel", OsNodeLabel, "osType", osType, "LinuxValue", LinuxValue)
+		log.NewLogger("utils").Info("Overriding node selector value", "OsNodeLabel", OsNodeLabel, "osType", osType, "LinuxValue", LinuxValue)
 	}
 	selectors[OsNodeLabel] = LinuxValue
 	return selectors
@@ -169,29 +169,31 @@ func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
 // based on the component type
 func GetComponentImage(component string) string {
 
+	logger := log.NewLogger("")
 	envVarName, ok := COMPONENT_IMAGES[component]
 	if !ok {
-		log.Error(errors.New("Can't get component image"), "Environment variable name mapping missing for component", "component", component)
+		logger.Error(errors.New("Can't get component image"), "Environment variable name mapping missing for component", "component", component)
 		return ""
 	}
 	imageTag := os.Getenv(envVarName)
 	if imageTag == "" {
-		log.Error(errors.New("Can't get component image"), "No image tag defined for component by environment variable", "component", component, "envVarName", envVarName)
+		logger.Error(errors.New("Can't get component image"), "No image tag defined for component by environment variable", "component", component, "envVarName", envVarName)
 	}
-	log.V(3).Info("Setting component image for to", "component", component, "imageTag", imageTag)
+	logger.V(3).Info("Setting component image for to", "component", component, "imageTag", imageTag)
 	return imageTag
 }
 
 func GetFileContents(filePath string) []byte {
 
+	logger := log.NewLogger("")
 	if filePath == "" {
-		log.V(2).Info("Empty file path provided for retrieving file contents")
+		logger.V(2).Info("Empty file path provided for retrieving file contents")
 		return nil
 	}
 
 	contents, err := ioutil.ReadFile(filepath.Clean(filePath))
 	if err != nil {
-		log.Error(err, "Operator unable to read local file to get contents")
+		logger.Error(err, "Operator unable to read local file to get contents")
 		return nil
 	}
 
@@ -205,15 +207,16 @@ func GetShareDir() string {
 	const sep = string(os.PathSeparator)
 	const repoRoot = sep + "cluster-logging-operator"
 	wd, err := os.Getwd()
+	logger := log.NewLogger("")
 	if err != nil {
-		log.V(3).Error(err, "Error determining share directory. Returning default", "default", defaultShareDir)
+		logger.V(3).Error(err, "Error determining share directory. Returning default", "default", defaultShareDir)
 		return defaultShareDir
 	}
-	log.V(5).Info("GetShareDir", "workingdir", wd)
+	logger.V(5).Info("GetShareDir", "workingdir", wd)
 	i := strings.LastIndex(wd, repoRoot)
 	if i >= 0 {
 		shareDir := filepath.Join(wd, "files")
-		log.V(5).Info("GetShareDir", "sharedir", shareDir)
+		logger.V(5).Info("GetShareDir", "sharedir", shareDir)
 		return shareDir
 	}
 	return defaultShareDir

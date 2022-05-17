@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
@@ -79,7 +78,7 @@ func (clusterRequest *ClusterLoggingRequest) GetRouteURL(routeName string) (stri
 
 	if err := clusterRequest.Get(routeName, foundRoute); err != nil {
 		if !errors.IsNotFound(err) {
-			log.Error(err, "Failed to check for ClusterLogging object")
+			clusterRequest.Log.Error(err, "Failed to check for ClusterLogging object")
 		}
 		return "", err
 	}

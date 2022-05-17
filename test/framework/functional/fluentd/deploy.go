@@ -2,15 +2,16 @@ package fluentd
 
 import (
 	"fmt"
-	"github.com/ViaQ/logerr/log"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/ViaQ/logerr/v2/log"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
-	"os"
-	"strconv"
-	"strings"
 )
 
 type FluentdCollector struct {
@@ -22,7 +23,7 @@ func (c *FluentdCollector) String() string {
 }
 
 func (c *FluentdCollector) DeployConfigMapForConfig(name, config, clfYaml string) error {
-	log.V(2).Info("Creating config configmap")
+	log.NewLogger("fluentd-deploy-testing").V(2).Info("Creating config configmap")
 	configmap := runtime.NewConfigMap(c.NS.Name, name, map[string]string{})
 
 	//create dirs that dont exist in testing
@@ -76,7 +77,7 @@ func adaptLogLevel() string {
 			default:
 			}
 		} else {
-			log.V(1).Error(err, "Unable to set LOG_LEVEL from environment")
+			log.NewLogger("fluent-deploy-testing").V(1).Error(err, "Unable to set LOG_LEVEL from environment")
 		}
 	}
 	return logLevel

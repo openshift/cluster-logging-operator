@@ -61,8 +61,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -187,8 +189,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -304,8 +308,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -458,8 +464,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -561,8 +569,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
 """
 
 [transforms.es_2_dedot_and_flatten]
@@ -649,7 +659,7 @@ crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 `,
 		}),
-		Entry("with Elsticsearch StructuredTypeKey", generator.ConfGenerateTest{
+		Entry("with Elasticsearch StructuredTypeKey", generator.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -683,9 +693,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
-  
+  del(.file)
+  del(.tag)
+  del(.source_type)
   if .log_type == "application" && .structured != null {
     val = .kubernetes.labels.mylabel
     if val != null {
@@ -771,7 +782,7 @@ request.timeout_secs = 2147483648
 id_key = "_id"
 `,
 		}),
-		Entry("with Elsticsearch StructuredTypeName", generator.ConfGenerateTest{
+		Entry("with Elasticsearch StructuredTypeName", generator.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -805,9 +816,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
-  
+  del(.file)
+  del(.tag)
+  del(.source_type)
   if .log_type == "application" && .structured != null {
     .write_index = "app-myindex-write"
   }
@@ -890,7 +902,7 @@ request.timeout_secs = 2147483648
 id_key = "_id"
 `,
 		}),
-		Entry("with both Elsticsearch StructuredTypeKey and StructuredTypeName", generator.ConfGenerateTest{
+		Entry("with both Elasticsearch StructuredTypeKey and StructuredTypeName", generator.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -925,9 +937,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
-  
+  del(.file)
+  del(.tag)
+  del(.source_type)
   if .log_type == "application" && .structured != null {
     val = .kubernetes.labels.mylabel
     if val != null {

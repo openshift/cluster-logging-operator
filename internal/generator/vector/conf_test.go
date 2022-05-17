@@ -150,15 +150,9 @@ source = """
     level = "debug"
   }
   .level = level
-  
-  del(.file)
-  
   del(.source_type)
-  
   del(.stream)
-  
   del(.kubernetes.pod_ips)
-  
   ."@timestamp" = del(.timestamp)
 """
 
@@ -166,7 +160,9 @@ source = """
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = """
-  .
+  .tag = ".journal.system"
+  del(.source_type)
+  ."@timestamp" = del(.timestamp)
 """
 
 [transforms.route_container_logs]
@@ -175,7 +171,7 @@ inputs = ["container_logs"]
 route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube"))'
 route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube")'
 
-# Rename log stream to "application"
+# Set log_type to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
@@ -183,7 +179,7 @@ source = """
   .log_type = "application"
 """
 
-# Rename log stream to "infrastructure"
+# Set log_type to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
@@ -191,12 +187,49 @@ source = """
   .log_type = "infrastructure"
 """
 
-# Rename log stream to "audit"
+# Tag host audit files
+[transforms.tagged_host_audit_logs]
+type = "remap"
+inputs = ["host_audit_logs"]
+source = """
+  .tag = ".linux-audit.log"
+"""
+
+# Tag k8s audit files
+[transforms.tagged_k8s_audit_logs]
+type = "remap"
+inputs = ["k8s_audit_logs"]
+source = """
+  .tag = ".k8s-audit.log"
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+"""
+
+# Tag openshift audit files
+[transforms.tagged_openshift_audit_logs]
+type = "remap"
+inputs = ["openshift_audit_logs"]
+source = """
+  .tag = ".openshift-audit.log"
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+"""
+
+# Tag ovn audit files
+[transforms.tagged_ovn_audit_logs]
+type = "remap"
+inputs = ["ovn_audit_logs"]
+source = """
+  .tag = ".ovn-audit.log"
+"""
+
+# Set log_type to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
+inputs = ["tagged_host_audit_logs","tagged_k8s_audit_logs","tagged_openshift_audit_logs","tagged_ovn_audit_logs"]
 source = """
   .log_type = "audit"
+  ."@timestamp" = del(.timestamp)
 """
 
 [transforms.route_application_logs]
@@ -351,15 +384,9 @@ source = """
     level = "debug"
   }
   .level = level
-  
-  del(.file)
-  
   del(.source_type)
-  
   del(.stream)
-  
   del(.kubernetes.pod_ips)
-  
   ."@timestamp" = del(.timestamp)
 """
 
@@ -367,7 +394,9 @@ source = """
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = """
-  .
+  .tag = ".journal.system"
+  del(.source_type)
+  ."@timestamp" = del(.timestamp)
 """
 
 [transforms.route_container_logs]
@@ -376,7 +405,7 @@ inputs = ["container_logs"]
 route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube"))'
 route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube")'
 
-# Rename log stream to "application"
+# Set log_type to "application"
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
@@ -384,7 +413,7 @@ source = """
   .log_type = "application"
 """
 
-# Rename log stream to "infrastructure"
+# Set log_type to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
@@ -392,12 +421,49 @@ source = """
   .log_type = "infrastructure"
 """
 
-# Rename log stream to "audit"
+# Tag host audit files
+[transforms.tagged_host_audit_logs]
+type = "remap"
+inputs = ["host_audit_logs"]
+source = """
+  .tag = ".linux-audit.log"
+"""
+
+# Tag k8s audit files
+[transforms.tagged_k8s_audit_logs]
+type = "remap"
+inputs = ["k8s_audit_logs"]
+source = """
+  .tag = ".k8s-audit.log"
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+"""
+
+# Tag openshift audit files
+[transforms.tagged_openshift_audit_logs]
+type = "remap"
+inputs = ["openshift_audit_logs"]
+source = """
+  .tag = ".openshift-audit.log"
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+"""
+
+# Tag ovn audit files
+[transforms.tagged_ovn_audit_logs]
+type = "remap"
+inputs = ["ovn_audit_logs"]
+source = """
+  .tag = ".ovn-audit.log"
+"""
+
+# Set log_type to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
+inputs = ["tagged_host_audit_logs","tagged_k8s_audit_logs","tagged_openshift_audit_logs","tagged_ovn_audit_logs"]
 source = """
   .log_type = "audit"
+  ."@timestamp" = del(.timestamp)
 """
 
 [transforms.pipeline]
@@ -423,8 +489,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
 """
 
 [transforms.es_1_dedot_and_flatten]
@@ -526,8 +594,10 @@ source = """
     index = "audit"
   }
   .write_index = index + "-write"
-  
   ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
 """
 
 [transforms.es_2_dedot_and_flatten]

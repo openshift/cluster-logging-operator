@@ -11,6 +11,13 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
+const (
+	HostAuditLogs      = "host_audit_logs"
+	K8sAuditLogs       = "k8s_audit_logs"
+	OpenShiftAuditLogs = "openshift_audit_logs"
+	OvnAuditLogs       = "ovn_audit_logs"
+)
+
 func Sources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	return generator.MergeElements(
 		LogSources(spec, op),
@@ -41,25 +48,25 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []g
 	if types.Has(logging.InputNameAudit) {
 		el = append(el,
 			source.HostAuditLog{
-				ComponentID:  "host_audit_logs",
+				ComponentID:  HostAuditLogs,
 				Desc:         "Logs from host audit",
 				TemplateName: "inputSourceHostAuditTemplate",
 				TemplateStr:  source.HostAuditLogTemplate,
 			},
 			source.K8sAuditLog{
-				ComponentID:  "k8s_audit_logs",
+				ComponentID:  K8sAuditLogs,
 				Desc:         "Logs from kubernetes audit",
 				TemplateName: "inputSourceK8sAuditTemplate",
 				TemplateStr:  source.K8sAuditLogTemplate,
 			},
 			source.OpenshiftAuditLog{
-				ComponentID:  "openshift_audit_logs",
+				ComponentID:  OpenShiftAuditLogs,
 				Desc:         "Logs from openshift audit",
 				TemplateName: "inputSourceOpenShiftAuditTemplate",
 				TemplateStr:  source.OpenshiftAuditLogTemplate,
 			},
 			source.OVNAuditLog{
-				ComponentID:  "ovn_audit_logs",
+				ComponentID:  OvnAuditLogs,
 				Desc:         "Logs from ovn audit",
 				TemplateName: "inputSourceOVNAuditTemplate",
 				TemplateStr:  source.OVNAuditLogTemplate,

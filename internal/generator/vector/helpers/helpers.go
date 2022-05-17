@@ -26,3 +26,7 @@ func TrimSpaces(in []string) []string {
 	}
 	return o
 }
+
+func FormatComponentID(name string) string {
+	return strings.ToLower(Replacer.Replace(name))
+}

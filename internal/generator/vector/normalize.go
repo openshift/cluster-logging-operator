@@ -25,22 +25,11 @@ if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"
 }
 .level = level
 `
-
-	RemoveFile = `
-del(.file)
-`
-	RemoveSourceType = `
-del(.source_type)
-`
-	RemoveStream = `
-del(.stream)
-`
-	RemovePodIPs = `
-del(.kubernetes.pod_ips)
-`
-	FixTimestampField = `
-."@timestamp" = del(.timestamp)
-`
+	RemoveSourceType  = `del(.source_type)`
+	RemoveStream      = `del(.stream)`
+	RemovePodIPs      = `del(.kubernetes.pod_ips)`
+	FixTimestampField = `."@timestamp" = del(.timestamp)`
+	AddJournalLogTag  = `.tag = ".journal.system"`
 )
 
 func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
@@ -62,12 +51,11 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				FixLogLevel,
-				RemoveFile,
 				RemoveSourceType,
 				RemoveStream,
 				RemovePodIPs,
 				FixTimestampField,
-			}), "\n\n"),
+			}), "\n"),
 		},
 	}
 }
@@ -77,7 +65,11 @@ func NormalizeJournalLogs(inLabel, outLabel string) []generator.Element {
 		Remap{
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
-			VRL:         SrcPassThrough,
+			VRL: strings.Join(helpers.TrimSpaces([]string{
+				AddJournalLogTag,
+				RemoveSourceType,
+				FixTimestampField,
+			}), "\n"),
 		},
 	}
 }

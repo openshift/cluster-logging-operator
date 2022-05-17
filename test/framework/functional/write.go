@@ -105,8 +105,9 @@ func (f *CollectorFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, s
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
 	file := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
 	logPath := filepath.Dir(file)
+	log.V(3).Info("Writing message to app log with path", "path", logPath)
 	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", logPath, size, numOfLogs, msg, file))
-	log.V(3).Info("CollectorFunctionalFramework.WritesNApplicationLogsOfSize", "result", result, "err", err)
+	log.V(3).Info("WritesNApplicationLogsOfSize", "namespace", f.Pod.Namespace, "result", result, "err", err)
 	return err
 }
 
@@ -116,6 +117,6 @@ func (f *CollectorFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs 
 	cmd := fmt.Sprintf("mkdir -p %s;for n in {1..%d};do echo \"$(echo %s|base64 -d)\" >> %s;sleep 1s;done", logPath, numOfLogs, encoded, filename)
 	log.V(3).Info("Writing messages to log with command", "cmd", cmd)
 	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
-	log.V(3).Info("CollectorFunctionalFramework.WriteMessagesToLog", "result", result, "err", err)
+	log.V(3).Info("WriteMessagesToLog", "namespace", f.Pod.Namespace, "result", result, "err", err)
 	return err
 }

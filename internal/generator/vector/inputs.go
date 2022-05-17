@@ -2,11 +2,13 @@ package vector
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"sort"
 )
 
 const (
@@ -22,6 +24,22 @@ const (
 	RouteApplicationLogs = "route_application_logs"
 
 	SrcPassThrough = "."
+
+	HostAuditLogTag = ".linux-audit.log"
+	HostAuditLogID  = "tagged_host_audit_logs"
+
+	K8sAuditLogTag = ".k8s-audit.log"
+	K8sAuditLogID  = "tagged_k8s_audit_logs"
+
+	OpenAuditLogTag = ".openshift-audit.log"
+	OpenAuditLogID  = "tagged_openshift_audit_logs"
+
+	OvnAuditLogTag = ".ovn-audit.log"
+	OvnAuditLogID  = "tagged_ovn_audit_logs"
+
+	ParseAndFlatten = `. = merge(., parse_json!(string!(.message))) ?? .
+del(.message)
+`
 )
 
 var (
@@ -37,6 +55,11 @@ var (
 	AddLogTypeInfra = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
 	AddLogTypeAudit = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
 
+	AddHostAuditTag = fmt.Sprintf(".tag = %q", HostAuditLogTag)
+	AddK8sAuditTag  = fmt.Sprintf(".tag = %q", K8sAuditLogTag)
+	AddOpenAuditTag = fmt.Sprintf(".tag = %q", OpenAuditLogTag)
+	AddOvnAuditTag  = fmt.Sprintf(".tag = %q", OvnAuditLogTag)
+
 	MatchNS = func(ns string) string {
 		return Eq(K8sNamespaceName, ns)
 	}
@@ -49,10 +72,10 @@ var (
 )
 
 // Inputs takes the raw log sources (container, journal, audit) and produces Inputs as defined by ClusterLogForwarder Api
-func Inputs(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
-	el := []generator.Element{}
+func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
+	el := []Element{}
 
-	types := generator.GatherSources(spec, o)
+	types := GatherSources(spec, o)
 	// route container_logs based on type
 	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
 		r := Route{
@@ -70,32 +93,64 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o generator.Options) []genera
 	}
 
 	if types.Has(logging.InputNameApplication) {
-		r := Remap{
-			Desc:        `Rename log stream to "application"`,
+		el = append(el, Remap{
+			Desc:        `Set log_type to "application"`,
 			ComponentID: logging.InputNameApplication,
 			Inputs:      helpers.MakeInputs("route_container_logs.app"),
 			VRL:         AddLogTypeApp,
-		}
-		el = append(el, r)
+		})
 	}
 	if types.Has(logging.InputNameInfrastructure) {
-		r := Remap{
-			Desc:        `Rename log stream to "infrastructure"`,
+		el = append(el, Remap{
+			Desc:        `Set log_type to "infrastructure"`,
 			ComponentID: logging.InputNameInfrastructure,
 			Inputs:      helpers.MakeInputs("route_container_logs.infra", InputJournalLogs),
 			VRL:         AddLogTypeInfra,
-		}
-		el = append(el, r)
+		})
 	}
 	if types.Has(logging.InputNameAudit) {
-		r := Remap{
-			Desc:        `Rename log stream to "audit"`,
-			ComponentID: logging.InputNameAudit,
-			Inputs:      helpers.MakeInputs("host_audit_logs", "k8s_audit_logs", "openshift_audit_logs", "ovn_audit_logs"),
-			VRL:         AddLogTypeAudit,
-		}
-		el = append(el, r)
+		el = append(el,
+			Remap{
+				Desc:        `Tag host audit files`,
+				ComponentID: HostAuditLogID,
+				Inputs:      helpers.MakeInputs(HostAuditLogs),
+				VRL:         AddHostAuditTag,
+			},
+			Remap{
+				Desc:        `Tag k8s audit files`,
+				ComponentID: K8sAuditLogID,
+				Inputs:      helpers.MakeInputs(K8sAuditLogs),
+				VRL: strings.Join(helpers.TrimSpaces([]string{
+					AddK8sAuditTag,
+					ParseAndFlatten,
+				}), "\n"),
+			},
+			Remap{
+				Desc:        `Tag openshift audit files`,
+				ComponentID: OpenAuditLogID,
+				Inputs:      helpers.MakeInputs(OpenShiftAuditLogs),
+				VRL: strings.Join(helpers.TrimSpaces([]string{
+					AddOpenAuditTag,
+					ParseAndFlatten,
+				}), "\n"),
+			},
+			Remap{
+				Desc:        `Tag ovn audit files`,
+				ComponentID: OvnAuditLogID,
+				Inputs:      helpers.MakeInputs(OvnAuditLogs),
+				VRL:         AddOvnAuditTag,
+			},
+			Remap{
+				Desc:        `Set log_type to "audit"`,
+				ComponentID: logging.InputNameAudit,
+				Inputs:      helpers.MakeInputs(HostAuditLogID, K8sAuditLogID, OpenAuditLogID, OvnAuditLogID),
+				VRL: strings.Join(helpers.TrimSpaces([]string{
+					AddLogTypeAudit,
+					FixTimestampField,
+				}), "\n"),
+			})
 	}
+
 	userDefinedAppRouteMap := UserDefinedAppRouting(spec, o)
 	if len(userDefinedAppRouteMap) != 0 {
 		el = append(el, Route{
@@ -108,7 +163,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o generator.Options) []genera
 	return el
 }
 
-func UserDefinedAppRouting(spec *logging.ClusterLogForwarderSpec, o generator.Options) map[string]string {
+func UserDefinedAppRouting(spec *logging.ClusterLogForwarderSpec, o Options) map[string]string {
 	userDefined := spec.InputMap()
 	routeMap := map[string]string{}
 	for _, pipeline := range spec.Pipelines {

@@ -68,8 +68,7 @@ func Debug(id string, inputs string) generator.Element {
 inputs = {{.InLabel}}
 type = "console"
 target = "stdout"
-[sinks.{{.ComponentID}}.encoding]
-codec = "json"
+encoding.codec = "json"
 {{end}}
 `,
 	}

@@ -369,8 +369,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfig(colle
 			constants.CollectorName,
 			clusterRequest.Cluster.Namespace,
 			map[string]string{
-				"fluent.conf": collectorConfig,
-				"run.sh":      fluentd.RunScript,
+				"fluent.conf":         collectorConfig,
+				"run.sh":              fluentd.RunScript,
+				"cleanInValidJson.rb": fluentd.CleanInValidJson,
 			},
 		)
 		err = clusterRequest.createConfigMap(collectorConfigMap)

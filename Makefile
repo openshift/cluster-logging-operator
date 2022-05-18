@@ -108,7 +108,7 @@ clean:
 	go clean -cache -testcache ./...
 
 image: .target/image
-.target/image: .target $(shell find must-gather version scripts files vendor manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
+.target/image: .target $(shell find must-gather version scripts files manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
 	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 

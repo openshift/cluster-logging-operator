@@ -84,7 +84,7 @@ run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	LOGFILEMETRICEXPORTER_IMAGE=quay.io/openshift-logging/log-file-metric-exporter:1.0 \
+	LOGFILEMETRICEXPORTER_IMAGE=quay.io/openshift-logging/log-file-metric-exporter:1.1 \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \

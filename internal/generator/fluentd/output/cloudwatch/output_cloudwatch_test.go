@@ -1,6 +1,7 @@
 package cloudwatch
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"path"
 	"testing"
 
@@ -55,7 +56,7 @@ var _ = Describe("Generating fluentd config", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
   <filter ` + source.InfraTagsForMultilineEx + `>
-     @type record_modifier
+    @type record_modifier
     <record>
       cw_group_name infrastructure
       cw_stream_name ${record['hostname']}.${tag}
@@ -164,7 +165,7 @@ var _ = Describe("Generating fluentd config", func() {
 				expConf := `
 <label @MY_CLOUDWATCH>
   <filter ` + source.InfraTagsForMultilineEx + `>
-   @type record_modifier
+    @type record_modifier
     <record>
       cw_group_name foo.infrastructure
       cw_stream_name ${record['hostname']}.${tag}
@@ -205,6 +206,62 @@ var _ = Describe("Generating fluentd config", func() {
 `
 
 				es := Conf(nil, secrets[output.Secret.Name], output, nil)
+				results, err := g.GenerateConf(es...)
+				Expect(err).To(BeNil())
+				Expect(results).To(EqualTrimLines(expConf))
+			})
+		})
+		Context("with encoding bad char", func() {
+			BeforeEach(func() {
+				output.Cloudwatch.GroupBy = loggingv1.LogGroupByLogType
+			})
+			It("should provide a valid configuration", func() {
+				expConf := `
+<label @MY_CLOUDWATCH>
+  <filter ` + source.InfraTagsForMultilineEx + `>
+    @type record_modifier
+    char_encoding ascii-8bit:utf-8
+    <record>
+      cw_group_name foo.infrastructure
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+  
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
+    @type record_modifier
+    char_encoding ascii-8bit:utf-8
+    <record>
+      cw_group_name foo.application
+      cw_stream_name ${tag}
+    </record>
+  </filter>
+  
+  <filter ` + source.AuditTags + `>
+    @type record_modifier
+    char_encoding ascii-8bit:utf-8
+    <record>
+      cw_group_name foo.audit
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+  
+  <match **>
+    @type cloudwatch_logs
+    auto_create_stream true
+    region anumber1
+    log_group_name_key cw_group_name
+    log_stream_name_key cw_stream_name
+    remove_log_stream_name_key true
+    remove_log_group_name_key true
+    concurrency 2
+    aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r') do |f|f.read.strip end}"
+    aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
+    include_time_key true
+    log_rejected_request true
+  </match>
+</label>
+`
+				es := Conf(nil, secrets[output.Secret.Name], output, map[string]interface{}{elements.CharEncoding: elements.DefaultCharEncoding})
 				results, err := g.GenerateConf(es...)
 				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))

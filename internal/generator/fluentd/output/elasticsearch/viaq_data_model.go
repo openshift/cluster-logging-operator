@@ -1,11 +1,11 @@
 package elasticsearch
 
 import (
+	"fmt"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	corev1 "k8s.io/api/core/v1"
-
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type IndexModel struct {
@@ -26,12 +26,16 @@ func ViaqDataModel(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o 
 		},
 	}
 	if o.Elasticsearch == nil || (o.Elasticsearch.StructuredTypeKey == "" && o.Elasticsearch.StructuredTypeName == "" && !o.Elasticsearch.EnableStructuredContainerLogs) {
+		recordModifier := RecordModifier{
+			RemoveKeys: []string{KeyStructured},
+		}
+		if op[CharEncoding] != nil {
+			recordModifier.CharEncoding = fmt.Sprintf("%v", op[CharEncoding])
+		}
 		elements = append(elements, Filter{
 			Desc:      "remove structured field if present",
 			MatchTags: "**",
-			Element: RecordModifier{
-				RemoveKeys: []string{KeyStructured},
-			},
+			Element:   recordModifier,
 		})
 	}
 	return elements

@@ -33,6 +33,7 @@ type ContainerLog struct {
 	LogType          string                 `json:"log_type,omitempty"`
 	ViaqIndexName    string                 `json:"viaq_index_name"`
 	ViaqMsgID        string                 `json:"viaq_msg_id"`
+	WriteIndex       string                 `json:"write_index"`
 	Openshift        OpenshiftMeta          `json:"openshift"`
 	Structured       map[string]interface{} `json:"structured"`
 }
@@ -46,6 +47,7 @@ type Kubernetes struct {
 	ContainerName     string            `json:"container_name,omitempty"`
 	NamespaceName     string            `json:"namespace_name,omitempty"`
 	PodName           string            `json:"pod_name,omitempty"`
+	ContainerID       string            `json:"container_id,omitempty"`
 	ContainerImage    string            `json:"container_image,omitempty"`
 	ContainerImageID  string            `json:"container_image_id,omitempty"`
 	PodID             string            `json:"pod_id,omitempty"`

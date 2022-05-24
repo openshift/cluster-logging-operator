@@ -9,24 +9,25 @@ import (
 var (
 	TemplateForAnyPipelineMetadata = types.PipelineMetadata{
 		Collector: types.Collector{
-			Ipaddr4:    "*",
-			Inputname:  "*",
-			Name:       "*",
-			Version:    "*",
+			Ipaddr4:    "**optional**",
+			Inputname:  "**optional**",
+			Name:       "**optional**",
+			Version:    "**optional**",
 			ReceivedAt: time.Time{},
 		},
 	}
 	templateForAnyKubernetes = types.Kubernetes{
 		ContainerName:    "*",
+		ContainerID:      "**optional**",
 		PodName:          "*",
 		NamespaceName:    "*",
-		NamespaceID:      "*",
+		NamespaceID:      "**optional**",
 		ContainerImage:   "*",
-		ContainerImageID: "*",
+		ContainerImageID: "**optional**",
 		PodID:            "*",
 		PodIP:            "**optional**",
-		Host:             "*",
-		MasterURL:        "*",
+		Host:             "**optional**",
+		MasterURL:        "**optional**",
 		FlatLabels:       []string{"*"},
 		NamespaceLabels:  map[string]string{"*": "*"},
 		Annotations:      map[string]string{"*": "*"},
@@ -51,19 +52,20 @@ var (
 
 func NewApplicationLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
-		Timestamp: time.Time{},
-		Message:   "*",
-		LogType:   "application",
-		Level:     "*",
-		Hostname:  "*",
-		ViaqMsgID: "*",
+		Timestamp:  time.Time{},
+		Message:    "*",
+		LogType:    "application",
+		Level:      "*",
+		Hostname:   "*",
+		ViaqMsgID:  "**optional**",
+		WriteIndex: "**optional**",
 		Openshift: types.OpenshiftMeta{
 			Labels:   map[string]string{"*": "*"},
 			Sequence: types.NewOptionalInt(""),
 		},
 		PipelineMetadata: TemplateForAnyPipelineMetadata,
 		Docker: types.Docker{
-			ContainerID: "*",
+			ContainerID: "**optional**",
 		},
 		Kubernetes: templateForAnyKubernetes,
 	}

@@ -166,16 +166,22 @@ undeploy-elasticsearch-operator:
 deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
-test-functional: test-functional-benchmarker
-	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
+test-functional: test-functional-benchmarker test-functional-fluentd test-functional-vector
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -cover -race ./test/helpers/...
 .PHONY: test-functional
+
+test-functional-fluentd:
+	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	go test --tags=fluentd -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
+
+test-functional-vector:
+	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
+	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	go test --tags=vector -race ./test/functional/outputs/elasticsearch/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 test-forwarder-generator: bin/forwarder-generator
 	@bin/forwarder-generator --file hack/logforwarder.yaml --collector=fluentd > /dev/null

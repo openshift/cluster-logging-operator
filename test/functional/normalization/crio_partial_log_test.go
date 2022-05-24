@@ -1,11 +1,12 @@
 package normalization
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
-	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
@@ -79,6 +80,7 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 
 		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+		Expect(len(logs)).To(Equal(2))
 		Expect(logs[0].Message).Should(Equal("Run, Forest, Run!"))
 		Expect(logs[1].Message).Should(Equal("Freedom!!!"))
 	})

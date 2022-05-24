@@ -71,13 +71,13 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 			SubElements: []Element{
 				GroupNameStreamName(fmt.Sprintf("%sinfrastructure", logGroupPrefix),
 					"${record['hostname']}.${tag}",
-					source.InfraTagsForMultilineEx),
+					source.InfraTagsForMultilineEx, op),
 				GroupNameStreamName(fmt.Sprintf("%s%s", logGroupPrefix, logGroupName),
 					"${tag}",
-					source.ApplicationTagsForMultilineEx),
+					source.ApplicationTagsForMultilineEx, op),
 				GroupNameStreamName(fmt.Sprintf("%saudit", logGroupPrefix),
 					"${record['hostname']}.${tag}",
-					source.AuditTags),
+					source.AuditTags, op),
 				OutputConf(bufspec, secret, o, op),
 			},
 		},
@@ -120,21 +120,25 @@ func EndpointConfig(o logging.OutputSpec) Element {
 	}
 }
 
-func GroupNameStreamName(groupName, streamName, tag string) Element {
-	return Filter{
-		MatchTags: tag,
-		Element: RecordModifier{
-			Records: []Record{
-				{
-					Key:        "cw_group_name",
-					Expression: groupName,
-				},
-				{
-					Key:        "cw_stream_name",
-					Expression: streamName,
-				},
+func GroupNameStreamName(groupName, streamName, tag string, op Options) Element {
+	recordModifier := RecordModifier{
+		Records: []Record{
+			{
+				Key:        "cw_group_name",
+				Expression: groupName,
+			},
+			{
+				Key:        "cw_stream_name",
+				Expression: streamName,
 			},
 		},
+	}
+	if op[CharEncoding] != nil {
+		recordModifier.CharEncoding = fmt.Sprintf("%v", op[CharEncoding])
+	}
+	return Filter{
+		MatchTags: tag,
+		Element:   recordModifier,
 	}
 }
 

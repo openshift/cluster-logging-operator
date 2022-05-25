@@ -20,6 +20,7 @@ If you have questions, connect to the coreos.slack.com workspace on slack and ch
 * [Troubleshooting the cluster logging operator](troubleshooting.md)
 * [Unmanaged Configurations for Cluster Logging](unmanaged_configuration.md)
 * [Using the clusterlogforwarder.output.url field](output_url_field.md)
+* [How-to add a new output type](how-to-add-new-output.md)
 
 ## Relevant links
 

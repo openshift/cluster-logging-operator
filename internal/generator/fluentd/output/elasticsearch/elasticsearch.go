@@ -127,38 +127,46 @@ func RetryOutput(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o lo
 
 func ChangeESIndex(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op Options) []Element {
 	if o.Elasticsearch != nil && (o.Elasticsearch.StructuredTypeKey != "" || o.Elasticsearch.StructuredTypeName != "") {
+		recordModifier := RecordModifier{
+			Records: []Record{
+				{
+					Key:        "typeFromKey",
+					Expression: (fmt.Sprintf("${record.dig(%s)}", generateRubyDigArgs(o.Elasticsearch.StructuredTypeKey))),
+				},
+				{
+					Key:        "hasStructuredTypeName",
+					Expression: o.Elasticsearch.StructuredTypeName,
+				},
+				{
+					Key:        "viaq_index_name",
+					Expression: `${ if !record['structured'].nil? && record['structured'] != {}; if !record['typeFromKey'].nil?; "app-"+record['typeFromKey']+"-write"; elsif record['hasStructuredTypeName'] != ""; "app-"+record['hasStructuredTypeName']+"-write"; else record['viaq_index_name']; end; else record['viaq_index_name']; end;}`,
+				},
+			},
+			RemoveKeys: []string{"typeFromKey", "hasStructuredTypeName"},
+		}
+		if op[CharEncoding] != nil {
+			recordModifier.CharEncoding = fmt.Sprintf("%v", op[CharEncoding])
+		}
 		return []Element{
 			Filter{
 				MatchTags: "**",
-				Element: RecordModifier{
-					Records: []Record{
-						{
-							Key:        "typeFromKey",
-							Expression: (fmt.Sprintf("${record.dig(%s)}", generateRubyDigArgs(o.Elasticsearch.StructuredTypeKey))),
-						},
-						{
-							Key:        "hasStructuredTypeName",
-							Expression: o.Elasticsearch.StructuredTypeName,
-						},
-						{
-							Key:        "viaq_index_name",
-							Expression: `${ if !record['structured'].nil? && record['structured'] != {}; if !record['typeFromKey'].nil?; "app-"+record['typeFromKey']+"-write"; elsif record['hasStructuredTypeName'] != ""; "app-"+record['hasStructuredTypeName']+"-write"; else record['viaq_index_name']; end; else record['viaq_index_name']; end;}`,
-						},
-					},
-					RemoveKeys: []string{"typeFromKey", "hasStructuredTypeName"},
-				},
+				Element:   recordModifier,
 			},
 		}
-	}
-
-	return []Element{
-		Filter{
-			Desc:      "remove structured field if present",
-			MatchTags: "**",
-			Element: RecordModifier{
-				RemoveKeys: []string{KeyStructured},
+	} else {
+		recordModifier := RecordModifier{
+			RemoveKeys: []string{KeyStructured},
+		}
+		if op[CharEncoding] != nil {
+			recordModifier.CharEncoding = fmt.Sprintf("%v", op[CharEncoding])
+		}
+		return []Element{
+			Filter{
+				Desc:      "remove structured field if present",
+				MatchTags: "**",
+				Element:   recordModifier,
 			},
-		},
+		}
 	}
 }
 

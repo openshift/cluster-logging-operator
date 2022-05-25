@@ -693,8 +693,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_ES_1>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -796,8 +797,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_ES_2>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -1460,8 +1462,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_ES_1>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -1563,8 +1566,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_ES_2>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -2231,8 +2235,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_ES_1>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -2334,8 +2339,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_ES_2>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -3515,8 +3521,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @INFRA_ES>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -3618,8 +3625,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_ES_1>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -3721,8 +3729,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_ES_2>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES
@@ -3824,8 +3833,9 @@ var _ = Describe("Generating fluentd config", func() {
 <label @AUDIT_ES>
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    remove_keys structured
+	@type record_modifier
+    char_encoding ascii-8bit:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES

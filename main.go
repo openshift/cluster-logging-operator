@@ -39,6 +39,10 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+const (
+	UnHealthyStatus = "0"
+)
+
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
@@ -116,7 +120,7 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
-		telemetry.Data.CLInfo.M["healthStatus"] = "1"
+		telemetry.Data.CLInfo.M["healthStatus"] = UnHealthyStatus
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
@@ -126,7 +130,7 @@ func main() {
 		Recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
-		telemetry.Data.CLFInfo.M["healthStatus"] = "1"
+		telemetry.Data.CLFInfo.M["healthStatus"] = UnHealthyStatus
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
@@ -141,6 +145,13 @@ func main() {
 	}
 
 	// updating clo Telemetry Data - to be published by prometheus
+	cloversion, err := getCLOVersion()
+	if err != nil {
+		cloversion = version.Version
+		log.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
+	}
+	telemetry.Data.CLInfo.M["version"] = cloversion
+
 	errr := telemetry.RegisterMetrics()
 	if errr != nil {
 		log.Error(err, "Error in registering clo metrics for telemetry")
@@ -164,4 +175,14 @@ func getWatchNamespace() (string, error) {
 		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
 	}
 	return ns, nil
+}
+
+//get clo operator version from CLUSTER_OPERATOR_CONDITION ENV variable .. supported OCP 4.8 version onwards
+func getCLOVersion() (string, error) {
+	CLOVersionEnvVar := "OPERATOR_CONDITION_NAME"
+	cloversion, found := os.LookupEnv(CLOVersionEnvVar)
+	if !found {
+		return "", fmt.Errorf("%s must be set", CLOVersionEnvVar)
+	}
+	return cloversion, nil
 }

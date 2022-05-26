@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/status"
+	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -107,6 +108,9 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request reconcile.Re
 
 	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client)
 	if reconcileErr != nil {
+		// if cluster is set to fail to reconcile then set healthStatus as 0
+		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
+		telemetry.UpdateCLFMetricsNoErr()
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
 	}
 
@@ -118,6 +122,8 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request reconcile.Re
 
 	if instance.Status.IsReady() {
 		if instance.Status.Conditions.SetCondition(condReady) {
+			telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
+			telemetry.UpdateCLFMetricsNoErr()
 			r.Recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
 		}
 	}
@@ -125,6 +131,8 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request reconcile.Re
 	if instance.Status.IsDegraded() {
 		msg := "Some pipelines are degraded or invalid"
 		if instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg)) {
+			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
+			telemetry.UpdateCLFMetricsNoErr()
 			r.Recorder.Event(instance, "Error", string(logging.ReasonInvalid), msg)
 		}
 	}

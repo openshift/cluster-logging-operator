@@ -8,7 +8,9 @@ import (
 
 	"github.com/ViaQ/logerr/log"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -95,10 +97,15 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request reconci
 	}
 
 	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
+		// if cluster is set to unmanaged then set managedStatus as 0
+		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
+		telemetry.UpdateCLMetricsNoErr()
 		return reconcile.Result{}, nil
 	}
 
 	if err = k8shandler.Reconcile(instance, r.Client, r.Reader, r.Recorder); err != nil {
+		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
+		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "Error reconciling clusterlogging instance")
 	}
 
@@ -111,6 +118,8 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request reconci
 
 func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (reconcile.Result, error) {
 	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
+		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
+		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "clusterlogging-controller error updating status")
 		return reconcileResult, err
 	}

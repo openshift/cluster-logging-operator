@@ -1,9 +1,6 @@
 package elasticsearch
 
 import (
-	"fmt"
-	"strings"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
@@ -72,7 +69,7 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 		FromLabel{
 			InLabel: helpers.LabelName(o.Name),
 			SubElements: MergeElements(
-				ChangeESIndex(bufspec, secret, o, op),
+				ViaqDataModel(bufspec, secret, o, op),
 				FlattenLabels(bufspec, secret, o, op),
 				OutputConf(bufspec, secret, o, op),
 			),
@@ -125,51 +122,6 @@ func RetryOutput(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o lo
 	return es
 }
 
-func ChangeESIndex(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op Options) []Element {
-	if o.Elasticsearch != nil && (o.Elasticsearch.StructuredTypeKey != "" || o.Elasticsearch.StructuredTypeName != "") {
-		recordModifier := RecordModifier{
-			Records: []Record{
-				{
-					Key:        "typeFromKey",
-					Expression: (fmt.Sprintf("${record.dig(%s)}", generateRubyDigArgs(o.Elasticsearch.StructuredTypeKey))),
-				},
-				{
-					Key:        "hasStructuredTypeName",
-					Expression: o.Elasticsearch.StructuredTypeName,
-				},
-				{
-					Key:        "viaq_index_name",
-					Expression: `${ if !record['structured'].nil? && record['structured'] != {}; if !record['typeFromKey'].nil?; "app-"+record['typeFromKey']+"-write"; elsif record['hasStructuredTypeName'] != ""; "app-"+record['hasStructuredTypeName']+"-write"; else record['viaq_index_name']; end; else record['viaq_index_name']; end;}`,
-				},
-			},
-			RemoveKeys: []string{"typeFromKey", "hasStructuredTypeName"},
-		}
-		if op[CharEncoding] != nil {
-			recordModifier.CharEncoding = fmt.Sprintf("%v", op[CharEncoding])
-		}
-		return []Element{
-			Filter{
-				MatchTags: "**",
-				Element:   recordModifier,
-			},
-		}
-	} else {
-		recordModifier := RecordModifier{
-			RemoveKeys: []string{KeyStructured},
-		}
-		if op[CharEncoding] != nil {
-			recordModifier.CharEncoding = fmt.Sprintf("%v", op[CharEncoding])
-		}
-		return []Element{
-			Filter{
-				Desc:      "remove structured field if present",
-				MatchTags: "**",
-				Element:   recordModifier,
-			},
-		}
-	}
-}
-
 func FlattenLabels(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op Options) []Element {
 	return []Element{
 		Filter{
@@ -215,12 +167,4 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		}
 	}
 	return conf
-}
-
-func generateRubyDigArgs(path string) string {
-	var args []string
-	for _, s := range strings.Split(path, ".") {
-		args = append(args, fmt.Sprintf("%q", s))
-	}
-	return strings.Join(args, ",")
 }

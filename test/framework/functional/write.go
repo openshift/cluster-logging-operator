@@ -21,6 +21,9 @@ func (f *CollectorFunctionalFramework) WriteMessagesToApplicationLogForContainer
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
+// WriteMessagesInfraContainerLog mocks writing infra container logs for the functional framework.  This may require
+// enabling the mock api adapter to get metadata for infrastructure logs since the path does not match a pod
+// running on the cluster (e.g framework.VisitConfig = functional.TestAPIAdapterConfigVisitor)
 func (f *CollectorFunctionalFramework) WriteMessagesToInfraContainerLog(msg string, numOfLogs int) error {
 	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], "openshift-fake-infra", f.Pod.Name, f.Pod.UID, constants.CollectorName)
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)

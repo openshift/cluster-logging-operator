@@ -3,6 +3,7 @@ package vector
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/framework/unit"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -18,7 +19,7 @@ import (
 
 //TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
-	var f = func(testcase generator.ConfGenerateTest) {
+	var f = func(testcase unit.ConfGenerateTest) {
 		g := generator.MakeGenerator()
 		if testcase.Options == nil {
 			testcase.Options = generator.Options{}
@@ -38,7 +39,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		Expect(diff).To(Equal(""))
 	}
 	DescribeTable("Generate full vector.toml", f,
-		Entry("with complex spec", generator.ConfGenerateTest{
+		Entry("with complex spec", unit.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{
 					Fluentd: &logging.FluentdForwarderSpec{
@@ -244,7 +245,7 @@ address = "0.0.0.0:24231"
 default_namespace = "collector"
 `,
 		}),
-		Entry("with complex spec for elastic-search", generator.ConfGenerateTest{
+		Entry("with complex spec for elastic-search", unit.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{},
 			},
@@ -592,7 +593,7 @@ address = "0.0.0.0:24231"
 default_namespace = "collector"
 `,
 		}),
-		Entry("with multiple pipelines for elastic-search", generator.ConfGenerateTest{
+		Entry("with multiple pipelines for elastic-search", unit.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{},
 			},

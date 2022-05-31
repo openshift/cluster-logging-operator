@@ -7,6 +7,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
+	. "github.com/openshift/cluster-logging-operator/test/framework/unit"
 	corev1 "k8s.io/api/core/v1"
 )
 

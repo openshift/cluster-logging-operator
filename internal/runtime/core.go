@@ -70,6 +70,15 @@ func NewRole(namespace, name string, rules ...rbacv1.PolicyRule) *rbacv1.Role {
 	return role
 }
 
+//NewClusterRole returns a role with namespace, names, rules
+func NewClusterRole(name string, rules ...rbacv1.PolicyRule) *rbacv1.ClusterRole {
+	role := &rbacv1.ClusterRole{
+		Rules: rules,
+	}
+	Initialize(role, "", name)
+	return role
+}
+
 //NewRoleBinding returns a role with namespace, names, rules
 func NewRoleBinding(namespace, name string, roleRef rbacv1.RoleRef, subjects ...rbacv1.Subject) *rbacv1.RoleBinding {
 	binding := &rbacv1.RoleBinding{
@@ -77,5 +86,15 @@ func NewRoleBinding(namespace, name string, roleRef rbacv1.RoleRef, subjects ...
 		Subjects: subjects,
 	}
 	Initialize(binding, namespace, name)
+	return binding
+}
+
+//NewClusterRoleBinding returns a role with namespace, names, rules
+func NewClusterRoleBinding(name string, roleRef rbacv1.RoleRef, subjects ...rbacv1.Subject) *rbacv1.ClusterRoleBinding {
+	binding := &rbacv1.ClusterRoleBinding{
+		RoleRef:  roleRef,
+		Subjects: subjects,
+	}
+	Initialize(binding, "", name)
 	return binding
 }

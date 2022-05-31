@@ -52,6 +52,7 @@ func (m *lineMatcher) NegatedFailureMessage(actual interface{}) (message string)
 }
 
 func (m *lineMatcher) normalize(in string) []string {
+
 	out := []string{}
 	for _, line := range strings.Split(in, "\n") {
 		if m.trim {

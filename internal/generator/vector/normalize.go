@@ -18,6 +18,8 @@ if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"
   level = "info"
 } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
   level = "error"
+} else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+  level = "critical"
 } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
   level = "debug"
 }

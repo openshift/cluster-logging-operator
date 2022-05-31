@@ -144,6 +144,8 @@ source = """
     level = "info"
   } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
     level = "error"
+  } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+    level = "critical"
   } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
     level = "debug"
   }
@@ -343,6 +345,8 @@ source = """
     level = "info"
   } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
     level = "error"
+  } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+    level = "critical"
   } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
     level = "debug"
   }

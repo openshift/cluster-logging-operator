@@ -662,6 +662,10 @@ const pipelineToOutputCopyTemplate = `{{- define "pipelineToOutputCopyTemplate" 
 
 const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
 <label {{.LabelName}}>
+  <filter **>
+    @type record_modifier
+    char_encoding ascii-8bit:utf-8
+  </filter>
   <filter kubernetes.**>
     @type record_transformer
 	enable_ruby true
@@ -704,6 +708,9 @@ const outputLabelConfCloudwatch = `{{- define "outputLabelConfCloudwatch" -}}
 {{- end}}
     include_time_key true
     log_rejected_request true
+    <buffer>
+      disable_chunk_backup: true
+    </buffer>
   </match>
 </label>
 {{- end}}`

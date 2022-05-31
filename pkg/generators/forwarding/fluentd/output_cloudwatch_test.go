@@ -53,6 +53,10 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 			<label @MY_CLOUDWATCH>
+                <filter **>
+					@type record_modifier
+					char_encoding ascii-8bit:utf-8
+				</filter>
 				<filter kubernetes.**>
 					@type record_transformer
 					enable_ruby true
@@ -91,6 +95,9 @@ var _ = Describe("Generating fluentd config", func() {
 					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
 					include_time_key true
 					log_rejected_request true
+					<buffer>
+					  disable_chunk_backup: true
+					</buffer>
 				</match>
 			</label>`
 				results, err := generator.generateOutputLabelBlocks(outputs, secrets, forwarderSpec)
@@ -106,6 +113,10 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 			<label @MY_CLOUDWATCH>
+                <filter **>
+					@type record_modifier
+					char_encoding ascii-8bit:utf-8
+				 </filter>
 				<filter kubernetes.**>
 					@type record_transformer
 					enable_ruby true
@@ -144,6 +155,9 @@ var _ = Describe("Generating fluentd config", func() {
 					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
 					include_time_key true
 					log_rejected_request true
+					<buffer>
+					  disable_chunk_backup: true
+					</buffer>
 				</match>
 			</label>`
 
@@ -162,6 +176,10 @@ var _ = Describe("Generating fluentd config", func() {
 			It("should provide a valid configuration", func() {
 				expConf := `
 			<label @MY_CLOUDWATCH>
+			    <filter **>
+					@type record_modifier
+					char_encoding ascii-8bit:utf-8
+			  	</filter>
 				<filter kubernetes.**>
 					@type record_transformer
 					enable_ruby true
@@ -200,6 +218,9 @@ var _ = Describe("Generating fluentd config", func() {
 					aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
 					include_time_key true
 					log_rejected_request true
+				    <buffer>
+      					disable_chunk_backup: true
+    				</buffer>
 				</match>
 			</label>`
 

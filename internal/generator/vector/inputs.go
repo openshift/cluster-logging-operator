@@ -2,12 +2,11 @@ package vector
 
 import (
 	"fmt"
-	"sort"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"sort"
 )
 
 const (
@@ -15,8 +14,8 @@ const (
 	NsOpenshift = "openshift"
 	NsDefault   = "default"
 
-	K8sPodNamespace = ".kubernetes.namespace_name"
-	K8sLabelKeyExpr = ".kubernetes.pod_labels.%s"
+	K8sNamespaceName = ".kubernetes.namespace_name"
+	K8sLabelKeyExpr  = ".kubernetes.pod_labels.%s"
 
 	InputContainerLogs   = "container_logs"
 	InputJournalLogs     = "journal_logs"
@@ -27,9 +26,11 @@ const (
 
 var (
 	InfraContainerLogs = OR(
-		StartWith(K8sPodNamespace, NsKube),
-		StartWith(K8sPodNamespace, NsOpenshift),
-		Eq(K8sPodNamespace, NsDefault))
+		StartWith(K8sNamespaceName, NsKube+"-"),
+		StartWith(K8sNamespaceName, NsOpenshift+"-"),
+		Eq(K8sNamespaceName, NsDefault),
+		Eq(K8sNamespaceName, NsOpenshift),
+		Eq(K8sNamespaceName, NsKube))
 	AppContainerLogs = Neg(Paren(InfraContainerLogs))
 
 	AddLogTypeApp   = fmt.Sprintf(".log_type = %q", logging.InputNameApplication)
@@ -37,7 +38,7 @@ var (
 	AddLogTypeAudit = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
 
 	MatchNS = func(ns string) string {
-		return Eq(K8sPodNamespace, ns)
+		return Eq(K8sNamespaceName, ns)
 	}
 	K8sLabelKey = func(k string) string {
 		return fmt.Sprintf(K8sLabelKeyExpr, k)

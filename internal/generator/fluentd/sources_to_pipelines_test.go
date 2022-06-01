@@ -36,7 +36,7 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: `
 # Include Infrastructure logs
-<match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+<match kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
   @type relabel
   @label @_INFRASTRUCTURE
 </match>
@@ -126,7 +126,7 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: `
 # Include Infrastructure logs
-<match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+<match kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
   @type relabel
   @label @_INFRASTRUCTURE
 </match>
@@ -222,7 +222,7 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: `
 # Discard Infrastructure logs
-<match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+<match kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
   @type null
 </match>
 
@@ -287,7 +287,7 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: `
 # Discard Infrastructure logs
-<match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+<match kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
   @type null
 </match>
 
@@ -353,7 +353,7 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: `
 # Discard Infrastructure logs
-<match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+<match kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
   @type null
 </match>
 
@@ -425,7 +425,7 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: `
 # Discard Infrastructure logs
-<match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+<match kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
   @type null
 </match>
 
@@ -527,7 +527,7 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: `
 # Discard Infrastructure logs
-<match kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
+<match kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.** system.var.log**>
   @type null
 </match>
 

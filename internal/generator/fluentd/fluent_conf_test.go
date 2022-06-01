@@ -524,7 +524,7 @@ var _ = Describe("Generating fluentd config", func() {
     </level>
     <level>
       name critical
-      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+      match 'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'
     </level>
     <level>
       name debug
@@ -1340,7 +1340,7 @@ var _ = Describe("Generating fluentd config", func() {
     </level>
     <level>
       name critical
-      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+      match 'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'
     </level>
     <level>
       name debug
@@ -2141,7 +2141,7 @@ var _ = Describe("Generating fluentd config", func() {
     </level>
     <level>
       name critical
-      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+      match 'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'
     </level>
     <level>
       name debug
@@ -2887,7 +2887,7 @@ var _ = Describe("Generating fluentd config", func() {
     </level>
     <level>
       name critical
-      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+      match 'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'
     </level>
     <level>
       name debug
@@ -3427,7 +3427,7 @@ var _ = Describe("Generating fluentd config", func() {
     </level>
     <level>
       name critical
-      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+      match 'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'
     </level>
     <level>
       name debug
@@ -4514,7 +4514,7 @@ inputs:
     </level>
     <level>
       name critical
-      match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+      match 'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'
     </level>
     <level>
       name debug

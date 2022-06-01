@@ -298,7 +298,7 @@ const ViaQDataModel string = `
   </level>
   <level>
     name critical
-    match 'Critical|CRITICAL|C[0-9]+|level=critical|Value:critical|"level":"critical"'
+    match 'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'
   </level>
   <level>
     name debug

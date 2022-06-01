@@ -446,7 +446,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 }
 
 func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, secretName string) (*corev1.Secret, error) {
-	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
+	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000)) //nolint:gosec
 	logger := clolog.NewLogger("e2e-syslog-testing")
 	logger.V(3).Info("Generating Pipeline certificates for", "rsyslog-receiver", workingDir)
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {

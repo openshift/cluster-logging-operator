@@ -2,7 +2,7 @@
 
 source .bingo/variables.env
 
-set -euo pipefail
+set -eo pipefail
 
 BUNDLE_DIR=${2:-"bundle/manifests"}
 CLF_CRD_FILE="logging.openshift.io_clusterlogforwarders_crd.yaml"

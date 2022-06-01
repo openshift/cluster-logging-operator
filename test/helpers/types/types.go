@@ -364,13 +364,13 @@ func StrictlyParseLogs(in string, logs interface{}) error {
 type Logs []AllLog
 
 type Timing struct {
-	//EpocIn is only added during benchmark testing
+	// EpocIn is only added during benchmark testing
 	EpocIn float64 `json:"epoc_in,omitempty"`
-	//EpocOut is only added during benchmark testing
+	// EpocOut is only added during benchmark testing
 	EpocOut float64 `json:"epoc_out,omitempty"`
 }
 
-//Bloat is the ratio of overall size / Message size
+// Bloat is the ratio of overall size / Message size
 func (l *AllLog) Bloat() float64 {
 	return float64(len(l.String())) / float64(len(l.Message))
 }
@@ -452,7 +452,7 @@ func NewMockEvent(ref *v1.ObjectReference, eventType, reason, message string) *v
 		Message:        message,
 		FirstTimestamp: tm,
 		LastTimestamp:  tm,
-		Count:          rand.Int31(),
+		Count:          rand.Int31(), // nolint:gosec
 		Type:           eventType,
 	}
 }

@@ -26,7 +26,7 @@ func IsReservedOutputName(s string) bool { return s == OutputNameDefault }
 
 // IsOutputTypeName returns true if s capitalized is a field name in OutputTypeSpec
 func IsOutputTypeName(s string) bool {
-	_, ok := reflect.TypeOf(OutputTypeSpec{}).FieldByName(strings.Title(s))
+	_, ok := reflect.TypeOf(OutputTypeSpec{}).FieldByName(strings.Title(s)) //nolint:staticcheck
 	return ok
 }
 

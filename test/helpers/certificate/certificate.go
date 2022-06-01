@@ -56,7 +56,7 @@ func (ck *CertKey) PrivateKeyPEM() []byte {
 func (ck *CertKey) ServerTLSConf(clientCA *CertKey) *tls.Config {
 	cert, err := tls.X509KeyPair(ck.CertificatePEM(), ck.PrivateKeyPEM())
 	test.Must(err)
-	conf := &tls.Config{Certificates: []tls.Certificate{cert}}
+	conf := &tls.Config{Certificates: []tls.Certificate{cert}} //nolint:gosec
 	if clientCA != nil {
 		conf.ClientCAs = x509.NewCertPool()
 		conf.ClientCAs.AppendCertsFromPEM(clientCA.CertificatePEM())
@@ -70,7 +70,7 @@ func (ck *CertKey) ServerTLSConf(clientCA *CertKey) *tls.Config {
 func (ck *CertKey) ClientTLSConf(clientCert *CertKey) *tls.Config {
 	certpool := x509.NewCertPool()
 	certpool.AppendCertsFromPEM(ck.CertificatePEM())
-	conf := &tls.Config{RootCAs: certpool}
+	conf := &tls.Config{RootCAs: certpool} //nolint:gosec
 	if clientCert != nil {
 		cert, err := tls.X509KeyPair(clientCert.CertificatePEM(), clientCert.PrivateKeyPEM())
 		test.Must(err)

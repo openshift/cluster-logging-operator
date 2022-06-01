@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-type IndexModel struct {
+type Viaq struct {
 	Elasticsearch *logging.Elasticsearch
 }
 
@@ -21,7 +21,7 @@ const (
 
 func ViaqDataModel(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op Options) []Element {
 	elements := []Element{
-		IndexModel{
+		Viaq{
 			Elasticsearch: o.Elasticsearch,
 		},
 	}
@@ -41,30 +41,30 @@ func ViaqDataModel(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o 
 	return elements
 }
 
-func (im IndexModel) StructuredTypeKey() string {
+func (im Viaq) StructuredTypeKey() string {
 	if im.Elasticsearch != nil && im.Elasticsearch.StructuredTypeKey != "" {
 		return im.Elasticsearch.StructuredTypeKey
 	}
 	return ""
 }
-func (im IndexModel) StructuredTypeName() string {
+func (im Viaq) StructuredTypeName() string {
 	if im.Elasticsearch != nil && im.Elasticsearch.StructuredTypeName != "" {
 		return im.Elasticsearch.StructuredTypeName
 	}
 	return ""
 }
-func (im IndexModel) StructuredTypeAnnotationPrefix() string {
+func (im Viaq) StructuredTypeAnnotationPrefix() string {
 	if im.Elasticsearch != nil && im.Elasticsearch.EnableStructuredContainerLogs {
 		return AnnotationPrefix
 	}
 	return ""
 }
 
-func (im IndexModel) Name() string {
+func (im Viaq) Name() string {
 	return "viaqDataIndexModel"
 }
 
-func (im IndexModel) Template() string {
+func (im Viaq) Template() string {
 	return `{{define "viaqDataIndexModel" -}}
 # Viaq Data Model
 <filter **>
@@ -106,6 +106,11 @@ func (im IndexModel) Template() string {
     structured_type_annotation_prefix {{ .StructuredTypeAnnotationPrefix }}
 {{ end -}}
   </elasticsearch_index_name>
+</filter>
+<filter **>
+  @type viaq_data_model
+  enable_prune_labels true
+  prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
 </filter>
 {{end}}
 `

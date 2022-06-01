@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
+	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"strings"
@@ -72,31 +73,23 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 	if output, found := outputSpecs[outputName]; found {
 		outputType = output.Type
 	}
-	readLogs := func() ([]string, error) {
-		var result string
-		outputFiles, ok := outputLogFile[outputType]
-		if !ok {
-			return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
-		}
-		file, ok := outputFiles[sourceType]
-		if !ok {
-			return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", sourceType))
-		}
-		err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
-			result, err = f.RunCommand(outputName, "cat", file)
-			if result != "" && err == nil {
-				return true, nil
+	var readLogs func() ([]string, error)
+
+	switch outputType {
+	case logging.OutputTypeKafka:
+		readLogs = func() ([]string, error) {
+			switch sourceType {
+			case logging.InputNameAudit:
+				sourceType = kafka.AuditLogsTopic
+			case logging.InputNameInfrastructure:
+				sourceType = kafka.InfraLogsTopic
+			default:
+				sourceType = kafka.AppLogsTopic
 			}
-			log.V(4).Error(err, "Polling logs")
-			return false, nil
-		})
-		if err == nil {
-			results = strings.Split(strings.TrimSpace(result), "\n")
+			container := kafka.ConsumerNameForTopic(sourceType)
+			return f.ReadApplicationLogsFromKafka(sourceType, "localhost:9092", container)
 		}
-		log.V(4).Info("Returning", "logs", result)
-		return results, err
-	}
-	if outputType == logging.OutputTypeElasticsearch {
+	case logging.OutputTypeElasticsearch:
 		readLogs = func() ([]string, error) {
 			result, err := f.GetLogsFromElasticSearch(outputName, sourceType)
 			if err == nil {
@@ -106,8 +99,32 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 			}
 			return nil, err
 		}
+	default:
+		readLogs = func() ([]string, error) {
+			var result string
+			outputFiles, ok := outputLogFile[outputType]
+			if !ok {
+				return nil, fmt.Errorf(fmt.Sprintf("cant find output of type %s in outputSpec %v", outputName, outputSpecs))
+			}
+			file, ok := outputFiles[sourceType]
+			if !ok {
+				return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", sourceType))
+			}
+			err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
+				result, err = f.RunCommand(outputName, "cat", file)
+				if result != "" && err == nil {
+					return true, nil
+				}
+				log.V(4).Error(err, "Polling logs")
+				return false, nil
+			})
+			if err == nil {
+				results = strings.Split(strings.TrimSpace(result), "\n")
+			}
+			log.V(4).Info("Returning", "logs", result)
+			return results, err
+		}
 	}
-
 	return readLogs()
 }
 

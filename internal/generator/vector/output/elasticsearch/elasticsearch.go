@@ -128,6 +128,12 @@ source = """
             return
         end
         dedot(event.log.kubernetes.labels)
+        flatten_labels(event)
+        prune_labels(event)
+        emit(event)
+    end
+
+    function flatten_labels(event)
         -- create "flat_labels" key
         event.log.kubernetes.flat_labels = {}
         i = 1
@@ -136,10 +142,20 @@ source = """
           event.log.kubernetes.flat_labels[i] = k.."="..v
           i=i+1
         end
-        -- delete the "labels" key
-        event.log.kubernetes["labels"] = nil
-        emit(event)
-    end
+    end 
+
+	function prune_labels(event)
+		local exclusions = {"app_kubernetes_io/name", "app_kubernetes_io/instance", "app_kubernetes_io/version", "app_kubernetes_io/component", "app_kubernetes_io/part-of", "app_kubernetes_io/managed-by", "app_kubernetes_io/created-by"}
+		local keys = {}
+		for k,v in pairs(event.log.kubernetes.labels) do
+			for index, e in pairs(exclusions) do
+				if k == e then
+					keys[k] = v
+				end
+			end
+		end
+		event.log.kubernetes.labels = keys
+	end
 
     function dedot(map)
         if map == nil then

@@ -1,3 +1,6 @@
+//go:build fluentd
+// +build fluentd
+
 package normalization
 
 import (
@@ -7,6 +10,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strings"
 )
@@ -53,7 +57,7 @@ created by main.main
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 	})
 	AfterEach(func() {
 		framework.Cleanup()

@@ -70,7 +70,6 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 			InLabel: helpers.LabelName(o.Name),
 			SubElements: MergeElements(
 				ViaqDataModel(bufspec, secret, o, op),
-				FlattenLabels(bufspec, secret, o, op),
 				OutputConf(bufspec, secret, o, op),
 			),
 		},
@@ -120,24 +119,6 @@ func RetryOutput(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o lo
 	es.StoreID = helpers.StoreID("retry_", o.Name, "")
 	es.BufferConfig = output.Buffer(output.NOKEYS, bufspec, es.StoreID, &o)
 	return es
-}
-
-func FlattenLabels(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op Options) []Element {
-	return []Element{
-		Filter{
-			Desc:      "flatten labels to prevent field explosion in ES",
-			MatchTags: "**",
-			Element: RecordTransformer{
-				Records: []Record{
-					{
-						Key:        "kubernetes",
-						Expression: `${!record['kubernetes'].nil? ? record['kubernetes'].merge({"flat_labels": (record['kubernetes']['labels']||{}).map{|k,v| "#{k}=#{v}"}}) : {} }`,
-					},
-				},
-				RemoveKeys: []string{"$.kubernetes.labels"},
-			},
-		},
-	}
 }
 
 func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {

@@ -1,3 +1,6 @@
+//go:build fluentd
+// +build fluentd
+
 package normalization
 
 import (
@@ -6,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -28,7 +32,7 @@ var _ = Describe("[Functional][Normalization]Reassembly split by CRI-O logs ", f
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()

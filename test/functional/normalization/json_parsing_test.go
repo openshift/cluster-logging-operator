@@ -1,3 +1,6 @@
+//go:build fluentd
+// +build fluentd
+
 package normalization
 
 import (
@@ -10,6 +13,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"strings"
@@ -104,7 +108,7 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 	BeforeEach(func() {
 		_ = json.Unmarshal([]byte(Json), &expected)
 		empty = map[string]interface{}{}
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput()
@@ -220,7 +224,7 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 	})
 
 	It("should verify LOG-2105 parses json message into structured field and writes to Elasticsearch", func() {
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToElasticSearchOutput()

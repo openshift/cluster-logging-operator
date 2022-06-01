@@ -1,8 +1,12 @@
+//go:build fluentd
+// +build fluentd
+
 package normalization
 
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -21,7 +25,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToFluentForwardOutput().

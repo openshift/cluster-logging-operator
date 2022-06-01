@@ -1,6 +1,7 @@
 package loki
 
 import (
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"sort"
 	"testing"
 
@@ -49,8 +50,8 @@ var _ = Describe("Generate fluentd config", func() {
 		}
 		return Conf(bufspec, secrets[clfspec.Outputs[0].Name], clfspec.Outputs[0], generator.NoOptions)
 	}
-	DescribeTable("for Loki output", generator.TestGenerateConfWith(f),
-		Entry("with default labels", generator.ConfGenerateTest{
+	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
+		Entry("with default labels", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -119,7 +120,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("with custom labels", generator.ConfGenerateTest{
+		Entry("with custom labels", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{

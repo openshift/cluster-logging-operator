@@ -3,6 +3,7 @@ package vector
 import (
 	"encoding/json"
 	"fmt"
+	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -18,7 +19,7 @@ import (
 
 //TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
-	var f = func(testcase generator.ConfGenerateTest) {
+	var f = func(testcase testhelpers.ConfGenerateTest) {
 		g := generator.MakeGenerator()
 		if testcase.Options == nil {
 			testcase.Options = generator.Options{}
@@ -38,7 +39,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		Expect(diff).To(Equal(""))
 	}
 	DescribeTable("Generate full vector.toml", f,
-		Entry("with complex spec", generator.ConfGenerateTest{
+		Entry("with complex spec", testhelpers.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{
 					Fluentd: &logging.FluentdForwarderSpec{
@@ -98,7 +99,7 @@ auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
-pod_annotation_fields.pod_annotations = ""
+pod_annotation_fields.pod_annotations = "kubernetes.annotations"
 pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 
@@ -274,7 +275,7 @@ key_file = "/etc/collector/metrics/tls.key"
 crt_file = "/etc/collector/metrics/tls.crt"
 `,
 		}),
-		Entry("with complex spec for elasticsearch", generator.ConfGenerateTest{
+		Entry("with complex spec for elasticsearch", testhelpers.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{},
 			},
@@ -332,7 +333,7 @@ auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
-pod_annotation_fields.pod_annotations = ""
+pod_annotation_fields.pod_annotations = "kubernetes.annotations"
 pod_annotation_fields.pod_uid = "kubernetes.pod_id"
 pod_annotation_fields.pod_node_name = "hostname"
 

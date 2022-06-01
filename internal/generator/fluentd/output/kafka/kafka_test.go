@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -23,8 +24,8 @@ var _ = Describe("Generate fluentd config", func() {
 		}
 		return Conf(bufspec, secrets[clfspec.Outputs[0].Name], clfspec.Outputs[0], op)
 	}
-	DescribeTable("for kafka output", generator.TestGenerateConfWith(f),
-		Entry("with username,password to single topic", generator.ConfGenerateTest{
+	DescribeTable("for kafka output", helpers.TestGenerateConfWith(f),
+		Entry("with username,password to single topic", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -83,7 +84,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("with tls key,cert,ca-bundle", generator.ConfGenerateTest{
+		Entry("with tls key,cert,ca-bundle", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -139,7 +140,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("without security", generator.ConfGenerateTest{
+		Entry("without security", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{

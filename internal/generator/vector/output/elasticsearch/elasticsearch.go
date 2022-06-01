@@ -95,6 +95,19 @@ if .log_type == "application" && .structured != null {
 `
 			vrls = append(vrls, fmt.Sprintf(changeIndexName, o.Elasticsearch.StructuredTypeKey, o.Elasticsearch.StructuredTypeName))
 		}
+		if es.EnableStructuredContainerLogs {
+			vrls = append(vrls, `
+  if .log_type == "application"  && .structured != null && .kubernetes.container_name != null && .kubernetes.annotations != null && length!(.kubernetes.annotations) > 0{
+	key = join!(["containerType.logging.openshift.io", .kubernetes.container_name], separator: "/")
+    index, err = get(value: .kubernetes.annotations, path: [key])
+    if index != null && err == null {
+      .write_index = join!(["app-",index,"-write"])
+    } else {
+       log(err, level: "error")
+    }
+  }
+`)
+		}
 	}
 
 	return Remap{

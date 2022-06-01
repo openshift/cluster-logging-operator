@@ -3,6 +3,7 @@ package vector
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -17,8 +18,8 @@ var _ = Describe("Testing Config Generation", func() {
 			Pipelines(&clfspec, op),
 		)
 	}
-	DescribeTable("Source(s) to Pipeline(s)", generator.TestGenerateConfWith(f),
-		Entry("Send all log types to output by name", generator.ConfGenerateTest{
+	DescribeTable("Source(s) to Pipeline(s)", helpers.TestGenerateConfWith(f),
+		Entry("Send all log types to output by name", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -108,7 +109,7 @@ source = """
 """
 `,
 		}),
-		Entry("Send same logtype to multiple output", generator.ConfGenerateTest{
+		Entry("Send same logtype to multiple output", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -212,7 +213,7 @@ source = """
 """
 `,
 		}),
-		Entry("Route Logs by Namespace(s)", generator.ConfGenerateTest{
+		Entry("Route Logs by Namespace(s)", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{
@@ -257,7 +258,7 @@ source = """
 """
 `,
 		}),
-		Entry("Route Logs by Namespaces(s), and Labels(s)", generator.ConfGenerateTest{
+		Entry("Route Logs by Namespaces(s), and Labels(s)", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{
@@ -308,7 +309,7 @@ source = """
 """
 `,
 		}),
-		Entry("Add Openshift Label(s)", generator.ConfGenerateTest{
+		Entry("Add Openshift Label(s)", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -352,7 +353,7 @@ source = """
 """
 `,
 		}),
-		Entry("Parse log message as Jaon", generator.ConfGenerateTest{
+		Entry("Parse log message as Jaon", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{

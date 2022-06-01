@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -21,8 +22,8 @@ var _ = Describe("Generate fluentd config", func() {
 		}
 		return Conf(bufspec, secrets[clfspec.Outputs[0].Name], clfspec.Outputs[0], op)
 	}
-	DescribeTable("for Elasticsearch output", generator.TestGenerateConfAndFormatWith(f, helpers.FormatFluentConf),
-		Entry("with username,password", generator.ConfGenerateTest{
+	DescribeTable("for Elasticsearch output", testhelpers.TestGenerateConfAndFormatWith(f, helpers.FormatFluentConf),
+		Entry("with username,password", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -165,7 +166,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("with tls key,cert,ca-bundle", generator.ConfGenerateTest{
+		Entry("with tls key,cert,ca-bundle", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -311,7 +312,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("without security", generator.ConfGenerateTest{
+		Entry("without security", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -441,7 +442,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("with https but without a secret", generator.ConfGenerateTest{
+		Entry("with https but without a secret", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -570,7 +571,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("with http and username/password", generator.ConfGenerateTest{
+		Entry("with http and username/password", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -711,7 +712,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("with structured container logs enabled", generator.ConfGenerateTest{
+		Entry("with structured container logs enabled", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -841,7 +842,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("with structured types enabled", generator.ConfGenerateTest{
+		Entry("with structured types enabled", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -974,7 +975,7 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
-		Entry("with char encoding", generator.ConfGenerateTest{
+		Entry("with char encoding", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{

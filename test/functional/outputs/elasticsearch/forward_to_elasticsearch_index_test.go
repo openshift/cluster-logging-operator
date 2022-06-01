@@ -1,3 +1,6 @@
+//go:build fluentd || vector
+// +build fluentd vector
+
 package elasticsearch
 
 import (
@@ -207,9 +210,6 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 		})
 		Context("and enabling sending each container log to different indices", func() {
 			It("should send one container's log as defined by the annotation and the other defined by structuredTypeKey", func() {
-				if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-					Skip("sending each container log to different indices not supported for vector")
-				}
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
@@ -231,7 +231,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 				applicationLogLine := functional.CreateAppLogFromJson(jsonLog)
 				Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
-				Expect(framework.WriteMessagesToApplicationLogForContainer(applicationLogLine, "other", 1)).To(BeNil())
+				Expect(framework.WriteMessagesToApplicationLogForContainer(functional.CreateAppLogFromJson(`{"foo":"bar"}`), "other", 1)).To(BeNil())
 
 				for index, containerName := range map[string]string{fmt.Sprintf("app-%s-write", containerStructuredIndexValue): constants.CollectorName, "app-write": "other"} {
 					raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, index)

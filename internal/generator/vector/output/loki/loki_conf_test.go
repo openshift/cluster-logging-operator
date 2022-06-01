@@ -1,6 +1,7 @@
 package loki
 
 import (
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"sort"
 	"testing"
 
@@ -45,8 +46,8 @@ var _ = Describe("Generate vector config", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], generator.NoOptions)
 	}
-	DescribeTable("for Loki output", generator.TestGenerateConfWith(f),
-		Entry("with default labels", generator.ConfGenerateTest{
+	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
+		Entry("with default labels", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -90,7 +91,7 @@ user = "username"
 password = "password"
 `,
 		}),
-		Entry("with custom labels", generator.ConfGenerateTest{
+		Entry("with custom labels", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -135,7 +136,7 @@ user = "username"
 password = "password"
 `,
 		}),
-		Entry("with tenant id", generator.ConfGenerateTest{
+		Entry("with tenant id", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -192,8 +193,8 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[constants.LogCollectorToken], generator.NoOptions)
 	}
-	DescribeTable("for Loki output", generator.TestGenerateConfWith(f),
-		Entry("with bearer token", generator.ConfGenerateTest{
+	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
+		Entry("with bearer token", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{

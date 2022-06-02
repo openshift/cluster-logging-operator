@@ -25,7 +25,6 @@ inputs = ["cw-forward"]
 source = """
   .group_name = "default"
   .stream_name = "default"
-  .hostname = del(.host)
   
   if (.file != null) {
    .file = "kubernetes" + replace!(.file, "/", ".")
@@ -34,8 +33,9 @@ source = """
 `
 		transformEnd = `
   if ( .tag == ".journal.system" ) {
-   .stream_name =  ( .hostname + .tag ) ?? .stream_name
+   .stream_name =  ( .host + .tag ) ?? .stream_name
   }
+  del(.host)
   del(.tag)
   del(.source_type)
 """
@@ -110,7 +110,7 @@ request.concurrency = 2
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "` + groupPrefix + `.infrastructure"
-   .stream_name = ( .kubernetes.pod_node_name + "." + .stream_name ) ?? .stream_name
+   .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
   }
 
 ` + transformEnd + `
@@ -142,7 +142,7 @@ request.concurrency = 2
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "` + groupPrefix + `.infrastructure"
-   .stream_name = ( .kubernetes.pod_node_name + "." + .stream_name ) ?? .stream_name
+   .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
   }
 
 ` + transformEnd + `
@@ -174,7 +174,7 @@ request.concurrency = 2
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "` + groupPrefix + `.infrastructure"
-   .stream_name = ( .kubernetes.pod_node_name + "." + .stream_name ) ?? .stream_name
+   .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
   }
 
 ` + transformEnd + `
@@ -213,7 +213,7 @@ request.concurrency = 2
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "infrastructure"
-   .stream_name = ( .kubernetes.pod_node_name + "." + .stream_name ) ?? .stream_name
+   .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
   }
 
 ` + transformEnd + `
@@ -247,7 +247,7 @@ request.concurrency = 2
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "infrastructure"
-   .stream_name = ( .kubernetes.pod_node_name + "." + .stream_name ) ?? .stream_name
+   .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
   }
 
 ` + transformEnd + `

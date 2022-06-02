@@ -110,7 +110,6 @@ func NormalizeGroupAndStreamName(logGroupNameField string, logGroupPrefix string
 	vrl := strings.TrimSpace(`
 .group_name = "default"
 .stream_name = "default"
-.hostname = del(.host)
 
 if (.file != null) {
  .file = "kubernetes" + replace!(.file, "/", ".")
@@ -126,11 +125,12 @@ if ( .log_type == "audit" ) {
 }
 if ( .log_type == "infrastructure" ) {
  .group_name = "` + infraGroupName + `"
- .stream_name = ( .kubernetes.pod_node_name + "." + .stream_name ) ?? .stream_name
+ .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
 }
 if ( .tag == ".journal.system" ) {
- .stream_name =  ( .hostname + .tag ) ?? .stream_name
+ .stream_name =  ( .host + .tag ) ?? .stream_name
 }
+del(.host)
 del(.tag)
 del(.source_type)
 	`)

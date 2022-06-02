@@ -10,7 +10,6 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -54,14 +53,14 @@ if (.log_type == "infrastructure"){
 if (.log_type == "audit"){
   index = "audit"
 }
-.write_index = index + "-write"
-`
+.write_index = index + "-write"`
 
-	addESId := `
-._id = encode_base64(uuid_v4())
-`
+	addESId := `._id = encode_base64(uuid_v4())`
+	removeFile := `del(.file)`
+	removeTag := `del(.tag)`
+	removeSourceType := `del(.source_type)`
 
-	vrls := []string{setESIndex, addESId}
+	vrls := []string{setESIndex, addESId, removeFile, removeTag, removeSourceType}
 
 	if o.Elasticsearch != nil {
 		es := o.Elasticsearch
@@ -102,7 +101,7 @@ if .log_type == "application" && .structured != null {
 		Desc:        "Set Elasticsearch index",
 		ComponentID: id,
 		Inputs:      helpers.MakeInputs(inputs...),
-		VRL:         strings.Join(helpers.TrimSpaces(vrls), "\n\n"),
+		VRL:         strings.Join(helpers.TrimSpaces(vrls), "\n"),
 	}
 }
 
@@ -188,12 +187,12 @@ func ID(id1, id2 string) string {
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	outputs := []Element{}
-	outputName := strings.ToLower(vectorhelpers.Replacer.Replace(o.Name))
+	outputName := helpers.FormatComponentID(o.Name)
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			SetESIndex(ID(outputName, "add_es_index"), inputs, o, op),
 			DeDotAndFlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_index")}),
-			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs([]string{ID(outputName, "dedot_and_flatten")}...)),
+			Debug(outputName, helpers.MakeInputs([]string{ID(outputName, "dedot_and_flatten")}...)),
 		}
 	}
 	outputs = MergeElements(outputs,
@@ -212,9 +211,9 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
 
 	return Elasticsearch{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: helpers.FormatComponentID(o.Name),
 		Endpoint:    o.URL,
-		Inputs:      vectorhelpers.MakeInputs(inputs...),
+		Inputs:      helpers.MakeInputs(inputs...),
 	}
 }
 
@@ -224,7 +223,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		hasTLS := false
 		conf = append(conf, security.TLSConf{
 			Desc:        "TLS Config",
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			ComponentID: helpers.FormatComponentID(o.Name),
 		})
 		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
 			hasTLS = true
@@ -255,7 +254,7 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		hasBasicAuth := false
 		conf = append(conf, BasicAuthConf{
 			Desc:        "Basic Auth Config",
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			ComponentID: helpers.FormatComponentID(o.Name),
 		})
 		if security.HasUsernamePassword(secret) {
 			hasBasicAuth = true

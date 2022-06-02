@@ -6,21 +6,20 @@ import (
 	"fmt"
 	"github.com/ViaQ/logerr/log"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	cwl "github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	openshiftv1 "github.com/openshift/api/route/v1"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	v1 "k8s.io/api/core/v1"
 	"net/http"
 	"strings"
 	"time"
-
-	openshiftv1 "github.com/openshift/api/route/v1"
-
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
@@ -56,23 +55,25 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			return nil
 		}
 
-		cwlClient *cwl.Client
+		cwlClient *cloudwatchlogs.Client
 		service   *v1.Service
 		route     *openshiftv1.Route
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 
-		log.V(2).Info("Creating service moto")
-		service = runtime.NewService(framework.Namespace, "moto")
+		log.V(2).Info("Creating service moto-server")
+		service = runtime.NewService(framework.Namespace, "moto-server")
 		runtime.NewServiceBuilder(service).
 			AddServicePort(5000, 5000).
 			WithSelector(map[string]string{"testname": "functional"})
 		if err := framework.Test.Client.Create(service); err != nil {
 			panic(err)
 		}
-		route = runtime.NewRoute(framework.Namespace, "moto", "moto", "5000")
+
+		log.V(2).Info("Creating route moto-server")
+		route = runtime.NewRoute(framework.Namespace, "moto-server", "moto-server", "5000")
 		route.Spec.TLS = &openshiftv1.TLSConfig{
 			Termination:                   openshiftv1.TLSTerminationPassthrough,
 			InsecureEdgeTerminationPolicy: openshiftv1.InsecureEdgeTerminationPolicyNone,
@@ -81,7 +82,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			panic(err)
 		}
 
-		cwlClient = cwl.NewFromConfig(
+		cwlClient = cloudwatchlogs.NewFromConfig(
 			aws.Config{
 				Region: "us-east-1",
 				Credentials: aws.CredentialsProviderFunc(func(context.Context) (aws.Credentials, error) {
@@ -144,6 +145,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		})
 
 		It("should reassemble multi-line stacktraces (e.g. LOG-2275)", func() {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("not supported for this vector release")
+			}
 			appNamespace := "multi-line-test"
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("applogs-one", func(spec *logging.InputSpec) {
@@ -182,12 +186,16 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	})
 
 	Context("When sending infrastructure log messages to CloudWatch", func() {
-		const (
+		var (
 			numLogsSent = 2
 			readLogType = logging.InputNameApplication
 		)
 		It("should not appear in the application log_group (e.g. LOG-2455)", func() {
-			// Must include at least app and infra inputs
+			// Test method fails for vector since our pod/container namespace will always
+			// begin with  "test-", thus cluster infrastructure logs are never found.
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("not a valid test for vector since we route by namespace")
+			}
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToCloudwatchOutput().
@@ -201,7 +209,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				mountCloudwatchSecretVisitor,
 			})).To(BeNil())
 
-			// Write audit log line
+			// Write audit logs
 			tstamp, _ := time.Parse(time.RFC3339Nano, "2021-03-28T14:36:03.243000+00:00")
 			auditLogLine := functional.NewAuditHostLog(tstamp)
 			writeAuditLogs := framework.WriteMessagesToAuditLog(auditLogLine, 3)
@@ -217,7 +225,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			writeInfraLogs := framework.WriteMessagesToInfraContainerLog(payload, 5)
 			Expect(writeInfraLogs).To(BeNil(), "Expect no errors writing logs")
 
-			// Write a single app log just to be sure its picked up ("test-xyz123" namespace)
+			// Write a single app log just to be sure its picked up ("test-..." namespace)
 			writeAppLogs := framework.WritesApplicationLogs(numLogsSent)
 			Expect(writeAppLogs).To(BeNil(), "Expect no errors writing logs")
 
@@ -232,4 +240,35 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		})
 	})
 
+	Context("When sending audit log messages to CloudWatch", func() {
+		var (
+			numLogsSent = 2
+			readLogType = logging.InputNameAudit
+		)
+		It("should appear in the audit log group with audit log_type", func() {
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameAudit).
+				ToCloudwatchOutput()
+
+			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+				addMotoContainerVisitor,
+				mountCloudwatchSecretVisitor,
+			})).To(BeNil())
+
+			// Write audit logs
+			tstamp, _ := time.Parse(time.RFC3339Nano, "2021-03-28T14:36:03.243000+00:00")
+			auditLogLine := functional.NewAuditHostLog(tstamp)
+			writeAuditLogs := framework.WriteMessagesToAuditLog(auditLogLine, numLogsSent)
+			Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing logs")
+
+			// Get audit logs from Cloudwatch
+			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
+			log.V(2).Info("GetLogGroupByType", "logType", readLogType, "logs", logs, "err", err)
+
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(logs).To(HaveLen(numLogsSent), "Expected to receive the correct number of audit log messages")
+			expMatch := fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)
+			Expect(logs[0]).To(MatchRegexp(expMatch), "Expected log_type to be correct")
+		})
+	})
 })

@@ -33,7 +33,7 @@ func (f *CollectorFunctionalFramework) GetAllCloudwatchGroups(svc *cwl.Client) (
 	return allGroups, nil
 }
 
-func (f *CollectorFunctionalFramework) GetLogGroupsByType(client *cwl.Client, inputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) GetLogGroupByType(client *cwl.Client, inputName string) ([]string, error) {
 	var (
 		myGroups        []string
 		logGroupsOutput *cwl.DescribeLogGroupsOutput
@@ -60,7 +60,7 @@ func (f *CollectorFunctionalFramework) GetLogGroupsByType(client *cwl.Client, in
 		}
 	}
 	if !found {
-		return nil, fmt.Errorf("%s log type not found", inputName)
+		return nil, fmt.Errorf("%s log group not found", inputName)
 	}
 	return myGroups, nil
 }
@@ -120,26 +120,26 @@ func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(client *cw
 }
 
 func (f *CollectorFunctionalFramework) ReadLogsFromCloudwatch(client *cwl.Client, inputName string) ([]string, error) {
-	log.V(3).Info("Retrieving cloudwatch LogGroups ----------", "LogGroupName:", inputName)
-	logGroupNames, err := f.GetLogGroupsByType(client, inputName)
+	log.V(3).Info("Reading cloudwatch log groups by type")
+	logGroupName, err := f.GetLogGroupByType(client, inputName)
 	if err != nil {
 		return nil, err
 	}
-	log.V(3).Info("Results", "logGroups", logGroupNames)
+	log.V(3).Info("GetLogGroupByType", "logGroupName", logGroupName)
 
-	log.V(3).Info("Retrieving cloudwatch LogStreams ----------")
-	logStreams, e := f.GetLogStreamsByGroup(client, logGroupNames[0])
+	log.V(3).Info("Reading cloudwatch log streams")
+	logStreams, e := f.GetLogStreamsByGroup(client, logGroupName[0])
 	if e != nil {
 		return nil, e
 	}
-	log.V(3).Info("Results", "logStreams", logStreams)
+	log.V(3).Info("GetLogStreamsByGroup", "logStreams", logStreams)
 
-	log.V(3).Info("Retrieving cloudwatch LogEvents  ----------")
-	myMessages, er := f.GetLogMessagesByGroupAndStream(client, logGroupNames[0], logStreams[0])
+	log.V(3).Info("Reading cloudwatch messages")
+	messages, er := f.GetLogMessagesByGroupAndStream(client, logGroupName[0], logStreams[0])
 	if er != nil {
 		return nil, er
 	}
-	log.V(3).Info("Results", "myMessages", myMessages)
+	log.V(3).Info("GetLogMessagesByGroupAndStream", "messages", messages)
 
-	return myMessages, nil
+	return messages, nil
 }

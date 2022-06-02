@@ -234,7 +234,7 @@ timestamp_format = "rfc3339"
 	)
 })
 
-func TestFluendConfGenerator(t *testing.T) {
+func TestVectorConfGenerator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Fluend Conf Generation")
+	RunSpecs(t, "Vector Conf Generation")
 }

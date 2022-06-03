@@ -199,19 +199,21 @@ test-functional: test-functional-benchmarker test-functional-fluentd test-functi
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test -cover -race ./test/helpers/...
+	go test -cover -race ./test/helpers/... $(GOTESTFLAGS)
 
 .PHONY: test-functional-fluentd
 test-functional-fluentd:
+	@echo == $@
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test --tags=fluentd -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
+	go test --tags=fluentd -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0 $(GOTESTFLAGS)
 
 .PHONY: test-functional-vector
 test-functional-vector:
+	@echo == $@
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
 	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test --tags=vector -race ./test/functional/outputs/cloudwatch/... ./test/functional/outputs/elasticsearch/... ./test/functional/normalization -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
+	go test --tags=vector -race ./test/functional/outputs/cloudwatch/... ./test/functional/outputs/elasticsearch/... ./test/functional/normalization -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0  $(GOTESTFLAGS)
 
 .PHONY: test-forwarder-generator
 test-forwarder-generator: bin/forwarder-generator
@@ -228,11 +230,11 @@ test-unit: test-forwarder-generator
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test -cover -race ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'`
+	go test -cover -race ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'` $(GOTESTFLAGS)
 
 .PHONY: test-cluster
 test-cluster:
-	go test  -cover -race ./test/... -- -root=$(CURDIR)
+	go test  -cover -race ./test/... $(GOTESTFLAGS) -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
 CHANNELS="stable,stable-${LOGGING_VERSION}"

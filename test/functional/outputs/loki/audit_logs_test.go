@@ -2,15 +2,16 @@ package loki
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
-	"time"
 )
 
-var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
+var _ = Describe("[Functional][Outputs][Loki] Forwarding audit logs to Loki", func() {
 	var (
 		f *functional.CollectorFunctionalFramework
 		l *loki.Receiver
@@ -19,7 +20,7 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 	BeforeEach(func() {
 		f = functional.NewCollectorFunctionalFramework()
 		// Start a Loki server
-		l = loki.NewReceiver(f.Namespace, "loki-server")
+		l = loki.NewReceiver(f.Namespace, "loki-server").EnableMultiTenant()
 		Expect(l.Create(f.Test.Client)).To(Succeed())
 
 		// Set up the common template forwarder configuration.
@@ -52,7 +53,7 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 
 		// Verify we can query by Loki labels
 		query := fmt.Sprintf(`{log_type=%q, tag=%q}`, "audit", auditType)
-		r, err := l.QueryUntil(query, "", 1)
+		r, err := l.QueryUntil(query, "audit", 1)
 		Expect(err).To(Succeed())
 		records := r[0].Records()
 		Expect(records).To(HaveCap(1), "Exp. the record to be ingested")

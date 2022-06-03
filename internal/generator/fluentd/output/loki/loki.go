@@ -22,6 +22,7 @@ import (
 const (
 	lokiLabelKubernetesHost = "kubernetes.host"
 	lokiLabelTag            = "tag"
+	logType                 = "log_type"
 )
 
 var (
@@ -89,15 +90,16 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 	u, _ := urlhelper.Parse(o.URL)
 	urlBase := fmt.Sprintf("%v://%v%v", u.Scheme, u.Host, u.Path)
 	storeID := helpers.StoreID("", o.Name, "")
+	tenant, bufKeys := Tenant(o.Loki)
 	return Match{
 		MatchTags: "**",
 		MatchElement: Loki{
 			StoreID:        strings.ToLower(helpers.Replacer.Replace(o.Name)),
 			URLBase:        urlBase,
-			Tenant:         Tenant(o.Loki),
+			Tenant:         tenant,
 			LokiLabel:      LokiLabel(o.Loki),
 			SecurityConfig: SecurityConfig(o, secret),
-			BufferConfig:   output.Buffer(output.NOKEYS, bufspec, storeID, &o),
+			BufferConfig:   output.Buffer(bufKeys, bufspec, storeID, &o),
 		},
 	}
 }
@@ -196,21 +198,21 @@ func LokiLabel(l *logging.Loki) []string {
 	return labels
 }
 
-// LokiTenantKeys returns the components of the loki tenant key.
-func LokiTenantKeys(l *logging.Loki) []string {
+// Tenant returns a configuration elements and a buffer key.
+func Tenant(l *logging.Loki) (tenant Element, bufKeys []string) {
+	if l != nil {
+		if l.TenantID == "-" {
+			return nil, nil
+		}
+		if l.TenantID != "" {
+			return KV("tenant", l.TenantID), nil
+		}
+	}
+	key := logType
 	if l != nil && l.TenantKey != "" {
-		return strings.Split(l.TenantKey, ".")
+		key = l.TenantKey
 	}
-	return nil
-}
-
-func Tenant(l *logging.Loki) Element {
-	if l == nil || l.TenantKey == "" {
-		return Nil
-	}
-	keys := []string{}
-	for _, k := range LokiTenantKeys(l) {
-		keys = append(keys, fmt.Sprintf("%q", k))
-	}
-	return KV("tenant", fmt.Sprintf("${record.dig(%v)}", strings.Join(keys, ",")))
+	// Loki tenant key in record accessor syntax, also required as a chunk key.
+	accessor := fmt.Sprintf("$.%v", key)
+	return KV("tenant", fmt.Sprintf("${%v}", accessor)), []string{accessor}
 }

@@ -173,10 +173,18 @@ func Labels(o logging.OutputSpec) Element {
 }
 
 func Tenant(l *logging.Loki) Element {
-	if l == nil || l.TenantKey == "" {
+	tenant := `"{{log_type}}"` // Default
+	switch {
+	case l == nil:
+		// use default
+	case l.TenantID == "-": // Disable multi-tenant mode
 		return Nil
+	case l.TenantID != "":
+		tenant = fmt.Sprintf("%q", l.TenantID)
+	case l.TenantKey != "":
+		tenant = fmt.Sprintf(`"{{%s}}"`, l.TenantKey)
 	}
-	return KV("tenant_id", fmt.Sprintf("%q", fmt.Sprintf("{{%s}}", l.TenantKey)))
+	return KV("tenant_id", tenant)
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {

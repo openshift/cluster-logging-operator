@@ -11,12 +11,11 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	"github.com/ViaQ/logerr/v2/log"
+	logerr "github.com/ViaQ/logerr/v2/log"
 	openshiftv1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,6 +26,8 @@ const (
 	Port         = int32(3100)
 	lokiReceiver = "loki-receiver"
 )
+
+var log = logerr.NewLogger("loki-testing")
 
 // Receiver is a service running loki in single-process mode.
 type Receiver struct {
@@ -49,9 +50,10 @@ func NewReceiver(ns, name string) *Receiver {
 	}
 	runtime.Labels(r.Pod)[lokiReceiver] = name
 	r.Pod.Spec.Containers = []corev1.Container{{
-		Name:  name,
-		Image: Image,
-		Ports: []corev1.ContainerPort{{Name: name, ContainerPort: Port}},
+		Name:    name,
+		Image:   Image,
+		Ports:   []corev1.ContainerPort{{Name: name, ContainerPort: Port}},
+		Command: []string{"loki", "-config.file=/etc/loki/local-config.yaml"},
 	}}
 	r.service.Spec = corev1.ServiceSpec{
 		Selector: map[string]string{lokiReceiver: name},
@@ -60,18 +62,26 @@ func NewReceiver(ns, name string) *Receiver {
 	return r
 }
 
+func (r *Receiver) AddArgs(args ...string) *Receiver {
+	cmd := &r.Pod.Spec.Containers[0].Command
+	*cmd = append(*cmd, args...)
+	return r
+}
+func (r *Receiver) EnableMultiTenant() *Receiver { return r.AddArgs("-auth.enabled=true") }
+func (r *Receiver) EnableDebug() *Receiver       { return r.AddArgs("-log.level=debug") }
+
 // Create the receiver's resources. Blocks till created.
 func (r *Receiver) Create(c *client.Client) error {
 	r.timeout = c.Timeout()
-	g := errgroup.Group{}
 	for _, o := range []crclient.Object{r.Pod, r.service, r.route} {
 		if err := c.Create(o); err != nil {
 			return err
 		}
 	}
-	g.Go(func() error { return c.WaitFor(r.Pod, client.PodRunning) })
-	g.Go(func() error { return c.WaitFor(r.route, client.RouteReady) })
-	if err := g.Wait(); err != nil {
+	if err := c.WaitFor(r.Pod, client.PodRunning); err != nil {
+		return err
+	}
+	if err := c.WaitFor(r.route, client.RouteReady); err != nil {
 		return err
 	}
 	// Wait till we can get the metrics page, means server is up.
@@ -105,8 +115,7 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 	q.Add("limit", strconv.Itoa(limit))
 	q.Add("direction", "FORWARD")
 	u.RawQuery = q.Encode()
-	newLogger := log.NewLogger("loki-testing")
-	newLogger.V(3).Info("Loki Query", "url", u.String(), "org-id", orgID)
+	log.V(3).Info("Loki Query", "url", u.String(), "org-id", orgID)
 	header := http.Header{}
 	if orgID != "" {
 		header.Add("X-Scope-OrgID", orgID)
@@ -121,7 +130,7 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 		err = test.HTTPError(resp)
 	}
 	if err != nil {
-		newLogger.V(3).Error(err, "Loki Query", "url", u.String())
+		log.V(3).Error(err, "Loki Query", "url", u.String())
 		return nil, fmt.Errorf("%w\nURL: %v", err, u)
 	}
 	defer resp.Body.Close()
@@ -135,19 +144,18 @@ func (r *Receiver) Query(logQL string, orgID string, limit int) ([]StreamValues,
 	if qr.Data.ResultType != "streams" {
 		return nil, fmt.Errorf("expected 'resultType: streams' in %v", qr)
 	}
-	newLogger.V(3).Info("Loki Query done", "result", test.JSONString(qr.Data.Result))
+	log.V(3).Info("Loki Query done", "result", test.JSONString(qr.Data.Result))
 	return qr.Data.Result, nil
 }
 
 // QueryUntil repeats the query until at least n lines are received.
 func (r *Receiver) QueryUntil(logQL string, orgID string, n int) (values []StreamValues, err error) {
-	newLogger := log.NewLogger("loki-testing")
-	newLogger.V(2).Info("Loki QueryUntil", "query", logQL, "n", n)
+	log.V(2).Info("Loki QueryUntil", "query", logQL, "orgID", orgID, "n", n)
 	err = wait.PollImmediate(time.Second, r.timeout, func() (bool, error) {
-		var err error
 		values, err = r.Query(logQL, orgID, n)
 		if err != nil {
-			return false, err
+			log.V(3).Error(err, "Loki QueryUntil ignoring error")
+			return false, nil
 		}
 		got := 0
 		for _, v := range values {
@@ -216,9 +224,16 @@ type labelResponse struct {
 	Data   []string `json:"data"`
 }
 
-func (r *Receiver) Labels() ([]string, error) {
+func (r *Receiver) Labels(orgID string) ([]string, error) {
 	u := r.ExternalURL("/loki/api/v1/labels")
-	resp, err := http.Get(u.String())
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	if orgID != "" {
+		req.Header.Set("X-Scope-OrgID", orgID)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err == nil {
 		err = test.HTTPError(resp)
 	}
@@ -233,19 +248,31 @@ func (r *Receiver) Labels() ([]string, error) {
 	return lr.Data, nil
 }
 
-func (r *Receiver) Push(sv ...StreamValues) error {
+func (r *Receiver) Push(orgID string, sv ...StreamValues) (err error) {
 	u := r.ExternalURL("/loki/api/v1/push")
+	log.V(3).Info("Loki Push", "url", u.String(), "org-id", orgID)
+	defer func() {
+		log.V(2).Error(err, "Loki Push error", "url", u.String())
+	}()
 	b, err := json.Marshal(map[string][]StreamValues{"streams": sv})
 	if err != nil {
 		return err
 	}
-	resp, err := http.Post(u.String(), "application/json", bytes.NewReader(b))
+	req, err := http.NewRequest("POST", u.String(), bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if orgID != "" {
+		req.Header.Set("X-Scope-OrgID", orgID)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err == nil {
+		defer resp.Body.Close()
 		err = test.HTTPError(resp)
 	}
 	if err != nil {
 		return fmt.Errorf("post %q: %w", u, err)
 	}
-	resp.Body.Close()
 	return nil
 }

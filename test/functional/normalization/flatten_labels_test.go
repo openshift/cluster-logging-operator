@@ -1,16 +1,14 @@
-//go:build fluentd || vector
-// +build fluentd vector
-
 package normalization
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"sort"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -56,7 +54,7 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 			"app.kubernetes.io/created-by": "anoperator",
 		}
 
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 		expLabels = map[string]string{}
 		for k, v := range applicationLabels {
 			framework.Labels[k] = v

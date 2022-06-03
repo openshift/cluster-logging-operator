@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/certificates"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/functional"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 
 	yaml "sigs.k8s.io/yaml"
@@ -69,7 +70,7 @@ type CollectorFunctionalFramework struct {
 
 func NewCollectorFunctionalFramework() *CollectorFunctionalFramework {
 	test := client.NewTest()
-	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0, logging.LogCollectionTypeFluentd)
+	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0, functional.LogCollectionType)
 }
 
 func NewCollectorFunctionalFrameworkUsingCollector(logCollectorType logging.LogCollectionType) *CollectorFunctionalFramework {

@@ -1,5 +1,5 @@
-//go:build fluentd
-// +build fluentd
+//go:build !vector
+// +build !vector
 
 package normalization
 
@@ -226,7 +226,7 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 	})
 
 	It("should verify LOG-2105 parses json message into structured field and writes to Elasticsearch", func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework = functional.NewCollectorFunctionalFramework()
 		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToElasticSearchOutput()

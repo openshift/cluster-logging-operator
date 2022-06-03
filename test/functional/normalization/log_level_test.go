@@ -1,12 +1,13 @@
-//go:build fluentd
-// +build fluentd
+//go:build !vector
+// +build !vector
 
 package normalization
 
 import (
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

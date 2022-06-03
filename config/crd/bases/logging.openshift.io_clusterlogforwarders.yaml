@@ -258,10 +258,17 @@ spec:
                           items:
                             type: string
                           type: array
+                        tenantID:
+                          description: "TenantID is a fixed string value to use as
+                            the Loki tenant-ID. \n The special value '-' means use
+                            single-tenant mode, no tenant ID. Note it is an error
+                            to set both TenantKey and TenantID"
+                          type: string
                         tenantKey:
-                          description: 'TenantKey is a meta-data key field to use
-                            as the TenantID, For example: ''TenantKey: kubernetes.namespace_name`
-                            will use the kubernetes namespace as the tenant ID.'
+                          description: "TenantKey identifies a log record field to
+                            use as the Loki tenant-ID. \n Default: 'log_type' (one
+                            of `application`, `infrastructure`, `audit`) \n Note it
+                            is an error to set both TenantKey and TenantID"
                           type: string
                       type: object
                     name:

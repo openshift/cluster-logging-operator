@@ -1,5 +1,8 @@
-//go:build fluentd
-// +build fluentd
+//go:build !vector
+// +build !vector
+
+// NOTE: fluentd is currently the default if no build tag (vector or fluetnd) is specified.
+// This will switch to vector eventually.
 
 package functional
 

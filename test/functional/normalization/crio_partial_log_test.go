@@ -1,5 +1,5 @@
-//go:build fluentd
-// +build fluentd
+//go:build !vector
+// +build !vector
 
 package normalization
 

@@ -2,19 +2,18 @@ package loki
 
 import (
 	"fmt"
-	"testing"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
-
-	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/test"
-	"github.com/stretchr/testify/require"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
 
 // lokiConfig assembls a loki config block in sections
 type lokiConfig struct {
-	filter, content, label, buffer string
+	filter, content, label, bufferKeys, buffer string
 }
 
 func (c *lokiConfig) String() string {
@@ -34,27 +33,24 @@ func (c *lokiConfig) String() string {
     <label>
       %v
     </label>
-    <buffer>
+    <buffer%v>
       %v
     </buffer>
   </match>
 </label>
-`, c.filter, c.content, c.label, c.buffer)
+`, c.filter, c.content, c.label, c.bufferKeys, c.buffer)
 }
 
-func TestLokiOutput(t *testing.T) {
+var _ = Describe("Loki output configuration", func() {
 	var (
 		config  lokiConfig
 		secrets map[string]*corev1.Secret
 		g       generator.Generator
 	)
 
-	// testCase runs before/after logic around testFunc
-	testCase := func(name string, testFunc func(t *testing.T)) {
-		t.Helper()
-		t.Run(name, func(t *testing.T) {
-			config = lokiConfig{ // config with defaults
-				filter: `
+	BeforeEach(func() {
+		config = lokiConfig{ // config with defaults
+			filter: `
          _kubernetes_container_name ${record.dig("kubernetes","container_name")}
          _kubernetes_host "#{ENV['NODE_NAME']}"
          _kubernetes_namespace_name ${record.dig("kubernetes","namespace_name")}
@@ -62,7 +58,7 @@ func TestLokiOutput(t *testing.T) {
          _log_type ${record.dig("log_type")}
          _tag ${tag}
 `,
-				label: `
+			label: `
        kubernetes_container_name _kubernetes_container_name
        kubernetes_host _kubernetes_host
        kubernetes_namespace_name _kubernetes_namespace_name
@@ -70,7 +66,7 @@ func TestLokiOutput(t *testing.T) {
        log_type _log_type
        tag _tag
 `,
-				buffer: `
+			buffer: `
      @type file
      path '/var/lib/fluentd/loki_receiver'
      flush_mode interval
@@ -85,72 +81,71 @@ func TestLokiOutput(t *testing.T) {
      chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
      overflow_action block
 `,
-			}
-			secrets = map[string]*corev1.Secret{
-				"loki-receiver": {
-					Data: map[string][]byte{
-						"username":      []byte("my-username"),
-						"password":      []byte("my-password"),
-						"tls.crt":       []byte("my-tls"),
-						"tls.key":       []byte("my-tls-key"),
-						"ca-bundle.crt": []byte("my-bundle"),
-					}},
-				"loki-receiver-token": {
-					Data: map[string][]byte{
-						"token": []byte("/path/to/token"),
-					}}}
+		}
+		secrets = map[string]*corev1.Secret{
+			"loki-receiver": {
+				Data: map[string][]byte{
+					"username":      []byte("my-username"),
+					"password":      []byte("my-password"),
+					"tls.crt":       []byte("my-tls"),
+					"tls.key":       []byte("my-tls-key"),
+					"ca-bundle.crt": []byte("my-bundle"),
+				}},
+			"loki-receiver-token": {
+				Data: map[string][]byte{
+					"token": []byte("/path/to/token"),
+				}}}
 
-			var err error
-			g = generator.MakeGenerator()
-			require.NoError(t, err)
-			testFunc(t)
-		})
-	}
-
-	testCase("insecure configuration", func(t *testing.T) {
-		outputs := []v1.OutputSpec{{
-			Type: v1.OutputTypeLoki,
-			Name: "loki-receiver",
-			URL:  "https://logs-us-west1.grafana.net",
-		}}
-		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
-		results, err := g.GenerateConf(es...)
-		require.NoError(t, err)
-		config.content = "url https://logs-us-west1.grafana.net"
-		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results), results)
+		g = generator.MakeGenerator()
 	})
 
-	testCase("secure configuration", func(t *testing.T) {
-		outputs := []v1.OutputSpec{{
-			Type:   v1.OutputTypeLoki,
-			Name:   "loki-receiver",
-			URL:    "https://logs-us-west1.grafana.net",
-			Secret: &v1.OutputSecretSpec{Name: "a-secret-ref"},
+	It("generates insecure, default tenant configuration", func() {
+		outputs := []loggingv1.OutputSpec{{
+			Type:           loggingv1.OutputTypeLoki,
+			Name:           "loki-receiver",
+			URL:            "https://logs-us-west1.grafana.net",
+			OutputTypeSpec: loggingv1.OutputTypeSpec{Loki: &loggingv1.Loki{TenantID: "-"}},
 		}}
 		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
 		results, err := g.GenerateConf(es...)
-		require.NoError(t, err)
+		ExpectOK(err)
+		config.content = `url https://logs-us-west1.grafana.net`
+		Expect(config.String()).To(EqualTrimLines(results))
+	})
+
+	It("generates secure, single-tenant configuration", func() {
+		outputs := []loggingv1.OutputSpec{{
+			Type:           loggingv1.OutputTypeLoki,
+			Name:           "loki-receiver",
+			URL:            "https://logs-us-west1.grafana.net",
+			Secret:         &loggingv1.OutputSecretSpec{Name: "a-secret-ref"},
+			OutputTypeSpec: loggingv1.OutputTypeSpec{Loki: &loggingv1.Loki{TenantID: "-"}},
+		}}
+		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
+		results, err := g.GenerateConf(es...)
+		ExpectOK(err)
 		config.content = `url https://logs-us-west1.grafana.net
     username "#{File.read('/var/run/ocp-collector/secrets/a-secret-ref/username') rescue nil}"
     password "#{File.read('/var/run/ocp-collector/secrets/a-secret-ref/password') rescue nil}"
     key '/var/run/ocp-collector/secrets/a-secret-ref/tls.key'
     cert '/var/run/ocp-collector/secrets/a-secret-ref/tls.crt'
     ca_cert '/var/run/ocp-collector/secrets/a-secret-ref/ca-bundle.crt'`
-		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results), results)
+		Expect(config.String()).To(EqualTrimLines(results))
 	})
 
-	testCase("custom label configuration", func(t *testing.T) {
-		outputs := []v1.OutputSpec{{
+	It("generates custom label configuration", func() {
+		outputs := []loggingv1.OutputSpec{{
 			Name: "loki-receiver",
-			Type: v1.OutputTypeLoki,
+			Type: loggingv1.OutputTypeLoki,
 			URL:  "https://logs-us-west1.grafana.net",
-			OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
+			OutputTypeSpec: loggingv1.OutputTypeSpec{Loki: &loggingv1.Loki{
 				LabelKeys: []string{"kubernetes.labels.app", "kubernetes.container_name"},
+				TenantID:  "-",
 			}},
 		}}
 		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
 		results, err := g.GenerateConf(es...)
-		require.NoError(t, err)
+		ExpectOK(err)
 		config.content = `url https://logs-us-west1.grafana.net`
 		// NOTE: kubernetes.host should be added automatically if not present.
 		config.filter = `
@@ -165,40 +160,61 @@ func TestLokiOutput(t *testing.T) {
       kubernetes_labels_app _kubernetes_labels_app
       tag _tag
 `
-		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results), results)
+		Expect(config.String()).To(EqualTrimLines(results))
 	})
 
-	testCase("applies tenantKey value as Loki tenant", func(t *testing.T) {
-		outputs := []v1.OutputSpec{{
-			Type: v1.OutputTypeLoki,
+	It("applies tenantID value as Loki tenant", func() {
+		outputs := []loggingv1.OutputSpec{{
+			Type: loggingv1.OutputTypeLoki,
 			Name: "loki-receiver",
-			URL:  "https://logs-us-west1.grafana.net/a-tenant",
-			OutputTypeSpec: v1.OutputTypeSpec{
-				Loki: &v1.Loki{TenantKey: "foo.bar.baz"},
+			URL:  "https://logs-us-west1.grafana.net",
+			OutputTypeSpec: loggingv1.OutputTypeSpec{
+				Loki: &loggingv1.Loki{TenantID: "my-tenant"},
 			},
 		}}
-		config.content = `url https://logs-us-west1.grafana.net/a-tenant
-    tenant ${record.dig("foo","bar","baz")}
+		config.content = `url https://logs-us-west1.grafana.net
+    tenant my-tenant
 `
 		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
 		results, err := g.GenerateConf(es...)
-		require.NoError(t, err)
-		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results))
+		ExpectOK(err)
+		Expect(config.String()).To(EqualTrimLines(results))
 	})
 
-	testCase("forward with bearer token", func(t *testing.T) {
-		outputs := []v1.OutputSpec{{
-			Type:   v1.OutputTypeLoki,
-			Name:   "loki-receiver",
-			URL:    "https://logs-us-west1.grafana.net",
-			Secret: &v1.OutputSecretSpec{Name: "a-secret-ref"},
+	It("applies tenantKey value as field name", func() {
+		outputs := []loggingv1.OutputSpec{{
+			Type: loggingv1.OutputTypeLoki,
+			Name: "loki-receiver",
+			URL:  "https://logs-us-west1.grafana.net",
+			OutputTypeSpec: loggingv1.OutputTypeSpec{
+				Loki: &loggingv1.Loki{TenantKey: "foo.bar.baz"},
+			},
+		}}
+		config.content = `url https://logs-us-west1.grafana.net
+    tenant ${$.foo.bar.baz}
+`
+		config.bufferKeys = ` $.foo.bar.baz`
+
+		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
+		results, err := g.GenerateConf(es...)
+		ExpectOK(err)
+
+		Expect(config.String()).To(EqualTrimLines(results))
+	})
+
+	It("forwards with bearer token", func() {
+		outputs := []loggingv1.OutputSpec{{
+			Type:           loggingv1.OutputTypeLoki,
+			Name:           "loki-receiver",
+			URL:            "https://logs-us-west1.grafana.net",
+			Secret:         &loggingv1.OutputSecretSpec{Name: "a-secret-ref"},
+			OutputTypeSpec: loggingv1.OutputTypeSpec{Loki: &loggingv1.Loki{TenantID: "-"}},
 		}}
 		es := Conf(nil, secrets["loki-receiver-token"], outputs[0], generator.NoOptions)
 		results, err := g.GenerateConf(es...)
-		require.NoError(t, err)
+		ExpectOK(err)
 		config.content = `url https://logs-us-west1.grafana.net
     bearer_token_file "/path/to/token"`
-		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results), results)
+		Expect(config.String()).To(EqualTrimLines(results))
 	})
-
-}
+})

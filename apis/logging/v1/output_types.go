@@ -201,12 +201,22 @@ type Elasticsearch struct {
 
 // Loki provides optional extra properties for `type: loki`
 type Loki struct {
-	// TenantKey is a meta-data key field to use as the TenantID,
-	// For example: 'TenantKey: kubernetes.namespace_name` will use the kubernetes
-	// namespace as the tenant ID.
+	// TenantKey identifies a log record field to use as the Loki tenant-ID.
+	//
+	// Default: 'log_type' (one of `application`, `infrastructure`, `audit`)
+	//
+	// Note it is an error to set both TenantKey and TenantID
 	//
 	// +optional
 	TenantKey string `json:"tenantKey,omitempty"`
+
+	// TenantID is a fixed string value to use as the Loki tenant-ID.
+	//
+	// The special value '-' means use single-tenant mode, no tenant ID.
+	// Note it is an error to set both TenantKey and TenantID
+	//
+	// +optional
+	TenantID string `json:"tenantID,omitempty"`
 
 	// LabelKeys is a list of meta-data field keys to replace the default Loki labels.
 	//

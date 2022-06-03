@@ -1,9 +1,10 @@
 package loki
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"sort"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -47,7 +48,7 @@ var _ = Describe("Generate vector config", func() {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], generator.NoOptions)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
-		Entry("with default labels", helpers.ConfGenerateTest{
+		Entry("with basic auth", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -73,6 +74,7 @@ var _ = Describe("Generate vector config", func() {
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
+tenant_id = "{{log_type}}"
 
 [sinks.loki_receiver.encoding]
 codec = "json"
@@ -98,11 +100,71 @@ password = "password"
 						Type: logging.OutputTypeLoki,
 						Name: "loki-receiver",
 						URL:  "https://logs-us-west1.grafana.net",
+						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
+							LabelKeys: []string{"kubernetes.labels.app", "kubernetes.container_name"},
+						}},
+					},
+				},
+			},
+			ExpectedConf: `
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["application"]
+endpoint = "https://logs-us-west1.grafana.net"
+tenant_id = "{{log_type}}"
+
+[sinks.loki_receiver.encoding]
+codec = "json"
+
+[sinks.loki_receiver.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_labels_app = "{{kubernetes.labels.app}}"
+`,
+		}),
+		Entry("with tenant key", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://logs-us-west1.grafana.net",
+						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
+							TenantKey: "foo.bar.baz",
+						}},
+					},
+				},
+			},
+			ExpectedConf: `
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["application"]
+endpoint = "https://logs-us-west1.grafana.net"
+tenant_id = "{{foo.bar.baz}}"
+
+[sinks.loki_receiver.encoding]
+codec = "json"
+
+[sinks.loki_receiver.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+`,
+		}),
+		Entry("with tenant id", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://logs-us-west1.grafana.net",
 						Secret: &logging.OutputSecretSpec{
 							Name: "loki-receiver",
 						},
 						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
-							LabelKeys: []string{"kubernetes.labels.app", "kubernetes.container_name"},
+							TenantID: "fred",
 						}},
 					},
 				},
@@ -120,6 +182,7 @@ password = "password"
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
+tenant_id = "fred"
 
 [sinks.loki_receiver.encoding]
 codec = "json"
@@ -127,16 +190,19 @@ codec = "json"
 [sinks.loki_receiver.labels]
 kubernetes_container_name = "{{kubernetes.container_name}}"
 kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
-kubernetes_labels_app = "{{kubernetes.labels.app}}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
 
 # Basic Auth Config
 [sinks.loki_receiver.auth]
 strategy = "basic"
 user = "username"
 password = "password"
+
 `,
 		}),
-		Entry("with tenant id", helpers.ConfGenerateTest{
+		Entry("with tenant key", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -166,6 +232,152 @@ type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
 tenant_id = "{{foo.bar.baz}}"
+
+[sinks.loki_receiver.encoding]
+codec = "json"
+
+[sinks.loki_receiver.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+
+# Basic Auth Config
+[sinks.loki_receiver.auth]
+strategy = "basic"
+user = "username"
+password = "password"
+
+`,
+		}),
+		Entry("with tenant key", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://logs-us-west1.grafana.net",
+						Secret: &logging.OutputSecretSpec{
+							Name: "loki-receiver",
+						},
+						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
+							TenantKey: "foo.bar.baz",
+						}},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"loki-receiver": {
+					Data: map[string][]byte{
+						"username": []byte("username"),
+						"password": []byte("password"),
+					},
+				},
+			},
+			ExpectedConf: `
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["application"]
+endpoint = "https://logs-us-west1.grafana.net"
+tenant_id = "{{foo.bar.baz}}"
+
+[sinks.loki_receiver.encoding]
+codec = "json"
+
+[sinks.loki_receiver.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+
+# Basic Auth Config
+[sinks.loki_receiver.auth]
+strategy = "basic"
+user = "username"
+password = "password"
+
+`,
+		}),
+		Entry("with tenant key", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://logs-us-west1.grafana.net",
+						Secret: &logging.OutputSecretSpec{
+							Name: "loki-receiver",
+						},
+						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
+							TenantKey: "foo.bar.baz",
+						}},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"loki-receiver": {
+					Data: map[string][]byte{
+						"username": []byte("username"),
+						"password": []byte("password"),
+					},
+				},
+			},
+			ExpectedConf: `
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["application"]
+endpoint = "https://logs-us-west1.grafana.net"
+tenant_id = "{{foo.bar.baz}}"
+
+[sinks.loki_receiver.encoding]
+codec = "json"
+
+[sinks.loki_receiver.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+
+# Basic Auth Config
+[sinks.loki_receiver.auth]
+strategy = "basic"
+user = "username"
+password = "password"
+
+`,
+		}),
+		Entry("with tenancy disabled", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://logs-us-west1.grafana.net",
+						Secret: &logging.OutputSecretSpec{
+							Name: "loki-receiver",
+						},
+						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
+							TenantID: "-",
+						}},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"loki-receiver": {
+					Data: map[string][]byte{
+						"username": []byte("username"),
+						"password": []byte("password"),
+					},
+				},
+			},
+			ExpectedConf: `
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["application"]
+endpoint = "https://logs-us-west1.grafana.net"
 
 [sinks.loki_receiver.encoding]
 codec = "json"
@@ -216,6 +428,7 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 type = "loki"
 inputs = ["application"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+tenant_id = "{{log_type}}"
 
 [sinks.loki_receiver.encoding]
 codec = "json"

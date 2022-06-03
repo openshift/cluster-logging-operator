@@ -1,6 +1,3 @@
-//go:build fluentd || vector
-// +build fluentd vector
-
 package normalization
 
 import (
@@ -28,7 +25,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 	Context("with fluentd", func() {
 		if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
 			BeforeEach(func() {
-				framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeFluentd)
+				framework = functional.NewCollectorFunctionalFramework()
 				functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameAudit).
 					ToFluentForwardOutput()

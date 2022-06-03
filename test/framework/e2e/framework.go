@@ -472,8 +472,11 @@ func RunCleanupScript() {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Env = nil
 		result, err := cmd.CombinedOutput()
-		logger.Info("RunCleanupScript output: ", "output", string(result))
-		logger.Info("RunCleanupScript err: ", "error", err)
+		if err != nil {
+			logger.Error(err, "RunCleanupScript error")
+		} else {
+			logger.Info("RunCleanupScript output: ", "output", string(result))
+		}
 	}
 }
 

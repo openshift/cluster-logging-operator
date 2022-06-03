@@ -1,32 +1,31 @@
 linters:
   disable-all: true
   enable:
-    - bodyclose
-    - deadcode
-    - depguard
-    - dogsled
-    - errcheck
-    - exportloopref
-    - gocyclo
-    - gofmt
-    - goprintffuncname
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
-    - nakedret
-    - staticcheck
-    - structcheck
-    - typecheck
-    - unconvert
-    - unused
-    - varcheck
+    - bodyclose	# checks whether HTTP response body is closed successfully [fast: false, auto-fix: false]
+    - deadcode	# Finds unused code [fast: false, auto-fix: false]
+    - depguard	# Go linter that checks if package imports are in a list of acceptable packages [fast: false, auto-fix: false]
+    - errcheck	# Errcheck is a program for checking for unchecked errors in go programs. These unchecked errors can be critical bugs in some cases [fast: false, auto-fix: false]
+    - exportloopref	# checks for pointers to enclosing loop variables [fast: false, auto-fix: false]
+    - gocyclo	# Computes and checks the cyclomatic complexity of functions [fast: true, auto-fix: false]
+    - gofmt	# Gofmt checks whether code was gofmt-ed. By default this tool runs with -s option to check for code simplification [fast: true, auto-fix: true]
+    - gomodguard	# Allow and block list linter for direct Go module dependencies. This is different from depguard where there are different block types for example version constraints and module recommendations. [fast: true, auto-fix: false]
+    - goprintffuncname	# Checks that printf-like functions are named with `f` at the end [fast: true, auto-fix: false]
+    - gosec	# Inspects source code for security problems [fast: false, auto-fix: false]
+    - gosimple	# Linter for Go source code that specializes in simplifying a code [fast: false, auto-fix: false]
+    - govet	# Vet examines Go source code and reports suspicious constructs, such as Printf calls whose arguments do not align with the format string [fast: false, auto-fix: false]
+    - ineffassign	# Detects when assignments to existing variables are not used [fast: true, auto-fix: false]
+    - nakedret	# Finds naked returns in functions greater than a specified function length [fast: true, auto-fix: false]
+    - staticcheck	# Staticcheck is a go vet on steroids, applying a ton of static analysis checks [fast: false, auto-fix: false]
+    - structcheck	# Finds unused struct fields [fast: false, auto-fix: false]
+    - typecheck	# Like the front-end of a Go compiler, parses and type-checks Go code [fast: false, auto-fix: false]
+    - unconvert	# Remove unnecessary type conversions [fast: false, auto-fix: false]
+    - unused	# Checks Go code for unused constants, variables, functions and types [fast: false, auto-fix: false]
+    - varcheck	# Finds unused global variables and constants [fast: false, auto-fix: false]
 
-# Consider enabling these, some cleanup required:
+## Consider enabling these, some cleanup required:
 # dupl: Tool for code clone detection [fast: true, auto-fix: false]
 # gocritic: Provides many diagnostics that check for bugs, performance and style issues. [fast: true, auto-fix: false]
-# goimports: Goimports does everything that gofmt does. Additionally it checks unused imports [fast: true, auto-fix: true]
+# goimports: In addition to fixing imports, goimports also formats your code in the same style as gofmt. [fast: true, auto-fix: true]
 # gomnd: An analyzer to detect magic numbers. [fast: true, auto-fix: false]
 # stylecheck: Stylecheck is a replacement for golint [fast: true, auto-fix: false]
 # whitespace: Tool for detection of leading and trailing whitespace [fast: true, auto-fix: true]

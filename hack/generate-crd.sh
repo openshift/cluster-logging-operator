@@ -28,9 +28,8 @@ BUNDLE_GEN_FLAGS="-q --overwrite --version ${BUNDLE_VERSION} ${BUNDLE_METADATA_O
 # USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
 # You can enable this value if you would like to use SHA Based Digests
 # To enable set flag to true
-USE_IMAGE_DIGESTS=false
-if [${USE_IMAGE_DIGESTS} ==  false]
-then
+USE_IMAGE_DIGESTS=${USE_IMAGE_DIGESTS:-false}
+if [ ${USE_IMAGE_DIGESTS} ==  true ]; then
     BUNDLE_GEN_FLAGS+="--use-image-digests"
 fi
 

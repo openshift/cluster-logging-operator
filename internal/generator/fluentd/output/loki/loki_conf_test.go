@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
@@ -61,6 +62,7 @@ var _ = Describe("Generate fluentd config", func() {
 						Secret: &logging.OutputSecretSpec{
 							Name: "es-1",
 						},
+						OutputTypeSpec: loggingv1.OutputTypeSpec{Loki: &loggingv1.Loki{TenantID: "-"}},
 					},
 				},
 			},
@@ -132,6 +134,7 @@ var _ = Describe("Generate fluentd config", func() {
 						},
 						OutputTypeSpec: v1.OutputTypeSpec{Loki: &v1.Loki{
 							LabelKeys: []string{"kubernetes.labels.app", "kubernetes.container_name"},
+							TenantID:  "-",
 						}},
 					},
 				},

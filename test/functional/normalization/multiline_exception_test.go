@@ -1,9 +1,11 @@
-//go:build fluentd
-// +build fluentd
+//go:build !vector
+// +build !vector
 
 package normalization
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -12,7 +14,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"strings"
 )
 
 // Multiline Detect Exception test to verify proper re-assembly of

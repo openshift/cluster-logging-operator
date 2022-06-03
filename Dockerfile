@@ -8,34 +8,28 @@ ENV OS_GIT_MINOR=${CI_Y_VERSION}
 ENV OS_GIT_PATCH=${CI_Z_VERSION}
 ENV SOURCE_GIT_COMMIT=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT}
 ENV SOURCE_GIT_URL=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}
-ENV REMOTE_SOURCE=${REMOTE_SOURCE:-.}
+ENV REMOTE_SOURCES=${REMOTE_SOURCES:-.}
+ENV REMOTE_SOURCES_DIR=${REMOTE_SOURCES_DIR:-/remote_sources}
+ENV WORKDIR=$REMOTE_SOURCES_DIR
 
+COPY $REMOTE_SOURCES $REMOTE_SOURCES_DIR
 
-WORKDIR /go/src/github.com/openshift/cluster-logging-operator
+WORKDIR $WORKDIR
 
-COPY ${REMOTE_SOURCE}/main.go .
-COPY ${REMOTE_SOURCE}/apis ./apis
-COPY ${REMOTE_SOURCE}/controllers ./controllers
-COPY ${REMOTE_SOURCE}/internal ./internal
-COPY ${REMOTE_SOURCE}/must-gather ./must-gather
-COPY ${REMOTE_SOURCE}/version ./version
-COPY ${REMOTE_SOURCE}/scripts ./scripts
-COPY ${REMOTE_SOURCE}/files ./files
-COPY ${REMOTE_SOURCE}/go.mod .
-COPY ${REMOTE_SOURCE}/go.sum .
-COPY ${REMOTE_SOURCE}/manifests ./manifests
-COPY ${REMOTE_SOURCE}/.bingo .bingo
-COPY ${REMOTE_SOURCE}/Makefile ./Makefile
 
 USER 0
+RUN go mod download
 RUN make build
 
-
-#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.8)
-FROM quay.io/openshift/origin-cli:4.8 AS origincli
+#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.9)
+FROM quay.io/openshift/origin-cli:4.9 AS origincli
 
 #@follow_tag(registry.redhat.io/ubi8:latest)
-FROM registry.redhat.io/ubi8:8.5
+FROM registry.redhat.io/ubi8:latest
+
+ENV REMOTE_SOURCES_DIR=${REMOTE_SOURCES_DIR:-/remote_sources}
+ENV WORKDIR=$REMOTE_SOURCES_DIR
+
 RUN INSTALL_PKGS=" \
       openssl \
       rsync \
@@ -46,16 +40,15 @@ RUN INSTALL_PKGS=" \
     rpm -V $INSTALL_PKGS && \
     yum clean all && \
     mkdir /tmp/ocp-clo && \
-    chmod og+w /tmp/ocp-clo
-COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/bin/cluster-logging-operator /usr/bin/
-COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/scripts/* /usr/bin/scripts/
-RUN mkdir -p /usr/share/logging/
-COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/files/ /usr/share/logging/
+    chmod og+w /tmp/ocp-clo && \
+    mkdir -p /usr/share/logging/
 
-COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/manifests /manifests
-
+COPY --from=builder $WORKDIR/bin/cluster-logging-operator /usr/bin/
+COPY --from=builder $WORKDIR/scripts/* /usr/bin/scripts/
+COPY --from=builder $WORKDIR/files/ /usr/share/logging/
+COPY --from=builder $WORKDIR/manifests /manifests
 COPY --from=origincli /usr/bin/oc /usr/bin
-COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/
+COPY --from=builder $WORKDIR/must-gather/collection-scripts/* /usr/bin/
 
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
@@ -68,7 +61,7 @@ LABEL \
         com.redhat.delivery.appregistry="false" \
         maintainer="AOS Logging <aos-logging@redhat.com>" \
         License="Apache-2.0" \
-        name="openshift-logging/cluster-logging-rhel8-operator" \
+        name="openshift/ose-cluster-logging-operator" \
         com.redhat.component="cluster-logging-operator-container" \
         io.openshift.maintainer.product="OpenShift Container Platform" \
         io.openshift.build.commit.id=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \

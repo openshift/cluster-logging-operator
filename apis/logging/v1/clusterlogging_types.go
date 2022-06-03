@@ -581,7 +581,7 @@ type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // ClusterLogging is the Schema for the clusterloggings API
-// +operator-sdk:csv:customresourcedefinitions:displayName="ClusterLogging",resources={{Pod,v1},{Deployment,v1},{ReplicaSet,v1},{ConfigMap,v1},{Service,v1},{Route,v1},{CronJob,v1beta1},{Role,v1},{RoleBinding,v1},{ServiceAccount,v1},{ServiceMonitor,v1},{persistentvolumeclaims,v1}}
+// +operator-sdk:csv:customresourcedefinitions:displayName="ClusterLogging",resources={{Pod,v1},{Deployment,v1},{ReplicaSet,v1},{ConfigMap,v1},{Service,v1},{Route,v1},{CronJob,v1},{Role,v1},{RoleBinding,v1},{ServiceAccount,v1},{ServiceMonitor,v1},{persistentvolumeclaims,v1}}
 type ClusterLogging struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

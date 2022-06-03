@@ -347,7 +347,7 @@ spec:
       - kind: DaemonSet
         version: v1
       - kind: CronJob
-        version: v1beta1
+        version: v1
       - kind: ReplicaSet
         version: v1
       - kind: Pod

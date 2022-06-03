@@ -139,7 +139,7 @@ lint-dockerfile:
 .PHONY: fmt
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	find test internal controllers apis -name '*.go' | xargs gofmt -s -l -w
+	find version test internal controllers apis -name '*.go' | xargs gofmt -s -l -w
 
 MANIFESTS=manifests/$(LOGGING_VERSION)
 

@@ -8,27 +8,30 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/go-logr/logr"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 
 	"github.com/spf13/pflag"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 )
 
 // HACK - This command is for development use only
 func main() {
 	logLevel, present := os.LookupEnv("LOG_LEVEL")
+
+	var logger logr.Logger
 	if present {
 		verbosity, err := strconv.Atoi(logLevel)
 		if err != nil {
-			log.Error(err, "LOG_LEVEL must be an integer", "value", logLevel)
+			log.NewLogger("cluster-logging-operator").Error(err, "LOG_LEVEL must be an integer")
 			os.Exit(1)
 		}
-		log.MustInit("cluster-logging-operator")
-		log.SetLogLevel(verbosity)
+		logger = log.NewLogger("cluster-logging-operator", log.WithVerbosity(verbosity))
+
 	} else {
-		log.MustInit("cluster-logging-operator")
+		logger = log.NewLogger("cluster-logging-operator")
 	}
 
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
@@ -47,35 +50,35 @@ func main() {
 		pflag.Usage()
 		os.Exit(1)
 	}
-	log.V(1).Info("Forwarder Generator Main", "Args", os.Args)
+	logger.V(1).Info("Forwarder Generator Main", "Args", os.Args)
 
 	var reader func() ([]byte, error)
 	switch *yamlFile {
 	case "-":
-		log.Info("Reading from stdin")
+		logger.Info("Reading from stdin")
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
 			return ioutil.ReadAll(stdin)
 		}
 	case "":
-		log.Info("received empty yamlfile")
+		logger.Info("received empty yamlfile")
 		reader = func() ([]byte, error) { return []byte{}, nil }
 	default:
-		log.Info("reading log forwarder from yaml file", "filename", *yamlFile)
+		logger.Info("reading log forwarder from yaml file", "filename", *yamlFile)
 		reader = func() ([]byte, error) { return ioutil.ReadFile(*yamlFile) }
 	}
 
 	content, err := reader()
 	if err != nil {
-		log.Error(err, "Error Unmarshalling file ", "file", yamlFile)
+		logger.Error(err, "Error Unmarshalling file ", "file", yamlFile)
 		os.Exit(1)
 	}
 
-	log.Info("Finished reading yaml", "content", string(content))
+	logger.Info("Finished reading yaml", "content", string(content))
 
 	generatedConfig, err := forwarder.Generate(logCollectorType, string(content), *includeDefaultLogStore, *debugOutput, nil)
 	if err != nil {
-		log.Error(err, "Unable to generate log configuration")
+		logger.Error(err, "Unable to generate log configuration")
 		os.Exit(1)
 	}
 	fmt.Println(generatedConfig)

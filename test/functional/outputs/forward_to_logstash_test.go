@@ -1,11 +1,12 @@
 package outputs
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"path"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+
+	log "github.com/ViaQ/logerr/v2/log"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -52,12 +53,13 @@ output {
 	)
 	var (
 		framework *functional.CollectorFunctionalFramework
+		logger    = log.NewLogger("")
 
 		newVisitor = func(f *functional.CollectorFunctionalFramework) runtime.PodBuilderVisitor {
 			return func(b *runtime.PodBuilder) error {
-				log.V(2).Info("Adding forward output to logstash", "name", logging.OutputTypeFluentdForward)
+				logger.V(2).Info("Adding forward output to logstash", "name", logging.OutputTypeFluentdForward)
 				configName := "logstash-config"
-				log.V(2).Info("Creating configmap", "name", configName)
+				logger.V(2).Info("Creating configmap", "name", configName)
 				config := runtime.NewConfigMap(b.Pod.Namespace, configName, map[string]string{
 					pipelineConfFileName: pipelineConf,
 					logstashConfFileName: logstashConf,
@@ -66,7 +68,7 @@ output {
 					return err
 				}
 
-				log.V(2).Info("Adding container", "name", logging.OutputTypeFluentdForward)
+				logger.V(2).Info("Adding container", "name", logging.OutputTypeFluentdForward)
 				b.AddContainer(logging.OutputTypeFluentdForward, logStashImage).
 					AddVolumeMount("logstash-config", path.Join("/usr/share/logstash/pipeline", pipelineConfFileName), pipelineConfFileName, true).
 					AddVolumeMount("logstash-config", path.Join("/usr/share/logstash/config", logstashConfFileName), logstashConfFileName, true).

@@ -1,7 +1,7 @@
 package vector
 
 import (
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -27,17 +27,19 @@ func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secr
 	outputs := []generator.Element{}
 	ofp := OutputFromPipelines(clfspec, op)
 
+	logger := log.NewLogger("")
+
 	for _, o := range clfspec.Outputs {
 		var secret *corev1.Secret
 		if s, ok := secrets[o.Name]; ok {
 			secret = s
-			log.V(9).Info("Using secret configured in output: " + o.Name)
+			logger.V(9).Info("Using secret configured in output: " + o.Name)
 		} else {
 			secret = secrets[constants.LogCollectorToken]
 			if secret != nil {
-				log.V(9).Info("Using secret configured in " + constants.LogCollectorToken)
+				logger.V(9).Info("Using secret configured in " + constants.LogCollectorToken)
 			} else {
-				log.V(9).Info("No Secret found in " + constants.LogCollectorToken)
+				logger.V(9).Info("No Secret found in " + constants.LogCollectorToken)
 			}
 		}
 		inputs := ofp[o.Name].List()

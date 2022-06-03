@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/servicemonitor"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/services"
 
-	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -49,9 +48,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	cluster := clusterRequest.Cluster
 	collectorConfig := ""
 	collectorConfHash := ""
-	log.V(9).Info("Entering CreateOrUpdateCollection")
+	clusterRequest.Log.V(9).Info("Entering CreateOrUpdateCollection")
 	defer func() {
-		log.V(9).Info("Leaving CreateOrUpdateCollection")
+		clusterRequest.Log.V(9).Info("Leaving CreateOrUpdateCollection")
 	}()
 
 	var collectorServiceAccount *core.ServiceAccount
@@ -66,57 +65,57 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 		//TODO: Remove me once fully migrated to new collector naming
 		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
-			log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
+			clusterRequest.Log.V(2).Info("Error removing legacy fluentd collector.  ", "err", err)
 		}
 
 		if err = clusterRequest.removeCollectorSecretIfOwnedByCLO(); err != nil {
-			log.Error(err, "Can't fully clean up old secret created by CLO")
+			clusterRequest.Log.Error(err, "Can't fully clean up old secret created by CLO")
 			return
 		}
 
 		if collectorServiceAccount, err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
-			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorServiceAccount")
+			clusterRequest.Log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorServiceAccount")
 			return
 		}
 
 		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
-			log.V(9).Error(err, "clusterRequest.generateCollectorConfig")
+			clusterRequest.Log.V(9).Error(err, "clusterRequest.generateCollectorConfig")
 			return
 		}
 
-		log.V(3).Info("Generated collector config", "config", collectorConfig)
+		clusterRequest.Log.V(3).Info("Generated collector config", "config", collectorConfig)
 		collectorConfHash, err = utils.CalculateMD5Hash(collectorConfig)
 		if err != nil {
-			log.Error(err, "unable to calculate MD5 hash")
-			log.V(9).Error(err, "Returning from unable to calculate MD5 hash")
+			clusterRequest.Log.Error(err, "unable to calculate MD5 hash")
+			clusterRequest.Log.V(9).Error(err, "Returning from unable to calculate MD5 hash")
 			return
 		}
 		if err = clusterRequest.reconcileCollectorService(); err != nil {
-			log.V(9).Error(err, "clusterRequest.reconcileCollectorService")
+			clusterRequest.Log.V(9).Error(err, "clusterRequest.reconcileCollectorService")
 			return
 		}
 
 		if err = clusterRequest.reconcileCollectorServiceMonitor(); err != nil {
-			log.V(9).Error(err, "clusterRequest.reconcileCollectorServiceMonitor")
+			clusterRequest.Log.V(9).Error(err, "clusterRequest.reconcileCollectorServiceMonitor")
 			return
 		}
 
 		if err = clusterRequest.createOrUpdateCollectorPrometheusRule(); err != nil {
-			log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
+			clusterRequest.Log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
 		if err = clusterRequest.createOrUpdateCollectorConfig(collectorType, collectorConfig); err != nil {
-			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorConfig")
+			clusterRequest.Log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorConfig")
 			return
 		}
 
 		if err = clusterRequest.reconcileCollectorDaemonset(collectorType, collectorConfHash); err != nil {
-			log.V(9).Error(err, "clusterRequest.reconcileCollectorDaemonset")
+			clusterRequest.Log.V(9).Error(err, "clusterRequest.reconcileCollectorDaemonset")
 			return
 		}
 
 		if err = clusterRequest.UpdateCollectorStatus(collectorType); err != nil {
-			log.V(9).Error(err, "unable to update status for the collector")
+			clusterRequest.Log.V(9).Error(err, "unable to update status for the collector")
 		}
 
 		if collectorServiceAccount != nil {
@@ -124,8 +123,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			// remove our finalizer from the list and update it.
 			collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
 			if err = clusterRequest.Update(collectorServiceAccount); err != nil {
-				log.Info("Unable to update the collector serviceaccount finalizers", "collectorServiceAccount.Name", collectorServiceAccount.Name)
-				log.V(9).Error(err, "Unable to update the collector serviceaccount finalizers")
+				clusterRequest.Log.Info("Unable to update the collector serviceaccount finalizers", "collectorServiceAccount.Name", collectorServiceAccount.Name)
+				clusterRequest.Log.V(9).Error(err, "Unable to update the collector serviceaccount finalizers")
 				return nil
 			}
 		}
@@ -152,7 +151,7 @@ func (clusterRequest *ClusterLoggingRequest) removeCollectorSecretIfOwnedByCLO()
 	if utils.IsOwnedBy(secret.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
 		err = clusterRequest.RemoveSecret(constants.CollectorSecretName)
 		if err != nil && !errors.IsNotFound(err) {
-			log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.CollectorSecretName))
+			clusterRequest.Log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.CollectorSecretName))
 			return err
 		}
 	}
@@ -234,7 +233,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorService() error {
 				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
 			}
 			if services.AreSame(current, desired) {
-				log.V(3).Info("Services are the same skipping update")
+				clusterRequest.Log.V(3).Info("Services are the same skipping update")
 				return nil
 			}
 			//Explicitly copying because services are immutable
@@ -243,7 +242,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorService() error {
 			current.Spec.Ports = desired.Spec.Ports
 			return clusterRequest.Update(current)
 		})
-		log.V(3).Error(retryErr, "Reconcile Service retry error")
+		clusterRequest.Log.V(3).Error(retryErr, "Reconcile Service retry error")
 		return retryErr
 	}
 	return err
@@ -307,7 +306,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorServiceMonitor() 
 				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
 			}
 			if servicemonitor.AreSame(current, desired) {
-				log.V(3).Info("ServiceMonitor are the same skipping update")
+				clusterRequest.Log.V(3).Info("ServiceMonitor are the same skipping update")
 				return nil
 			}
 			current.Labels = desired.Labels
@@ -316,7 +315,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorServiceMonitor() 
 
 			return clusterRequest.Update(current)
 		})
-		log.V(3).Error(retryErr, "Reconcile ServiceMonitor retry error")
+		clusterRequest.Log.V(3).Error(retryErr, "Reconcile ServiceMonitor retry error")
 		return retryErr
 	}
 	return err
@@ -349,20 +348,20 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRu
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		err = clusterRequest.Client.Get(ctx, types.NamespacedName{Name: rule.Name, Namespace: rule.Namespace}, current)
 		if err != nil {
-			log.V(2).Info("could not get prometheus rule", rule.Name, err)
+			clusterRequest.Log.V(2).Info("could not get prometheus rule", rule.Name, err)
 			return err
 		}
 		current.Spec = rule.Spec
 		if err = clusterRequest.Client.Update(ctx, current); err != nil {
 			return err
 		}
-		log.V(3).Info("updated prometheus rules")
+		clusterRequest.Log.V(3).Info("updated prometheus rules")
 		return nil
 	})
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfig(collectorType logging.LogCollectionType, collectorConfig string) error {
-	log.V(3).Info("Updating ConfigMap and Secrets")
+	clusterRequest.Log.V(3).Info("Updating ConfigMap and Secrets")
 	var err error = nil
 	if collectorType == logging.LogCollectionTypeFluentd {
 		collectorConfigMap := NewConfigMap(
@@ -404,7 +403,7 @@ func (clusterRequest *ClusterLoggingRequest) createConfigMap(collectorConfigMap 
 		current := &v1.ConfigMap{}
 		if err = clusterRequest.Get(collectorConfigMap.Name, current); err != nil {
 			if errors.IsNotFound(err) {
-				log.V(2).Info("Returning nil. The configmap was not found even though create previously failed.  Was it culled?", "configmap name", collectorConfigMap.Name)
+				clusterRequest.Log.V(2).Info("Returning nil. The configmap was not found even though create previously failed.  Was it culled?", "configmap name", collectorConfigMap.Name)
 				return nil
 			}
 			return fmt.Errorf("Failed to get %v configmap for %q: %v", collectorConfigMap.Name, clusterRequest.Cluster.Name, err)
@@ -437,7 +436,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorDaemonset(collect
 	}
 	caTrustHash, err := calcTrustedCAHashValue(caTrustBundle)
 	if err != nil || caTrustHash == "" {
-		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key or does not contain ca bundle", "configmapName", constants.CollectorTrustedCAName, "key", constants.TrustedCABundleKey, "err", err)
+		clusterRequest.Log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key or does not contain ca bundle", "configmapName", constants.CollectorTrustedCAName, "key", constants.TrustedCABundleKey, "err", err)
 	}
 
 	instance := clusterRequest.Cluster

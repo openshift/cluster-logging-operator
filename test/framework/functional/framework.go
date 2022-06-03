@@ -2,10 +2,6 @@ package functional
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/certificates"
-	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"os"
 	"regexp"
 	"strconv"
@@ -13,9 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openshift/cluster-logging-operator/internal/certificates"
+	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+
 	yaml "sigs.k8s.io/yaml"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -95,10 +96,10 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 		}
 	}
 
-	log.Info("Using collector", "impl", collectorImpl.String())
+	logger := log.NewLogger("functional-framework", log.WithVerbosity(verbosity))
 
-	log.MustInit("functional-framework")
-	log.SetLogLevel(verbosity)
+	logger.Info("Using collector", "impl", collectorImpl.String())
+
 	testName := "functional"
 	framework := &CollectorFunctionalFramework{
 		Name:      testName,
@@ -130,9 +131,10 @@ func (f *CollectorFunctionalFramework) GetMaxReadDuration() time.Duration {
 }
 
 func (f *CollectorFunctionalFramework) RunCommand(container string, cmd ...string) (string, error) {
-	log.V(2).Info("Running", "container", container, "cmd", cmd)
+	logger := log.NewLogger("functional-framework")
+	logger.V(2).Info("Running", "container", container, "cmd", cmd)
 	out, err := testruntime.ExecOc(f.Pod, strings.ToLower(container), cmd[0], cmd[1:]...)
-	log.V(2).Info("Exec'd", "out", out, "err", err)
+	logger.V(2).Info("Exec'd", "out", out, "err", err)
 	return out, err
 }
 
@@ -159,7 +161,8 @@ func (f *CollectorFunctionalFramework) DeployWithVisitor(visitor runtime.PodBuil
 
 //Deploy the objects needed to functional Test
 func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBuilderVisitor) (err error) {
-	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
+	logger := log.NewLogger("functional-framework")
+	logger.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()
@@ -174,20 +177,20 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 			f.Conf = f.VisitConfig(f.Conf)
 		}
 	} else {
-		log.V(2).Info("Using provided collector conf instead of generating one")
+		logger.V(2).Info("Using provided collector conf instead of generating one")
 	}
 
 	if err = f.collector.DeployConfigMapForConfig(f.Name, f.Conf, string(clfYaml)); err != nil {
 		return err
 	}
 
-	log.V(2).Info("Generating Certificates")
+	logger.V(2).Info("Generating Certificates")
 	if err, _, _ = certificates.GenerateCertificates(f.Test.NS.Name,
 		test.GitRoot("scripts"), "elasticsearch",
 		utils.DefaultWorkingDir); err != nil {
 		return err
 	}
-	log.V(2).Info("Creating certs configmap")
+	logger.V(2).Info("Creating certs configmap")
 	certsName := "certs-" + f.Name
 	certs := runtime.NewConfigMap(f.Test.NS.Name, certsName, map[string]string{})
 	runtime.NewConfigMapBuilder(certs).
@@ -197,7 +200,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 
-	log.V(2).Info("Creating service")
+	logger.V(2).Info("Creating service")
 	service := runtime.NewService(f.Test.NS.Name, f.Name)
 	runtime.NewServiceBuilder(service).
 		AddServicePort(24231, 24231).
@@ -232,7 +235,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 
-	log.V(2).Info("Defining pod...")
+	logger.V(2).Info("Defining pod...")
 	f.Pod = runtime.NewPod(f.Test.NS.Name, f.Name)
 	b := runtime.NewPodBuilder(f.Pod).
 		WithLabels(f.Labels).
@@ -246,7 +249,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 			return err
 		}
 	}
-	log.V(2).Info("Creating pod", "pod", f.Pod)
+	logger.V(2).Info("Creating pod", "pod", f.Pod)
 	if err = f.Test.Client.Create(f.Pod); err != nil {
 		return err
 	}
@@ -254,14 +257,14 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 
-	log.V(2).Info("waiting for pod to be ready")
+	logger.V(2).Info("waiting for pod to be ready")
 	if err = oc.Literal().From("oc wait -n %s pod/%s --timeout=120s --for=condition=Ready", f.Test.NS.Name, f.Name).Output(); err != nil {
 		return err
 	}
 	if err = f.Test.Client.Get(f.Pod); err != nil {
 		return err
 	}
-	log.V(2).Info("waiting for service endpoints to be ready")
+	logger.V(2).Info("waiting for service endpoints to be ready")
 	err = wait.PollImmediate(time.Second*2, time.Second*10, func() (bool, error) {
 		ips, err := oc.Get().WithNamespace(f.Test.NS.Name).Resource("endpoints", f.Name).OutputJsonpath("{.subsets[*].addresses[*].ip}").Run()
 		if err != nil {
@@ -276,7 +279,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	if err != nil {
 		return fmt.Errorf("service could not be started")
 	}
-	log.V(2).Info("waiting for the collector to be ready")
+	logger.V(2).Info("waiting for the collector to be ready")
 	err = wait.PollImmediate(time.Second*2, time.Second*30, func() (bool, error) {
 		output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", f.Test.NS.Name, f.Name, constants.CollectorName).Run()
 		if err != nil {
@@ -302,7 +305,8 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 }
 
 func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder, outputs []logging.OutputSpec) error {
-	log.V(2).Info("Adding outputs", "outputs", outputs)
+	logger := log.NewLogger("functional-framework")
+	logger.V(2).Info("Adding outputs", "outputs", outputs)
 	for _, output := range outputs {
 		switch output.Type {
 		case logging.OutputTypeFluentdForward:

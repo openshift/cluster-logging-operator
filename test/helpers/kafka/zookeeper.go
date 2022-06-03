@@ -128,7 +128,7 @@ func NewZookeeperStatefuleSet(namespace string) *apps.StatefulSet {
 								"/etc/kafka/zookeeper.properties",
 							},
 							Lifecycle: &v1.Lifecycle{
-								PreStop: &v1.Handler{
+								PreStop: &v1.LifecycleHandler{
 									Exec: &v1.ExecAction{
 										Command: []string{
 											"sh",

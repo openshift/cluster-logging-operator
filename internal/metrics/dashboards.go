@@ -1,13 +1,14 @@
 package metrics
 
 import (
-	"github.com/ViaQ/logerr/log"
+	"path"
+
+	"github.com/ViaQ/logerr/v2/log"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/configmaps"
 	corev1 "k8s.io/api/core/v1"
-	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -23,7 +24,7 @@ func newDashboardConfigMap() *corev1.ConfigMap {
 	spec := string(utils.GetFileContents(path.Join(utils.GetShareDir(), ClusterLoggingDashboardFile)))
 	hash, err := utils.CalculateMD5Hash(spec)
 	if err != nil {
-		log.Error(err, "Error calculated hash for metrics dashboard")
+		log.NewLogger("dashboards").Error(err, "Error calculated hash for metrics dashboard")
 	}
 	cm := runtime.NewConfigMap(DashboardNS,
 		DashboardName,

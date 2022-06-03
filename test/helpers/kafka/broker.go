@@ -174,7 +174,7 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 								"/etc/kafka/server.properties",
 							},
 							Lifecycle: &v1.Lifecycle{
-								PreStop: &v1.Handler{
+								PreStop: &v1.LifecycleHandler{
 									Exec: &v1.ExecAction{
 										Command: []string{
 											"sh",
@@ -194,7 +194,7 @@ func NewBrokerStatefuleSet(namespace string) *apps.StatefulSet {
 								},
 							},
 							ReadinessProbe: &v1.Probe{
-								Handler: v1.Handler{
+								ProbeHandler: v1.ProbeHandler{
 									TCPSocket: &v1.TCPSocketAction{
 										Port: intstr.FromInt(kafkaInsidePort),
 									},

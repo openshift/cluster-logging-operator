@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/ViaQ/logerr/log"
+	"github.com/ViaQ/logerr/v2/log"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
@@ -66,7 +66,7 @@ var _ = Describe("oc get pod", func() {
 				if tmpFile != nil {
 					os.Remove(tmpFile.Name())
 				} else {
-					log.Info("tmpfile is nil")
+					log.NewLogger("get-testing").Info("tmpfile is nil")
 				}
 			})
 		})

@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -18,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	clolog "github.com/ViaQ/logerr/log"
+	clolog "github.com/ViaQ/logerr/v2/log"
 	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -101,7 +102,7 @@ func (es *ElasticLogStore) HasInfraStructureLogs(timeToWait time.Duration) (bool
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
-			clolog.V(2).Info("Error retrieving indices from elasticsearch")
+			clolog.NewLogger("e2e-elasticsearch-testing").V(2).Info("Error retrieving indices from elasticsearch")
 			return false, nil
 		}
 		return indices.HasInfraStructureLogs(), nil
@@ -114,7 +115,7 @@ func (es *ElasticLogStore) HasApplicationLogs(timeToWait time.Duration) (bool, e
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
-			clolog.Error(err, "Error retrieving indices from elasticsearch")
+			clolog.NewLogger("e2e-elasticsearch-testing").Error(err, "Error retrieving indices from elasticsearch")
 			return false, nil
 		}
 		return indices.HasApplicationLogs(), nil
@@ -127,7 +128,7 @@ func (es *ElasticLogStore) HasAuditLogs(timeToWait time.Duration) (bool, error) 
 		indices, err := es.Indices()
 		if err != nil {
 			//accept arbitrary errors like 'etcd leader change'
-			clolog.Error(err, "Error retrieving indices from elasticsearch")
+			clolog.NewLogger("e2e-elasticsearch-testing").Error(err, "Error retrieving indices from elasticsearch")
 			return false, nil
 		}
 		return indices.HasAuditLogs(), nil
@@ -160,7 +161,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	if len(pods.Items) == 0 {
 		return nil, errors.New("No pods found for elasticsearch")
 	}
-	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
+	clolog.NewLogger("e2e-elasticsearch-testing").V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	indices := []Index{}
 	stdout, err := es.Framework.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
 	if err != nil {
@@ -185,7 +186,8 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		constants.OpenshiftNS,
 		k8shandler.LoadElasticsearchSecretMap(),
 	)
-	clolog.V(3).Info("Creating secret for an elasticsearch cluster: ", "secret", esSecret.Name)
+	logger := clolog.NewLogger("e2e-elasticsearch-testing")
+	logger.V(3).Info("Creating secret for an elasticsearch cluster: ", "secret", esSecret.Name)
 	_, err = tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), esSecret, opts)
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
@@ -252,7 +254,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 		return nil
 	})
 
-	clolog.V(3).Info("Creating an elasticsearch cluster ", "cluster", cr)
+	logger.V(3).Info("Creating an elasticsearch cluster ", "cluster", cr)
 	var body []byte
 	if body, err = json.Marshal(cr); err != nil {
 		return nil, nil, err

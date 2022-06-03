@@ -1,10 +1,11 @@
 package types
 
 import (
-	"github.com/ViaQ/logerr/log"
 	"regexp"
 	"strconv"
 	"strings"
+
+	log "github.com/ViaQ/logerr/v2/log"
 )
 
 //OptionalInt allows passing an arbitrary int as well matching conditional values
@@ -29,7 +30,8 @@ func (oi OptionalInt) getParts() (string, int) {
 	value := 0
 	optionalIntRE := regexp.MustCompile(`(?P<comparison>[><=]{1,2})?(?P<value>\d*)`)
 	parts := optionalIntRE.FindStringSubmatch(strings.TrimSpace(string(oi)))
-	log.V(4).Info("Evaluating optionalInt", "value", oi)
+	logger := log.NewLogger("types-testing")
+	logger.V(4).Info("Evaluating optionalInt", "value", oi)
 	for i, name := range optionalIntRE.SubexpNames() {
 		if name == "comparison" {
 			comparison = parts[i]
@@ -38,18 +40,19 @@ func (oi OptionalInt) getParts() (string, int) {
 			var err error
 			value, err = strconv.Atoi(parts[i])
 			if err != nil {
-				log.V(4).Error(err, "Unable to convert value into an OptionalInt. Expected a comparator and number (e.g. >12): defaulting to 0", "value", parts[i])
+				log.NewLogger("").V(4).Error(err, "Unable to convert value into an OptionalInt. Expected a comparator and number (e.g. >12): defaulting to 0", "value", parts[i])
 			}
 		}
 
 	}
-	log.V(4).Info("OptionalInt#getParts returning", "comparison", comparison, "value", value)
+	logger.V(4).Info("OptionalInt#getParts returning", "comparison", comparison, "value", value)
 	return comparison, value
 }
 
 //IsSatisfiedBy returns true/false if the comparison needed is satisfied by other
 func (oi OptionalInt) IsSatisfiedBy(other OptionalInt) bool {
-	log.V(4).Info("Comparing", "value", oi, "IsSatisfiedByArg", other)
+	logger := log.NewLogger("types-testing")
+	logger.V(4).Info("Comparing", "value", oi, "IsSatisfiedByArg", other)
 	if oi == emptyOptionalInt {
 		return true
 	}
@@ -58,10 +61,10 @@ func (oi OptionalInt) IsSatisfiedBy(other OptionalInt) bool {
 	comparison, expValue := oi.getParts()
 	actValue, err = strconv.Atoi(string(other))
 	if err != nil {
-		log.V(4).Error(err, "Unable to parse actual value. returning false")
+		logger.V(4).Error(err, "Unable to parse actual value. returning false")
 		return false
 	}
-	log.V(4).Info("Expected", "comp", comparison, "value", expValue)
+	logger.V(4).Info("Expected", "comp", comparison, "value", expValue)
 	switch comparison {
 	case ">":
 		return actValue > expValue

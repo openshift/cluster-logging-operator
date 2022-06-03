@@ -4,12 +4,13 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/ViaQ/logerr/log"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/test"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/go-logr/logr"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test"
 )
 
 const (
@@ -38,7 +39,7 @@ type Options struct {
 	PayloadSource       string
 }
 
-func InitOptions() Options {
+func InitOptions(logger logr.Logger) Options {
 	options := Options{
 		ReadTimeout: test.SuccessTimeout().String(),
 	}
@@ -68,50 +69,48 @@ func InitOptions() Options {
 		os.Exit(1)
 	}
 
-	log.MustInit("functional-benchmark")
-	log.SetLogLevel(options.Verbosity)
-	log.V(1).Info("Starting functional benchmarker", "args", options)
+	logger.V(1).Info("Starting functional benchmarker", "args", options)
 
 	if err := os.Setenv(constants.FluentdImageEnvVar, options.Image); err != nil {
-		log.Error(err, "Error setting fluent Image env var")
+		logger.Error(err, "Error setting fluent Image env var")
 		os.Exit(1)
 	}
 
 	return options
 }
 
-func ReadConfig(configFile string, baseline bool) string {
+func ReadConfig(configFile string, baseline bool, logger logr.Logger) string {
 	if baseline {
-		log.V(0).Info("Using the baseline config")
+		logger.V(0).Info("Using the baseline config")
 		return FluentdBaselineConf
 	}
 	var reader func() ([]byte, error)
 	switch configFile {
 	case "-":
-		log.V(1).Info("Reading from stdin")
+		logger.V(1).Info("Reading from stdin")
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
 			return ioutil.ReadAll(stdin)
 		}
 	case "":
-		log.V(1).Info("received empty configFile. Generating from CLF")
+		logger.V(1).Info("received empty configFile. Generating from CLF")
 		return ""
 	default:
-		log.V(1).Info("reading configfile", "filename", configFile)
+		logger.V(1).Info("reading configfile", "filename", configFile)
 		reader = func() ([]byte, error) { return ioutil.ReadFile(configFile) }
 	}
 	content, err := reader()
 	if err != nil {
-		log.Error(err, "Error reading config")
+		logger.Error(err, "Error reading config")
 		os.Exit(1)
 	}
 	return string(content)
 }
 
-func MustParseDuration(durationString, optionName string) time.Duration {
+func MustParseDuration(durationString, optionName string, logger logr.Logger) time.Duration {
 	duration, err := time.ParseDuration(durationString)
 	if err != nil {
-		log.Error(err, "Unable to parse duration", "option", optionName)
+		logger.Error(err, "Unable to parse duration", "option", optionName)
 		os.Exit(1)
 	}
 	return duration

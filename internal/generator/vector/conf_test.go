@@ -1,10 +1,8 @@
 package vector
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/test/framework/unit"
-	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -14,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -27,16 +26,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, testcase.Options))
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
-		diff := cmp.Diff(
-			strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"),
-			strings.Split(strings.TrimSpace(conf), "\n"))
-		if diff != "" {
-			b, _ := json.MarshalIndent(e, "", " ")
-			fmt.Printf("elements:\n%s\n", string(b))
-			fmt.Println(conf)
-			fmt.Printf("diff: %s", diff)
-		}
-		Expect(diff).To(Equal(""))
+		Expect(conf).To(EqualTrimLines(testcase.ExpectedConf))
 	}
 	DescribeTable("Generate full vector.toml", f,
 		Entry("with complex spec", unit.ConfGenerateTest{
@@ -128,13 +118,15 @@ inputs = ["raw_container_logs"]
 source = '''
   level = "unknown"
   if match(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn")'){
-	level = "warn"
+    level = "warn"
   } else if match(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"'){
-	level = "info"
+    level = "info"
   } else if match(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
-	level = "error"
+    level = "error"
+  } else if match(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+    level = "critical"
   } else if match(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
-	level = "debug"
+    level = "debug"
   }
   .level = level
 
@@ -158,6 +150,8 @@ source = '''
 	level = "info"
   } else if match(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
 	level = "error"
+  } else if match(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+    level = "critical"
   } else if match(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
 	level = "debug"
   }
@@ -337,6 +331,8 @@ source = '''
 	level = "info"
   } else if match(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
 	level = "error"
+  } else if match(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+    level = "critical"
   } else if match(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
 	level = "debug"
   }
@@ -362,6 +358,8 @@ source = '''
 	level = "info"
   } else if match(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
 	level = "error"
+  } else if match(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+    level = "critical"
   } else if match(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
 	level = "debug"
   }
@@ -691,6 +689,8 @@ source = '''
 	level = "info"
   } else if match(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
 	level = "error"
+  } else if match(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+    level = "critical"
   } else if match(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
 	level = "debug"
   }
@@ -716,6 +716,8 @@ source = '''
 	level = "info"
   } else if match(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"'){
 	level = "error"
+  } else if match(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"'){
+    level = "critical"
   } else if match(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'){
 	level = "debug"
   }

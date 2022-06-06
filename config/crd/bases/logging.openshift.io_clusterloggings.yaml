@@ -498,7 +498,7 @@ spec:
                         properties:
                           maxAge:
                             description: TimeUnit is a time unit like h,m,d
-                            pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                            pattern: ^([0-9]+)([wdhHms]{0,1})$
                             type: string
                           namespaceSpec:
                             description: The per namespace specification to delete
@@ -508,7 +508,7 @@ spec:
                                 minAge:
                                   description: Delete the records matching the namespaces
                                     which are older than this MinAge (e.g. 1d)
-                                  pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                                  pattern: ^([0-9]+)([wdhHms]{0,1})$
                                   type: string
                                 namespace:
                                   description: Target Namespace to delete logs older
@@ -522,7 +522,7 @@ spec:
                             type: array
                           pruneNamespacesInterval:
                             description: How often to run a new prune-namespaces job
-                            pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                            pattern: ^([0-9]+)([wdhHms]{0,1})$
                             type: string
                         type: object
                       audit:
@@ -530,7 +530,7 @@ spec:
                         properties:
                           maxAge:
                             description: TimeUnit is a time unit like h,m,d
-                            pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                            pattern: ^([0-9]+)([wdhHms]{0,1})$
                             type: string
                           namespaceSpec:
                             description: The per namespace specification to delete
@@ -540,7 +540,7 @@ spec:
                                 minAge:
                                   description: Delete the records matching the namespaces
                                     which are older than this MinAge (e.g. 1d)
-                                  pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                                  pattern: ^([0-9]+)([wdhHms]{0,1})$
                                   type: string
                                 namespace:
                                   description: Target Namespace to delete logs older
@@ -554,7 +554,7 @@ spec:
                             type: array
                           pruneNamespacesInterval:
                             description: How often to run a new prune-namespaces job
-                            pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                            pattern: ^([0-9]+)([wdhHms]{0,1})$
                             type: string
                         type: object
                       infra:
@@ -562,7 +562,7 @@ spec:
                         properties:
                           maxAge:
                             description: TimeUnit is a time unit like h,m,d
-                            pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                            pattern: ^([0-9]+)([wdhHms]{0,1})$
                             type: string
                           namespaceSpec:
                             description: The per namespace specification to delete
@@ -572,7 +572,7 @@ spec:
                                 minAge:
                                   description: Delete the records matching the namespaces
                                     which are older than this MinAge (e.g. 1d)
-                                  pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                                  pattern: ^([0-9]+)([wdhHms]{0,1})$
                                   type: string
                                 namespace:
                                   description: Target Namespace to delete logs older
@@ -586,7 +586,7 @@ spec:
                             type: array
                           pruneNamespacesInterval:
                             description: How often to run a new prune-namespaces job
-                            pattern: ^([0-9]+)([yMwdhHms]{0,1})$
+                            pattern: ^([0-9]+)([wdhHms]{0,1})$
                             type: string
                         type: object
                     type: object

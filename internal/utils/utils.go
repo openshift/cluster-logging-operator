@@ -262,7 +262,7 @@ var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ012345
 func GetRandomWord(wordSize int) []byte {
 	b := make([]rune, wordSize)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = letters[rand.Intn(len(letters))] //nolint:gosec
 	}
 	return []byte(string(b))
 }

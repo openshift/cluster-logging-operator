@@ -172,7 +172,7 @@ function os::test::junit::generate_report() {
 
 # os::test::junit::internal::generate_report generats an XML jUnit
 # report for either `os::cmd` or `go test`, based on the passed
-# argument. If the `junitreport` binary is not present, it will be built.
+# argument.
 #
 # Globals:
 #  - JUNIT_REPORT_OUTPUT
@@ -183,19 +183,20 @@ function os::test::junit::generate_report() {
 #  export JUNIT_REPORT_NUM_FAILED
 function os::test::junit::internal::generate_report() {
     local report_type="$1"
-    os::util::ensure::system_binary_exists 'junitreport'
+    source .bingo/variables.env	# For JUNITREPORT
+    os::util::ensure::system_binary_exists $JUNITREPORT
 
     local report_file
     report_file="$( mktemp "${ARTIFACT_DIR}/${report_type}_report_XXXXX" ).xml"
     os::log::info "jUnit XML report placed at $( os::util::repository_relative_path ${report_file} )"
-    junitreport --type "${report_type}"    \
+    $JUNITREPORT --type "${report_type}"    \
                 --suites nested            \
                 --roots "[ClusterLogging]" \
                 --output "${report_file}"  \
                 <"${JUNIT_REPORT_OUTPUT}"
 
     local summary
-    summary=$( junitreport summarize <"${report_file}" )
+    summary=$( $JUNITREPORT summarize <"${report_file}" )
 
     JUNIT_REPORT_NUM_FAILED="$( grep -oE "[0-9]+ failed" <<<"${summary}" )"
     export JUNIT_REPORT_NUM_FAILED

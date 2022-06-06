@@ -219,6 +219,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
   </match>
 </label>
 `
+		//nolint:gosec
 		tcpWithTLSConf := `
 <label @SYSLOG_RECEIVER>
   <filter **>
@@ -268,6 +269,7 @@ var _ = Describe("Generating external syslog server output store config blocks",
   </match>
 </label>
 `
+		//nolint:gosec
 		udpWithTLSConf := `
 <label @SYSLOG_RECEIVER>
   <filter **>

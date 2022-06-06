@@ -28,7 +28,7 @@ REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
 
-.PHONY: force all build clean fmt generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
+.PHONY: force all build clean generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
 
 .PHONY: tools
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN)
@@ -40,16 +40,15 @@ pre-commit: clean generate-bundle check
 .PHONY: check
 # check health of the code:
 # - Update generated code
-# - Apply standard source format
+# - Build all code and test
+# - Run lint, automatically fix trivial issues
 # - Run unit tests
-# - Build all code (including e2e tests)
-# - Run lint check
 #
-check: generate fmt test-unit bin/forwarder-generator bin/cluster-logging-operator bin/functional-benchmarker
-	go test ./test/... -exec true > /dev/null # Build but don't run e2e tests.
-	go test ./test/functional/... -exec true > /dev/null # Build but don't run test functional tests.
-	go test ./test/helpers/... -exec true > /dev/null # Build but don't run test helpers tests.
-	$(MAKE) lint				  # Only lint if all code builds.
+check: compile-tests bin/forwarder-generator bin/cluster-logging-operator bin/functional-benchmarker lint test-unit
+
+# Compile all tests and code but don't run the tests.
+compile-tests: generate
+	go test ./test/... -exec true > /dev/null # Build all tests but don't run
 
 .PHONY: ci-check
 # CI calls ci-check first.
@@ -74,7 +73,7 @@ bin/forwarder-generator: force
 	go build $(BUILD_OPTS) -o $@ ./internal/cmd/forwarder-generator
 
 bin/cluster-logging-operator: force
-	go build -mod=mod $(BUILD_OPTS) -o $@
+	go build $(BUILD_OPTS) -o $@
 
 .PHONY: openshift-client
 openshift-client:
@@ -127,9 +126,13 @@ image: .target/image
 	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 
+# Notes:
+# - override the .cache dir for CI, where $HOME/.cache may not be writable.
+# - don't run with --fix in CI, complain about everything. Do try to auto-fix outside of CI.
+export GOLANGCI_LINT_CACHE=$(CURDIR)/.cache
+lint:  $(GOLANGCI_LINT) lint-dockerfile
+	$(GOLANGCI_LINT) run --color=never $(if $(CI),,--fix)
 .PHONY: lint
-lint: $(GOLANGCI_LINT) lint-dockerfile
-	@GOLANGCI_LINT_CACHE="$(CURDIR)/.cache" $(GOLANGCI_LINT) run -c golangci.yaml
 
 .PHONY: lint-dockerfile
 lint-dockerfile:
@@ -152,7 +155,6 @@ $(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
 	@bash ./hack/generate-crd.sh
 	echo 'package version; var Version = "$(or $(CI_CONTAINER_VERSION),$(LOGGING_VERSION), DEFAULT_VERSION)"' > version/version.go
-	@$(MAKE) fmt
 	@touch $@
 
 .PHONY: regenerate

@@ -190,7 +190,7 @@ def set_vals():
 
 func (tc *E2ETestFramework) CreateTestNamespace() string {
 	opts := metav1.CreateOptions{}
-	name := fmt.Sprintf("clo-test-%d", rand.Intn(10000))
+	name := fmt.Sprintf("clo-test-%d", rand.Intn(10000)) //nolint:gosec
 	if value, found := os.LookupEnv("GENERATOR_NS"); found {
 		name = value
 	}
@@ -607,7 +607,7 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 }
 
 func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {
-	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000))
+	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000)) //nolint:gosec
 	logger := clolog.NewLogger("e2e-framework-testing")
 	logger.V(3).Info("Generating Pipeline certificates for Log Store to working dir", "logStoreName", logStoreName, "workingDir", workingDir)
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {

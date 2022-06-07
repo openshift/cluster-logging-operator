@@ -4,7 +4,7 @@ source .bingo/variables.env
 
 set -eo pipefail
 
-BUNDLE_DIR=${2:-"bundle/manifests"}
+BUNDLE_DIR=${1:-"bundle/manifests"}
 CLF_CRD_FILE="logging.openshift.io_clusterlogforwarders_crd.yaml"
 CLO_CRD_FILE="logging.openshift.io_clusterloggings_crd.yaml"
 CLO_PATCH_FILE="crd-v1-clusterloggings-patches.yaml"
@@ -15,7 +15,24 @@ METADATA_READER_CLUSTERROLEBINDING="cluster-logging-metadata-reader_rbac.authori
 METADATA_READER_CLUSTERROLE="metadata-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml"
 PRIORITY_CLASS="cluster-logging_scheduling.k8s.io_v1_priorityclass.yaml"
 
-BUNDLE_GEN_FLAGS=$1
+# Generate bundle manifests and metadata, then validate generated files.
+BUNDLE_VERSION="${LOGGING_VERSION}.0"
+# Options for 'bundle-build'
+BUNDLE_CHANNELS="--channels=stable,stable-${LOGGING_VERSION}"
+BUNDLE_DEFAULT_CHANNEL="--default-channel=stable"
+BUNDLE_METADATA_OPTS="${BUNDLE_CHANNELS} ${BUNDLE_DEFAULT_CHANNEL}"
+
+# BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
+BUNDLE_GEN_FLAGS="-q --overwrite --version ${BUNDLE_VERSION} ${BUNDLE_METADATA_OPTS}"
+
+# USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
+# You can enable this value if you would like to use SHA Based Digests
+# To enable set flag to true
+USE_IMAGE_DIGESTS=false
+if [${USE_IMAGE_DIGESTS} ==  false]
+then
+    BUNDLE_GEN_FLAGS+="--use-image-digests"
+fi
 
 echo "--------------------------------------------------------------"
 echo "Generate CRDs for apiVersion v1"

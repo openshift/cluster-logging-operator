@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -17,7 +18,7 @@ import (
 
 //TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
-	var f = func(testcase generator.ConfGenerateTest) {
+	var f = func(testcase testhelpers.ConfGenerateTest) {
 		g := generator.MakeGenerator()
 		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, generator.NoOptions))
 		conf, err := g.GenerateConf(e...)
@@ -34,7 +35,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		Expect(diff).To(Equal(""))
 	}
 	DescribeTable("Generate full fluent.conf", f,
-		Entry("with complex spec", generator.ConfGenerateTest{
+		Entry("with complex spec", testhelpers.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{
 					Fluentd: &logging.FluentdForwarderSpec{

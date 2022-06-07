@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -12,8 +13,8 @@ var _ = Describe("Testing Config Generation", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return PipelineToOutputs(&clfspec, generator.NoOptions)
 	}
-	DescribeTable("Pipelines(s) to Output(s)", generator.TestGenerateConfWith(f),
-		Entry("Application to single output", generator.ConfGenerateTest{
+	DescribeTable("Pipelines(s) to Output(s)", helpers.TestGenerateConfWith(f),
+		Entry("Application to single output", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -32,7 +33,7 @@ var _ = Describe("Testing Config Generation", func() {
   </match>
 </label>`,
 		}),
-		Entry("Application to multiple outputs", generator.ConfGenerateTest{
+		Entry("Application to multiple outputs", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -82,7 +83,7 @@ var _ = Describe("Testing Config Generation", func() {
   </match>
 </label>`,
 		}),
-		Entry("Application to default output with Labels", generator.ConfGenerateTest{
+		Entry("Application to default output with Labels", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -122,7 +123,7 @@ var _ = Describe("Testing Config Generation", func() {
   </match>
 </label>`,
 		}),
-		Entry("Application to default output with Json Parsing, and Labels", generator.ConfGenerateTest{
+		Entry("Application to default output with Json Parsing, and Labels", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{

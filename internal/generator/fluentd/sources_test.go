@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -16,8 +17,8 @@ var _ = Describe("Testing Config Generation", func() {
 		}
 		return LogSources(&clfspec, tuning, op)
 	}
-	DescribeTable("Source(s)", generator.TestGenerateConfWith(f),
-		Entry("Only Application", generator.ConfGenerateTest{
+	DescribeTable("Source(s)", helpers.TestGenerateConfWith(f),
+		Entry("Only Application", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -60,7 +61,7 @@ var _ = Describe("Testing Config Generation", func() {
 </source>
 `,
 		}),
-		Entry("Only Application with InTail tuning", generator.ConfGenerateTest{
+		Entry("Only Application with InTail tuning", helpers.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{
 					Fluentd: &logging.FluentdForwarderSpec{
@@ -113,7 +114,7 @@ var _ = Describe("Testing Config Generation", func() {
 </source>
 `,
 		}),
-		Entry("Only Infrastructure", generator.ConfGenerateTest{
+		Entry("Only Infrastructure", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -174,7 +175,7 @@ var _ = Describe("Testing Config Generation", func() {
 </source>
 `,
 		}),
-		Entry("Only Audit", generator.ConfGenerateTest{
+		Entry("Only Audit", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -251,7 +252,7 @@ var _ = Describe("Testing Config Generation", func() {
 </source>
 `,
 		}),
-		Entry("Only Audit with InTail tuning", generator.ConfGenerateTest{
+		Entry("Only Audit with InTail tuning", helpers.ConfGenerateTest{
 			CLSpec: logging.ClusterLoggingSpec{
 				Forwarder: &logging.ForwarderSpec{
 					Fluentd: &logging.FluentdForwarderSpec{
@@ -341,7 +342,7 @@ var _ = Describe("Testing Config Generation", func() {
 </source>
 `,
 		}),
-		Entry("All Log Sources", generator.ConfGenerateTest{
+		Entry("All Log Sources", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -476,8 +477,8 @@ var _ = Describe("Testing Config Generation", func() {
 	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return MetricSources(&clfspec, op)
 	}
-	DescribeTable("Metric Source(s)", generator.TestGenerateConfWith(f),
-		Entry("Any Input", generator.ConfGenerateTest{
+	DescribeTable("Metric Source(s)", helpers.TestGenerateConfWith(f),
+		Entry("Any Input", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{

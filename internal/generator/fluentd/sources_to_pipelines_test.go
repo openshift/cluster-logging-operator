@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,8 +20,8 @@ var _ = Describe("Testing Config Generation", func() {
 			InputsToPipeline(&clfspec, op),
 		)
 	}
-	DescribeTable("Source(s) to Pipeline(s)", generator.TestGenerateConfWith(f),
-		Entry("Send all log types to output by name", generator.ConfGenerateTest{
+	DescribeTable("Source(s) to Pipeline(s)", helpers.TestGenerateConfWith(f),
+		Entry("Send all log types to output by name", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -103,7 +104,7 @@ var _ = Describe("Testing Config Generation", func() {
   </match>
 </label>`,
 		}),
-		Entry("Send same logtype to multiple output", generator.ConfGenerateTest{
+		Entry("Send same logtype to multiple output", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -202,7 +203,7 @@ var _ = Describe("Testing Config Generation", func() {
 </label>
 `,
 		}),
-		Entry("Route Logs by Namespace(s)", generator.ConfGenerateTest{
+		Entry("Route Logs by Namespace(s)", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{
@@ -262,7 +263,7 @@ var _ = Describe("Testing Config Generation", func() {
   </match>
 </label>`,
 		}),
-		Entry("Route Logs by Labels(s)", generator.ConfGenerateTest{
+		Entry("Route Logs by Labels(s)", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{
@@ -327,7 +328,7 @@ var _ = Describe("Testing Config Generation", func() {
   </match>
 </label>`,
 		}),
-		Entry("Route Logs by Namespaces(s), and Labels(s)", generator.ConfGenerateTest{
+		Entry("Route Logs by Namespaces(s), and Labels(s)", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{
@@ -394,7 +395,7 @@ var _ = Describe("Testing Config Generation", func() {
   </match>
 </label>`,
 		}),
-		Entry("Send Logs by custom selection, and direct", generator.ConfGenerateTest{
+		Entry("Send Logs by custom selection, and direct", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
 					{
@@ -481,7 +482,7 @@ var _ = Describe("Testing Config Generation", func() {
   </match>
 </label>`,
 		}),
-		Entry("Complex Case", generator.ConfGenerateTest{
+		Entry("Complex Case", helpers.ConfGenerateTest{
 			Desc: "Complex Case",
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{

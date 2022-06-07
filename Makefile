@@ -154,7 +154,7 @@ $(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_
 	@$(CONTROLLER_GEN) object paths="./apis/..."
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
 	@bash ./hack/generate-crd.sh
-	echo 'package version; var Version = "$(or $(CI_CONTAINER_VERSION),$(LOGGING_VERSION), DEFAULT_VERSION)"' > version/version.go
+	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(LOGGING_VERSION), DEFAULT_VERSION)\"" > version/version.go
 	@touch $@
 
 .PHONY: regenerate

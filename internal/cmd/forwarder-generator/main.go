@@ -6,33 +6,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 
-	"github.com/go-logr/logr"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
-
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/spf13/pflag"
-
-	"github.com/ViaQ/logerr/v2/log"
 )
 
 // HACK - This command is for development use only
 func main() {
-	logLevel, present := os.LookupEnv("LOG_LEVEL")
-
-	var logger logr.Logger
-	if present {
-		verbosity, err := strconv.Atoi(logLevel)
-		if err != nil {
-			log.NewLogger("cluster-logging-operator").Error(err, "LOG_LEVEL must be an integer")
-			os.Exit(1)
-		}
-		logger = log.NewLogger("cluster-logging-operator", log.WithVerbosity(verbosity))
-
-	} else {
-		logger = log.NewLogger("cluster-logging-operator")
-	}
+	logger := utils.InitLogger("forwarder-generator")
 
 	yamlFile := flag.String("file", "", "ClusterLogForwarder yaml file. - for stdin")
 	includeDefaultLogStore := flag.Bool("include-default-store", true, "Include the default storage when generating the config")

@@ -15,14 +15,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
-
-	"github.com/ViaQ/logerr/v2/log"
 )
 
 // HACK - This command is for development use only
 func main() {
-
-	logger := log.NewLogger("functional-benchmarker")
+	logger := utils.InitLogger("functional-benchmarker")
 
 	options := config.InitOptions(logger)
 

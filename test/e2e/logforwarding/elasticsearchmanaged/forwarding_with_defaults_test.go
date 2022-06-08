@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,8 +22,7 @@ import (
 
 var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger := log.NewLogger("e2e-logforwarding")
-	logger.Info("Running ", "filename", filename)
+	log.Info("Running ", "filename", filename)
 	var (
 		e2e          = framework.NewE2ETestFramework()
 		generatorNS  string
@@ -116,11 +115,11 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
 							indices, err = estore.Indices()
 							if err != nil {
-								logger.Error(err, "Error retrieving indices from elasticsearch")
+								log.Error(err, "Error retrieving indices from elasticsearch")
 								return false, nil
 							}
 							found := false
-							logger.V(2).Info("indices", "indices", indices)
+							log.V(2).Info("indices", "indices", indices)
 							for _, index := range indices {
 								if strings.HasPrefix(index.Name, "app-redhat") {
 									found = true
@@ -128,7 +127,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							}
 							return found, nil
 						})
-						logger.V(2).Info("error", "error", err)
+						log.V(2).Info("error", "error", err)
 						Expect(err).To(BeNil())
 					})
 				}
@@ -201,7 +200,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
 							indices, err = estore.Indices()
 							if err != nil {
-								logger.Error(err, "Error retrieving indices from elasticsearch")
+								log.Error(err, "Error retrieving indices from elasticsearch")
 								return false, nil
 							}
 							found := false

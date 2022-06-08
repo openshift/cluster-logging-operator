@@ -9,7 +9,7 @@ import (
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -33,12 +33,9 @@ func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.Out
 }
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
-
 	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
-		log.NewLogger("k8sHandler").V(2).Info("skipping collection config generation as 'collection' section is not specified in CLO's CR")
+		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in CLO's CR")
 		return "", nil
-	} else {
-		clusterRequest.Log = log.NewLogger("k8sHandler")
 	}
 	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
 	case logging.LogCollectionTypeFluentd:
@@ -74,14 +71,14 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	g := forwardergenerator.New(collectorType)
 	err = g.Verify(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 	if err != nil {
-		clusterRequest.Log.Error(err, "Unable to generate log configuration")
+		log.Error(err, "Unable to generate log configuration")
 		if updateError := clusterRequest.UpdateCondition(
 			logging.CollectorDeadEnd,
 			"ClusterLogForwarder input validation error",
 			"ClusterLogForwarder input validation error",
 			corev1.ConditionTrue,
 		); updateError != nil {
-			clusterRequest.Log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
+			log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
 		}
 		return "", err
 	}
@@ -89,14 +86,14 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	generatedConfig, err := g.GenerateConf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 
 	if err != nil {
-		clusterRequest.Log.Error(err, "Unable to generate log configuration")
+		log.Error(err, "Unable to generate log configuration")
 		if updateError := clusterRequest.UpdateCondition(
 			logging.CollectorDeadEnd,
 			"Collectors are defined but there is no defined LogStore or LogForward destinations",
 			"No defined logstore destination",
 			corev1.ConditionTrue,
 		); updateError != nil {
-			clusterRequest.Log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
+			log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
 		}
 		return "", err
 	}
@@ -107,7 +104,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		"",
 		corev1.ConditionFalse,
 	)
-	clusterRequest.Log.V(3).Info("ClusterLogForwarder generated config", generatedConfig)
+	log.V(3).Info("ClusterLogForwarder generated config", generatedConfig)
 	return generatedConfig, err
 }
 
@@ -128,7 +125,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
 		if clusterRequest.Cluster.Spec.LogStore != nil && clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
-			clusterRequest.Log.V(2).Info("ClusterLogForwarder forwarding to default store")
+			log.V(2).Info("ClusterLogForwarder forwarding to default store")
 			defaultPipeline := logging.PipelineSpec{
 				InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
 				OutputRefs: []string{logging.OutputNameDefault},
@@ -136,7 +133,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{defaultPipeline}
 			// Continue with normalization to fill out spec and status.
 		} else if clusterRequest.ForwarderRequest == nil {
-			clusterRequest.Log.V(3).Info("ClusterLogForwarder disabled")
+			log.V(3).Info("ClusterLogForwarder disabled")
 			return &logging.ClusterLogForwarderSpec{}, &logging.ClusterLogForwarderStatus{}
 		}
 	}
@@ -146,15 +143,15 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 
 	clusterRequest.verifyInputs(spec, status)
 	if !status.Inputs.IsAllReady() {
-		log.NewLogger("").V(3).Info("Input not Ready", "inputs", status.Inputs)
+		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
 	}
 	clusterRequest.verifyOutputs(spec, status)
 	if !status.Outputs.IsAllReady() {
-		clusterRequest.Log.V(3).Info("Output not Ready", "outputs", status.Outputs)
+		log.V(3).Info("Output not Ready", "outputs", status.Outputs)
 	}
 	clusterRequest.verifyPipelines(spec, status)
 	if !status.Pipelines.IsAllReady() {
-		clusterRequest.Log.V(3).Info("Pipeline not Ready", "pipelines", status.Pipelines)
+		log.V(3).Info("Pipeline not Ready", "pipelines", status.Pipelines)
 	}
 
 	routes := logging.NewRoutes(spec.Pipelines) // Compute used inputs/outputs
@@ -178,7 +175,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 		}
 	}
 	if len(unready) == len(status.Pipelines) {
-		clusterRequest.Log.V(3).Info("NormalizeForwarder. All pipelines invalid", "ForwarderSpec", clusterRequest.ForwarderSpec)
+		log.V(3).Info("NormalizeForwarder. All pipelines invalid", "ForwarderSpec", clusterRequest.ForwarderSpec)
 		status.Conditions.SetCondition(condInvalid("all pipelines invalid: %v", unready))
 	} else {
 		if len(unready)+len(degraded) > 0 {
@@ -307,26 +304,26 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			output.Name = fmt.Sprintf("output_%v_", i)
 			status.Outputs.Set(output.Name, condInvalid(format, args...))
 		}
-		clusterRequest.Log.V(3).Info("Verifying", "outputs", output)
+		log.V(3).Info("Verifying", "outputs", output)
 		switch {
 		case output.Name == "":
-			clusterRequest.Log.V(3).Info("verifyOutputs failed", "reason", "output must have a name")
+			log.V(3).Info("verifyOutputs failed", "reason", "output must have a name")
 			badName("output must have a name")
 		case logging.IsReservedOutputName(output.Name):
-			clusterRequest.Log.V(3).Info("verifyOutputs failed", "reason", "output name is reserved", "output name", output.Name)
+			log.V(3).Info("verifyOutputs failed", "reason", "output name is reserved", "output name", output.Name)
 			badName("output name %q is reserved", output.Name)
 		case names.Has(output.Name):
-			clusterRequest.Log.V(3).Info("verifyOutputs failed", "reason", "output name is duplicated", "output name", output.Name)
+			log.V(3).Info("verifyOutputs failed", "reason", "output name is duplicated", "output name", output.Name)
 			badName("duplicate name: %q", output.Name)
 		case !logging.IsOutputTypeName(output.Type):
-			clusterRequest.Log.V(3).Info("verifyOutputs failed", "reason", "output type is invalid", "output name", output.Name, "output type", output.Type)
+			log.V(3).Info("verifyOutputs failed", "reason", "output type is invalid", "output name", output.Name, "output type", output.Type)
 			status.Outputs.Set(output.Name, condInvalid("output %q: unknown output type %q", output.Name, output.Type))
 		case !clusterRequest.verifyOutputURL(&output, status.Outputs):
-			clusterRequest.Log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
+			log.V(3).Info("verifyOutputs failed", "reason", "output URL is invalid", "output URL", output.URL)
 		case !clusterRequest.verifyOutputSecret(&output, status.Outputs):
-			clusterRequest.Log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
+			log.V(3).Info("verifyOutputs failed", "reason", "output secret is invalid")
 		case output.Type == logging.OutputTypeCloudwatch && output.Cloudwatch == nil:
-			clusterRequest.Log.V(3).Info("verifyOutputs failed", "reason", "Cloudwatch output requires type spec", "output name", output.Name)
+			log.V(3).Info("verifyOutputs failed", "reason", "Cloudwatch output requires type spec", "output name", output.Name)
 			status.Outputs.Set(output.Name, condInvalid("output %q: Cloudwatch output requires type spec", output.Name))
 		default:
 			status.Outputs.Set(output.Name, condReady)
@@ -408,7 +405,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputSecret(output *logging.
 		conds.Set(output.Name, condInvalid("secret has empty name"))
 		return false
 	}
-	clusterRequest.Log.V(3).Info("getting output secret", "output", output.Name, "secret", output.Secret.Name)
+	log.V(3).Info("getting output secret", "output", output.Name, "secret", output.Secret.Name)
 	secret, err := clusterRequest.GetSecret(output.Secret.Name)
 	if err != nil {
 		return fail(condMissing("secret %q not found", output.Secret.Name))
@@ -448,7 +445,7 @@ func verifySecretKeysForTLS(output *logging.OutputSpec, conds logging.NamedCondi
 }
 
 func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.NamedConditions, secret *corev1.Secret) bool {
-	log.NewLogger("k8sHandler").V(3).Info("V")
+	log.V(3).Info("V")
 	fail := func(c status.Condition) bool {
 		conds.Set(output.Name, c)
 		return false
@@ -471,29 +468,29 @@ func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.Nam
 }
 
 func (clusterRequest *ClusterLoggingRequest) getLogCollectorServiceAccountTokenSecret() (*corev1.Secret, error) {
-	clusterRequest.Log.V(9).Info("Entered getServiceAccountToken")
+	log.V(9).Info("Entered getServiceAccountToken")
 	sa := corev1.ServiceAccount{}
 	err := clusterRequest.Client.Get(context.Background(), client.ObjectKey{Name: constants.CollectorServiceAccountName, Namespace: constants.OpenshiftNS}, &sa)
 	if err != nil {
-		clusterRequest.Log.V(3).Error(err, "Could not find serviceAccount", "ServiceAccoutName", constants.CollectorServiceAccountName)
+		log.V(3).Error(err, "Could not find serviceAccount", "ServiceAccoutName", constants.CollectorServiceAccountName)
 		return nil, err
 	}
-	clusterRequest.Log.V(9).Info("Found secrets", "Count", len(sa.Secrets))
+	log.V(9).Info("Found secrets", "Count", len(sa.Secrets))
 	for _, sref := range sa.Secrets {
 		s := corev1.Secret{}
-		clusterRequest.Log.V(9).Info("Fetching Secret", "Name", sref.Name)
+		log.V(9).Info("Fetching Secret", "Name", sref.Name)
 		err = clusterRequest.Client.Get(context.Background(), client.ObjectKey{Name: sref.Name, Namespace: constants.OpenshiftNS}, &s)
 		if err != nil {
-			clusterRequest.Log.V(3).Error(err, "Could not find Secret", "Name", sref.Name)
+			log.V(3).Error(err, "Could not find Secret", "Name", sref.Name)
 		} else {
 			if t, ok := s.Data[constants.TokenKey]; ok {
-				clusterRequest.Log.V(9).Info("found token", constants.TokenKey, t)
+				log.V(9).Info("found token", constants.TokenKey, t)
 				return &s, nil
 			} else {
-				clusterRequest.Log.V(9).Info("did not find token in secret", "Name", s.Name)
+				log.V(9).Info("did not find token in secret", "Name", s.Name)
 			}
 		}
 	}
-	clusterRequest.Log.V(9).Info("Exited getServiceAccountToken")
+	log.V(9).Info("Exited getServiceAccountToken")
 	return nil, errors.New("Could not retrieve ServiceAccount token")
 }

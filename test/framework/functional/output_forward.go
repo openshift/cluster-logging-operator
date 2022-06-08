@@ -6,7 +6,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -126,19 +126,17 @@ const (
 )
 
 func (f *CollectorFunctionalFramework) addForwardOutputWithConf(b *runtime.PodBuilder, output logging.OutputSpec, conf string) error {
-	logger := log.NewLogger("output-forward-testing")
-
-	logger.V(2).Info("Adding forward output", "name", output.Name)
+	log.V(2).Info("Adding forward output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 	config := runtime.NewConfigMap(b.Pod.Namespace, name, map[string]string{
 		"fluent.conf": conf,
 	})
-	logger.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "fluent.conf", unsecureFluentConf)
+	log.V(2).Info("Creating configmap", "namespace", config.Namespace, "name", config.Name, "fluent.conf", unsecureFluentConf)
 	if err := f.Test.Client.Create(config); err != nil {
 		return err
 	}
 
-	logger.V(2).Info("Adding container", "name", name)
+	log.V(2).Info("Adding container", "name", name)
 	b.AddContainer(name, utils.GetComponentImage(constants.FluentdName)).
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
 		WithCmd([]string{"fluentd", "-c", "/tmp/config/fluent.conf"}).

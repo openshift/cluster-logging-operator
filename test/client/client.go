@@ -8,7 +8,7 @@ import (
 
 	testrt "github.com/openshift/cluster-logging-operator/internal/runtime"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/test"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -77,7 +77,7 @@ func logKeyId(v interface{}) (key, id string) {
 
 func logBeginEnd(op string, v interface{}, errp *error, kv ...interface{}) func() {
 	key, id := logKeyId(v)
-	return test.LogBeginEnd(log.NewLogger(""), op, errp, append(kv, key, id)...)
+	return test.LogBeginEnd(log.WithName(""), op, errp, append(kv, key, id)...)
 }
 
 // Create the cluster resource described by the struct o.

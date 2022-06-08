@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 )
 
 // Test wraps the singleton test client with setup/teardown and convenience methods
@@ -59,7 +59,7 @@ func NewNamesapceClient() *NamespaceClient {
 		},
 	}
 	test.Must(t.Create(t.NS))
-	log.NewLogger("test").Info("testhack", "namespace", t.NS.Name)
+	log.Info("testhack", "namespace", t.NS.Name)
 	return t
 }
 func (t *NamespaceClient) Close() {

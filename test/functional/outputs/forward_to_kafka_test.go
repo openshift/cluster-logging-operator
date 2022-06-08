@@ -1,7 +1,7 @@
 package outputs
 
 import (
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -18,7 +18,7 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFramework()
 
-		log.NewLogger("").V(2).Info("Creating secret for broker credentials")
+		log.V(2).Info("Creating secret for broker credentials")
 		brokersecret := kafka.NewBrokerSecret(framework.Namespace)
 		if err := framework.Test.Client.Create(brokersecret); err != nil {
 			panic(err)

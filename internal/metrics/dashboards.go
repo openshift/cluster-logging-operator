@@ -3,7 +3,7 @@ package metrics
 import (
 	"path"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -24,7 +24,7 @@ func newDashboardConfigMap() *corev1.ConfigMap {
 	spec := string(utils.GetFileContents(path.Join(utils.GetShareDir(), ClusterLoggingDashboardFile)))
 	hash, err := utils.CalculateMD5Hash(spec)
 	if err != nil {
-		log.NewLogger("dashboards").Error(err, "Error calculated hash for metrics dashboard")
+		log.Error(err, "Error calculated hash for metrics dashboard")
 	}
 	cm := runtime.NewConfigMap(DashboardNS,
 		DashboardName,

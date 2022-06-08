@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,7 +36,7 @@ func checkMountReadOnly(mount string) {
 
 var _ = Describe("Tests of collector container security stance", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	log.NewLogger("e2e-fluentd").Info("Running ", "filename", filename)
+	log.Info("Running ", "filename", filename)
 	e2e := framework.NewE2ETestFramework()
 
 	BeforeEach(func() {

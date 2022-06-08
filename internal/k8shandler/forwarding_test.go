@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ViaQ/logerr/v2/log"
-	"github.com/go-logr/logr"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
@@ -60,7 +58,6 @@ var _ = Describe("Normalizing forwarder", func() {
 		output      logging.OutputSpec
 		otherOutput logging.OutputSpec
 		request     *ClusterLoggingRequest
-		logger      logr.Logger
 	)
 	BeforeEach(func() {
 		output = logging.OutputSpec{
@@ -73,9 +70,7 @@ var _ = Describe("Normalizing forwarder", func() {
 			Type: "elasticsearch",
 			URL:  "http://there",
 		}
-		logger = log.NewLogger("")
 		request = &ClusterLoggingRequest{
-			Log:    logger,
 			Client: fake.NewFakeClient(), //nolint
 			Cluster: &logging.ClusterLogging{
 				ObjectMeta: metav1.ObjectMeta{
@@ -800,7 +795,6 @@ var _ = DescribeTable("Normalizing round trip of valid YAML specs",
 
 	func(yamlSpec string) {
 		request := ClusterLoggingRequest{
-			Log:    log.NewLogger(""),
 			Client: fake.NewFakeClient(), //nolint
 			Cluster: &logging.ClusterLogging{
 				ObjectMeta: metav1.ObjectMeta{
@@ -882,7 +876,6 @@ pipelines:
 
 func TestClusterLoggingRequest_verifyOutputURL(t *testing.T) {
 	type fields struct {
-		Log              logr.Logger
 		Client           client.Client
 		Cluster          *logging.ClusterLogging
 		ForwarderRequest *logging.ClusterLogForwarder
@@ -999,7 +992,6 @@ func TestClusterLoggingRequest_verifyOutputURL(t *testing.T) {
 		tt := tt // Don't bind range variable.
 		t.Run(tt.name, func(t *testing.T) {
 			clusterRequest := &ClusterLoggingRequest{
-				Log:              tt.fields.Log,
 				Client:           tt.fields.Client,
 				Cluster:          tt.fields.Cluster,
 				ForwarderRequest: tt.fields.ForwarderRequest,

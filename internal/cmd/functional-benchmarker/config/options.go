@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-logr/logr"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test"
 )
@@ -39,7 +39,7 @@ type Options struct {
 	PayloadSource       string
 }
 
-func InitOptions(logger logr.Logger) Options {
+func InitOptions() Options {
 	options := Options{
 		ReadTimeout: test.SuccessTimeout().String(),
 	}
@@ -69,48 +69,48 @@ func InitOptions(logger logr.Logger) Options {
 		os.Exit(1)
 	}
 
-	logger.V(1).Info("Starting functional benchmarker", "args", options)
+	log.V(1).Info("Starting functional benchmarker", "args", options)
 
 	if err := os.Setenv(constants.FluentdImageEnvVar, options.Image); err != nil {
-		logger.Error(err, "Error setting fluent Image env var")
+		log.Error(err, "Error setting fluent Image env var")
 		os.Exit(1)
 	}
 
 	return options
 }
 
-func ReadConfig(configFile string, baseline bool, logger logr.Logger) string {
+func ReadConfig(configFile string, baseline bool) string {
 	if baseline {
-		logger.V(0).Info("Using the baseline config")
+		log.V(0).Info("Using the baseline config")
 		return FluentdBaselineConf
 	}
 	var reader func() ([]byte, error)
 	switch configFile {
 	case "-":
-		logger.V(1).Info("Reading from stdin")
+		log.V(1).Info("Reading from stdin")
 		reader = func() ([]byte, error) {
 			stdin := bufio.NewReader(os.Stdin)
 			return ioutil.ReadAll(stdin)
 		}
 	case "":
-		logger.V(1).Info("received empty configFile. Generating from CLF")
+		log.V(1).Info("received empty configFile. Generating from CLF")
 		return ""
 	default:
-		logger.V(1).Info("reading configfile", "filename", configFile)
+		log.V(1).Info("reading configfile", "filename", configFile)
 		reader = func() ([]byte, error) { return ioutil.ReadFile(configFile) }
 	}
 	content, err := reader()
 	if err != nil {
-		logger.Error(err, "Error reading config")
+		log.Error(err, "Error reading config")
 		os.Exit(1)
 	}
 	return string(content)
 }
 
-func MustParseDuration(durationString, optionName string, logger logr.Logger) time.Duration {
+func MustParseDuration(durationString, optionName string) time.Duration {
 	duration, err := time.ParseDuration(durationString)
 	if err != nil {
-		logger.Error(err, "Unable to parse duration", "option", optionName)
+		log.Error(err, "Unable to parse duration", "option", optionName)
 		os.Exit(1)
 	}
 	return duration

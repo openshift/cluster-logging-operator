@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd"
@@ -41,7 +41,7 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 	case logging.LogCollectionTypeVector:
 		g.conf = vector.Conf
 	default:
-		log.NewLogger("").Error(errors.New("Unsupported collector implementation"), "type", collectorType)
+		log.Error(errors.New("Unsupported collector implementation"), "type", collectorType)
 		return nil
 	}
 	return g

@@ -14,14 +14,12 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 	"unsafe"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 
-	"github.com/ViaQ/logerr/v2/log"
 	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/format"
@@ -33,11 +31,6 @@ import (
 func init() {
 	if os.Getenv("TEST_UNTRUNCATED_DIFF") != "" || os.Getenv("TEST_FULL_DIFF") != "" {
 		format.TruncatedDiff = false
-	}
-	// Set up logging for tests.
-	level, err := strconv.Atoi(os.Getenv("LOG_LEVEL"))
-	if err == nil {
-		log.NewLogger("test", log.WithVerbosity(level))
 	}
 }
 

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	esapi "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
@@ -36,11 +36,10 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 
 	retentionPolicy = newDefaultPoliciesSpec(retentionPolicy)
 	indexManagement := esapi.IndexManagementSpec{}
-	logger := log.NewLogger("index-management")
 	if retentionPolicy.App != nil {
 		hotPhaseAgeApp, err := getHotPhaseAge(retentionPolicy.App.MaxAge)
 		if err != nil {
-			logger.Error(err, "Error occurred while getting hot phase age for App log source")
+			log.Error(err, "Error occurred while getting hot phase age for App log source")
 			return nil
 		}
 		appPolicySpec := newPolicySpec(PolicyNameApp, retentionPolicy.App, hotPhaseAgeApp)
@@ -51,7 +50,7 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 	if retentionPolicy.Infra != nil {
 		hotPhaseAgeInfra, err := getHotPhaseAge(retentionPolicy.Infra.MaxAge)
 		if err != nil {
-			logger.Error(err, "Error occurred while getting hot phase age for Infra log source.")
+			log.Error(err, "Error occurred while getting hot phase age for Infra log source.")
 			return nil
 		}
 		infraPolicySpec := newPolicySpec(PolicyNameInfra, retentionPolicy.Infra, hotPhaseAgeInfra)
@@ -62,7 +61,7 @@ func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagem
 	if retentionPolicy.Audit != nil {
 		hotPhaseAgeAudit, err := getHotPhaseAge(retentionPolicy.Audit.MaxAge)
 		if err != nil {
-			logger.Error(err, "Error occurred while getting hot phase age for Audit log source.")
+			log.Error(err, "Error occurred while getting hot phase age for Audit log source.")
 			return nil
 		}
 		auditPolicySpec := newPolicySpec(PolicyNameAudit, retentionPolicy.Audit, hotPhaseAgeAudit)

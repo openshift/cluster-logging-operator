@@ -1,6 +1,7 @@
 package k8shandler
 
 import (
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -24,10 +25,10 @@ func (clusterRequest *ClusterLoggingRequest) RestartCollector() (err error) {
 		return err
 	}
 
-	clusterRequest.Log.V(3).Info("Generated collector config", "config", collectorConfig)
+	log.V(3).Info("Generated collector config", "config", collectorConfig)
 	collectorConfHash, err := utils.CalculateMD5Hash(collectorConfig)
 	if err != nil {
-		clusterRequest.Log.Error(err, "unable to calculate MD5 hash.")
+		log.Error(err, "unable to calculate MD5 hash.")
 		return
 	}
 	collectorType := clusterRequest.Cluster.Spec.Collection.Logs.Type

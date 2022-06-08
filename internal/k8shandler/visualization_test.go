@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ViaQ/logerr/v2/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	es "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -416,7 +415,6 @@ func TestRemoveKibanaCR(t *testing.T) {
 	}
 
 	clr := &ClusterLoggingRequest{
-		Log: log.NewLogger("visualization-testing"),
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: "openshift-logging",

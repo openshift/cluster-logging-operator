@@ -13,7 +13,7 @@ The CLO does not collect or forward logs itself: it starts, configures, monitors
 and manages the components that do the work.
 
 CLO currently uses:
-* Fluentd as collector/forwarder
+* Fluentd|Vector as collector/forwarder
 * Elasticsearch as default store
 * Kibana for visualization.
 

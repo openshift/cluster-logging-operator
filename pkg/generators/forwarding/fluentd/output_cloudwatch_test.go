@@ -96,7 +96,7 @@ var _ = Describe("Generating fluentd config", func() {
 					include_time_key true
 					log_rejected_request true
 					<buffer>
-					  disable_chunk_backup: true
+					  disable_chunk_backup true
 					</buffer>
 				</match>
 			</label>`
@@ -156,7 +156,7 @@ var _ = Describe("Generating fluentd config", func() {
 					include_time_key true
 					log_rejected_request true
 					<buffer>
-					  disable_chunk_backup: true
+					  disable_chunk_backup true
 					</buffer>
 				</match>
 			</label>`
@@ -219,7 +219,7 @@ var _ = Describe("Generating fluentd config", func() {
 					include_time_key true
 					log_rejected_request true
 				    <buffer>
-      					disable_chunk_backup: true
+      					disable_chunk_backup true
     				</buffer>
 				</match>
 			</label>`

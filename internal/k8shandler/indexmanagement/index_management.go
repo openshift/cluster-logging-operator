@@ -29,7 +29,7 @@ var (
 	AliasesInfra = []string{"infra", "logs.infra"}
 	AliasesAudit = []string{"audit", "logs.audit"}
 
-	agePattern = regexp.MustCompile(`^(?P<number>\d+)(?P<unit>[yMwdhHms])$`)
+	agePattern = regexp.MustCompile(`^(?P<number>\d+)(?P<unit>[wdhHms])$`)
 )
 
 func NewSpec(retentionPolicy *logging.RetentionPoliciesSpec) *esapi.IndexManagementSpec {

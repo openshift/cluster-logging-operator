@@ -258,10 +258,10 @@ timestamp_format = "rfc3339"
 
 # TLS Config
 [sinks.kafka_receiver.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
-enabled = true
 
 [sinks.prometheus_output]
 type = "prometheus_exporter"
@@ -574,9 +574,9 @@ id_key = "_id"
 
 # TLS Config
 [sinks.es_1.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
-
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 
 # Set Elasticsearch index
@@ -679,9 +679,9 @@ id_key = "_id"
 
 # TLS Config
 [sinks.es_2.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
-
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 
 [sinks.prometheus_output]

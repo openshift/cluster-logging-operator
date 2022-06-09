@@ -207,7 +207,12 @@ test-functional-fluentd:
 test-functional-vector:
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
 	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
-	go test --tags=vector -race ./test/functional/outputs/cloudwatch/... ./test/functional/outputs/elasticsearch/... ./test/functional/normalization -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
+	go test --tags=vector -race \
+		./test/functional/outputs/elasticsearch/... \
+		./test/functional/outputs/kafka/... \
+		./test/functional/outputs/cloudwatch/... \
+		./test/functional/normalization \
+		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-forwarder-generator
 test-forwarder-generator: bin/forwarder-generator

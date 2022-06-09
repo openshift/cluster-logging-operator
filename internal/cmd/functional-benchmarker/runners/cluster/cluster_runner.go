@@ -55,7 +55,8 @@ func (r *ClusterRunner) Deploy() {
 
 	//modify config to only collect loader containers
 	r.framework.VisitConfig = func(conf string) string {
-		conf = strings.Replace(conf, "/var/log/containers/*.log", "/var/log/containers/*_*_loader-*.log", 1)
+		pattern := fmt.Sprintf("/var/log/pods/%s_*/loader-*/*.log", r.framework.Namespace)
+		conf = strings.Replace(conf, "/var/log/pods/**/*.log", pattern, 1)
 		return conf
 	}
 

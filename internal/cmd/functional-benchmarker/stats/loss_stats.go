@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
 )
 
 type LossStats struct {

@@ -4,9 +4,16 @@ metadata:
   name: instance
   namespace: openshift-logging
 spec:
+  outputs:
+    - name: remote-elasticsearch
+      secret:
+        name: elasticsearch
+      type: elasticsearch
+      url: remote.example.org:9200
   pipelines:
-    - name: application-logs
-      inputRefs:
-        - application
-      outputRefs:
-        - default
+    - name: enable-default-log-store
+      inputRefs: [ application, audit, infrastructure ]
+      outputRefs: [ default ]
+    - name: forward-to-remote
+      inputRefs: [ application ]
+      outputRefs: [ remote-elasticsearch ]

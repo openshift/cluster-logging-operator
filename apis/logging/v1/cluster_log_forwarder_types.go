@@ -30,6 +30,7 @@ type ClusterLogForwarderSpec struct {
 	// your needs. See `inputRefs` for more.
 	//
 	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Inputs",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderInputs"}
 	Inputs []InputSpec `json:"inputs,omitempty"`
 
 	// Outputs are named destinations for log messages.
@@ -39,11 +40,13 @@ type ClusterLogForwarderSpec struct {
 	// log processors, inside or outside the cluster.
 	//
 	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Outputs",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderOutputs"}
 	Outputs []OutputSpec `json:"outputs,omitempty"`
 
 	// Pipelines forward the messages selected by a set of inputs to a set of outputs.
 	//
 	// +required
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Pipelines",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderPipelines"}
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 
 	// OutputDefaults are used to specify default values for OutputSpec
@@ -55,12 +58,19 @@ type ClusterLogForwarderSpec struct {
 // ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 type ClusterLogForwarderStatus struct {
 	// Conditions of the log forwarder.
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Forwarder Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderConditions"}
 	Conditions status.Conditions `json:"conditions,omitempty"`
+
 	// Inputs maps input name to condition of the input.
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Input Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:inputConditions"}
 	Inputs NamedConditions `json:"inputs,omitempty"`
+
 	// Outputs maps output name to condition of the output.
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Output Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:outputConditions"}
 	Outputs NamedConditions `json:"outputs,omitempty"`
+
 	// Pipelines maps pipeline name to condition of the pipeline.
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Pipeline Conditions",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:pipelineConditions"}
 	Pipelines NamedConditions `json:"pipelines,omitempty"`
 }
 

@@ -8,6 +8,10 @@ resources:
 - metadata_reader_clusterrolebinding.yaml
 - prometheus_role.yaml
 - prometheus_role_binding.yaml
+- cluster-logging-operator_clusterrole.yaml
+- cluster-logging-operator_clusterrolebinding.yaml
+- cluster-logging-operator_role.yaml
+- cluster-logging-operator_rolebinding.yaml
 #- leader_election_role.yaml
 #- leader_election_role_binding.yaml
 # Comment the following 4 lines if you want to disable

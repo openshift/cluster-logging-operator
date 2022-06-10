@@ -97,15 +97,18 @@ type KibanaSpec struct {
 	//
 	// +nullable
 	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Resource Requirements",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:resourceRequirements"}
 	Resources *v1.ResourceRequirements `json:"resources"`
 
 	// Define which Nodes the Pods are scheduled on.
 	//
 	// +nullable
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Node Selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:nodeSelector"}
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 
 	// Number of instances to deploy for a Kibana deployment
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Kibana Size",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:podCount"}
 	Replicas *int32 `json:"replicas"`
 
 	// Specification of the Kibana Proxy component
@@ -160,14 +163,17 @@ type ElasticsearchSpec struct {
 	//
 	// +nullable
 	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Resource Requirements",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:resourceRequirements"}
 	Resources *v1.ResourceRequirements `json:"resources"`
 
 	// Number of nodes to deploy for Elasticsearch
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Size",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:podCount"}
 	NodeCount int32 `json:"nodeCount"`
 
 	// Define which Nodes the Pods are scheduled on.
 	//
 	// +nullable
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Node Selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:nodeSelector"}
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 
@@ -207,11 +213,13 @@ type FluentdSpec struct {
 	//
 	// +nullable
 	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Fluentd Resource Requirements",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:resourceRequirements"}
 	Resources *v1.ResourceRequirements `json:"resources"`
 
 	// Define which Nodes the Pods are scheduled on.
 	//
 	// +nullable
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Fluentd node selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:nodeSelector"}
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
 }
@@ -467,6 +475,7 @@ type FluentdCollectorStatus struct {
 	// +optional
 	Nodes map[string]string `json:"nodes,omitempty"`
 	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=status,displayName="Fluentd status",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:podStatuses"}
 	Pods PodStateMap `json:"pods,omitempty"`
 	// +optional
 	Conditions map[string]ClusterConditions `json:"clusterCondition,omitempty"`
@@ -580,8 +589,8 @@ type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 // +kubebuilder:printcolumn:name="Management State",JSONPath=".spec.managementState",type=string
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// ClusterLogging is the Schema for the clusterloggings API
-// +operator-sdk:csv:customresourcedefinitions:displayName="ClusterLogging",resources={{Pod,v1},{Deployment,v1},{ReplicaSet,v1},{ConfigMap,v1},{Service,v1},{Route,v1},{CronJob,v1},{Role,v1},{RoleBinding,v1},{ServiceAccount,v1},{ServiceMonitor,v1},{persistentvolumeclaims,v1}}
+// A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clusterloggings API
+// +operator-sdk:csv:customresourcedefinitions:displayName="Cluster Logging",resources={{Pod,v1},{Deployment,v1},{ReplicaSet,v1},{ConfigMap,v1},{Service,v1},{Route,v1},{CronJob,v1},{Role,v1},{RoleBinding,v1},{ServiceAccount,v1},{ServiceMonitor,v1},{persistentvolumeclaims,v1}}
 type ClusterLogging struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

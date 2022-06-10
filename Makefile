@@ -18,10 +18,10 @@ export APP_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):$(CURRENT_BRANCH)
 
-export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
+export LOGGING_VERSION?=5.5
 export NAMESPACE?=openshift-logging
 
-IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.5
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.21-rh
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
 REPLICAS?=0
@@ -35,7 +35,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMI
 
 .PHONY: pre-commit
 # Should pass when run before commit.
-pre-commit: clean generate-bundle check
+pre-commit: clean bundle check
 
 .PHONY: check
 # check health of the code:
@@ -91,7 +91,7 @@ RUN_CMD?=go run
 
 .PHONY: run
 run:
-	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
+	@ls ./bundle/manifests/logging.openshift.io_*.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
 	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
 	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
@@ -122,7 +122,7 @@ clean:
 
 .PHONY: image
 image: .target/image
-.target/image: .target $(shell find must-gather version scripts files manifests .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
+.target/image: .target $(shell find must-gather version scripts files bundle .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
 	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 
@@ -138,23 +138,19 @@ lint:  $(GOLANGCI_LINT) lint-dockerfile
 lint-dockerfile:
 	@hack/run-linter
 
-
 .PHONY: fmt
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
 	find version test internal controllers apis -name '*.go' | xargs gofmt -s -l -w
 
-MANIFESTS=manifests/$(LOGGING_VERSION)
-
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.target/codegen
-DEFAULT_VERSION=5.5
 generate: $(GEN_TIMESTAMP)
 $(GEN_TIMESTAMP): $(shell find apis -name '*.go')  $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE) .target
 	@$(CONTROLLER_GEN) object paths="./apis/..."
 	@$(CONTROLLER_GEN) crd:crdVersions=v1 rbac:roleName=clusterlogging-operator paths="./..." output:crd:artifacts:config=config/crd/bases
-	@bash ./hack/generate-crd.sh
-	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(LOGGING_VERSION), DEFAULT_VERSION)\"" > version/version.go
+	echo -e "package version\n\nvar Version = \"$(or $(CI_CONTAINER_VERSION),$(LOGGING_VERSION))\"" > version/version.go
+	@$(MAKE) fmt
 	@touch $@
 
 .PHONY: regenerate
@@ -235,15 +231,30 @@ test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
-CHANNELS="stable,stable-${LOGGING_VERSION}"
-DEFAULT_CHANNEL="stable"
+# Generate bundle manifests and metadata, then validate generated files.
+BUNDLE_VERSION?=$(LOGGING_VERSION).0
+# Options for 'bundle-build'
+BUNDLE_CHANNELS := --channels=stable,stable-${LOGGING_VERSION}
+BUNDLE_DEFAULT_CHANNEL := --default-channel=stable
+BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
-.PHONY: generate-bundle
-generate-bundle: regenerate $(OPM)
-	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
+# BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
+BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(BUNDLE_VERSION) $(BUNDLE_METADATA_OPTS)
+
+# USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
+# You can enable this value if you would like to use SHA Based Digests
+# To enable set flag to true
+USE_IMAGE_DIGESTS ?= false
+ifeq ($(USE_IMAGE_DIGESTS), true)
+    BUNDLE_GEN_FLAGS += --use-image-digests
+endif
 
 .PHONY: bundle
-bundle: generate-bundle
+ bundle: regenerate $(KUSTOMIZE) ## Generate operator bundle.
+	$(OPERATOR_SDK) generate kustomize manifests -q
+	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+	$(OPERATOR_SDK) bundle validate ./bundle
+	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
 
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.

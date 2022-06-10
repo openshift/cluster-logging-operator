@@ -4,9 +4,11 @@ source .bingo/variables.env
 
 set -euo pipefail
 
-mkdir -p bundle
+sed -i 's/bundle\.package\.v1=.*logging/bundle\.package\.v1=cluster-logging/g' bundle.Dockerfile
+sed -i 's/.*scorecard.*//g' bundle.Dockerfile
 
-$OPM alpha bundle generate --directory manifests/${MANIFEST_VERSION} --package cluster-logging --channels ${CHANNELS} --default ${DEFAULT_CHANNEL} --output-dir bundle/
+sed -i 's/bundle\.package\.v1\: .*logging/bundle\.package\.v1\: cluster-logging/g' ./bundle/metadata/annotations.yaml
+sed -i 's/.*scorecard.*//g' ./bundle/metadata/annotations.yaml
 
 cat >> bundle.Dockerfile <<EOF
 
@@ -21,8 +23,8 @@ LABEL \\
     io.k8s.display-name="cluster-logging-operator bundle" \\
     io.k8s.description="bundle for the cluster-logging-operator" \\
     summary="This is the bundle for the cluster-logging-operator" \\
-    maintainer="AOS Logging <aos-logging@redhat.com>"
+    maintainer="AOS Logging <team-logging@redhat.com>"
 EOF
 
 echo "validating bundle..."
-$OPERATOR_SDK bundle validate --verbose bundle
+$OPERATOR_SDK bundle validate --verbose ./bundle

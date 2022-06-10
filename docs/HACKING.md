@@ -204,5 +204,5 @@ image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-loggin
 which will allow you to use the script like:
 ```                                                                                                                                                                                                                                                                               
 CLO_IMAGE=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:latest \
-./hack/gen-olm-artifacts.py manifests/5.1/cluster-logging.v5.1.0.clusterserviceversion.yaml  $CLO_IMAGE | oc create -f -
+./hack/gen-olm-artifacts.py bundle/manifests/clusterlogging.clusterserviceversion.yaml  $CLO_IMAGE | oc create -f -
 ```

@@ -5,11 +5,11 @@
 # usage:
 #   ./hack/gen-olm-artifacts.sh <manifest_dir> (operator_image)
 #
-#   i.e. ./hack/gen-olm-artifacts.sh manifests/5.1/cluster-logging.v5.1.0.clusterserviceversion.yaml | oc create -f -
+#   i.e. ./hack/gen-olm-artifacts.sh bundle/manifests/clusterlogging.clusterserviceversion.yaml | oc create -f -
 #
 # This will deploy the cluster-logging-operator using the latest available images. The component images can be
 # overriden by specifying them as env vars:
-# FLUENTD_IMAGE=myimageurl ./hack/gen-olm-artifacts.sh manifests/5.1/cluster-logging.v5.1.0.clusterserviceversion.yaml
+# FLUENTD_IMAGE=myimageurl ./hack/gen-olm-artifacts.sh bundle/manifests/clusterlogging.clusterserviceversion.yaml
 
 import  os, sys, yaml, re
 

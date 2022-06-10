@@ -1,0 +1,2 @@
+resources:
+- cluster-logging_scheduling.k8s.io_v1_priorityclass.yaml

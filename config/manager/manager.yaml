@@ -6,12 +6,15 @@ metadata:
 spec:
   selector:
     matchLabels:
+      name: cluster-logging-operator
   replicas: 1
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: cluster-logging-operator
+        target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
       labels:
+        name: cluster-logging-operator
     spec:
       nodeSelector:
         kubernetes.io/os: linux
@@ -22,18 +25,6 @@ spec:
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 8081
-            initialDelaySeconds: 15
-            periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: 8081
-            initialDelaySeconds: 5
-            periodSeconds: 10
         command:
           - cluster-logging-operator
         env:
@@ -47,7 +38,9 @@ spec:
                 fieldPath: metadata.name
           - name: OPERATOR_NAME
             value: "cluster-logging-operator"
+          - name: VECTOR_IMAGE
+            value: "quay.io/openshift-logging/vector:0.21-rh"
           - name: FLUENTD_IMAGE
-            value: "quay.io/openshift-logging/fluentd:1.14.5"
+            value: "quay.io/openshift-logging/fluentd:1.14.6"
           - name: LOGFILEMETRICEXPORTER_IMAGE
             value: "quay.io/openshift-logging/log-file-metric-exporter:latest"

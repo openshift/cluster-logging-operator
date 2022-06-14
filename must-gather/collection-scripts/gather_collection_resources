@@ -58,8 +58,6 @@ for collector in "fluentd" "collector"; do
   echo "-- Retrieving configmaps: $collector"
   mkdir -p $collector_folder/cm/$collector
   oc -n $NAMESPACE extract configmap/$collector --to=$collector_folder/cm/$collector
-  mkdir -p $collector_folder/cm/secure-forward
-  oc -n $NAMESPACE extract configmap/secure-forward --to=$collector_folder/cm/secure-forward
   mkdir -p $collector_folder/cm/syslog
   oc -n $NAMESPACE extract configmap/syslog --to=$collector_folder/cm/syslog
 

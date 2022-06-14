@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -20,7 +20,7 @@ import (
 
 var _ = Describe("[Collection] Namespace filtering", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	log.NewLogger("e2e-namespace-filtering").Info("Running ", "filename", filename)
+	log.Info("Running ", "filename", filename)
 	var (
 		err              error
 		fluentDeployment *apps.Deployment

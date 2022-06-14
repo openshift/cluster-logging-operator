@@ -4,6 +4,8 @@ import (
 	"math"
 	"regexp"
 	"strconv"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
 )
 
 var (

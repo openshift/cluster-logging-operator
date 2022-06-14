@@ -19,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	clolog "github.com/ViaQ/logerr/v2/log"
+	clolog "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
@@ -112,19 +112,18 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	if len(pods.Items) == 0 {
 		return false, errors.New("No pods found for fluent receiver")
 	}
-	logger := clolog.NewLogger("e2e-fluentd-testing")
-	logger.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
+	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		output, err := fluent.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			logger.Error(err, "Error polling fluent-receiver for logs")
+			clolog.Error(err, "Error polling fluent-receiver for logs")
 			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
 		if err != nil {
-			logger.V(3).Info("Error parsing output: ", "output", output)
+			clolog.V(3).Info("Error parsing output: ", "output", output)
 			return false, nil
 		}
 		return value > 0, nil
@@ -146,13 +145,12 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	if len(pods.Items) == 0 {
 		return "", errors.New("No pods found for fluent receiver")
 	}
-	logger := clolog.NewLogger("e2e-fluentd-testing")
-	logger.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
+	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf("cat %s | awk -F '\t' '{print $3}'| head -n 1", file)
 	result := ""
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		if result, err = fluent.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
-			logger.Error(err, "Failed to fetch logs from fluent-receiver ")
+			clolog.Error(err, "Failed to fetch logs from fluent-receiver ")
 			return false, nil
 		}
 		return true, nil

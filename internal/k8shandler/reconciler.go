@@ -8,7 +8,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/status"
@@ -23,9 +23,7 @@ import (
 )
 
 func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client, reader client.Reader, r record.EventRecorder) (err error) {
-	logger := log.NewLogger("cluster-logging-operator")
 	clusterLoggingRequest := ClusterLoggingRequest{
-		Log:           logger.WithName("k8sHandler"),
 		Client:        requestClient,
 		Reader:        reader,
 		Cluster:       requestCluster,
@@ -42,7 +40,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	telemetry.Data.CLInfo.Set("managedStatus", constants.ManagedStatus)
 	updateCLInfo := UpdateInfofromCL(&clusterLoggingRequest)
 	if updateCLInfo != nil {
-		clusterLoggingRequest.Log.V(1).Info("Error in updating CL Info for CL specific metrics", "updateCLInfo", updateCLInfo)
+		log.V(1).Info("Error in updating CL Info for CL specific metrics", "updateCLInfo", updateCLInfo)
 	}
 
 	forwarder := clusterLoggingRequest.getLogForwarder()
@@ -72,7 +70,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 
 	// Remove Curator
 	if err := clusterLoggingRequest.removeCurator(); err != nil {
-		clusterLoggingRequest.Log.V(0).Error(err, "Error removing curator component")
+		log.V(0).Error(err, "Error removing curator component")
 	}
 	clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(status.Condition{
 		Type:    "CuratorRemoved",
@@ -93,7 +91,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
-		clusterLoggingRequest.Log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)
+		log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)
 	}
 
 	//if there is no early exit from reconciler then new CL spec is applied successfully hence healthStatus is set to true or 1
@@ -104,20 +102,18 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 }
 
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
-	clusterRequest.Log.V(0).Info("Removing managed store components...")
+	log.V(0).Info("Removing managed store components...")
 	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		if err := remove(); err != nil {
-			clusterRequest.Log.V(0).Error(err, "Error removing component")
+			log.V(0).Error(err, "Error removing component")
 		}
 	}
 }
 
 func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client) (err error) {
-	logger := log.NewLogger("cluster-logging-operator")
 	clusterLoggingRequest := ClusterLoggingRequest{
-		Log:    logger.WithName("k8sHandler"),
 		Client: requestClient,
 	}
 	if forwarder != nil {
@@ -145,7 +141,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLFMetricsNoErr()
-		clusterLoggingRequest.Log.Error(err, msg)
+		log.Error(err, msg)
 		return errors.New(msg)
 	}
 
@@ -154,7 +150,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
 	updateCLFInfo := UpdateInfofromCLF(&clusterLoggingRequest)
 	if updateCLFInfo != nil {
-		clusterLoggingRequest.Log.V(1).Info("Error in updating CLF Info for CLF specific metrics", "updateCLFInfo", updateCLFInfo)
+		log.V(1).Info("Error in updating CLF Info for CLF specific metrics", "updateCLFInfo", updateCLFInfo)
 	}
 	telemetry.UpdateCLFMetricsNoErr()
 	///////
@@ -164,9 +160,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 
 func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.Client) (err error) {
 
-	logger := log.NewLogger("cluster-logging-operator")
 	clusterLoggingRequest := ClusterLoggingRequest{
-		Log:    logger.WithName("k8sHandler"),
 		Client: requestClient,
 	}
 
@@ -201,9 +195,7 @@ func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.C
 
 func ReconcileForTrustedCABundle(requestName string, requestClient client.Client) (err error) {
 
-	logger := log.NewLogger("cluster-logging-operator")
 	clusterLoggingRequest := ClusterLoggingRequest{
-		Log:    logger.WithName("k8sHandler"),
 		Client: requestClient,
 	}
 
@@ -235,7 +227,7 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.Cluste
 
 	if err := clusterRequest.Client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
 		if !apierrors.IsNotFound(err) {
-			clusterRequest.Log.Error(err, "Encountered unexpected error getting", "NamespacedName", clusterLoggingNamespacedName)
+			log.Error(err, "Encountered unexpected error getting", "NamespacedName", clusterLoggingNamespacedName)
 		}
 		return nil
 	}
@@ -248,7 +240,7 @@ func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterL
 	forwarder := &logging.ClusterLogForwarder{}
 	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
 		if !apierrors.IsNotFound(err) {
-			clusterRequest.Log.Error(err, "Encountered unexpected error getting", "forwarder", nsname)
+			log.Error(err, "Encountered unexpected error getting", "forwarder", nsname)
 		}
 	}
 
@@ -263,7 +255,7 @@ func UpdateInfofromCL(request *ClusterLoggingRequest) (err error) {
 
 	//default LogStore is set to be internal elasticsearch cluster running within OCP
 	if clspec.LogStore != nil {
-		request.Log.V(1).Info("LogStore Type", "clspecLogStoreType", clspec.LogStore.Type)
+		log.V(1).Info("LogStore Type", "clspecLogStoreType", clspec.LogStore.Type)
 		if clspec.LogStore.Type == "elasticsearch" {
 			telemetry.Data.CLLogStoreType.Set("elasticsearch", constants.IsPresent)
 		} else {
@@ -287,31 +279,31 @@ func UpdateInfofromCLF(request *ClusterLoggingRequest) (err error) {
 	//CLO CLF pipelines and set of output specs
 	lgpipeline := request.ForwarderSpec.Pipelines
 	outputs := request.ForwarderSpec.OutputMap()
-	request.Log.V(1).Info("OutputMap", "outputs", outputs)
+	log.V(1).Info("OutputMap", "outputs", outputs)
 
 	for _, pipeline := range lgpipeline {
 		npipelines++
-		request.Log.V(1).Info("pipelines", "npipelines", npipelines)
+		log.V(1).Info("pipelines", "npipelines", npipelines)
 		inref := pipeline.InputRefs
 		outref := pipeline.OutputRefs
 
 		for labelname := range telemetry.Data.CLFInputType.M {
-			request.Log.V(1).Info("iter over labelnames", "labelname", labelname)
+			log.V(1).Info("iter over labelnames", "labelname", labelname)
 			telemetry.Data.CLFInputType.Set(labelname, constants.IsNotPresent) //reset to zero
 			for _, inputtype := range inref {
-				request.Log.V(1).Info("iter over inputtype", "inputtype", inputtype)
+				log.V(1).Info("iter over inputtype", "inputtype", inputtype)
 				if inputtype == labelname {
-					request.Log.V(1).Info("labelname and inputtype", "labelname", labelname, "inputtype", inputtype) //when matched print matched labelname with input type stated in CLF spec
-					telemetry.Data.CLFInputType.Set(labelname, constants.IsPresent)                                  //input type present in CLF spec
+					log.V(1).Info("labelname and inputtype", "labelname", labelname, "inputtype", inputtype) //when matched print matched labelname with input type stated in CLF spec
+					telemetry.Data.CLFInputType.Set(labelname, constants.IsPresent)                          //input type present in CLF spec
 				}
 			}
 		}
 
 		for labelname := range telemetry.Data.CLFOutputType.M {
-			request.Log.V(1).Info("iter over labelnames", "labelname", labelname)
+			log.V(1).Info("iter over labelnames", "labelname", labelname)
 			telemetry.Data.CLFOutputType.Set(labelname, constants.IsNotPresent) //reset to zero
 			for _, outputname := range outref {
-				request.Log.V(1).Info("iter over outref", "outputname", outputname)
+				log.V(1).Info("iter over outref", "outputname", outputname)
 				if outputname == "default" {
 					telemetry.Data.CLFOutputType.Set("default", constants.IsPresent)
 					continue
@@ -320,13 +312,13 @@ func UpdateInfofromCLF(request *ClusterLoggingRequest) (err error) {
 				if found {
 					outputtype := output.Type
 					if outputtype == labelname {
-						request.Log.V(1).Info("labelname and outputtype", "labelname", labelname, "outputtype", outputtype)
+						log.V(1).Info("labelname and outputtype", "labelname", labelname, "outputtype", outputtype)
 						telemetry.Data.CLFOutputType.Set(labelname, constants.IsPresent) //when matched print matched labelname with output type stated in CLF spec
 					}
 				}
 			}
 		}
-		request.Log.V(1).Info("post updating inputtype and outputtype")
+		log.V(1).Info("post updating inputtype and outputtype")
 		telemetry.Data.CLFInfo.Set("pipelineInfo", strconv.Itoa(npipelines))
 	}
 	return nil

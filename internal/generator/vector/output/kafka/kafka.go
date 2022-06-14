@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -162,7 +162,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		}
 		if security.HasKeys(secret, constants.TLSInsecure) {
 			conf = append(conf, TLSInsecure(true))
-			log.NewLogger("").Info("Insecure TLS selected for output %q", o.Name)
+			log.Info("Insecure TLS selected for output %q", o.Name)
 		}
 	}
 	conf = append(conf, TLS(true))

@@ -7,7 +7,7 @@ import (
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -26,8 +26,6 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName strin
 }
 
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string) (result string, err error) {
-
-	logger := log.NewLogger("elasticsearch")
 	buffer := []string{}
 	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
 		cmd := `curl -X GET "localhost:9200/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
@@ -56,21 +54,21 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 						if err == nil {
 							buffer = append(buffer, string(jsonHit))
 						} else {
-							logger.V(4).Info("Marshall failed", "err", err)
+							log.V(4).Info("Marshall failed", "err", err)
 						}
 					}
 					return true, nil
 				}
 			} else {
-				logger.V(4).Info("Unmarshall failed", "err", err)
+				log.V(4).Info("Unmarshall failed", "err", err)
 			}
 		}
-		logger.V(4).Info("Polling from ElasticSearch", "err", err, "result", result)
+		log.V(4).Info("Polling from ElasticSearch", "err", err, "result", result)
 		return false, nil
 	})
 	if err == nil {
 		result = fmt.Sprintf("[%s]", strings.Join(buffer, ","))
 	}
-	logger.V(4).Info("Returning", "logs", result)
+	log.V(4).Info("Returning", "logs", result)
 	return result, err
 }

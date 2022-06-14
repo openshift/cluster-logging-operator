@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -95,7 +95,7 @@ func (c *Client) waitFor(o runtime.Object, condition Condition, w watch.Interfac
 			if !ok {
 				return fmt.Errorf("%w: %v: %v", ErrWatchClosed, msg, runtime.ID(o))
 			}
-			log.NewLogger("test-watch").V(3).Info("event: "+msg,
+			log.V(3).Info("event: "+msg,
 				"object", runtime.ID(e.Object),
 				"type", e.Type,
 				"elapsed", time.Since(start).String(),

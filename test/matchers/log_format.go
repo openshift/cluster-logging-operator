@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/onsi/gomega/types"
 	"github.com/openshift/cluster-logging-operator/test"
 	testtypes "github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -101,58 +101,56 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 	templateValueString := fmt.Sprintf("%v", templateValue)
 	valueString := fmt.Sprintf("%v", value)
 
-	logger := log.NewLogger("matchers-testing")
-
 	if reflect.TypeOf(templateValue).Name() == "OptionalInt" {
 		expValue := templateValue.(testtypes.OptionalInt)
 		actValue := value.(testtypes.OptionalInt)
-		logger.V(3).Info("CompareLogLogic: OptionalInt for", "name", name, "value", valueString, "exp", expValue, "act", actValue)
+		log.V(3).Info("CompareLogLogic: OptionalInt for", "name", name, "value", valueString, "exp", expValue, "act", actValue)
 		return expValue.IsSatisfiedBy(actValue)
 	}
 	if templateValueString == valueString { // Same value is ok
-		logger.V(3).Info("CompareLogLogic: Same value for", "name", name, "value", valueString)
+		log.V(3).Info("CompareLogLogic: Same value for", "name", name, "value", valueString)
 		return true
 	}
 	if templateValueString == "**optional**" {
-		logger.V(3).Info("CompareLogLogic: Optional value for **optional** ", "fieldname", name, "value", value)
+		log.V(3).Info("CompareLogLogic: Optional value for **optional** ", "fieldname", name, "value", value)
 		return true
 	}
 	if templateValueString == "*" && valueString != "" { // Any value, not Nil is ok if template value is "*"
-		logger.V(3).Info("CompareLogLogic: Any value for * ", "fieldname", name, "value", value)
+		log.V(3).Info("CompareLogLogic: Any value for * ", "fieldname", name, "value", value)
 		return true
 	}
 	if templateValueString == "[*]" && valueString != "" { // Any array
-		logger.V(3).Info("CompareLogLogic: Any value for array[*] ", "fieldname", name, "value", value)
+		log.V(3).Info("CompareLogLogic: Any value for array[*] ", "fieldname", name, "value", value)
 		return true
 	}
 
 	if templateValueString == "map[*:*]" && valueString != "" { // Any map
-		logger.V(3).Info("CompareLogLogic: Any value for map[*] ", "fieldname", name, "value", value)
+		log.V(3).Info("CompareLogLogic: Any value for map[*] ", "fieldname", name, "value", value)
 		return true
 	}
 	if templateValueString == "[]" && valueString != "[]" { // Any value, not Nil is ok if template value is an array "[*]"
-		logger.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
+		log.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
 		return true
 	}
 	if templateValueString == "0" && valueString != "" { // Any value, not Nil is ok if template value is an array "[*]"
-		logger.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
+		log.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
 		return true
 	}
 
 	if templateValueString == "0001-01-01 00:00:00 +0000 UTC" && valueString != "" { // Any time value not Nil is ok if template value is empty time
-		logger.V(3).Info("CompareLogLogic: Any value for 'empty time' ", "name", name, "value", valueString)
+		log.V(3).Info("CompareLogLogic: Any value for 'empty time' ", "name", name, "value", valueString)
 		return true
 	}
 
 	if strings.HasPrefix(templateValueString, "regex:") { // Using regex if starts with "/"
 		match, _ := regexp.MatchString(templateValueString[6:], valueString)
 		if match {
-			logger.V(3).Info("CompareLogLogic: Fit regex ", "fieldname", name, "value", value)
+			log.V(3).Info("CompareLogLogic: Fit regex ", "fieldname", name, "value", value)
 			return true
 		}
 	}
 
-	logger.V(3).Info("CompareLogLogic: Mismatch !!!", "fieldname", name, "templateValue", templateValueString, "value", valueString)
+	log.V(3).Info("CompareLogLogic: Mismatch !!!", "fieldname", name, "templateValue", templateValueString, "value", valueString)
 	return false
 }
 
@@ -165,8 +163,7 @@ func CompareLog(template interface{}, actual interface{}) (string, bool, error) 
 	// test.MustUnmarshal(templateString, allLog)
 	// logger.V(3).Info("Unmarshled", "template", template)
 	templateFieldValues, templateFieldNames := DeepFields(template, "")
-	logger := log.NewLogger("matchers-testing")
-	logger.V(3).Info("Template", "names", templateFieldNames)
+	log.V(3).Info("Template", "names", templateFieldNames)
 	for i := range templateFieldNames {
 		templateFieldValue := templateFieldValues[i].Interface()
 		templateFieldName := templateFieldNames[i]
@@ -176,10 +173,10 @@ func CompareLog(template interface{}, actual interface{}) (string, bool, error) 
 			logFieldName := logFieldNames[j]
 			if templateFieldName == logFieldName {
 				foundMatchFields = true
-				logger.V(3).Info("CompareLog: comparing", "name", templateFieldName)
+				log.V(3).Info("CompareLog: comparing", "name", templateFieldName)
 				if !isNil(templateFieldValue) { // Are we interested this field?
 					if templateFieldValues[j].Kind() == reflect.Ptr { // Skip skeleton structure fields
-						logger.V(3).Info("CompareLog: skipping skeleton", "name", templateFieldName)
+						log.V(3).Info("CompareLog: skipping skeleton", "name", templateFieldName)
 						break
 					}
 
@@ -188,13 +185,13 @@ func CompareLog(template interface{}, actual interface{}) (string, bool, error) 
 					}
 					return templateFieldName, false, nil
 				} else {
-					logger.V(3).Info("CompareLog: skipping not interesting field", "name", templateFieldName)
+					log.V(3).Info("CompareLog: skipping not interesting field", "name", templateFieldName)
 					break // If this is not an interesting field
 				}
 			}
 		}
 		if !foundMatchFields {
-			logger.V(3).Info("CompareLog: skipping field, not found in log", "name", templateFieldName)
+			log.V(3).Info("CompareLog: skipping field, not found in log", "name", templateFieldName)
 		}
 	}
 

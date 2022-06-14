@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clolog "github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
@@ -22,8 +22,7 @@ const (
 )
 
 func NewClusterLogging(componentTypes ...LogComponentType) *cl.ClusterLogging {
-	logger := clolog.NewLogger("helpers-testing")
-	logger.Info("NewClusterLogging ", "componentTypes", componentTypes)
+	log.Info("NewClusterLogging ", "componentTypes", componentTypes)
 	instance := &cl.ClusterLogging{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterLogging",

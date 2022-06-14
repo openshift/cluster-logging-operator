@@ -7,7 +7,7 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -16,8 +16,7 @@ import (
 
 var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 	_, filename, _, _ := runtime.Caller(0)
-	logger := log.NewLogger("input-selector-testing")
-	logger.Info("Running ", "filename", filename)
+	log.Info("Running ", "filename", filename)
 
 	const (
 		otherFluentForward = "altFluentForward"
@@ -79,7 +78,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 
 				// verify only appLabels1 logs appear in Application logs
 				for _, msg := range logs {
-					logger.V(3).Info("Print", "msg", msg)
+					log.V(3).Info("Print", "msg", msg)
 					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
 					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env1"))
 				}
@@ -89,7 +88,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 				Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", otherFluentForward)
 				// verify only appLabels2 logs appear in Application logs
 				for _, msg := range logs {
-					logger.V(3).Info("Print", "msg", msg)
+					log.V(3).Info("Print", "msg", msg)
 					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
 					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("fallback", "env2"))
 				}
@@ -129,7 +128,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 
 				// verify only appLabels1 logs appear in Application logs
 				for _, msg := range logs {
-					logger.V(3).Info("Print", "msg", msg)
+					log.V(3).Info("Print", "msg", msg)
 					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
 					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env1"))
 					Expect(msg.Message).To(Not(ContainSubstring("Here is my message")), "Found an unexpected long entry")

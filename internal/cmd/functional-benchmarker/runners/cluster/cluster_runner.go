@@ -6,8 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ViaQ/logerr/v2/log"
-	"github.com/go-logr/logr"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
@@ -24,14 +23,12 @@ const (
 )
 
 type ClusterRunner struct {
-	log       logr.Logger
 	framework *functional.CollectorFunctionalFramework
 	config.Options
 }
 
 func New(options config.Options) *ClusterRunner {
 	return &ClusterRunner{
-		log:     log.NewLogger("test-functional"),
 		Options: options,
 	}
 }
@@ -89,7 +86,7 @@ func (r *ClusterRunner) Deploy() {
 		},
 	})
 	if err != nil {
-		r.log.Error(err, "Error deploying test pod", "pod", r.framework.Pod)
+		log.Error(err, "Error deploying test pod", "pod", r.framework.Pod)
 		os.Exit(1)
 	}
 
@@ -107,11 +104,11 @@ func (r *ClusterRunner) Cleanup() {
 
 func (r *ClusterRunner) SampleCollector() *stats.Sample {
 	if result, err := oc.AdmTop(r.framework.Namespace, r.framework.Name).NoHeaders().ForContainers().Run(); err == nil {
-		r.log.V(3).Info("Sample collector", "result", result)
+		log.V(3).Info("Sample collector", "result", result)
 		if !strings.Contains(result, "Error from server") {
 			for _, line := range strings.Split(result, "\n") {
 				fields := strings.Fields(line)
-				r.log.V(3).Info("Container metric", "fields", fields)
+				log.V(3).Info("Container metric", "fields", fields)
 				if len(fields) == 4 && fields[1] == constants.CollectorName {
 					return &stats.Sample{
 						Time:        time.Now().Unix(),
@@ -123,7 +120,7 @@ func (r *ClusterRunner) SampleCollector() *stats.Sample {
 		}
 
 	} else {
-		r.log.V(3).Error(err, "Unable to sample collector metrics", "result", result)
+		log.V(3).Error(err, "Unable to sample collector metrics", "result", result)
 	}
 	return nil
 }

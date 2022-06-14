@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ViaQ/logerr/v2/log"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +32,6 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		Log:    log.NewLogger(""),
 		Client: fake.NewFakeClient(), //nolint
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
@@ -99,7 +97,6 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		Log:    log.NewLogger(""),
 		Client: fake.NewFakeClient(), //nolint
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
@@ -175,7 +172,6 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		Log:    log.NewLogger(""),
 		Client: fake.NewFakeClient(), //nolint
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{
@@ -243,7 +239,6 @@ This is a private key.
 		})
 
 	clusterLoggingRequest := &ClusterLoggingRequest{
-		Log:    log.NewLogger(""),
 		Client: fake.NewFakeClient(), //nolint
 		Cluster: &logging.ClusterLogging{
 			ObjectMeta: v1.ObjectMeta{

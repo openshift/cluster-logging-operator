@@ -6,8 +6,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/ViaQ/logerr/v2/log"
-	"github.com/go-logr/logr"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
@@ -32,9 +31,7 @@ func Add(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 
-	logger := log.NewLogger("cluster-logging-operator")
 	return &ReconcileClusterLogging{
-		Log:      logger.WithName("clusterlogging-controller"),
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
@@ -72,7 +69,6 @@ type ReconcileClusterLogging struct {
 	Reader   client.Reader
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
-	Log      logr.Logger
 }
 
 var (
@@ -85,7 +81,7 @@ var (
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
-	r.Log.V(3).Info("Clusterlogging reconcile request.", "name", request.Name)
+	log.V(3).Info("Clusterlogging reconcile request.", "name", request.Name)
 
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
@@ -111,7 +107,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request reconci
 	if err = k8shandler.Reconcile(instance, r.Client, r.Reader, r.Recorder); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
-		r.Log.Error(err, "Error reconciling clusterlogging instance")
+		log.Error(err, "Error reconciling clusterlogging instance")
 	}
 
 	if result, err := r.updateStatus(instance); err != nil {
@@ -125,7 +121,7 @@ func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLoggin
 	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
-		r.Log.Error(err, "clusterlogging-controller error updating status")
+		log.Error(err, "clusterlogging-controller error updating status")
 		return reconcileResult, err
 	}
 

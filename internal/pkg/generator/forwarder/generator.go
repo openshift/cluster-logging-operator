@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -33,14 +33,12 @@ func UnMarshalClusterLogForwarder(clfYaml string) (forwarder *logging.ClusterLog
 }
 
 func Generate(collectionType logging.LogCollectionType, clfYaml string, includeDefaultLogStore, debugOutput bool, client *client.Client) (string, error) {
-
-	logger := log.NewLogger("k8sHandler")
 	var err error
 	forwarder, err := UnMarshalClusterLogForwarder(clfYaml)
 	if err != nil {
 		return "", fmt.Errorf("Error Unmarshalling %q: %v", clfYaml, err)
 	}
-	logger.V(2).Info("Unmarshalled", "forwarder", forwarder)
+	log.V(2).Info("Unmarshalled", "forwarder", forwarder)
 
 	clRequest := &k8shandler.ClusterLoggingRequest{
 		ForwarderSpec: forwarder.Spec,
@@ -54,7 +52,6 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 
 	if client != nil {
 		clRequest.Client = *client
-		clRequest.Log = log.NewLogger("k8sHandler")
 	}
 
 	if includeDefaultLogStore {
@@ -64,8 +61,8 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	}
 
 	spec, status := clRequest.NormalizeForwarder()
-	logger.V(2).Info("Normalization", "spec", spec)
-	logger.V(2).Info("Normalization", "status", status)
+	log.V(2).Info("Normalization", "spec", spec)
+	log.V(2).Info("Normalization", "status", status)
 
 	tunings := &logging.ForwarderSpec{}
 	clspec := logging.ClusterLoggingSpec{

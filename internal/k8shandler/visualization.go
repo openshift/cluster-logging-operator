@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -25,7 +26,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err 
 	}
 
 	if err = clusterRequest.removeKibanaIfOwnedByCLO(); err != nil {
-		clusterRequest.Log.Error(err, "Can't fully clean up old version version for Kibana")
+		log.Error(err, "Can't fully clean up old version version for Kibana")
 		return
 	}
 
@@ -50,7 +51,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaIfOwnedByCLO() (err err
 	if utils.IsOwnedBy(secret.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
 		err = clusterRequest.RemoveSecret(constants.KibanaProxyName)
 		if err != nil {
-			clusterRequest.Log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.KibanaProxyName))
+			log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.KibanaProxyName))
 			return err
 		}
 	}
@@ -62,22 +63,22 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaIfOwnedByCLO() (err err
 	if utils.IsOwnedBy(secret.GetOwnerReferences(), utils.AsOwner(clusterRequest.Cluster)) {
 		err = clusterRequest.RemoveSecret(constants.KibanaName)
 		if err != nil && !errors.IsNotFound(err) {
-			clusterRequest.Log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.KibanaName))
+			log.Error(err, fmt.Sprintf("Can't remove %s secret", constants.KibanaName))
 			return err
 		}
 		err = clusterRequest.RemoveDeployment(constants.KibanaName)
 		if err != nil && !errors.IsNotFound(err) {
-			clusterRequest.Log.Error(err, fmt.Sprintf("Can't remove %s deployment", constants.KibanaName))
+			log.Error(err, fmt.Sprintf("Can't remove %s deployment", constants.KibanaName))
 			return err
 		}
 		err = clusterRequest.RemoveService(constants.KibanaName)
 		if err != nil && !errors.IsNotFound(err) {
-			clusterRequest.Log.Error(err, fmt.Sprintf("Can't remove %s service", constants.KibanaName))
+			log.Error(err, fmt.Sprintf("Can't remove %s service", constants.KibanaName))
 			return err
 		}
 		err = clusterRequest.RemoveRoute(constants.KibanaName)
 		if err != nil && !errors.IsNotFound(err) {
-			clusterRequest.Log.Error(err, fmt.Sprintf("Can't remove %s route", constants.KibanaName))
+			log.Error(err, fmt.Sprintf("Can't remove %s route", constants.KibanaName))
 			return err
 		}
 	}
@@ -87,7 +88,7 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaIfOwnedByCLO() (err err
 func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 	kibanaStatus, err := clusterRequest.getKibanaStatus()
 	if err != nil {
-		clusterRequest.Log.Error(err, "Failed to get Kibana status for", "clusterName", clusterRequest.Cluster.Name)
+		log.Error(err, "Failed to get Kibana status for", "clusterName", clusterRequest.Cluster.Name)
 		return
 	}
 

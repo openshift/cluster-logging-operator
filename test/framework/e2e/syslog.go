@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	clolog "github.com/ViaQ/logerr/v2/log"
+	clolog "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
@@ -101,16 +101,15 @@ func (syslog *syslogReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	}
 	podName := pods.Items[0].Name
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
-	logger := clolog.NewLogger("e2e-syslog-testing")
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (done bool, err error) {
 		output, err := syslog.tc.PodExec(constants.OpenshiftNS, podName, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			logger.Error(err, "failed to fetch logs from syslog-receiver")
+			clolog.Error(err, "failed to fetch logs from syslog-receiver")
 			return false, nil
 		}
 		value, err := strconv.Atoi(strings.TrimSpace(output))
 		if err != nil {
-			logger.V(2).Error(err, "Error parsing output", "output", output)
+			clolog.V(2).Error(err, "Error parsing output", "output", output)
 			return false, nil
 		}
 		return value > 0, nil
@@ -133,16 +132,15 @@ func (syslog *syslogReceiverLogStore) grepLogs(expr string, logfile string, time
 	if len(pods.Items) == 0 {
 		return NotFound, errors.New("No pods found for syslog receiver")
 	}
-	logger := clolog.NewLogger("e2e-syslog-testing")
-	logger.V(3).Info("Pod", "PodName", pods.Items[0].Name)
+	clolog.V(3).Info("Pod", "PodName", pods.Items[0].Name)
 	cmd := fmt.Sprintf(expr, logfile)
-	logger.V(3).Info("running expression", "expression", cmd)
+	clolog.V(3).Info("running expression", "expression", cmd)
 	var value string
 
 	err = wait.Poll(defaultRetryInterval, timeToWait, func() (bool, error) {
 		output, err := syslog.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "syslog-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
-			logger.Error(err, "failed to fetch logs from syslog-receiver")
+			clolog.Error(err, "failed to fetch logs from syslog-receiver")
 			return false, nil
 		}
 		value = strings.TrimSpace(output)
@@ -447,8 +445,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 
 func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, secretName string) (*corev1.Secret, error) {
 	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000)) //nolint:gosec
-	logger := clolog.NewLogger("e2e-syslog-testing")
-	logger.V(3).Info("Generating Pipeline certificates for", "rsyslog-receiver", workingDir)
+	clolog.V(3).Info("Generating Pipeline certificates for", "rsyslog-receiver", workingDir)
 	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
 		if err = os.MkdirAll(workingDir, 0766); err != nil {
 			return nil, err
@@ -458,15 +455,15 @@ func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, s
 		return nil, err
 	}
 	script := fmt.Sprintf("%s/syslog_cert_generation.sh", testDir)
-	logger.Info("Running script '%s %s %s %s'", "script", script, "workingdir", workingDir, "namespace", constants.OpenshiftNS, "logStore", logStoreName)
+	clolog.Info("Running script '%s %s %s %s'", "script", script, "workingdir", workingDir, "namespace", constants.OpenshiftNS, "logStore", logStoreName)
 	cmd := exec.Command(script, workingDir, constants.OpenshiftNS, logStoreName)
 	result, err := cmd.Output()
 
-	if logger.V(3).Enabled() {
-		logger.V(3).Info("cert_generation :", "output", string(result))
+	if clolog.V(3).Enabled() {
+		clolog.V(3).Info("cert_generation :", "output", string(result))
 	}
 	if err != nil {
-		logger.V(3).Error(err, "Error:")
+		clolog.V(3).Error(err, "Error:")
 	}
 
 	data := map[string][]byte{
@@ -482,7 +479,7 @@ func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, s
 		constants.OpenshiftNS,
 		data,
 	)
-	logger.V(3).Info("Creating secret for logStore", "secret", secret.Name, "logStore", logStoreName)
+	clolog.V(3).Info("Creating secret for logStore", "secret", secret.Name, "logStore", logStoreName)
 	if secret, err = tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), secret, sOpts); err != nil {
 		return nil, err
 	}

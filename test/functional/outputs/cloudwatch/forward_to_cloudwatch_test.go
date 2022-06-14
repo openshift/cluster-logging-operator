@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	. "github.com/onsi/ginkgo"
@@ -39,9 +39,8 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 	var (
 		framework               *functional.CollectorFunctionalFramework
-		logger                  = log.NewLogger("forward-to-cloudwatch-testing")
 		addMotoContainerVisitor = func(b *runtime.PodBuilder) error {
-			logger.V(2).Info("Adding AWS CloudWatch Logs mock container")
+			log.V(2).Info("Adding AWS CloudWatch Logs mock container")
 			b.AddContainer(logging.OutputTypeCloudwatch, cloudwatchMotoImage).
 				WithCmdArgs([]string{"-s"}).
 				End()
@@ -49,7 +48,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		}
 
 		mountCloudwatchSecretVisitor = func(b *runtime.PodBuilder) error {
-			logger.V(2).Info("Mounting cloudwatch secret to the collector container")
+			log.V(2).Info("Mounting cloudwatch secret to the collector container")
 			b.AddSecretVolume("cloudwatch", "cloudwatch").
 				GetContainer(constants.CollectorName).
 				AddVolumeMount("cloudwatch", "/var/run/ocp-collector/secrets/cloudwatch", "", true)
@@ -64,7 +63,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 
-		logger.V(2).Info("Creating service moto-server")
+		log.V(2).Info("Creating service moto-server")
 		service = runtime.NewService(framework.Namespace, "moto-server")
 		runtime.NewServiceBuilder(service).
 			AddServicePort(5000, 5000).
@@ -73,7 +72,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			panic(err)
 		}
 
-		logger.V(2).Info("Creating route moto-server")
+		log.V(2).Info("Creating route moto-server")
 		route = runtime.NewRoute(framework.Namespace, "moto-server", "moto-server", "5000")
 		route.Spec.TLS = &openshiftv1.TLSConfig{
 			Termination:                   openshiftv1.TLSTerminationPassthrough,
@@ -108,7 +107,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				}),
 			})
 
-		logger.V(2).Info("Creating secret cloudwatch with AWS example credentials")
+		log.V(2).Info("Creating secret cloudwatch with AWS example credentials")
 		secret := runtime.NewSecret(framework.Namespace, "cloudwatch",
 			map[string][]byte{
 				"aws_access_key_id":     []byte(awsAccessKeyID),
@@ -232,7 +231,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 			// Get application logs from Cloudwatch
 			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
-			logger.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
+			log.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
 
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(logs).To(HaveLen(numLogsSent), "Expected the receiver to receive only the app log messages")
@@ -264,7 +263,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 			// Get audit logs from Cloudwatch
 			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
-			logger.V(2).Info("GetLogGroupByType", "logType", readLogType, "logs", logs, "err", err)
+			log.V(2).Info("GetLogGroupByType", "logType", readLogType, "logs", logs, "err", err)
 
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			Expect(logs).To(HaveLen(numLogsSent), "Expected to receive the correct number of audit log messages")

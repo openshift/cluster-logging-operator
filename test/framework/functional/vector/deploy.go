@@ -3,7 +3,7 @@ package vector
 import (
 	"strings"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -25,7 +25,7 @@ func (c *VectorCollector) String() string {
 }
 
 func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfYaml string) error {
-	log.NewLogger("vector-deploy-testing").V(2).Info("Creating config configmap")
+	log.V(2).Info("Creating config configmap")
 	configmap := runtime.NewConfigMap(c.NS.Name, name, map[string]string{})
 	runtime.NewConfigMapBuilder(configmap).
 		Add("vector.toml", config).

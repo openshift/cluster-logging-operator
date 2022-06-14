@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
 
-	"github.com/go-logr/logr"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
-	"github.com/ViaQ/logerr/v2/log"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/apis"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -72,19 +71,9 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.Parse()
-	logLevel, present := os.LookupEnv("LOG_LEVEL")
-	var logger logr.Logger
-	if present {
-		verbosity, err := strconv.Atoi(logLevel)
-		if err != nil {
-			log.NewLogger("cluster-logging-operator").Error(err, "LOG_LEVEL must be an integer")
-			os.Exit(1)
-		}
-		logger = log.NewLogger("cluster-logging-operator", log.WithVerbosity(verbosity))
-	} else {
-		logger = log.NewLogger("cluster-logging-operator")
-	}
-	logger.Info("starting up...",
+
+	utils.InitLogger("cluster-logging-operator")
+	log.Info("starting up...",
 		"operator_version", version.Version,
 		"go_version", runtime.Version(),
 		"go_os", runtime.GOOS,
@@ -93,7 +82,7 @@ func main() {
 
 	namespace, err := getWatchNamespace()
 	if err != nil {
-		logger.Error(err, "Failed to get watch namespace")
+		log.Error(err, "Failed to get watch namespace")
 		os.Exit(1)
 	}
 
@@ -111,13 +100,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger.Info("Registering Components.")
+	log.Info("Registering Components.")
 
 	if err = (&clusterlogging.ReconcileClusterLogging{
-		Log:    logger,
-		Client: mgr.GetClient(),
-		Reader: mgr.GetAPIReader(),
-		//Log:    ctrl.Log.WithName("controllers").WithName("ClusterLogForwarder"),
+		Client:   mgr.GetClient(),
+		Reader:   mgr.GetAPIReader(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
 	}).SetupWithManager(mgr); err != nil {
@@ -126,9 +113,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
-		Log:    logger,
-		Client: mgr.GetClient(),
-		//Log:    ctrl.Log.WithName("controllers").WithName("ClusterLogging"),
+		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
 	}).SetupWithManager(mgr); err != nil {
@@ -151,19 +136,19 @@ func main() {
 	cloversion, err := getCLOVersion()
 	if err != nil {
 		cloversion = version.Version
-		logger.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
+		log.Info("Failed to get clo version from env variable OPERATOR_CONDITION_NAME so falling back to default version")
 	}
 	telemetry.Data.CLInfo.M["version"] = cloversion
 
 	errr := telemetry.RegisterMetrics()
 	if errr != nil {
-		logger.Error(err, "Error in registering clo metrics for telemetry")
+		log.Error(err, "Error in registering clo metrics for telemetry")
 	}
 
-	logger.Info("Starting the Cmd.")
+	log.Info("Starting the Cmd.")
 	// Start the Cmd
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-		logger.Error(err, "Manager exited non-zero")
+		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
 

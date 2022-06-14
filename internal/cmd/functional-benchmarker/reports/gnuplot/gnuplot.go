@@ -12,6 +12,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/config"
 	"github.com/openshift/cluster-logging-operator/internal/cmd/functional-benchmarker/stats"
 )

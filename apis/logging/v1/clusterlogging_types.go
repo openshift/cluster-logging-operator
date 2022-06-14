@@ -156,6 +156,10 @@ type RetentionPolicySpec struct {
 	// The per namespace specification to delete documents older than a given minimum age
 	// +optional
 	Namespaces []elasticsearch.IndexManagementDeleteNamespaceSpec `json:"namespaceSpec,omitempty"`
+
+	// The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+	// +optional
+	DiskThresholdPercent int64 `json:"diskThresholdPercent,omitempty"`
 }
 
 type ElasticsearchSpec struct {

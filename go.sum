@@ -635,8 +635,8 @@ github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/openshift/api v0.0.0-20220124143425-d74727069f6f h1:iOTv1WudhVm2UsoST+L+ZrA5A9w57h9vmQsdlBuqG6g=
 github.com/openshift/api v0.0.0-20220124143425-d74727069f6f/go.mod h1:F/eU6jgr6Q2VhMu1mSpMmygxAELd7+BUxs3NHZ25jV4=
 github.com/openshift/build-machinery-go v0.0.0-20211213093930-7e33a7eb4ce3/go.mod h1:b1BuldmJlbA/xYtdZvKi+7j5YGB44qJUJDZ9zwiNCfE=
-github.com/openshift/elasticsearch-operator v0.0.0-20220510141603-65a736a07be1 h1:5D7cx5+82tv2jg/oaABIHMRbmP9Bf8j6MstDCUOQ4sk=
-github.com/openshift/elasticsearch-operator v0.0.0-20220510141603-65a736a07be1/go.mod h1:6dxhWPY3Wr/0b0eGrFpV7gcyeS+ne48Mo9OQ9dxrLNI=
+github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298 h1:/CbENmI9HuJHd8N/h3eaUkqhHoQjj1BdwIGOF+X3wnM=
+github.com/openshift/elasticsearch-operator v0.0.0-20220613183908-e1648e67c298/go.mod h1:6dxhWPY3Wr/0b0eGrFpV7gcyeS+ne48Mo9OQ9dxrLNI=
 github.com/openshift/prom-label-proxy v0.1.1-0.20191016113035-b8153a7f39f1/go.mod h1:p5MuxzsYP1JPsNGwtjtcgRHHlGziCJJfztff91nNixw=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
 github.com/opentracing/basictracer-go v1.0.0/go.mod h1:QfBfYuafItcjQuMwinw9GhYKwFXS9KnPs5lxoYwgW74=

@@ -497,6 +497,12 @@ spec:
                       application:
                         nullable: true
                         properties:
+                          diskThresholdPercent:
+                            description: The threshold percentage of ES disk usage
+                              that when reached, old indices should be deleted (e.g.
+                              75)
+                            format: int64
+                            type: integer
                           maxAge:
                             description: TimeUnit is a time unit like h,m,d
                             pattern: ^([0-9]+)([wdhHms]{0,1})$
@@ -529,6 +535,12 @@ spec:
                       audit:
                         nullable: true
                         properties:
+                          diskThresholdPercent:
+                            description: The threshold percentage of ES disk usage
+                              that when reached, old indices should be deleted (e.g.
+                              75)
+                            format: int64
+                            type: integer
                           maxAge:
                             description: TimeUnit is a time unit like h,m,d
                             pattern: ^([0-9]+)([wdhHms]{0,1})$
@@ -561,6 +573,12 @@ spec:
                       infra:
                         nullable: true
                         properties:
+                          diskThresholdPercent:
+                            description: The threshold percentage of ES disk usage
+                              that when reached, old indices should be deleted (e.g.
+                              75)
+                            format: int64
+                            type: integer
                           maxAge:
                             description: TimeUnit is a time unit like h,m,d
                             pattern: ^([0-9]+)([wdhHms]{0,1})$

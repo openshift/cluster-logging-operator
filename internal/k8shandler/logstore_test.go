@@ -824,3 +824,49 @@ func TestIndexManagementNamespacePruning(t *testing.T) {
 		t.Errorf("Expected that difference would be found due to retention policy change")
 	}
 }
+
+func TestIndexManagementDeleteByPercentage(t *testing.T) {
+	cluster := &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				RetentionPolicy: &logging.RetentionPoliciesSpec{
+					App: &logging.RetentionPolicySpec{
+						MaxAge: elasticsearch.TimeUnit("12h"),
+					},
+				},
+			},
+		},
+	}
+	cr := &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	existing := &elasticsearch.Elasticsearch{}
+	elasticsearchCR1 := cr.newElasticsearchCR("test-app-name", existing)
+	cluster = &logging.ClusterLogging{
+		Spec: logging.ClusterLoggingSpec{
+			LogStore: &logging.LogStoreSpec{
+				Type: "elasticsearch",
+				RetentionPolicy: &logging.RetentionPoliciesSpec{
+					App: &logging.RetentionPolicySpec{
+						MaxAge:               "12h",
+						DiskThresholdPercent: 75,
+					},
+				},
+			},
+		},
+	}
+	cr = &ClusterLoggingRequest{
+		Cluster: cluster,
+	}
+	elasticsearchCR2 := cr.newElasticsearchCR("test-app-name", existing)
+	diffCR, different := isElasticsearchCRDifferent(elasticsearchCR1, elasticsearchCR2)
+	if !different {
+		t.Errorf("Expected that difference would be found due to retention policy change")
+	}
+
+	if diffCR.Spec.IndexManagement.Policies[0].Name != indexmanagement.PolicyNameApp ||
+		diffCR.Spec.IndexManagement.Policies[0].Phases.Delete.DiskThresholdPercent != cluster.Spec.LogStore.RetentionPolicy.App.DiskThresholdPercent {
+		t.Errorf("Expected that difference would be found due to retention policy change")
+	}
+}

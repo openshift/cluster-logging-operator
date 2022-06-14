@@ -14,9 +14,9 @@
   - "alert": "FluentdQueueLengthIncreasing"
     "annotations":
       "message": "For the last hour, fluentd {{ $labels.instance }} output '{{ $labels.plugin_id }}' average buffer queue length has increased continuously."
-      "summary": "Fluentd unable to keep up with traffic over time for forwarding output {{ $labels.plugin_id }}."
+      "summary": "Fluentd is unable to keep up with traffic over time for forwarder output {{ $labels.plugin_id }}."
     "expr": |
-      ( 0 * (kube_pod_start_time{pod=~".*collector-.*"} < time() - 3600 ) )  + on(pod,plugin_id)  label_replace( ( deriv(fluentd_output_status_buffer_queue_length[10m]) > 0 and delta(fluentd_output_status_buffer_queue_length[1h]) > 1 ), "pod", "$1", "hostname", "(.*)")
+      ( 0 * (deriv(fluentd_output_status_emit_records[1m] offset 1h)))  + on(pod,plugin_id)  ( deriv(fluentd_output_status_buffer_queue_length[10m]) > 0 and delta(fluentd_output_status_buffer_queue_length[1h]) > 1 )
     "for": "1h"
     "labels":
       "service": "fluentd"

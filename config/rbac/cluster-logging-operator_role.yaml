@@ -1,0 +1,70 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: logging-deployer
+rules:
+- apiGroups:
+  - logging.openshift.io
+  resources:
+    - "*"
+  verbs:
+    - "*"
+- apiGroups:
+    - ""
+  resources:
+    - pods
+    - services
+    - endpoints
+    - persistentvolumeclaims
+    - events
+    - configmaps
+    - secrets
+    - serviceaccounts
+    - serviceaccounts/finalizers
+    - services/finalizers
+  verbs:
+    - "*"
+- apiGroups:
+    - apps
+  resources:
+    - deployments
+    - daemonsets
+    - replicasets
+    - statefulsets
+  verbs:
+    - "*"
+- apiGroups:
+    - route.openshift.io
+  resources:
+    - routes
+    - routes/custom-host
+  verbs:
+    - "*"
+- apiGroups:
+    - batch
+  resources:
+    - cronjobs
+  verbs:
+    - "*"
+- apiGroups:
+    - rbac.authorization.k8s.io
+  resources:
+    - roles
+    - rolebindings
+  verbs:
+    - "*"
+- apiGroups:
+    - monitoring.coreos.com
+  resources:
+    - servicemonitors
+    - prometheusrules
+  verbs:
+    - "*"
+- apiGroups:
+    - apps
+  resources:
+    - deployments/finalizers
+  resourceNames:
+    - "cluster-logging-operator"
+  verbs:
+    - "update"

@@ -1,0 +1,9 @@
+packageName: cluster-logging
+defaultChannel: "stable"
+channels:
+  - name: "stable"
+    currentCSV: clusterlogging.v5.5.0
+  - name: "stable-5.5"
+    currentCSV: clusterlogging.v5.5.0
+  - name: "5.5"
+    currentCSV: clusterlogging.v5.5.0

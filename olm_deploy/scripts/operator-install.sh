@@ -22,7 +22,7 @@ echo "##################"
 envsubst < olm_deploy/subscription/operator-group.yaml | oc apply -n ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} -f -
 
 # create the subscription
-export OPERATOR_PACKAGE_CHANNEL=\"$(grep name manifests/cluster-logging.package.yaml | grep  -oh "[0-9]\+\.[0-9]\+")\"
+export OPERATOR_PACKAGE_CHANNEL=\"$(grep -Eo 'bundle\.channel\.default\.v1:(.*)$' bundle/metadata/annotations.yaml | cut -d ':' -f2 | tr -d '[:space:]')\"
 echo "Deploying CLO from channel ${OPERATOR_PACKAGE_CHANNEL}"
 subscription=$(envsubst < olm_deploy/subscription/subscription.yaml)
 echo "Creating:"

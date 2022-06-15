@@ -6,6 +6,11 @@ md5hash(){
   md5sum $1 | cut -d ' ' -f1
 }
 
+hashDir(){
+  (find $1 -type f -print0  | sort -z | xargs -0 sha1sum;
+   find $1 \( -type f -o -type d \) -print0 | sort -z | xargs -0 stat -c '%n %a') | sha1sum
+}
+
 rc=0
 
 # check dockerfile changes
@@ -17,18 +22,14 @@ if [ "$change" != "$(md5hash Dockerfile)" ] ; then
     echo ""
 fi
 
-bundleDir="./bundle/manifests"
-manifestDir="./manifests/$(ls ./manifests/ | sort | head -1)"
-for f in $(ls $bundleDir); do
-  bundleFile="$bundleDir/$f"
-  manifestFile="$manifestDir/$f"
-  if [ "$(md5hash $bundleFile)" != "$(md5hash $manifestFile)" ] ; then
-    rc=1
-    echo "A change was found in $manifestFile that was not sourced from $bundleFile."
-    echo "Please reset $manifestFile, update bundle/metadata/annotations.yaml if necessary, run make  generate-bundle and commit the results"
-    echo ""
-  fi
-done
+bundleHash=$(hashDir ./bundle)
+make bundle
+if [ "$(hashDir ./bundle)" != "$bundleHash" ] ; then
+  echo ""
+  echo "A change was found in the ./bundle that was not generated using the config."
+  echo "Please run make bundle and commit the results"
+  echo ""
+fi
 
 set +e
 fitCheck=$(grep -nEIr --include=*_test.go 'FContext|FEntry|FDescribe|FDescribeTable|FIt')

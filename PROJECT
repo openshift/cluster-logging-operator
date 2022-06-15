@@ -5,7 +5,7 @@ multigroup: true
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
-projectName: cluster-logging-operator
+projectName: clusterlogging
 repo: github.com/openshift/cluster-logging-operator
 resources:
 - api:

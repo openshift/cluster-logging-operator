@@ -26,7 +26,8 @@ spec:
     name: v1
     schema:
       openAPIV3Schema:
-        description: ClusterLogging is the Schema for the clusterloggings API
+        description: A Red Hat OpenShift Logging instance. ClusterLogging is the Schema
+          for the clusterloggings API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

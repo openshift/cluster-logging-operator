@@ -20,8 +20,6 @@ fi
 export CLUSTER_LOGGING_OPERATOR_NAMESPACE="openshift-logging"
 NAMESPACE="${CLUSTER_LOGGING_OPERATOR_NAMESPACE}"
 repo_dir="$(dirname $0)/../.."
-manifest=${repo_dir}/manifests
-version=$(basename $(find $manifest -type d | sort -r | head -n 1))
 
 cleanup(){
   local return_code="$?"

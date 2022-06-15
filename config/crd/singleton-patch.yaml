@@ -6,4 +6,4 @@
       name:
         type: string
         enum:
-        - "instance"
+          - "instance"

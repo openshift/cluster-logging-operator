@@ -23,7 +23,7 @@ COPY ${REMOTE_SOURCE}/must-gather ./must-gather
 COPY ${REMOTE_SOURCE}/version ./version
 COPY ${REMOTE_SOURCE}/scripts ./scripts
 COPY ${REMOTE_SOURCE}/files ./files
-COPY ${REMOTE_SOURCE}/manifests ./manifests
+COPY ${REMOTE_SOURCE}/bundle/manifests ./manifests
 COPY ${REMOTE_SOURCE}/main.go .
 COPY ${REMOTE_SOURCE}/apis ./apis
 COPY ${REMOTE_SOURCE}/controllers ./controllers

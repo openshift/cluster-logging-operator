@@ -26,22 +26,18 @@ done
 
 oc -n $NAMESPACE get deployment cluster-logging-operator -o yaml > $clo_folder/deployment
 
-csv_name="$(oc -n $NAMESPACE get csv -o name | grep 'cluster-logging-operator')"
+csv_name="$(oc -n $NAMESPACE get csv -o name | grep 'clusterlogging')"
 oc -n $NAMESPACE get "${csv_name}" -o yaml > "${clo_folder}/csv"
 oc -n $NAMESPACE get clusterlogging instance -o yaml > "${clo_folder}/cr"
-oc -n $NAMESPACE get logforwarding instance -o yaml > "${clo_folder}/logforwarding_cr"
 oc -n $NAMESPACE get clusterlogforwarder instance -o yaml > "${clo_folder}/clusterlogforwarder_cr"
 
 oc -n $NAMESPACE get configmaps -o yaml > ${clo_folder}/configmaps.yaml 2>&1
 oc -n $NAMESPACE get secrets -o yaml > ${clo_folder}/secrets.yaml 2>&1
+oc -n $NAMESPACE get secret collector-config -o jsonpath='{.data.vector\.toml}' | base64 -d > ${clo_folder}/vector.toml 2>&1
 oc -n $NAMESPACE get cronjobs -o yaml > ${clo_folder}/cronjobs.yaml 2>&1
 oc -n $NAMESPACE get deployments -o wide > ${clo_folder}/deployments.txt 2>&1
 oc -n $NAMESPACE get ds -o wide > ${clo_folder}/daemonsets.txt 2>&1
 oc -n $NAMESPACE get pods -o wide > ${clo_folder}/pods.txt 2>&1
 oc -n $NAMESPACE extract secret/elasticsearch --to=${clo_folder}
-oc -n $NAMESPACE extract configmap/fluentd --to=${clo_folder}
 oc -n $NAMESPACE extract configmap/collector --to=${clo_folder}
-oc -n $NAMESPACE extract configmap/secure-forward --to=${clo_folder}
-oc -n $NAMESPACE extract secret/secure-forward --to=${clo_folder}
-oc -n $NAMESPACE get events --field-selector involvedObject.kind=ClusterLogging -o yaml > ${clo_folder}/clo-events.yaml 2>&1
-oc -n $NAMESPACE get events --field-selector involvedObject.kind=ClusterLogForwarder -o yaml > ${clo_folder}/clf-events.yaml 2>&1
+oc -n $NAMESPACE get events -o yaml > ${clo_folder}/$NAMESPACE-events.yaml 2>&1

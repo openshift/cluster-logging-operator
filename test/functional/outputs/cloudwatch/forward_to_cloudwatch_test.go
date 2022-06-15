@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"strings"
 	"time"
@@ -142,6 +143,44 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(logs).To(HaveLen(numOfLogs))
 			Expect(len(logs)).To(Equal(numOfLogs))
 
+		})
+
+		It("should be able to forward by user-defined pod labels", func() {
+			var (
+				labelKey   = "env1"
+				labelValue = "test1"
+			)
+			// Add new label
+			framework.Labels[labelKey] = labelValue
+
+			// Generate a pod spec with a selector for labels and namespace
+			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInputWithVisitor("app-logs",
+					func(spec *logging.InputSpec) {
+						spec.Application = &logging.Application{
+							Namespaces: []string{framework.Namespace},
+							Selector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{labelKey: labelValue},
+							},
+						}
+					},
+				).
+				ToCloudwatchOutput()
+
+			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
+				addMotoContainerVisitor,
+				mountCloudwatchSecretVisitor,
+			})).To(BeNil())
+
+			// Write logs
+			Expect(framework.WritesApplicationLogs(numOfLogs)).To(BeNil())
+
+			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
+			Expect(err).To(BeNil())
+			Expect(logs).To(HaveLen(numOfLogs))
+
+			expMatch := fmt.Sprintf(`{.*"%s":"%s".*}`, labelKey, labelValue)
+			Expect(logs[0]).To(MatchRegexp(expMatch), "Expected label to be found")
 		})
 
 		It("should reassemble multi-line stacktraces (e.g. LOG-2275)", func() {

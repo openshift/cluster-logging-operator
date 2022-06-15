@@ -299,7 +299,7 @@ source = """
 [transforms.route_application_logs]
 type = "route"
 inputs = ["application"]
-route.myapplogs = '((.kubernetes.namespace_name == "myapp1") || (.kubernetes.namespace_name == "myapp2")) && ((.kubernetes.pod_labels.key1 == "value1") && (.kubernetes.pod_labels.key2 == "value2"))'
+route.myapplogs = '((.kubernetes.namespace_name == "myapp1") || (.kubernetes.namespace_name == "myapp2")) && ((.kubernetes.labels.key1 == "value1") && (.kubernetes.labels.key2 == "value2"))'
 
 [transforms.pipeline]
 type = "remap"

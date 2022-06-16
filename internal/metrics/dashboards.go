@@ -1,6 +1,9 @@
 package metrics
 
 import (
+	"context"
+	"path"
+
 	"github.com/ViaQ/logerr/log"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -8,7 +11,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/configmaps"
 	corev1 "k8s.io/api/core/v1"
-	"path"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -45,4 +47,10 @@ func ReconcileDashboards(writer client.Writer, reader client.Reader) (err error)
 	}
 
 	return nil
+}
+
+// RemoveDashboardConfigMap removes the config map in the grafana dashboard
+func RemoveDashboardConfigMap(c client.Client) (err error) {
+	cm := newDashboardConfigMap()
+	return c.Delete(context.TODO(), cm)
 }

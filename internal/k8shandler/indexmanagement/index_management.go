@@ -100,6 +100,9 @@ func newDefaultPoliciesSpec(spec *logging.RetentionPoliciesSpec) *logging.Retent
 				}
 				defaultSpec.App.Namespaces = spec.App.Namespaces
 			}
+			if spec.App.DiskThresholdPercent != 0 {
+				defaultSpec.App.DiskThresholdPercent = spec.App.DiskThresholdPercent
+			}
 		}
 		if spec.Infra != nil {
 			if spec.Infra.MaxAge != "" {
@@ -111,6 +114,9 @@ func newDefaultPoliciesSpec(spec *logging.RetentionPoliciesSpec) *logging.Retent
 				}
 				defaultSpec.Infra.Namespaces = spec.Infra.Namespaces
 			}
+			if spec.Infra.DiskThresholdPercent != 0 {
+				defaultSpec.Infra.DiskThresholdPercent = spec.Infra.DiskThresholdPercent
+			}
 		}
 		if spec.Audit != nil {
 			if spec.Audit.MaxAge != "" {
@@ -121,6 +127,9 @@ func newDefaultPoliciesSpec(spec *logging.RetentionPoliciesSpec) *logging.Retent
 					defaultSpec.Audit.PruneNamespacesInterval = spec.Audit.PruneNamespacesInterval
 				}
 				defaultSpec.Audit.Namespaces = spec.Audit.Namespaces
+			}
+			if spec.Audit.DiskThresholdPercent != 0 {
+				defaultSpec.Audit.DiskThresholdPercent = spec.Audit.DiskThresholdPercent
 			}
 		}
 	}
@@ -144,12 +153,19 @@ func newPolicySpec(name string, retentionPolicy *logging.RetentionPolicySpec, ho
 			Delete: &esapi.IndexManagementDeletePhaseSpec{
 				MinAge:                  retentionPolicy.MaxAge,
 				PruneNamespacesInterval: retentionPolicy.PruneNamespacesInterval,
+				DiskThresholdPercent:    retentionPolicy.DiskThresholdPercent,
 			},
 		},
 	}
 
 	if retentionPolicy.Namespaces != nil {
 		policySpec.Phases.Delete.Namespaces = retentionPolicy.Namespaces
+	}
+
+	if retentionPolicy.DiskThresholdPercent > 0 {
+		policySpec.Phases.Delete.DiskThresholdPercent = retentionPolicy.DiskThresholdPercent
+	} else {
+		log.Info("DiskThresholdPercent must be an integer higher than 0")
 	}
 
 	return policySpec

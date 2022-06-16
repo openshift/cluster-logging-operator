@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"path"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -46,4 +47,10 @@ func ReconcileDashboards(writer client.Writer, reader client.Reader) (err error)
 	}
 
 	return nil
+}
+
+// RemoveDashboardConfigMap removes the config map in the grafana dashboard
+func RemoveDashboardConfigMap(c client.Client) (err error) {
+	cm := newDashboardConfigMap()
+	return c.Delete(context.TODO(), cm)
 }

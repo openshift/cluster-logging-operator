@@ -17,7 +17,7 @@ const (
 	NsDefault   = "default"
 
 	K8sNamespaceName = ".kubernetes.namespace_name"
-	K8sLabelKeyExpr  = ".kubernetes.pod_labels.%s"
+	K8sLabelKeyExpr  = ".kubernetes.labels.%s"
 
 	InputContainerLogs   = "container_logs"
 	InputJournalLogs     = "journal_logs"

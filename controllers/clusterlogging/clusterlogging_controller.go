@@ -2,6 +2,7 @@ package clusterlogging
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/metrics"
 	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -91,6 +92,9 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request reconci
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
+			if err := metrics.RemoveDashboardConfigMap(r.Client); err != nil {
+				log.V(1).Error(err, "error deleting grafana configmap")
+			}
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.

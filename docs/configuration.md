@@ -24,11 +24,9 @@ The image for each subcomponent are overwriteable by modifying the appropriate
 environment variable in the `cluster-logging-operator` Deployment.  Each variable
 takes a full pull spec of the image:
 
-* `CURATOR_IMAGE`
-* `ELASTICSEARCH_IMAGE`
 * `RELATED_IMAGE_FLUENTD`
-* `KIBANA_IMAGE`
-* `OAUTH_PROXY_IMAGE`
+* `LOGFILEMETRICEXPORTER_IMAGE`
+* `VECTOR_IMAGE`
 
 ## Common Configurations
 The following configuration options apply generally to all components defined in for a ClusterLogging object (e.g. logStore, visualization, etc).
@@ -110,20 +108,19 @@ The policy that defines how shards are replicated across data nodes in the clust
 Log collectors are deployed as a Daemonset to each node in the OKD cluster.  Following are the
 supported log collectors for Cluster Logging:
 * Fluentd - The default log collector based on Fluentd.
+* Vector - An alterate log collector based on Vector.
 
 ```
   spec:
     collection:
-      logs:
-        type: "fluentd"
-        fluentd:
-          resources:
-            limits:
-              cpu:
-              memory:
-            requests:
-              cpu:
-              memory:
+      type: "fluentd"
+      resources:
+        limits:
+          cpu:
+          memory:
+        requests:
+          cpu:
+          memory:
 ```
 
 ## Kibana and Visualization
@@ -147,13 +144,4 @@ configuration.
 
 ```
 ## Curator and Data Curation
-Schedulable as defined by the [cron format](https://en.wikipedia.org/wiki/Cron).
-```
-  spec:
-    curation:
-    type: "curator"
-    resources:
-    curator:
-      schedule: "30 3 * * *"
-```
-**Note:** Curator is deprecated and subject to removal in future releases
+**Note:** Curator is deprecated and no longer supported

@@ -10,7 +10,7 @@ import (
 )
 
 var _ = Describe("Vector Config Generation", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return generator.MergeElements(
 			NormalizeLogs(&clfspec, op),
 		)

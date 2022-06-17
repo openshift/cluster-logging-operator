@@ -12,7 +12,7 @@ import (
 )
 
 var _ = Describe("Testing Config Generation", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return generator.MergeElements(
 			Inputs(&clfspec, op),
 			Pipelines(&clfspec, op),

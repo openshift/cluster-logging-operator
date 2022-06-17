@@ -16,7 +16,7 @@ import (
 )
 
 var _ = Describe("Generate vector config", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return Conf(clfspec.Outputs[0], []string{"pipeline_1", "pipeline_2"}, secrets[clfspec.Outputs[0].Name], op)
 	}
 	DescribeTable("for kafka output", helpers.TestGenerateConfWith(f),

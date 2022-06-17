@@ -10,10 +10,10 @@ import (
 )
 
 var _ = Describe("Testing Config Generation", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		var tuning *logging.FluentdInFileSpec
-		if clspec.Forwarder != nil && clspec.Forwarder.Fluentd != nil && clspec.Forwarder.Fluentd.InFile != nil {
-			tuning = clspec.Forwarder.Fluentd.InFile
+		if clspec.Fluentd != nil && clspec.Fluentd.InFile != nil {
+			tuning = clspec.Fluentd.InFile
 		}
 		return LogSources(&clfspec, tuning, op)
 	}
@@ -62,12 +62,10 @@ var _ = Describe("Testing Config Generation", func() {
 `,
 		}),
 		Entry("Only Application with InTail tuning", helpers.ConfGenerateTest{
-			CLSpec: logging.ClusterLoggingSpec{
-				Forwarder: &logging.ForwarderSpec{
-					Fluentd: &logging.FluentdForwarderSpec{
-						InFile: &logging.FluentdInFileSpec{
-							ReadLinesLimit: 1500,
-						},
+			CLSpec: logging.CollectionSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					InFile: &logging.FluentdInFileSpec{
+						ReadLinesLimit: 1500,
 					},
 				},
 			},
@@ -253,12 +251,10 @@ var _ = Describe("Testing Config Generation", func() {
 `,
 		}),
 		Entry("Only Audit with InTail tuning", helpers.ConfGenerateTest{
-			CLSpec: logging.ClusterLoggingSpec{
-				Forwarder: &logging.ForwarderSpec{
-					Fluentd: &logging.FluentdForwarderSpec{
-						InFile: &logging.FluentdInFileSpec{
-							ReadLinesLimit: 1500,
-						},
+			CLSpec: logging.CollectionSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					InFile: &logging.FluentdInFileSpec{
+						ReadLinesLimit: 1500,
 					},
 				},
 			},
@@ -474,7 +470,7 @@ const AllSources = `
 `
 
 var _ = Describe("Testing Config Generation", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return MetricSources(&clfspec, op)
 	}
 	DescribeTable("Metric Source(s)", helpers.TestGenerateConfWith(f),

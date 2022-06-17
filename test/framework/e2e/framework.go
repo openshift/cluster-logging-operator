@@ -247,6 +247,33 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 	})
 }
 
+// WaitForResourceCondition retrieves resource info given a selector and evaluates the jsonPath output against the provided condition.
+func (tc *E2ETestFramework) WaitForResourceCondition(namespace, kind, name, selector, jsonPath string, maxtimes int, isSatisfied func(string) (bool, error)) error {
+	times := 0
+	return wait.PollImmediate(5*time.Second, defaultTimeout, func() (bool, error) {
+		out, err := oc.Get().WithNamespace(namespace).Resource(kind, name).Selector(selector).OutputJsonpath(jsonPath).Run()
+		clolog.V(3).Error(err, "Error returned from retrieving resources")
+		if err == nil {
+			met, err := isSatisfied(out)
+			if err != nil {
+				times = 0
+				clolog.V(3).Error(err, "Error returned from condition check")
+				return false, nil
+			}
+			if met {
+				times++
+				clolog.V(3).Info("Condition met", "success", times, "need", maxtimes)
+			} else {
+				times = 0
+			}
+			if times == maxtimes {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+}
+
 func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time.Duration) error {
 	clolog.V(3).Info("Waiting for elasticsearch")
 	return wait.PollImmediate(retryInterval, timeout, func() (done bool, err error) {

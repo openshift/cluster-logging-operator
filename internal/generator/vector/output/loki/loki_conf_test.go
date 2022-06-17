@@ -43,7 +43,7 @@ var _ = Describe("outputLabelConf", func() {
 
 var _ = Describe("Generate vector config", func() {
 	inputPipeline := []string{"application"}
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], generator.NoOptions)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
@@ -232,7 +232,7 @@ token = "token-for-custom-loki"
 
 var _ = Describe("Generate vector config for in cluster loki", func() {
 	inputPipeline := []string{"application"}
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[constants.LogCollectorToken], generator.NoOptions)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),

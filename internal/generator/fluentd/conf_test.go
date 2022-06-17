@@ -36,14 +36,12 @@ var _ = Describe("Testing Complete Config Generation", func() {
 	}
 	DescribeTable("Generate full fluent.conf", f,
 		Entry("with complex spec", testhelpers.ConfGenerateTest{
-			CLSpec: logging.ClusterLoggingSpec{
-				Forwarder: &logging.ForwarderSpec{
-					Fluentd: &logging.FluentdForwarderSpec{
-						Buffer: &logging.FluentdBufferSpec{
-							ChunkLimitSize: "8m",
-							TotalLimitSize: "800000000",
-							OverflowAction: "throw_exception",
-						},
+			CLSpec: logging.CollectionSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					Buffer: &logging.FluentdBufferSpec{
+						ChunkLimitSize: "8m",
+						TotalLimitSize: "800000000",
+						OverflowAction: "throw_exception",
 					},
 				},
 			},

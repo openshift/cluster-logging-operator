@@ -50,6 +50,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	collectorConfig := ""
 	collectorConfHash := ""
 	log.V(9).Info("Entering CreateOrUpdateCollection")
+	log.V(3).Info("creating collector using", "spec", cluster.Spec.Collection)
 	defer func() {
 		log.V(9).Info("Leaving CreateOrUpdateCollection")
 	}()
@@ -58,11 +59,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
-	if cluster.Spec.Collection != nil &&
-		(cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd ||
-			cluster.Spec.Collection.Logs.Type == logging.LogCollectionTypeVector) {
+	if cluster.Spec.Collection != nil && cluster.Spec.Collection.Type.IsSupportedCollector() {
 
-		var collectorType = cluster.Spec.Collection.Logs.Type
+		var collectorType = cluster.Spec.Collection.Type
 
 		//TODO: Remove me once fully migrated to new collector naming
 		if err = clusterRequest.removeCollector(constants.FluentdName); err != nil {
@@ -160,6 +159,7 @@ func (clusterRequest *ClusterLoggingRequest) removeCollectorSecretIfOwnedByCLO()
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err error) {
+	log.V(3).Info("Removing collector", "name", name)
 	if clusterRequest.isManaged() {
 
 		if err = clusterRequest.RemoveService(name); err != nil {

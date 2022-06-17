@@ -10,13 +10,11 @@ spec:
       nodeCount: 3
       resources:
         requests:
-          limits: 2Gi
+          memory: 2Gi
       redundancyPolicy: "ZeroRedundancy"
   visualization:
     type: "kibana"
     kibana:
       replicas: 1
   collection:
-    logs:
-      type: "vector"
-      fluentd: {}
+    type: "vector"

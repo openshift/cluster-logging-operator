@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-func Sources(clspec *logging.ClusterLoggingSpec, spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
+func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
 	var tunings *logging.FluentdInFileSpec
-	if clspec != nil && clspec.Forwarder != nil && clspec.Forwarder.Fluentd != nil && clspec.Forwarder.Fluentd.InFile != nil {
-		tunings = clspec.Forwarder.Fluentd.InFile
+	if clspec != nil && clspec.Fluentd != nil && clspec.Fluentd.InFile != nil {
+		tunings = clspec.Fluentd.InFile
 	}
 	return generator.MergeElements(
 		MetricSources(spec, o),

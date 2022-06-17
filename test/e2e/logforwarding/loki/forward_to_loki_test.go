@@ -83,8 +83,8 @@ func TestLogForwardingToLokiWithFluentd(t *testing.T) {
 
 func TestLogForwardingToLokiWithVector(t *testing.T) {
 	cl := runtime.NewClusterLogging()
-	cl.Spec.Collection.Logs.Type = loggingv1.LogCollectionTypeVector
-	cl.Spec.Collection.Logs.FluentdSpec = loggingv1.FluentdSpec{}
+	cl.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
+	cl.Spec.Collection.CollectorSpec = loggingv1.CollectorSpec{}
 	clf := runtime.NewClusterLogForwarder()
 	for _, spec := range specs {
 		clf.Spec = spec

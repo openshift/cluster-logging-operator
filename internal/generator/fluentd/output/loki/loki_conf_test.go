@@ -41,12 +41,11 @@ var _ = Describe("outputLabelConf", func() {
 })
 
 var _ = Describe("Generate fluentd config", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		var bufspec *logging.FluentdBufferSpec = nil
-		if clspec.Forwarder != nil &&
-			clspec.Forwarder.Fluentd != nil &&
-			clspec.Forwarder.Fluentd.Buffer != nil {
-			bufspec = clspec.Forwarder.Fluentd.Buffer
+		if clspec.Fluentd != nil &&
+			clspec.Fluentd.Buffer != nil {
+			bufspec = clspec.Fluentd.Buffer
 		}
 		return Conf(bufspec, secrets[clfspec.Outputs[0].Name], clfspec.Outputs[0], generator.NoOptions)
 	}

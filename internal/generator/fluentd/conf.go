@@ -7,7 +7,7 @@ import (
 )
 
 //nolint:govet // using declarative style
-func Conf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Section {
+func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Section {
 	return []generator.Section{
 		{
 			Header(op),

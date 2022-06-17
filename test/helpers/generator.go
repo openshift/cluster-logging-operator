@@ -13,14 +13,14 @@ import (
 type ConfGenerateTest struct {
 	Desc    string
 	CLFSpec logging.ClusterLogForwarderSpec
-	CLSpec  logging.ClusterLoggingSpec
+	CLSpec  logging.CollectionSpec
 	// key:Output Name, value: secret for the Output
 	Secrets      map[string]*corev1.Secret
 	Options      generator.Options
 	ExpectedConf string
 }
 
-type GenerateFunc func(logging.ClusterLoggingSpec, map[string]*corev1.Secret, logging.ClusterLogForwarderSpec, generator.Options) []generator.Element
+type GenerateFunc func(logging.CollectionSpec, map[string]*corev1.Secret, logging.ClusterLogForwarderSpec, generator.Options) []generator.Element
 
 func TestGenerateConfWith(gf GenerateFunc) func(ConfGenerateTest) {
 	return TestGenerateConfAndFormatWith(gf, nil)

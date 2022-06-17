@@ -506,9 +506,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				It("should accept default output", func() {
 					cluster.Spec = logging.ClusterLoggingSpec{
 						Collection: &logging.CollectionSpec{
-							Logs: logging.LogCollectionSpec{
-								Type: "fluentd",
-							},
+							Type: "fluentd",
 						},
 						LogStore: &logging.LogStoreSpec{
 							Type: logging.LogStoreTypeElasticsearch,
@@ -538,9 +536,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				It("should setup values for elasticsearch output", func() {
 					cluster.Spec = logging.ClusterLoggingSpec{
 						Collection: &logging.CollectionSpec{
-							Logs: logging.LogCollectionSpec{
-								Type: "fluentd",
-							},
+							Type: "fluentd",
 						},
 						LogStore: &logging.LogStoreSpec{
 							Type: logging.LogStoreTypeElasticsearch,
@@ -746,19 +742,17 @@ var _ = DescribeTable("#generateCollectorConfig",
 		Spec: logging.ClusterLoggingSpec{
 			LogStore: nil,
 			Collection: &logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					Type: "fluentd",
-					FluentdSpec: logging.FluentdSpec{
-						Resources: &core.ResourceRequirements{
-							Limits: core.ResourceList{
-								"Memory": fluentd.DefaultMemory,
-							},
-							Requests: core.ResourceList{
-								"Memory": fluentd.DefaultMemory,
-							},
+				Type: "fluentd",
+				CollectorSpec: logging.CollectorSpec{
+					Resources: &core.ResourceRequirements{
+						Limits: core.ResourceList{
+							"Memory": fluentd.DefaultMemory,
 						},
-						NodeSelector: map[string]string{"123": "123"},
+						Requests: core.ResourceList{
+							"Memory": fluentd.DefaultMemory,
+						},
 					},
+					NodeSelector: map[string]string{"123": "123"},
 				},
 			},
 		},

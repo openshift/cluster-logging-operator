@@ -9,7 +9,7 @@ spec:
       nodeCount: 3
       resources:
         requests:
-          limits: 2Gi
+          memory: 2Gi
       redundancyPolicy: "ZeroRedundancy"
     retentionPolicy:
       application:
@@ -22,6 +22,4 @@ spec:
     kibana:
       replicas: 1
   collection:
-    logs:
-      type: "fluentd"
-      fluentd: {}
+    type: "fluentd"

@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"strconv"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/telemetry"
@@ -22,19 +22,23 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Client, reader client.Reader, r record.EventRecorder) (err error) {
+func Reconcile(requestClient client.Client, reader client.Reader, r record.EventRecorder) (instance *logging.ClusterLogging, err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client:        requestClient,
 		Reader:        reader,
-		Cluster:       requestCluster,
 		EventRecorder: r,
 	}
+
+	if instance, err = clusterLoggingRequest.getClusterLogging(); err != nil {
+		return nil, err
+	}
+	clusterLoggingRequest.Cluster = instance
 
 	if !clusterLoggingRequest.isManaged() {
 		// if cluster is set to unmanaged then set managedStatus as 0
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		telemetry.UpdateCLMetricsNoErr()
-		return nil
+		return clusterLoggingRequest.Cluster, nil
 	}
 	// CL is managed by default set it as 1
 	telemetry.Data.CLInfo.Set("managedStatus", constants.ManagedStatus)
@@ -54,14 +58,14 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
 			telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 			telemetry.UpdateCLMetricsNoErr()
-			return fmt.Errorf("unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
 		// Reconcile Visualization
 		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
 			telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 			telemetry.UpdateCLMetricsNoErr()
-			return fmt.Errorf("unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+			return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
 	} else {
@@ -84,7 +88,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.Data.CollectorErrorCount.Inc("CollectorErrorCount")
 		telemetry.UpdateCLMetricsNoErr()
-		return fmt.Errorf("unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	// Reconcile metrics Dashboards
@@ -98,7 +102,7 @@ func Reconcile(requestCluster *logging.ClusterLogging, requestClient client.Clie
 	telemetry.Data.CLInfo.Set("healthStatus", constants.HealthyStatus)
 	telemetry.UpdateCLMetricsNoErr()
 
-	return nil
+	return clusterLoggingRequest.Cluster, nil
 }
 
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
@@ -121,7 +125,10 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}
 
-	clusterLogging := clusterLoggingRequest.getClusterLogging()
+	var clusterLogging *logging.ClusterLogging
+	if clusterLogging, err = clusterLoggingRequest.getClusterLogging(); err != nil {
+		return err
+	}
 	if clusterLogging == nil {
 		return nil
 	}
@@ -158,52 +165,16 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	return nil
 }
 
-func ReconcileForGlobalProxy(proxyConfig *configv1.Proxy, requestClient client.Client) (err error) {
-
-	clusterLoggingRequest := ClusterLoggingRequest{
-		Client: requestClient,
-	}
-
-	clusterLogging := clusterLoggingRequest.getClusterLogging()
-	if clusterLogging == nil {
-		return nil
-	}
-
-	clusterLoggingRequest.Cluster = clusterLogging
-
-	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
-		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
-		telemetry.UpdateCLMetricsNoErr()
-		return nil
-	}
-
-	forwarder := clusterLoggingRequest.getLogForwarder()
-	if forwarder != nil {
-		clusterLoggingRequest.ForwarderRequest = forwarder
-		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
-	}
-
-	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
-		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLMetricsNoErr()
-		return fmt.Errorf("unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-	}
-
-	return nil
-}
-
 func ReconcileForTrustedCABundle(requestName string, requestClient client.Client) (err error) {
 
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client: requestClient,
 	}
 
-	clusterLogging := clusterLoggingRequest.getClusterLogging()
-	if clusterLogging == nil {
-		return nil
+	var clusterLogging *logging.ClusterLogging
+	if clusterLogging, err = clusterLoggingRequest.getClusterLogging(); err != nil {
+		return err
 	}
-
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
@@ -221,18 +192,22 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 	return clusterLoggingRequest.RestartCollector()
 }
 
-func (clusterRequest *ClusterLoggingRequest) getClusterLogging() *logging.ClusterLogging {
+func (clusterRequest *ClusterLoggingRequest) getClusterLogging() (*logging.ClusterLogging, error) {
 	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	clusterLogging := &logging.ClusterLogging{}
 
 	if err := clusterRequest.Client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
 		if !apierrors.IsNotFound(err) {
 			log.Error(err, "Encountered unexpected error getting", "NamespacedName", clusterLoggingNamespacedName)
+			return nil, err
 		}
-		return nil
+		return nil, nil
 	}
 
-	return clusterLogging
+	//TODO Drop migration upon introduction of v2
+	clusterLogging.Spec = migrations.MigrateCollectionSpec(clusterLogging.Spec)
+
+	return clusterLogging, nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {

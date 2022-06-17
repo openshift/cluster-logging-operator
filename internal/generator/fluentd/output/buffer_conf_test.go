@@ -12,11 +12,11 @@ import (
 )
 
 var _ = Describe("Generate fluentd conf", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op Options) []Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op Options) []Element {
 		es := make([][]Element, len(clfspec.Outputs))
 		for i := range clfspec.Outputs {
 			storeID := helpers.StoreID("", clfspec.Outputs[i].Name, "")
-			es[i] = output.Buffer([]string{"time", "tag"}, clspec.Forwarder.Fluentd.Buffer, storeID, &clfspec.Outputs[i])
+			es[i] = output.Buffer([]string{"time", "tag"}, clspec.Fluentd.Buffer, storeID, &clfspec.Outputs[i])
 		}
 		return MergeElements(es...)
 	}
@@ -29,21 +29,19 @@ var _ = Describe("Generate fluentd conf", func() {
 					},
 				},
 			},
-			CLSpec: logging.ClusterLoggingSpec{
-				Forwarder: &logging.ForwarderSpec{
-					Fluentd: &logging.FluentdForwarderSpec{
-						Buffer: &logging.FluentdBufferSpec{
-							ChunkLimitSize:   "8m",
-							TotalLimitSize:   "800000000",
-							OverflowAction:   "throw_exception",
-							FlushThreadCount: 128,
-							FlushMode:        "interval",
-							FlushInterval:    "25s",
-							RetryWait:        "20s",
-							RetryType:        "periodic",
-							RetryMaxInterval: "300s",
-							RetryTimeout:     "60h",
-						},
+			CLSpec: logging.CollectionSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					Buffer: &logging.FluentdBufferSpec{
+						ChunkLimitSize:   "8m",
+						TotalLimitSize:   "800000000",
+						OverflowAction:   "throw_exception",
+						FlushThreadCount: 128,
+						FlushMode:        "interval",
+						FlushInterval:    "25s",
+						RetryWait:        "20s",
+						RetryType:        "periodic",
+						RetryMaxInterval: "300s",
+						RetryTimeout:     "60h",
 					},
 				},
 			},
@@ -73,13 +71,11 @@ var _ = Describe("Generate fluentd conf", func() {
 					},
 				},
 			},
-			CLSpec: logging.ClusterLoggingSpec{
-				Forwarder: &logging.ForwarderSpec{
-					Fluentd: &logging.FluentdForwarderSpec{
-						Buffer: &logging.FluentdBufferSpec{
-							FlushMode:     "lazy",
-							FlushInterval: "25s",
-						},
+			CLSpec: logging.CollectionSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					Buffer: &logging.FluentdBufferSpec{
+						FlushMode:     "lazy",
+						FlushInterval: "25s",
 					},
 				},
 			},
@@ -104,11 +100,11 @@ var _ = Describe("Generate fluentd conf", func() {
 })
 
 var _ = Describe("Generate fluentd conf", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op Options) []Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op Options) []Element {
 		es := make([][]Element, len(clfspec.Outputs))
 		for i := range clfspec.Outputs {
 			storeID := helpers.StoreID("retry_", clfspec.Outputs[i].Name, "")
-			es[i] = output.Buffer([]string{}, clspec.Forwarder.Fluentd.Buffer, storeID, &clfspec.Outputs[i])
+			es[i] = output.Buffer([]string{}, clspec.Fluentd.Buffer, storeID, &clfspec.Outputs[i])
 		}
 		return MergeElements(es...)
 	}
@@ -128,11 +124,9 @@ var _ = Describe("Generate fluentd conf", func() {
 					},
 				},
 			},
-			CLSpec: logging.ClusterLoggingSpec{
-				Forwarder: &logging.ForwarderSpec{
-					Fluentd: &logging.FluentdForwarderSpec{
-						Buffer: nil,
-					},
+			CLSpec: logging.CollectionSpec{
+				Fluentd: &logging.FluentdForwarderSpec{
+					Buffer: nil,
 				},
 			},
 			ExpectedConf: `

@@ -2,18 +2,20 @@ package fluentd
 
 import (
 	"fmt"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"runtime"
+	"strconv"
+	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -21,8 +23,10 @@ const (
 	pollingInterval = `10s`
 )
 
+var collector string
+
 func runInFluentdContainer(command string, args ...string) (string, error) {
-	return oc.Exec().WithNamespace(constants.OpenshiftNS).WithPodGetter(oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").OutputJsonpath("{.items[0].metadata.name}")).Container(constants.CollectorName).WithCmd(command, args...).Run()
+	return oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(collector).Container(constants.CollectorName).WithCmd(command, args...).Run()
 }
 
 func checkMountReadOnly(mount string) {
@@ -37,6 +41,7 @@ func checkMountReadOnly(mount string) {
 var _ = Describe("Tests of collector container security stance", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	log.Info("Running ", "filename", filename)
+
 	e2e := framework.NewE2ETestFramework()
 
 	BeforeEach(func() {
@@ -46,7 +51,8 @@ var _ = Describe("Tests of collector container security stance", func() {
 				APIVersion: logging.GroupVersion.String(),
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "instance",
+				Name:      constants.SingletonName,
+				Namespace: constants.OpenshiftNS,
 			},
 			Spec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
@@ -78,9 +84,37 @@ var _ = Describe("Tests of collector container security stance", func() {
 		if err := e2e.SetupClusterLogging(components...); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 		}
-		if err := e2e.WaitFor(helpers.ComponentTypeCollector); err != nil {
+
+		nodes := 0
+		out, err := oc.Literal().From("oc get nodes --skip-headers -o name").Run()
+		if err != nil {
 			Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", helpers.ComponentTypeCollector, err))
 		}
+		nodes = len(strings.Split(out, "\n"))
+		log.V(3).Info("Waiting for a stable number collectors to be ready", "nodes", nodes)
+		if err := e2e.WaitForResourceCondition(constants.OpenshiftNS, "daemonset", constants.CollectorName, "", "{.status.numberReady}", 10,
+			func(out string) (bool, error) {
+				ready, err := strconv.Atoi(strings.TrimSpace(out))
+				if err != nil {
+					return false, err
+				}
+				log.V(3).Info("Checking ready pods", "pods", ready, "need", nodes)
+				if ready == nodes {
+					return true, nil
+				}
+				return false, nil
+			}); err != nil {
+			Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", helpers.ComponentTypeCollector, err))
+		}
+
+		podList, err := oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").OutputJsonpath("{.items[*].metadata.name}").Run()
+		Expect(err).To(BeNil())
+		for _, pod := range strings.Split(podList, " ") {
+			if oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(pod).Container(constants.CollectorName).WithCmd("hostname").Output() == nil {
+				collector = pod
+			}
+		}
+		Expect(collector).To(Not(BeNil()))
 	})
 
 	AfterEach(func() {
@@ -89,6 +123,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 	}, framework.DefaultCleanUpTimeout)
 
 	It("collector containers should have tight security settings", func() {
+
 		By("having all Linux capabilities disabled")
 		Eventually(func(g Gomega) {
 			result, err := runInFluentdContainer("bash", "-c", "getpcaps 1 2>&1")

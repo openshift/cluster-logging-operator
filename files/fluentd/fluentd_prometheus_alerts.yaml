@@ -20,7 +20,7 @@
     "for": "1h"
     "labels":
       "service": "fluentd"
-      "severity": "error"
+      "severity": "Warning"
   - alert: FluentDHighErrorRate
     annotations:
       message: |-

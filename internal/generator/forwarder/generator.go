@@ -21,7 +21,10 @@ var (
 	ErrInvalidOutputURL = func(o logging.OutputSpec) error {
 		return fmt.Errorf("Invalid URL in %s output in ClusterLogForwarder", o.Name)
 	}
-	ErrInvalidInput = errors.New("Invalid Input")
+	ErrInvalidInput      = errors.New("Invalid Input")
+	ErrTLSOutputNoSecret = func(o logging.OutputSpec) error {
+		return fmt.Errorf("No secret defined in output %s, but URL has TLS Scheme %s", o.Name, o.URL)
+	}
 )
 
 type ConfigGenerator struct {
@@ -68,7 +71,7 @@ func (cg *ConfigGenerator) Verify(clspec *logging.ClusterLoggingSpec, secrets ma
 		}
 	}
 	for _, o := range clfspec.Outputs {
-		if _, err := url.Parse(o.URL); err != nil {
+		if _, err = url.Parse(o.URL); err != nil {
 			return ErrInvalidOutputURL(o)
 		}
 	}

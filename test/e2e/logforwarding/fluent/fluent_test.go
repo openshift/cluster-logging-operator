@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/client"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
@@ -24,7 +25,10 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		logTypes   = loggingv1.ReservedInputNames.UnsortedList()
 	)
 	BeforeEach(func() { c = client.NewTest(); f = NewFixture(c.NS.Name, message) })
-	AfterEach(func() { c.Close() })
+	AfterEach(func() {
+		c.Close()
+		e2e.RunCleanupScript()
+	})
 
 	Context("with app/infra/audit receiver", func() {
 		BeforeEach(func() {

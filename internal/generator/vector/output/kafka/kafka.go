@@ -130,22 +130,18 @@ timestamp_format = "rfc3339"
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
-	// FIXME ignored URL parse error.
-	u, _ := url.Parse(o.URL)
-	if !urlhelper.IsTLSScheme(u.Scheme) { // Not a TLS URL
-		// FIXME error if not TLS but has secret, probable misconfiguration.
+	if o.Secret == nil {
 		return conf
 	}
-	conf = append(conf, security.TLSConf{
-		Desc:        "TLS Config",
-		ComponentID: strings.ToLower(helpers.Replacer.Replace(o.Name)),
-	})
-	if o.Secret != nil {
+	hasTLS := false
+	u, _ := url.Parse(o.URL)
+	if urlhelper.IsTLSScheme(u.Scheme) {
 		if security.HasPassphrase(secret) {
 			pp := Passphrase{
 				PassphrasePath: security.SecretPath(o.Secret.Name, constants.Passphrase),
 			}
 			conf = append(conf, pp)
+			hasTLS = true
 		}
 		if security.HasTLSCertAndKey(secret) {
 			kc := TLSKeyCert{
@@ -153,19 +149,27 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
 			}
 			conf = append(conf, kc)
+			hasTLS = true
 		}
 		if security.HasCABundle(secret) {
 			ca := CAFile{
 				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
 			}
 			conf = append(conf, ca)
+			hasTLS = true
 		}
 		if security.HasKeys(secret, constants.TLSInsecure) {
 			conf = append(conf, TLSInsecure(true))
+			hasTLS = true
 			log.Info("Insecure TLS selected for output %q", o.Name)
 		}
 	}
-	conf = append(conf, TLS(true))
+	if hasTLS {
+		conf = append([]Element{security.TLSConf{
+			Desc:        "TLS Config",
+			ComponentID: strings.ToLower(helpers.Replacer.Replace(o.Name)),
+		}}, conf...)
+	}
 	return conf
 }
 
@@ -174,22 +178,19 @@ func SASLConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	// Try the preferred and deprecated names.
 	_, ok := security.TryKeys(secret, constants.SASLEnable, constants.DeprecatedSaslOverSSL)
 	if o.Secret != nil && ok {
-		hasSASL := false
-		conf = append(conf, SaslConf{
-			Desc:        "Sasl Config",
-			ComponentID: strings.ToLower(helpers.Replacer.Replace(o.Name)),
-		})
 		if security.HasUsernamePassword(secret) {
-			hasSASL = true
-			up := UserNamePass{
-				Username: security.GetFromSecret(secret, constants.ClientUsername),
-				Password: security.GetFromSecret(secret, constants.ClientPassword),
+			sasl := SASL{
+				Desc:        "SASL Config",
+				ComponentID: strings.ToLower(helpers.Replacer.Replace(o.Name)),
+				Username:    security.GetFromSecret(secret, constants.ClientUsername),
+				Password:    security.GetFromSecret(secret, constants.ClientPassword),
+				Mechanism:   SASLMechanismPlain,
 			}
-			conf = append(conf, up)
-		}
-		conf = append(conf, Sasl(true))
-		if !hasSASL {
-			return []Element{}
+			if m := security.GetFromSecret(secret, constants.SASLMechanisms); m != "" {
+				// librdkafka does not support multiple values for sasl mechanism
+				sasl.Mechanism = m
+			}
+			conf = append(conf, sasl)
 		}
 	}
 	return conf

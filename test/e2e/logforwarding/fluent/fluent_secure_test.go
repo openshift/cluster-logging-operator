@@ -2,15 +2,17 @@ package fluent_test
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -85,7 +87,10 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		g.Wait() // Create secrets before creating CLF to pass validation first time
 	})
 
-	AfterEach(func() { c.Close() })
+	AfterEach(func() {
+		c.Close()
+		e2e.RunCleanupScript()
+	})
 
 	It("connects to secure destinations", func() {
 		// Set up the CLF, one output per receiver source.

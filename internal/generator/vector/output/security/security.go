@@ -40,14 +40,15 @@ type BearerToken struct {
 type TLSConf generator.ConfLiteral
 
 func (t TLSConf) Name() string {
-	return "kafkaTLS"
+	return "vectorTLS"
 }
 
 func (t TLSConf) Template() string {
 	return `
-{{define "kafkaTLS" -}}
+{{define "vectorTLS" -}}
 # {{.Desc}}
 [sinks.{{.ComponentID}}.tls]
+enabled = true
 {{- end}}`
 }
 

@@ -1,34 +1,29 @@
 package kafka
 
-import (
-	"fmt"
-
-	"github.com/openshift/cluster-logging-operator/internal/generator"
+const (
+	SASLMechanismPlain = "PLAIN"
+	SASLMechamisnSSL   = "SCRAM-SHA-256"
 )
 
-type Sasl bool
-
-func (s Sasl) Name() string {
-	return "kafkaSaslTemplate"
+type SASL struct {
+	Desc        string
+	ComponentID string
+	Username    string
+	Password    string
+	Mechanism   string
 }
 
-func (s Sasl) Template() string {
-	return fmt.Sprintf(`{{define "kafkaSaslTemplate" -}}
-enabled = %t
-{{end}}
-`, s)
+func (t SASL) Name() string {
+	return "vectorKafkaSasl"
 }
 
-type SaslConf generator.ConfLiteral
-
-func (t SaslConf) Name() string {
-	return "kafkaSasl"
-}
-
-func (t SaslConf) Template() string {
-	return `
-{{define "kafkaSasl" -}}
+func (t SASL) Template() string {
+	return `{{define "vectorKafkaSasl"}}
 # {{.Desc}}
 [sinks.{{.ComponentID}}.sasl]
-{{- end}}`
+enabled = true
+username = "{{.Username}}"
+password = "{{.Password}}"
+mechanism = "{{.Mechanism}}"
+{{end}}`
 }

@@ -14,5 +14,5 @@ func (kc TLSKeyCert) Template() string {
 	return `{{define "` + kc.Name() + `" -}}
 key_file = {{.KeyPath}}
 crt_file = {{.CertPath}}
-{{end}}`
+{{- end}}`
 }

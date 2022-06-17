@@ -1,8 +1,9 @@
 package kafka
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
@@ -19,7 +20,7 @@ var _ = Describe("Generate vector config", func() {
 		return Conf(clfspec.Outputs[0], []string{"pipeline_1", "pipeline_2"}, secrets[clfspec.Outputs[0].Name], op)
 	}
 	DescribeTable("for kafka output", helpers.TestGenerateConfWith(f),
-		Entry("with username, password, no tls to single topic", helpers.ConfGenerateTest{
+		Entry("with plaintext sasl, to single topic", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -40,9 +41,9 @@ var _ = Describe("Generate vector config", func() {
 			Secrets: map[string]*corev1.Secret{
 				"kafka-receiver": {
 					Data: map[string][]byte{
+						"sasl.enable": []byte("true"),
 						"username":    []byte("testuser"),
 						"password":    []byte("testpass"),
-						"sasl.enable": []byte("true"),
 					},
 				},
 			},
@@ -58,11 +59,124 @@ topic = "build_complete"
 codec = "json"
 timestamp_format = "rfc3339"
 
-# Sasl Config
+
+# SASL Config
 [sinks.kafka_receiver.sasl]
-user = "testuser"
-password = "testpass"
 enabled = true
+username = "testuser"
+password = "testpass"
+mechanism = "PLAIN"
+`,
+		}),
+		Entry("with tls sasl, to single topic", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeKafka,
+						Name: "kafka-receiver",
+						URL:  "https://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						Secret: &logging.OutputSecretSpec{
+							Name: "kafka-receiver-1",
+						},
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Kafka: &logging.Kafka{
+								Topic: "build_complete",
+							},
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"kafka-receiver": {
+					Data: map[string][]byte{
+						"tls.key":     []byte("junk"),
+						"tls.crt":     []byte("junk"),
+						"sasl.enable": []byte("true"),
+						"username":    []byte("testuser"),
+						"password":    []byte("testpass"),
+					},
+				},
+			},
+			ExpectedConf: `
+# Kafka config
+[sinks.kafka_receiver]
+type = "kafka"
+inputs = ["pipeline_1","pipeline_2"]
+bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
+topic = "build_complete"
+
+[sinks.kafka_receiver.encoding]
+codec = "json"
+timestamp_format = "rfc3339"
+
+# TLS Config
+[sinks.kafka_receiver.tls]
+enabled = true
+key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
+
+# SASL Config
+[sinks.kafka_receiver.sasl]
+enabled = true
+username = "testuser"
+password = "testpass"
+mechanism = "PLAIN"
+`,
+		}),
+		Entry("with tls sasl, with SCRAM-SHA-256 mechanism to single topic", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeKafka,
+						Name: "kafka-receiver",
+						URL:  "https://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						Secret: &logging.OutputSecretSpec{
+							Name: "kafka-receiver-1",
+						},
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Kafka: &logging.Kafka{
+								Topic: "build_complete",
+							},
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"kafka-receiver": {
+					Data: map[string][]byte{
+						"tls.key":         []byte("junk"),
+						"tls.crt":         []byte("junk"),
+						"sasl.enable":     []byte("true"),
+						"sasl.mechanisms": []byte("SCRAM-SHA-256"),
+						"username":        []byte("testuser"),
+						"password":        []byte("testpass"),
+					},
+				},
+			},
+			ExpectedConf: `
+# Kafka config
+[sinks.kafka_receiver]
+type = "kafka"
+inputs = ["pipeline_1","pipeline_2"]
+bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
+topic = "build_complete"
+
+[sinks.kafka_receiver.encoding]
+codec = "json"
+timestamp_format = "rfc3339"
+
+# TLS Config
+[sinks.kafka_receiver.tls]
+enabled = true
+key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
+
+# SASL Config
+[sinks.kafka_receiver.sasl]
+enabled = true
+username = "testuser"
+password = "testpass"
+mechanism = "SCRAM-SHA-256"
 `,
 		}),
 		Entry("with tls key,cert,ca-bundle", helpers.ConfGenerateTest{
@@ -101,10 +215,10 @@ timestamp_format = "rfc3339"
 
 # TLS Config
 [sinks.kafka_receiver.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
-enabled = true
 `,
 		}),
 		Entry("with TLS and tls.insecure", helpers.ConfGenerateTest{
@@ -144,12 +258,13 @@ timestamp_format = "rfc3339"
 
 # TLS Config
 [sinks.kafka_receiver.tls]
+enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
+
 verify_certificate = false
 verify_hostname = false
-enabled = true
 `,
 		}),
 		Entry("with basic TLS", helpers.ConfGenerateTest{
@@ -174,10 +289,6 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
-
-# TLS Config
-[sinks.kafka_receiver.tls]
-enabled = true
 `,
 		}),
 		Entry("with plain TLS - no secret", helpers.ConfGenerateTest{
@@ -202,10 +313,6 @@ topic = "topic"
 [sinks.kafka_receiver.encoding]
 codec = "json"
 timestamp_format = "rfc3339"
-
-# TLS Config
-[sinks.kafka_receiver.tls]
-enabled = true
 `,
 		}),
 		Entry("without security", helpers.ConfGenerateTest{

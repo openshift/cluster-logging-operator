@@ -162,11 +162,7 @@ func newPolicySpec(name string, retentionPolicy *logging.RetentionPolicySpec, ho
 		policySpec.Phases.Delete.Namespaces = retentionPolicy.Namespaces
 	}
 
-	if retentionPolicy.DiskThresholdPercent > 0 {
-		policySpec.Phases.Delete.DiskThresholdPercent = retentionPolicy.DiskThresholdPercent
-	} else {
-		log.Info("DiskThresholdPercent must be an integer higher than 0")
-	}
+	policySpec.Phases.Delete.DiskThresholdPercent = retentionPolicy.DiskThresholdPercent
 
 	return policySpec
 }

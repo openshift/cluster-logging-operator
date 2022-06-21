@@ -87,9 +87,9 @@ const (
 	LegacySecureforward = "_LEGACY_SECUREFORWARD"
 	LegacySyslog        = "_LEGACY_SYSLOG"
 
-	FluentdImageEnvVar            = "FLUENTD_IMAGE"
-	VectorImageEnvVar             = "VECTOR_IMAGE"
-	LogfilesmetricImageEnvVar     = "LOGFILEMETRICEXPORTER_IMAGE"
+	FluentdImageEnvVar            = "RELATED_IMAGE_FLUENTD"
+	VectorImageEnvVar             = "RELATED_IMAGE_VECTOR"
+	LogfilesmetricImageEnvVar     = "RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER"
 	CertEventName                 = "cluster-logging-certs-generate"
 	ClusterInfrastructureInstance = "cluster"
 

@@ -93,9 +93,9 @@ RUN_CMD?=go run
 run:
 	@ls ./bundle/manifests/logging.openshift.io_*.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
-	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -192,21 +192,21 @@ deploy-example: deploy
 
 .PHONY: test-functional
 test-functional: test-functional-benchmarker test-functional-fluentd test-functional-vector
-	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -cover -race ./test/helpers/...
 
 .PHONY: test-functional-fluentd
 test-functional-fluentd:
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test --tags=fluentd -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-functional-vector
 test-functional-vector:
-	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
-	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test --tags=vector -race \
 		./test/functional/outputs/elasticsearch/... \
 		./test/functional/outputs/kafka/... \
@@ -226,9 +226,9 @@ test-functional-benchmarker: bin/functional-benchmarker
 
 .PHONY: test-unit
 test-unit: test-forwarder-generator
-	VECTOR_IMAGE=$(IMAGE_LOGGING_VECTOR) \
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	LOGFILEMETRICEXPORTER_IMAGE=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test -cover -race ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'`
 
 .PHONY: test-cluster
@@ -264,11 +264,11 @@ endif
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-local
 test-e2e-local: $(JUNITREPORT) deploy-image
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
@@ -276,7 +276,7 @@ test-e2e-local: $(JUNITREPORT) deploy-image
 	hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-clo-metric
-test-e2e-clo-metric: 
+test-e2e-clo-metric:
 	test/e2e/telemetry/clometrics_test.sh
 
 .PHONY: test-svt

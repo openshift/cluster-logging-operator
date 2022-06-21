@@ -9,7 +9,7 @@
 #
 # This will deploy the cluster-logging-operator using the latest available images. The component images can be
 # overriden by specifying them as env vars:
-# FLUENTD_IMAGE=myimageurl ./hack/gen-olm-artifacts.sh bundle/manifests/clusterlogging.clusterserviceversion.yaml
+# RELATED_IMAGE_FLUENTD=myimageurl ./hack/gen-olm-artifacts.sh bundle/manifests/clusterlogging.clusterserviceversion.yaml
 
 import  os, sys, yaml, re
 

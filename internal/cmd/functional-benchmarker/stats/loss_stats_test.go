@@ -11,7 +11,7 @@ var _ = Describe("Evaluating log loss stats", func() {
 
 	var (
 		formatLoaderMessage = func(seq int) string {
-			return fmt.Sprintf("goloader seq - %s - %010d - %s", "abc3-123-xyz", seq, "some message")
+			return fmt.Sprintf("goloader seq - %s - %010d - %s", "functional.0.00000000000000009B38CE8D200310A4", seq, "some message")
 		}
 
 		logs = PerfLogs{
@@ -24,6 +24,16 @@ var _ = Describe("Evaluating log loss stats", func() {
 			{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host2"}, Message: formatLoaderMessage(2)}},
 		}
 
+		baselineLogs = PerfLogs{
+			{AllLog: types.AllLog{Message: formatLoaderMessage(2)}},
+			{AllLog: types.AllLog{Message: formatLoaderMessage(1)}},
+			{AllLog: types.AllLog{Message: formatLoaderMessage(3)}},
+			{AllLog: types.AllLog{Message: formatLoaderMessage(4)}},
+			{AllLog: types.AllLog{Message: formatLoaderMessage(10)}},
+			{AllLog: types.AllLog{Message: formatLoaderMessage(1)}},
+			{AllLog: types.AllLog{Message: formatLoaderMessage(2)}},
+		}
+
 		stats LossStats
 	)
 
@@ -33,6 +43,19 @@ var _ = Describe("Evaluating log loss stats", func() {
 
 	Context("#splitEntriesByLoader", func() {
 
+		It("should separate logs by info in the message for baseline messages", func() {
+			Expect(splitEntriesByLoader(baselineLogs)).To(Equal(map[string][]PerfLog{
+				"functional.0.00000000000000009B38CE8D200310A4": {
+					{AllLog: types.AllLog{Message: formatLoaderMessage(2)}},
+					{AllLog: types.AllLog{Message: formatLoaderMessage(1)}},
+					{AllLog: types.AllLog{Message: formatLoaderMessage(3)}},
+					{AllLog: types.AllLog{Message: formatLoaderMessage(4)}},
+					{AllLog: types.AllLog{Message: formatLoaderMessage(10)}},
+					{AllLog: types.AllLog{Message: formatLoaderMessage(1)}},
+					{AllLog: types.AllLog{Message: formatLoaderMessage(2)}},
+				},
+			}))
+		})
 		It("should separate logs by host", func() {
 			Expect(splitEntriesByLoader(logs)).To(Equal(map[string][]PerfLog{
 				"host1": {
@@ -61,14 +84,14 @@ var _ = Describe("Evaluating log loss stats", func() {
 		It("should return the total number of missing entries", func() {
 			streamStats, err := stats.LossStatsFor("host1")
 			Expect(err).To(BeNil())
-			Expect(streamStats.Lost()).To(Equal(5), "Exp to find calculate total missing from the stream")
+			Expect(streamStats.Collected).To(Equal(4), "Exp to find calculate total missing from the stream")
 			Expect(streamStats.Range()).To(Equal(8), "Exp to find the total possible entries for the stream")
 		})
 	})
 
 	Context("#GetSequenceIdFrom", func() {
-		It("should return the total number of missing entries", func() {
-			Expect(GetSequenceIdFrom("goloader seq - abc3-123-xyz - 0000000006 - some message")).To(Equal(6))
+		It("should return the seq from the message", func() {
+			Expect(GetSequenceIdFrom("goloader seq - functional.0.000000000000000020EDEA5A11C91A7C - 0000000006 - KXmfZDNuNWxJtHbhAciehWlkxYjRWrC")).To(Equal(6))
 		})
 		It("should return an error if format is unexpected", func() {
 			_, err := GetSequenceIdFrom("here is my message")

@@ -2,7 +2,11 @@ package cluster
 
 import (
 	"fmt"
+	"io/ioutil"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -33,6 +37,10 @@ func New(options config.Options) *ClusterRunner {
 	}
 }
 
+func (r *ClusterRunner) Config() string {
+	return r.framework.Conf
+}
+
 func (r *ClusterRunner) Namespace() string {
 	return r.framework.Namespace
 }
@@ -53,6 +61,7 @@ func (r *ClusterRunner) Deploy() {
 	//modify config to only collect loader containers
 	r.framework.VisitConfig = func(conf string) string {
 		pattern := fmt.Sprintf("/var/log/pods/%s_*/loader-*/*.log", r.framework.Namespace)
+		conf = strings.Replace(conf, "/var/log/pods/*/*/*.log", pattern, 1)
 		conf = strings.Replace(conf, "/var/log/pods/**/*.log", pattern, 1)
 		return conf
 	}
@@ -79,7 +88,16 @@ func (r *ClusterRunner) Deploy() {
 			collectorBuilder := b.GetContainer(constants.CollectorName).
 				AddVolumeMount(containerVolumeName, constants.ContainerLogDir, "", true).
 				AddVolumeMount(PodLogsDirName, constants.PodLogDir, "", true).
+				AddEnvVarFromFieldRef("NAMESPACE", "metadata.namespace").
+				AddEnvVar("RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", "0.9").
 				WithPrivilege()
+			if r.RequestCPU != "" {
+				collectorBuilder.ResourceRequirements(corev1.ResourceRequirements{
+					Requests: map[corev1.ResourceName]resource.Quantity{
+						corev1.ResourceCPU: resource.MustParse(r.RequestCPU),
+					},
+				})
+			}
 			collectorBuilder.Update()
 
 			return r.framework.AddBenchmarkForwardOutput(b, r.framework.Forwarder.Spec.Outputs[0])
@@ -91,13 +109,57 @@ func (r *ClusterRunner) Deploy() {
 	}
 
 }
-func (r *ClusterRunner) WritesApplicationLogsOfSize(msgSize int) error {
-	return r.framework.WritesNApplicationLogsOfSize(r.TotalMessages, msgSize)
-}
 
 func (r *ClusterRunner) ReadApplicationLogs() ([]string, error) {
-	return r.framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+
+	artifacts, err := ioutil.ReadDir(r.ArtifactDir)
+	if err != nil {
+		return nil, err
+	}
+	files := []string{}
+	for _, file := range artifacts {
+		if strings.HasPrefix(file.Name(), "kubernetes.") {
+			files = append(files, file.Name())
+		}
+	}
+	logs := []string{}
+	for _, file := range files {
+		filePath := path.Join(r.ArtifactDir, file)
+		result, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			log.Error(err, "Trying to read application logs", "path", file)
+		}
+		appLogs := strings.Split(strings.TrimSpace(string(result)), "\n")
+		log.V(4).Info("App logs", "file", file, "logs", appLogs)
+		logs = append(logs, appLogs...)
+	}
+	log.V(3).Info("Returning all app logs", "logs", logs)
+	return logs, nil
 }
+func (r *ClusterRunner) FetchApplicationLogs() error {
+	out, err := oc.Exec().WithNamespace(r.framework.Namespace).Pod(r.framework.Name).Container(logging.OutputTypeFluentdForward).
+		WithCmd("ls", "/tmp").Run()
+	if err != nil {
+		return err
+	}
+	files := []string{}
+	for _, file := range strings.Split(out, "\n") {
+		if strings.HasPrefix(file, "kubernetes.") && strings.HasSuffix(file, "log.log") {
+			files = append(files, file)
+		}
+	}
+	for _, file := range files {
+		cmd := fmt.Sprintf("oc cp %s/%s:/tmp/%s %s/%s -c %s  --request-timeout=3m", r.framework.Namespace, r.framework.Name, file,
+			r.ArtifactDir, file, strings.ToLower(logging.OutputTypeFluentdForward))
+		log.V(2).Info("copy command", "cmd", cmd)
+		out, err := oc.Literal().From(cmd).Run()
+		if err != nil {
+			log.V(2).Error(err, "Trying to retrieve application logs", "path", file, "out", out)
+		}
+	}
+	return nil
+}
+
 func (r *ClusterRunner) Cleanup() {
 	r.framework.Cleanup()
 }

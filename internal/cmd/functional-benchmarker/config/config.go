@@ -9,19 +9,28 @@ const (
 <source>
   @type tail
   @id container-input
-  path "/var/log/pods/*/*/*.log"
-  pos_file "/var/lib/containers.log.pos"
+  path /var/log/pods/**/*
+  exclude_path ["/var/log/pods/**/*/*.gz","/var/log/pods/**/*/*.tmp"]
+  pos_file "/var/lib/fluentd/pos/containers-app"
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
   <parse>
     @type regexp
-    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<message>.*)$/
+    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<message>.*)$/
     time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
     keep_time_key true
   </parse>
 </source>
+
+<filter kubernetes.**>
+	@type concat
+	key message
+	partial_key logtag
+	partial_value P
+	separator ''
+</filter>
 
 <match **>
 	@type forward

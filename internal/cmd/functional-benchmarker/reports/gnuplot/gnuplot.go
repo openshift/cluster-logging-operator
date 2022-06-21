@@ -79,25 +79,33 @@ func exportLoss(outDir string, samples stats.LossStats) {
 	log.V(3).Info("Exporting message losses", "samples", samples)
 	buffer := []string{}
 	for _, stream := range samples.Streams() {
-		streamStats, _ := samples.LossStatsFor(stream)
+		streamStats, err := samples.LossStatsFor(stream)
+		if err != nil {
+			log.Error(err, "Unable to generate stats", "stream", stream)
+			return
+		}
+		if len(streamStats.Entries) == 0 {
+			log.V(0).Info("No entries returned for stream", "stream", stream, "streamStats", streamStats)
+			continue
+		}
 		lostLogs := 0
 		i := 0
 		for expSeqId := streamStats.MinSeqId; expSeqId <= streamStats.MaxSeqId; expSeqId++ {
-			seqId, _ := stats.GetSequenceIdFrom(streamStats.Entries[i].Message)
-			if seqId > expSeqId+1 {
+			seqId := streamStats.Entries[i].SequenceId
+			if seqId != expSeqId {
 				lostLogs += 1
 			} else {
 				i += 1 //found entry
 			}
 			buffer = append(buffer, fmt.Sprintf("%d %d", expSeqId, lostLogs))
-			expSeqId += 1
 		}
 
 		log.V(3).Info("Writing message losses data", "outDir", outDir, "losses", buffer)
-		err := ioutil.WriteFile(path.Join(outDir, fmt.Sprintf("%s-loss.data", stream)), []byte(strings.Join(buffer, "\n")), 0755)
+		err = ioutil.WriteFile(path.Join(outDir, fmt.Sprintf("%s-loss.data", stream)), []byte(strings.Join(buffer, "\n")), 0755)
 		if err != nil {
 			log.Error(err, "Error writing message loss metrics", "stream", stream)
 		}
+
 	}
 }
 
@@ -141,28 +149,10 @@ func plotData(plot, dir string, writer io.Writer) {
 	if writer != nil {
 		cmd.Stdout = writer
 	}
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		log.Error(err, "Unable to create StderrPipe")
-	}
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		log.V(1).Error(err, "Unable to create StdOutPipe")
-	}
-	if err := cmd.Start(); err != nil {
-		log.Error(err, "Error starting command", "dir", cmd.Dir, "cmd", cmd.String())
-	}
-	if stderr != nil {
-		raw, err := ioutil.ReadAll(stderr)
-		log.V(1).Info("Reading stderr", "stderr", raw, "err", err)
-	}
 
-	if stdout != nil {
-		raw, err := ioutil.ReadAll(stdout)
-		log.V(1).Info("Reading stdout", "stdout", raw, "stdout", err)
-	}
-	if err := cmd.Wait(); err != nil {
-		log.Error(err, "Error running command", "dir", cmd.Dir, "cmd", cmd.String())
+	err := cmd.Run()
+	if err != nil {
+		log.Error(err, "Error starting command", "dir", cmd.Dir, "cmd", cmd.String())
 	}
 }
 
@@ -174,28 +164,42 @@ func (r *GNUPlotReporter) generateStats() {
 	}
 	s := r.Stats
 	o := r.Options
-	escapeFn := func(content string) string {
-		return content
-	}
-	lossFmtFun := func() string {
-		losses := ""
-		for _, name := range s.Losses.Streams() {
-			streamLoss, _ := s.Losses.LossStatsFor(name)
-			losses += fmt.Sprintf("<tr><td>%s</td><td>%d</td><tr>", name, streamLoss.Lost()/streamLoss.Range()*100)
-		}
-		return losses
-	}
 
+	var lossFmtFun func() string
+	var escapeFn func(content string) string
 	for file, template := range reports {
 		if template == html {
 			escapeFn = htmllib.EscapeString
-		}
-		if template == markdown {
 			lossFmtFun = func() string {
 				losses := ""
 				for _, name := range s.Losses.Streams() {
 					streamLoss, _ := s.Losses.LossStatsFor(name)
-					losses += fmt.Sprintf("%s|%d\n", name, streamLoss.Lost()/streamLoss.Range()*100)
+					losses += fmt.Sprintf("<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%d</td><td>%.1f%%</td><tr>",
+						name,
+						streamLoss.MinSeqId,
+						streamLoss.MaxSeqId,
+						streamLoss.Purged,
+						streamLoss.Collected,
+						streamLoss.PercentCollected())
+				}
+				return losses
+			}
+		}
+		if template == markdown {
+			escapeFn = func(content string) string {
+				return "```\n" + content + "\n```"
+			}
+			lossFmtFun = func() string {
+				losses := ""
+				for _, name := range s.Losses.Streams() {
+					streamLoss, _ := s.Losses.LossStatsFor(name)
+					losses += fmt.Sprintf("| %s|%d|%d|%d|%d|%.1f%%\n",
+						name,
+						streamLoss.MinSeqId,
+						streamLoss.MaxSeqId,
+						streamLoss.Purged,
+						streamLoss.Collected,
+						streamLoss.PercentCollected())
 				}
 				return losses
 			}
@@ -248,13 +252,19 @@ func writeStatsToConsole(s stats.Statistics) {
 
 	fmt.Fprintf(w, "\n")
 
-	headerFmt = "\n %s\t%s\t"
+	headerFmt = "\n %s\t%s\t%s\t%s\t%s\t%s\t"
 	fmt.Fprintf(w, "\nPercent logs lost between first and last collected sequence ids")
-	fmt.Fprintf(w, headerFmt, "Stream", "Percent Lost")
-	fmt.Fprintf(w, headerFmt, div, div)
+	fmt.Fprintf(w, headerFmt, "Stream", "Min", "Max", "Purged", "Collected", "Per. Coll.")
+	fmt.Fprintf(w, headerFmt, div, div, div, div, div, div)
 	for _, name := range s.Losses.Streams() {
 		streamLoss, _ := s.Losses.LossStatsFor(name)
-		fmt.Fprintf(w, "\n %s\t%d\t", name, streamLoss.Lost()/streamLoss.Range()*100.0)
+		fmt.Fprintf(w, "\n%s\t%d\t%d\t%d\t%d\t\t%.1f%%\n",
+			name,
+			streamLoss.MinSeqId,
+			streamLoss.MaxSeqId,
+			streamLoss.Purged,
+			streamLoss.Collected,
+			streamLoss.PercentCollected())
 	}
 	fmt.Fprintf(w, "\n")
 }

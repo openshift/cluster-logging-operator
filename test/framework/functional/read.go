@@ -111,14 +111,8 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 			if !ok {
 				return nil, fmt.Errorf(fmt.Sprintf("can't find log of type %s", sourceType))
 			}
-			err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
-				result, err = f.RunCommand(outputName, "cat", file)
-				if result != "" && err == nil {
-					return true, nil
-				}
-				log.V(4).Error(err, "Polling logs")
-				return false, nil
-			})
+
+			result, err = f.ReadFileFrom(outputName, file)
 			if err == nil {
 				results = strings.Split(strings.TrimSpace(result), "\n")
 			}
@@ -127,6 +121,19 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 		}
 	}
 	return readLogs()
+}
+
+func (f *CollectorFunctionalFramework) ReadFileFrom(outputName, filePath string) (result string, err error) {
+	err = wait.PollImmediate(defaultRetryInterval, f.GetMaxReadDuration(), func() (done bool, err error) {
+		result, err = f.RunCommand(strings.ToLower(outputName), "cat", filePath)
+		if result != "" && err == nil {
+			return true, nil
+		}
+		log.V(4).Error(err, "Polling logs")
+		return false, nil
+	})
+	log.V(3).Info("Returning", "content", result)
+	return result, err
 }
 
 func (f *CollectorFunctionalFramework) ReadNApplicationLogsFrom(n uint64, outputName string) ([]string, error) {

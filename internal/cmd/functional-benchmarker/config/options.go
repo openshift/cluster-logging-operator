@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
 	"time"
 
@@ -37,6 +38,8 @@ type Options struct {
 	RunDuration         string
 	SampleDuration      string
 	PayloadSource       string
+
+	RequestCPU string
 }
 
 func InitOptions() Options {
@@ -45,7 +48,7 @@ func InitOptions() Options {
 	}
 	fs := flag.NewFlagSet("functional-benchmarker", flag.ExitOnError)
 
-	fs.StringVar(&options.Image, "image", "quay.io/openshift-logging/fluentd:1.14.5", "The Image to use to run the benchmark")
+	fs.StringVar(&options.Image, "image", "quay.io/openshift-logging/fluentd:1.14.6", "The Image to use to run the benchmark")
 	//fs.IntVar(&options.TotalMessages, "tot-messages", 10000, "The number of messages to write per stressor")
 	fs.IntVar(&options.MsgSize, "size", 1024, "The message size in bytes per stressor for 'synthetic' payload")
 	fs.IntVar(&options.LinesPerSecond, "lines-per-sec", 1, "The log lines per second per stressor")
@@ -64,9 +67,18 @@ func InitOptions() Options {
 	fs.StringVar(&options.CollectorConfigPath, "collector-config", "", "The path to the collector config to use")
 	fs.StringVar(&options.ArtifactDir, "artifact-dir", "", "The directory to write artifacts (default: Time.now())")
 
+	fs.StringVar(&options.RequestCPU, "request-cpu", "", "The amount of CPU request to allocate for the collector")
+
 	if err := fs.Parse(os.Args[1:]); err != nil {
 		fmt.Printf("Error parsing argument: %v", err)
 		os.Exit(1)
+	}
+
+	if options.RequestCPU != "" {
+		if _, err := resource.ParseQuantity(options.RequestCPU); err != nil {
+			fmt.Printf("Error parsing request-cpu %q: %v", options.RequestCPU, err)
+			os.Exit(1)
+		}
 	}
 
 	log.V(1).Info("Starting functional benchmarker", "args", options)
@@ -81,7 +93,7 @@ func InitOptions() Options {
 
 func ReadConfig(configFile string, baseline bool) string {
 	if baseline {
-		log.V(0).Info("Using the baseline config")
+		log.V(0).Info("Using the baseline config. Modifying source to collect only loader")
 		return FluentdBaselineConf
 	}
 	var reader func() ([]byte, error)

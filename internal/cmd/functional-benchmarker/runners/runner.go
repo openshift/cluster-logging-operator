@@ -8,12 +8,13 @@ import (
 
 type Runner interface {
 	Deploy()
-	WritesApplicationLogsOfSize(msgSize int) error
 	ReadApplicationLogs() ([]string, error)
+	FetchApplicationLogs() error
 	SampleCollector() *stats.Sample
 	Cleanup()
 	Namespace() string
 	Pod() string
+	Config() string
 }
 
 func NewRunner(options config.Options) Runner {

@@ -67,15 +67,10 @@ const (
 	UnsecureFluentConfBenchmark = `
 <system>
   log_level debug
-  workers 4
 </system>
 <source>
   @type forward
 </source>
-<filter **>
-	@type stdout
-	include_time_key true 
-</filter>
 
 <filter kubernetes.** var.log.containers.**>
   @type record_transformer
@@ -90,11 +85,15 @@ const (
 <match kubernetes.** var.log.containers.**>
   @type file
   append true
-  path /tmp/app.logs
-  symlink_path /tmp/app-logs
+  path /tmp/${tag}
   <format>
     @type json
   </format>
+  <buffer tag>
+    chunk_limit_size 12Gb
+    flush_mode immediate
+    flush_thread_count 2
+  </buffer>
 </match>
 
 <filter linux-audit.log**>

@@ -66,7 +66,7 @@ plot 'latency.data' using 1:2 with lines`
 <div>
   Latency of logs collected based on the time the log was generated and ingested
 </div>
-<table>
+<table border="1">
   <tr>
     <th>Total</th>
     <th>Size</th>
@@ -108,16 +108,23 @@ plot 'latency.data' using 1:2 with lines`
     <img src="loss.png">
   </div>
   <div>
-	<table>
+	<table border="1">
 	  <tr>
 		<th>Stream</th>
-		<th>Percent Lost</th>
+		<th>Min Seq</th>
+		<th>Max Seq</th>
+		<th>Purged</th>
+		<th>Collected</th>
+		<th>Percent Collected</th>
 	  </tr>
 	  <tr>
       %s
+    </table>
   </div>
   <div>
+    <code style="display:block;white-space:pre-wrap">
     %s
+	</code>
   </div>
 </html>
 `
@@ -134,7 +141,7 @@ plot 'latency.data' using 1:2 with lines`
 
 Total Msg| Size | Elapsed (s) | Mean (s)| Min(s) | Max (s)| Median (s)
 ---------|------|-------------|---------|--------|--------|---
-%d|%d|%s|%.3f|%.3f|%.3f%.3f
+%d|%d|%s|%.3f|%.3f|%.3f|%.3f
 
 ![](cpu.png)
 
@@ -145,13 +152,13 @@ Total Msg| Size | Elapsed (s) | Mean (s)| Min(s) | Max (s)| Median (s)
 ![](loss.png)
 
 ## Percent logs lost between first and last collected sequence ids
-Stream | Percent Lost
--------| ------------
+Stream |  Min Seq | Max Seq | Purged | Collected | Percent Collected |
+-------| ---------| --------| -------|-----------|--------------|
 %s
 
 ## Config
-<code style="white-space:pre;">
+
 %s
-</code>
+
 `
 )

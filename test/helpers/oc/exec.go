@@ -73,7 +73,7 @@ func (e *exec) WithPodGetter(cmd Command) Execer {
 }
 
 func (e *exec) Container(container string) Execer {
-	e.container = container
+	e.container = strings.ToLower(container)
 	return e
 }
 

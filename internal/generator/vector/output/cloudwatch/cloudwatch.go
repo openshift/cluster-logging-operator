@@ -128,9 +128,8 @@ if ( .log_type == "infrastructure" ) {
  .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
 }
 if ( .tag == ".journal.system" ) {
- .stream_name =  ( .host + .tag ) ?? .stream_name
+ .stream_name =  ( .hostname + .tag ) ?? .stream_name
 }
-del(.host)
 del(.tag)
 del(.source_type)
 	`)

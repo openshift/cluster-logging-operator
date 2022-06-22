@@ -10,7 +10,6 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -854,7 +853,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Name: "myInput-1",
 					Application: &logging.Application{
-						Selector: &metav1.LabelSelector{
+						Selector: &logging.LabelSelector{
 							MatchLabels: map[string]string{
 								"environment": "production",
 								"app":         "nginx",
@@ -865,7 +864,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Name: "myInput-2",
 					Application: &logging.Application{
-						Selector: &metav1.LabelSelector{
+						Selector: &logging.LabelSelector{
 							MatchLabels: map[string]string{
 								"environment": "dev",
 								"app":         "nginx",
@@ -1557,7 +1556,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Name: "myInput-1",
 					Application: &logging.Application{
-						Selector: &metav1.LabelSelector{
+						Selector: &logging.LabelSelector{
 							MatchLabels: map[string]string{
 								"environment": "production",
 								"app":         "nginx",
@@ -1569,7 +1568,7 @@ var _ = Describe("Generating fluentd config", func() {
 				{
 					Name: "myInput-2",
 					Application: &logging.Application{
-						Selector: &metav1.LabelSelector{
+						Selector: &logging.LabelSelector{
 							MatchLabels: map[string]string{
 								"environment": "dev",
 								"app":         "nginx",

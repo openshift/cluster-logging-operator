@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"strings"
 	"time"
@@ -159,7 +158,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 					func(spec *logging.InputSpec) {
 						spec.Application = &logging.Application{
 							Namespaces: []string{framework.Namespace},
-							Selector: &metav1.LabelSelector{
+							Selector: &logging.LabelSelector{
 								MatchLabels: map[string]string{labelKey: labelValue},
 							},
 						}

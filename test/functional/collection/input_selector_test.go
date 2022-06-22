@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
@@ -47,7 +46,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 					FromInputWithVisitor("application-logs1",
 						func(spec *logging.InputSpec) {
 							spec.Application = &logging.Application{
-								Selector: &metav1.LabelSelector{
+								Selector: &logging.LabelSelector{
 									MatchLabels: appLabels1,
 								},
 							}
@@ -57,7 +56,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 				builder.FromInputWithVisitor("application-logs2",
 					func(spec *logging.InputSpec) {
 						spec.Application = &logging.Application{
-							Selector: &metav1.LabelSelector{
+							Selector: &logging.LabelSelector{
 								MatchLabels: appLabels2,
 							},
 						}
@@ -107,7 +106,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 						func(spec *logging.InputSpec) {
 							spec.Application = &logging.Application{
 								Namespaces: []string{instance.Namespace},
-								Selector: &metav1.LabelSelector{
+								Selector: &logging.LabelSelector{
 									MatchLabels: appLabels1,
 								},
 							}

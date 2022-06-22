@@ -1,7 +1,9 @@
 package fluentd
 
 import (
+	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/cloudwatch"
@@ -25,7 +27,19 @@ func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secr
 		bufspec = clspec.Forwarder.Fluentd.Buffer
 	}
 	for _, o := range clfspec.Outputs {
-		secret := secrets[o.Name]
+		var secret *corev1.Secret
+		if s, ok := secrets[o.Name]; ok {
+			secret = s
+			log.V(9).Info("Using secret configured in output: " + o.Name)
+		} else {
+			secret = secrets[constants.LogCollectorToken]
+			if secret != nil {
+				log.V(9).Info("Using secret configured in " + constants.LogCollectorToken)
+			} else {
+				log.V(9).Info("No Secret found in " + constants.LogCollectorToken)
+			}
+		}
+
 		switch o.Type {
 		case logging.OutputTypeElasticsearch:
 			if _, ok := op[elements.CharEncoding]; !ok {

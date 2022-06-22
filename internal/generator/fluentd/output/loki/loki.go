@@ -131,6 +131,13 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			}
 			conf = append(conf, bt)
 		}
+	} else if secret != nil {
+		// Use secret of logcollector ServiceAccount as fallback
+		conf = append(conf, CAFile{
+			CAFilePath: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt",
+		}, BearerTokenFile{
+			BearerTokenFilePath: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+		})
 	}
 	return conf
 }

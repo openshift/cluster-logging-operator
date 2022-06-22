@@ -117,7 +117,9 @@ func TestLokiOutput(t *testing.T) {
 		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
-		config.content = "url https://logs-us-west1.grafana.net"
+		config.content = `url https://logs-us-west1.grafana.net
+ca_cert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token`
 		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results), results)
 	})
 
@@ -152,7 +154,9 @@ func TestLokiOutput(t *testing.T) {
 		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
-		config.content = `url https://logs-us-west1.grafana.net`
+		config.content = `url https://logs-us-west1.grafana.net
+ca_cert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token`
 		// NOTE: kubernetes.host should be added automatically if not present.
 		config.filter = `
       _kubernetes_container_name ${record.dig("kubernetes","container_name")}
@@ -180,6 +184,8 @@ func TestLokiOutput(t *testing.T) {
 		}}
 		config.content = `url https://logs-us-west1.grafana.net/a-tenant
     tenant ${record.dig("foo","bar","baz")}
+ca_cert /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token
 `
 		es := Conf(nil, secrets["loki-receiver"], outputs[0], generator.NoOptions)
 		results, err := g.GenerateConf(es...)

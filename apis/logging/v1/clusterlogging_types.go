@@ -125,13 +125,27 @@ type ProxySpec struct {
 	Resources *v1.ResourceRequirements `json:"resources"`
 }
 
-// This is the struct that will contain information pertinent to Log storage (Elasticsearch)
+// The LogStoreSpec contains information about how logs are stored.
 type LogStoreSpec struct {
-	// The type of Log Storage to configure
+	// The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
+	// managed by elasticsearch-operator or Loki managed by loki-operator (LokiStack) as a default log store.
+	//
+	// When using ElasticSearch as a log store this operator also manages the ElasticSearch deployment.
+	//
+	// When using LokiStack as a log store this operator does not manage the LokiStack, but only creates
+	// configuration referencing an existing LokiStack deployment. The user is responsible for creating and
+	// managing the LokiStack himself.
+	//
+	// +kubebuilder:validation:Enum=elasticsearch;lokistack
 	Type LogStoreType `json:"type"`
 
 	// Specification of the Elasticsearch Log Store component
 	ElasticsearchSpec `json:"elasticsearch,omitempty"`
+
+	// LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
+	//
+	// The cluster-logging-operator does not create or manage the referenced LokiStack.
+	LokiStack LokiStackStoreSpec `json:"lokistack,omitempty"`
 
 	// Retention policy defines the maximum age for an index after which it should be deleted
 	//
@@ -197,6 +211,15 @@ type ElasticsearchSpec struct {
 
 	// Specification of the Elasticsearch Proxy component
 	ProxySpec `json:"proxy,omitempty"`
+}
+
+// LokiStackStoreSpec is used to set up cluster-logging to use a LokiStack as logging storage.
+// It points to an existing LokiStack in the same namespace.
+type LokiStackStoreSpec struct {
+	// Name of the LokiStack resource.
+	//
+	// +required
+	Name string `json:"name"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection
@@ -563,6 +586,7 @@ type LogStoreType string
 
 const (
 	LogStoreTypeElasticsearch LogStoreType = "elasticsearch"
+	LogStoreTypeLokiStack     LogStoreType = "lokistack"
 )
 
 type ElasticsearchRoleType string

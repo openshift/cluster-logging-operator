@@ -107,7 +107,7 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	log.V(0).Info("Removing managed store components...")
-	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana} {
+	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeLokiStackRbac} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		if err := remove(); err != nil {

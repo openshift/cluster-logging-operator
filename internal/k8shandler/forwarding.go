@@ -124,13 +124,31 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 
 	// Check for default configuration
 	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
-		if clusterRequest.Cluster.Spec.LogStore != nil && clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
+		logStore := clusterRequest.Cluster.Spec.LogStore
+		if logStore != nil &&
+			(logStore.Type == logging.LogStoreTypeElasticsearch ||
+				logStore.Type == logging.LogStoreTypeLokiStack) {
 			log.V(2).Info("ClusterLogForwarder forwarding to default store")
-			defaultPipeline := logging.PipelineSpec{
-				InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
-				OutputRefs: []string{logging.OutputNameDefault},
+			switch logStore.Type {
+			case logging.LogStoreTypeElasticsearch:
+				clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
+					{
+						InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
+						OutputRefs: []string{logging.OutputNameDefault},
+					},
+				}
+			case logging.LogStoreTypeLokiStack:
+				clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
+					{
+						InputRefs:  []string{logging.InputNameApplication},
+						OutputRefs: []string{logging.OutputNameDefault},
+					},
+					{
+						InputRefs:  []string{logging.InputNameInfrastructure},
+						OutputRefs: []string{logging.OutputNameDefault + "-infra"},
+					},
+				}
 			}
-			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{defaultPipeline}
 			// Continue with normalization to fill out spec and status.
 		} else if clusterRequest.ForwarderRequest == nil {
 			log.V(3).Info("ClusterLogForwarder disabled")
@@ -349,13 +367,29 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		if clusterRequest.Cluster.Spec.LogStore == nil {
 			status.Outputs.Set(name, condMissing("no default log store specified"))
 		} else {
-			spec.Outputs = append(spec.Outputs, logging.OutputSpec{
-				Name:   logging.OutputNameDefault,
-				Type:   logging.OutputTypeElasticsearch,
-				URL:    constants.LogStoreURL,
-				Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
-			})
-			status.Outputs.Set(name, condReady)
+			logStore := clusterRequest.Cluster.Spec.LogStore
+			switch logStore.Type {
+			case logging.LogStoreTypeElasticsearch:
+				spec.Outputs = append(spec.Outputs, logging.OutputSpec{
+					Name:   logging.OutputNameDefault,
+					Type:   logging.OutputTypeElasticsearch,
+					URL:    constants.LogStoreURL,
+					Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
+				})
+				status.Outputs.Set(name, condReady)
+			case logging.LogStoreTypeLokiStack:
+				spec.Outputs = append(spec.Outputs, logging.OutputSpec{
+					Name: logging.OutputNameDefault,
+					Type: logging.OutputTypeLoki,
+					URL:  fmt.Sprintf("https://%s-gateway-http.%s.svc:8080/api/logs/v1/application", logStore.LokiStack.Name, constants.OpenshiftNS),
+				}, logging.OutputSpec{
+					Name: logging.OutputNameDefault + "-infra",
+					Type: logging.OutputTypeLoki,
+					URL:  fmt.Sprintf("https://%s-gateway-http.%s.svc:8080/api/logs/v1/infrastructure", logStore.LokiStack.Name, constants.OpenshiftNS),
+				})
+			default:
+				status.Outputs.Set(name, condInvalid(fmt.Sprintf("unknown log store type: %s", clusterRequest.Cluster.Spec.LogStore.Type)))
+			}
 		}
 	}
 

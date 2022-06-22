@@ -615,6 +615,37 @@ pipelines:
 			Expect(status.Inputs[logging.InputNameInfrastructure]).To(HaveCondition("Ready", true, "", ""))
 		})
 
+		It("generates default configuration for empty spec with LokiStack log store", func() {
+			cluster.Spec.LogStore = &logging.LogStoreSpec{
+				Type: logging.LogStoreTypeLokiStack,
+				LokiStack: logging.LokiStackStoreSpec{
+					Name: "lokistack-testing",
+				},
+			}
+
+			spec, _ := request.NormalizeForwarder()
+			Expect(YAMLString(spec)).To(EqualLines(`
+outputs:
+- name: default
+	type: loki
+	url: https://lokistack-testing-gateway-http.openshift-logging.svc:8080/api/logs/v1/application
+- name: default-infra
+	type: loki
+	url: https://lokistack-testing-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure
+pipelines:
+- inputRefs:
+  - application
+  name: pipeline_0_
+  outputRefs:
+  - default
+- inputRefs:
+  - infrastructure
+  name: pipeline_1_
+  outputRefs:
+  - default-infra
+`))
+		})
+
 		It("forwards logs to an explicit default logstore", func() {
 			cluster.Spec.LogStore = &logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,

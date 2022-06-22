@@ -227,6 +227,9 @@ kubernetes_namespace_name = "{{kubernetes.pod_namespace}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
+# TLS Config
+[sinks.loki_receiver.tls]
+ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 # Bearer Auth Config
 [sinks.loki_receiver.auth]
 strategy = "bearer"

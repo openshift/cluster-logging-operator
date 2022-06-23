@@ -2,8 +2,6 @@ package forwarding
 
 import (
 	"context"
-	"time"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -16,44 +14,10 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
-
-// Add creates a new Controller and adds it to the Manager. The Manager will set fields on the Controller
-// and Start it when the Manager is Started.
-func Add(mgr manager.Manager) error {
-	return add(mgr, newReconciler(mgr))
-}
-
-// newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileForwarder{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
-	}
-}
-
-// add adds a new Controller to mgr with r as the reconcile.Reconciler
-func add(mgr manager.Manager, r reconcile.Reconciler) error {
-	// Create a new controller
-	c, err := controller.New("clusterlogforwarder-controller", mgr, controller.Options{Reconciler: r})
-	if err != nil {
-		return err
-	}
-
-	// Watch for changes to primary resource ClusterLogging
-	err = c.Watch(&source.Kind{Type: &logging.ClusterLogForwarder{}}, &handler.EnqueueRequestForObject{})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 var _ reconcile.Reconciler = &ReconcileForwarder{}
 
@@ -65,11 +29,6 @@ type ReconcileForwarder struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 }
-
-var (
-	reconcilePeriod = 30 * time.Second
-	reconcileResult = reconcile.Result{RequeueAfter: reconcilePeriod}
-)
 
 var condReady = status.Condition{Type: logging.ConditionReady, Status: corev1.ConditionTrue}
 
@@ -89,7 +48,7 @@ func condInvalid(format string, args ...interface{}) status.Condition {
 // and what is in the Logging.Spec
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileForwarder) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.V(3).Info("clusterlogforwarder-controller fetching LF instance")
 
 	// Fetch the ClusterLogForwarder instance
@@ -98,10 +57,10 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request reconcile.Re
 		log.V(2).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err)
 		if !errors.IsNotFound(err) {
 			// Error reading - requeue the request.
-			return reconcileResult, err
+			return ctrl.Result{}, err
 		}
 		// else the object is not found -- meaning it was removed so stop reconciliation
-		return reconcile.Result{}, nil
+		return ctrl.Result{}, nil
 	}
 
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
@@ -141,21 +100,23 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request reconcile.Re
 		return result, err
 	}
 
-	return reconcile.Result{}, reconcileErr
+	return ctrl.Result{}, reconcileErr
 }
 
-func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (reconcile.Result, error) {
+func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (ctrl.Result, error) {
 	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
 		log.Error(err, "clusterlogforwarder-controller error updating status")
-		return reconcileResult, err
+		return ctrl.Result{}, err
 	}
 
-	return reconcile.Result{}, nil
+	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ReconcileForwarder) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
+		Watches(&source.Kind{Type: &logging.ClusterLogForwarder{}}, &handler.EnqueueRequestForObject{})
+	return controllerBuilder.
 		For(&logging.ClusterLogForwarder{}).
 		Complete(r)
 }

@@ -59,6 +59,9 @@ concurrency 2
 include_time_key true
 log_rejected_request true
 {{compose_one .EndpointConfig}}
+<buffer>
+  disable_chunk_backup true
+</buffer>
 {{end}}`
 }
 

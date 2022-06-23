@@ -92,6 +92,9 @@ var _ = Describe("Generating fluentd config", func() {
     aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
     include_time_key true
     log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
   </match>
 </label>
 `
@@ -145,6 +148,9 @@ var _ = Describe("Generating fluentd config", func() {
     aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
     include_time_key true
     log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
   </match>
 </label>
 `
@@ -201,6 +207,9 @@ var _ = Describe("Generating fluentd config", func() {
     aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
     include_time_key true
     log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
   </match>
 </label>
 `
@@ -258,6 +267,9 @@ var _ = Describe("Generating fluentd config", func() {
     aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
     include_time_key true
     log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
   </match>
 </label>
 `
@@ -349,6 +361,9 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </web_identity_credentials>    
     include_time_key true
     log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
   </match>
 </label>
 `
@@ -405,6 +420,9 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </web_identity_credentials>      
     include_time_key true
     log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
   </match>
 </label>
 `
@@ -464,6 +482,9 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </web_identity_credentials>     
     include_time_key true
     log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
   </match>
 </label>
 `

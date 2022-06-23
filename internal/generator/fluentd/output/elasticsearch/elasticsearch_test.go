@@ -119,6 +119,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -161,6 +162,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>
@@ -264,6 +266,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -307,6 +310,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>
@@ -398,6 +402,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -437,6 +442,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>
@@ -526,6 +532,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -566,6 +573,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>
@@ -666,6 +674,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -707,6 +716,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>
@@ -797,6 +807,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -837,6 +848,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>
@@ -930,6 +942,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -970,6 +983,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>
@@ -1063,6 +1077,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -1102,6 +1117,7 @@ var _ = Describe("Generate fluentd config", func() {
       total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
       chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
       overflow_action block
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>

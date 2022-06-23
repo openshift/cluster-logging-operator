@@ -156,6 +156,7 @@ var _ = Describe("Generating fluentd config", func() {
                 total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
                 chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
                 overflow_action block
+                disable_chunk_backup true
               </buffer>
           </match>
           <match **>
@@ -195,6 +196,7 @@ var _ = Describe("Generating fluentd config", func() {
                 total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
                 chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
                 overflow_action block
+                disable_chunk_backup true
               </buffer>
           </match>
         </label>`
@@ -293,6 +295,7 @@ var _ = Describe("Generating fluentd config", func() {
                 total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
                 chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
                 overflow_action block
+                disable_chunk_backup true
               </buffer>
           </match>
           <match **>
@@ -332,6 +335,7 @@ var _ = Describe("Generating fluentd config", func() {
                 total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
                 chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
                 overflow_action block
+                disable_chunk_backup true
               </buffer>
           </match>
         </label>`
@@ -415,7 +419,8 @@ var _ = Describe("Generating fluentd config", func() {
                 total_limit_size 512m
                 chunk_limit_size 256m
                 overflow_action drop_oldest_chunk
-              </buffer>
+                disable_chunk_backup true
+             </buffer>
           </match>
           <match **>
               @type elasticsearch
@@ -453,6 +458,7 @@ var _ = Describe("Generating fluentd config", func() {
                 total_limit_size 512m
                 chunk_limit_size 256m
                 overflow_action drop_oldest_chunk
+                disable_chunk_backup true
               </buffer>
           </match>
         </label>`
@@ -504,6 +510,7 @@ var _ = Describe("Generating fluentd config", func() {
             total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
             chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
             overflow_action block
+            disable_chunk_backup true
             </buffer>
 
            </match>
@@ -542,6 +549,7 @@ var _ = Describe("Generating fluentd config", func() {
           total_limit_size 512m
           chunk_limit_size 256m
           overflow_action drop_oldest_chunk
+          disable_chunk_backup true
           </buffer>
 
         </match>
@@ -610,7 +618,8 @@ var _ = Describe("Generating fluentd config", func() {
 		                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
 		                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
 		                overflow_action block
-		              </buffer>
+		                disable_chunk_backup true
+                    </buffer>
 		          </match>
 		        </label>`
 
@@ -662,6 +671,7 @@ var _ = Describe("Generating fluentd config", func() {
 		                total_limit_size 512m
 		                chunk_limit_size 256m
 		                overflow_action drop_oldest_chunk
+                        disable_chunk_backup true
 		              </buffer>
 		          </match>
 		        </label>`
@@ -712,6 +722,7 @@ var _ = Describe("Generating fluentd config", func() {
                total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
                chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
                overflow_action block
+               disable_chunk_backup true
            </buffer>
         </match>
         </label>`
@@ -746,6 +757,7 @@ var _ = Describe("Generating fluentd config", func() {
                total_limit_size 512m
                chunk_limit_size 256m
                overflow_action drop_oldest_chunk
+               disable_chunk_backup true
            </buffer>
         </match>
         </label>`

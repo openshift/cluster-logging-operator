@@ -21,6 +21,7 @@ func (bc BufferConf) Template() string {
 <buffer>
 {{- end}}
 {{compose_one .BufferConfData | indent 2}}
+  disable_chunk_backup true
 </buffer>
 {{end}}`
 }

@@ -237,20 +237,16 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 
 func BearerTokenAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	conf := []Element{}
-	if o.Secret == nil {
-		// internal loki, use bearer token of logcollector service account
-		// the secret contains the token itself
-		if secret != nil && security.HasBearerTokenFileKey(secret) {
+	if secret != nil {
+		// Inject token from secret, either provided by user using a custom secret
+		// or from the default logcollector service account.
+		if security.HasBearerTokenFileKey(secret) {
 			conf = append(conf, BasicAuthConf{
 				Desc:        "Bearer Auth Config",
 				ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-			})
-			bt := BearerToken{
+			}, BearerToken{
 				Token: security.GetFromSecret(secret, constants.BearerTokenFileKey),
-			}
-			conf = append(conf, bt)
-		} else {
-			return []Element{}
+			})
 		}
 	}
 	return conf

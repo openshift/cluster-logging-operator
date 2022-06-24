@@ -185,6 +185,48 @@ password = "password"
 
 `,
 		}),
+		Entry("with custom bearer token", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+						Secret: &logging.OutputSecretSpec{
+							Name: "custom-loki-secret",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"loki-receiver": {
+					Data: map[string][]byte{
+						"token": []byte("token-for-custom-loki"),
+					},
+				},
+			},
+			ExpectedConf: `
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["application"]
+endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+
+[sinks.loki_receiver.encoding]
+codec = "json"
+
+[sinks.loki_receiver.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+
+# Bearer Auth Config
+[sinks.loki_receiver.auth]
+strategy = "bearer"
+token = "token-for-custom-loki"
+`,
+		}),
 	)
 })
 
@@ -194,7 +236,7 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 		return Conf(clfspec.Outputs[0], inputPipeline, secrets[constants.LogCollectorToken], generator.NoOptions)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
-		Entry("with bearer token", helpers.ConfGenerateTest{
+		Entry("with default logcollector bearer token", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{

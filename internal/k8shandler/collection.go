@@ -243,7 +243,9 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorService() error {
 			current.Spec.Ports = desired.Spec.Ports
 			return clusterRequest.Update(current)
 		})
-		log.V(3).Error(retryErr, "Reconcile Service retry error")
+		if retryErr != nil {
+			log.V(3).Error(retryErr, "Reconcile Service retry error")
+		}
 		return retryErr
 	}
 	return err
@@ -316,7 +318,9 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorServiceMonitor() 
 
 			return clusterRequest.Update(current)
 		})
-		log.V(3).Error(retryErr, "Reconcile ServiceMonitor retry error")
+		if retryErr != nil {
+			log.V(3).Error(retryErr, "Reconcile ServiceMonitor retry error")
+		}
 		return retryErr
 	}
 	return err

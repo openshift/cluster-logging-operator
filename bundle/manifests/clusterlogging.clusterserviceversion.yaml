@@ -385,11 +385,11 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: cluster-logging-operator
-                - name: VECTOR_IMAGE
+                - name: RELATED_IMAGE_VECTOR
                   value: quay.io/openshift-logging/vector:0.21-rh
-                - name: FLUENTD_IMAGE
+                - name: RELATED_IMAGE_FLUENTD
                   value: quay.io/openshift-logging/fluentd:1.14.6
-                - name: LOGFILEMETRICEXPORTER_IMAGE
+                - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
                   value: quay.io/openshift-logging/log-file-metric-exporter:latest
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
                 imagePullPolicy: IfNotPresent
@@ -498,4 +498,11 @@ spec:
   minKubeVersion: 1.18.3
   provider:
     name: Red Hat, Inc
+  relatedImages:
+  - image: quay.io/openshift-logging/vector:0.21-rh
+    name: vector
+  - image: quay.io/openshift-logging/fluentd:1.14.6
+    name: fluentd
+  - image: quay.io/openshift-logging/log-file-metric-exporter:latest
+    name: log-file-metric-exporter
   version: 5.5.0

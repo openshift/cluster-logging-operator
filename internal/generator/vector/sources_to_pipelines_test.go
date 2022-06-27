@@ -44,69 +44,33 @@ route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_wit
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
-source = """
+source = '''
   .log_type = "application"
-"""
+'''
 
 # Set log_type to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
-source = """
+source = '''
   .log_type = "infrastructure"
-"""
-
-# Tag host audit files
-[transforms.tagged_host_audit_logs]
-type = "remap"
-inputs = ["host_audit_logs"]
-source = """
-  .tag = ".linux-audit.log"
-"""
-
-# Tag k8s audit files
-[transforms.tagged_k8s_audit_logs]
-type = "remap"
-inputs = ["k8s_audit_logs"]
-source = """
-  .tag = ".k8s-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-"""
-
-# Tag openshift audit files
-[transforms.tagged_openshift_audit_logs]
-type = "remap"
-inputs = ["openshift_audit_logs"]
-source = """
-  .tag = ".openshift-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-"""
-
-# Tag ovn audit files
-[transforms.tagged_ovn_audit_logs]
-type = "remap"
-inputs = ["ovn_audit_logs"]
-source = """
-  .tag = ".ovn-audit.log"
-"""
+'''
 
 # Set log_type to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["tagged_host_audit_logs","tagged_k8s_audit_logs","tagged_openshift_audit_logs","tagged_ovn_audit_logs"]
-source = """
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
+source = '''
   .log_type = "audit"
   ."@timestamp" = del(.timestamp)
-"""
+'''
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
-source = """
+source = '''
   .
-"""
+'''
 `,
 		}),
 		Entry("Send same logtype to multiple output", helpers.ConfGenerateTest{
@@ -141,76 +105,40 @@ route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_wit
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
-source = """
+source = '''
   .log_type = "application"
-"""
+'''
 
 # Set log_type to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
-source = """
+source = '''
   .log_type = "infrastructure"
-"""
-
-# Tag host audit files
-[transforms.tagged_host_audit_logs]
-type = "remap"
-inputs = ["host_audit_logs"]
-source = """
-  .tag = ".linux-audit.log"
-"""
-
-# Tag k8s audit files
-[transforms.tagged_k8s_audit_logs]
-type = "remap"
-inputs = ["k8s_audit_logs"]
-source = """
-  .tag = ".k8s-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-"""
-
-# Tag openshift audit files
-[transforms.tagged_openshift_audit_logs]
-type = "remap"
-inputs = ["openshift_audit_logs"]
-source = """
-  .tag = ".openshift-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-"""
-
-# Tag ovn audit files
-[transforms.tagged_ovn_audit_logs]
-type = "remap"
-inputs = ["ovn_audit_logs"]
-source = """
-  .tag = ".ovn-audit.log"
-"""
+'''
 
 # Set log_type to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["tagged_host_audit_logs","tagged_k8s_audit_logs","tagged_openshift_audit_logs","tagged_ovn_audit_logs"]
-source = """
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
+source = '''
   .log_type = "audit"
   ."@timestamp" = del(.timestamp)
-"""
+'''
 
 [transforms.pipeline1]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
-source = """
+source = '''
   .
-"""
+'''
 
 [transforms.pipeline2]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   .
-"""
+'''
 `,
 		}),
 		Entry("Route Logs by Namespace(s)", helpers.ConfGenerateTest{
@@ -241,9 +169,9 @@ route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_wit
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
-source = """
+source = '''
   .log_type = "application"
-"""
+'''
 
 [transforms.route_application_logs]
 type = "route"
@@ -253,9 +181,9 @@ route.myapplogs = '(.kubernetes.namespace_name == "test-ns1") || (.kubernetes.na
 [transforms.pipeline]
 type = "remap"
 inputs = ["route_application_logs.myapplogs"]
-source = """
+source = '''
   .
-"""
+'''
 `,
 		}),
 		Entry("Route Logs by Namespaces(s), and Labels(s)", helpers.ConfGenerateTest{
@@ -292,9 +220,9 @@ route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_wit
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
-source = """
+source = '''
   .log_type = "application"
-"""
+'''
 
 [transforms.route_application_logs]
 type = "route"
@@ -304,9 +232,9 @@ route.myapplogs = '((.kubernetes.namespace_name == "myapp1") || (.kubernetes.nam
 [transforms.pipeline]
 type = "remap"
 inputs = ["route_application_logs.myapplogs"]
-source = """
+source = '''
   .
-"""
+'''
 `,
 		}),
 		Entry("Add Openshift Label(s)", helpers.ConfGenerateTest{
@@ -333,24 +261,24 @@ route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_wit
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
-source = """
+source = '''
   .log_type = "application"
-"""
+'''
 
 # Set log_type to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
-source = """
+source = '''
   .log_type = "infrastructure"
-"""
+'''
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["application","infrastructure"]
-source = """
+source = '''
   .openshift.labels = {"label1":"value1"}
-"""
+'''
 `,
 		}),
 		Entry("Parse log message as Jaon", helpers.ConfGenerateTest{
@@ -375,27 +303,27 @@ route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_wit
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
-source = """
+source = '''
   .log_type = "application"
-"""
+'''
 
 # Set log_type to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
-source = """
+source = '''
   .log_type = "infrastructure"
-"""
+'''
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["application","infrastructure"]
-source = """
+source = '''
   parsed, err = parse_json(.message)
   if err == null {
     .structured = parsed
   }
-"""
+'''
 `,
 		}),
 	)

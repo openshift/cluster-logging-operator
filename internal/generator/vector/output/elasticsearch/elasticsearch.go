@@ -129,7 +129,7 @@ type = "lua"
 inputs = {{.InLabel}}
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -189,7 +189,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 {{end}}`,
 	}
 }

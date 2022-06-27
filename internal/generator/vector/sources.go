@@ -12,10 +12,17 @@ import (
 )
 
 const (
-	HostAuditLogs      = "host_audit_logs"
-	K8sAuditLogs       = "k8s_audit_logs"
-	OpenShiftAuditLogs = "openshift_audit_logs"
-	OvnAuditLogs       = "ovn_audit_logs"
+	RawHostAuditLogs = "raw_host_audit_logs"
+	HostAuditLogs    = "host_audit_logs"
+
+	RawK8sAuditLogs = "raw_k8s_audit_logs"
+	K8sAuditLogs    = "k8s_audit_logs"
+
+	RawOpenshiftAuditLogs = "raw_openshift_audit_logs"
+	OpenshiftAuditLogs    = "openshift_audit_logs"
+
+	RawOvnAuditLogs = "raw_ovn_audit_logs"
+	OvnAuditLogs    = "ovn_audit_logs"
 )
 
 func Sources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
@@ -48,25 +55,25 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []g
 	if types.Has(logging.InputNameAudit) {
 		el = append(el,
 			source.HostAuditLog{
-				ComponentID:  HostAuditLogs,
+				ComponentID:  RawHostAuditLogs,
 				Desc:         "Logs from host audit",
 				TemplateName: "inputSourceHostAuditTemplate",
 				TemplateStr:  source.HostAuditLogTemplate,
 			},
 			source.K8sAuditLog{
-				ComponentID:  K8sAuditLogs,
+				ComponentID:  RawK8sAuditLogs,
 				Desc:         "Logs from kubernetes audit",
 				TemplateName: "inputSourceK8sAuditTemplate",
 				TemplateStr:  source.K8sAuditLogTemplate,
 			},
 			source.OpenshiftAuditLog{
-				ComponentID:  OpenShiftAuditLogs,
+				ComponentID:  RawOpenshiftAuditLogs,
 				Desc:         "Logs from openshift audit",
 				TemplateName: "inputSourceOpenShiftAuditTemplate",
 				TemplateStr:  source.OpenshiftAuditLogTemplate,
 			},
 			source.OVNAuditLog{
-				ComponentID:  OvnAuditLogs,
+				ComponentID:  RawOvnAuditLogs,
 				Desc:         "Logs from ovn audit",
 				TemplateName: "inputSourceOVNAuditTemplate",
 				TemplateStr:  source.OVNAuditLogTemplate,

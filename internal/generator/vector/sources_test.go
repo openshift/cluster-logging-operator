@@ -84,25 +84,25 @@ journal_directory = "/var/log/journal"
 			},
 			ExpectedConf: `
 # Logs from host audit
-[sources.host_audit_logs]
+[sources.raw_host_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/audit/audit.log"]
 
 # Logs from kubernetes audit
-[sources.k8s_audit_logs]
+[sources.raw_k8s_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/kube-apiserver/audit.log"]
 
 # Logs from openshift audit
-[sources.openshift_audit_logs]
+[sources.raw_openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 
 # Logs from ovn audit
-[sources.ovn_audit_logs]
+[sources.raw_ovn_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/ovn/acl-audit-log.log"]
@@ -139,28 +139,29 @@ type = "journald"
 journal_directory = "/var/log/journal"
 
 # Logs from host audit
-[sources.host_audit_logs]
+[sources.raw_host_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/audit/audit.log"]
 
 # Logs from kubernetes audit
-[sources.k8s_audit_logs]
+[sources.raw_k8s_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/kube-apiserver/audit.log"]
 
 # Logs from openshift audit
-[sources.openshift_audit_logs]
+[sources.raw_openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 
 # Logs from ovn audit
-[sources.ovn_audit_logs]
+[sources.raw_ovn_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/ovn/acl-audit-log.log"]
 `,
-		}))
+		}),
+	)
 })

@@ -22,7 +22,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 [transforms.cw_normalize_group_and_streams]
 type = "remap"
 inputs = ["cw-forward"]
-source = """
+source = '''
   .group_name = "default"
   .stream_name = "default"
   
@@ -37,7 +37,7 @@ source = """
   }
   del(.tag)
   del(.source_type)
-"""
+'''
 `
 		cwSink = `
 # Cloudwatch Logs

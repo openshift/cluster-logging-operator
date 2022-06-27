@@ -1,8 +1,9 @@
 package elasticsearch
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
@@ -50,7 +51,7 @@ var _ = Describe("Generate Vector config", func() {
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -66,14 +67,14 @@ source = """
   del(.file)
   del(.tag)
   del(.source_type)
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -133,7 +134,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"
@@ -178,7 +179,7 @@ password = "testpass"
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -194,14 +195,14 @@ source = """
   del(.file)
   del(.tag)
   del(.source_type)
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -261,7 +262,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"
@@ -297,7 +298,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -313,14 +314,14 @@ source = """
   del(.file)
   del(.tag)
   del(.source_type)
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -380,7 +381,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"
@@ -453,7 +454,7 @@ id_key = "_id"
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -469,14 +470,14 @@ source = """
   del(.file)
   del(.tag)
   del(.source_type)
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -536,7 +537,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"
@@ -558,7 +559,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 [transforms.es_2_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -574,14 +575,14 @@ source = """
   del(.file)
   del(.tag)
   del(.source_type)
-"""
+'''
 
 [transforms.es_2_dedot_and_flatten]
 type = "lua"
 inputs = ["es_2_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -641,7 +642,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_2]
 type = "elasticsearch"
@@ -682,7 +683,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -704,14 +705,14 @@ source = """
       .write_index, err = "app-" + val + "-write"
     }
   }
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -771,7 +772,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"
@@ -805,7 +806,7 @@ id_key = "_id"
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -824,14 +825,14 @@ source = """
   if .log_type == "application" && .structured != null {
     .write_index = "app-myindex-write"
   }
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -891,7 +892,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"
@@ -926,7 +927,7 @@ id_key = "_id"
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -950,14 +951,14 @@ source = """
       .write_index = "app-myindex-write"
     }
   }
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -1017,7 +1018,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"
@@ -1053,7 +1054,7 @@ id_key = "_id"
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["application"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -1088,14 +1089,14 @@ source = """
        log(err, level: "error")
     }
   }
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -1155,7 +1156,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"

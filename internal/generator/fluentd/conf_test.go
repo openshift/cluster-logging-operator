@@ -707,6 +707,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
       total_limit_size 800000000
       chunk_limit_size 8m
       overflow_action throw_exception
+      disable_chunk_backup true
     </buffer>
   </match>
   
@@ -750,6 +751,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
       total_limit_size 800000000
       chunk_limit_size 8m
       overflow_action throw_exception
+      disable_chunk_backup true
     </buffer>
   </match>
 </label>

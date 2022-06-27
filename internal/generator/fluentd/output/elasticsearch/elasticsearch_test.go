@@ -72,7 +72,7 @@ var _ = Describe("Generate fluentd config", func() {
   <filter **>
     @type viaq_data_model
     enable_prune_labels true
-    prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+    prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -218,7 +218,7 @@ var _ = Describe("Generate fluentd config", func() {
   <filter **>
     @type viaq_data_model
     enable_prune_labels true
-    prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+    prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -358,7 +358,7 @@ var _ = Describe("Generate fluentd config", func() {
   <filter **>
     @type viaq_data_model
     enable_prune_labels true
-    prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+    prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -487,7 +487,7 @@ var _ = Describe("Generate fluentd config", func() {
   <filter **>
     @type viaq_data_model
     enable_prune_labels true
-    prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+    prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -628,7 +628,7 @@ var _ = Describe("Generate fluentd config", func() {
   <filter **>
     @type viaq_data_model
     enable_prune_labels true
-    prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+    prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -749,7 +749,7 @@ var _ = Describe("Generate fluentd config", func() {
       tag "kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
-      structured_type_annotation_prefix containerType_logging_openshift_io
+      structured_type_annotation_prefix containerType.logging.openshift.io
     </elasticsearch_index_name>
     <elasticsearch_index_name>
       enabled 'true'
@@ -762,13 +762,13 @@ var _ = Describe("Generate fluentd config", func() {
       tag "**"
       name_type structured
       static_index_name app-write
-      structured_type_annotation_prefix containerType_logging_openshift_io
+      structured_type_annotation_prefix containerType.logging.openshift.io
     </elasticsearch_index_name>
   </filter>
   <filter **>
     @type viaq_data_model
     enable_prune_labels true
-    prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+    prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   <match retry_es_1>
@@ -903,7 +903,7 @@ var _ = Describe("Generate fluentd config", func() {
   <filter **>
     @type viaq_data_model
     enable_prune_labels true
-    prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+    prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   <match retry_es_1>
@@ -1032,7 +1032,7 @@ var _ = Describe("Generate fluentd config", func() {
   <filter **>
     @type viaq_data_model
     enable_prune_labels true
-    prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+    prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present

@@ -441,6 +441,7 @@ var _ = Describe("Generating fluentd config", func() {
     annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
     allow_orphans false
     cache_size '1000'
+    de_dot false
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -700,7 +701,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -825,7 +826,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -1252,6 +1253,7 @@ var _ = Describe("Generating fluentd config", func() {
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
     allow_orphans false
     cache_size '1000'
+    de_dot false
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -1494,7 +1496,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -1619,7 +1621,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -2048,6 +2050,7 @@ var _ = Describe("Generating fluentd config", func() {
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
     allow_orphans false
     cache_size '1000'
+    de_dot false
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -2292,7 +2295,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -2417,7 +2420,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -2789,6 +2792,7 @@ var _ = Describe("Generating fluentd config", func() {
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
     allow_orphans false
     cache_size '1000'
+    de_dot false
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -3331,6 +3335,7 @@ var _ = Describe("Generating fluentd config", func() {
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
     allow_orphans false
     cache_size '1000'
+    de_dot false
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
@@ -3587,7 +3592,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -3712,7 +3717,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -3837,7 +3842,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -3962,7 +3967,7 @@ var _ = Describe("Generating fluentd config", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
-	prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   
   #remove structured field if present
@@ -4407,6 +4412,7 @@ inputs:
 	annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
 	allow_orphans false
     cache_size '1000'
+    de_dot false
     use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>

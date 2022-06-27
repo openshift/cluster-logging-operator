@@ -5,15 +5,13 @@ package normalization
 
 import (
 	"fmt"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"sort"
-	"strings"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -29,11 +27,6 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 
 		expectFlattenLabels = func(kubemeta types.Kubernetes) {
 			Expect(kubemeta.FlatLabels).To(Not(BeNil()), fmt.Sprintf("Expected to find the kubernetes.flat_labels key in %#v", kubemeta))
-			initialLabels := framework.Labels
-			for k, v := range initialLabels {
-				//expLabels change because kubernetes_metadata plugin replaces dots with underscores
-				expLabels[strings.ReplaceAll(k, ".", "_")] = v
-			}
 			expFlatLabels := []string{}
 			for k, v := range expLabels {
 				expFlatLabels = append(expFlatLabels, fmt.Sprintf("%s=%s", k, v))
@@ -58,10 +51,10 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		expLabels = map[string]string{}
+
 		for k, v := range applicationLabels {
 			framework.Labels[k] = v
-			//expLabels change because kubernetes_metadata plugin replaces dots with underscores
-			expLabels[strings.ReplaceAll(k, ".", "_")] = v
+			expLabels[k] = v
 		}
 		pb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication)
@@ -72,7 +65,7 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 	})
 
 	Context("for ES output", func() {
-		It("should create 'kubernetes.flat_labels' with an array of 'kubernetes.labels' and remove all but the exclusions", func() {
+		It("should create 'kubernetes.flat_labels' with an array of 'kubernetes.labels' and remove from 'kubernetes.labels' all but the 'common' ones", func() {
 
 			pb.ToElasticSearchOutput()
 			Expect(framework.Deploy()).To(BeNil())
@@ -89,6 +82,12 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 			//verify we removed all but common labels
 			Expect(logs[0].Kubernetes.Labels).To(Equal(expLabels), fmt.Sprintf("Expect to find only common kubernetes.labels in %#v", logs[0]))
 
+			for k, v := range framework.Test.Client.Labels {
+				expLabels[k] = v
+			}
+			for k, v := range framework.Labels {
+				expLabels[k] = v
+			}
 			//verify the new key exists
 			expectFlattenLabels(logs[0].Kubernetes)
 		})
@@ -96,24 +95,18 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 
 	Context("for non-ES output", func() {
 		It("should not remove 'kubernetes.labels' and not add 'kubernetes.flat_labels'", func() {
+
+			for k, v := range framework.Test.Client.Labels {
+				expLabels[k] = v
+			}
+			for k, v := range framework.Labels {
+				expLabels[k] = v
+			}
+
 			pb.ToKafkaOutput()
 			secret := kafka.NewBrokerSecret(framework.Namespace)
 			Expect(framework.Test.Client.Create(secret)).To(Succeed())
 			Expect(framework.Deploy()).To(BeNil())
-
-			if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
-				for k, v := range framework.Labels {
-					//expLabels change because kubernetes_metadata plugin replaces dots with underscores
-					expLabels[strings.ReplaceAll(k, ".", "_")] = v
-				}
-			} else {
-				tempLabels := map[string]string{}
-				for k, v := range framework.Labels {
-					//expLabels change because kubernetes_metadata plugin replaces dots with underscores
-					tempLabels[strings.ReplaceAll(k, "_", ".")] = v
-				}
-				expLabels = tempLabels
-			}
 
 			Expect(framework.WritesApplicationLogs(1)).To(BeNil())
 			raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeKafka)
@@ -127,6 +120,8 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 			if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
 				//verify the new key exists
 				expectFlattenLabels(logs[0].Kubernetes)
+			} else {
+				Expect(logs[0].Kubernetes.FlatLabels).To(BeEmpty(), "labels should not be flattened when using vector")
 			}
 		})
 

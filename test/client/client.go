@@ -29,13 +29,13 @@ type Client struct {
 	mapper  meta.RESTMapper
 	rests   *sync.Map // map[schema.GroupVersion]rest.Interface
 	timeout time.Duration
-	labels  map[string]string
+	Labels  map[string]string
 }
 
 // New client.
 //
 // Operations will fail if they take longer than timeout.
-// The labels will be applied to each object created by the client.
+// The Labels will be applied to each object created by the client.
 func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Client, error) {
 	var err error
 	if cfg == nil {
@@ -48,10 +48,10 @@ func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Cl
 		ctx:     context.Background(),
 		rests:   &sync.Map{},
 		timeout: timeout,
-		labels:  make(map[string]string, len(labels)),
+		Labels:  make(map[string]string, len(labels)),
 	}
 	for k, v := range labels {
-		c.labels[k] = v
+		c.Labels[k] = v
 	}
 	if c.mapper, err = apiutil.NewDynamicRESTMapper(c.cfg); err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func (c *Client) Create(o crclient.Object) (err error) {
 }
 
 func (c *Client) create(o crclient.Object) (err error) {
-	for k, v := range c.labels {
+	for k, v := range c.Labels {
 		testrt.Labels(o)[k] = v
 	}
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
@@ -229,11 +229,11 @@ func (c *Client) GroupVersionResource(o crclient.Object) (schema.GroupVersionRes
 	return m.Resource, nil
 }
 
-// WithLabels returns a client that uses c but has a different set of Create labels.
+// WithLabels returns a client that uses c but has a different set of Create Labels.
 func (c *Client) WithLabels(labels map[string]string) *Client {
 	c2 := *c
 	for k, v := range labels {
-		c2.labels[k] = v
+		c2.Labels[k] = v
 	}
 	return &c2
 }

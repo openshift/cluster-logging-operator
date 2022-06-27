@@ -22,7 +22,7 @@ var _ = Describe("Client", func() {
 
 	AfterEach(func() { t.Close() })
 
-	It("creates object with data and automatic labels", func() {
+	It("creates object with data and automatic Labels", func() {
 		cm := runtime.NewConfigMap(t.NS.Name, "foo", data)
 		ExpectOK(t.Create(cm))
 		cm2 := runtime.NewConfigMap(t.NS.Name, "foo", nil)

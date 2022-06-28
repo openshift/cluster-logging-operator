@@ -34,7 +34,7 @@ var _ = Describe("telemetry", func() {
 
 		mdir, _ = os.Getwd()
 		mdir = path.Dir(path.Dir(mdir))
-		smYamlFile = mdir + "/config/prometheus/monitor.yaml"
+		smYamlFile = mdir + "/config/prometheus/servicemonitor.yaml"
 		manifestFile = mdir + "/bundle/manifests/cluster-logging-operator-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml"
 
 	})
@@ -44,7 +44,7 @@ var _ = Describe("telemetry", func() {
 	})
 
 	Describe("Testing ServiceMonitor Spec", func() {
-		Context("With config/prometheus/monitor.yaml", func() {
+		Context("With config/prometheus/servicemonitor.yaml", func() {
 			It("Should generate bundle/manifests/cluster-logging-operator-metrics-monitor_monitoring.coreos.com_v1_servicemonitor.yaml spec correctly", func() {
 				sm, _ := ioutil.ReadFile(smYamlFile)
 				msm, _ := ioutil.ReadFile(manifestFile)

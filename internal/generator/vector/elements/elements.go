@@ -49,9 +49,9 @@ func (r Remap) Template() string {
 [transforms.{{.ComponentID}}]
 type = "remap"
 inputs = {{.Inputs}}
-source = """
+source = '''
 {{.VRL | indent 2}}
-"""
+'''
 {{end}}
 `
 }

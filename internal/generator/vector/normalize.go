@@ -1,6 +1,7 @@
 package vector
 
 import (
+	"fmt"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -33,7 +34,7 @@ if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"
 	AddHostName       = `.hostname = del(.host)`
 	AddTime           = `.time = format_timestamp!(.timestamp, format: "%FT%T%:z")`
 
-	DeleteFields = `
+	DeleteJournalLogFields = `
 del(.source_type)
 del(._CPU_USAGE_NSEC)
 del(.__REALTIME_TIMESTAMP)
@@ -96,6 +97,41 @@ if exists(.SYSLOG_PID) { .systemd.u.SYSLOG_PID = del(.SYSLOG_PID) }
 if exists(.RESULT) { .systemd.u.RESULT = del(.RESULT) }
 if exists(.UNIT) { .systemd.u.UNIT = del(.UNIT) }
 `
+	ParseHostAuditLogs = `
+match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
+envelop = {}
+envelop |= {"type": match1.type}
+
+match2, err = parse_regex(.message, r'msg=audit\((?P<ts_record>[^ ]+)\):')
+if err == null {
+  sp = split(match2.ts_record,":")
+  if length(sp) == 2 {
+      ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
+      envelop |= {"record_id": sp[1]}
+      . |= {"audit.linux" : envelop}
+      . |= {"@timestamp" : format_timestamp(ts,"%+") ?? ""}
+  }
+} else {
+  log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
+}
+hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+del(.host)
+. |= {"hostname" : hostname}
+`
+	HostAuditLogTag = ".linux-audit.log"
+	K8sAuditLogTag  = ".k8s-audit.log"
+	OpenAuditLogTag = ".openshift-audit.log"
+	OvnAuditLogTag  = ".ovn-audit.log"
+	ParseAndFlatten = `. = merge(., parse_json!(string!(.message))) ?? .
+del(.message)
+`
+)
+
+var (
+	AddHostAuditTag = fmt.Sprintf(".tag = %q", HostAuditLogTag)
+	AddK8sAuditTag  = fmt.Sprintf(".tag = %q", K8sAuditLogTag)
+	AddOpenAuditTag = fmt.Sprintf(".tag = %q", OpenAuditLogTag)
+	AddOvnAuditTag  = fmt.Sprintf(".tag = %q", OvnAuditLogTag)
 )
 
 func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
@@ -106,6 +142,12 @@ func NormalizeLogs(spec *logging.ClusterLogForwarderSpec, op generator.Options) 
 	}
 	if types.Has(logging.InputNameInfrastructure) {
 		el = append(el, NormalizeJournalLogs("raw_journal_logs", "journal_logs")...)
+	}
+	if types.Has(logging.InputNameAudit) {
+		el = append(el, NormalizeHostAuditLogs(RawHostAuditLogs, HostAuditLogs)...)
+		el = append(el, NormalizeK8sAuditLogs(RawK8sAuditLogs, K8sAuditLogs)...)
+		el = append(el, NormalizeOpenshiftAuditLogs(RawOpenshiftAuditLogs, OpenshiftAuditLogs)...)
+		el = append(el, NormalizeOVNAuditLogs(RawOvnAuditLogs, OvnAuditLogs)...)
 	}
 	return el
 }
@@ -133,7 +175,7 @@ func NormalizeJournalLogs(inLabel, outLabel string) []generator.Element {
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddJournalLogTag,
-				DeleteFields,
+				DeleteJournalLogFields,
 				FixLogLevel,
 				AddHostName,
 				SystemK,
@@ -141,6 +183,57 @@ func NormalizeJournalLogs(inLabel, outLabel string) []generator.Element {
 				SystemU,
 				AddTime,
 				FixTimestampField,
+			}), "\n\n"),
+		},
+	}
+}
+
+func NormalizeHostAuditLogs(inLabel, outLabel string) []generator.Element {
+	return []generator.Element{
+		Remap{
+			ComponentID: outLabel,
+			Inputs:      helpers.MakeInputs(inLabel),
+			VRL: strings.Join(helpers.TrimSpaces([]string{
+				AddHostAuditTag,
+				ParseHostAuditLogs,
+			}), "\n\n"),
+		},
+	}
+}
+
+func NormalizeK8sAuditLogs(inLabel, outLabel string) []generator.Element {
+	return []generator.Element{
+		Remap{
+			ComponentID: outLabel,
+			Inputs:      helpers.MakeInputs(inLabel),
+			VRL: strings.Join(helpers.TrimSpaces([]string{
+				AddK8sAuditTag,
+				ParseAndFlatten,
+			}), "\n\n"),
+		},
+	}
+}
+
+func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
+	return []generator.Element{
+		Remap{
+			ComponentID: outLabel,
+			Inputs:      helpers.MakeInputs(inLabel),
+			VRL: strings.Join(helpers.TrimSpaces([]string{
+				AddOpenAuditTag,
+				ParseAndFlatten,
+			}), "\n\n"),
+		},
+	}
+}
+
+func NormalizeOVNAuditLogs(inLabel, outLabel string) []generator.Element {
+	return []generator.Element{
+		Remap{
+			ComponentID: outLabel,
+			Inputs:      helpers.MakeInputs(inLabel),
+			VRL: strings.Join(helpers.TrimSpaces([]string{
+				AddOvnAuditTag,
 			}), "\n\n"),
 		},
 	}

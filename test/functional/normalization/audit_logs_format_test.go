@@ -286,24 +286,24 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 			//TODO: fix me when audit formatting is enabled
 			It("should parse ovn audit log correctly", func() {
 				// Log message data
-				//level := "info"
+				level := "info"
 				ovnLogLine := functional.NewOVNAuditLog(time.Now())
 
-				//// Template expected as output Log
-				//var outputLogTemplate = types.OVNAuditLog{
-				//	Message:   ovnLogLine,
-				//	Level:     level,
-				//	Hostname:  functional.FunctionalNodeName,
-				//	Timestamp: time.Time{},
-				//	LogType:   "audit",
-				//	Openshift: types.OpenshiftMeta{
-				//		Sequence: types.NewOptionalInt(""),
-				//	},
-				//	ViaqMsgID:        "*",
-				//	PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
-				//}
-				//outputLogTemplate.PipelineMetadata.Collector.ReceivedAt = time.Time{}
-				//// Write log line as input to fluentd
+				// Template expected as output Log
+				var outputLogTemplate = types.OVNAuditLog{
+					Message:   ovnLogLine,
+					Level:     level,
+					Hostname:  functional.FunctionalNodeName,
+					Timestamp: time.Time{},
+					LogType:   "audit",
+					Openshift: types.OpenshiftMeta{
+						Sequence: types.NewOptionalInt(""),
+					},
+					ViaqMsgID:        "*",
+					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+				}
+				outputLogTemplate.PipelineMetadata.Collector.ReceivedAt = time.Time{}
+				// Write log line as input to fluentd
 				Expect(framework.WriteMessagesToOVNAuditLog(ovnLogLine, 10)).To(BeNil())
 				// Read line from Log Forward output
 				raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
@@ -311,7 +311,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				//var logs []types.OVNAuditLog
 				//err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
 				//ExpectOK(err)
-				//// Compare to expected template
+				// Compare to expected template
 				//outputTestLog := logs[0]
 				//Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 				results := strings.Join(raw, " ")

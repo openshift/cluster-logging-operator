@@ -1,10 +1,10 @@
 package vector
 
 import (
-	"encoding/json"
 	"fmt"
-	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
 	"strings"
+
+	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -31,8 +31,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"),
 			strings.Split(strings.TrimSpace(conf), "\n"))
 		if diff != "" {
-			b, _ := json.MarshalIndent(e, "", " ")
-			fmt.Printf("elements:\n%s\n", string(b))
 			fmt.Println(conf)
 			fmt.Printf("diff: %s", diff)
 		}
@@ -108,25 +106,25 @@ type = "journald"
 journal_directory = "/var/log/journal"
 
 # Logs from host audit
-[sources.host_audit_logs]
+[sources.raw_host_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/audit/audit.log"]
 
 # Logs from kubernetes audit
-[sources.k8s_audit_logs]
+[sources.raw_k8s_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/kube-apiserver/audit.log"]
 
 # Logs from openshift audit
-[sources.openshift_audit_logs]
+[sources.raw_openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 
 # Logs from ovn audit
-[sources.ovn_audit_logs]
+[sources.raw_ovn_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/ovn/acl-audit-log.log"]
@@ -137,7 +135,7 @@ type = "internal_metrics"
 [transforms.container_logs]
 type = "remap"
 inputs = ["raw_container_logs"]
-source = """
+source = '''
   level = "unknown"
   if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)'){
     level = "warn"
@@ -155,12 +153,12 @@ source = """
   del(.stream)
   del(.kubernetes.pod_ips)
   ."@timestamp" = del(.timestamp)
-"""
+'''
 
 [transforms.journal_logs]
 type = "remap"
 inputs = ["raw_journal_logs"]
-source = """
+source = '''
   .tag = ".journal.system"
   
   del(.source_type)
@@ -241,7 +239,61 @@ source = """
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
   
   ."@timestamp" = del(.timestamp)
-"""
+'''
+
+[transforms.host_audit_logs]
+type = "remap"
+inputs = ["raw_host_audit_logs"]
+source = '''
+  .tag = ".linux-audit.log"
+  
+  match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
+  envelop = {}
+  envelop |= {"type": match1.type}
+  
+  match2, err = parse_regex(.message, r'msg=audit\((?P<ts_record>[^ ]+)\):')
+  if err == null {
+    sp = split(match2.ts_record,":")
+    if length(sp) == 2 {
+        ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
+        envelop |= {"record_id": sp[1]}
+        . |= {"audit.linux" : envelop}
+        . |= {"@timestamp" : format_timestamp(ts,"%+") ?? ""}
+    }
+  } else {
+    log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
+  }
+  hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  del(.host)
+  . |= {"hostname" : hostname}
+'''
+
+[transforms.k8s_audit_logs]
+type = "remap"
+inputs = ["raw_k8s_audit_logs"]
+source = '''
+  .tag = ".k8s-audit.log"
+  
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+'''
+
+[transforms.openshift_audit_logs]
+type = "remap"
+inputs = ["raw_openshift_audit_logs"]
+source = '''
+  .tag = ".openshift-audit.log"
+  
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+'''
+
+[transforms.ovn_audit_logs]
+type = "remap"
+inputs = ["raw_ovn_audit_logs"]
+source = '''
+  .tag = ".ovn-audit.log"
+'''
 
 [transforms.route_container_logs]
 type = "route"
@@ -253,62 +305,26 @@ route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_wit
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
-source = """
+source = '''
   .log_type = "application"
-"""
+'''
 
 # Set log_type to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
-source = """
+source = '''
   .log_type = "infrastructure"
-"""
-
-# Tag host audit files
-[transforms.tagged_host_audit_logs]
-type = "remap"
-inputs = ["host_audit_logs"]
-source = """
-  .tag = ".linux-audit.log"
-"""
-
-# Tag k8s audit files
-[transforms.tagged_k8s_audit_logs]
-type = "remap"
-inputs = ["k8s_audit_logs"]
-source = """
-  .tag = ".k8s-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-"""
-
-# Tag openshift audit files
-[transforms.tagged_openshift_audit_logs]
-type = "remap"
-inputs = ["openshift_audit_logs"]
-source = """
-  .tag = ".openshift-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-"""
-
-# Tag ovn audit files
-[transforms.tagged_ovn_audit_logs]
-type = "remap"
-inputs = ["ovn_audit_logs"]
-source = """
-  .tag = ".ovn-audit.log"
-"""
+'''
 
 # Set log_type to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["tagged_host_audit_logs","tagged_k8s_audit_logs","tagged_openshift_audit_logs","tagged_ovn_audit_logs"]
-source = """
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
+source = '''
   .log_type = "audit"
   ."@timestamp" = del(.timestamp)
-"""
+'''
 
 [transforms.route_application_logs]
 type = "route"
@@ -318,9 +334,9 @@ route.mytestapp = '.kubernetes.namespace_name == "test-ns"'
 [transforms.pipeline]
 type = "remap"
 inputs = ["route_application_logs.mytestapp","infrastructure","audit"]
-source = """
+source = '''
   .openshift.labels = {"key1":"value1","key2":"value2"}
-"""
+'''
 
 # Kafka config
 [sinks.kafka_receiver]
@@ -419,25 +435,25 @@ type = "journald"
 journal_directory = "/var/log/journal"
 
 # Logs from host audit
-[sources.host_audit_logs]
+[sources.raw_host_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/audit/audit.log"]
 
 # Logs from kubernetes audit
-[sources.k8s_audit_logs]
+[sources.raw_k8s_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/kube-apiserver/audit.log"]
 
 # Logs from openshift audit
-[sources.openshift_audit_logs]
+[sources.raw_openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 
 # Logs from ovn audit
-[sources.ovn_audit_logs]
+[sources.raw_ovn_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/ovn/acl-audit-log.log"]
@@ -448,7 +464,7 @@ type = "internal_metrics"
 [transforms.container_logs]
 type = "remap"
 inputs = ["raw_container_logs"]
-source = """
+source = '''
   level = "unknown"
   if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)'){
     level = "warn"
@@ -466,12 +482,12 @@ source = """
   del(.stream)
   del(.kubernetes.pod_ips)
   ."@timestamp" = del(.timestamp)
-"""
+'''
 
 [transforms.journal_logs]
 type = "remap"
 inputs = ["raw_journal_logs"]
-source = """
+source = '''
   .tag = ".journal.system"
   
   del(.source_type)
@@ -552,7 +568,61 @@ source = """
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
   
   ."@timestamp" = del(.timestamp)
-"""
+'''
+
+[transforms.host_audit_logs]
+type = "remap"
+inputs = ["raw_host_audit_logs"]
+source = '''
+  .tag = ".linux-audit.log"
+  
+  match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
+  envelop = {}
+  envelop |= {"type": match1.type}
+  
+  match2, err = parse_regex(.message, r'msg=audit\((?P<ts_record>[^ ]+)\):')
+  if err == null {
+    sp = split(match2.ts_record,":")
+    if length(sp) == 2 {
+        ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
+        envelop |= {"record_id": sp[1]}
+        . |= {"audit.linux" : envelop}
+        . |= {"@timestamp" : format_timestamp(ts,"%+") ?? ""}
+    }
+  } else {
+    log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
+  }
+  hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  del(.host)
+  . |= {"hostname" : hostname}
+'''
+
+[transforms.k8s_audit_logs]
+type = "remap"
+inputs = ["raw_k8s_audit_logs"]
+source = '''
+  .tag = ".k8s-audit.log"
+  
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+'''
+
+[transforms.openshift_audit_logs]
+type = "remap"
+inputs = ["raw_openshift_audit_logs"]
+source = '''
+  .tag = ".openshift-audit.log"
+  
+  . = merge(., parse_json!(string!(.message))) ?? .
+  del(.message)
+'''
+
+[transforms.ovn_audit_logs]
+type = "remap"
+inputs = ["raw_ovn_audit_logs"]
+source = '''
+  .tag = ".ovn-audit.log"
+'''
 
 [transforms.route_container_logs]
 type = "route"
@@ -564,75 +634,39 @@ route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_wit
 [transforms.application]
 type = "remap"
 inputs = ["route_container_logs.app"]
-source = """
+source = '''
   .log_type = "application"
-"""
+'''
 
 # Set log_type to "infrastructure"
 [transforms.infrastructure]
 type = "remap"
 inputs = ["route_container_logs.infra","journal_logs"]
-source = """
+source = '''
   .log_type = "infrastructure"
-"""
-
-# Tag host audit files
-[transforms.tagged_host_audit_logs]
-type = "remap"
-inputs = ["host_audit_logs"]
-source = """
-  .tag = ".linux-audit.log"
-"""
-
-# Tag k8s audit files
-[transforms.tagged_k8s_audit_logs]
-type = "remap"
-inputs = ["k8s_audit_logs"]
-source = """
-  .tag = ".k8s-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-"""
-
-# Tag openshift audit files
-[transforms.tagged_openshift_audit_logs]
-type = "remap"
-inputs = ["openshift_audit_logs"]
-source = """
-  .tag = ".openshift-audit.log"
-  . = merge(., parse_json!(string!(.message))) ?? .
-  del(.message)
-"""
-
-# Tag ovn audit files
-[transforms.tagged_ovn_audit_logs]
-type = "remap"
-inputs = ["ovn_audit_logs"]
-source = """
-  .tag = ".ovn-audit.log"
-"""
+'''
 
 # Set log_type to "audit"
 [transforms.audit]
 type = "remap"
-inputs = ["tagged_host_audit_logs","tagged_k8s_audit_logs","tagged_openshift_audit_logs","tagged_ovn_audit_logs"]
-source = """
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
+source = '''
   .log_type = "audit"
   ."@timestamp" = del(.timestamp)
-"""
+'''
 
 [transforms.pipeline]
 type = "remap"
 inputs = ["application","infrastructure","audit"]
-source = """
+source = '''
   .
-"""
+'''
 
 # Set Elasticsearch index
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["pipeline"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -648,14 +682,14 @@ source = """
   del(.file)
   del(.tag)
   del(.source_type)
-"""
+'''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -715,7 +749,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_1]
 type = "elasticsearch"
@@ -737,7 +771,7 @@ ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
 [transforms.es_2_add_es_index]
 type = "remap"
 inputs = ["pipeline"]
-source = """
+source = '''
   index = "default"
   if (.log_type == "application"){
     index = "app"
@@ -753,14 +787,14 @@ source = """
   del(.file)
   del(.tag)
   del(.source_type)
-"""
+'''
 
 [transforms.es_2_dedot_and_flatten]
 type = "lua"
 inputs = ["es_2_add_es_index"]
 version = "2"
 hooks.process = "process"
-source = """
+source = '''
     function process(event, emit)
         if event.log.kubernetes == nil then
             emit(event)
@@ -820,7 +854,7 @@ source = """
             map[k] = v
         end
     end
-"""
+'''
 
 [sinks.es_2]
 type = "elasticsearch"

@@ -98,7 +98,7 @@ func TestLokiOutput(t *testing.T) {
 					}},
 				"loki-receiver-token": {
 					Data: map[string][]byte{
-						"token": []byte("/path/to/token"),
+						"token": []byte("bearer-token-value"),
 					}}}
 
 			var err error
@@ -198,7 +198,7 @@ func TestLokiOutput(t *testing.T) {
 		results, err := g.GenerateConf(es...)
 		require.NoError(t, err)
 		config.content = `url https://logs-us-west1.grafana.net
-    bearer_token_file "/path/to/token"`
+    bearer_token_file '/var/run/ocp-collector/secrets/a-secret-ref/token'`
 		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results), results)
 	})
 

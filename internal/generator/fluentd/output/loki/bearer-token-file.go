@@ -12,7 +12,7 @@ func (bt BearerTokenFile) Name() string {
 
 func (bt BearerTokenFile) Template() string {
 	return `{{define "` + bt.Name() + `" -}}
-bearer_token_file "{{ .BearerTokenFilePath }}"
+bearer_token_file {{ .BearerTokenFilePath }}
 {{- end}}
 `
 }

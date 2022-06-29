@@ -51,6 +51,10 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 	if forwarder != nil {
 		clusterLoggingRequest.ForwarderRequest = forwarder
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
+	} else if !clusterLoggingRequest.IncludesManagedStorage() {
+		// No clf and no logStore so remove the collector https://issues.redhat.com/browse/LOG-2703
+		removeCollectorAndUpdate(clusterLoggingRequest)
+		return clusterLoggingRequest.Cluster, nil
 	}
 
 	if clusterLoggingRequest.IncludesManagedStorage() {
@@ -105,13 +109,33 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 	return clusterLoggingRequest.Cluster, nil
 }
 
+func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
+	log.V(3).Info("forwarder not found and logStore not found so removing collector")
+	if err := clusterRequest.removeCollector(constants.CollectorName); err != nil {
+		log.Error(err, "Error removing collector")
+		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
+		telemetry.UpdateCLMetricsNoErr()
+	}
+
+	if updateError := clusterRequest.UpdateCondition(
+		logging.CollectorDeadEnd,
+		"Collectors are defined but there is no defined LogStore or LogForward destinations",
+		"No defined logstore or logforward destination",
+		corev1.ConditionTrue,
+	); updateError != nil {
+		log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
+		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
+		telemetry.UpdateCLMetricsNoErr()
+	}
+}
+
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
-	log.V(0).Info("Removing managed store components...")
+	log.V(1).Info("Removing managed store components...")
 	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeLokiStackRbac} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		if err := remove(); err != nil {
-			log.V(0).Error(err, "Error removing component")
+			log.Error(err, "Error removing component")
 		}
 	}
 }
@@ -217,6 +241,7 @@ func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterL
 		if !apierrors.IsNotFound(err) {
 			log.Error(err, "Encountered unexpected error getting", "forwarder", nsname)
 		}
+		return nil
 	}
 
 	return forwarder

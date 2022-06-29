@@ -96,7 +96,9 @@ func (clusterRequest *ClusterLoggingRequest) removeLokiStackRbac() error {
 		},
 	}
 	if err := clusterRequest.Delete(clusterRoleBinding); err != nil {
-		return kverrors.Wrap(err, "Failed to delete LokiStack ClusterRoleBinding", "name", lokiStackClusterRoleBindingName)
+		if !apierrors.IsNotFound(err) {
+			return kverrors.Wrap(err, "Failed to delete LokiStack ClusterRoleBinding", "name", lokiStackClusterRoleBindingName)
+		}
 	}
 
 	clusterRole := &rbacv1.ClusterRole{
@@ -105,7 +107,9 @@ func (clusterRequest *ClusterLoggingRequest) removeLokiStackRbac() error {
 		},
 	}
 	if err := clusterRequest.Delete(clusterRole); err != nil {
-		return kverrors.Wrap(err, "Failed to delete LokiStack ClusterRole", "name", lokiStackClusterRoleName)
+		if !apierrors.IsNotFound(err) {
+			return kverrors.Wrap(err, "Failed to delete LokiStack ClusterRole", "name", lokiStackClusterRoleName)
+		}
 	}
 	return nil
 }

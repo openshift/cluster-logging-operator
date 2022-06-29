@@ -502,7 +502,9 @@ spec:
                         nullable: true
                         properties:
                           diskThresholdPercent:
-                            description: The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+                            description: The threshold percentage of ES disk usage
+                              that when reached, old indices should be deleted (e.g.
+                              75)
                             format: int64
                             type: integer
                           maxAge:
@@ -538,7 +540,9 @@ spec:
                         nullable: true
                         properties:
                           diskThresholdPercent:
-                            description: The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+                            description: The threshold percentage of ES disk usage
+                              that when reached, old indices should be deleted (e.g.
+                              75)
                             format: int64
                             type: integer
                           maxAge:
@@ -574,7 +578,9 @@ spec:
                         nullable: true
                         properties:
                           diskThresholdPercent:
-                            description: The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
+                            description: The threshold percentage of ES disk usage
+                              that when reached, old indices should be deleted (e.g.
+                              75)
                             format: int64
                             type: integer
                           maxAge:

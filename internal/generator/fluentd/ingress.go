@@ -199,6 +199,7 @@ const KubernetesMetadataPlugin string = `
   annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
   allow_orphans false
   cache_size '1000'
+  de_dot false
   use_journal 'nil'
   ssl_partial_chain 'true'
 </filter>

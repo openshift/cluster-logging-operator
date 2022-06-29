@@ -13,10 +13,7 @@ type Viaq struct {
 }
 
 const (
-	//AnnotationPrefix is modified to use underscores because the fluentd kubernetes metadata
-	//plugin replaces dots for annotation and labels with underscores. Users should annotate
-	//their pods with containerType.logging.openshift.io
-	AnnotationPrefix = "containerType_logging_openshift_io"
+	AnnotationPrefix = "containerType.logging.openshift.io"
 )
 
 func ViaqDataModel(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op Options) []Element {
@@ -110,7 +107,7 @@ func (im Viaq) Template() string {
 <filter **>
   @type viaq_data_model
   enable_prune_labels true
-  prune_labels_exclusions app_kubernetes_io/name,app_kubernetes_io/instance,app_kubernetes_io/version,app_kubernetes_io/component,app_kubernetes_io/part-of,app_kubernetes_io/managed-by,app_kubernetes_io/created-by
+  prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
 </filter>
 {{end}}
 `

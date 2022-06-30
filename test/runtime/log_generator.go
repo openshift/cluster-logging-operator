@@ -2,8 +2,9 @@ package runtime
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -16,7 +17,7 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 	cmd := fmt.Sprintf(`i=0; while [ $i -lt %v ]; do echo "$(date) [$i]: %v"; i=$((i+1)); sleep %f; done; sleep infinity`, count, message, delay.Seconds())
 	l := runtime.NewPod(namespace, "log-generator", corev1.Container{
 		Name:    name,
-		Image:   "busybox",
+		Image:   "quay.io/quay/busybox",
 		Command: []string{"sh", "-c", cmd}},
 	)
 	l.Spec.RestartPolicy = corev1.RestartPolicyNever
@@ -29,7 +30,7 @@ func NewOneLineLogGenerator(namespace, containerName, message string) *corev1.Po
 	cmd := fmt.Sprintf(`echo "%v"; sleep infinity`, message)
 	l := runtime.NewPod(namespace, "log-generator", corev1.Container{
 		Name:    containerName,
-		Image:   "busybox",
+		Image:   "quay.io/quay/busybox",
 		Command: []string{"sh", "-c", cmd}},
 	)
 	l.Spec.RestartPolicy = corev1.RestartPolicyNever

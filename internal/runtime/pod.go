@@ -106,6 +106,7 @@ func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	}
 	return &containerBuilder
 }
+
 func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBuilder {
 	return builder.AddConfigMapVolumeWithPermissions(name, configMapName, utils.GetInt32(0644))
 }
@@ -163,6 +164,11 @@ func (builder *PodBuilder) AddAnnotation(key, value string) *PodBuilder {
 		builder.Pod.Annotations = map[string]string{}
 	}
 	builder.Pod.Annotations[key] = value
+	return builder
+}
+
+func (builder *ContainerBuilder) WithPullPolicy(policy corev1.PullPolicy) *ContainerBuilder {
+	builder.container.ImagePullPolicy = policy
 	return builder
 }
 

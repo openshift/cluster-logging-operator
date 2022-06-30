@@ -61,6 +61,13 @@ func NewDaemonSet(namespace, name string) *appsv1.DaemonSet {
 	return ds
 }
 
+// NewDeployment returns a daemon set.
+func NewDeployment(namespace, name string) *appsv1.Deployment {
+	dep := &appsv1.Deployment{}
+	Initialize(dep, namespace, name)
+	return dep
+}
+
 //NewRole returns a role with namespace, names, rules
 func NewRole(namespace, name string, rules ...rbacv1.PolicyRule) *rbacv1.Role {
 	role := &rbacv1.Role{

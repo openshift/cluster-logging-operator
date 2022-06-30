@@ -7,7 +7,7 @@ import (
 
 const (
 	// DefaultSuccessTimeout for operations that are expected to succeed.
-	DefaultSuccessTimeout = 5 * time.Minute
+	DefaultSuccessTimeout = 10 * time.Minute
 
 	// DefaultFailureTimeout for operations that are *expected* to time out.
 	//

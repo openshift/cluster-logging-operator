@@ -7,6 +7,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/client"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 var _ = Describe("Client", func() {
@@ -31,28 +32,22 @@ var _ = Describe("Client", func() {
 		Expect(cm2.Labels).To(HaveKeyWithValue(LabelKey, LabelValue))
 	})
 
-	It("re-creates existing namespace", func() {
-		// Namespaces don't delete synchronously, so an important case.
-		ExpectOK(t.Recreate(t.NS))
-	})
-
-	It("re-creates existing object", func() {
+	It("re-creates objects", func() {
 		cm := runtime.NewConfigMap(t.NS.Name, "foo", map[string]string{"a": "b"})
-		ExpectOK(t.Create(cm))
+		ExpectOK(t.Recreate(cm))
+		Expect(cm.Data).To(Equal(map[string]string{"a": "b"}))
+
 		cm2 := runtime.NewConfigMap(t.NS.Name, "foo", map[string]string{"x": "y"})
 		ExpectOK(t.Recreate(cm2))
 		cm3 := runtime.NewConfigMap(t.NS.Name, "foo", nil)
 		ExpectOK(t.Get(cm3))
 		Expect(cm3.Data).To(Equal(map[string]string{"x": "y"}))
-		ExpectOK(t.Recreate(t.NS))
 	})
 
-	It("creates non-existing object", func() {
-		cm := runtime.NewConfigMap(t.NS.Name, "foo", data)
-		ExpectOK(t.Recreate(cm))
-		cm2 := runtime.NewConfigMap(t.NS.Name, "foo", nil)
-		ExpectOK(t.Get(cm2))
-		Expect(cm2.Data).To(Equal(data))
+	It("synchronously deletes objects", func() {
+		ExpectOK(t.RemoveSync(t.NS))
+		err := t.Get(t.NS)
+		Expect(errors.IsNotFound(err)).To(BeTrue(), "error: %v", err)
 	})
 
 	It("lists objects", func() {
@@ -60,4 +55,5 @@ var _ = Describe("Client", func() {
 		ExpectOK(t.List(l))
 		Expect(l.Items).NotTo(BeEmpty())
 	})
+
 })

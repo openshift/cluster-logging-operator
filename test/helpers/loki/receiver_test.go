@@ -3,6 +3,7 @@ package loki_test
 import (
 	"testing"
 
+	_ "github.com/onsi/ginkgo" // Accept ginkgo command line options
 	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"
 	"github.com/stretchr/testify/assert"

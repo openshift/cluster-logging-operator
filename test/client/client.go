@@ -7,6 +7,7 @@ import (
 	"time"
 
 	testrt "github.com/openshift/cluster-logging-operator/internal/runtime"
+	"golang.org/x/time/rate"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/test"
@@ -16,10 +17,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/flowcontrol"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
+
+// Object is any k8s object, it combines runtime.Object and metav1.Object
+type Object = crclient.Object
+
+// ObjectList is any k8s objct list, it combines runtime.Object and metav1.ListInterface
+type ObjectList = crclient.ObjectList
 
 // Client operates on any runtime.Object (core or custom) and has Watch to wait efficiently.
 type Client struct {
@@ -43,6 +51,8 @@ func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Cl
 			return nil, err
 		}
 	}
+	// Don't rate-limit the test client. Tests should be short and fast.
+	cfg.RateLimiter = flowcontrol.NewFakeAlwaysRateLimiter()
 	c := &Client{
 		cfg:     cfg,
 		ctx:     context.Background(),
@@ -53,7 +63,7 @@ func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Cl
 	for k, v := range labels {
 		c.Labels[k] = v
 	}
-	if c.mapper, err = apiutil.NewDynamicRESTMapper(c.cfg); err != nil {
+	if c.mapper, err = apiutil.NewDynamicRESTMapper(c.cfg, apiutil.WithLimiter(rate.NewLimiter(1000, 10000))); err != nil {
 		return nil, err
 	}
 	if c.c, err = crclient.New(cfg, crclient.Options{Mapper: c.mapper}); err != nil {
@@ -64,7 +74,7 @@ func New(cfg *rest.Config, timeout time.Duration, labels map[string]string) (*Cl
 
 func logKeyId(v interface{}) (key, id string) {
 	switch v := v.(type) {
-	case crclient.Object:
+	case Object:
 		return "object", testrt.ID(v)
 	case schema.GroupVersionKind:
 		return "type", v.String()
@@ -81,12 +91,15 @@ func logBeginEnd(op string, v interface{}, errp *error, kv ...interface{}) func(
 }
 
 // Create the cluster resource described by the struct o.
-func (c *Client) Create(o crclient.Object) (err error) {
+func (c *Client) Create(o Object) (err error) {
 	defer logBeginEnd("Create", o, &err)()
 	return c.create(o)
 }
 
-func (c *Client) create(o crclient.Object) (err error) {
+func (c *Client) create(o Object) (err error) {
+	// Clear resource version and UID so we can re-create, even if o was used before.
+	testrt.Meta(o).SetResourceVersion("")
+	testrt.Meta(o).SetUID("")
 	for k, v := range c.Labels {
 		testrt.Labels(o)[k] = v
 	}
@@ -96,13 +109,13 @@ func (c *Client) create(o crclient.Object) (err error) {
 }
 
 // Get the resource with the name, namespace and type of o, copy it's state into o.
-func (c *Client) Get(o crclient.Object) (err error) {
+func (c *Client) Get(o Object) (err error) {
 	defer logBeginEnd("Get", o, &err)()
 	return c.get(o)
 }
 
 // get with no logging, for internal use.
-func (c *Client) get(o crclient.Object) (err error) {
+func (c *Client) get(o Object) (err error) {
 	nsName := crclient.ObjectKeyFromObject(o)
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
@@ -122,7 +135,7 @@ type Limit = crclient.Limit
 type Continue = crclient.Continue
 
 // List resources, return results in o, which must be an xxxList struct.
-func (c *Client) List(list crclient.ObjectList, opts ...ListOption) (err error) {
+func (c *Client) List(list ObjectList, opts ...ListOption) (err error) {
 	defer logBeginEnd("List", list, &err)()
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
@@ -130,35 +143,43 @@ func (c *Client) List(list crclient.ObjectList, opts ...ListOption) (err error) 
 }
 
 // Update the state of resource with name, namespace and type of o using the state in o.
-func (c *Client) Update(o crclient.Object) (err error) {
+func (c *Client) Update(o Object) (err error) {
 	defer logBeginEnd("Update", o, &err)()
+	return c.update(o)
+}
+
+func (c *Client) update(o Object) (err error) {
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
 	return c.c.Update(ctx, o)
 }
 
 // Delete the of resource with name, namespace and type of o.
-func (c *Client) Delete(o crclient.Object) (err error) {
+func (c *Client) Delete(o Object) (err error) {
 	defer logBeginEnd("Delete", o, &err)()
 	return c.delete(o)
 }
 
-func (c *Client) delete(o crclient.Object, opts ...crclient.DeleteOption) (err error) {
+func (c *Client) delete(o Object, opts ...crclient.DeleteOption) (err error) {
 	ctx, cancel := context.WithTimeout(c.ctx, c.timeout)
 	defer cancel()
 	return c.c.Delete(ctx, o, opts...)
 }
 
 // Remove is like Delete but ignores NotFound errors.
-func (c *Client) Remove(o crclient.Object) (err error) {
+func (c *Client) Remove(o Object) (err error) {
 	defer logBeginEnd("Remove", o, &err)()
 	return crclient.IgnoreNotFound(c.delete(o))
 }
 
-// RemoveSync is like Delete but ignores NotFound errors and deletes in the foreground
-func (c *Client) RemoveSync(o crclient.Object) (err error) {
-	defer logBeginEnd("Remove", o, &err)()
-	return crclient.IgnoreNotFound(c.delete(o, crclient.PropagationPolicy(metav1.DeletePropagationForeground)))
+// RemoveSync is like Remove but waits for object to be finalized and deleted.
+func (c *Client) RemoveSync(o Object) (err error) {
+	defer func() { err = IgnoreNotFound(err) }()
+	defer logBeginEnd("RemoveSync", o, &err)()
+	if err := c.delete(o, crclient.PropagationPolicy(metav1.DeletePropagationForeground)); err != nil {
+		return err
+	}
+	return c.WaitFor(o, Deleted)
 }
 
 // Deleted is a condition for Client.WaitFor true when the event is of type Deleted.
@@ -170,13 +191,11 @@ func Deleted(e watch.Event) (bool, error) {
 }
 
 // Recreate creates o after removing any existing object of the same name and type.
-func (c *Client) Recreate(o crclient.Object) (err error) {
+func (c *Client) Recreate(o Object) (err error) {
 	defer logBeginEnd("Recreate", o, &err)()
 	if err := crclient.IgnoreNotFound(c.delete(o)); err != nil {
 		return err
 	}
-	// Clear resource version so we can re-create, even if o was used before.
-	testrt.Meta(o).SetResourceVersion("")
 	err = c.create(o)
 	switch {
 	case err == nil:
@@ -221,7 +240,7 @@ func (c *Client) rest(gv schema.GroupVersion) (rest.Interface, error) {
 }
 
 // GroupVersionResource uses the Client's RESTMapping to find the resource name for o.
-func (c *Client) GroupVersionResource(o crclient.Object) (schema.GroupVersionResource, error) {
+func (c *Client) GroupVersionResource(o Object) (schema.GroupVersionResource, error) {
 	m, err := c.mapper.RESTMapping(testrt.GroupVersionKind(o).GroupKind())
 	if err != nil {
 		return schema.GroupVersionResource{}, err
@@ -229,7 +248,7 @@ func (c *Client) GroupVersionResource(o crclient.Object) (schema.GroupVersionRes
 	return m.Resource, nil
 }
 
-// WithLabels returns a client that uses c but has a different set of Create Labels.
+// WithLabels returns a derived client that uses c but has a different set of Create labels.
 func (c *Client) WithLabels(labels map[string]string) *Client {
 	c2 := *c
 	for k, v := range labels {
@@ -238,13 +257,22 @@ func (c *Client) WithLabels(labels map[string]string) *Client {
 	return &c2
 }
 
-// WithTimeout returns a client that uses c but has a different timeout.
+// WithTimeout returns a derived client that uses c but has a different timeout.
 func (c *Client) WithTimeout(timeout time.Duration) *Client {
 	c2 := *c
 	c2.timeout = timeout
 	return &c2
 }
 
+// WithContext returns a derived client that uses c but has a different context.
+// All client operations are interrupted when the context is cancelled.
+func (c *Client) WithContext(ctx context.Context) *Client {
+	c2 := *c
+	c2.ctx = ctx
+	return &c2
+}
+
+// Timeout returns the client timeout.
 func (c *Client) Timeout() time.Duration { return c.timeout }
 
 // Host returns the API host or URL used by the client's rest.Config.
@@ -277,4 +305,26 @@ func Get() *Client {
 		panic(s.err)
 	}
 	return s.c
+}
+
+// ForEachNoError calls f for each object in turn.
+// If any call returns an error, stop and return the error.
+func ForEachNoError(f func(Object) error, objs ...Object) (err error) {
+	for _, o := range objs {
+		if err := f(o); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ForEach calls f for each object in turn.
+// If a call returns an error, continue and return the last error seen.
+func ForEach(f func(Object) error, objs ...Object) (err error) {
+	for _, o := range objs {
+		if e := f(o); e != nil {
+			err = e
+		}
+	}
+	return err
 }

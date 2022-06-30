@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,8 +27,7 @@ var _ = Describe("ClustLogForwarderBuilder", func() {
 			pipelineBuilder.ToElasticSearchOutput()
 			pipelineBuilder.ToSyslogOutput()
 
-			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:
-- name: application
+			Expect(test.YAMLString(forwarder.Spec)).To(EqualLines(`
 outputs:
 - name: elasticsearch
   type: elasticsearch

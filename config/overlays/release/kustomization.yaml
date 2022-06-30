@@ -1,0 +1,18 @@
+---
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+# All resources go in this namespace.
+namespace: openshift-logging
+# Set the controller image name and tag.
+# For release images the tag should be the semantic version.
+# For developer images it defaults to the current branch name.
+images:
+  - name: controller
+    newName: quay.io/openshift-logging/origin-cluster-logging-operator
+    newTag: 5.5.0
+# Patches to apply to resources.
+patchesStrategicMerge:
+  - deployment_patch.yaml
+# Resource list.
+resources:
+  - ../../manifests

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +29,7 @@ func init() {
 func Decode(manifest string) runtime.Object {
 	d := Codecs.UniversalDeserializer()
 	o, _, err := d.Decode([]byte(manifest), nil, nil)
+	// FIXME should not panic except in test code.
 	must(err)
 	return o
 }

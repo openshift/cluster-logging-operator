@@ -34,12 +34,22 @@ var DefaultNodeSelector = map[string]string{OsNodeLabel: LinuxValue}
 
 // COMPONENT_IMAGES are thee keys are based on the "container name" + "-{image,version}"
 var COMPONENT_IMAGES = map[string]string{
-	constants.CollectorName:              constants.FluentdImageEnvVar,
+	constants.CollectorName: constants.
+		FluentdImageEnvVar,
 	"curator":                            "CURATOR_IMAGE",
 	constants.FluentdName:                constants.FluentdImageEnvVar,
 	constants.VectorName:                 constants.VectorImageEnvVar,
 	"kibana":                             "KIBANA_IMAGE",
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,
+}
+
+// SetMockImageEnv sets dummy values for image env. vars.
+// Use in tests that refer to the env. vars (e.g. via framework code)
+// but don't actually need to pull the images.
+func SetMockImageEnv() {
+	for k, v := range COMPONENT_IMAGES {
+		os.Setenv(v, k+".dummy-image-tag")
+	}
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found
@@ -166,7 +176,7 @@ func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
 }
 
 // GetComponentImage returns a full image pull spec for a given component
-// based on the component type
+// based on the component type. Panic if no image is found.
 func GetComponentImage(component string) string {
 
 	envVarName, ok := COMPONENT_IMAGES[component]
@@ -216,14 +226,6 @@ func GetShareDir() string {
 		return shareDir
 	}
 	return defaultShareDir
-}
-
-func GetScriptsDir() string {
-	scriptsDir := os.Getenv("SCRIPTS_DIR")
-	if scriptsDir == "" {
-		return DefaultScriptsDir
-	}
-	return scriptsDir
 }
 
 func GetWorkingDirFileContents(filePath string) []byte {

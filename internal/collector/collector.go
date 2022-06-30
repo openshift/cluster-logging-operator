@@ -102,16 +102,25 @@ func New(confHash, trustedCAHash string, collectorType logging.LogCollectionType
 		ConfigHash:    confHash,
 		CollectorSpec: collectorSpec,
 		CollectorType: collectorType,
-		ImageName:     constants.FluentdName,
 		TrustedCAHash: trustedCAHash,
 		Visit:         fluentd.CollectorVisitor,
 		Secrets:       secrets,
 	}
-	if collectorType == logging.LogCollectionTypeVector {
-		factory.ImageName = constants.VectorName
-		factory.Visit = vector.CollectorVisitor
-	}
+	factory.Setup()
 	return factory
+}
+
+func (f *Factory) Setup() {
+	switch f.CollectorType {
+	case logging.LogCollectionTypeVector:
+		f.ImageName = constants.VectorName
+		f.Visit = vector.CollectorVisitor
+	case logging.LogCollectionTypeFluentd:
+		f.ImageName = constants.FluentdName
+		f.Visit = fluentd.CollectorVisitor
+	default:
+		panic(fmt.Errorf("Invalid collector type %v", f.CollectorType))
+	}
 }
 
 func NewDaemonSet(namespace, confHash, trustedCAHash string, collectorType logging.LogCollectionType, trustedCABundle *v1.ConfigMap, collectorSpec logging.CollectionSpec, forwarderSpec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret) *apps.DaemonSet {
@@ -169,7 +178,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
 func (f *Factory) NewCollectorContainer(secretNames []string) *v1.Container {
-
+	f.Setup() // Make sure we have an image name
 	collector := factory.NewContainer(constants.CollectorName, f.ImageName, v1.PullIfNotPresent, f.CollectorResourceRequirements())
 	collector.Ports = []v1.ContainerPort{
 		{

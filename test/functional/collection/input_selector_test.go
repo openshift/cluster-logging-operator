@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -115,7 +116,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 					).
 					ToFluentForwardOutput()
 
-				Expect(instance.Deploy()).To(BeNil())
+				ExpectOK(instance.Deploy())
 				Expect(instance.WritesApplicationLogs(1)).To(Succeed(), "Expected no errors writing log messages")
 
 				msg := functional.NewCRIOLogMessage(functional.CRIOTime(time.Now()), "Here is my message", false)

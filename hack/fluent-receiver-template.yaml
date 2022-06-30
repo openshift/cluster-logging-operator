@@ -101,7 +101,7 @@ objects:
             - name: fluentd
               command: ["fluentd","-c","/etc/fluent/configs.d/user/fluent.conf","--no-supervisor"] 
               image: ${IMAGE}
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent
               volumeMounts:
               - name: config
                 mountPath: /etc/fluent/configs.d/user

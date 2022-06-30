@@ -1,15 +1,10 @@
-# Documentation for the cluster logging operator
+# Overview of the cluster logging operator
 
-## What are these docs for?
+This README gives an overview of the Cluster Logging Operator, what it does and how it works.
 
-The topics in this `/docs` directory are a place for developers to share development-related information with other developers. 
-These are informal and unofficial docs. They are not carefully maintained or updated.
+You can install official Red Hat releases using the "operartor hub" section of your cluster console. The [Red Hat Documentation](https://docs.openshift.com/container-platform/latest/logging/cluster-logging-deploying.html) describes those released versions.
 
-For the official documentation, see https://docs.openshift.com/container-platform/4.6/logging/cluster-logging-deploying.html
-
-## Where can you get help with these docs?
-
-If you have questions, connect to the coreos.slack.com workspace on slack and check out the #forum-logging channel.
+To build and deploy the operator for yourself from source see [Hacking on the Cluster Logging Operator](HACKING.md)
 
 ## Index of topics
 

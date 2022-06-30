@@ -2,11 +2,13 @@ package loki
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
+	_ "github.com/onsi/ginkgo" // Accept ginkgo command line options
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"testing"
-	"time"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/loki"

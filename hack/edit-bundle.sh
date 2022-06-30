@@ -4,13 +4,15 @@ source .bingo/variables.env
 
 set -euo pipefail
 
-sed -i 's/bundle\.package\.v1=.*logging/bundle\.package\.v1=cluster-logging/g' bundle.Dockerfile
-sed -i 's/.*scorecard.*//g' bundle.Dockerfile
+DIR=${1:-.}
 
-sed -i 's/bundle\.package\.v1\: .*logging/bundle\.package\.v1\: cluster-logging/g' ./bundle/metadata/annotations.yaml
-sed -i 's/.*scorecard.*//g' ./bundle/metadata/annotations.yaml
+sed -i 's/bundle\.package\.v1=.*logging/bundle\.package\.v1=cluster-logging/g' $DIR/bundle.Dockerfile
+sed -i 's/.*scorecard.*//g' $DIR/bundle.Dockerfile
 
-cat >> bundle.Dockerfile <<EOF
+sed -i 's/bundle\.package\.v1\: .*logging/bundle\.package\.v1\: cluster-logging/g' $DIR/bundle/metadata/annotations.yaml
+sed -i 's/.*scorecard.*//g' $DIR/bundle/metadata/annotations.yaml
+
+cat >> $DIR/bundle.Dockerfile <<EOF
 
 LABEL com.redhat.delivery.operator.bundle=true
 LABEL com.redhat.openshift.versions="${OPENSHIFT_VERSIONS}"
@@ -25,6 +27,3 @@ LABEL \\
     summary="This is the bundle for the cluster-logging-operator" \\
     maintainer="AOS Logging <team-logging@redhat.com>"
 EOF
-
-echo "validating bundle..."
-$OPERATOR_SDK bundle validate --verbose ./bundle

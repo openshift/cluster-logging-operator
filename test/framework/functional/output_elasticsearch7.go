@@ -7,6 +7,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -22,6 +23,7 @@ func (f *CollectorFunctionalFramework) addES7Output(b *runtime.PodBuilder, outpu
 	b.AddContainer(logging.OutputTypeElasticsearch, ElasticSearchImage).
 		AddEnvVar("discovery.type", "single-node").
 		AddRunAsUser(2000).
+		WithPullPolicy(corev1.PullIfNotPresent). // Docker image, excessive pulling will exceed quota and fail.
 		End()
 	return nil
 }

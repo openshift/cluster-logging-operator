@@ -6,6 +6,8 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 
 	"fmt"
+	"os"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	vector "github.com/openshift/cluster-logging-operator/internal/collector/vector"
@@ -14,7 +16,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 )
 
 var _ = Describe("Factory#NewPodSpec", func() {
@@ -29,6 +30,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 			CollectorType: logging.LogCollectionTypeFluentd,
 			Visit:         fluentd.CollectorVisitor,
 		}
+		utils.SetMockImageEnv() // NewPodSpec looks up image env vars.
 		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{})
 		collector = podSpec.Containers[0]
 	})

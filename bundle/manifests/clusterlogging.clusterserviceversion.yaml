@@ -112,7 +112,7 @@ metadata:
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
   name: clusterlogging.v5.5.0
-  namespace: placeholder
+  namespace: openshift-logging
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
@@ -375,6 +375,14 @@ spec:
               - command:
                 - cluster-logging-operator
                 env:
+                - name: RELATED_IMAGE_VECTOR
+                  value: quay.io/openshift-logging/vector:0.21-rh
+                - name: RELATED_IMAGE_FLUENTD
+                  value: quay.io/openshift-logging/fluentd:1.14.5
+                - name: RELATED_IMAGE_LOGFILEMETRICEXPORTER
+                  value: quay.io/openshift-logging/log-file-metric-exporter:1.0
+                - name: OPERATOR_NAME
+                  value: cluster-logging-operator
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -383,12 +391,6 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.name
-                - name: OPERATOR_NAME
-                  value: cluster-logging-operator
-                - name: RELATED_IMAGE_VECTOR
-                  value: quay.io/openshift-logging/vector:0.21-rh
-                - name: RELATED_IMAGE_FLUENTD
-                  value: quay.io/openshift-logging/fluentd:1.14.6
                 - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
                   value: quay.io/openshift-logging/log-file-metric-exporter:latest
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
@@ -501,8 +503,10 @@ spec:
   relatedImages:
   - image: quay.io/openshift-logging/vector:0.21-rh
     name: vector
-  - image: quay.io/openshift-logging/fluentd:1.14.6
+  - image: quay.io/openshift-logging/fluentd:1.14.5
     name: fluentd
+  - image: quay.io/openshift-logging/log-file-metric-exporter:1.0
+    name: logfilemetricexporter
   - image: quay.io/openshift-logging/log-file-metric-exporter:latest
     name: log-file-metric-exporter
   version: 5.5.0

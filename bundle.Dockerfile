@@ -21,7 +21,7 @@ COPY bundle/metadata /metadata/
 
 
 LABEL com.redhat.delivery.operator.bundle=true
-LABEL com.redhat.openshift.versions="v4.7"
+LABEL com.redhat.openshift.versions="v4.9"
 
 LABEL \
     com.redhat.component="cluster-logging-operator" \

@@ -106,6 +106,7 @@ var _ = Describe("Reconciling", func() {
 				}
 			)
 			BeforeEach(func() {
+				utils.SetMockImageEnv()
 				client = fake.NewFakeClient( //nolint
 					cluster,
 					fluentdSecret,

@@ -173,7 +173,7 @@ func LogGroupName(o logging.OutputSpec) string {
 func ParseRoleArn(secret *corev1.Secret) string {
 	roleArnString := security.GetFromSecret(secret, constants.AWSWebIdentityRoleKey)
 	if roleArnString != "" {
-		reg := regexp.MustCompile(`(arn:aws:(iam|sts)::\d{12}:role\/\S+)\s?`)
+		reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
 		roleArn := reg.FindStringSubmatch(roleArnString)
 		if roleArn != nil {
 			return roleArn[1] // the capturing group is index 1

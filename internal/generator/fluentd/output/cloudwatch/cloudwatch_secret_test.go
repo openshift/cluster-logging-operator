@@ -8,6 +8,7 @@ import (
 
 var _ = Describe("Parsing strings for sts functionality", func() {
 	var (
+		altRoleArn        = "arn:aws-us-gov:iam::225746144451:role/anli-sts-25690-openshift-logging-cloudwatch-credentials"
 		roleArn           = "arn:aws:iam::123456789012:role/my-role-from-secret"
 		credentialsString = "[default]\nrole_arn = " + roleArn + "\nweb_identity_token_file = /var/run/secrets/token"
 		secrets           = map[string]*corev1.Secret{
@@ -24,6 +25,15 @@ var _ = Describe("Parsing strings for sts functionality", func() {
 			It("should return our specified valid role_arn", func() {
 				results := ParseRoleArn(secrets["my-secret"])
 				Expect(results).To(Equal(roleArn))
+			})
+			It("should return our specified valid role_arn when the partion is more than 'aws'", func() {
+				secrets["other"] = &corev1.Secret{
+					Data: map[string][]byte{
+						"role_arn": []byte(altRoleArn),
+					},
+				}
+				results := ParseRoleArn(secrets["other"])
+				Expect(results).To(Equal(altRoleArn))
 			})
 		})
 	})

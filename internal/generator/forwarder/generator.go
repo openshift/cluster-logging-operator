@@ -29,7 +29,7 @@ var (
 
 type ConfigGenerator struct {
 	g      generator.Generator
-	conf   func(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Section
+	conf   func(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Section
 	format func(conf string) string
 }
 
@@ -50,13 +50,13 @@ func New(collectorType logging.LogCollectionType) *ConfigGenerator {
 	return g
 }
 
-func (cg *ConfigGenerator) GenerateConf(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) (string, error) {
+func (cg *ConfigGenerator) GenerateConf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) (string, error) {
 	sections := cg.conf(clspec, secrets, clfspec, op)
 	conf, err := cg.g.GenerateConf(generator.MergeSections(sections)...)
 	return cg.format(conf), err
 }
 
-func (cg *ConfigGenerator) Verify(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) error {
+func (cg *ConfigGenerator) Verify(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) error {
 	var err error
 	types := generator.GatherSources(clfspec, op)
 	if !types.HasAny(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit) {

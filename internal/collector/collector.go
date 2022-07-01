@@ -78,7 +78,7 @@ func (f *Factory) CollectorResourceRequirements() v1.ResourceRequirements {
 	if f.CollectorType == logging.LogCollectionTypeVector {
 		return v1.ResourceRequirements{}
 	}
-	if f.CollectorSpec.Logs.Resources == nil {
+	if f.CollectorSpec.Resources == nil {
 		return v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: fluentd.DefaultMemory},
 			Requests: v1.ResourceList{
@@ -87,14 +87,14 @@ func (f *Factory) CollectorResourceRequirements() v1.ResourceRequirements {
 			},
 		}
 	}
-	return *f.CollectorSpec.Logs.Resources
+	return *f.CollectorSpec.Resources
 }
 
 func (f *Factory) NodeSelector() map[string]string {
-	return f.CollectorSpec.Logs.FluentdSpec.NodeSelector
+	return f.CollectorSpec.CollectorSpec.NodeSelector
 }
 func (f *Factory) Tolerations() []v1.Toleration {
-	return f.CollectorSpec.Logs.FluentdSpec.Tolerations
+	return f.CollectorSpec.CollectorSpec.Tolerations
 }
 
 func New(confHash, trustedCAHash string, collectorType logging.LogCollectionType, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret) *Factory {

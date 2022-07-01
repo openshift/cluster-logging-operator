@@ -37,7 +37,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in CLO's CR")
 		return "", nil
 	}
-	switch clusterRequest.Cluster.Spec.Collection.Logs.Type {
+	switch clusterRequest.Cluster.Spec.Collection.Type {
 	case logging.LogCollectionTypeFluentd:
 		break
 	case logging.LogCollectionTypeVector:
@@ -67,9 +67,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		op[helpers.EnableDebugOutput] = "true"
 	}
 
-	var collectorType = clusterRequest.Cluster.Spec.Collection.Logs.Type
+	var collectorType = clusterRequest.Cluster.Spec.Collection.Type
 	g := forwardergenerator.New(collectorType)
-	err = g.Verify(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
+	err = g.Verify(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		if updateError := clusterRequest.UpdateCondition(
@@ -83,7 +83,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		return "", err
 	}
 
-	generatedConfig, err := g.GenerateConf(&clusterRequest.Cluster.Spec, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
+	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

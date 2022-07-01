@@ -26,7 +26,7 @@ import (
 // ClusterLoggingSpec defines the desired state of ClusterLogging
 // +k8s:openapi-gen=true
 type ClusterLoggingSpec struct {
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
+	// Important: Run "make generate" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 
 	// Indicator if the resource is 'Managed' or 'Unmanaged' by the operator
@@ -38,11 +38,13 @@ type ClusterLoggingSpec struct {
 	// Specification of the Visualization component for the cluster
 	//
 	// +nullable
+	// +optional
 	Visualization *VisualizationSpec `json:"visualization,omitempty"`
 
 	// Specification of the Log Storage component for the cluster
 	//
 	// +nullable
+	// +optional
 	LogStore *LogStoreSpec `json:"logStore,omitempty"`
 
 	// Specification of the Collection component for the cluster
@@ -50,14 +52,17 @@ type ClusterLoggingSpec struct {
 	// +nullable
 	Collection *CollectionSpec `json:"collection,omitempty"`
 
-	// Specification of the Curation component for the cluster
+	// Deprecated. Specification of the Curation component for the cluster
 	//
 	// +nullable
+	// +optional
 	Curation *CurationSpec `json:"curation,omitempty"`
 
-	// Specification for Forwarder component for the cluster
+	// Deprecated. Specification for Forwarder component for the cluster
+	// See spec.collection.fluentd
 	//
 	// +nullable
+	// +optional
 	Forwarder *ForwarderSpec `json:"forwarder,omitempty"`
 }
 
@@ -196,8 +201,30 @@ type ElasticsearchSpec struct {
 
 // This is the struct that will contain information pertinent to Log and event collection
 type CollectionSpec struct {
-	// Specification of Log Collection for the cluster
+
+	// TODO make type required in v2 once Logs is removed. For now assume default which is fluentd
+
+	// The type of Log Collection to configure
+	// +nullable
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Implementation",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:fluentd","urn:alm:descriptor:com.tectonic.ui:select:vector"}
+	Type LogCollectionType `json:"type"`
+
+	// Deprecated. Specification of Log Collection for the cluster
+	// See spec.collection
+	// +nullable
+	// +optional
 	Logs LogCollectionSpec `json:"logs,omitempty"`
+
+	// CollectorSpec is the common specification that applies to any collector
+	// +nullable
+	// +optional
+	CollectorSpec `json:",inline"`
+
+	// Fluentd represents the configuration for forwarders of type fluentd.
+	// +nullable
+	// +optional
+	Fluentd *FluentdForwarderSpec `json:"fluentd,omitempty"`
 }
 
 type LogCollectionSpec struct {
@@ -205,27 +232,32 @@ type LogCollectionSpec struct {
 	Type LogCollectionType `json:"type"`
 
 	// Specification of the Fluentd Log Collection component
-	FluentdSpec `json:"fluentd,omitempty"`
+	CollectorSpec `json:"fluentd,omitempty"`
 }
 
 type EventCollectionSpec struct {
 	Type EventCollectionType `json:"type"`
 }
 
-type FluentdSpec struct {
-	// The resource requirements for Fluentd
-	//
+// CollectorSpec is spec to define scheduling and resources for a collector
+type CollectorSpec struct {
+	// The resource requirements for the collector
 	// +nullable
 	// +optional
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Fluentd Resource Requirements",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:resourceRequirements"}
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Resource Requirements",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:resourceRequirements"}
 	Resources *v1.ResourceRequirements `json:"resources"`
 
 	// Define which Nodes the Pods are scheduled on.
-	//
 	// +nullable
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Fluentd node selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:nodeSelector"}
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Node Selector",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:selector:core:v1:ConfigMap"}
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
-	Tolerations  []v1.Toleration   `json:"tolerations,omitempty"`
+
+	// Define the tolerations the Pods will accept
+	// +nullable
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Pod Tolerations",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration"}
+	Tolerations []v1.Toleration `json:"tolerations,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log curation (Curator)
@@ -559,6 +591,10 @@ const (
 	LogCollectionTypeFluentd LogCollectionType = "fluentd"
 	LogCollectionTypeVector  LogCollectionType = "vector"
 )
+
+func (ct LogCollectionType) IsSupportedCollector() bool {
+	return ct == LogCollectionTypeFluentd || ct == LogCollectionTypeVector
+}
 
 type EventCollectionType string
 

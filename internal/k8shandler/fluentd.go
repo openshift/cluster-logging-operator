@@ -31,7 +31,7 @@ func (clusterRequest *ClusterLoggingRequest) RestartCollector() (err error) {
 		log.Error(err, "unable to calculate MD5 hash.")
 		return
 	}
-	collectorType := clusterRequest.Cluster.Spec.Collection.Logs.Type
+	collectorType := clusterRequest.Cluster.Spec.Collection.Type
 
 	if err = clusterRequest.reconcileCollectorDaemonset(collectorType, collectorConfHash); err != nil {
 		return

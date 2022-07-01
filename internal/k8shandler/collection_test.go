@@ -40,10 +40,8 @@ var _ = Describe("Reconciling", func() {
 					Type: loggingv1.LogStoreTypeElasticsearch,
 				},
 				Collection: &loggingv1.CollectionSpec{
-					Logs: loggingv1.LogCollectionSpec{
-						Type:        loggingv1.LogCollectionTypeFluentd,
-						FluentdSpec: loggingv1.FluentdSpec{},
-					},
+					Type:          loggingv1.LogCollectionTypeFluentd,
+					CollectorSpec: loggingv1.CollectorSpec{},
 				},
 			},
 		}

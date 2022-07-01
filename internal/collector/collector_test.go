@@ -65,12 +65,10 @@ var _ = Describe("Factory#NewPodSpec", func() {
 					Effect:   v1.TaintEffectNoSchedule,
 				}
 				factory.CollectorSpec = logging.CollectionSpec{
-					Logs: logging.LogCollectionSpec{
-						Type: "fluentd",
-						FluentdSpec: logging.FluentdSpec{
-							Tolerations: []v1.Toleration{
-								providedToleration,
-							},
+					Type: "fluentd",
+					CollectorSpec: logging.CollectorSpec{
+						Tolerations: []v1.Toleration{
+							providedToleration,
 						},
 					},
 				}
@@ -91,12 +89,10 @@ var _ = Describe("Factory#NewPodSpec", func() {
 					utils.OsNodeLabel: utils.LinuxValue,
 				}
 				factory.CollectorSpec = logging.CollectionSpec{
-					Logs: logging.LogCollectionSpec{
-						Type: "fluentd",
-						FluentdSpec: logging.FluentdSpec{
-							NodeSelector: map[string]string{
-								"foo": "bar",
-							},
+					Type: "fluentd",
+					CollectorSpec: logging.CollectorSpec{
+						NodeSelector: map[string]string{
+							"foo": "bar",
 						},
 					},
 				}
@@ -214,16 +210,14 @@ var _ = Describe("Factory#CollectorResourceRequirements", func() {
 		})
 		It("should apply the spec'd resources when defined", func() {
 			factory.CollectorSpec = logging.CollectionSpec{
-				Logs: logging.LogCollectionSpec{
-					FluentdSpec: logging.FluentdSpec{
-						Resources: &v1.ResourceRequirements{
-							Limits: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("120Gi"),
-							},
-							Requests: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("100Gi"),
-								v1.ResourceCPU:    resource.MustParse("500m"),
-							},
+				CollectorSpec: logging.CollectorSpec{
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("120Gi"),
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("100Gi"),
+							v1.ResourceCPU:    resource.MustParse("500m"),
 						},
 					},
 				},

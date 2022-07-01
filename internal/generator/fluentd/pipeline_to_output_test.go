@@ -10,7 +10,7 @@ import (
 )
 
 var _ = Describe("Testing Config Generation", func() {
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return PipelineToOutputs(&clfspec, generator.NoOptions)
 	}
 	DescribeTable("Pipelines(s) to Output(s)", helpers.TestGenerateConfWith(f),

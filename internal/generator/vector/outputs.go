@@ -23,7 +23,7 @@ func OutputFromPipelines(spec *logging.ClusterLogForwarderSpec, op generator.Opt
 	return r
 }
 
-func Outputs(clspec *logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	outputs := []generator.Element{}
 	ofp := OutputFromPipelines(clfspec, op)
 

@@ -64,9 +64,9 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	log.V(2).Info("Normalization", "spec", spec)
 	log.V(2).Info("Normalization", "status", status)
 
-	tunings := &logging.ForwarderSpec{}
-	clspec := logging.ClusterLoggingSpec{
-		Forwarder: tunings,
+	tunings := &logging.FluentdForwarderSpec{}
+	clspec := logging.CollectionSpec{
+		Fluentd: tunings,
 	}
 	op := generator.Options{}
 	if useOldRemoteSyslogPlugin {

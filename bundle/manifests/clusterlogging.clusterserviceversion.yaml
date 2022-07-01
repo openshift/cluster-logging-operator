@@ -55,10 +55,7 @@ metadata:
           },
           "spec": {
             "collection": {
-              "logs": {
-                "fluentd": {},
-                "type": "fluentd"
-              }
+              "type": "fluentd"
             },
             "logStore": {
               "elasticsearch": {
@@ -218,15 +215,41 @@ spec:
         version: v1
       specDescriptors:
       - description: Define which Nodes the Pods are scheduled on.
-        displayName: Fluentd node selector
+        displayName: Collector Node Selector
         path: collection.logs.nodeSelector
         x-descriptors:
-        - urn:alm:descriptor:com.tectonic.ui:nodeSelector
-      - description: The resource requirements for Fluentd
-        displayName: Fluentd Resource Requirements
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:ConfigMap
+      - description: The resource requirements for the collector
+        displayName: Collector Resource Requirements
         path: collection.logs.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Define the tolerations the Pods will accept
+        displayName: Collector Pod Tolerations
+        path: collection.logs.tolerations
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration
+      - description: Define which Nodes the Pods are scheduled on.
+        displayName: Collector Node Selector
+        path: collection.nodeSelector
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:ConfigMap
+      - description: The resource requirements for the collector
+        displayName: Collector Resource Requirements
+        path: collection.resources
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
+      - description: Define the tolerations the Pods will accept
+        displayName: Collector Pod Tolerations
+        path: collection.tolerations
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Toleration
+      - description: The type of Log Collection to configure
+        displayName: Collector Implementation
+        path: collection.type
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:select:fluentd
+        - urn:alm:descriptor:com.tectonic.ui:select:vector
       - description: Number of nodes to deploy for Elasticsearch
         displayName: Elasticsearch Size
         path: logStore.nodeCount

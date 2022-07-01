@@ -5,9 +5,7 @@ metadata:
   namespace: openshift-logging
 spec:
   collection:
-    logs:
-      type: fluentd
-      fluentd: { }
+    type: fluentd
   logStore:
     type: elasticsearch
     elasticsearch:

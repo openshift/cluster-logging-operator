@@ -66,9 +66,11 @@ for dir in $(ls -d $TEST_DIR); do
     os::log::info "Collection $dir failed"
     os::log::info "======================================================="
   fi
-  for ns in "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"; do
-    oc delete $ns --ignore-not-found --force --grace-period=0||:
-    os::cmd::try_until_failure "oc get $ns" "$((1 * $minute))"
-  done
+  if [ "${DO_CLEANUP:-true}" == "true" ] ; then
+    for ns in "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"; do
+      oc delete $ns --ignore-not-found --force --grace-period=0||:
+      os::cmd::try_until_failure "oc get $ns" "$((1 * $minute))"
+    done
+  fi
 done
 exit $failed

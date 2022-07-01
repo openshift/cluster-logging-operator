@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("Generate Vector config", func() {
 	inputPipeline := []string{"application"}
-	var f = func(clspec logging.ClusterLoggingSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		e := []generator.Element{}
 		for _, o := range clfspec.Outputs {
 			e = generator.MergeElements(e, Conf(o, inputPipeline, secrets[o.Name], op))
@@ -328,9 +328,7 @@ id_key = "_id"
 `,
 		}),
 		Entry("with multiple pipelines for elastic-search", helpers.ConfGenerateTest{
-			CLSpec: logging.ClusterLoggingSpec{
-				Forwarder: &logging.ForwarderSpec{},
-			},
+			CLSpec: logging.CollectionSpec{},
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{

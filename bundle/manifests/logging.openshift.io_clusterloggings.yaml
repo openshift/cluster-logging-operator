@@ -52,8 +52,109 @@ spec:
                 description: Specification of the Collection component for the cluster
                 nullable: true
                 properties:
+                  fluentd:
+                    description: Fluentd represents the configuration for forwarders
+                      of type fluentd.
+                    nullable: true
+                    properties:
+                      buffer:
+                        description: "FluentdBufferSpec represents a subset of fluentd
+                          buffer parameters to tune the buffer configuration for all
+                          fluentd outputs. It supports a subset of parameters to configure
+                          buffer and queue sizing, flush operations and retry flushing.
+                          \n For general parameters refer to: https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
+                          \n For flush parameters refer to: https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
+                          \n For retry parameters refer to: https://docs.fluentd.org/configuration/buffer-section#retries-parameters"
+                        properties:
+                          chunkLimitSize:
+                            description: ChunkLimitSize represents the maximum size
+                              of each chunk. Events will be written into chunks until
+                              the size of chunks become this size.
+                            pattern: ^([0-9]+)([kmgtKMGT]{0,1})$
+                            type: string
+                          flushInterval:
+                            description: 'FlushInterval represents the time duration
+                              to wait between two consecutive flush operations. Takes
+                              only effect used together with `flushMode: interval`.'
+                            pattern: ^([0-9]+)([smhd]{0,1})$
+                            type: string
+                          flushMode:
+                            description: FlushMode represents the mode of the flushing
+                              thread to write chunks. The mode allows lazy (if `time`
+                              parameter set), per interval or immediate flushing.
+                            enum:
+                            - lazy
+                            - interval
+                            - immediate
+                            type: string
+                          flushThreadCount:
+                            description: FlushThreadCount reprents the number of threads
+                              used by the fluentd buffer plugin to flush/write chunks
+                              in parallel.
+                            format: int32
+                            type: integer
+                          overflowAction:
+                            description: 'OverflowAction represents the action for
+                              the fluentd buffer plugin to execute when a buffer queue
+                              is full. (Default: block)'
+                            enum:
+                            - throw_exception
+                            - block
+                            - drop_oldest_chunk
+                            type: string
+                          retryMaxInterval:
+                            description: 'RetryMaxInterval represents the maximum
+                              time interval for exponential backoff between retries.
+                              Takes only effect if used together with `retryType:
+                              exponential_backoff`.'
+                            pattern: ^([0-9]+)([smhd]{0,1})$
+                            type: string
+                          retryTimeout:
+                            description: RetryTimeout represents the maximum time
+                              interval to attempt retries before giving up and the
+                              record is disguarded.  If unspecified, the default will
+                              be used
+                            pattern: ^([0-9]+)([smhd]{0,1})$
+                            type: string
+                          retryType:
+                            description: RetryType represents the type of retrying
+                              flush operations. Flush operations can be retried either
+                              periodically or by applying exponential backoff.
+                            enum:
+                            - exponential_backoff
+                            - periodic
+                            type: string
+                          retryWait:
+                            description: RetryWait represents the time duration between
+                              two consecutive retries to flush buffers for periodic
+                              retries or a constant factor of time on retries with
+                              exponential backoff.
+                            pattern: ^([0-9]+)([smhd]{0,1})$
+                            type: string
+                          totalLimitSize:
+                            description: TotalLimitSize represents the threshold of
+                              node space allowed per fluentd buffer to allocate. Once
+                              this threshold is reached, all append operations will
+                              fail with error (and data will be lost).
+                            pattern: ^([0-9]+)([kmgtKMGT]{0,1})$
+                            type: string
+                        type: object
+                      inFile:
+                        description: "FluentdInFileSpec represents a subset of fluentd
+                          in-tail plugin parameters to tune the configuration for
+                          all fluentd in-tail inputs. \n For general parameters refer
+                          to: https://docs.fluentd.org/input/tail#parameters"
+                        properties:
+                          readLinesLimit:
+                            description: ReadLinesLimit represents the number of lines
+                              to read with each I/O operation
+                            type: integer
+                        type: object
+                    type: object
                   logs:
-                    description: Specification of Log Collection for the cluster
+                    description: Deprecated. Specification of Log Collection for the
+                      cluster See spec.collection
+                    nullable: true
                     properties:
                       fluentd:
                         description: Specification of the Fluentd Log Collection component
@@ -66,7 +167,7 @@ spec:
                             nullable: true
                             type: object
                           resources:
-                            description: The resource requirements for Fluentd
+                            description: The resource requirements for the collector
                             nullable: true
                             properties:
                               limits:
@@ -94,6 +195,7 @@ spec:
                                 type: object
                             type: object
                           tolerations:
+                            description: Define the tolerations the Pods will accept
                             items:
                               description: The pod this Toleration is attached to
                                 tolerates any taint that matches the triple <key,value,effect>
@@ -135,6 +237,7 @@ spec:
                                     should be empty, otherwise just a regular string.
                                   type: string
                               type: object
+                            nullable: true
                             type: array
                         type: object
                       type:
@@ -143,9 +246,89 @@ spec:
                     required:
                     - type
                     type: object
+                  nodeSelector:
+                    additionalProperties:
+                      type: string
+                    description: Define which Nodes the Pods are scheduled on.
+                    nullable: true
+                    type: object
+                  resources:
+                    description: The resource requirements for the collector
+                    nullable: true
+                    properties:
+                      limits:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: 'Limits describes the maximum amount of compute
+                          resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                        type: object
+                      requests:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: 'Requests describes the minimum amount of compute
+                          resources required. If Requests is omitted for a container,
+                          it defaults to Limits if that is explicitly specified, otherwise
+                          to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
+                        type: object
+                    type: object
+                  tolerations:
+                    description: Define the tolerations the Pods will accept
+                    items:
+                      description: The pod this Toleration is attached to tolerates
+                        any taint that matches the triple <key,value,effect> using
+                        the matching operator <operator>.
+                      properties:
+                        effect:
+                          description: Effect indicates the taint effect to match.
+                            Empty means match all taint effects. When specified, allowed
+                            values are NoSchedule, PreferNoSchedule and NoExecute.
+                          type: string
+                        key:
+                          description: Key is the taint key that the toleration applies
+                            to. Empty means match all taint keys. If the key is empty,
+                            operator must be Exists; this combination means to match
+                            all values and all keys.
+                          type: string
+                        operator:
+                          description: Operator represents a key's relationship to
+                            the value. Valid operators are Exists and Equal. Defaults
+                            to Equal. Exists is equivalent to wildcard for value,
+                            so that a pod can tolerate all taints of a particular
+                            category.
+                          type: string
+                        tolerationSeconds:
+                          description: TolerationSeconds represents the period of
+                            time the toleration (which must be of effect NoExecute,
+                            otherwise this field is ignored) tolerates the taint.
+                            By default, it is not set, which means tolerate the taint
+                            forever (do not evict). Zero and negative values will
+                            be treated as 0 (evict immediately) by the system.
+                          format: int64
+                          type: integer
+                        value:
+                          description: Value is the taint value the toleration matches
+                            to. If the operator is Exists, the value should be empty,
+                            otherwise just a regular string.
+                          type: string
+                      type: object
+                    nullable: true
+                    type: array
+                  type:
+                    description: The type of Log Collection to configure
+                    nullable: true
+                    type: string
                 type: object
               curation:
-                description: Specification of the Curation component for the cluster
+                description: Deprecated. Specification of the Curation component for
+                  the cluster
                 nullable: true
                 properties:
                   curator:
@@ -240,7 +423,8 @@ spec:
                 - type
                 type: object
               forwarder:
-                description: Specification for Forwarder component for the cluster
+                description: Deprecated. Specification for Forwarder component for
+                  the cluster See spec.collection.fluentd
                 nullable: true
                 properties:
                   fluentd:

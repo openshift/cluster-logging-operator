@@ -92,10 +92,9 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []generator.Ele
 	conf := []generator.Element{}
 	if url.IsTLSScheme(u.Scheme) {
 		conf = []generator.Element{
-			TLS(true),
-		}
-		if secret == nil {
-			conf = append(conf, TLS(false))
+			TLS{
+				InsecureMode: o.TLS != nil && o.TLS.InsecureSkipVerify,
+			},
 		}
 	}
 	if o.Secret != nil {

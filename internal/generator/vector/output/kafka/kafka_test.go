@@ -109,7 +109,6 @@ topic = "build_complete"
 codec = "json"
 timestamp_format = "rfc3339"
 
-# TLS Config
 [sinks.kafka_receiver.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
@@ -165,7 +164,6 @@ topic = "build_complete"
 codec = "json"
 timestamp_format = "rfc3339"
 
-# TLS Config
 [sinks.kafka_receiver.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
@@ -213,7 +211,6 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
-# TLS Config
 [sinks.kafka_receiver.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
@@ -221,13 +218,16 @@ crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 `,
 		}),
-		Entry("with TLS and tls.insecure", helpers.ConfGenerateTest{
+		Entry("with TLS and InsecureSkipVerify", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
 						Type: logging.OutputTypeKafka,
 						Name: "kafka-receiver",
 						URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
 						Secret: &logging.OutputSecretSpec{
 							Name: "kafka-receiver-1",
 						},
@@ -240,7 +240,6 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 						"tls.key":       []byte("junk"),
 						"tls.crt":       []byte("junk"),
 						"ca-bundle.crt": []byte("junk"),
-						"tls.insecure":  []byte(""),
 					},
 				},
 			},
@@ -256,15 +255,13 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
-# TLS Config
 [sinks.kafka_receiver.tls]
 enabled = true
+verify_certificate = false
+verify_hostname = false
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
-
-verify_certificate = false
-verify_hostname = false
 `,
 		}),
 		Entry("with basic TLS", helpers.ConfGenerateTest{

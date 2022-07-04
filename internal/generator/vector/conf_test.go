@@ -347,7 +347,6 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
-# TLS Config
 [sinks.kafka_receiver.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
@@ -734,7 +733,6 @@ bulk.action = "create"
 request.timeout_secs = 2147483648
 id_key = "_id"
 
-# TLS Config
 [sinks.es_1.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
@@ -817,7 +815,6 @@ bulk.action = "create"
 request.timeout_secs = 2147483648
 id_key = "_id"
 
-# TLS Config
 [sinks.es_2.tls]
 enabled = true
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"

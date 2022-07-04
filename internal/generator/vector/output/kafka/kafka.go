@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -158,16 +157,11 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			conf = append(conf, ca)
 			hasTLS = true
 		}
-		if security.HasKeys(secret, constants.TLSInsecure) {
-			conf = append(conf, TLSInsecure(true))
-			hasTLS = true
-			log.Info("Insecure TLS selected for output %q", o.Name)
-		}
 	}
 	if hasTLS {
 		conf = append([]Element{security.TLSConf{
-			Desc:        "TLS Config",
-			ComponentID: strings.ToLower(helpers.Replacer.Replace(o.Name)),
+			ComponentID:        strings.ToLower(helpers.Replacer.Replace(o.Name)),
+			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
 		}}, conf...)
 	}
 	return conf

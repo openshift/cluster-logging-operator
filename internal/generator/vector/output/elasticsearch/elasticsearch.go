@@ -213,8 +213,8 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	if o.Secret != nil {
 		hasTLS := false
 		conf = append(conf, security.TLSConf{
-			Desc:        "TLS Config",
-			ComponentID: helpers.FormatComponentID(o.Name),
+			ComponentID:        helpers.FormatComponentID(o.Name),
+			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
 		})
 		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
 			hasTLS = true

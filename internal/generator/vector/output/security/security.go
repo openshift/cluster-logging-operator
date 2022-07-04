@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -37,7 +36,10 @@ type BearerToken struct {
 	Token string
 }
 
-type TLSConf generator.ConfLiteral
+type TLSConf struct {
+	ComponentID        string
+	InsecureSkipVerify bool
+}
 
 func (t TLSConf) Name() string {
 	return "vectorTLS"
@@ -46,9 +48,12 @@ func (t TLSConf) Name() string {
 func (t TLSConf) Template() string {
 	return `
 {{define "vectorTLS" -}}
-# {{.Desc}}
 [sinks.{{.ComponentID}}.tls]
 enabled = true
+{{- if .InsecureSkipVerify }}
+verify_certificate = false
+verify_hostname = false
+{{- end }}
 {{- end}}`
 }
 

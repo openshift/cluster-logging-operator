@@ -287,12 +287,7 @@ spec:
                         `tls.key`. `tls.key`: Private key to unlock the client certificate.
                         Requires `tls.crt` `passphrase`: Passphrase to decode an encoded
                         TLS private key. Requires tls.key. `ca-bundle.crt`: Custom
-                        CA to validate certificates. \n `tls.insecure`: If this key
-                        is present (with any value) accept server certificates that
-                        are self-signed or have an incorrect hostname. This is INSECURE,
-                        the connection is susceptible to man-in-the-middle attacks.
-                        This is ONLY for development and testing when valid certificates
-                        are not available. \n Username and Password \n `username`:
+                        CA to validate certificates. \n Username and Password \n `username`:
                         Authentication user name. Requires `password`. `password`:
                         Authentication password. Requires `username`. \n Simple Authentication
                         Security Layer (SASL) \n `sasl.enable`: (boolean) Explicitly
@@ -371,6 +366,16 @@ spec:
                         trimPrefix:
                           description: TrimPrefix is a prefix to trim from the tag.
                           type: string
+                      type: object
+                    tls:
+                      description: TLS contains settings for controlling options on
+                        TLS client connections.
+                      properties:
+                        insecureSkipVerify:
+                          description: "If InsecureSkipVerify is true, then the TLS
+                            client will be configured to ignore errors with certificates.
+                            \n This option is *not* recommended for production configurations."
+                          type: boolean
                       type: object
                     type:
                       description: Type of output plugin.

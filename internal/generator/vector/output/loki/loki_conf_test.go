@@ -269,7 +269,6 @@ kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
 kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
-# TLS Config
 [sinks.loki_receiver.tls]
 enabled = true
 ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"

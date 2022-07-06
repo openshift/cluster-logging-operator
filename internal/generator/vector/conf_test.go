@@ -108,24 +108,28 @@ journal_directory = "/var/log/journal"
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/audit/audit.log"]
+host_key = "hostname"
 
 # Logs from kubernetes audit
 [sources.raw_k8s_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/kube-apiserver/audit.log"]
+host_key = "hostname"
 
 # Logs from openshift audit
 [sources.raw_openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
+host_key = "hostname"
 
 # Logs from ovn audit
 [sources.raw_ovn_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/ovn/acl-audit-log.log"]
+host_key = "hostname"
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -261,9 +265,8 @@ source = '''
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
   }
-  hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  del(.host)
-  . |= {"hostname" : hostname}
+  
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.k8s_audit_logs]
@@ -274,6 +277,8 @@ source = '''
   
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.openshift_audit_logs]
@@ -284,6 +289,8 @@ source = '''
   
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.ovn_audit_logs]
@@ -291,6 +298,8 @@ type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
   .tag = ".ovn-audit.log"
+  
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.route_container_logs]
@@ -435,24 +444,28 @@ journal_directory = "/var/log/journal"
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/audit/audit.log"]
+host_key = "hostname"
 
 # Logs from kubernetes audit
 [sources.raw_k8s_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/kube-apiserver/audit.log"]
+host_key = "hostname"
 
 # Logs from openshift audit
 [sources.raw_openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
+host_key = "hostname"
 
 # Logs from ovn audit
 [sources.raw_ovn_audit_logs]
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/ovn/acl-audit-log.log"]
+host_key = "hostname"
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -588,9 +601,8 @@ source = '''
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
   }
-  hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  del(.host)
-  . |= {"hostname" : hostname}
+  
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.k8s_audit_logs]
@@ -601,6 +613,8 @@ source = '''
   
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.openshift_audit_logs]
@@ -611,6 +625,8 @@ source = '''
   
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.ovn_audit_logs]
@@ -618,6 +634,8 @@ type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
   .tag = ".ovn-audit.log"
+  
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.route_container_logs]

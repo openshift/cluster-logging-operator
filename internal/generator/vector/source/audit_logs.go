@@ -11,6 +11,7 @@ const HostAuditLogTemplate = `
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/audit/audit.log"]
+host_key = "hostname"
 {{end}}`
 
 type HostAuditLog = generator.ConfLiteral
@@ -22,6 +23,7 @@ const OpenshiftAuditLogTemplate = `
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
+host_key = "hostname"
 {{end}}
 `
 
@@ -34,6 +36,7 @@ const K8sAuditLogTemplate = `
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/kube-apiserver/audit.log"]
+host_key = "hostname"
 {{end}}
 `
 
@@ -46,6 +49,7 @@ const OVNAuditLogTemplate = `
 type = "file"
 ignore_older_secs = 600
 include = ["/var/log/ovn/acl-audit-log.log"]
+host_key = "hostname"
 {{end}}
 `
 

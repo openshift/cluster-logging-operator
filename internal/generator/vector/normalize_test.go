@@ -212,9 +212,7 @@ source = '''
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
   }
-  hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  del(.host)
-  . |= {"hostname" : hostname}
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
     
 [transforms.k8s_audit_logs]
@@ -225,6 +223,7 @@ source = '''
   
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.openshift_audit_logs]
@@ -235,6 +234,7 @@ source = '''
   
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.ovn_audit_logs]
@@ -242,6 +242,7 @@ type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
   .tag = ".ovn-audit.log"
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 `,
 		}),

@@ -114,9 +114,6 @@ if err == null {
 } else {
   log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
 }
-hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-del(.host)
-. |= {"hostname" : hostname}
 `
 	HostAuditLogTag = ".linux-audit.log"
 	K8sAuditLogTag  = ".k8s-audit.log"
@@ -125,6 +122,7 @@ del(.host)
 	ParseAndFlatten = `. = merge(., parse_json!(string!(.message))) ?? .
 del(.message)
 `
+	FixHostname = `.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
 )
 
 var (
@@ -196,6 +194,7 @@ func NormalizeHostAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddHostAuditTag,
 				ParseHostAuditLogs,
+				FixHostname,
 			}), "\n\n"),
 		},
 	}
@@ -209,6 +208,7 @@ func NormalizeK8sAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddK8sAuditTag,
 				ParseAndFlatten,
+				FixHostname,
 			}), "\n\n"),
 		},
 	}
@@ -222,6 +222,7 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddOpenAuditTag,
 				ParseAndFlatten,
+				FixHostname,
 			}), "\n\n"),
 		},
 	}
@@ -234,6 +235,7 @@ func NormalizeOVNAuditLogs(inLabel, outLabel string) []generator.Element {
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddOvnAuditTag,
+				FixHostname,
 			}), "\n\n"),
 		},
 	}

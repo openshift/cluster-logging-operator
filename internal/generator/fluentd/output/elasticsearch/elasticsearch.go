@@ -51,6 +51,8 @@ type_name _doc
 {{ kv .RetryTag -}}
 http_backend typhoeus
 write_operation create
+# https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
+suppress_type_name 'true'
 reload_connections 'true'
 # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 reload_after '200'

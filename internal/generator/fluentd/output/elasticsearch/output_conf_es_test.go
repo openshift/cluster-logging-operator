@@ -156,6 +156,8 @@ var _ = Describe("Generating fluentd config blocks", func() {
     type_name _doc
     http_backend typhoeus
     write_operation create
+    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
+    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -200,6 +202,8 @@ var _ = Describe("Generating fluentd config blocks", func() {
     retry_tag retry_oncluster_elasticsearch
     http_backend typhoeus
     write_operation create
+    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
+    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -314,6 +318,8 @@ var _ = Describe("Generating fluentd config blocks", func() {
     type_name _doc
     http_backend typhoeus
     write_operation create
+    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
+    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -356,6 +362,8 @@ var _ = Describe("Generating fluentd config blocks", func() {
     retry_tag retry_other_elasticsearch
     http_backend typhoeus
     write_operation create
+    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
+    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'

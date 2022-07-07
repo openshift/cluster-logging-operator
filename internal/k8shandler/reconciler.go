@@ -92,7 +92,7 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 	}
 
 	// Reconcile metrics Dashboards
-	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader); err != nil {
+	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader, clusterLoggingRequest.Cluster.Spec.Collection); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)

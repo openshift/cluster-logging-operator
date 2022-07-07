@@ -15,12 +15,14 @@ import (
 )
 
 type Elasticsearch struct {
-	ID_Key      string
-	Desc        string
-	ComponentID string
-	Inputs      string
-	Index       string
-	Endpoint    string
+	ID_Key         string
+	Desc           string
+	ComponentID    string
+	Inputs         string
+	Index          string
+	Endpoint       string
+	Version        int
+	DefaultVersion int
 }
 
 func (e Elasticsearch) Name() string {
@@ -38,6 +40,9 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
+{{ if gt .Version .DefaultVersion -}}
+suppress_type_name = true
+{{ end -}}
 {{end}}`
 }
 
@@ -212,12 +217,23 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 }
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
-
 	return Elasticsearch{
-		ComponentID: helpers.FormatComponentID(o.Name),
-		Endpoint:    o.URL,
-		Inputs:      helpers.MakeInputs(inputs...),
+		ComponentID:    helpers.FormatComponentID(o.Name),
+		Endpoint:       o.URL,
+		Inputs:         helpers.MakeInputs(inputs...),
+		Version:        DetermineESVersionOrDefault(o),
+		DefaultVersion: logging.DefaultESVersion,
 	}
+}
+
+func DetermineESVersionOrDefault(o logging.OutputSpec) int {
+	if o.Elasticsearch != nil {
+		if o.Elasticsearch.Version >= logging.DefaultESVersion {
+			return o.Elasticsearch.Version
+		}
+	}
+	// Defaults to latest ES version
+	return logging.LatestESVersion
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {

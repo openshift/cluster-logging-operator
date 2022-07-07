@@ -1,0 +1,13 @@
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogging
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  logStore:
+    type: lokistack
+    lokistack:
+      name: lokistack-dev
+  collection:
+    logs:
+      type: vector

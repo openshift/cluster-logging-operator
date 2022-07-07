@@ -673,6 +673,18 @@ spec:
                     required:
                     - nodeCount
                     type: object
+                  lokistack:
+                    description: "LokiStack contains information about which LokiStack
+                      to use for log storage if Type is set to LogStoreTypeLokiStack.
+                      \n The cluster-logging-operator does not create or manage the
+                      referenced LokiStack."
+                    properties:
+                      name:
+                        description: Name of the LokiStack resource.
+                        type: string
+                    required:
+                    - name
+                    type: object
                   retentionPolicy:
                     description: Retention policy defines the maximum age for an index
                       after which it should be deleted
@@ -794,7 +806,18 @@ spec:
                         type: object
                     type: object
                   type:
-                    description: The type of Log Storage to configure
+                    description: "The Type of Log Storage to configure. The operator
+                      currently supports either using ElasticSearch managed by elasticsearch-operator
+                      or Loki managed by loki-operator (LokiStack) as a default log
+                      store. \n When using ElasticSearch as a log store this operator
+                      also manages the ElasticSearch deployment. \n When using LokiStack
+                      as a log store this operator does not manage the LokiStack,
+                      but only creates configuration referencing an existing LokiStack
+                      deployment. The user is responsible for creating and managing
+                      the LokiStack himself."
+                    enum:
+                    - elasticsearch
+                    - lokistack
                     type: string
                 required:
                 - type

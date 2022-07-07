@@ -26,38 +26,46 @@ const (
 )
 
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateLogStore() (err error) {
-	if clusterRequest.Cluster.Spec.LogStore == nil || clusterRequest.Cluster.Spec.LogStore.Type == "" {
+	if clusterRequest.Cluster.Spec.LogStore == nil {
 		return nil
 	}
-	if clusterRequest.Cluster.Spec.LogStore.Type == logging.LogStoreTypeElasticsearch {
 
-		cluster := clusterRequest.Cluster
+	switch clusterRequest.Cluster.Spec.LogStore.Type {
+	case logging.LogStoreTypeElasticsearch:
+		return clusterRequest.createOrUpdateElasticSearchLogStore()
+	case logging.LogStoreTypeLokiStack:
+		return clusterRequest.createOrUpdateLokiStackLogStore()
+	default:
+		return nil
+	}
+}
 
-		if err = clusterRequest.removeElasticsearchIfSecretOwnedByCLO(); err != nil {
-			log.Error(err, "Can't fully clean up old secret created by CLO")
-			return err
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticSearchLogStore() error {
+	cluster := clusterRequest.Cluster
+
+	if err := clusterRequest.removeElasticsearchIfSecretOwnedByCLO(); err != nil {
+		log.Error(err, "Can't fully clean up old secret created by CLO")
+		return err
+	}
+
+	if err := clusterRequest.createOrUpdateElasticsearchCR(); err != nil {
+		return err
+	}
+
+	elasticsearchStatus, err := clusterRequest.getElasticsearchStatus()
+	if err != nil {
+		return fmt.Errorf("Failed to get Elasticsearch status for %q: %v", cluster.Name, err)
+	}
+
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if !compareElasticsearchStatus(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
+			cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
+			return clusterRequest.UpdateStatus(cluster)
 		}
-
-		if err = clusterRequest.createOrUpdateElasticsearchCR(); err != nil {
-			return err
-		}
-
-		elasticsearchStatus, err := clusterRequest.getElasticsearchStatus()
-
-		if err != nil {
-			return fmt.Errorf("Failed to get Elasticsearch status for %q: %v", cluster.Name, err)
-		}
-
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if !compareElasticsearchStatus(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
-				cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
-				return clusterRequest.UpdateStatus(cluster)
-			}
-			return nil
-		})
-		if retryErr != nil {
-			return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
-		}
+		return nil
+	})
+	if retryErr != nil {
+		return fmt.Errorf("Failed to update Cluster Logging Elasticsearch status: %v", retryErr)
 	}
 
 	return nil

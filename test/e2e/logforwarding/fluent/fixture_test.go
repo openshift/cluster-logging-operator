@@ -11,9 +11,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"time"
+
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"time"
 )
 
 type Fixture struct {
@@ -109,7 +110,7 @@ func (f *Fixture) cleanFluentDBuffers(c *client.Client) {
 					InitContainers: []corev1.Container{
 						{
 							Name:  "clean-fluentd-buffers",
-							Image: "docker.io/library/busybox:latest",
+							Image: "quay.io/quay/busybox",
 							Args:  []string{"sh", "-c", "rm -rf /fluentd-buffers/** || rm /logs/audit/audit.log.pos || rm /logs/kube-apiserver/audit.log.pos || rm /logs/es-containers.log.pos"},
 							SecurityContext: &corev1.SecurityContext{
 								Privileged: &p,

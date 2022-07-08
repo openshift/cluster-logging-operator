@@ -97,7 +97,7 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) er
 	opts := metav1.CreateOptions{}
 	container := corev1.Container{
 		Name:            "log-generator",
-		Image:           "busybox",
+		Image:           "quay.io/quay/busybox",
 		ImagePullPolicy: corev1.PullAlways,
 		Args:            []string{"sh", "-c", "i=0; while true; do echo $i: My life is my message; i=$((i+1)) ; sleep 1; done"},
 	}

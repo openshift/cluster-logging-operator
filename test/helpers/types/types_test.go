@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	_ "github.com/onsi/ginkgo" // Accept ginkgo command line options
 )
 
 const (
@@ -17,8 +19,8 @@ const (
     "container_name": "log-generator",
     "namespace_name": "clo-test-21151",
     "pod_name": "log-generator-595c967f99-59v44",
-    "container_image": "docker.io/library/busybox:latest",
-    "container_image_id": "docker.io/library/busybox@sha256:9f1c79411e054199210b4d489ae600a061595967adb643cd923f8515ad8123d2",
+    "container_image": "quay.io/quay/busybox:latest",
+    "container_image_id": "quay.io/quay/busybox@sha256:9f1c79411e054199210b4d489ae600a061595967adb643cd923f8515ad8123d2",
     "pod_id": "b902950c-90df-4ca0-b296-614471c38fd0",
     "host": "crc-j55b9-master-0",
     "master_url": "https://kubernetes.default.svc",

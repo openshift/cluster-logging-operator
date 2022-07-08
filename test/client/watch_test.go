@@ -1,8 +1,9 @@
 package client_test
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -40,7 +41,7 @@ var _ = Describe("Watch", func() {
 
 	It("waits for a pod to be running", func() {
 		pod := runtime.NewPod(t.NS.Name, "run", corev1.Container{
-			Name: "testpod", Image: "docker.io/library/busybox", Args: []string{"sleep", "1h"},
+			Name: "testpod", Image: "quay.io/quay/busybox", Args: []string{"sleep", "1h"},
 		})
 		ExpectOK(t.Create(pod))
 		ExpectOK(t.WaitFor(pod, PodRunning), test.YAMLString(pod))
@@ -49,7 +50,7 @@ var _ = Describe("Watch", func() {
 
 	It("waits for a pod that succeeds", func() {
 		pod := runtime.NewPod(t.NS.Name, "run", corev1.Container{
-			Name: "testpod", Image: "docker.io/library/busybox", Args: []string{"true"},
+			Name: "testpod", Image: "quay.io/quay/busybox", Args: []string{"true"},
 		})
 		pod.Spec.RestartPolicy = corev1.RestartPolicyNever
 		ExpectOK(t.Create(pod))
@@ -59,7 +60,7 @@ var _ = Describe("Watch", func() {
 
 	It("returns when a pod fails", func() {
 		pod := runtime.NewPod(t.NS.Name, "run", corev1.Container{
-			Name: "testpod", Image: "docker.io/library/busybox", Args: []string{"false"},
+			Name: "testpod", Image: "quay.io/quay/busybox", Args: []string{"false"},
 		})
 		pod.Spec.RestartPolicy = corev1.RestartPolicyNever
 		ExpectOK(t.Create(pod))

@@ -21,7 +21,7 @@ import (
 
 const ClusterLogForwarderKind = "ClusterLogForwarder"
 
-// ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
+// ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 type ClusterLogForwarderSpec struct {
 	// Inputs are named filters for log messages to be forwarded.
 	//

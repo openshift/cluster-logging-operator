@@ -89,7 +89,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 # Prometheus Monitoring
 <source>
   @type prometheus
-  bind "#{ENV['POD_IP']}"
+  bind "[::]"
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key

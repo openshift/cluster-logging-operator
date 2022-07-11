@@ -9,7 +9,6 @@ const HostAuditLogTemplate = `
 # {{.Desc}}
 [sources.{{.ComponentID}}]
 type = "file"
-ignore_older_secs = 600
 include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
 {{end}}`
@@ -21,7 +20,6 @@ const OpenshiftAuditLogTemplate = `
 # {{.Desc}}
 [sources.{{.ComponentID}}]
 type = "file"
-ignore_older_secs = 600
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 host_key = "hostname"
 {{end}}
@@ -34,7 +32,6 @@ const K8sAuditLogTemplate = `
 # {{.Desc}}
 [sources.{{.ComponentID}}]
 type = "file"
-ignore_older_secs = 600
 include = ["/var/log/kube-apiserver/audit.log"]
 host_key = "hostname"
 {{end}}
@@ -47,7 +44,6 @@ const OVNAuditLogTemplate = `
 # {{.Desc}}
 [sources.{{.ComponentID}}]
 type = "file"
-ignore_older_secs = 600
 include = ["/var/log/ovn/acl-audit-log.log"]
 host_key = "hostname"
 {{end}}

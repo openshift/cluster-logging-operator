@@ -410,7 +410,22 @@ var _ = Describe("Normalizing forwarder", func() {
 						request.Client = fake.NewFakeClient(secret)  //nolint
 						spec, status := request.NormalizeForwarder() //
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
-						stsMessage := "auth keys: a 'role_arn' key is required containing a valid arn value"
+						stsMessage := "auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", stsMessage))
+					})
+					It("should accept outputs with secrets that have credentials key with valid arn specified", func() {
+						secret.Data[constants.AWSCredentialsKey] = []byte("role_arn = arn:aws:iam::123456789012:role/my-role")
+						request.Client = fake.NewFakeClient(secret)  //nolint
+						spec, status := request.NormalizeForwarder() //
+						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
+						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
+					})
+					It("should drop outputs with credential key but without formatted arn specified", func() {
+						secret.Data[constants.AWSCredentialsKey] = []byte("role/my-role")
+						request.Client = fake.NewFakeClient(secret)  //nolint
+						spec, status := request.NormalizeForwarder() //
+						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
+						stsMessage := "auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", stsMessage))
 					})
 				})

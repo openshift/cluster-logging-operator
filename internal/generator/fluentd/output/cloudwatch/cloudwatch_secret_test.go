@@ -26,7 +26,7 @@ var _ = Describe("Parsing strings for sts functionality", func() {
 				results := ParseRoleArn(secrets["my-secret"])
 				Expect(results).To(Equal(roleArn))
 			})
-			It("should return our specified valid role_arn when the partion is more than 'aws'", func() {
+			It("should return our specified valid role_arn when the partition is more than 'aws'", func() {
 				secrets["other"] = &corev1.Secret{
 					Data: map[string][]byte{
 						"role_arn": []byte(altRoleArn),
@@ -41,13 +41,16 @@ var _ = Describe("Parsing strings for sts functionality", func() {
 	Context("pass a fully formatted sts secret with 'credentials' as key", func() {
 		BeforeEach(func() {
 			delete(secrets["my-secret"].Data, "role_arn")
-			secrets["my-secret"].Data["credentials"] = []byte(credentialsString)
+			secrets["my-secret"] = &corev1.Secret{
+				Data: map[string][]byte{
+					"credentials": []byte(credentialsString),
+				},
+			}
 		})
 		Context("to ParseRoleArn() helper", func() {
-			It("should return an empty string since the key 'role_arn' is not found", func() {
-				//results := ParseRoleArn(secrets["cred-secret"])
+			It("should be able to parse and return our specified valid role_arn value", func() {
 				results := ParseRoleArn(secrets["my-secret"])
-				Expect(results).To(BeEmpty())
+				Expect(results).To(Equal(roleArn))
 			})
 		})
 	})
@@ -67,8 +70,16 @@ var _ = Describe("Parsing strings for sts functionality", func() {
 
 	Context("pass an incorrectly formatted role_arn", func() {
 		BeforeEach(func() {
+			delete(secrets["my-secret"].Data, "credentials")
 			roleArn = "arn:aws:iam::12345:role/my-role-from-secret" // incorrect format since not "arn:aws:iam::<12-digit-account-id>:"
 			secrets["my-secret"].Data["role_arn"] = []byte(roleArn)
+
+			//delete(secrets["my-secret"].Data, "role_arn")
+			//secrets["my-secret"] = &corev1.Secret{
+			//	Data: map[string][]byte{
+			//		"role_arn": []byte("arn:aws:iam::12345:role/my-role-from-secret"),
+			//	},
+			//}
 		})
 		Context("to ParseRoleArn() helper", func() {
 			It("should return an empty string since arn is not in valid format", func() {

@@ -7,24 +7,25 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// CloudwatchSecretWithRoleArnKey return true if secret has 'role_arn' key and output type is cloudwatch
-func CloudwatchSecretWithRoleArnKey(secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec) bool {
+// CloudwatchSecretWithRoleArn return true if output type is cloudwatch and secret has 'role_arn' or 'credentials' key
+func CloudwatchSecretWithRoleArn(secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec) bool {
 	if secrets == nil {
 		return false
 	}
 	for _, o := range forwarderSpec.Outputs {
 		secret := secrets[o.Name]
-		if security.HasAwsRoleArnKey(secret) && o.Type == logging.OutputTypeCloudwatch {
-			return true
+		if o.Type == logging.OutputTypeCloudwatch {
+			if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
+				return true
+			}
 		}
 	}
 	return false
 }
 
+// Append any additional volumes based on attributes of the secret and forwarder spec
 func addVolumesForCloudwatch(collector *v1.Container, podSpec *v1.PodSpec, forwarderSpec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret) {
-
-	// Append any additional volumes based on attributes of the secret and forwarder spec
-	if CloudwatchSecretWithRoleArnKey(secrets, forwarderSpec) {
+	if CloudwatchSecretWithRoleArn(secrets, forwarderSpec) {
 		collector.VolumeMounts = append(collector.VolumeMounts,
 			v1.VolumeMount{
 				Name:      constants.AWSWebIdentityTokenName,

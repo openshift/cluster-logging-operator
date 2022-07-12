@@ -373,6 +373,71 @@ var _ = Describe("Generating fluentd config for sts", func() {
 				Expect(results).To(EqualTrimLines(expConf))
 			})
 		})
+		Context("with credentials key", func() {
+			BeforeEach(func() {
+				credentialsString := "[default]\nrole_arn = " + roleArn + "\nweb_identity_token_file = /var/run/secrets/token"
+				secrets["my-secret"] = &corev1.Secret{
+					Data: map[string][]byte{
+						"credentials": []byte(credentialsString),
+					},
+				}
+			})
+			It("should provide a valid configuration for sts", func() {
+				expConf := `
+<label @MY_CLOUDWATCH>
+  <filter ` + source.InfraTagsForMultilineEx + `>
+     @type record_modifier
+    <record>
+      cw_group_name infrastructure
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+  
+
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
+    @type record_modifier
+    <record>
+      cw_group_name application
+      cw_stream_name ${tag}
+    </record>
+  </filter>
+  
+  <filter ` + source.AuditTags + `>
+    @type record_modifier
+    <record>
+      cw_group_name audit
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+  
+  <match **>
+    @type cloudwatch_logs
+    auto_create_stream true
+    region anumber1
+    log_group_name_key cw_group_name
+    log_stream_name_key cw_stream_name
+    remove_log_stream_name_key true
+    remove_log_group_name_key true
+    concurrency 2
+    <web_identity_credentials>
+      role_arn "` + roleArn + `"
+      web_identity_token_file "` + webIdentityTokenFile + `"
+      role_session_name "` + constants.AWSRoleSessionName + `"
+    </web_identity_credentials>    
+    include_time_key true
+    log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
+  </match>
+</label>
+`
+				es := Conf(nil, secrets[output.Secret.Name], output, nil)
+				results, err := g.GenerateConf(es...)
+				Expect(err).To(BeNil())
+				Expect(results).To(EqualTrimLines(expConf))
+			})
+		})
 		Context("grouped by namespace using sts", func() {
 			BeforeEach(func() {
 				output.Cloudwatch.GroupBy = loggingv1.LogGroupByNamespaceName

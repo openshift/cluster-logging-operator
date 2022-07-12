@@ -201,7 +201,7 @@ var _ = Describe("Generating fluentd config", func() {
 # Prometheus Monitoring
 <source>
   @type prometheus
-  bind "#{ENV['POD_IP']}"
+  bind "[::]"
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
@@ -1021,7 +1021,7 @@ var _ = Describe("Generating fluentd config", func() {
 # Prometheus Monitoring
 <source>
   @type prometheus
-  bind "#{ENV['POD_IP']}"
+  bind "[::]"
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
@@ -1826,7 +1826,7 @@ var _ = Describe("Generating fluentd config", func() {
 # Prometheus Monitoring
 <source>
   @type prometheus
-  bind "#{ENV['POD_IP']}"
+  bind "[::]"
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
@@ -2576,7 +2576,7 @@ var _ = Describe("Generating fluentd config", func() {
 # Prometheus Monitoring
 <source>
   @type prometheus
-  bind "#{ENV['POD_IP']}"
+  bind "[::]"
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
@@ -3038,7 +3038,7 @@ var _ = Describe("Generating fluentd config", func() {
 # Prometheus Monitoring
 <source>
   @type prometheus
-  bind "#{ENV['POD_IP']}"
+  bind "[::]"
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
@@ -4212,7 +4212,7 @@ inputs:
 # Prometheus Monitoring
 <source>
   @type prometheus
-  bind "#{ENV['POD_IP']}"
+  bind "[::]"
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key

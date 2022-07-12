@@ -49,7 +49,8 @@ spec:
                 type: string
             type: object
           spec:
-            description: ClusterLogForwarderSpec defines the desired state of ClusterLogForwarder
+            description: ClusterLogForwarderSpec defines how logs should be forwarded
+              to remote targets.
             properties:
               inputs:
                 description: "Inputs are named filters for log messages to be forwarded.

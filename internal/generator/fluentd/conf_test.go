@@ -127,7 +127,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 <source>
   @type systemd
   @id systemd-input
-  @label @MEASURE
+  @label @INGRESS
   path '/var/log/journal'
   <storage>
     @type local
@@ -145,28 +145,20 @@ var _ = Describe("Testing Complete Config Generation", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/pods/**/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+  path "/var/log/pods/*/*/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
   skip_refresh_on_startup true
-  @label @MEASURE
+  @label @CONCAT
   <parse>
-    @type multi_format
-    <pattern>
-      format json
-      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
-      keep_time_key true
-    </pattern>
-    <pattern>
-      format regexp
-      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
-      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
-      keep_time_key true
-    </pattern>
+    @type regexp
+    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<message>.*)$/
+    time_key '@timestamp'
+    keep_time_key true
   </parse>
 </source>
 
@@ -174,7 +166,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 <source>
   @type tail
   @id audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
   tag linux-audit.log
@@ -187,7 +179,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 <source>
   @type tail
   @id k8s-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
   tag k8s-audit.log
@@ -204,7 +196,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 <source>
   @type tail
   @id openshift-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
   tag openshift-audit.log
@@ -221,7 +213,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 <source>
   @type tail
   @id ovn-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
   tag ovn-audit.log
@@ -233,72 +225,11 @@ var _ = Describe("Testing Complete Config Generation", func() {
   </parse>
 </source>
 
-# Increment Prometheus metrics
-<label @MEASURE>
-  <filter **>
-    @type record_transformer
-    enable_ruby
-    <record>
-      msg_size ${record.to_s.length}
-    </record>
-  </filter>
-  
-  <filter **>
-    @type prometheus
-    <metric>
-      name cluster_logging_collector_input_record_total
-      type counter
-      desc The total number of incoming records
-      <labels>
-        tag ${tag}
-        hostname ${hostname}
-      </labels>
-    </metric>
-  </filter>
-  
-  <filter **>
-    @type prometheus
-    <metric>
-      name cluster_logging_collector_input_record_bytes
-      type counter
-      desc The total bytes of incoming records
-      key msg_size
-      <labels>
-        tag ${tag}
-        hostname ${hostname}
-      </labels>
-    </metric>
-  </filter>
-  
-  <filter **>
-    @type record_transformer
-    remove_keys msg_size
-  </filter>
-  
-  # Journal Logs go to INGRESS pipeline
-  <match journal>
-    @type relabel
-    @label @INGRESS
-  </match>
-  
-  # Audit Logs go to INGRESS pipeline
-  <match *audit.log>
-    @type relabel
-    @label @INGRESS
-  </match>
-  
-  # Kubernetes Logs go to CONCAT pipeline
-  <match kubernetes.**>
-    @type relabel
-    @label @CONCAT
-  </match>
-</label>
-
 # Concat log lines of container logs, and send to INGRESS pipeline
 <label @CONCAT>
   <filter kubernetes.**>
     @type concat
-    key log
+    key message
     partial_key logtag
     partial_value P
     separator ''
@@ -402,7 +333,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
     </rule>
   </match>
   
-  # Invoke kubernetes apiserver to get kunbernetes metadata
+  # Invoke kubernetes apiserver to get kubernetes metadata
   <filter kubernetes.**>
     @id kubernetes-metadata
     @type kubernetes_metadata
@@ -410,41 +341,15 @@ var _ = Describe("Testing Complete Config Generation", func() {
     annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
     allow_orphans false
     cache_size '1000'
-    de_dot false
-    use_journal 'nil'
     ssl_partial_chain 'true'
   </filter>
   
   # Parse Json fields for container, journal and eventrouter logs
-  <filter kubernetes.journal.**>
-    @type parse_json_field
-    merge_json_log 'false'
-    preserve_json_log 'true'
-    json_fields 'log,MESSAGE'
-  </filter>
-  
-  <filter kubernetes.var.log.pods.**>
-    @type parse_json_field
-    merge_json_log 'false'
-    preserve_json_log 'true'
-    json_fields 'log,MESSAGE'
-  </filter>
-  
   <filter kubernetes.var.log.pods.**_eventrouter-**>
     @type parse_json_field
     merge_json_log true
     preserve_json_log true
-    json_fields 'log,MESSAGE'
-  </filter>
-  
-  # Clean kibana log fields
-  <filter **kibana**>
-    @type record_transformer
-    enable_ruby
-    <record>
-      log ${record['err'] || record['msg'] || record['MESSAGE'] || record['log']}
-    </record>
-    remove_keys req,res,msg,name,level,v,pid,err
+    json_fields 'message'
   </filter>
   
   # Fix level field in audit logs
@@ -466,21 +371,12 @@ var _ = Describe("Testing Complete Config Generation", func() {
   <filter **>
     @type viaq_data_model
     enable_flatten_labels true
-    elasticsearch_index_prefix_field 'viaq_index_name'
+    enable_prune_empty_fields false
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
-    extra_keep_fields ''
     keep_empty_fields 'message'
-    use_undefined false
-    undefined_name 'undefined'
     rename_time true
-    rename_time_if_missing false
-    src_time_name 'time'
-    dest_time_name '@timestamp'
     pipeline_type 'collector'
-    undefined_to_string 'false'
-    undefined_dot_replace_char 'UNUSED'
-    undefined_max_num_fields '-1'
-    process_kubernetes_events 'false'
+    process_kubernetes_events false
     <level>
       name warn
       match 'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"'
@@ -502,30 +398,20 @@ var _ = Describe("Testing Complete Config Generation", func() {
       match 'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'
     </level>
     <formatter>
-      tag "system.var.log**"
-      type sys_var_log
-      remove_keys host,pid,ident
-    </formatter>
-    <formatter>
       tag "journal.system**"
       type sys_journal
       remove_keys log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID
     </formatter>
     <formatter>
-      tag "kubernetes.journal.container**"
-      type k8s_journal
-      remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
-    </formatter>
-    <formatter>
       tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
       type k8s_json_file
-      remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
+      remove_keys stream
       process_kubernetes_events 'true'
     </formatter>
     <formatter>
       tag "kubernetes.var.log.pods**"
       type k8s_json_file
-      remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
+      remove_keys stream
     </formatter>
   </filter>
   
@@ -626,6 +512,10 @@ var _ = Describe("Testing Complete Config Generation", func() {
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
+    enable_openshift_model false
+    enable_prune_empty_fields false
+    rename_time false
+    undefined_dot_replace_char UNUSED
 	elasticsearch_index_prefix_field 'viaq_index_name'
 	<elasticsearch_index_name>
 	  enabled 'true'
@@ -649,6 +539,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
   <filter **>
 	@type viaq_data_model
 	enable_prune_labels true
+	enable_openshift_model false
+	rename_time false
+	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
   

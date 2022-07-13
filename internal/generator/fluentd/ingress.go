@@ -52,7 +52,7 @@ func Ingress(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 					TemplateStr:  RetagJournalLogs,
 				},
 				ConfLiteral{
-					Desc:         "Invoke kubernetes apiserver to get kunbernetes metadata",
+					Desc:         "Invoke kubernetes apiserver to get kubernetes metadata",
 					TemplateName: "kubernetesMetadata",
 					TemplateStr:  KubernetesMetadataPlugin,
 				},
@@ -60,11 +60,6 @@ func Ingress(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 					Desc:         "Parse Json fields for container, journal and eventrouter logs",
 					TemplateName: "parseJsonFields",
 					TemplateStr:  ParseJsonFields,
-				},
-				ConfLiteral{
-					Desc:         "Clean kibana log fields",
-					TemplateName: "cleanKibanaLogs",
-					TemplateStr:  CleanKibanaLogs,
 				},
 				ConfLiteral{
 					Desc:         "Fix level field in audit logs",
@@ -199,8 +194,6 @@ const KubernetesMetadataPlugin string = `
   annotation_match ["^containerType\.logging\.openshift\.io\/.*$"]
   allow_orphans false
   cache_size '1000'
-  de_dot false
-  use_journal 'nil'
   ssl_partial_chain 'true'
 </filter>
 {{end}}
@@ -209,25 +202,11 @@ const KubernetesMetadataPlugin string = `
 const ParseJsonFields string = `
 {{define "parseJsonFields" -}}
 # {{.Desc}}
-<filter kubernetes.journal.**>
-  @type parse_json_field
-  merge_json_log 'false'
-  preserve_json_log 'true'
-  json_fields 'log,MESSAGE'
-</filter>
-
-<filter kubernetes.var.log.pods.**>
-  @type parse_json_field
-  merge_json_log 'false'
-  preserve_json_log 'true'
-  json_fields 'log,MESSAGE'
-</filter>
-
 <filter kubernetes.var.log.pods.**_eventrouter-**>
   @type parse_json_field
   merge_json_log true
   preserve_json_log true
-  json_fields 'log,MESSAGE'
+  json_fields 'message'
 </filter>
 {{end}}
 `
@@ -271,21 +250,12 @@ const ViaQDataModel string = `
 <filter **>
   @type viaq_data_model
   enable_flatten_labels true
-  elasticsearch_index_prefix_field 'viaq_index_name'
+  enable_prune_empty_fields false
   default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
-  extra_keep_fields ''
   keep_empty_fields 'message'
-  use_undefined false
-  undefined_name 'undefined'
   rename_time true
-  rename_time_if_missing false
-  src_time_name 'time'
-  dest_time_name '@timestamp'
   pipeline_type 'collector'
-  undefined_to_string 'false'
-  undefined_dot_replace_char 'UNUSED'
-  undefined_max_num_fields '-1'
-  process_kubernetes_events 'false'
+  process_kubernetes_events false
   <level>
     name warn
     match 'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"'
@@ -307,30 +277,20 @@ const ViaQDataModel string = `
     match 'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"'
   </level>
   <formatter>
-    tag "system.var.log**"
-    type sys_var_log
-    remove_keys host,pid,ident
-  </formatter>
-  <formatter>
     tag "journal.system**"
     type sys_journal
     remove_keys log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID
   </formatter>
   <formatter>
-    tag "kubernetes.journal.container**"
-    type k8s_journal
-    remove_keys 'log,stream,MESSAGE,_SOURCE_REALTIME_TIMESTAMP,__REALTIME_TIMESTAMP,CONTAINER_ID,CONTAINER_ID_FULL,CONTAINER_NAME,PRIORITY,_BOOT_ID,_CAP_EFFECTIVE,_CMDLINE,_COMM,_EXE,_GID,_HOSTNAME,_MACHINE_ID,_PID,_SELINUX_CONTEXT,_SYSTEMD_CGROUP,_SYSTEMD_SLICE,_SYSTEMD_UNIT,_TRANSPORT,_UID,_AUDIT_LOGINUID,_AUDIT_SESSION,_SYSTEMD_OWNER_UID,_SYSTEMD_SESSION,_SYSTEMD_USER_UNIT,CODE_FILE,CODE_FUNCTION,CODE_LINE,ERRNO,MESSAGE_ID,RESULT,UNIT,_KERNEL_DEVICE,_KERNEL_SUBSYSTEM,_UDEV_SYSNAME,_UDEV_DEVNODE,_UDEV_DEVLINK,SYSLOG_FACILITY,SYSLOG_IDENTIFIER,SYSLOG_PID'
-  </formatter>
-  <formatter>
     tag "kubernetes.var.log.pods.**_eventrouter-** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
     type k8s_json_file
-    remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
+    remove_keys stream
     process_kubernetes_events 'true'
   </formatter>
   <formatter>
     tag "kubernetes.var.log.pods**"
     type k8s_json_file
-    remove_keys log,stream,CONTAINER_ID_FULL,CONTAINER_NAME
+    remove_keys stream
   </formatter>
 </filter>
 {{end}}
@@ -352,7 +312,7 @@ const ConcatLines string = `
 {{define "concatLines" -}}
 <filter kubernetes.**>
   @type concat
-  key log
+  key message
   partial_key logtag
   partial_value P
   separator ''

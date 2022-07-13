@@ -37,7 +37,7 @@ type OutputTypeSpec struct {
 //	`aws_secret_access_key`: AWS secret access key.
 // 	`aws_access_key_id`: AWS secret access key ID.
 //
-// Or for sts-enabled clusters `role_arn` key specifying a properly formatted role arn
+// Or for sts-enabled clusters `credentials` or `role_arn` key specifying a properly formatted role arn
 //
 type Cloudwatch struct {
 	// +required

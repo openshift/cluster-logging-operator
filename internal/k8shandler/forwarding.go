@@ -489,12 +489,13 @@ func verifySecretKeysForCloudwatch(output *logging.OutputSpec, conds logging.Nam
 	hasKeyID := len(secret.Data[constants.AWSAccessKeyID]) > 0
 	hasSecretKey := len(secret.Data[constants.AWSSecretAccessKey]) > 0
 	hasRoleArnKey := security.HasAwsRoleArnKey(secret)
+	hasCredentialsKey := security.HasAwsCredentialsKey(secret)
 	hasValidRoleArn := len(cloudwatch.ParseRoleArn(secret)) > 0
 	switch {
 	case hasValidRoleArn: // Sts secret format is the first check
 		return true
-	case hasRoleArnKey && !hasValidRoleArn:
-		return fail(condMissing("auth keys: a 'role_arn' key is required containing a valid arn value"))
+	case hasRoleArnKey && !hasValidRoleArn, hasCredentialsKey && !hasValidRoleArn:
+		return fail(condMissing("auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"))
 	case !hasKeyID || !hasSecretKey:
 		return fail(condMissing("auth keys: " + constants.AWSAccessKeyID + " and " + constants.AWSSecretAccessKey + " are required"))
 	}

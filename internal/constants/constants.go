@@ -33,7 +33,8 @@ const (
 	AWSSecretAccessKey          = "aws_secret_access_key" //nolint:gosec
 	AWSAccessKeyID              = "aws_access_key_id"
 	AWSRoleSessionName          = "cluster-logging" // identifier for role logging session
-	AWSWebIdentityRoleKey       = "role_arn"        // key to expect for sts-formatted secret
+	AWSCredentialsKey           = "credentials"     // credrequest key to check for sts-formatted secret
+	AWSWebIdentityRoleKey       = "role_arn"        // manual key to check for sts-formatted secret
 	AWSWebIdentityTokenName     = "collector-sts-token"
 	AWSWebIdentityTokenMount    = "/var/run/secrets/openshift/serviceaccount" //nolint:gosec // default location for volume mount
 	AWSWebIdentityTokenFilePath = "token"                                     // file containing token relative to mount

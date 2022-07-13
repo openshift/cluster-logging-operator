@@ -13,7 +13,7 @@ func (a AWSKey) Name() string {
 }
 
 func (a AWSKey) Template() string {
-	// First check for the role key in the secret
+	// First check if we found a value for role
 	if len(a.KeyRoleArn) > 0 {
 		return `{{define "` + a.Name() + `" -}}
 <web_identity_credentials>
@@ -23,7 +23,7 @@ func (a AWSKey) Template() string {
 </web_identity_credentials>
 {{end}}`
 	}
-	// Use ID/Secret
+	// Otherwise use ID/Secret
 	return `{{define "` + a.Name() + `" -}}
 aws_key_id "#{open({{ .KeyIDPath }},'r') do |f|f.read.strip end}"
 aws_sec_key "#{open({{ .KeySecretPath }},'r') do |f|f.read.strip end}"

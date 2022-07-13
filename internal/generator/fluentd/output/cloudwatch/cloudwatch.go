@@ -102,8 +102,8 @@ func OutputConf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o log
 }
 
 func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) Element {
-	// First check for role_arn key, indicating a sts-enabled authentication
-	if security.HasAwsRoleArnKey(secret) {
+	// First check for credentials or role_arn key, indicating a sts-enabled authentication
+	if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
 		return AWSKey{
 			KeyRoleArn:          ParseRoleArn(secret),
 			KeyRoleSessionName:  constants.AWSRoleSessionName,
@@ -169,9 +169,13 @@ func LogGroupName(o logging.OutputSpec) string {
 	return ""
 }
 
-// ParseRoleArn search for matching valid arn within the 'role_arn' key
+// ParseRoleArn search for matching valid arn within the 'credentials' or 'role_arn' key
 func ParseRoleArn(secret *corev1.Secret) string {
-	roleArnString := security.GetFromSecret(secret, constants.AWSWebIdentityRoleKey)
+	roleArnString := security.GetFromSecret(secret, constants.AWSCredentialsKey)
+	if roleArnString == "" {
+		roleArnString = security.GetFromSecret(secret, constants.AWSWebIdentityRoleKey)
+	}
+
 	if roleArnString != "" {
 		reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
 		roleArn := reg.FindStringSubmatch(roleArnString)

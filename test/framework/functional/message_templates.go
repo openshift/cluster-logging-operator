@@ -49,13 +49,12 @@ var (
 
 func NewApplicationLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
-		Timestamp:     time.Time{},
-		Message:       "*",
-		LogType:       "application",
-		ViaqIndexName: "app-write",
-		Level:         "*",
-		Hostname:      "*",
-		ViaqMsgID:     "*",
+		Timestamp: time.Time{},
+		Message:   "*",
+		LogType:   "application",
+		Level:     "*",
+		Hostname:  "*",
+		ViaqMsgID: "*",
 		Openshift: types.OpenshiftMeta{
 			Labels:   map[string]string{"*": "*"},
 			Sequence: types.NewOptionalInt(""),

@@ -88,6 +88,10 @@ var _ = Describe("Generating fluentd config", func() {
 		  # Viaq Data Model
 		  <filter **>
 			@type viaq_data_model
+            enable_openshift_model false
+            enable_prune_empty_fields false
+            rename_time false
+            undefined_dot_replace_char UNUSED
 			elasticsearch_index_prefix_field 'viaq_index_name'
 			<elasticsearch_index_name>
 			  enabled 'true'
@@ -234,6 +238,10 @@ var _ = Describe("Generating fluentd config", func() {
 		  # Viaq Data Model
 		  <filter **>
 			@type viaq_data_model
+            enable_openshift_model false
+            enable_prune_empty_fields false
+            rename_time false
+            undefined_dot_replace_char UNUSED
 			elasticsearch_index_prefix_field 'viaq_index_name'
 			<elasticsearch_index_name>
 			  enabled 'true'
@@ -367,6 +375,10 @@ var _ = Describe("Generating fluentd config", func() {
 		  # Viaq Data Model
 		  <filter **>
 			@type viaq_data_model
+            enable_openshift_model false
+            enable_prune_empty_fields false
+            rename_time false
+            undefined_dot_replace_char UNUSED
 			elasticsearch_index_prefix_field 'viaq_index_name'
 			<elasticsearch_index_name>
 			  enabled 'true'

@@ -19,7 +19,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 	)
 
 	BeforeEach(func() {
-
+		outputLogTemplate.ViaqIndexName = "app-write"
 		framework = functional.NewCollectorFunctionalFramework()
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).

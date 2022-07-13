@@ -37,7 +37,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 		el = append(el,
 			source2.JournalLog{
 				Desc:         "Logs from linux journal",
-				OutLabel:     "MEASURE",
+				OutLabel:     "INGRESS",
 				TemplateName: "inputSourceJournalTemplate",
 				TemplateStr:  source2.JournalLogTemplate,
 			})
@@ -49,7 +49,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 				Paths:        ContainerLogPaths(),
 				ExcludePaths: ExcludeContainerPaths(),
 				PosFile:      "/var/lib/fluentd/pos/es-containers.log.pos",
-				OutLabel:     "MEASURE",
+				OutLabel:     "CONCAT",
 				Tunings:      tunings,
 			})
 	}
@@ -58,7 +58,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 			source2.AuditLog{
 				AuditLogLiteral: source2.AuditLogLiteral{
 					Desc:         "linux audit logs",
-					OutLabel:     "MEASURE",
+					OutLabel:     "INGRESS",
 					TemplateName: "inputSourceHostAuditTemplate",
 					TemplateStr:  source2.HostAuditLogTemplate,
 				},
@@ -67,7 +67,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 			source2.AuditLog{
 				AuditLogLiteral: source2.AuditLogLiteral{
 					Desc:         "k8s audit logs",
-					OutLabel:     "MEASURE",
+					OutLabel:     "INGRESS",
 					TemplateName: "inputSourceK8sAuditTemplate",
 					TemplateStr:  source2.K8sAuditLogTemplate,
 				},
@@ -76,7 +76,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 			source2.AuditLog{
 				AuditLogLiteral: source2.AuditLogLiteral{
 					Desc:         "Openshift audit logs",
-					OutLabel:     "MEASURE",
+					OutLabel:     "INGRESS",
 					TemplateName: "inputSourceOpenShiftAuditTemplate",
 					TemplateStr:  source2.OpenshiftAuditLogTemplate,
 				},
@@ -85,7 +85,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 			source2.AuditLog{
 				AuditLogLiteral: source2.AuditLogLiteral{
 					Desc:         "Openshift Virtual Network (OVN) audit logs",
-					OutLabel:     "MEASURE",
+					OutLabel:     "INGRESS",
 					TemplateName: "inputSourceOVNAuditTemplate",
 					TemplateStr:  source2.OVNAuditLogTemplate,
 				},
@@ -97,7 +97,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 }
 
 func ContainerLogPaths() string {
-	return fmt.Sprintf("%q", "/var/log/pods/**/*.log")
+	return fmt.Sprintf("%q", "/var/log/pods/*/*/*.log")
 }
 
 func ExcludeContainerPaths() string {
@@ -105,5 +105,7 @@ func ExcludeContainerPaths() string {
 	for _, comp := range []string{constants.CollectorName, constants.ElasticsearchName, constants.KibanaName} {
 		paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_%s-*/*/*.log\"", constants.OpenshiftNS, comp))
 	}
+	paths = append(paths, "\"/var/log/pods/*/*/*.gz\"", "\"/var/log/pods/*/*/*.tmp\"")
+
 	return fmt.Sprintf("[%s]", strings.Join(paths, ", "))
 }

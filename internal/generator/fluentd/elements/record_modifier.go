@@ -6,12 +6,14 @@ package elements
 // In char_encoding from:to case, it replaces invalid character with safe character.
 // <filter pattern>
 //   @type record_modifier
-//   # change char encoding from 'ASCII-8BIT' to 'UTF-8'
-//   char_encoding ascii-8bit:utf-8
+//   # will check is symbols valid 'utf-8', if not replace to the valid one
+//   # e.g. japanese 'こんにちは' and ukrainian 'привіт' are valid 'utf-8' string, so will be store without modification
+//   # but BINARY will be replaced with '?'
+//   char_encoding utf-8:utf-8
 //  </filter>
 // */
 
-const DefaultCharEncoding = "ascii-8bit:utf-8"
+const DefaultCharEncoding = "utf-8:utf-8"
 const CharEncoding = "charEncoding"
 
 type RecordModifier struct {

@@ -148,6 +148,7 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		Watches(&source.Kind{Type: &loggingv1.ClusterLogging{}}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Kind{Type: &loggingv1.ClusterLogForwarder{}}, &handler.EnqueueRequestForObject{}).
 		Watches(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 			IsController: true,
 			OwnerType:    &loggingv1.ClusterLogging{},

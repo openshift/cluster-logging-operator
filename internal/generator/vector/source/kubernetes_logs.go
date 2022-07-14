@@ -19,6 +19,7 @@ func (kl KubernetesLogs) Template() string {
 # {{.Desc}}
 [sources.{{.ComponentID}}]
 type = "kubernetes_logs"
+glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = {{.ExcludePaths}}
 pod_annotation_fields.pod_labels = "kubernetes.labels"

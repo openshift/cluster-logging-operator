@@ -17,7 +17,7 @@ func (c Copy) Template() string {
 	return `{{define "` + c.Name() + `"  -}}
 @type copy
 {{if .DeepCopy -}}
-deep_copy true
+copy_mode deep
 {{end -}}
 {{compose .Stores}}
 {{end}}`

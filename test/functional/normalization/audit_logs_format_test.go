@@ -316,6 +316,12 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				//Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 				results := strings.Join(raw, " ")
 				Expect(results).To(MatchRegexp("name=verify-audit-logging_deny-all"), "Message should contain the audit log: %v", raw)
+
+				// Parse logs and verify level and type
+				logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+				ExpectOK(err, "Expected no errors parsing the logs: %s", raw)
+				Expect(logs[0].Level).To(Equal(outputLogTemplate.Level))
+				Expect(logs[0].LogType).To(Equal(outputLogTemplate.LogType))
 			})
 
 			AfterEach(func() {

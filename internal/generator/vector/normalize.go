@@ -12,19 +12,20 @@ import (
 
 const (
 	FixLogLevel = `
-level = "unknown"
-if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)'){
-  level = "warn"
-} else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>'){
-  level = "info"
-} else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>'){
-  level = "error"
-} else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>'){
-  level = "critical"
-} else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>'){
-  level = "debug"
+if !exists(.level) {
+  .level = "unknown"
+  if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
+    .level = "warn"
+  } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+    .level = "info"
+  } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+    .level = "error"
+  } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+    .level = "critical"
+  } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+    .level = "debug"
+  }
 }
-.level = level
 `
 	RemoveSourceType  = `del(.source_type)`
 	RemoveStream      = `del(.stream)`
@@ -194,7 +195,6 @@ func NormalizeHostAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddHostAuditTag,
 				ParseHostAuditLogs,
-				FixHostname,
 			}), "\n\n"),
 		},
 	}
@@ -208,8 +208,7 @@ func NormalizeK8sAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddK8sAuditTag,
 				ParseAndFlatten,
-				FixHostname,
-			}), "\n\n"),
+			}), "\n"),
 		},
 	}
 }
@@ -222,8 +221,7 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddOpenAuditTag,
 				ParseAndFlatten,
-				FixHostname,
-			}), "\n\n"),
+			}), "\n"),
 		},
 	}
 }
@@ -235,8 +233,8 @@ func NormalizeOVNAuditLogs(inLabel, outLabel string) []generator.Element {
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddOvnAuditTag,
-				FixHostname,
-			}), "\n\n"),
+				FixLogLevel,
+			}), "\n"),
 		},
 	}
 }

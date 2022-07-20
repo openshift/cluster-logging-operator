@@ -11,6 +11,7 @@ const HostAuditLogTemplate = `
 type = "file"
 include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 {{end}}`
 
 type HostAuditLog = generator.ConfLiteral
@@ -22,6 +23,7 @@ const OpenshiftAuditLogTemplate = `
 type = "file"
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 {{end}}
 `
 
@@ -34,6 +36,7 @@ const K8sAuditLogTemplate = `
 type = "file"
 include = ["/var/log/kube-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 {{end}}
 `
 
@@ -46,6 +49,7 @@ const OVNAuditLogTemplate = `
 type = "file"
 include = ["/var/log/ovn/acl-audit-log.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 {{end}}
 `
 

@@ -91,6 +91,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
@@ -108,24 +109,28 @@ journal_directory = "/var/log/journal"
 type = "file"
 include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from kubernetes audit
 [sources.raw_k8s_audit_logs]
 type = "file"
 include = ["/var/log/kube-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from openshift audit
 [sources.raw_openshift_audit_logs]
 type = "file"
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from ovn audit
 [sources.raw_ovn_audit_logs]
 type = "file"
 include = ["/var/log/ovn/acl-audit-log.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -423,6 +428,7 @@ crt_file = "/etc/collector/metrics/tls.crt"
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
@@ -440,24 +446,28 @@ journal_directory = "/var/log/journal"
 type = "file"
 include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from kubernetes audit
 [sources.raw_k8s_audit_logs]
 type = "file"
 include = ["/var/log/kube-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from openshift audit
 [sources.raw_openshift_audit_logs]
 type = "file"
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from ovn audit
 [sources.raw_ovn_audit_logs]
 type = "file"
 include = ["/var/log/ovn/acl-audit-log.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 [sources.internal_metrics]
 type = "internal_metrics"

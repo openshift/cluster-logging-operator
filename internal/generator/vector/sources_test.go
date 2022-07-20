@@ -32,6 +32,7 @@ var _ = Describe("Vector Config Generation", func() {
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
@@ -57,6 +58,7 @@ pod_annotation_fields.pod_node_name = "hostname"
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
@@ -88,24 +90,28 @@ journal_directory = "/var/log/journal"
 type = "file"
 include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from kubernetes audit
 [sources.raw_k8s_audit_logs]
 type = "file"
 include = ["/var/log/kube-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from openshift audit
 [sources.raw_openshift_audit_logs]
 type = "file"
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from ovn audit
 [sources.raw_ovn_audit_logs]
 type = "file"
 include = ["/var/log/ovn/acl-audit-log.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 `,
 		}),
 		Entry("All Log Sources", helpers.ConfGenerateTest{
@@ -126,6 +132,7 @@ host_key = "hostname"
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
 type = "kubernetes_logs"
+glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
 exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
@@ -143,24 +150,28 @@ journal_directory = "/var/log/journal"
 type = "file"
 include = ["/var/log/audit/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from kubernetes audit
 [sources.raw_k8s_audit_logs]
 type = "file"
 include = ["/var/log/kube-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from openshift audit
 [sources.raw_openshift_audit_logs]
 type = "file"
 include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 
 # Logs from ovn audit
 [sources.raw_ovn_audit_logs]
 type = "file"
 include = ["/var/log/ovn/acl-audit-log.log"]
 host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
 `,
 		}),
 	)

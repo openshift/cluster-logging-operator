@@ -202,11 +202,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "[::]"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -660,7 +659,7 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_PIPELINE>
   <match **>
     @type copy
-    deep_copy true
+    copy_mode deep
     <store>
       @type relabel
       @label @APPS_ES_1
@@ -1048,11 +1047,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "[::]"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -1879,11 +1877,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "[::]"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -2655,11 +2652,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "[::]"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -3133,11 +3129,10 @@ var _ = Describe("Generating fluentd config", func() {
 <source>
   @type prometheus
   bind "[::]"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>
@@ -3669,7 +3664,7 @@ var _ = Describe("Generating fluentd config", func() {
 <label @APPS_PIPELINE>
   <match **>
     @type copy
-	deep_copy true
+	copy_mode deep
     <store>
       @type relabel
       @label @APPS_ES_1
@@ -4343,11 +4338,10 @@ inputs:
 <source>
   @type prometheus
   bind "[::]"
-  <ssl>
-    enable true
-    certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
+  <transport tls>
+    cert_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"
     private_key_path "#{ENV['METRICS_KEY'] || '/etc/fluent/metrics/tls.key'}"
-  </ssl>
+  </transport>
 </source>
 
 <source>

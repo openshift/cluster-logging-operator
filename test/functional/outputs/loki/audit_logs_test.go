@@ -76,7 +76,7 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			now := time.Now()
 			nowCrio := functional.CRIOTime(now)
 			openshiftAuditLogs := fmt.Sprintf(functional.OpenShiftAuditLogTemplate, nowCrio, nowCrio)
-			earlier := now.Add(-1 * 3600 * time.Minute)
+			earlier := now.Add(-1 * 30 * time.Minute)
 			earlierLog := functional.NewKubeAuditLog(earlier)
 
 			writeAndVerifyLogs("k8s-audit.log", func() error {

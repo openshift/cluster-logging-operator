@@ -121,3 +121,19 @@ func (f *CollectorFunctionalFramework) WriteMessagesToLog(msg string, numOfLogs 
 	log.V(3).Info("WriteMessagesToLog", "namespace", f.Pod.Namespace, "result", result, "err", err)
 	return err
 }
+
+// WriteMessagesWithNotUTF8SymbolsToLog write 12 symbols in ISO-8859-1 encoding
+// need to use small hack with 'sed' replacement because if try to use something like:
+// 'echo -e \xC0\xC1' Go always convert every undecodeable byte into '\ufffd'.
+// More details here: https://github.com/golang/go/issues/38006
+func (f *CollectorFunctionalFramework) WriteMessagesWithNotUTF8SymbolsToLog() error {
+	filename := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name,
+		f.Pod.UID, constants.CollectorName)
+	logPath := filepath.Dir(filename)
+	cmd := fmt.Sprintf("mkdir -p %s; echo -e \"$(echo '%s stdout F yC0yC1yF5yF6yF7yF8yF9yFAyFByFCyFDyFE' | sed -r 's/y/\\\\x/g')\"  >> %s;",
+		logPath, CRIOTime(time.Now()), filename)
+	log.V(3).Info("Writing messages to log with command", "cmd", cmd)
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", cmd)
+	log.V(3).Info("WriteMessagesWithNotUTF8SymbolsToLog", "namespace", f.Pod.Namespace, "result", result, "err", err)
+	return err
+}

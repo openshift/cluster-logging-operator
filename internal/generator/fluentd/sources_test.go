@@ -492,7 +492,7 @@ var _ = Describe("Testing Config Generation", func() {
 # Prometheus Monitoring
 <source>
   @type prometheus
-  bind "#{ENV['POD_IP']}"
+  bind "[::]"
   <ssl>
     enable true
     certificate_path "#{ENV['METRICS_CERT'] || '/etc/fluent/metrics/tls.crt'}"

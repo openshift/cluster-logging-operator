@@ -139,19 +139,20 @@ type = "internal_metrics"
 type = "remap"
 inputs = ["raw_container_logs"]
 source = '''
-  level = "unknown"
-  if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)'){
-    level = "warn"
-  } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>'){
-    level = "info"
-  } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>'){
-    level = "error"
-  } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>'){
-    level = "critical"
-  } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>'){
-    level = "debug"
+  if !exists(.level) {
+    .level = "unknown"
+    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
+      .level = "warn"
+    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+      .level = "info"
+    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+      .level = "error"
+    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+      .level = "critical"
+    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+      .level = "debug"
+    }
   }
-  .level = level
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
@@ -175,19 +176,20 @@ source = '''
   del(.TIMESTAMP_BOOTTIME)
   del(.TIMESTAMP_MONOTONIC)
   
-  level = "unknown"
-  if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)'){
-    level = "warn"
-  } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>'){
-    level = "info"
-  } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>'){
-    level = "error"
-  } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>'){
-    level = "critical"
-  } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>'){
-    level = "debug"
+  if !exists(.level) {
+    .level = "unknown"
+    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
+      .level = "warn"
+    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+      .level = "info"
+    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+      .level = "error"
+    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+      .level = "critical"
+    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+      .level = "debug"
+    }
   }
-  .level = level
   
   .hostname = del(.host)
   
@@ -266,8 +268,6 @@ source = '''
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
   }
-  
-  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.k8s_audit_logs]
@@ -275,11 +275,8 @@ type = "remap"
 inputs = ["raw_k8s_audit_logs"]
 source = '''
   .tag = ".k8s-audit.log"
-  
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
-  
-  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.openshift_audit_logs]
@@ -287,11 +284,8 @@ type = "remap"
 inputs = ["raw_openshift_audit_logs"]
 source = '''
   .tag = ".openshift-audit.log"
-  
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
-  
-  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.ovn_audit_logs]
@@ -299,8 +293,20 @@ type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
   .tag = ".ovn-audit.log"
-  
-  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  if !exists(.level) {
+    .level = "unknown"
+    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
+      .level = "warn"
+    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+      .level = "info"
+    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+      .level = "error"
+    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+      .level = "critical"
+    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+      .level = "debug"
+    }
+  }
 '''
 
 [transforms.route_container_logs]
@@ -331,6 +337,7 @@ type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
 source = '''
   .log_type = "audit"
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ."@timestamp" = del(.timestamp)
 '''
 
@@ -476,19 +483,20 @@ type = "internal_metrics"
 type = "remap"
 inputs = ["raw_container_logs"]
 source = '''
-  level = "unknown"
-  if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)'){
-    level = "warn"
-  } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>'){
-    level = "info"
-  } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>'){
-    level = "error"
-  } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>'){
-    level = "critical"
-  } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>'){
-    level = "debug"
+  if !exists(.level) {
+    .level = "unknown"
+    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
+      .level = "warn"
+    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+      .level = "info"
+    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+      .level = "error"
+    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+      .level = "critical"
+    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+      .level = "debug"
+    }
   }
-  .level = level
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
@@ -512,19 +520,20 @@ source = '''
   del(.TIMESTAMP_BOOTTIME)
   del(.TIMESTAMP_MONOTONIC)
   
-  level = "unknown"
-  if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)'){
-    level = "warn"
-  } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>'){
-    level = "info"
-  } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>'){
-    level = "error"
-  } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>'){
-    level = "critical"
-  } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>'){
-    level = "debug"
+  if !exists(.level) {
+    .level = "unknown"
+    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
+      .level = "warn"
+    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+      .level = "info"
+    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+      .level = "error"
+    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+      .level = "critical"
+    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+      .level = "debug"
+    }
   }
-  .level = level
   
   .hostname = del(.host)
   
@@ -603,8 +612,6 @@ source = '''
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
   }
-  
-  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.k8s_audit_logs]
@@ -612,11 +619,8 @@ type = "remap"
 inputs = ["raw_k8s_audit_logs"]
 source = '''
   .tag = ".k8s-audit.log"
-  
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
-  
-  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.openshift_audit_logs]
@@ -624,11 +628,8 @@ type = "remap"
 inputs = ["raw_openshift_audit_logs"]
 source = '''
   .tag = ".openshift-audit.log"
-  
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
-  
-  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
 '''
 
 [transforms.ovn_audit_logs]
@@ -636,8 +637,20 @@ type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
   .tag = ".ovn-audit.log"
-  
-  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  if !exists(.level) {
+    .level = "unknown"
+    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
+      .level = "warn"
+    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+      .level = "info"
+    } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
+      .level = "error"
+    } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
+      .level = "critical"
+    } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
+      .level = "debug"
+    }
+  }
 '''
 
 [transforms.route_container_logs]
@@ -668,6 +681,7 @@ type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
 source = '''
   .log_type = "audit"
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ."@timestamp" = del(.timestamp)
 '''
 

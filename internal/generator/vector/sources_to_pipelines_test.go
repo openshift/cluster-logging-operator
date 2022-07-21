@@ -62,6 +62,7 @@ type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
 source = '''
   .log_type = "audit"
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ."@timestamp" = del(.timestamp)
 '''
 
@@ -123,6 +124,7 @@ type = "remap"
 inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
 source = '''
   .log_type = "audit"
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
   ."@timestamp" = del(.timestamp)
 '''
 

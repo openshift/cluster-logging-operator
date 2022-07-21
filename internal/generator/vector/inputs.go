@@ -95,6 +95,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 				Inputs:      helpers.MakeInputs(HostAuditLogs, K8sAuditLogs, OpenshiftAuditLogs, OvnAuditLogs),
 				VRL: strings.Join(helpers.TrimSpaces([]string{
 					AddLogTypeAudit,
+					FixHostname,
 					FixTimestampField,
 				}), "\n"),
 			})

@@ -53,7 +53,7 @@ var _ = Describe("Testing Config Generation", func() {
 <label @APP_TO_ES>
   <match **>
     @type copy
-    deep_copy true
+    copy_mode deep
     <store>
       @type relabel
       @label @DEFAULT
@@ -70,7 +70,7 @@ var _ = Describe("Testing Config Generation", func() {
 <label @AUDIT_TO_ES>
   <match **>
     @type copy
-    deep_copy true
+    copy_mode deep
     <store>
       @type relabel
       @label @DEFAULT
@@ -110,7 +110,7 @@ var _ = Describe("Testing Config Generation", func() {
   
   <match **>
     @type copy
-    deep_copy true
+    copy_mode deep
     <store>
       @type relabel
       @label @DEFAULT
@@ -163,7 +163,7 @@ var _ = Describe("Testing Config Generation", func() {
   
   <match **>
     @type copy
-    deep_copy true
+    copy_mode deep
     <store>
       @type relabel
       @label @DEFAULT

@@ -227,7 +227,7 @@ var _ = Describe("Generating fluentd config", func() {
 <label @MY_CLOUDWATCH>
   <filter ` + source.InfraTagsForMultilineEx + `>
     @type record_modifier
-    char_encoding ascii-8bit:utf-8
+    char_encoding utf-8:utf-8
     <record>
       cw_group_name foo.infrastructure
       cw_stream_name ${record['hostname']}.${tag}
@@ -236,7 +236,7 @@ var _ = Describe("Generating fluentd config", func() {
   
   <filter ` + source.ApplicationTagsForMultilineEx + `>
     @type record_modifier
-    char_encoding ascii-8bit:utf-8
+    char_encoding utf-8:utf-8
     <record>
       cw_group_name foo.application
       cw_stream_name ${tag}
@@ -245,7 +245,7 @@ var _ = Describe("Generating fluentd config", func() {
   
   <filter ` + source.AuditTags + `>
     @type record_modifier
-    char_encoding ascii-8bit:utf-8
+    char_encoding utf-8:utf-8
     <record>
       cw_group_name foo.audit
       cw_stream_name ${record['hostname']}.${tag}

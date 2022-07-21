@@ -44,7 +44,7 @@ func NewCRIOLogMessage(timestamp, message string, partial bool) string {
 }
 
 // CRIOTime returns the CRIO string format of time t.
-func CRIOTime(t time.Time) string { return time.Now().UTC().Format(time.RFC3339Nano) }
+func CRIOTime(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
 
 func CreateAppLogFromJson(jsonstr string) string {
 	jsonMsg := strings.ReplaceAll(jsonstr, "\n", "")

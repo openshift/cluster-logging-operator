@@ -653,9 +653,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
   
   #remove structured field if present
   <filter **>
-    @type record_modifier
-    char_encoding ascii-8bit:utf-8
-    remove_keys structured
+	@type record_modifier
+    char_encoding utf-8:utf-8
+	remove_keys structured
   </filter>
   
   #flatten labels to prevent field explosion in ES

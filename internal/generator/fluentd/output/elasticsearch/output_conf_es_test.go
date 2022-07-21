@@ -67,7 +67,7 @@ var _ = Describe("Generating fluentd config blocks", func() {
 <label @MY_SECURE_PIPELINE>
   <match **>
     @type copy
-	deep_copy true
+	copy_mode deep
     <store>
       @type relabel
       @label @ONCLUSTER_ELASTICSEARCH

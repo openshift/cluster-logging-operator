@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,7 +59,11 @@ func ID(o runtime.Object) string {
 	}
 	gvr, _ := meta.UnsafeGuessKindToResource(gvk)
 	if m.GetNamespace() != "" {
-		return fmt.Sprintf("%v/%v/namespaces/%v/%v/%v", gvr.Group, gvr.Version, m.GetNamespace(), gvr.Resource, m.GetName())
+		group := gvr.Group
+		if group == "" {
+			group = "core" // Core APIs are in group "" which doesn't read well.
+		}
+		return fmt.Sprintf("%v/%v/namespaces/%v/%v/%v", group, gvr.Version, m.GetNamespace(), gvr.Resource, m.GetName())
 	}
 	return fmt.Sprintf("%v/%v/%v/%v", gvr.Group, gvr.Version, gvr.Resource, m.GetName())
 }

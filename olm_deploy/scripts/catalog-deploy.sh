@@ -8,6 +8,7 @@ echo "cluster logging operator: ${IMAGE_CLUSTER_LOGGING_OPERATOR}"
 echo "fluentd: ${IMAGE_LOGGING_FLUENTD}"
 echo "vector: ${IMAGE_LOGGING_VECTOR}"
 echo "log-file-metric-exporter: ${IMAGE_LOG_FILE_METRIC_EXPORTER}"
+echo "console-plugin: ${IMAGE_LOGGING_CONSOLE_PLUGIN}"
 
 echo "In namespace: ${CLUSTER_LOGGING_OPERATOR_NAMESPACE}"
 

@@ -313,6 +313,21 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 	}
 }
 
+// LogStoreLokiStackName Name of default lokistack service.
+func (clusterRequest *ClusterLoggingRequest) LogStoreLokiStackName() string {
+	logStore := clusterRequest.Cluster.Spec.LogStore
+	if logStore != nil && logStore.LokiStack.Name != "" {
+		return logStore.LokiStack.Name
+	}
+	return constants.LokiStackName
+}
+
+// DefaultLokiStackURL returns the base URL of the default lokistack API.
+func (clusterRequest *ClusterLoggingRequest) DefaultLokiStackURL() string {
+	name := clusterRequest.LogStoreLokiStackName()
+	return fmt.Sprintf("https://%s-gateway-http.%s.svc:8080/api/logs/v1", name, constants.OpenshiftNS)
+}
+
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
 	status.Outputs = logging.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
@@ -378,15 +393,17 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 				})
 				status.Outputs.Set(name, condReady)
 			case logging.LogStoreTypeLokiStack:
-				spec.Outputs = append(spec.Outputs, logging.OutputSpec{
-					Name: logging.OutputNameDefault,
-					Type: logging.OutputTypeLoki,
-					URL:  fmt.Sprintf("https://%s-gateway-http.%s.svc:8080/api/logs/v1/application", logStore.LokiStack.Name, constants.OpenshiftNS),
-				}, logging.OutputSpec{
-					Name: logging.OutputNameDefault + "-infra",
-					Type: logging.OutputTypeLoki,
-					URL:  fmt.Sprintf("https://%s-gateway-http.%s.svc:8080/api/logs/v1/infrastructure", logStore.LokiStack.Name, constants.OpenshiftNS),
-				})
+				spec.Outputs = append(spec.Outputs,
+					logging.OutputSpec{
+						Name: logging.OutputNameDefault,
+						Type: logging.OutputTypeLoki,
+						URL:  clusterRequest.DefaultLokiStackURL() + "/application",
+					},
+					logging.OutputSpec{
+						Name: logging.OutputNameDefault + "-infra",
+						Type: logging.OutputTypeLoki,
+						URL:  clusterRequest.DefaultLokiStackURL() + "/infrastructure",
+					})
 			default:
 				status.Outputs.Set(name, condInvalid(fmt.Sprintf("unknown log store type: %s", clusterRequest.Cluster.Spec.LogStore.Type)))
 			}

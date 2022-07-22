@@ -150,6 +150,7 @@ type LogStoreSpec struct {
 	// Retention policy defines the maximum age for an index after which it should be deleted
 	//
 	// +nullable
+	// +optional
 	RetentionPolicy *RetentionPoliciesSpec `json:"retentionPolicy,omitempty"`
 }
 
@@ -207,7 +208,7 @@ type ElasticsearchSpec struct {
 	Storage elasticsearch.ElasticsearchStorageSpec `json:"storage"`
 
 	// +optional
-	RedundancyPolicy elasticsearch.RedundancyPolicyType `json:"redundancyPolicy"`
+	RedundancyPolicy elasticsearch.RedundancyPolicyType `json:"redundancyPolicy,omitempty"`
 
 	// Specification of the Elasticsearch Proxy component
 	ProxySpec `json:"proxy,omitempty"`
@@ -585,6 +586,7 @@ const (
 type LogStoreType string
 
 const (
+	//  NOTE: update the +kubebuilder:validation:Enum comment on LogStoreSpec.Type if you add values here.
 	LogStoreTypeElasticsearch LogStoreType = "elasticsearch"
 	LogStoreTypeLokiStack     LogStoreType = "lokistack"
 )

@@ -40,6 +40,7 @@ var COMPONENT_IMAGES = map[string]string{
 	constants.VectorName:                 constants.VectorImageEnvVar,
 	"kibana":                             "KIBANA_IMAGE",
 	constants.LogfilesmetricexporterName: constants.LogfilesmetricImageEnvVar,
+	constants.ConsolePluginName:          constants.ConsolePluginImageEnvVar,
 }
 
 // GetAnnotation returns the value of an annoation for a given key and true if the key was found

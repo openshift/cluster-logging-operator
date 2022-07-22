@@ -24,6 +24,14 @@ export NAMESPACE?=openshift-logging
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.21-rh
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
+# Note: use logging-view-plugin:latest to pick up improvements in the console automatically.
+# Unlike the other components, console changes do not risk breaking the collector,
+# the console depends only on the format of the LokiStore records.
+IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:latest
+
+# Create an env string for tests with RELATED_IMAGE_LOG*=$(IMAGE_LOG*) for each IMAGE_LOG* variable.
+RELATED_IMAGE_ENV=$(foreach v,$(filter IMAGE_LOG%,$(.VARIABLES)),RELATED_$(v)=$(value $(value v)))
+
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
@@ -93,9 +101,7 @@ RUN_CMD?=go run
 run:
 	@ls ./bundle/manifests/logging.openshift.io_*.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	$(RELATED_IMAGE_ENV) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -192,21 +198,17 @@ deploy-example: deploy
 
 .PHONY: test-functional
 test-functional: test-functional-benchmarker test-functional-fluentd test-functional-vector
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
-	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	$(RELATED_IMAGE_ENV) \
 	go test -cover -race ./test/helpers/...
 
 .PHONY: test-functional-fluentd
 test-functional-fluentd:
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
-	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	$(filter-out RELATED_IMAGE_LOGGING_VECTOR%,$(RELATED_IMAGE_ENV)) \
 	go test --tags=fluentd -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-functional-vector
 test-functional-vector:
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	 $(filter-out RELATED_IMAGE_LOGGING_FLUENTD%,$(RELATED_IMAGE_ENV)) \
 	go test --tags=vector -race \
 		./test/functional/outputs/elasticsearch/... \
 		./test/functional/outputs/kafka/... \
@@ -222,17 +224,17 @@ test-forwarder-generator: bin/forwarder-generator
 
 .PHONY: test-functional-benchmarker
 test-functional-benchmarker: bin/functional-benchmarker
+	@rm -rf /tmp/benchmark-test
 	@out=$$(bin/functional-benchmarker --artifact-dir=/tmp/benchmark-test 2>&1); if [ "$$?" != "0" ] ; then echo "$$out"; exit 1; fi
 
 .PHONY: test-unit
 test-unit: test-forwarder-generator
-	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
-	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	$(RELATED_IMAGE_ENV) \
 	go test -cover -race ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'`
 
 .PHONY: test-cluster
 test-cluster:
+	$(RELATED_IMAGE_ENV) \
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
 OPENSHIFT_VERSIONS?="v4.7"
@@ -264,11 +266,11 @@ endif
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
+	$(RELATED_IMAGE_ENV) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-local
 test-e2e-local: $(JUNITREPORT) deploy-image
-	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	$(RELATED_IMAGE_ENV) \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \

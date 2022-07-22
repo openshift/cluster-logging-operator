@@ -1,9 +1,10 @@
 package loki
 
 import (
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"sort"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -73,6 +74,7 @@ var _ = Describe("Generate vector config", func() {
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
+healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
@@ -120,6 +122,7 @@ password = "password"
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
+healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
@@ -165,6 +168,7 @@ password = "password"
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
+healthcheck.enabled = false
 tenant_id = "{{foo.bar.baz}}"
 
 [sinks.loki_receiver.encoding]
@@ -210,6 +214,7 @@ password = "password"
 type = "loki"
 inputs = ["application"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"
@@ -258,6 +263,7 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 type = "loki"
 inputs = ["application"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
 codec = "json"

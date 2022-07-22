@@ -3,10 +3,11 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	log "github.com/ViaQ/logerr/v2/log/static"
 	"path"
 	"reflect"
 	"time"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
@@ -219,7 +220,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorService() error {
 	)
 
 	desired.Annotations = map[string]string{
-		"service.alpha.openshift.io/serving-cert-secret-name": constants.CollectorMetricSecretName,
+		constants.AnnotationServingCertSecretName: constants.CollectorMetricSecretName,
 	}
 
 	utils.AddOwnerRefToObject(desired, utils.AsOwner(clusterRequest.Cluster))

@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"strconv"
+
+	"github.com/openshift/cluster-logging-operator/internal/migrations"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 
@@ -254,13 +255,9 @@ func UpdateInfofromCL(request *ClusterLoggingRequest) (err error) {
 	clspec := request.Cluster.Spec
 
 	//default LogStore is set to be internal elasticsearch cluster running within OCP
-	if clspec.LogStore != nil {
+	if clspec.LogStore != nil && clspec.LogStore.Type != "" {
 		log.V(1).Info("LogStore Type", "clspecLogStoreType", clspec.LogStore.Type)
-		if clspec.LogStore.Type == "elasticsearch" {
-			telemetry.Data.CLLogStoreType.Set("elasticsearch", constants.IsPresent)
-		} else {
-			telemetry.Data.CLLogStoreType.Set("elasticsearch", constants.IsNotPresent)
-		}
+		telemetry.Data.CLLogStoreType.Set(string(clspec.LogStore.Type), constants.IsPresent)
 	}
 
 	return nil

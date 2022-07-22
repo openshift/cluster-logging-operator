@@ -24,6 +24,11 @@ export NAMESPACE?=openshift-logging
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.21-rh
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
+# Note: use logging-view-plugin:latest to pick up improvements in the console automatically.
+# Unlike the other components, console changes do not risk breaking the collector,
+# the console depends only on the format of the LokiStore records.
+IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:latest
+
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
@@ -96,6 +101,7 @@ run:
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -195,6 +201,7 @@ test-functional: test-functional-benchmarker test-functional-fluentd test-functi
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 	go test -cover -race ./test/helpers/...
 
 .PHONY: test-functional-fluentd
@@ -230,6 +237,7 @@ test-unit: test-forwarder-generator
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
+	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
 	go test -cover -race ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'`
 
 .PHONY: test-cluster

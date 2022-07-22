@@ -58,6 +58,8 @@ rules:
   resources:
   - consoleexternalloglinks
   - consolelinks
+  - consoleplugins
+  - consoleplugins/finalizers
   verbs:
   - create
   - delete

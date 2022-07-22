@@ -6,10 +6,12 @@ import (
 	"reflect"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/consoleplugin"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -17,10 +19,33 @@ import (
 	es "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 )
 
-// CreateOrUpdateVisualization reconciles visualization component for cluster logging
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() (err error) {
+// CreateOrUpdateVisualization reconciles visualization (kibana or console log view) component for cluster logging
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() error {
+	var errs []error
+	errs = append(errs, clusterRequest.createOrUpdateKibana())
+	errs = append(errs, clusterRequest.createOrUpdateLoggingConsolePlugin())
+	return utilerrors.NewAggregate(errs)
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateLoggingConsolePlugin() error {
+	cl := clusterRequest.Cluster
+	logStore := cl.Spec.LogStore
+	lokiService := clusterRequest.LokiStackGatewayService()
+	r := consoleplugin.NewReconciler(clusterRequest.Client, consoleplugin.NewConfig(cl, lokiService))
+
+	if logStore != nil && logStore.Type == logging.LogStoreTypeLokiStack {
+		log.V(3).Info("Enabling logging console plugin", "created-by", r.CreatedBy(), "loki-service", lokiService)
+		return r.Reconcile(context.TODO())
+	} else {
+		log.V(3).Info("Removing logging console plugin", "created-by", r.CreatedBy(), "loki-service", lokiService)
+		return r.Delete(context.TODO())
+	}
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibana() (err error) {
 	if clusterRequest.Cluster.Spec.Visualization == nil || clusterRequest.Cluster.Spec.Visualization.Type == "" {
 		return clusterRequest.removeKibana()
 	}
@@ -344,7 +369,8 @@ func (clusterRequest *ClusterLoggingRequest) removeKibanaCR() error {
 	}
 
 	err := clusterRequest.Delete(cr)
-	if err != nil && !errors.IsNotFound(err) {
+	// Treat MatchError like NotFound - it means the Kibana CRD isn't installed, so clearly the CR is not found.
+	if err != nil && !errors.IsNotFound(err) && !meta.IsNoMatchError(err) {
 		return fmt.Errorf("unable to delete kibana cr. E: %s", err.Error())
 	}
 

@@ -57,6 +57,7 @@ func (l Loki) Template() string {
 type = "loki"
 inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
+healthcheck.enabled = false
 {{kv .TenantID -}}
 {{end}}`
 }

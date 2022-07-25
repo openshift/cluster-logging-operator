@@ -211,6 +211,7 @@ test-functional-vector:
 		./test/functional/outputs/elasticsearch/... \
 		./test/functional/outputs/kafka/... \
 		./test/functional/outputs/cloudwatch/... \
+		./test/functional/outputs/loki/... \
 		./test/functional/normalization \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 

@@ -74,6 +74,7 @@ var _ = Describe("Generate vector config", func() {
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
+out_of_order_action = "accept"
 healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
@@ -122,6 +123,7 @@ password = "password"
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
+out_of_order_action = "accept"
 healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
@@ -168,6 +170,7 @@ password = "password"
 type = "loki"
 inputs = ["application"]
 endpoint = "https://logs-us-west1.grafana.net"
+out_of_order_action = "accept"
 healthcheck.enabled = false
 tenant_id = "{{foo.bar.baz}}"
 
@@ -214,6 +217,7 @@ password = "password"
 type = "loki"
 inputs = ["application"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+out_of_order_action = "accept"
 healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]
@@ -263,6 +267,7 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 type = "loki"
 inputs = ["application"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+out_of_order_action = "accept"
 healthcheck.enabled = false
 
 [sinks.loki_receiver.encoding]

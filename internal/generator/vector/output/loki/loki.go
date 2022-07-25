@@ -57,6 +57,7 @@ func (l Loki) Template() string {
 type = "loki"
 inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
+out_of_order_action = "accept"
 healthcheck.enabled = false
 {{kv .TenantID -}}
 {{end}}`

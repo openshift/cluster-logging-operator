@@ -153,8 +153,9 @@ var _ = Describe("Testing Config Generation", func() {
   <filter **>
     @type parser
     key_name message
-    reserve_data yes
+    reserve_data true
     hash_value_field structured
+    remove_key_name_field true
     <parse>
       @type json
       json_parser oj

@@ -7,3 +7,11 @@ const ToStdOut = `
  @type stdout
 </match>
 {{end}}`
+
+const FilterToStdOut = `
+{{define "filterToStdout" -}}
+# {{.Desc}}
+<filter {{.Pattern}}>
+ @type stdout
+</filter>
+{{end}}`

@@ -324,6 +324,7 @@ source = '''
   parsed, err = parse_json(.message)
   if err == null {
     .structured = parsed
+    del(.message)
   }
 '''
 `,

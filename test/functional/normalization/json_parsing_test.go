@@ -143,10 +143,9 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 			fmt.Printf("diff %s\n", diff)
 		}
 		Expect(same).To(BeTrue(), "parsed json message not matching")
+
 		log.V(2).Info("Received", "Message", logs[0].Message)
-		diff := cmp.Diff(logs[0].Message, expectedMessage)
-		log.V(2).Info("Received", "Diff", diff)
-		Expect(normalizeJson(logs[0].Message)).To(Equal(expectedMessage), "received message not matching")
+		Expect(logs[0].Message).To(BeEmpty())
 	})
 	It("should not parse non json message into structured", func() {
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
@@ -258,9 +257,7 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(logs).To(HaveLen(1), "Expected to receive the log message")
 		Expect(logs[0].Structured).To(Equal(expected), "structured field with parsed json message not matching")
-		log.V(2).Info("Received", "Message", logs[0].Message)
-		diff := cmp.Diff(logs[0].Message, expectedMessage)
-		log.V(2).Info("Received", "Diff", diff)
-		Expect(normalizeJson(logs[0].Message)).To(Equal(expectedMessage), "message field not matching")
+		log.V(2).Info("Received", "Message", logs[0])
+		Expect(logs[0].Message).To(BeEmpty())
 	})
 })

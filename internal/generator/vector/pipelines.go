@@ -33,6 +33,7 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 parsed, err = parse_json(.message)
 if err == null {
   .structured = parsed
+  del(.message)
 }
 `
 			vrls = append(vrls, parse)

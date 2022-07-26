@@ -43,18 +43,10 @@ func (cl ContainerLogs) Template() string {
   skip_refresh_on_startup true
   @label @{{.OutLabel}}
   <parse>
-    @type multi_format
-    <pattern>
-      format json
-      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
-      keep_time_key true
-    </pattern>
-    <pattern>
-      format regexp
-      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
-      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
-      keep_time_key true
-    </pattern>
+    @type regexp
+    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<message>.*)$/
+    time_key '@timestamp'
+    keep_time_key true
   </parse>
 </source>
 {{end}}`

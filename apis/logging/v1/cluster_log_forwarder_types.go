@@ -158,6 +158,9 @@ type OutputSpec struct {
 
 	OutputTypeSpec `json:",inline"`
 
+	// TLS contains settings for controlling options on TLS client connections.
+	TLS *OutputTLSSpec `json:"tls,omitempty"`
+
 	// Secret for authentication.
 	//
 	// Names a secret in the same namespace as the ClusterLogForwarder.
@@ -183,10 +186,6 @@ type OutputSpec struct {
 	//   `passphrase`: Passphrase to decode an encoded TLS private key. Requires tls.key.
 	//   `ca-bundle.crt`: Custom CA to validate certificates.
 	//
-	//   `tls.insecure`: If this key is present (with any value) accept server certificates that are self-signed or have an incorrect hostname.
-	//     This is INSECURE, the connection is susceptible to man-in-the-middle attacks.
-	//     This is ONLY for development and testing when valid certificates are not available.
-	//
 	// Username and Password
 	//
 	//   `username`: Authentication user name. Requires `password`.
@@ -203,6 +202,14 @@ type OutputSpec struct {
 	//
 	// +optional
 	Secret *OutputSecretSpec `json:"secret,omitempty"`
+}
+
+// OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
+type OutputTLSSpec struct {
+	// If InsecureSkipVerify is true, then the TLS client will be configured to ignore errors with certificates.
+	//
+	// This option is *not* recommended for production configurations.
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
 }
 
 // OutputSecretSpec is a secret reference containing name only, no namespace.

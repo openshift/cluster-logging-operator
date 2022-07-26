@@ -13,7 +13,6 @@ const (
 	TrustedCABundleKey = "ca-bundle.crt"
 	Passphrase         = "passphrase"
 	BearerTokenFileKey = "token"
-	TLSInsecure        = "tls.insecure"
 
 	// Username/Password keys, used by any output with username/password authentication.
 

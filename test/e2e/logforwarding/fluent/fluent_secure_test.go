@@ -41,12 +41,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		clientCert = certificate.NewCert(privateCA, "Client")
 		sharedKey = "top-secret"
 		sources := []*fluentd.Source{
-			// TODO this test case currently does not work, because a default secret is injected automatically.
-			// Discussing this we came to the conclusion that the best way to fix it would be to make
-			// "disable certificate validation" an explicit configuration option instead of automatically
-			// downgrading security when no secret is present.
-			// Disabling the test now temporarily to unblock the other pull-requests.
-			// {Name: "no-auth", Type: "forward", Cert: serverCert},
+			{Name: "no-auth", Type: "forward", Cert: serverCert},
 			{Name: "server-auth", Type: "forward", Cert: serverCert},
 			{Name: "server-auth-shared", Type: "forward", Cert: serverCert, SharedKey: sharedKey},
 			{Name: "mutual-auth", Type: "forward", Cert: serverCert, CA: privateCA},
@@ -103,13 +98,18 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		clf.Spec.Pipelines = []loggingv1.PipelineSpec{{InputRefs: []string{loggingv1.InputNameApplication}}}
 		for _, s := range f.Receiver.Sources {
 			secret := &loggingv1.OutputSecretSpec{Name: s.Name}
+			var tls *loggingv1.OutputTLSSpec
 			if s.Name == "no-auth" {
 				secret = nil
+				tls = &loggingv1.OutputTLSSpec{
+					InsecureSkipVerify: true,
+				}
 			}
 			clf.Spec.Outputs = append(clf.Spec.Outputs, loggingv1.OutputSpec{
 				Name:   s.Name,
 				Type:   "fluentdForward",
 				URL:    fmt.Sprintf("tls://%v:%v", s.Host(), s.Port),
+				TLS:    tls,
 				Secret: secret,
 			})
 			clf.Spec.Pipelines[0].OutputRefs = append(clf.Spec.Pipelines[0].OutputRefs, s.Name)

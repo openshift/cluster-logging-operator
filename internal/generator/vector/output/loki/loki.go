@@ -186,8 +186,8 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	if o.Secret != nil {
 		hasTLS := false
 		conf = append(conf, security.TLSConf{
-			Desc:        "TLS Config",
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			ComponentID:        strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
 		})
 
 		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
@@ -212,7 +212,6 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		// Set CA from logcollector ServiceAccount for internal Loki
 		return []Element{
 			security.TLSConf{
-				Desc:        "TLS Config",
 				ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 			},
 			CAFile{

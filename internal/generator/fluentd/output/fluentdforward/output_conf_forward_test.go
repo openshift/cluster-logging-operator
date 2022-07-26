@@ -93,8 +93,11 @@ var _ = Describe("Generating fluentd secure forward output store config blocks",
 `))
 		})
 
-		It("should use insecure mode if no secret", func() {
+		It("should use insecure mode if specified", func() {
 			outputs[0].Secret = nil
+			outputs[0].TLS = &logging.OutputTLSSpec{
+				InsecureSkipVerify: true,
+			}
 			results, err := g.GenerateConf(fluentdforward.Conf(nil, nil, outputs[0], nil)...)
 			Expect(err).To(BeNil())
 			Expect(results).To(EqualTrimLines(`

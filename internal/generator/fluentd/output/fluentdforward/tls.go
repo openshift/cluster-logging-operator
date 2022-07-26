@@ -1,28 +1,21 @@
 package fluentdforward
 
-import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
-)
-
-type TLS security.TLS
+type TLS struct {
+	InsecureMode bool
+}
 
 func (t TLS) Name() string {
 	return "fluentdforwardTLSTemplate"
 }
 
 func (t TLS) Template() string {
-	https := `{{define "fluentdforwardTLSTemplate" -}}
+	return `{{define "fluentdforwardTLSTemplate" -}}
 transport tls
 tls_verify_hostname false
 tls_version 'TLSv1_2'
-{{- end}}
-`
-	http := `{{define "fluentdforwardTLSTemplate" -}}
+{{- if .InsecureMode }}
 tls_insecure_mode true
-{{- end}}
+{{- end }}
+{{- end }}
 `
-	if t {
-		return https
-	}
-	return http
 }

@@ -73,8 +73,36 @@ All conditions in the selector must be satisfied (logical AND) to select logs.
 |======================
 |Property|Type|Description
 
+|containerLimit|object|  *(optional)* Container limit applied to each container selected
+|groupLimit|object|  *(optional)* Group limit applied to the aggregated log
 |namespaces|array|  *(optional)* Namespaces from which to collect application logs.
 |selector|object|  *(optional)* Selector for logs from pods with matching labels.
+|======================
+
+=== .spec.inputs[].application.containerLimit
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
+|======================
+
+=== .spec.inputs[].application.groupLimit
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 |======================
 
 === .spec.inputs[].application.namespaces[]
@@ -155,11 +183,25 @@ Output defines a destination for log messages.
 |googleCloudLogging|object|  *(optional)* 
 |splunk|object|  *(optional)* 
 |http|object|  *(optional)* 
+|limit|object|  *(optional)* Limit applied to the aggregated log
 |name|string|  Name used to refer to the output from a `pipeline`.
 |secret|object|  *(optional)* Secret for authentication.
 |tls|object|  TLS contains settings for controlling options on TLS client connections.
 |type|string|  Type of output plugin.
 |url|string|  *(optional)* URL to send log records to.
+|======================
+
+=== .spec.outputs[].limit
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|maxRecordsPerSecond|int|  MaxRecordsPerSecond is the maximum number of log records
 |======================
 
 === .spec.outputs[].secret

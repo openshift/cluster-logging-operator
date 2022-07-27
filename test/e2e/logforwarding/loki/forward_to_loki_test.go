@@ -2,8 +2,9 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -103,7 +104,7 @@ func testLogForwardingToLoki(t *testing.T, cl *loggingv1.ClusterLogging, clf *lo
 	rcv := loki.NewReceiver(c.NS.Name, "loki-receiver")
 	framework.AddCleanup(func() error { return rcv.Delete(c.Client) })
 
-	gen := runtime.NewLogGenerator(c.NS.Name, rcv.Name, 100, 0, "I am Loki, of Asgard, and I am burdened with glorious purpose.")
+	gen := runtime.NewLogGenerator(c.NS.Name, "log-generator", 100, 0, "I am Loki, of Asgard, and I am burdened with glorious purpose.")
 	framework.AddCleanup(func() error { return c.Delete(gen) })
 	clf.Spec.Outputs[0].URL = rcv.InternalURL("").String()
 

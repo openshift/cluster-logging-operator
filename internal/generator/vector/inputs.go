@@ -2,11 +2,13 @@ package vector
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"sort"
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -20,9 +22,11 @@ const (
 	K8sNamespaceName = ".kubernetes.namespace_name"
 	K8sLabelKeyExpr  = ".kubernetes.labels.%q"
 
-	InputContainerLogs   = "container_logs"
-	InputJournalLogs     = "journal_logs"
-	RouteApplicationLogs = "route_application_logs"
+	InputContainerLogs = "container_logs"
+	InputJournalLogs   = "journal_logs"
+
+	RouteApplicationLogs    = "route_application_logs"
+	SourceTransformThrottle = "source_throttle"
 
 	SrcPassThrough = "."
 )
@@ -40,6 +44,10 @@ var (
 	AddLogTypeInfra = fmt.Sprintf(".log_type = %q", logging.InputNameInfrastructure)
 	AddLogTypeAudit = fmt.Sprintf(".log_type = %q", logging.InputNameAudit)
 
+	UserDefinedInput          = fmt.Sprintf("%s.%%s", RouteApplicationLogs)
+	UserDefinedSourceThrottle = fmt.Sprintf("%s_%%s", SourceTransformThrottle)
+	perContainerLimitKeyField = `"{{ file }}"`
+
 	MatchNS = func(ns string) string {
 		return Eq(K8sNamespaceName, ns)
 	}
@@ -50,6 +58,32 @@ var (
 		return Eq(K8sLabelKey(k), v)
 	}
 )
+
+func AddThrottle(spec *logging.InputSpec) []generator.Element {
+	var (
+		threshold    int64
+		throttle_key string
+	)
+
+	el := []generator.Element{}
+	input := fmt.Sprintf(UserDefinedInput, spec.Name)
+
+	if spec.Application.ContainerLimit != nil {
+		threshold = spec.Application.ContainerLimit.MaxRecordsPerSecond
+		throttle_key = perContainerLimitKeyField
+	} else {
+		threshold = spec.Application.GroupLimit.MaxRecordsPerSecond
+	}
+
+	el = append(el, Throttle{
+		ComponentID: fmt.Sprintf(UserDefinedSourceThrottle, spec.Name),
+		Inputs:      helpers.MakeInputs([]string{input}...),
+		Threshold:   threshold,
+		KeyField:    throttle_key,
+	})
+
+	return el
+}
 
 // Inputs takes the raw log sources (container, journal, audit) and produces Inputs as defined by ClusterLogForwarder Api
 func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
@@ -109,6 +143,14 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 			Inputs:      helpers.MakeInputs(logging.InputNameApplication),
 			Routes:      userDefinedAppRouteMap,
 		})
+
+		userDefined := spec.InputMap()
+		for inRef := range userDefinedAppRouteMap {
+			if input, ok := userDefined[inRef]; ok && input.HasPolicy() && input.GetMaxRecordsPerSecond() > 0 {
+				// Vector Throttle component cannot have zero threshold
+				el = append(el, AddThrottle(input)...)
+			}
+		}
 	}
 
 	return el
@@ -143,6 +185,8 @@ func UserDefinedAppRouting(spec *logging.ClusterLogForwarderSpec, o Options) map
 					}
 					if len(matchNS) != 0 || len(matchLabels) != 0 {
 						routeMap[input.Name] = Quote(AND(OR(matchNS...), AND(matchLabels...)))
+					} else if input.HasPolicy() {
+						routeMap[input.Name] = "'true'"
 					}
 				}
 			}

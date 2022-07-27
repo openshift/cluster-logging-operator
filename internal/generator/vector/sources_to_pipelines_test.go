@@ -435,5 +435,126 @@ source = '''
 '''
 `,
 		}),
+		Entry("Application Inputs with Container Limits", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "input-app1",
+						Application: &logging.Application{
+							Namespaces: []string{"logstress"},
+							Selector: &logging.LabelSelector{
+								MatchLabels: map[string]string{
+									"podname": "very-important",
+								},
+							},
+							ContainerLimit: &logging.LimitSpec{
+								MaxRecordsPerSecond: 100,
+							},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs:  []string{"input-app1"},
+						OutputRefs: []string{"default"},
+						Name:       "flow-control",
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube"))'
+
+# Set log_type to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = '''
+	.log_type = "application"
+'''
+
+[transforms.route_application_logs]
+type = "route"
+inputs = ["application"]
+route.input-app1 = '(.kubernetes.namespace_name == "logstress") && (.kubernetes.labels."podname" == "very-important")'
+
+
+[transforms.source_throttle_input-app1]
+type = "throttle"
+inputs = ["route_application_logs.input-app1"]
+window_secs = 1
+threshold = 100
+key_field = "{{ file }}"
+
+[transforms.flow_control_user_defined]
+type = "remap"
+inputs = ["source_throttle_input-app1"]
+source = '''
+	.
+'''
+`,
+		}),
+		Entry("Application Inputs with Group Limits", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Inputs: []logging.InputSpec{
+					{
+						Name: "input-app2",
+						Application: &logging.Application{
+							Namespaces: []string{"logstress"},
+							Selector: &logging.LabelSelector{
+								MatchLabels: map[string]string{
+									"podname": "less-important",
+								},
+							},
+							GroupLimit: &logging.LimitSpec{
+								MaxRecordsPerSecond: 50,
+							},
+						},
+					},
+				},
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs:  []string{"input-app2"},
+						OutputRefs: []string{"default"},
+						Name:       "flow-control",
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube"))'
+
+# Set log_type to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = '''
+	.log_type = "application"
+'''
+
+[transforms.route_application_logs]
+type = "route"
+inputs = ["application"]
+route.input-app2 = '(.kubernetes.namespace_name == "logstress") && (.kubernetes.labels."podname" == "less-important")'
+
+
+[transforms.source_throttle_input-app2]
+type = "throttle"
+inputs = ["route_application_logs.input-app2"]
+window_secs = 1
+threshold = 50
+
+[transforms.flow_control_user_defined]
+type = "remap"
+inputs = ["source_throttle_input-app2"]
+source = '''
+	.
+'''
+`,
+		}),
 	)
 })

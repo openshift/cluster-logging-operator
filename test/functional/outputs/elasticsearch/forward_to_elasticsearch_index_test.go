@@ -5,6 +5,8 @@ package elasticsearch
 
 import (
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -15,7 +17,6 @@ import (
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
-	"time"
 )
 
 var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific index", func() {

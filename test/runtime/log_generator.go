@@ -2,8 +2,9 @@ package runtime
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
@@ -14,9 +15,14 @@ import (
 // `delay` between each line.  Lines are of the form "<timestamp> [n] `message`"
 // where n is the number of lines output so far. Once done printing the pod will
 // be idle but will not exit until deleted.
+// If count <= 0, print lines until killed.
 func NewLogGenerator(namespace, name string, count int, delay time.Duration, message string) *corev1.Pod {
-	cmd := fmt.Sprintf(`i=0; while [ $i -lt %v ]; do echo "$(date) [$i]: %v"; i=$((i+1)); sleep %f; done; sleep infinity`, count, message, delay.Seconds())
-	l := runtime.NewPod(namespace, "log-generator", corev1.Container{
+	condition := "true"
+	if count > 0 {
+		condition = fmt.Sprintf("[ $i -lt %v ]", count)
+	}
+	cmd := fmt.Sprintf(`i=0; while %v; do echo "$(date) [ $i ]: %v"; i=$((i+1)); sleep %f; done; sleep infinity`, condition, message, delay.Seconds())
+	l := runtime.NewPod(namespace, name, corev1.Container{
 		Name:    name,
 		Image:   "quay.io/quay/busybox",
 		Command: []string{"sh", "-c", cmd},
@@ -34,18 +40,5 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},
 	}
-	return l
-}
-
-// NewOneLineLogGenerator creates a pod that will print given lines to stdout.
-// Once done printing the pod will be idle but will not exit until deleted.
-func NewOneLineLogGenerator(namespace, containerName, message string) *corev1.Pod {
-	cmd := fmt.Sprintf(`echo "%v"; sleep infinity`, message)
-	l := runtime.NewPod(namespace, "log-generator", corev1.Container{
-		Name:    containerName,
-		Image:   "quay.io/quay/busybox",
-		Command: []string{"sh", "-c", cmd}},
-	)
-	l.Spec.RestartPolicy = corev1.RestartPolicyNever
 	return l
 }

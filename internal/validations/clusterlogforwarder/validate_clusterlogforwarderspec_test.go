@@ -176,6 +176,77 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			Expect(clfStatus.Inputs["all-logs"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(clfStatus.Inputs["app-infra-logs"]).To(HaveCondition("Ready", true, "", ""))
 		})
+
+		It("should fail if input spec has multiple limits defined", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: "custom-app",
+						Application: &loggingv1.Application{
+							ContainerLimit: &loggingv1.LimitSpec{
+								MaxRecordsPerSecond: 100,
+							},
+							GroupLimit: &loggingv1.LimitSpec{
+								MaxRecordsPerSecond: 200,
+							},
+						},
+					},
+				},
+			}
+			verifyInputs(forwarderSpec, clfStatus)
+			Expect(clfStatus.Inputs["custom-app"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec must define only one of container or group limit"))
+		})
+		It("should be valid if input has a positive limit threshold", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: "custom-app-container-limit",
+						Application: &loggingv1.Application{
+							ContainerLimit: &loggingv1.LimitSpec{
+								MaxRecordsPerSecond: 100,
+							},
+						},
+					},
+					{
+						Name: "custom-app-group-limit",
+						Application: &loggingv1.Application{
+							GroupLimit: &loggingv1.LimitSpec{
+								MaxRecordsPerSecond: 200,
+							},
+						},
+					},
+				},
+			}
+			verifyInputs(forwarderSpec, clfStatus)
+			Expect(clfStatus.Inputs["custom-app-container-limit"]).To((HaveCondition("Ready", true, "", "")))
+			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition("Ready", true, "", ""))
+		})
+		It("should fail if input has a negative limit threshold", func() {
+			forwarderSpec := &loggingv1.ClusterLogForwarderSpec{
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: "custom-app-container-limit",
+						Application: &loggingv1.Application{
+							ContainerLimit: &loggingv1.LimitSpec{
+								MaxRecordsPerSecond: -100,
+							},
+						},
+					},
+					{
+						Name: "custom-app-group-limit",
+						Application: &loggingv1.Application{
+							GroupLimit: &loggingv1.LimitSpec{
+								MaxRecordsPerSecond: -200,
+							},
+						},
+					},
+				},
+			}
+			verifyInputs(forwarderSpec, clfStatus)
+			Expect(clfStatus.Inputs["custom-app-container-limit"]).To((HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec cannot have a negative limit threshold")))
+			Expect(clfStatus.Inputs["custom-app-group-limit"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "inputspec cannot have a negative limit threshold"))
+		})
+
 	})
 
 	Context("output specs", func() {
@@ -386,6 +457,33 @@ var _ = Describe("Validate clusterlogforwarderspec", func() {
 			})
 			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
 			Expect(clfStatus.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "secret.*not found"))
+		})
+
+		It("should be valid if output has a positive limit threshold", func() {
+			forwarderSpec.Outputs = append(forwarderSpec.Outputs, loggingv1.OutputSpec{
+				Name: "custom-output",
+				Type: "elasticsearch",
+				URL:  "https://somewhere",
+				Limit: &loggingv1.LimitSpec{
+					MaxRecordsPerSecond: 100,
+				},
+			})
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["custom-output"]).To(HaveCondition("Ready", true, "", ""))
+
+		})
+
+		It("should fail if output has a negtive limit threshold", func() {
+			forwarderSpec.Outputs = append(forwarderSpec.Outputs, loggingv1.OutputSpec{
+				Name: "custom-output",
+				Type: "elasticsearch",
+				URL:  "https://somewhere",
+				Limit: &loggingv1.LimitSpec{
+					MaxRecordsPerSecond: -100,
+				},
+			})
+			verifyOutputs(namespace, client, forwarderSpec, clfStatus, extras)
+			Expect(clfStatus.Outputs["custom-output"]).To(HaveCondition("Ready", false, loggingv1.ReasonInvalid, "output \"custom-output\": Output cannot have negative limit threshold"))
 		})
 
 		Context("when validating secrets", func() {

@@ -173,6 +173,10 @@ func verifyInputs(spec *loggingv1.ClusterLogForwarderSpec, status *loggingv1.Clu
 		// Check if inputspec has either application, infrastructure, or audit specs
 		case input.Application == nil && input.Infrastructure == nil && input.Audit == nil:
 			badInput("inputspec must define one or more of application, infrastructure, or audit")
+		case input.HasPolicy() && input.Application.ContainerLimit != nil && input.Application.GroupLimit != nil:
+			badInput("inputspec must define only one of container or group limit")
+		case input.HasPolicy() && input.GetMaxRecordsPerSecond() < 0:
+			badInput("inputspec cannot have a negative limit threshold")
 		default:
 			status.Inputs.Set(input.Name, condReady)
 		}
@@ -218,6 +222,8 @@ func verifyOutputs(namespace string, clfClient client.Client, spec *loggingv1.Cl
 			status.Outputs.Set(output.Name,
 				CondInvalid("output %q: Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.",
 					output.Name))
+		case output.HasPolicy() && output.GetMaxRecordsPerSecond() < 0:
+			status.Outputs.Set(output.Name, CondInvalid("output %q: Output cannot have negative limit threshold", output.Name))
 		default:
 			status.Outputs.Set(output.Name, condReady)
 		}

@@ -263,6 +263,7 @@ test-functional-vector:
 		./test/functional/outputs/http/... \
 		./test/functional/normalization \
 		./test/functional/outputs/syslog/... \
+		./test/functional/flowcontrol/... \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-forwarder-generator

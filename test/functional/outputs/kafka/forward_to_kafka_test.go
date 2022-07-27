@@ -35,7 +35,7 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			maxLen := 1000
-			Expect(framework.WritesNApplicationLogsOfSize(1, maxLen)).To(BeNil())
+			Expect(framework.WritesNApplicationLogsOfSize(1, maxLen, 0)).To(BeNil())
 			// Read line from Kafka output
 			outputlogs, err := framework.ReadApplicationLogsFromKafka("clo-app-topic", "localhost:9092", "kafka-consumer-clo-app-topic")
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
@@ -52,7 +52,7 @@ var _ = Describe("[Functional][Outputs][Kafka] Functional tests", func() {
 				})
 			Expect(framework.Deploy()).To(BeNil())
 
-			Expect(framework.WritesNApplicationLogsOfSize(20, 10)).To(BeNil())
+			Expect(framework.WritesNApplicationLogsOfSize(20, 10, 0)).To(BeNil())
 			// Read line from Kafka output
 			outputlogs, err := framework.ReadApplicationLogsFromKafka(topic, "localhost:9092", kafka.ConsumerNameForTopic(topic))
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")

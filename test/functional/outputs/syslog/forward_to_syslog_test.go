@@ -69,7 +69,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(framework.Deploy()).To(BeNil())
 
 			var MaxLen int = 30000
-			Expect(framework.WritesNApplicationLogsOfSize(1, MaxLen)).To(BeNil())
+			Expect(framework.WritesNApplicationLogsOfSize(1, MaxLen, 0)).To(BeNil())
 			// Read line from Syslog output
 			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")

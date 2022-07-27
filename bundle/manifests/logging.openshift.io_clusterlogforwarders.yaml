@@ -58,6 +58,28 @@ spec:
                       description: Application, if present, enables named set of `application`
                         logs that can specify a set of match criteria
                       properties:
+                        containerLimit:
+                          description: Container limit applied to each container selected
+                            by this input. No container selected by this input can
+                            exceed this limit.
+                          properties:
+                            maxRecordsPerSecond:
+                              description: MaxRecordsPerSecond is the maximum number
+                                of log records allowed per input/output in a pipeline
+                              format: int64
+                              type: integer
+                          type: object
+                        groupLimit:
+                          description: Group limit applied to the aggregated log flow
+                            to this input. The total log flow from this input cannot
+                            exceed the limit.
+                          properties:
+                            maxRecordsPerSecond:
+                              description: MaxRecordsPerSecond is the maximum number
+                                of log records allowed per input/output in a pipeline
+                              format: int64
+                              type: integer
+                          type: object
                         namespaces:
                           description: Namespaces from which to collect application
                             logs. Only messages from these namespaces are collected.
@@ -258,6 +280,17 @@ spec:
                           description: Topic specifies the target topic to send logs
                             to.
                           type: string
+                      type: object
+                    limit:
+                      description: Limit applied to the aggregated log flow to this
+                        output. The total log flow from this output cannot exceed
+                        the limit.
+                      properties:
+                        maxRecordsPerSecond:
+                          description: MaxRecordsPerSecond is the maximum number of
+                            log records allowed per input/output in a pipeline
+                          format: int64
+                          type: integer
                       type: object
                     loki:
                       description: 'Loki provides optional extra properties for `type:

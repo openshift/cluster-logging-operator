@@ -117,15 +117,19 @@ func (f *CollectorFunctionalFramework) WriteOVNAuditLog(numOfLogs int) error {
 }
 
 func (f *CollectorFunctionalFramework) WritesApplicationLogs(numOfLogs int) error {
-	return f.WritesNApplicationLogsOfSize(numOfLogs, 100)
+	return f.WritesNApplicationLogsOfSize(numOfLogs, 100, 1)
 }
 
-func (f *CollectorFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size int) error {
+func (f *CollectorFunctionalFramework) WritesApplicationLogsWithDelay(numOfLogs int, delay float32) error {
+	return f.WritesNApplicationLogsOfSize(numOfLogs, 100, delay)
+}
+
+func (f *CollectorFunctionalFramework) WritesNApplicationLogsOfSize(numOfLogs, size int, delay float32) error {
 	msg := "$(date -u +'%Y-%m-%dT%H:%M:%S.%N%:z') stdout F $msg "
 	file := fmt.Sprintf("%s/%s_%s_%s/%s/0.log", fluentdLogPath[applicationLog], f.Pod.Namespace, f.Pod.Name, f.Pod.UID, constants.CollectorName)
 	logPath := filepath.Dir(file)
 	log.V(3).Info("Writing message to app log with path", "path", logPath)
-	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; done'", logPath, size, numOfLogs, msg, file))
+	result, err := f.RunCommand(constants.CollectorName, "bash", "-c", fmt.Sprintf("bash -c 'mkdir -p %s;msg=$(cat /dev/urandom|tr -dc 'a-zA-Z0-9'|fold -w %d|head -n 1);for n in $(seq 1 %d);do echo %s >> %s; sleep %fs; done'", logPath, size, numOfLogs, msg, file, delay))
 	log.V(3).Info("WritesNApplicationLogsOfSize", "namespace", f.Pod.Namespace, "result", result, "err", err)
 	return err
 }

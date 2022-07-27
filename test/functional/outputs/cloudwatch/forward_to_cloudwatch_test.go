@@ -121,7 +121,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				addMotoContainerVisitor,
 			})).To(BeNil())
 
-			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize)).To(BeNil())
+			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize, 0)).To(BeNil())
 			time.Sleep(10 * time.Second)
 			Eventually(func(g Gomega) int {
 				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)

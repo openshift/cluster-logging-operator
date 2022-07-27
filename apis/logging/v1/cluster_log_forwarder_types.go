@@ -143,6 +143,20 @@ type Application struct {
 	//
 	// +optional
 	Selector *LabelSelector `json:"selector,omitempty"`
+
+	// Group limit applied to the aggregated log
+	// flow to this input. The total log flow from this input
+	// cannot exceed the limit.
+	//
+	// +optional
+	GroupLimit *LimitSpec `json:"groupLimit,omitempty"`
+
+	// Container limit applied to each container selected
+	// by this input. No container selected by this input can
+	// exceed this limit.
+	//
+	// +optional
+	ContainerLimit *LimitSpec `json:"containerLimit,omitempty"`
 }
 
 // Infrastructure enables infrastructure logs. Filtering may be added in future.
@@ -229,6 +243,13 @@ type OutputSpec struct {
 	//
 	// +optional
 	Secret *OutputSecretSpec `json:"secret,omitempty"`
+
+	// Limit applied to the aggregated log
+	// flow to this output. The total log flow from this output
+	// cannot exceed the limit.
+	//
+	// +optional
+	Limit *LimitSpec `json:"limit,omitempty"`
 }
 
 // OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
@@ -347,4 +368,12 @@ type ClusterLogForwarderList struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterLogForwarder{}, &ClusterLogForwarderList{})
+}
+
+type LimitSpec struct {
+	// MaxRecordsPerSecond is the maximum number of log records
+	// allowed per input/output in a pipeline
+	//
+	// +required
+	MaxRecordsPerSecond int64 `json:"maxRecordsPerSecond,omitempty"`
 }

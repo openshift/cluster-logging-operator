@@ -101,6 +101,11 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
+		if err = clusterRequest.createOrUpdateCollectorTokenSecret(); err != nil {
+			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorTokenSecret")
+			return
+		}
+
 		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
 			log.V(9).Error(err, "clusterRequest.generateCollectorConfig")
 			return
@@ -662,6 +667,50 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	} else {
 		return nil, nil
 	}
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorTokenSecret() error {
+	serviceAccount := &corev1.ServiceAccount{}
+	if err := clusterRequest.Get(constants.CollectorServiceAccountName, serviceAccount); err != nil {
+		return fmt.Errorf("failed to get ServiceAccount: %w", err)
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: clusterRequest.Cluster.Namespace,
+			Name:      constants.LogCollectorToken,
+			Annotations: map[string]string{
+				corev1.ServiceAccountNameKey: serviceAccount.Name,
+				corev1.ServiceAccountUIDKey:  string(serviceAccount.UID),
+			},
+		},
+		Type: corev1.SecretTypeServiceAccountToken,
+	}
+	utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.Cluster))
+
+	if err := clusterRequest.Get(constants.LogCollectorToken, secret); err == nil {
+		accountName := secret.Annotations[corev1.ServiceAccountNameKey]
+		accountUID := secret.Annotations[corev1.ServiceAccountUIDKey]
+		if accountName != serviceAccount.Name || accountUID != string(serviceAccount.UID) {
+			// Delete secret, so that we can create a new one next loop
+			if err := clusterRequest.Delete(secret); err != nil {
+				return err
+			}
+
+			return fmt.Errorf("deleted stale secret: %s", constants.LogCollectorToken)
+		}
+
+		// Existing secret is up-to-date
+		return nil
+	} else if !errors.IsNotFound(err) {
+		return fmt.Errorf("failed to get logcollector token secret: %w", err)
+	}
+
+	if err := clusterRequest.Create(secret); err != nil {
+		return fmt.Errorf("failed to create logcollector token secret: %w", err)
+	}
+
+	return nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) waitForDaemonSetReady(ds *apps.DaemonSet) error {

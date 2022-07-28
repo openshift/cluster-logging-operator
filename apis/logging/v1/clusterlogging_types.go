@@ -85,7 +85,7 @@ type ClusterLoggingStatus struct {
 	Curation CurationStatus `json:"curation"`
 
 	// +optional
-	Conditions status.Conditions `json:"clusterConditions,omitempty"`
+	Conditions status.Conditions `json:"conditions,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)

@@ -29,13 +29,16 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiStackLogStore() e
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiStackClusterRole() error {
+	logStore := clusterRequest.Cluster.Spec.LogStore
+	auditEnabled := logStore != nil && logStore.LokiStack.SendAuditLogs
+
 	clusterRole := &rbacv1.ClusterRole{}
 	if err := clusterRequest.Get(lokiStackClusterRoleName, clusterRole); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return fmt.Errorf("failed to get ClusterRole: %w", err)
 		}
 
-		clusterRole = newLokiStackClusterRole()
+		clusterRole = newLokiStackClusterRole(auditEnabled)
 		if err := clusterRequest.Create(clusterRole); err != nil {
 			return fmt.Errorf("failed to create ClusterRole: %w", err)
 		}
@@ -43,7 +46,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiStackClusterRole(
 		return nil
 	}
 
-	wantRole := newLokiStackClusterRole()
+	wantRole := newLokiStackClusterRole(auditEnabled)
 	if compareLokiStackClusterRole(clusterRole, wantRole) {
 		log.V(9).Info("LokiStack collector ClusterRole matches.")
 		return nil
@@ -114,8 +117,8 @@ func (clusterRequest *ClusterLoggingRequest) removeLokiStackRbac() error {
 	return nil
 }
 
-func newLokiStackClusterRole() *rbacv1.ClusterRole {
-	return &rbacv1.ClusterRole{
+func newLokiStackClusterRole(auditEnabled bool) *rbacv1.ClusterRole {
+	role := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: lokiStackClusterRoleName,
 		},
@@ -137,6 +140,12 @@ func newLokiStackClusterRole() *rbacv1.ClusterRole {
 			},
 		},
 	}
+
+	if auditEnabled {
+		role.Rules[0].Resources = append(role.Rules[0].Resources, "audit")
+	}
+
+	return role
 }
 
 func newLokiStackClusterRoleBinding() *rbacv1.ClusterRoleBinding {

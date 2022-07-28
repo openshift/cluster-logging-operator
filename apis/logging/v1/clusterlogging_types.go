@@ -221,6 +221,12 @@ type LokiStackStoreSpec struct {
 	//
 	// +required
 	Name string `json:"name"`
+
+	// SendAuditLogs controls whether audit-logs will be sent to the LokiStack log store.
+	// By default, only application and infrastructure logs will be sent to the store.
+	//
+	// +optional
+	SendAuditLogs bool `json:"sendAuditLogs,omitempty"`
 }
 
 // This is the struct that will contain information pertinent to Log and event collection

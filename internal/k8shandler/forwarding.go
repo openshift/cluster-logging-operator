@@ -148,6 +148,13 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 						OutputRefs: []string{logging.OutputNameDefault + "-infra"},
 					},
 				}
+
+				if logStore.LokiStack.SendAuditLogs {
+					clusterRequest.ForwarderSpec.Pipelines = append(clusterRequest.ForwarderSpec.Pipelines, logging.PipelineSpec{
+						InputRefs:  []string{logging.InputNameAudit},
+						OutputRefs: []string{logging.OutputNameDefault + "-audit"},
+					})
+				}
 			}
 			// Continue with normalization to fill out spec and status.
 		} else if clusterRequest.ForwarderRequest == nil {
@@ -411,6 +418,14 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 						Type: logging.OutputTypeLoki,
 						URL:  clusterRequest.LokiStackURL("infrastructure"),
 					})
+
+				if logStore.LokiStack.SendAuditLogs {
+					spec.Outputs = append(spec.Outputs, logging.OutputSpec{
+						Name: logging.OutputNameDefault + "-audit",
+						Type: logging.OutputTypeLoki,
+						URL:  clusterRequest.LokiStackURL("audit"),
+					})
+				}
 			default:
 				status.Outputs.Set(name, condInvalid(fmt.Sprintf("unknown log store type: %s", clusterRequest.Cluster.Spec.LogStore.Type)))
 			}

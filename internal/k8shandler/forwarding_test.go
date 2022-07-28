@@ -661,6 +661,46 @@ pipelines:
 `))
 		})
 
+		It("generates default configuration for empty spec with LokiStack log store and audit logs enabled", func() {
+			cluster.Spec.LogStore = &logging.LogStoreSpec{
+				Type: logging.LogStoreTypeLokiStack,
+				LokiStack: logging.LokiStackStoreSpec{
+					Name:          "lokistack-testing",
+					SendAuditLogs: true,
+				},
+			}
+
+			spec, _ := request.NormalizeForwarder()
+			Expect(YAMLString(spec)).To(EqualLines(`
+outputs:
+- name: default
+	type: loki
+	url: https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application
+- name: default-infra
+	type: loki
+	url: https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure
+- name: default-audit
+	type: loki
+	url: https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/audit
+pipelines:
+- inputRefs:
+  - application
+  name: pipeline_0_
+  outputRefs:
+  - default
+- inputRefs:
+  - infrastructure
+  name: pipeline_1_
+  outputRefs:
+  - default-infra
+- inputRefs:
+  - audit
+  name: pipeline_2_
+  outputRefs:
+  - default-audit
+`))
+		})
+
 		It("forwards logs to an explicit default logstore", func() {
 			cluster.Spec.LogStore = &logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,

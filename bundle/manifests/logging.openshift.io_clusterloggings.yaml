@@ -686,6 +686,11 @@ spec:
                       name:
                         description: Name of the LokiStack resource.
                         type: string
+                      sendAuditLogs:
+                        description: SendAuditLogs controls whether audit-logs will
+                          be sent to the LokiStack log store. By default, only application
+                          and infrastructure logs will be sent to the store.
+                        type: boolean
                     required:
                     - name
                     type: object

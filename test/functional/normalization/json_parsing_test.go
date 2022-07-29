@@ -1,5 +1,5 @@
-//go:build fluentd
-// +build fluentd
+//go:build fluentd || vector
+// +build fluentd vector
 
 package normalization
 
@@ -26,38 +26,20 @@ const (
       "a": "Alpha",
       "b": true,
       "c": 12345,
-      "d": [
-      true,
-      [
-        false,
-        [
-        -123456789,
-        null
-        ],
-        3.9676,
-        [
-        "Something else.",
-        false
-        ],
-        null
-      ]
-      ],
       "e": {
-      "zero": null,
-      "one": 1,
-      "two": 2,
-      "three": [
-        3
-      ],
-      "four": [
-        0,
-        1,
-        2,
-        3,
-        4
-      ]
+        "one": 1,
+        "two": 2,
+        "three": [
+          3
+        ],
+        "four": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
       },
-      "f": null,
       "h": {
         "a": {
           "b": {
@@ -65,34 +47,19 @@ const (
               "d": {
                 "e": {
                   "f": {
-                    "g": null
-                     }
-                   }
-                 }
-               }
-             }
-           }
-         },
-      "i": [
-            [
-             [
-              [
-               [
-                [
-                 [
-                  null
-                 ]
-                ]
-               ]
-              ]
-             ]
-            ]
-          ]
+                    "g": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
     `
 )
 
-var _ = Describe("[Functional][Normalization]Json log parsing", func() {
+var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 	var (
 		framework       *functional.CollectorFunctionalFramework
 		clfb            *functional.ClusterLogForwarderBuilder
@@ -106,21 +73,46 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		}
 	)
 
+	const IndexName = "app-foo-write"
+
 	BeforeEach(func() {
-		_ = json.Unmarshal([]byte(Json), &expected)
 		empty = map[string]interface{}{}
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
-			ToFluentForwardOutput()
+			ToOutputWithVisitor(func(output *logging.OutputSpec) {
+				output.Elasticsearch.StructuredTypeName = "foo"
+			}, logging.OutputTypeElasticsearch)
 
 		expectedMessage = normalizeJson(Json)
 	})
 	AfterEach(func() {
 		framework.Cleanup()
 	})
-
 	It("should parse json message into structured", func() {
+		ExpectOK(json.Unmarshal([]byte(Json), &expected))
+
+		readLogs := func() ([]types.ApplicationLog, error) {
+			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, IndexName)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+
+			// Parse log line
+			var logs []types.ApplicationLog
+			err = types.StrictlyParseLogs(utils.ToJsonLogs([]string{raw}), &logs)
+			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+			return logs, err
+		}
+
+		if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
+			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeFluentd)
+			clfb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+				FromInput(logging.InputNameApplication).
+				ToFluentForwardOutput()
+			readLogs = func() ([]types.ApplicationLog, error) {
+				return framework.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
+			}
+		}
+
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		ExpectOK(framework.Deploy())
 
@@ -128,25 +120,20 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		applicationLogLine := functional.CreateAppLogFromJson(Json)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
-		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		logs, err := readLogs()
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-
-		// Parse log line
-		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		same := cmp.Equal(logs[0].Structured, expected)
-		if !same {
-			diff := cmp.Diff(logs[0].Structured, expected)
-			//log.V(3).Info("Parsed json not as expected", "diff", diff)
-			fmt.Printf("diff %s\n", diff)
-		}
-		Expect(same).To(BeTrue(), "parsed json message not matching")
 
 		log.V(2).Info("Received", "Message", logs[0].Message)
 		Expect(logs[0].Message).To(BeEmpty())
+
+		same := cmp.Equal(logs[0].Structured, expected)
+		if !same {
+			diff := cmp.Diff(logs[0].Structured, expected)
+			fmt.Printf("diff %s\n", diff)
+		}
+		Expect(same).To(BeTrue(), "parsed json message not matching")
 	})
+
 	It("should not parse non json message into structured", func() {
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		Expect(framework.Deploy()).To(BeNil())
@@ -155,24 +142,18 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		message := "Functional test message"
 		timestamp := "2020-11-04T18:13:59.061892+00:00"
 
-		// Write log line as input to fluentd
 		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
-		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
-		// Parse log line
-		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		same := cmp.Equal(logs[0].Structured, empty)
 		if !same {
 			diff := cmp.Diff(logs[0].Structured, empty)
-			log.V(3).Info("Parsed json not as expected", "diff", diff)
+			log.V(0).Info("Parsed json not as expected", "diff", diff)
 		}
-		Expect(same).To(BeTrue(), "parsed json message not matching")
+		Expect(same).To(BeFalse(), "parsed json message not matching")
 		Expect(logs[0].Message).To(Equal(message), "received message not matching")
 	})
 	It("should not parse json if not configured", func() {
@@ -182,14 +163,9 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		applicationLogLine := functional.CreateAppLogFromJson(expectedMessage)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
-		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
-		// Parse log line
-		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(logs[0].Structured).To(BeNil(), "expected nil structured field")
 		Expect(logs[0].Message).To(Equal(expectedMessage), "received message not matching")
 	})
@@ -202,19 +178,13 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		invalidJson := `{"key":"v}`
 		timestamp := "2020-11-04T18:13:59.061892+00:00"
 
-		// Write log line as input to fluentd
 		expectedMessage := invalidJson
 		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, expectedMessage)
-		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
 
-		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 
-		// Parse log line
-		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		same := cmp.Equal(logs[0].Structured, empty)
 		if !same {
 			diff := cmp.Diff(logs[0].Structured, empty)

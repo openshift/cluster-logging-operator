@@ -101,6 +101,9 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				Name: logging.OutputTypeElasticsearch,
 				Type: logging.OutputTypeElasticsearch,
 				URL:  "http://0.0.0.0:9200",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Elasticsearch: &logging.Elasticsearch{},
+				},
 			}
 		case logging.OutputTypeSyslog:
 			output = &logging.OutputSpec{

@@ -47,9 +47,7 @@ const (
 	ManagedStatus   = "1"
 	IsPresent       = "1"
 	IsNotPresent    = "0"
-)
 
-const (
 	SingletonName = "instance"
 	OpenshiftNS   = "openshift-logging"
 	// global proxy / trusted ca bundle consts
@@ -69,6 +67,7 @@ const (
 	KibanaProxyName            = "kibana-proxy"
 	CuratorName                = "curator"
 	LogfilesmetricexporterName = "logfilesmetricexporter"
+	ConsolePluginName          = "consoleplugin"
 	LogStoreURL                = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
 	MasterCASecretName         = "master-certs"
 	CollectorSecretName        = "collector"
@@ -90,11 +89,27 @@ const (
 	FluentdImageEnvVar            = "RELATED_IMAGE_FLUENTD"
 	VectorImageEnvVar             = "RELATED_IMAGE_VECTOR"
 	LogfilesmetricImageEnvVar     = "RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER"
+	ConsolePluginImageEnvVar      = "RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN"
 	CertEventName                 = "cluster-logging-certs-generate"
 	ClusterInfrastructureInstance = "cluster"
 
 	ContainerLogDir = "/var/log/containers"
 	PodLogDir       = "/var/log/pods"
+
+	// Annotation Names
+	AnnotationServingCertSecretName = "service.alpha.openshift.io/serving-cert-secret-name"
+
+	// K8s recommended label names: https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
+	LabelK8sName      = "app.kubernetes.io/name"       // The name of the application (string)
+	LabelK8sInstance  = "app.kubernetes.io/instance"   // A unique name identifying the instance of an application (string)
+	LabelK8sVersion   = "app.kubernetes.io/version"    // The current version of the application (e.g., a semantic version, revision hash, etc.) (string)
+	LabelK8sComponent = "app.kubernetes.io/component"  // The component within the architecture (string)
+	LabelK8sPartOf    = "app.kubernetes.io/part-of"    // The name of a higher level application this one is part of (string)
+	LabelK8sManagedBy = "app.kubernetes.io/managed-by" // The tool being used to manage the operation of an application (string)
+	LabelK8sCreatedBy = "app.kubernetes.io/created-by" // The controller/user who created this resource (string)
+
+	// Commonly-used label names.
+	LabelApp = "app"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

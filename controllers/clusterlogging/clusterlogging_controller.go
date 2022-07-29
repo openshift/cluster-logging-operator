@@ -2,6 +2,7 @@ package clusterlogging
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -14,6 +15,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
@@ -178,6 +180,10 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 			OwnerType:    &loggingv1.ClusterLogging{},
 		}).
 		Watches(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &loggingv1.ClusterLogging{},
+		}).
+		Watches(&source.Kind{Type: &consolev1alpha1.ConsolePlugin{}}, &handler.EnqueueRequestForOwner{
 			IsController: true,
 			OwnerType:    &loggingv1.ClusterLogging{},
 		}).

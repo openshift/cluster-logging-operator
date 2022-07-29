@@ -643,10 +643,10 @@ pipelines:
 outputs:
 - name: default
 	type: loki
-	url: https://lokistack-testing-gateway-http.openshift-logging.svc:8080/api/logs/v1/application
+	url: https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application
 - name: default-infra
 	type: loki
-	url: https://lokistack-testing-gateway-http.openshift-logging.svc:8080/api/logs/v1/infrastructure
+	url: https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure
 pipelines:
 - inputRefs:
   - application

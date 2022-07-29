@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/apis"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
+
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -24,6 +25,7 @@ import (
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	oauth "github.com/openshift/api/oauth/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
@@ -50,6 +52,7 @@ func init() {
 	utilruntime.Must(elasticsearch.AddToScheme(scheme))
 	utilruntime.Must(routev1.AddToScheme(scheme))
 	utilruntime.Must(consolev1.AddToScheme(scheme))
+	utilruntime.Must(consolev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(oauth.AddToScheme(scheme))
 	utilruntime.Must(monitoringv1.AddToScheme(scheme))
 	utilruntime.Must(configv1.AddToScheme(scheme))

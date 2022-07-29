@@ -91,6 +91,7 @@ metadata:
     capabilities: Seamless Upgrades
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
+    console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
     createdAt: "2018-08-01T08:00:00Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
@@ -324,6 +325,8 @@ spec:
           - console.openshift.io
           resources:
           - consoleexternalloglinks
+          - consoleplugins
+          - consoleplugins/finalizers
           verbs:
           - '*'
         - apiGroups:
@@ -414,6 +417,8 @@ spec:
                   value: quay.io/openshift-logging/fluentd:1.14.6
                 - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
                   value: quay.io/openshift-logging/log-file-metric-exporter:latest
+                - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN
+                  value: quay.io/openshift-logging/logging-view-plugin:latest
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: cluster-logging-operator
@@ -528,4 +533,6 @@ spec:
     name: fluentd
   - image: quay.io/openshift-logging/log-file-metric-exporter:latest
     name: log-file-metric-exporter
+  - image: quay.io/openshift-logging/logging-view-plugin:latest
+    name: logging-console-plugin
   version: 5.5.0

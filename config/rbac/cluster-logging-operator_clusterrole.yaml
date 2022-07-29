@@ -7,6 +7,8 @@ rules:
     - console.openshift.io
   resources:
     - consoleexternalloglinks
+    - consoleplugins
+    - consoleplugins/finalizers
   verbs:
     - "*"
 - apiGroups:

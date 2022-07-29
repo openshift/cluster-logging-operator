@@ -5,6 +5,7 @@ metadata:
     capabilities: Seamless Upgrades
     categories: OpenShift Optional, Logging & Tracing
     certified: "false"
+    console.openshift.io/plugins: '["logging-view-plugin"]'
     containerImage: quay.io/openshift-logging/cluster-logging-operator:latest
     createdAt: "2018-08-01T08:00:00Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for

@@ -43,18 +43,24 @@ var _ = Describe("[ConsolePlugin]", func() {
 		r *consoleplugin.Reconciler
 	)
 
+	cleanup := func() {
+		_ = r.Delete(ctx)
+		_ = c.Remove(testruntime.NewClusterLogForwarder())
+		_ = c.Remove(testruntime.NewClusterLogging())
+	}
+
 	BeforeEach(func() {
 		c = client.NewTest()
 		r = consoleplugin.NewReconciler(
 			c.ControllerRuntimeClient(),
 			consoleplugin.NewConfig(testruntime.NewClusterLogging(), "lokiService"))
-		// Clear out any previosly-existing objects
-		_ = c.Remove(testruntime.NewClusterLogging())
-		_ = c.Remove(testruntime.NewClusterLogForwarder())
-		_ = r.Delete(ctx)
+		cleanup() // Clear out objects left behind by previous tests.
 	})
 
-	AfterEach(func() { c.Close() })
+	AfterEach(func() {
+		cleanup()
+		c.Close()
+	})
 
 	It("activates logging view if log type is lokistack", func() {
 		cl := testruntime.NewClusterLogging()

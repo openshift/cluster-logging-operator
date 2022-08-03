@@ -177,7 +177,29 @@ var _ = Describe("Factory#NewPodSpec", func() {
 
 var _ = Describe("Factory#CollectorResourceRequirements", func() {
 	var (
-		factory *Factory
+		factory        *Factory
+		collectionSpec = logging.CollectionSpec{
+			CollectorSpec: logging.CollectorSpec{
+				Resources: &v1.ResourceRequirements{
+					Limits: v1.ResourceList{
+						v1.ResourceMemory: resource.MustParse("120Gi"),
+					},
+					Requests: v1.ResourceList{
+						v1.ResourceMemory: resource.MustParse("100Gi"),
+						v1.ResourceCPU:    resource.MustParse("500m"),
+					},
+				},
+			},
+		}
+		expResources = v1.ResourceRequirements{
+			Limits: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse("120Gi"),
+			},
+			Requests: v1.ResourceList{
+				v1.ResourceMemory: resource.MustParse("100Gi"),
+				v1.ResourceCPU:    resource.MustParse("500m"),
+			},
+		}
 	)
 
 	Context("when collectorType is vector", func() {
@@ -187,8 +209,13 @@ var _ = Describe("Factory#CollectorResourceRequirements", func() {
 				Visit:         vector.CollectorVisitor,
 			}
 		})
-		It("should not define any resources", func() {
+		It("should not define any resources when none are specified", func() {
 			Expect(factory.CollectorResourceRequirements()).To(Equal(v1.ResourceRequirements{}))
+		})
+
+		It("should apply the spec'd resources when defined", func() {
+			factory.CollectorSpec = collectionSpec
+			Expect(factory.CollectorResourceRequirements()).To(Equal(expResources))
 		})
 
 	})
@@ -209,28 +236,8 @@ var _ = Describe("Factory#CollectorResourceRequirements", func() {
 			}))
 		})
 		It("should apply the spec'd resources when defined", func() {
-			factory.CollectorSpec = logging.CollectionSpec{
-				CollectorSpec: logging.CollectorSpec{
-					Resources: &v1.ResourceRequirements{
-						Limits: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse("120Gi"),
-						},
-						Requests: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse("100Gi"),
-							v1.ResourceCPU:    resource.MustParse("500m"),
-						},
-					},
-				},
-			}
-			Expect(factory.CollectorResourceRequirements()).To(Equal(v1.ResourceRequirements{
-				Limits: v1.ResourceList{
-					v1.ResourceMemory: resource.MustParse("120Gi"),
-				},
-				Requests: v1.ResourceList{
-					v1.ResourceMemory: resource.MustParse("100Gi"),
-					v1.ResourceCPU:    resource.MustParse("500m"),
-				},
-			}))
+			factory.CollectorSpec = collectionSpec
+			Expect(factory.CollectorResourceRequirements()).To(Equal(expResources))
 		})
 
 	})

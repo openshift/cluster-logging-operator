@@ -2,6 +2,7 @@ package stats
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ type StreamLossStats struct {
 	MinSeqId  int
 	MaxSeqId  int
 	Collected int
+	Purged    int
 	Entries   []PerfLog
 }
 
@@ -33,14 +35,13 @@ func (l *LossStats) init() {
 	}
 }
 
-// Lost is the number of messages not collected for the stream
-func (s *StreamLossStats) Lost() int {
-	return s.MaxSeqId - s.MinSeqId - s.Collected
-}
-
 // Range is difference between the first and last collected sequence ids
 func (s *StreamLossStats) Range() int {
 	return s.MaxSeqId - s.MinSeqId
+}
+
+func (l *StreamLossStats) PercentCollected() float64 {
+	return float64(l.Collected) / float64(l.Range()) * 100.0
 }
 
 func (l *LossStats) LossStatsFor(stream string) (*StreamLossStats, error) {
@@ -49,50 +50,38 @@ func (l *LossStats) LossStatsFor(stream string) (*StreamLossStats, error) {
 	if !found {
 		return nil, fmt.Errorf("No lost entries found for %s", stream)
 	}
+
+	purged := 0
+	validEntries := []PerfLog{}
+	for _, entry := range entries {
+		seqId, err := GetSequenceIdFrom(entry.Message)
+		if err != nil {
+			log.Error(err, "purging entry. failed getting sequenceid", "entry", entry)
+			purged += 1
+		} else {
+			entry.SequenceId = seqId
+			validEntries = append(validEntries, entry)
+		}
+	}
+	entries = validEntries
+
 	sort.Slice(entries, func(l int, r int) bool {
-		left, err := GetSequenceIdFrom(entries[l].Message)
-		if err != nil {
-			log.Error(err, "message", entries[l].Message)
-			return false
-		}
-		right, err := GetSequenceIdFrom(entries[r].Message)
-		if err != nil {
-			log.Error(err, "message", entries[r].Message)
-			return false
-		}
-		return left < right
+		return entries[l].SequenceId < entries[r].SequenceId
 	})
 
-	log.V(4).Info("Retrieving the seqId from first message received", "message", entries[0].Message)
-	min, errMin := GetSequenceIdFrom(entries[0].Message)
-	log.V(4).Info("Retrieving the seqId from last message evaluated", "messag", entries[len(entries)-1].Message)
-	max, errMax := GetSequenceIdFrom(entries[len(entries)-1].Message)
-
-	missing := 0
-	next := min
-	for _, entry := range entries {
-		seq, err := GetSequenceIdFrom(entry.Message)
-		if err != nil {
-			log.Error(err, "Error evaluating seqId", "message", entry.Message)
-		} else {
-			if next != seq {
-				missing += (seq - next)
-			}
-			next = seq + 1
-		}
-	}
-
-	var err error
-	if errMin != nil || errMax != nil {
-		err = fmt.Errorf("minError: %v, maxError: %v", errMin, errMax)
-	}
 	lossStats := StreamLossStats{
-		MinSeqId:  min,
-		MaxSeqId:  max,
-		Collected: max - min - missing,
+		Collected: len(entries) + purged,
 		Entries:   entries,
+		Purged:    purged,
 	}
-	return &lossStats, err
+	if len(entries) == 0 {
+		return &lossStats, nil
+	}
+
+	lossStats.MinSeqId = entries[0].SequenceId
+	lossStats.MaxSeqId = entries[len(entries)-1].SequenceId
+
+	return &lossStats, nil
 }
 
 func (l *LossStats) Streams() []string {
@@ -108,24 +97,43 @@ func (l *LossStats) Streams() []string {
 func splitEntriesByLoader(logs PerfLogs) map[string][]PerfLog {
 	results := map[string][]PerfLog{}
 	for _, entry := range logs {
-		streams, found := results[entry.Kubernetes.ContainerName]
+		streamName := getStreamName(entry)
+		streams, found := results[streamName]
 		if !found {
 			streams = []PerfLog{}
 		}
 		streams = append(streams, entry)
-		results[entry.Kubernetes.ContainerName] = streams
+		results[streamName] = streams
 	}
 
 	return results
 }
 
-func GetSequenceIdFrom(message string) (int, error) {
+func getStreamName(entry PerfLog) string {
+	if entry.Kubernetes.ContainerName != "" {
+		return entry.Kubernetes.ContainerName
+	}
+	match := reSeqenceId.FindStringSubmatch(entry.Message)
+	if len(match) > 0 {
+		for i, name := range reSeqenceId.SubexpNames() {
+			if name == "stream" {
+				return match[i]
+			}
+		}
+	}
+	return ""
+}
 
-	parts := strings.Split(message, " - ")
-	log.V(4).Info("Evaluating seq from parts", "parts", parts)
-	if len(parts) >= 3 {
-		seq := parts[2]
-		return strconv.Atoi(seq)
+var reSeqenceId = regexp.MustCompile(`(goloader seq) - (?P<stream>functional\.0\.[0-9A-Z]*) - (?P<seqid>\d{10})( -)?(.*)?`)
+
+func GetSequenceIdFrom(message string) (int, error) {
+	match := reSeqenceId.FindStringSubmatch(message)
+	if len(match) > 0 {
+		for i, name := range reSeqenceId.SubexpNames() {
+			if name == "seqid" {
+				return strconv.Atoi(strings.TrimSpace(match[i]))
+			}
+		}
 	}
 	return 0, fmt.Errorf("message is not the expected format containing sequence number: %s", message)
 }

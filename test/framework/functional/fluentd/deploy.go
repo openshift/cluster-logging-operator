@@ -1,7 +1,7 @@
 package fluentd
 
 import (
-	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 	"os"
 	"strconv"
 	"strings"
@@ -32,9 +32,7 @@ mkdir -p /var/log/{kube-apiserver,oauth-apiserver,audit,ovn}
 for d in kube-apiserver oauth-apiserver audit; do
   touch /var/log/$d/{audit.log,acl-audit-log.log}
 done
-mkdir -p /var/log/pods/%s_functional_123456789-0/loader-0
 `
-	replace = fmt.Sprintf(replace, c.NS.Name)
 	runScript := strings.Replace(fluentd.RunScript, "#!/bin/bash\n", replace, 1)
 	runtime.NewConfigMapBuilder(configmap).
 		Add("fluent.conf", config).
@@ -57,8 +55,12 @@ func (c *FluentdCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, 
 }
 
 func (c *FluentdCollector) IsStarted(logs string) bool {
-	// if fluentd started successfully return success
-	return strings.Contains(logs, "fluentd worker is now running worker")
+	phase, err := oc.Get().Pod().WithNamespace(c.NS.Name).Name("functional").OutputJsonpath("{.status.phase}").Run()
+	if err != nil {
+		log.V(1).Error(err, "Unable to determine if the collector started")
+		return false
+	}
+	return "Running" == strings.TrimSpace(phase)
 }
 
 func adaptLogLevel() string {

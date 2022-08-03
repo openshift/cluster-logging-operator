@@ -172,11 +172,13 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		//remove journal for now since we can not mimic it
 		re := regexp.MustCompile(`(?msU).*<source>.*type.*systemd.*</source>`)
 		f.Conf = string(re.ReplaceAll([]byte(f.Conf), []byte{}))
-		if f.VisitConfig != nil {
-			f.Conf = f.VisitConfig(f.Conf)
-		}
+
 	} else {
 		log.V(2).Info("Using provided collector conf instead of generating one")
+	}
+	if f.VisitConfig != nil {
+		log.V(2).Info("Modifying config using provided config visitor")
+		f.Conf = f.VisitConfig(f.Conf)
 	}
 
 	if err = f.collector.DeployConfigMapForConfig(f.Name, f.Conf, string(clfYaml)); err != nil {

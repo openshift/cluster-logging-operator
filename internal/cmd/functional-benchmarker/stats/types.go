@@ -7,6 +7,7 @@ import (
 type PerfLog struct {
 	types.AllLog
 	types.Timing `json:",inline"`
+	SequenceId   int
 }
 
 type PerfLogs []PerfLog

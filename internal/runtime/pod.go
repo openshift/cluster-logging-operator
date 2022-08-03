@@ -56,6 +56,11 @@ func (builder *ContainerBuilder) AddVolumeMount(name, path, subPath string, read
 	return builder
 }
 
+func (builder *ContainerBuilder) ResourceRequirements(resources corev1.ResourceRequirements) *ContainerBuilder {
+	builder.container.Resources = resources
+	return builder
+}
+
 func (builder *ContainerBuilder) WithCmdArgs(cmdArgs []string) *ContainerBuilder {
 	builder.container.Args = cmdArgs
 	return builder

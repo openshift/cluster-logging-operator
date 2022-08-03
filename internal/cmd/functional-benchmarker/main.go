@@ -3,7 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -27,18 +32,22 @@ func main() {
 	log.V(1).Info(options.CollectorConfig)
 
 	artifactDir := createArtifactDir(options.ArtifactDir)
+	if options.ArtifactDir != artifactDir {
+		options.ArtifactDir = artifactDir
+	}
 
-	metrics, statistics, err := RunBenchmark(artifactDir, options)
+	metrics, statistics, config, err := RunBenchmark(artifactDir, options)
 	if err != nil {
 		log.Error(err, "Error in run")
 		os.Exit(1)
 	}
 
+	options.CollectorConfig = config
 	reporter := reports.NewReporter(options, artifactDir, metrics, statistics)
 	reporter.Generate()
 }
 
-func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMetrics, *stats.Statistics, error) {
+func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMetrics, *stats.Statistics, string, error) {
 	runDuration := config.MustParseDuration(options.RunDuration, "run-duration")
 	sampleDuration := config.MustParseDuration(options.SampleDuration, "resource-sample-duration")
 	runner := runners.NewRunner(options)
@@ -68,35 +77,60 @@ func RunBenchmark(artifactDir string, options config.Options) (*stats.ResourceMe
 	time.Sleep(runDuration)
 	endTime := time.Now()
 	done <- true
-	statistics, _ := gatherStatistics(runner, options.Sample, options.MsgSize, startTime, endTime)
 	sampler.Stop()
+	if err := runner.FetchApplicationLogs(); err != nil {
+		return nil, nil, "", err
+	}
+	statistics := gatherStatistics(runner, options.Sample, options.MsgSize, startTime, endTime)
 
-	return metrics, statistics, nil
+	var err error
+	var out string
+	for _, container := range []string{constants.CollectorName, logging.OutputTypeFluentdForward} {
+
+		if out, err = oc.Logs().WithNamespace(runner.Namespace()).WithPod(runner.Pod()).WithContainer(strings.ToLower(container)).Run(); err == nil {
+
+			/* #nosec G306*/
+			err = ioutil.WriteFile(path.Join(artifactDir, container+".logs"), []byte(out), 0755)
+			if err != nil {
+				log.Error(err, "Error writing collector logs to artifactDir")
+			}
+		} else {
+			log.Error(err, "Error retrieving collector logs from container", "container")
+		}
+	}
+
+	return metrics, statistics, runner.Config(), nil
 }
 
-func gatherStatistics(runner runners.Runner, sample bool, msgSize int, startTime, endTime time.Time) (*stats.Statistics, []string) {
+func gatherStatistics(runner runners.Runner, sample bool, msgSize int, startTime, endTime time.Time) *stats.Statistics {
 	raw, err := runner.ReadApplicationLogs()
 	if err != nil {
 		log.Error(err, "Error reading logs")
-		return &stats.Statistics{}, []string{}
+		return &stats.Statistics{}
 	}
-	log.V(4).Info("Read logs", "raw", raw)
+	log.V(4).Info("Raw logs", "raw", raw)
 	logs := stats.PerfLogs{}
-	err = json.Unmarshal([]byte(utils.ToJsonLogs(raw)), &logs)
-	if err != nil {
-		log.Error(err, "Error parsing logs")
-		return &stats.Statistics{}, []string{}
+	for _, entry := range raw {
+		perflog := stats.PerfLog{}
+		err = json.Unmarshal([]byte(entry), &perflog)
+		if err != nil {
+			log.Error(err, "Error parsing log entry. skipping", "raw", entry)
+		} else {
+			logs = append(logs, perflog)
+		}
 	}
-	log.V(4).Info("Read logs", "parsed", logs)
-	if sample {
+
+	log.V(4).Info("Parsed logs", "parsed", logs)
+	if sample && len(logs) > 0 {
 		fmt.Printf("Sample:\n%s\n", test.JSONString(logs[0]))
 	}
-	return stats.NewStatisics(logs, msgSize, endTime.Sub(startTime)), raw
+	return stats.NewStatisics(logs, msgSize, endTime.Sub(startTime))
 }
 
 func createArtifactDir(artifactDir string) string {
 	if strings.TrimSpace(artifactDir) == "" {
 		artifactDir = fmt.Sprintf("./benchmark-%s", time.Now().Format(time.RFC3339Nano))
+		artifactDir = strings.ReplaceAll(artifactDir, ":", "_")
 	}
 	var err error
 

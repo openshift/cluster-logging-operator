@@ -641,10 +641,10 @@ pipelines:
 			spec, _ := request.NormalizeForwarder()
 			Expect(YAMLString(spec)).To(EqualLines(`
 outputs:
-- name: default
+- name: default-loki-apps
 	type: loki
 	url: https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application
-- name: default-infra
+- name: default-loki-infra
 	type: loki
 	url: https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/infrastructure
 pipelines:
@@ -652,12 +652,43 @@ pipelines:
   - application
   name: pipeline_0_
   outputRefs:
-  - default
+  - default-loki-apps
 - inputRefs:
   - infrastructure
   name: pipeline_1_
   outputRefs:
-  - default-infra
+  - default-loki-infra
+`))
+		})
+
+		It("processes custom pipelines to default LokiStack log store", func() {
+			cluster.Spec.LogStore = &logging.LogStoreSpec{
+				Type: logging.LogStoreTypeLokiStack,
+				LokiStack: logging.LokiStackStoreSpec{
+					Name: "lokistack-testing",
+				},
+			}
+			request.ForwarderSpec = logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs:  []string{"audit"},
+						OutputRefs: []string{"default"},
+					},
+				},
+			}
+
+			spec, _ := request.NormalizeForwarder()
+			Expect(YAMLString(spec)).To(EqualLines(`
+outputs:
+- name: default-loki-audit
+	type: loki
+	url: https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/audit
+pipelines:
+- inputRefs:
+  - audit
+  name: pipeline_0_
+  outputRefs:
+  - default-loki-audit
 `))
 		})
 

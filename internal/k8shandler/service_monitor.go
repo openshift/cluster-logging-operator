@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,6 +19,12 @@ func NewServiceMonitor(serviceMonitorName, namespace string) *monitoringv1.Servi
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceMonitorName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       serviceMonitorName,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 	}
 }

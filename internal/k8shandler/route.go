@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/util/retry"
@@ -24,9 +25,13 @@ func NewRoute(routeName, namespace, serviceName, cafilePath string) *route.Route
 			Name:      routeName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"component":     "support",
-				"logging-infra": "support",
-				"provider":      "openshift",
+				"component":                    "support",
+				"logging-infra":                "support",
+				"provider":                     "openshift",
+				"app.kubernetes.io/name":       routeName,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
 			},
 		},
 		Spec: route.RouteSpec{

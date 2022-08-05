@@ -48,8 +48,9 @@ const (
 	IsPresent       = "1"
 	IsNotPresent    = "0"
 
-	SingletonName = "instance"
-	OpenshiftNS   = "openshift-logging"
+	ClusterLoggingOperator = "cluster-logging-operator"
+	SingletonName          = "instance"
+	OpenshiftNS            = "openshift-logging"
 	// global proxy / trusted ca bundle consts
 	ProxyName = "cluster"
 

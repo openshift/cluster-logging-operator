@@ -247,6 +247,12 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kibanaName,
 			Namespace: cluster.Namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       kibanaName,
+				"app.kubernetes.io/component":  constants.KibanaName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		Spec: es.KibanaSpec{
 			ManagementState: es.ManagementStateManaged,

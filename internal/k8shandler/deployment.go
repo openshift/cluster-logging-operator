@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"fmt"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -22,9 +23,13 @@ func NewDeployment(deploymentName string, namespace string, loggingComponent str
 			Name:      deploymentName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"provider":      "openshift",
-				"component":     component,
-				"logging-infra": loggingComponent,
+				"provider":                     "openshift",
+				"component":                    component,
+				"logging-infra":                loggingComponent,
+				"app.kubernetes.io/name":       loggingComponent,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
 			},
 		},
 		Spec: apps.DeploymentSpec{
@@ -40,9 +45,13 @@ func NewDeployment(deploymentName string, namespace string, loggingComponent str
 				ObjectMeta: metav1.ObjectMeta{
 					Name: deploymentName,
 					Labels: map[string]string{
-						"provider":      "openshift",
-						"component":     component,
-						"logging-infra": loggingComponent,
+						"provider":                     "openshift",
+						"component":                    component,
+						"logging-infra":                loggingComponent,
+						"app.kubernetes.io/name":       loggingComponent,
+						"app.kubernetes.io/component":  constants.CollectorName,
+						"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+						"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
 					},
 					Annotations: map[string]string{
 						"target.workload.openshift.io/management": `{"effect": "PreferredDuringScheduling"}`,

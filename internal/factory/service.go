@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -16,7 +17,11 @@ func NewService(serviceName string, namespace string, selectorComponent string, 
 			Name:      serviceName,
 			Namespace: namespace,
 			Labels: map[string]string{
-				"logging-infra": "support",
+				"logging-infra":                "support",
+				"app.kubernetes.io/name":       serviceName,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
 			},
 		},
 		Spec: core.ServiceSpec{

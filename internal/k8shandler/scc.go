@@ -6,6 +6,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
@@ -19,6 +20,12 @@ func NewSCC(name string) *SecurityContextConstraints {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       name,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		AllowPrivilegedContainer: false,
 		RequiredDropCapabilities: []corev1.Capability{

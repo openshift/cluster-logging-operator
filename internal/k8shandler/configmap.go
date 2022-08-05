@@ -2,6 +2,8 @@ package k8shandler
 
 import (
 	"fmt"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +19,12 @@ func NewConfigMap(configmapName string, namespace string, data map[string]string
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configmapName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       configmapName,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		Data: data,
 	}

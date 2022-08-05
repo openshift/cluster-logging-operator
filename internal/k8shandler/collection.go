@@ -607,6 +607,12 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorTokenSecret(
 				corev1.ServiceAccountNameKey: serviceAccount.Name,
 				corev1.ServiceAccountUIDKey:  string(serviceAccount.UID),
 			},
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       constants.LogCollectorToken,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		Type: corev1.SecretTypeServiceAccountToken,
 	}

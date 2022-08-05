@@ -198,6 +198,12 @@ func (cr *ClusterLoggingRequest) emptyElasticsearchCR(elasticsearchName string) 
 				"logging.openshift.io/elasticsearch-cert-management": "true",
 				"logging.openshift.io/elasticsearch-cert.collector":  "system.logging.fluentd",
 			},
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       elasticsearchName,
+				"app.kubernetes.io/component":  constants.ElasticsearchName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",

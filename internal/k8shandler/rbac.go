@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	rbac "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -35,6 +36,12 @@ func NewRole(roleName, namespace string, rules []rbac.PolicyRule) *rbac.Role {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      roleName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       roleName,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		Rules: rules,
 	}
@@ -64,6 +71,12 @@ func NewRoleBinding(bindingName, namespace, roleName string, subjects []rbac.Sub
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      bindingName,
 			Namespace: namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       bindingName,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		RoleRef: rbac.RoleRef{
 			Kind:     "Role",
@@ -83,6 +96,12 @@ func NewClusterRoleBinding(bindingName, roleName string, subjects []rbac.Subject
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: bindingName,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       bindingName,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		RoleRef: rbac.RoleRef{
 			Kind:     "ClusterRole",
@@ -102,6 +121,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateClusterRole(name string, rule
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
+			Labels: map[string]string{
+				"app.kubernetes.io/name":       name,
+				"app.kubernetes.io/component":  constants.CollectorName,
+				"app.kubernetes.io/created-by": constants.ClusterLoggingOperator,
+				"app.kubernetes.io/managed-by": constants.ClusterLoggingOperator,
+			},
 		},
 		Rules: rules,
 	}

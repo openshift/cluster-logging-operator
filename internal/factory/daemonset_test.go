@@ -22,11 +22,21 @@ func TestNewDaemonsetSetsAllLabelsToBeTheSame(t *testing.T) {
 	daemonSet := NewDaemonSet("thenname", "thenamespace", "thecomponent", "thecomponent", podspec)
 
 	expLabels := daemonSet.ObjectMeta.Labels
-	if !reflect.DeepEqual(expLabels, daemonSet.Spec.Selector.MatchLabels) {
-		t.Errorf("Exp. the ObjectMeta.Labels %q to be the same as spec.selector.matchlabels: %q", expLabels, daemonSet.Spec.Selector.MatchLabels)
+	for k, v := range daemonSet.Spec.Selector.MatchLabels {
+		if _, ok := expLabels[k]; !ok {
+			t.Errorf("spec.selector.MatchLabel key: %q does not exist in ObjectMeta.Labels", k)
+		}
+		if !reflect.DeepEqual(expLabels[k], v) {
+			t.Errorf("spec.selector.MatchLabel[%q] value %v is not same as ObjectMeta.Labels[%q]: %v", k, expLabels[k], k, v)
+		}
 	}
-	if !reflect.DeepEqual(expLabels, daemonSet.Spec.Template.ObjectMeta.Labels) {
-		t.Errorf("Exp. the ObjectMeta.Labels %q to be the same as spec.template.objectmeta.labels: %q", expLabels, daemonSet.Spec.Selector.MatchLabels)
+	for k, v := range daemonSet.Spec.Template.ObjectMeta.Labels {
+		if _, ok := expLabels[k]; !ok {
+			t.Errorf("spec.template.ObjectMeta.Labels key: %q does not exist in ObjectMeta.Labels", k)
+		}
+		if !reflect.DeepEqual(expLabels[k], v) {
+			t.Errorf("spec.template.ObjectMeta.Labels[%q] value %v is not same as ObjectMeta.Labels[%q]: %v", k, expLabels[k], k, v)
+		}
 	}
 }
 func TestNewDaemonsetIncludesCriticalPodAnnotation(t *testing.T) {

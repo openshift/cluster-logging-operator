@@ -74,11 +74,13 @@ type Factory struct {
 	Secrets       map[string]*v1.Secret
 }
 
+// CollectorResourceRequirements returns the resource requirements for a given collector implementation
+// or it's default if none are specified
 func (f *Factory) CollectorResourceRequirements() v1.ResourceRequirements {
-	if f.CollectorType == logging.LogCollectionTypeVector {
-		return v1.ResourceRequirements{}
-	}
 	if f.CollectorSpec.Resources == nil {
+		if f.CollectorType == logging.LogCollectionTypeVector {
+			return v1.ResourceRequirements{}
+		}
 		return v1.ResourceRequirements{
 			Limits: v1.ResourceList{v1.ResourceMemory: fluentd.DefaultMemory},
 			Requests: v1.ResourceList{

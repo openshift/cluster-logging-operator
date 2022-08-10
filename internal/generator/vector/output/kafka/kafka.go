@@ -132,15 +132,27 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	if o.Secret == nil {
 		return conf
 	}
-	hasTLS := false
+
 	u, _ := url.Parse(o.URL)
 	if urlhelper.IsTLSScheme(u.Scheme) {
+		componentID := strings.ToLower(helpers.Replacer.Replace(o.Name))
+		if o.TLS != nil && o.TLS.InsecureSkipVerify {
+			conf = append(conf, insecureTLS{
+				ComponentID: componentID,
+			})
+		}
+
+		conf = append(conf, security.TLSConf{
+			ComponentID: componentID,
+			// Kafka does not use the verify_certificate or verify_hostname options, see insecureTLS
+			InsecureSkipVerify: false,
+		})
+
 		if security.HasPassphrase(secret) {
 			pp := Passphrase{
 				PassphrasePath: security.SecretPath(o.Secret.Name, constants.Passphrase),
 			}
 			conf = append(conf, pp)
-			hasTLS = true
 		}
 		if security.HasTLSCertAndKey(secret) {
 			kc := TLSKeyCert{
@@ -148,22 +160,15 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
 			}
 			conf = append(conf, kc)
-			hasTLS = true
 		}
 		if security.HasCABundle(secret) {
 			ca := CAFile{
 				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
 			}
 			conf = append(conf, ca)
-			hasTLS = true
 		}
 	}
-	if hasTLS {
-		conf = append([]Element{security.TLSConf{
-			ComponentID:        strings.ToLower(helpers.Replacer.Replace(o.Name)),
-			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
-		}}, conf...)
-	}
+
 	return conf
 }
 

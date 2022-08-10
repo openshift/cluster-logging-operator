@@ -255,10 +255,10 @@ topic = "topic"
 codec = "json"
 timestamp_format = "rfc3339"
 
+[sinks.kafka_receiver.librdkafka_options]
+"enable.ssl.certificate.verification" = "false"
 [sinks.kafka_receiver.tls]
 enabled = true
-verify_certificate = false
-verify_hostname = false
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"

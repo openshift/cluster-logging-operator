@@ -18,10 +18,6 @@ func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clf
 			"Set of all input sources",
 		},
 		{
-			PrometheusMetrics(clfspec, op),
-			"Section to add measurement, and dispatch to Concat or Ingress pipelines",
-		},
-		{
 			Concat(clfspec, op),
 			`Concat pipeline section`,
 		},

@@ -141,9 +141,7 @@ spec:
           memory: 1Gi
           cpu: 100m
   collection:
-    logs:
-      type: "fluentd"
-      fluentd: {}
+    type: "fluentd"
 EOL
 
 deploy_eventrouter
@@ -152,7 +150,7 @@ espod=$(oc -n $LOGGING_NS get pods -l component=elasticsearch -o jsonpath={.item
 os::log::info "Testing Elasticsearch pod ${espod}..."
 os::cmd::try_until_text "oc -n $LOGGING_NS exec -c elasticsearch ${espod} -- es_util --query=/ --request HEAD --head --output /dev/null --write-out %{response_code}" "200" "$(( 1*$minute ))"
 
-warn_nonformatted 'infra'
+warn_nonformatted 'infra-*'
 
 evpod=$(oc -n $LOGGING_NS get pods -l component=eventrouter -o jsonpath={.items[0].metadata.name})
 

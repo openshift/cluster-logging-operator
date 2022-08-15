@@ -151,6 +151,7 @@ spec:
                         description: StructuredTypeKey specifies the metadata key
                           to be used as name of elasticsearch index It takes precedence
                           over StructuredTypeName
+                        pattern: (kubernetes\.container_name|kubernetes\.labels\..+|openshift\.labels\..+)
                         type: string
                       structuredTypeName:
                         description: StructuredTypeName specifies the name of elasticsearch
@@ -205,6 +206,7 @@ spec:
                           description: StructuredTypeKey specifies the metadata key
                             to be used as name of elasticsearch index It takes precedence
                             over StructuredTypeName
+                          pattern: (kubernetes\.container_name|kubernetes\.labels\..+|openshift\.labels\..+)
                           type: string
                         structuredTypeName:
                           description: StructuredTypeName specifies the name of elasticsearch

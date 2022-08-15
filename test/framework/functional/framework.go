@@ -73,8 +73,8 @@ func NewCollectorFunctionalFramework() *CollectorFunctionalFramework {
 	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0, logging.LogCollectionTypeFluentd)
 }
 
-func NewCollectorFunctionalFrameworkUsingCollector(logCollectorType logging.LogCollectionType) *CollectorFunctionalFramework {
-	test := client.NewTest()
+func NewCollectorFunctionalFrameworkUsingCollector(logCollectorType logging.LogCollectionType, testOptions ...client.TestOption) *CollectorFunctionalFramework {
+	test := client.NewTest(testOptions...)
 	return NewCollectorFunctionalFrameworkUsing(test, test.Close, 0, logCollectorType)
 }
 

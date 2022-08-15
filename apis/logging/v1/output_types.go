@@ -181,6 +181,7 @@ type Elasticsearch struct {
 	// StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index
 	// It takes precedence over StructuredTypeName
 	//
+	// +kubebuilder:validation:Pattern:=(kubernetes\.container_name|kubernetes\.labels\..+|openshift\.labels\..+)
 	// +optional
 	StructuredTypeKey string `json:"structuredTypeKey,omitempty"`
 

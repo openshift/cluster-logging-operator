@@ -2,11 +2,13 @@ package elasticsearchunmanaged
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"path/filepath"
 	"runtime"
 
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,24 +32,52 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		elasticsearch  *elasticsearch.Elasticsearch
 	)
 
+	BeforeEach(func() {
+		rootDir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
+		log.V(3).Info("Repo ", "rootDir", rootDir)
+		err = e2e.DeployLogGenerator()
+		if err != nil {
+			Fail(fmt.Sprintf("Unable to deploy log generator. E: %s", err.Error()))
+		}
+
+		if elasticsearch, pipelineSecret, err = e2e.DeployAnElasticsearchCluster(rootDir); err != nil {
+			Fail(fmt.Sprintf("Unable to deploy an elastic instance: %v", err))
+		}
+
+		cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector)
+		if err := e2e.CreateClusterLogging(cr); err != nil {
+			Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
+		}
+	})
+
+	Describe("when the output is Elasticsearch", func() {
+
+		Context("and JSON parsing is enabled", func() {
+
+			It("should fail validation when structuredTypeKey references an invalid value", func() {
+				forwarder := testruntime.NewClusterLogForwarder()
+				clfb := functional.NewClusterLogForwarderBuilder(forwarder).
+					FromInput(logging.InputNameApplication).
+					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+						spec.Elasticsearch = &logging.Elasticsearch{
+							StructuredTypeKey: "junk",
+						}
+					}, logging.OutputTypeElasticsearch)
+				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+				var err error
+				if err = e2e.CreateClusterLogForwarder(forwarder); err == nil {
+					Fail(fmt.Sprintf("Expected kubevalidation to fail creation of: %#v", forwarder))
+				}
+				Expect(err.Error()).To(MatchRegexp(`invalid.*spec\.outputs\[[0-9]*\]\.elasticsearch\.structuredTypeKey`))
+			})
+
+		})
+
+	})
+
 	Describe("when the output is a third-party managed elasticsearch", func() {
 
 		BeforeEach(func() {
-			rootDir := filepath.Join(filepath.Dir(filename), "..", "..", "..", "..", "/")
-			log.V(3).Info("Repo ", "rootDir", rootDir)
-			err = e2e.DeployLogGenerator()
-			if err != nil {
-				Fail(fmt.Sprintf("Unable to deploy log generator. E: %s", err.Error()))
-			}
-
-			if elasticsearch, pipelineSecret, err = e2e.DeployAnElasticsearchCluster(rootDir); err != nil {
-				Fail(fmt.Sprintf("Unable to deploy an elastic instance: %v", err))
-			}
-
-			cr := helpers.NewClusterLogging(helpers.ComponentTypeCollector)
-			if err := e2e.CreateClusterLogging(cr); err != nil {
-				Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
-			}
 			forwarder := &logging.ClusterLogForwarder{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       logging.ClusterLogForwarderKind,
@@ -89,18 +119,13 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 				Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 			}
+
 			components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
 			for _, component := range components {
 				if err := e2e.WaitFor(component); err != nil {
 					Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 				}
 			}
-
-		})
-
-		AfterEach(func() {
-			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "elasticsearch"})
 		})
 
 		It("should send logs to the forward.Output logstore", func() {
@@ -112,4 +137,8 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 	})
 
+	AfterEach(func() {
+		e2e.Cleanup()
+		e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "elasticsearch"})
+	})
 })

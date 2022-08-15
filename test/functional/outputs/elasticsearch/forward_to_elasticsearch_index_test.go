@@ -10,6 +10,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -99,9 +100,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should not send logs spec'd by structuredTypeName for infrastructure sources", func() {
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				Skip("infrastructure logs tests not supported for vector")
-			}
+			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType, client.UseInfraNamespaceTestOption)
 			outputLogTemplate = functional.NewContainerInfrastructureLogTemplate()
 			outputLogTemplate.ViaqIndexName = "infra-write"
 			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -125,12 +124,12 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
+			//TODO: Fix me as part of LOG-2759
+			//outputLogTemplate.Structured = map[string]interface{}{}
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should not send logs spec'd by k8s label structuredTypeKey for infrastructure sources", func() {
-			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-				Skip("infrastructure logs tests not supported for vector")
-			}
+			framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType, client.UseInfraNamespaceTestOption)
 			outputLogTemplate = functional.NewContainerInfrastructureLogTemplate()
 			outputLogTemplate.ViaqIndexName = "infra-write"
 			clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -153,6 +152,8 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
+			//TODO: Fix me as part of LOG-2759
+			//outputLogTemplate.Structured = map[string]interface{}{}
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should send logs spec'd by k8s label structuredTypeKey", func() {
@@ -251,6 +252,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 		})
 
 		Context("if structured type name/key not configured", func() {
+
 			It("should send logs to app-write", func() {
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
@@ -271,37 +273,18 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				// Compare to expected template
 				outputTestLog := logs[0]
 				outputLogTemplate.ViaqIndexName = ""
+				//TODO: Fix me as part of LOG-2759
+				//outputLogTemplate.Structured = map[string]interface{}{}
 				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 			})
 		})
+
 		Context("if elasticsearch structuredTypeKey wrongly configured", func() {
 			It("should send logs to app-write", func() {
-				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
-					FromInput(logging.InputNameApplication).
-					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-						spec.Elasticsearch = &logging.Elasticsearch{
-							StructuredTypeKey: "junk",
-						}
-					}, logging.OutputTypeElasticsearch)
-				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
-				Expect(framework.Deploy()).To(BeNil())
-
-				applicationLogLine := functional.CreateAppLogFromJson(jsonLog)
-				Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
-				raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, AppIndex)
-				Expect(err).To(BeNil(), "Expected no errors reading the logs")
-				Expect(raw).To(Not(BeEmpty()))
-
-				// Parse log line
-				var logs []types.ApplicationLog
-				err = types.StrictlyParseLogs(raw, &logs)
-				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-				// Compare to expected template
-				outputTestLog := logs[0]
-				outputLogTemplate.ViaqIndexName = ""
-				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+				Skip("Function test replace by e2e (forward_to_unmanged_elasticsearch_test.go) because of dependency upon kubebuilder validations")
 			})
 		})
+
 		Context("if json parsing failed", func() {
 			It("should send logs to app-write", func() {
 				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
@@ -329,6 +312,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				// Compare to expected template
 				outputTestLog := logs[0]
 				outputLogTemplate.ViaqIndexName = ""
+				outputLogTemplate.Structured = map[string]interface{}{}
 				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 			})
 		})

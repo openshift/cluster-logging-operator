@@ -20,19 +20,6 @@ type Test struct {
 	NS *corev1.Namespace
 }
 
-// NewTest creates a new Test, which includes creating a new test namespace.
-func NewTest() *Test {
-	t := &Test{
-		Client: Get(),
-		NS:     runtime.NewNamespace(test.UniqueNameForTest()),
-	}
-	test.Must(t.Create(t.NS))
-	if _, ok := test.GinkgoCurrentTest(); ok {
-		fmt.Fprintf(ginkgo.GinkgoWriter, "test namespace: %v\n", t.NS.Name)
-	}
-	return t
-}
-
 // Close removes the test namespace unless called from a failed test.
 func (t *Test) Close() {
 	if g, ok := test.GinkgoCurrentTest(); ok && !g.Failed {
@@ -44,6 +31,40 @@ func (t *Test) Close() {
 		fmt.Printf("============\n\n")
 	}
 }
+
+// NewTest creates a new Test, which includes creating a new test namespace.
+func NewTest(testOptions ...TestOption) *Test {
+	ns := test.UniqueNameForTest()
+	if TestOptions(testOptions).Include(UseInfraNamespaceTestOption) {
+		ns = test.UniqueName("openshift-test")
+	}
+	t := &Test{
+		Client: Get(),
+		NS:     runtime.NewNamespace(ns),
+	}
+	test.Must(t.Create(t.NS))
+	if _, ok := test.GinkgoCurrentTest(); ok {
+		fmt.Fprintf(ginkgo.GinkgoWriter, "test namespace: %v\n", t.NS.Name)
+	}
+	return t
+}
+
+//TestOption is an option to alter a test in some way
+type TestOption string
+
+type TestOptions []TestOption
+
+func (options TestOptions) Include(option TestOption) bool {
+	for _, o := range options {
+		if o == option {
+			return true
+		}
+	}
+	return false
+}
+
+//UseInfraNamespaceTestOption is the option to hint the test should be run in an infrastructure namespace
+const UseInfraNamespaceTestOption TestOption = "useInfraNamespace"
 
 //NamespaceClient wraps the singleton test client for use with hack testing
 type NamespaceClient struct {

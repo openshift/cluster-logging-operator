@@ -10,7 +10,7 @@ metadata:
     createdAt: "2018-08-01T08:00:00Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
-    olm.skipRange: '>=4.6.0-0 <5.5.0'
+    olm.skipRange: '>=4.6.0-0 <5.6.0'
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
@@ -264,4 +264,4 @@ spec:
   minKubeVersion: 1.18.3
   provider:
     name: Red Hat, Inc
-  version: 5.5.0
+  version: 5.6.0

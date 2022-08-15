@@ -18,7 +18,7 @@ export APP_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):$(CURRENT_BRANCH)
 
-export LOGGING_VERSION?=5.5
+export LOGGING_VERSION?=5.6
 export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6

@@ -37,24 +37,25 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 
 			It("should parse k8s audit log format correctly", func() {
 				// Log message data
-				timestamp := "2013-03-28T14:36:03.243000+00:00"
+				timestamp := "2022-08-17T20:27:20.570375Z"
 				nanoTime, _ := time.Parse(time.RFC3339Nano, timestamp)
 
 				// Define a template for test format (used for input, and expected output)
 				var outputLogTemplate = types.K8sAuditLog{
 					AuditLogCommon: types.AuditLogCommon{
-						Kind:             "Event",
-						Hostname:         functional.FunctionalNodeName,
-						LogType:          "audit",
-						Level:            "debug",
-						Timestamp:        time.Time{},
-						ViaqMsgID:        "*",
-						PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+						Kind:                     "Event",
+						Hostname:                 functional.FunctionalNodeName,
+						LogType:                  "audit",
+						Level:                    "debug",
+						Timestamp:                nanoTime,
+						RequestReceivedTimestamp: nanoTime,
+						ViaqMsgID:                "*",
+						PipelineMetadata:         functional.TemplateForAnyPipelineMetadata,
 					},
 					K8SAuditLevel: "debug",
 				}
 				// Template expected as output Log
-				k8sAuditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"debug"}`, functional.CRIOTime(nanoTime))
+				k8sAuditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"debug"}`, timestamp)
 				Expect(framework.WriteMessagesTok8sAuditLog(k8sAuditLogLine, 10)).To(BeNil())
 				// Read line from Log Forward output
 				raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeFluentdForward)

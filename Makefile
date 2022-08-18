@@ -20,7 +20,7 @@ export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):$(CURRENT_BRANCH)
 export LOGGING_VERSION?=$(shell basename $(shell ls -d manifests/[0-9]*))
 export NAMESPACE?=openshift-logging
 
-IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6
+IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.5
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.14.1
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=

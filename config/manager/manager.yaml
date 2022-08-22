@@ -45,7 +45,7 @@ spec:
                 fieldPath: metadata.name
           - name: OPERATOR_NAME
             value: "cluster-logging-operator"
-          - name: FLUENTD_IMAGE
+          - name: RELATED_IMAGE_FLUENTD
             value: "quay.io/openshift-logging/fluentd:latest"
-          - name: LOGFILEMETRICEXPORTER_IMAGE
+          - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
             value: "quay.io/openshift-logging/log-file-metric-exporter:latest"

@@ -9,7 +9,3 @@ annotations:
   operators.operatorframework.io.metrics.builder: operator-sdk-unknown
   operators.operatorframework.io.metrics.mediatype.v1: metrics+v1
   operators.operatorframework.io.metrics.project_layout: go.kubebuilder.io/v3
-
-  # Annotations for testing.
-
-

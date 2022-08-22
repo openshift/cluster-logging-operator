@@ -136,12 +136,12 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			})).To(BeNil())
 
 			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize)).To(BeNil())
-
-			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
-			Expect(err).To(BeNil())
-			Expect(logs).To(HaveLen(numOfLogs))
-			Expect(len(logs)).To(Equal(numOfLogs))
-
+			Eventually(func(g Gomega) int {
+				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
+				Expect(err).To(BeNil())
+				Expect(logs).To(HaveLen(numOfLogs))
+				return len(logs)
+			}).WithTimeout(time.Second).Should(Equal(numOfLogs))
 		})
 
 		It("should be able to forward by user-defined pod labels", func() {
@@ -174,12 +174,12 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			// Write logs
 			Expect(framework.WritesApplicationLogs(numOfLogs)).To(BeNil())
 
-			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
-			Expect(err).To(BeNil())
-			Expect(logs).To(HaveLen(numOfLogs))
-
-			expMatch := fmt.Sprintf(`{.*"%s":"%s".*}`, labelKey, labelValue)
-			Expect(logs[0]).To(MatchRegexp(expMatch), "Expected label to be found")
+			Eventually(func(g Gomega) string {
+				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
+				Expect(err).To(BeNil())
+				Expect(logs).To(HaveLen(numOfLogs))
+				return logs[0]
+			}).WithTimeout(time.Second).Should(MatchRegexp(fmt.Sprintf(`{.*"%s":"%s".*}`, labelKey, labelValue)))
 		})
 
 		It("should reassemble multi-line stacktraces (e.g. LOG-2275)", func() {
@@ -215,11 +215,13 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
 
-			raw, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
-			Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
-			Expect(logs[0].Message).To(Equal(exception))
+			Eventually(func(g Gomega) string {
+				raw, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
+				Expect(err).To(BeNil(), "Expected no errors reading the logs")
+				logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
+				Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
+				return logs[0].Message
+			}).WithTimeout(time.Second).Should(Equal(exception))
 		})
 	})
 
@@ -267,14 +269,15 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			writeAppLogs := framework.WritesApplicationLogs(numLogsSent)
 			Expect(writeAppLogs).To(BeNil(), "Expect no errors writing logs")
 
-			// Get application logs from Cloudwatch
-			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
-			log.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
+			Eventually(func(g Gomega) string {
+				// Get application logs from Cloudwatch
+				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
+				log.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
 
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(logs).To(HaveLen(numLogsSent), "Expected the receiver to receive only the app log messages")
-			expMatch := fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)
-			Expect(logs[0]).To(MatchRegexp(expMatch), "Expected log_type to be correct")
+				Expect(err).To(BeNil(), "Expected no errors reading the logs")
+				Expect(logs).To(HaveLen(numLogsSent), "Expected the receiver to receive only the app log messages")
+				return logs[0]
+			}).WithTimeout(time.Second).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)), "Expected log_type to be correct")
 		})
 	})
 
@@ -300,13 +303,12 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing logs")
 
 			// Get audit logs from Cloudwatch
-			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
-			log.V(2).Info("GetLogGroupByType", "logType", readLogType, "logs", logs, "err", err)
-
-			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			Expect(logs).To(HaveLen(numLogsSent), "Expected to receive the correct number of audit log messages")
-			expMatch := fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)
-			Expect(logs[0]).To(MatchRegexp(expMatch), "Expected log_type to be correct")
+			Eventually(func(g Gomega) string {
+				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
+				g.Expect(err).To(BeNil(), "Expected no errors reading the logs")
+				g.Expect(logs).To(HaveLen(numLogsSent), "Expected to receive the correct number of audit log messages")
+				return logs[0]
+			}).WithTimeout(time.Second).Should(MatchRegexp(fmt.Sprintf(`{.*"log_type":"%s".*}`, readLogType)))
 		})
 	})
 })

@@ -11,14 +11,9 @@ LABEL operators.operatorframework.io.metrics.builder=operator-sdk-unknown
 LABEL operators.operatorframework.io.metrics.mediatype.v1=metrics+v1
 LABEL operators.operatorframework.io.metrics.project_layout=go.kubebuilder.io/v3
 
-# Labels for testing.
-
-
-
 # Copy files to locations specified by labels.
 COPY bundle/manifests /manifests/
 COPY bundle/metadata /metadata/
-
 
 LABEL com.redhat.delivery.operator.bundle=true
 LABEL com.redhat.openshift.versions="v4.7"

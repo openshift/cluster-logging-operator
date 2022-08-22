@@ -83,8 +83,8 @@ RUN_CMD?=go run
 run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	LOGFILEMETRICEXPORTER_IMAGE=quay.io/openshift-logging/log-file-metric-exporter:1.1 \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=quay.io/openshift-logging/log-file-metric-exporter:1.1 \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -165,11 +165,11 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-functional: test-functional-benchmarker
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
 	go test -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) go test -cover -race ./test/helpers/...
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) go test -cover -race ./test/helpers/...
 .PHONY: test-functional
 
 test-forwarder-generator: bin/forwarder-generator
@@ -181,7 +181,7 @@ test-functional-benchmarker: bin/functional-benchmarker
 .PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	go test -cover -race ./internal/... ./test ./test/helpers ./test/matchers ./test/runtime
 
 test-cluster:
@@ -199,16 +199,16 @@ bundle: generate-bundle
 
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 test-e2e-local: $(JUNITREPORT) deploy-image
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	CLF_INCLUDES=$(CLF_TEST_INCLUDES) \
 	INCLUDES=$(E2E_TEST_INCLUDES) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR=image-registry.openshift-image-registry.svc:5000/openshift/origin-cluster-logging-operator:$(CURRENT_BRANCH) \
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
 	hack/test-e2e-olm.sh
-test-e2e-clo-metric: 
+test-e2e-clo-metric:
 	test/e2e/telemetry/clometrics_test.sh
 test-svt:
 	hack/svt/test-svt.sh

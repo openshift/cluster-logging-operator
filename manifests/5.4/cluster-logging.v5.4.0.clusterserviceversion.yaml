@@ -144,6 +144,13 @@ spec:
   provider:
     name: Red Hat
 
+  relatedImages:
+  - image: quay.io/openshift-logging/vector:0.14.1
+    name: vector
+  - image: quay.io/openshift-logging/fluentd:1.14.5
+    name: fluentd
+  - image: quay.io/openshift-logging/log-file-metric-exporter:1.1
+    name: log-file-metric-exporter
 
   links:
   - name: Elastic
@@ -328,11 +335,11 @@ spec:
                         fieldPath: metadata.name
                   - name: OPERATOR_NAME
                     value: "cluster-logging-operator"
-                  - name: VECTOR_IMAGE
+                  - name: RELATED_IMAGE_VECTOR
                     value: "quay.io/openshift-logging/vector:0.14.1"
-                  - name: FLUENTD_IMAGE
+                  - name: RELATED_IMAGE_FLUENTD
                     value: "quay.io/openshift-logging/fluentd:1.14.5"
-                  - name: LOGFILEMETRICEXPORTER_IMAGE
+                  - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
                     value: "quay.io/openshift-logging/log-file-metric-exporter:1.1"
   customresourcedefinitions:
     owned:

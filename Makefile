@@ -81,8 +81,8 @@ RUN_CMD?=go run
 run:
 	@ls $(MANIFESTS)/*crd.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
-	LOGFILEMETRICEXPORTER_IMAGE=quay.io/openshift-logging/log-file-metric-exporter:1.0 \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=quay.io/openshift-logging/log-file-metric-exporter:1.0 \
 	OPERATOR_NAME=cluster-logging-operator \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
@@ -165,7 +165,7 @@ deploy-example: deploy
 	oc create -n $(NAMESPACE) -f hack/cr.yaml
 
 test-functional: test-functional-benchmarker
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	LOGGING_SHARE_DIR=$(CURDIR)/files \
 	SCRIPTS_DIR=$(CURDIR)/scripts \
 	ACK_GINKGO_DEPRECATIONS=1.16.4 \
@@ -182,7 +182,7 @@ test-functional-benchmarker: bin/functional-benchmarker
 .PHONY: test-functional-benchmarker
 
 test-unit: test-forwarder-generator
-	FLUENTD_IMAGE=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	ACK_GINKGO_DEPRECATIONS=1.16.4 \
 	go test -cover -race ./internal/... ./test ./test/helpers ./test/matchers ./test/runtime
 

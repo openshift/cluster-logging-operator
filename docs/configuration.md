@@ -26,7 +26,7 @@ takes a full pull spec of the image:
 
 * `CURATOR_IMAGE`
 * `ELASTICSEARCH_IMAGE`
-* `FLUENTD_IMAGE`
+* `RELATED_IMAGE_FLUENTD`
 * `KIBANA_IMAGE`
 * `OAUTH_PROXY_IMAGE`
 

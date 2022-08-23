@@ -2,6 +2,7 @@ package oc
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Logs is interface for collecting arguments for Logs command
@@ -46,7 +47,7 @@ func (e *logConfig) WithPod(podname string) LogsCommand {
 }
 
 func (e *logConfig) WithContainer(container string) LogsCommand {
-	e.container = container
+	e.container = strings.ToLower(container)
 	return e
 }
 

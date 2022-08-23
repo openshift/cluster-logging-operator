@@ -5,9 +5,9 @@
 FROM registry.ci.openshift.org/ocp/4.7:elasticsearch-operator-src
 ADD . /go/src/github.com/openshift/cluster-logging-operator
 WORKDIR /go/src/github.com/openshift/cluster-logging-operator
-
+USER 0
 RUN mkdir -p /go/src/github.com/openshift/cluster-logging-operator/bin/
 RUN chmod -R 777 /go/src/github.com/openshift/cluster-logging-operator/bin/
-RUN go mod download && chmod -R 777 /go/pkg/mod/cache/download
+RUN go mod download
 RUN make tools
 RUN make bin/functional-benchmarker

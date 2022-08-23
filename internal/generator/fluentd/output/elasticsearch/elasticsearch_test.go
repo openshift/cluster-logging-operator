@@ -59,7 +59,7 @@ var _ = Describe("Generate fluentd config", func() {
     elasticsearch_index_prefix_field 'viaq_index_name'
     <elasticsearch_index_name>
       enabled 'true'
-      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -218,7 +218,7 @@ var _ = Describe("Generate fluentd config", func() {
     elasticsearch_index_prefix_field 'viaq_index_name'
     <elasticsearch_index_name>
       enabled 'true'
-      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -371,7 +371,7 @@ var _ = Describe("Generate fluentd config", func() {
     elasticsearch_index_prefix_field 'viaq_index_name'
     <elasticsearch_index_name>
       enabled 'true'
-      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -513,7 +513,7 @@ var _ = Describe("Generate fluentd config", func() {
     elasticsearch_index_prefix_field 'viaq_index_name'
     <elasticsearch_index_name>
       enabled 'true'
-      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -668,7 +668,7 @@ var _ = Describe("Generate fluentd config", func() {
     elasticsearch_index_prefix_field 'viaq_index_name'
     <elasticsearch_index_name>
       enabled 'true'
-      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>
@@ -821,7 +821,7 @@ var _ = Describe("Generate fluentd config", func() {
     elasticsearch_index_prefix_field 'viaq_index_name'
     <elasticsearch_index_name>
       enabled 'true'
-      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** journal.system** system.var.log**"
+      tag "kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_** journal.system** system.var.log**"
       name_type static
       static_index_name infra-write
     </elasticsearch_index_name>

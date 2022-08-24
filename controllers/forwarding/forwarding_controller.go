@@ -2,6 +2,7 @@ package forwarding
 
 import (
 	"context"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -80,11 +81,26 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	}
 
 	if instance.Status.IsReady() {
-		if instance.Status.Conditions.SetCondition(condReady) {
+		// This returns False if SetCondition updates the condition instead of setting it.
+		// For condReady, it will always be updating the status.
+		if !instance.Status.Conditions.SetCondition(condReady) {
 			telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
 			telemetry.UpdateCLFMetricsNoErr()
 			r.Recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
 		}
+	} else {
+		clfCondition := instance.Status.Conditions.GetCondition(logging.ConditionReady)
+		r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), clfCondition.Message)
+
+		// Get subordinate conditions (status.Pipelines, status.Inputs, status.Outputs)
+		// and their messages if the condition.status is False
+		invalidConds := instance.Status.GetReadyConditionMessages()
+		for i := range invalidConds {
+			r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), invalidConds[i])
+		}
+
+		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
+		telemetry.UpdateCLFMetricsNoErr()
 	}
 
 	if instance.Status.IsDegraded() {
@@ -92,7 +108,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		if instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg)) {
 			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 			telemetry.UpdateCLFMetricsNoErr()
-			r.Recorder.Event(instance, "Error", string(logging.ReasonInvalid), msg)
+			r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), msg)
 		}
 	}
 

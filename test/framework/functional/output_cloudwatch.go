@@ -91,7 +91,7 @@ func (f *CollectorFunctionalFramework) GetLogStreamsByGroup(client *cwl.Client, 
 	return myStreams, nil
 }
 
-func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(client *cwl.Client, groupName string, streamName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(client *cwl.Client, groupName string, streamName string, atLeast int) ([]string, error) {
 	var (
 		myMessages      []string
 		logEventsOutput *cwl.GetLogEventsOutput
@@ -104,7 +104,7 @@ func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(client *cw
 				LogGroupName:  &groupName,
 				LogStreamName: &streamName,
 			})
-		if err != nil || len(logEventsOutput.Events) == 0 {
+		if err != nil || len(logEventsOutput.Events) < atLeast {
 			return false, err
 		}
 		return true, nil
@@ -119,7 +119,7 @@ func (f *CollectorFunctionalFramework) GetLogMessagesByGroupAndStream(client *cw
 	return myMessages, nil
 }
 
-func (f *CollectorFunctionalFramework) ReadLogsFromCloudwatch(client *cwl.Client, inputName string) ([]string, error) {
+func (f *CollectorFunctionalFramework) ReadLogsFromCloudwatch(client *cwl.Client, inputName string, atLeast int) ([]string, error) {
 	log.V(3).Info("Reading cloudwatch log groups by type")
 	logGroupName, err := f.GetLogGroupByType(client, inputName)
 	if err != nil {
@@ -135,7 +135,7 @@ func (f *CollectorFunctionalFramework) ReadLogsFromCloudwatch(client *cwl.Client
 	log.V(3).Info("GetLogStreamsByGroup", "logStreams", logStreams)
 
 	log.V(3).Info("Reading cloudwatch messages")
-	messages, er := f.GetLogMessagesByGroupAndStream(client, logGroupName[0], logStreams[0])
+	messages, er := f.GetLogMessagesByGroupAndStream(client, logGroupName[0], logStreams[0], atLeast)
 	if er != nil {
 		return nil, er
 	}

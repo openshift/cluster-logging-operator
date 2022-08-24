@@ -4,10 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"strings"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -137,8 +138,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			})).To(BeNil())
 
 			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize)).To(BeNil())
-
-			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
+			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication, numOfLogs)
 			Expect(err).To(BeNil())
 			Expect(logs).To(HaveLen(numOfLogs))
 			Expect(len(logs)).To(Equal(numOfLogs))
@@ -175,7 +175,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			// Write logs
 			Expect(framework.WritesApplicationLogs(numOfLogs)).To(BeNil())
 
-			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
+			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication, numOfLogs)
 			Expect(err).To(BeNil())
 			Expect(logs).To(HaveLen(numOfLogs))
 
@@ -216,7 +216,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
 
-			raw, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
+			raw, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication, 1)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
 			logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs: %s", raw)
@@ -269,7 +269,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(writeAppLogs).To(BeNil(), "Expect no errors writing logs")
 
 			// Get application logs from Cloudwatch
-			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
+			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType, numLogsSent)
 			log.V(2).Info("ReadLogsFromCloudwatch", "logType", readLogType, "logs", logs, "err", err)
 
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
@@ -301,7 +301,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing logs")
 
 			// Get audit logs from Cloudwatch
-			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
+			logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType, numLogsSent)
 			log.V(2).Info("GetLogGroupByType", "logType", readLogType, "logs", logs, "err", err)
 
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")

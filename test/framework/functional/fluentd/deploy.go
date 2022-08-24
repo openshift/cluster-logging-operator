@@ -60,7 +60,10 @@ func (c *FluentdCollector) IsStarted(logs string) bool {
 		log.V(1).Error(err, "Unable to determine if the collector started")
 		return false
 	}
-	return "Running" == strings.TrimSpace(phase)
+	if "Running" != strings.TrimSpace(phase) {
+		return false
+	}
+	return strings.Contains(logs, "fluentd worker is now running worker=")
 }
 
 func adaptLogLevel() string {

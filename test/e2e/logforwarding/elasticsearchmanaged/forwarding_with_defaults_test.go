@@ -107,7 +107,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					}
 				}
 				AssertBehaviours := func() {
-					It("should send logs to index set in labsls ", func() {
+					It("should send logs to index set in labels ", func() {
 						store := e2e.LogStores["elasticsearch"]
 						estore := store.(*framework.ElasticLogStore)
 						var indices framework.Indices
@@ -131,7 +131,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						Expect(err).To(BeNil())
 					})
 				}
-				Describe("for fluentd collector", func() {
+				FDescribe("for fluentd collector", func() {
 					BeforeEach(func() {
 						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeStore})
 						DeployLogForwarderWithStructuredTypeKey()

@@ -2,6 +2,7 @@ package functional
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
 	"regexp"
 	"strconv"
@@ -121,6 +122,16 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 }
 
 func (f *CollectorFunctionalFramework) Cleanup() {
+	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
+		for _, container := range f.Pod.Spec.Containers {
+			log.Info("Dumping logs for container", "container", container.Name)
+			logs, err := oc.Logs().WithNamespace(f.Namespace).WithPod(f.Pod.Name).WithContainer(container.Name).Run()
+			if err != nil {
+				log.Error(err, "Unable to retrieve logs", "container", container.Name)
+			}
+			fmt.Println(logs)
+		}
+	}
 	f.closeClient()
 }
 
@@ -237,13 +248,18 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	}
 
 	log.V(2).Info("Defining pod...")
+	resources := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU: resource.MustParse("500m"),
+		},
+	}
 	f.Pod = runtime.NewPod(f.Test.NS.Name, f.Name)
 	b := runtime.NewPodBuilder(f.Pod).
 		WithLabels(f.Labels).
 		AddConfigMapVolume("config", f.Name).
 		AddConfigMapVolumeWithPermissions("entrypoint", f.Name, utils.GetInt32(0755)).
 		AddConfigMapVolume("certs", certsName)
-	b = f.collector.BuildCollectorContainer(b.AddContainer(constants.CollectorName, f.image), FunctionalNodeName).End()
+	b = f.collector.BuildCollectorContainer(b.AddContainer(constants.CollectorName, f.image).ResourceRequirements(resources), FunctionalNodeName).End()
 
 	for _, visit := range visitors {
 		if err = visit(b); err != nil {

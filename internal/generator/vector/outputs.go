@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/kafka"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	corev1 "k8s.io/api/core/v1"
@@ -50,6 +51,8 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			outputs = generator.MergeElements(outputs, elasticsearch.Conf(o, inputs, secret, op))
 		case logging.OutputTypeCloudwatch:
 			outputs = generator.MergeElements(outputs, cloudwatch.Conf(o, inputs, secret, op))
+		case logging.OutputTypeGoogleCloudLogging:
+			outputs = generator.MergeElements(outputs, gcl.Conf(o, inputs, secret, op))
 		}
 	}
 	outputs = append(outputs, PrometheusOutput(PrometheusOutputSinkName, []string{InternalMetricsSourceName}))

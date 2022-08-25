@@ -414,9 +414,9 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputURL(output *logging.Out
 		return false
 	}
 	if output.URL == "" {
-		// Some output types (currently just kafka) allow a missing URL
+		// Some output types allow a missing URL
 		// TODO (alanconway) move output-specific valiation to the output implementation.
-		if output.Type == logging.OutputTypeKafka || output.Type == logging.OutputTypeCloudwatch {
+		if output.Type == logging.OutputTypeKafka || output.Type == logging.OutputTypeCloudwatch || output.Type == logging.OutputTypeGoogleCloudLogging {
 			return true
 		} else {
 			return fail(condInvalid("URL is required for output type %v", output.Type))

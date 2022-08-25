@@ -6,6 +6,9 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
+	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -1072,5 +1075,50 @@ func TestClusterLoggingRequest_verifyOutputURL(t *testing.T) {
 				t.Errorf("verifyOutputURL() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestClusterLoggingRequest_verifyGCL(t *testing.T) {
+	tests := []struct {
+		gclSpec logging.GoogleCloudLogging
+		want    error
+	}{
+		{
+			gclSpec: logging.GoogleCloudLogging{
+				OrganizationID: "redhat",
+				ProjectID:      "project1",
+			},
+			want: forwarder.ErrGCL,
+		},
+		{
+			gclSpec: logging.GoogleCloudLogging{
+				ProjectID: "project1",
+			},
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		clf := logging.ClusterLogForwarderSpec{
+			Pipelines: []logging.PipelineSpec{
+				{
+					InputRefs:  []string{logging.InputNameApplication},
+					OutputRefs: []string{"X"},
+				},
+			},
+			Outputs: []logging.OutputSpec{
+				{
+					Name: "X",
+					Type: "googleCloudLogging",
+					OutputTypeSpec: logging.OutputTypeSpec{
+						GoogleCloudLogging: &tt.gclSpec,
+					},
+				},
+			},
+		}
+		g := forwardergenerator.New(logging.LogCollectionTypeVector)
+		err := g.Verify(nil, nil, &clf, generator.Options{})
+		if err != tt.want {
+			t.Errorf("want %v, got %v", tt.want, err)
+		}
 	}
 }

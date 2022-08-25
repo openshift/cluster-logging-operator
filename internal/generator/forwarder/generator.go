@@ -25,6 +25,7 @@ var (
 	ErrTLSOutputNoSecret = func(o logging.OutputSpec) error {
 		return fmt.Errorf("No secret defined in output %s, but URL has TLS Scheme %s", o.Name, o.URL)
 	}
+	ErrGCL = errors.New("Exactly one of billingAccountId, folderId, organizationId, or projectId must be set.")
 )
 
 type ConfigGenerator struct {
@@ -73,6 +74,25 @@ func (cg *ConfigGenerator) Verify(clspec *logging.CollectionSpec, secrets map[st
 	for _, o := range clfspec.Outputs {
 		if _, err = url.Parse(o.URL); err != nil {
 			return ErrInvalidOutputURL(o)
+		}
+		if o.GoogleCloudLogging != nil {
+			gcl := o.GoogleCloudLogging
+			i := 0
+			if gcl.ProjectID != "" {
+				i += 1
+			}
+			if gcl.FolderID != "" {
+				i += 1
+			}
+			if gcl.BillingAccountID != "" {
+				i += 1
+			}
+			if gcl.OrganizationID != "" {
+				i += 1
+			}
+			if i > 1 {
+				return ErrGCL
+			}
 		}
 	}
 	return err

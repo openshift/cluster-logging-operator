@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
+	"path"
 
 	"fmt"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -27,6 +28,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 	BeforeEach(func() {
 		factory = &Factory{
 			CollectorType: logging.LogCollectionTypeFluentd,
+			ImageName:     constants.FluentdName,
 			Visit:         fluentd.CollectorVisitor,
 		}
 		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{})
@@ -206,6 +208,7 @@ var _ = Describe("Factory#CollectorResourceRequirements", func() {
 		BeforeEach(func() {
 			factory = &Factory{
 				CollectorType: logging.LogCollectionTypeVector,
+				ImageName:     constants.VectorName,
 				Visit:         vector.CollectorVisitor,
 			}
 		})
@@ -223,6 +226,7 @@ var _ = Describe("Factory#CollectorResourceRequirements", func() {
 		BeforeEach(func() {
 			factory = &Factory{
 				CollectorType: logging.LogCollectionTypeFluentd,
+				ImageName:     constants.FluentdName,
 				Visit:         fluentd.CollectorVisitor,
 			}
 		})
@@ -240,5 +244,149 @@ var _ = Describe("Factory#CollectorResourceRequirements", func() {
 			Expect(factory.CollectorResourceRequirements()).To(Equal(expResources))
 		})
 
+	})
+})
+
+var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
+	var (
+		factory   *Factory
+		pipelines = []logging.PipelineSpec{
+			{
+				Name:       "cw-forward",
+				InputRefs:  []string{logging.InputNameInfrastructure},
+				OutputRefs: []string{"cw"},
+			},
+		}
+		outputs = []logging.OutputSpec{
+			{
+				Type: logging.OutputTypeCloudwatch,
+				Name: "cw",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Cloudwatch: &logging.Cloudwatch{
+						Region:  "us-east-77",
+						GroupBy: logging.LogGroupByNamespaceName,
+					},
+				},
+				Secret: &logging.OutputSecretSpec{
+					Name: "my-secret",
+				},
+			},
+		}
+		roleArn = "arn:aws:iam::123456789012:role/my-role-to-assume"
+		secrets = map[string]*v1.Secret{
+			// output secrets are keyed by output name
+			outputs[0].Name: {
+				Data: map[string][]byte{
+					"credentials": []byte(roleArn),
+				},
+			},
+		}
+
+		verifyEnvVar = func(container v1.Container, name, value string) {
+			for _, elem := range container.Env {
+				if elem.Name == name {
+					Expect(elem.Value).To(Equal(value))
+					return
+				}
+			}
+			Fail(fmt.Sprintf("Expected collector to include env var '%s' with a value of '%s'", name, value))
+		}
+	)
+	Context("when collectorType is fluentd", func() {
+		BeforeEach(func() {
+			factory = &Factory{
+				CollectorType: logging.LogCollectionTypeFluentd,
+				ImageName:     constants.FluentdName,
+				Visit:         fluentd.CollectorVisitor,
+				Secrets:       secrets,
+			}
+		})
+		Context("when collector has a secret containing a credentials key", func() {
+
+			It("should find the AWS web identity env vars in the container", func() {
+				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
+					Outputs:   outputs,
+					Pipelines: pipelines,
+				})
+				collector := podSpec.Containers[0]
+
+				verifyEnvVar(collector, constants.AWSRegionEnvVarKey, outputs[0].OutputTypeSpec.Cloudwatch.Region)
+				verifyEnvVar(collector, constants.AWSRoleArnEnvVarKey, roleArn)
+				verifyEnvVar(collector, constants.AWSRoleSessionEnvVarKey, constants.AWSRoleSessionName)
+				verifyEnvVar(collector, constants.AWSWebIdentityTokenEnvVarKey, path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath))
+			})
+		})
+		Context("when collector has a secret containing a role_arn key", func() {
+			BeforeEach(func() {
+				factory.Secrets = map[string]*v1.Secret{
+					outputs[0].Name: {
+						Data: map[string][]byte{
+							"role_arn": []byte(roleArn),
+						},
+					},
+				}
+			})
+			It("should find the AWS web identity env vars in the container", func() {
+				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
+					Outputs:   outputs,
+					Pipelines: pipelines,
+				})
+				collector := podSpec.Containers[0]
+
+				verifyEnvVar(collector, constants.AWSRegionEnvVarKey, outputs[0].OutputTypeSpec.Cloudwatch.Region)
+				verifyEnvVar(collector, constants.AWSRoleArnEnvVarKey, roleArn)
+				verifyEnvVar(collector, constants.AWSRoleSessionEnvVarKey, constants.AWSRoleSessionName)
+				verifyEnvVar(collector, constants.AWSWebIdentityTokenEnvVarKey, path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath))
+			})
+		})
+
+	})
+	Context("when collectorType is vector", func() {
+		BeforeEach(func() {
+			factory = &Factory{
+				CollectorType: logging.LogCollectionTypeVector,
+				ImageName:     constants.VectorName,
+				Visit:         vector.CollectorVisitor,
+				Secrets:       secrets,
+			}
+		})
+		Context("when collector has a secret containing a credentials key", func() {
+
+			It("should find the AWS web identity env vars in the container", func() {
+				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
+					Outputs:   outputs,
+					Pipelines: pipelines,
+				})
+				collector := podSpec.Containers[0]
+
+				verifyEnvVar(collector, constants.AWSRegionEnvVarKey, outputs[0].OutputTypeSpec.Cloudwatch.Region)
+				verifyEnvVar(collector, constants.AWSRoleArnEnvVarKey, roleArn)
+				verifyEnvVar(collector, constants.AWSRoleSessionEnvVarKey, constants.AWSRoleSessionName)
+				verifyEnvVar(collector, constants.AWSWebIdentityTokenEnvVarKey, path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath))
+			})
+		})
+		Context("when collector has a secret containing a role_arn key", func() {
+			BeforeEach(func() {
+				factory.Secrets = map[string]*v1.Secret{
+					outputs[0].Name: {
+						Data: map[string][]byte{
+							"role_arn": []byte(roleArn),
+						},
+					},
+				}
+			})
+			It("should find the AWS web identity env vars in the container", func() {
+				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
+					Outputs:   outputs,
+					Pipelines: pipelines,
+				})
+				collector := podSpec.Containers[0]
+
+				verifyEnvVar(collector, constants.AWSRegionEnvVarKey, outputs[0].OutputTypeSpec.Cloudwatch.Region)
+				verifyEnvVar(collector, constants.AWSRoleArnEnvVarKey, roleArn)
+				verifyEnvVar(collector, constants.AWSRoleSessionEnvVarKey, constants.AWSRoleSessionName)
+				verifyEnvVar(collector, constants.AWSWebIdentityTokenEnvVarKey, path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath))
+			})
+		})
 	})
 })

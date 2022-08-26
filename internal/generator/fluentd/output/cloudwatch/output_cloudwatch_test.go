@@ -2,7 +2,6 @@ package cloudwatch
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
-	"path"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -10,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 
@@ -306,7 +304,6 @@ var _ = Describe("Generating fluentd config for sts", func() {
 				},
 			},
 		}
-		webIdentityTokenFile = path.Join(constants.AWSWebIdentityTokenMount, constants.AWSWebIdentityTokenFilePath)
 	)
 
 	Context("for cloudwatch sts output ", func() {
@@ -355,9 +352,9 @@ var _ = Describe("Generating fluentd config for sts", func() {
     remove_log_group_name_key true
     concurrency 2
     <web_identity_credentials>
-      role_arn "` + roleArn + `"
-      web_identity_token_file "` + webIdentityTokenFile + `"
-      role_session_name "` + constants.AWSRoleSessionName + `"
+	  role_arn "#{ENV['AWS_ROLE_ARN']}"
+	  web_identity_token_file "#{ENV['AWS_WEB_IDENTITY_TOKEN_FILE']}"
+	  role_session_name "#{ENV['AWS_ROLE_SESSION_NAME']}"
     </web_identity_credentials>    
     include_time_key true
     log_rejected_request true
@@ -420,9 +417,9 @@ var _ = Describe("Generating fluentd config for sts", func() {
     remove_log_group_name_key true
     concurrency 2
     <web_identity_credentials>
-      role_arn "` + roleArn + `"
-      web_identity_token_file "` + webIdentityTokenFile + `"
-      role_session_name "` + constants.AWSRoleSessionName + `"
+	  role_arn "#{ENV['AWS_ROLE_ARN']}"
+	  web_identity_token_file "#{ENV['AWS_WEB_IDENTITY_TOKEN_FILE']}"
+	  role_session_name "#{ENV['AWS_ROLE_SESSION_NAME']}"
     </web_identity_credentials>    
     include_time_key true
     log_rejected_request true
@@ -479,9 +476,9 @@ var _ = Describe("Generating fluentd config for sts", func() {
     remove_log_group_name_key true
     concurrency 2
     <web_identity_credentials>
-      role_arn "` + roleArn + `"
-      web_identity_token_file "` + webIdentityTokenFile + `"
-      role_session_name "` + constants.AWSRoleSessionName + `"
+	  role_arn "#{ENV['AWS_ROLE_ARN']}"
+	  web_identity_token_file "#{ENV['AWS_WEB_IDENTITY_TOKEN_FILE']}"
+	  role_session_name "#{ENV['AWS_ROLE_SESSION_NAME']}"
     </web_identity_credentials>      
     include_time_key true
     log_rejected_request true
@@ -541,9 +538,9 @@ var _ = Describe("Generating fluentd config for sts", func() {
     remove_log_group_name_key true
     concurrency 2
     <web_identity_credentials>
-      role_arn "` + roleArn + `"
-      web_identity_token_file "` + webIdentityTokenFile + `"
-      role_session_name "` + constants.AWSRoleSessionName + `"
+	  role_arn "#{ENV['AWS_ROLE_ARN']}"
+	  web_identity_token_file "#{ENV['AWS_WEB_IDENTITY_TOKEN_FILE']}"
+	  role_session_name "#{ENV['AWS_ROLE_SESSION_NAME']}"
     </web_identity_credentials>     
     include_time_key true
     log_rejected_request true

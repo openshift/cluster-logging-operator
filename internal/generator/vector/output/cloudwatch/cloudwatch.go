@@ -3,12 +3,14 @@ package cloudwatch
 import (
 	"fmt"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
+	"regexp"
 	"strings"
 )
 
@@ -91,9 +93,16 @@ func OutputConf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op
 }
 
 func SecurityConfig(secret *corev1.Secret) Element {
+	// First check for credentials or role_arn key, indicating a sts-enabled authentication
+	if security.HasAwsRoleArnKey(secret) || security.HasAwsCredentialsKey(secret) {
+		return AWSKey{
+			KeyRoleArn: ParseRoleArn(secret),
+		}
+	}
+	// Otherwise use ID and Secret
 	return AWSKey{
-		KeyID:     strings.TrimSpace(security.GetFromSecret(secret, "aws_access_key_id")),
-		KeySecret: strings.TrimSpace(security.GetFromSecret(secret, "aws_secret_access_key")),
+		KeyID:     strings.TrimSpace(security.GetFromSecret(secret, constants.AWSAccessKeyID)),
+		KeySecret: strings.TrimSpace(security.GetFromSecret(secret, constants.AWSSecretAccessKey)),
 	}
 }
 
@@ -161,6 +170,23 @@ func LogGroupNameField(o logging.OutputSpec) string {
 			return ".kubernetes.namespace_uid"
 		default:
 			return ".log_type"
+		}
+	}
+	return ""
+}
+
+// ParseRoleArn search for matching valid arn within the 'credentials' or 'role_arn' key
+func ParseRoleArn(secret *corev1.Secret) string {
+	roleArnString := security.GetFromSecret(secret, constants.AWSCredentialsKey)
+	if roleArnString == "" {
+		roleArnString = security.GetFromSecret(secret, constants.AWSWebIdentityRoleKey)
+	}
+
+	if roleArnString != "" {
+		reg := regexp.MustCompile(`(arn:aws(.*)?:(iam|sts)::\d{12}:role\/\S+)\s?`)
+		roleArn := reg.FindStringSubmatch(roleArnString)
+		if roleArn != nil {
+			return roleArn[1] // the capturing group is index 1
 		}
 	}
 	return ""

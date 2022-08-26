@@ -131,7 +131,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 						Expect(err).To(BeNil())
 					})
 				}
-				FDescribe("for fluentd collector", func() {
+				Describe("for fluentd collector", func() {
 					BeforeEach(func() {
 						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeStore})
 						DeployLogForwarderWithStructuredTypeKey()

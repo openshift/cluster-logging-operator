@@ -38,6 +38,7 @@ var _ = Describe("Testing Config Generation", func() {
   path "/var/log/pods/*/*/*.log"
   exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
+  follow_inodes true
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
@@ -80,6 +81,7 @@ var _ = Describe("Testing Config Generation", func() {
   path "/var/log/pods/*/*/*.log"
   exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
+  follow_inodes true
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
@@ -134,6 +136,7 @@ var _ = Describe("Testing Config Generation", func() {
   path "/var/log/pods/*/*/*.log"
   exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
+  follow_inodes true
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
@@ -169,6 +172,7 @@ var _ = Describe("Testing Config Generation", func() {
   @label @INGRESS
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
+  follow_inodes true
   tag linux-audit.log
   <parse>
     @type viaq_host_audit
@@ -182,6 +186,7 @@ var _ = Describe("Testing Config Generation", func() {
   @label @INGRESS
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
+  follow_inodes true
   tag k8s-audit.log
   <parse>
     @type json
@@ -199,6 +204,7 @@ var _ = Describe("Testing Config Generation", func() {
   @label @INGRESS
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
+  follow_inodes true
   tag openshift-audit.log
   <parse>
     @type json
@@ -216,6 +222,7 @@ var _ = Describe("Testing Config Generation", func() {
   @label @INGRESS
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
+  follow_inodes true
   tag ovn-audit.log
   refresh_interval 5
   rotate_wait 5
@@ -253,6 +260,7 @@ var _ = Describe("Testing Config Generation", func() {
   @label @INGRESS
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
+  follow_inodes true
   read_lines_limit 1500
   tag linux-audit.log
   <parse>
@@ -267,6 +275,7 @@ var _ = Describe("Testing Config Generation", func() {
   @label @INGRESS
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
+  follow_inodes true
   read_lines_limit 1500
   tag k8s-audit.log
   <parse>
@@ -285,6 +294,7 @@ var _ = Describe("Testing Config Generation", func() {
   @label @INGRESS
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
+  follow_inodes true
   read_lines_limit 1500
   tag openshift-audit.log
   <parse>
@@ -303,6 +313,7 @@ var _ = Describe("Testing Config Generation", func() {
   @label @INGRESS
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
+  follow_inodes true
   read_lines_limit 1500
   tag ovn-audit.log
   refresh_interval 5
@@ -359,6 +370,7 @@ const AllSources = `
   path "/var/log/pods/*/*/*.log"
   exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
+  follow_inodes true
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*
@@ -380,6 +392,7 @@ const AllSources = `
   @label @INGRESS
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
+  follow_inodes true
   tag linux-audit.log
   <parse>
     @type viaq_host_audit
@@ -393,6 +406,7 @@ const AllSources = `
   @label @INGRESS
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
+  follow_inodes true
   tag k8s-audit.log
   <parse>
     @type json
@@ -410,6 +424,7 @@ const AllSources = `
   @label @INGRESS
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
+  follow_inodes true
   tag openshift-audit.log
   <parse>
     @type json
@@ -427,6 +442,7 @@ const AllSources = `
   @label @INGRESS
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
+  follow_inodes true
   tag ovn-audit.log
   refresh_interval 5
   rotate_wait 5

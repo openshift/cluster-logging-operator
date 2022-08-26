@@ -28,6 +28,7 @@ const HostAuditLogTemplate = `
   @label @{{.OutLabel}}
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
+  follow_inodes true
   {{- .ReadLinesLimit }}
   tag linux-audit.log
   <parse>
@@ -45,6 +46,7 @@ const OpenshiftAuditLogTemplate = `
   @label @{{.OutLabel}}
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
+  follow_inodes true
   {{- .ReadLinesLimit }}
   tag openshift-audit.log
   <parse>
@@ -67,6 +69,7 @@ const K8sAuditLogTemplate = `
   @label @{{.OutLabel}}
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
+  follow_inodes true
   {{- .ReadLinesLimit }}
   tag k8s-audit.log
   <parse>
@@ -89,6 +92,7 @@ const OVNAuditLogTemplate = `
   @label @{{.OutLabel}}
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
+  follow_inodes true
   {{- .ReadLinesLimit }}
   tag ovn-audit.log
   refresh_interval 5

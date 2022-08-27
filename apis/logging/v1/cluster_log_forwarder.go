@@ -30,6 +30,20 @@ func IsOutputTypeName(s string) bool {
 	return ok
 }
 
+// Get all subordinate condition messages for condition of type "Ready" and False
+func (status ClusterLogForwarderStatus) GetReadyConditionMessages() []string {
+	var messages = []string{}
+	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
+		for _, conds := range nc {
+			if !conds.IsTrueFor(ConditionReady) {
+				currCond := conds.GetCondition(ConditionReady)
+				messages = append(messages, currCond.Message)
+			}
+		}
+	}
+	return messages
+}
+
 // IsReady returns true if all of the subordinate conditions are ready.
 func (status ClusterLogForwarderStatus) IsReady() bool {
 	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {

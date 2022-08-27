@@ -12,8 +12,6 @@ filters:
       - vimalk78
       - syedriko
       - vparfonov
-      - pmoogi-redhat
-      - ajaygupta978
       - cahartma
   "Dockerfile(?:\\.in)?$":   # matches Dockerfile, Dockerfile.in
     labels:

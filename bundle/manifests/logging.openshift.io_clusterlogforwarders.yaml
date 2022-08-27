@@ -221,6 +221,23 @@ spec:
                         keys in the Secret: \n `shared_key`: (string) Key to enable
                         fluent-forward shared-key authentication."
                       type: object
+                    googleCloudLogging:
+                      description: GoogleCloudLogging provides configuration for sending
+                        logs to Google Cloud Logging
+                      properties:
+                        billingAccountId:
+                          type: string
+                        folderId:
+                          type: string
+                        logId:
+                          description: LogID is the log ID to which to publish logs.
+                            This identifies log stream.
+                          type: string
+                        organizationId:
+                          type: string
+                        projectId:
+                          type: string
+                      type: object
                     kafka:
                       description: 'Kafka provides optional extra properties for `type:
                         kafka`'
@@ -391,6 +408,7 @@ spec:
                       - kafka
                       - cloudwatch
                       - loki
+                      - googleCloudLogging
                       type: string
                     url:
                       description: "URL to send log records to. \n An absolute URL,

@@ -35,6 +35,7 @@ func (cl ContainerLogs) Template() string {
   path {{.Paths}}
   exclude_path {{.ExcludePaths}}
   pos_file "{{.PosFile}}"
+  follow_inodes true
   refresh_interval 5
   rotate_wait 5
   tag kubernetes.*

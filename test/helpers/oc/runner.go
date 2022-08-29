@@ -76,11 +76,11 @@ func (r *runner) runCmd(timeoutCh <-chan time.Time) (string, error) {
 	select {
 	case <-timeoutCh:
 		if err = r.Cmd.Process.Kill(); err != nil {
-			log.V(1).Error(err, "failed to kill process: ")
+			log.V(1).Error(err, "failed to kill oc process")
 		}
 	case err = <-done:
 		if err != nil {
-			log.V(1).Error(err, "oc finished with error = %v")
+			log.V(1).Error(err, "oc finished with error", "args", cmdargs)
 		}
 	}
 	if err != nil {

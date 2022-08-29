@@ -39,6 +39,7 @@ func (cl ContainerLogs) Template() string {
   rotate_wait 5
   tag kubernetes.*
   read_from_head "true"
+  follow_inodes true
   {{- .ReadLinesLimit }}
   skip_refresh_on_startup true
   @label @{{.OutLabel}}

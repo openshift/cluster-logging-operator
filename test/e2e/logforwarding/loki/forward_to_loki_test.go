@@ -2,6 +2,7 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -109,6 +110,8 @@ func testLogForwardingToLoki(t *testing.T, cl *loggingv1.ClusterLogging, clf *lo
 	g.Go(func() error { return c.Create(gen) })
 	require.NoError(t, g.Wait())
 	require.NoError(t, c.WaitFor(clf, client.ClusterLogForwarderReady))
+	framework := e2e.NewE2ETestFramework()
+	require.NoError(t, framework.WaitFor(helpers.ComponentTypeCollector))
 
 	// Now the actual test.
 	for _, logType := range []string{"application", "infrastructure", "audit"} {

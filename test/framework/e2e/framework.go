@@ -130,7 +130,7 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace s
 	return err
 }
 
-func (tc *E2ETestFramework) DeployJsonLogGenerator(vals map[string]string) (string, string, error) {
+func (tc *E2ETestFramework) DeployJsonLogGenerator(vals, labels map[string]string) (string, string, error) {
 	namespace := tc.CreateTestNamespace()
 	pycode := `
 import time,json,sys,datetime
@@ -171,6 +171,9 @@ def set_vals():
 		Containers: []corev1.Container{container},
 	}
 	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
+	for k, v := range labels {
+		deployment.Spec.Template.Labels[k] = v
+	}
 	clolog.Info("Deploying deployment to namespace", "deployment", deployment.Name, "namespace", deployment.Namespace)
 	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, metav1.CreateOptions{})
 	if err != nil {
@@ -411,7 +414,7 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
 	})
-	clolog.V(3).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
+	clolog.V(1).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
 	result := tc.KubeClient.RESTClient().Post().
 		RequestURI(clusterLoggingURI).
 		SetHeader("Content-Type", "application/json").
@@ -437,7 +440,7 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 			Do(context.TODO()).Error()
 	}
 	tc.AddCleanup(deleteCLF)
-	clolog.V(3).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
+	clolog.V(1).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
 	createCLF := func() rest.Result {
 		return tc.KubeClient.RESTClient().Post().
 			RequestURI(clusterlogforwarderURI).
@@ -466,7 +469,7 @@ func (tc *E2ETestFramework) Cleanup() {
 			RunCleanupScript()
 		}
 	} else {
-		clolog.Info("Not Running Cleanup script")
+		clolog.V(1).Info("Test passed. Skipping artifacts gathering")
 	}
 	clolog.V(3).Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {

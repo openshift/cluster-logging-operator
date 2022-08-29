@@ -8,15 +8,15 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -24,10 +24,8 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	log.Info("Running ", "filename", filename)
 	var (
-		e2e          = framework.NewE2ETestFramework()
-		generatorNS  string
-		generatorPod string
-		err          error
+		e2e         = framework.NewE2ETestFramework()
+		generatorNS string
 	)
 
 	Describe("ClusterLogging with default store", func() {
@@ -47,19 +45,37 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				"myapp.kubernetes.io/name": "test-log-generator",
 				"logFormat":                "redhat",
 			}
-			generatorNS, generatorPod, err = e2e.DeployJsonLogGenerator(map[string]string{
+			var err error
+			generatorNS, _, err = e2e.DeployJsonLogGenerator(map[string]string{
 				"level":   "debug",
 				"logtext": "hey, this is a log line",
-			})
+			}, appLabels)
 			if err != nil {
 				Fail(fmt.Sprintf("Timed out waiting for the log generator to deploy: %v", err))
 			}
-			for k, v := range appLabels {
-				if _, err := oc.Literal().From("oc -n %s label pods %s %s=%s --overwrite=true", generatorNS, generatorPod, k, v).Run(); err != nil {
-					Fail(fmt.Sprintf("Failed to apply labels to log generator. err: %v", err))
-				}
-			}
 		}
+
+		AssertLogStoreHasIndex := func(store framework.LogStore, prefix string) {
+			estore := store.(*framework.ElasticLogStore)
+			pollErr := wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
+				indices, err := estore.Indices()
+				if err != nil {
+					log.Error(err, "Error retrieving indices from elasticsearch")
+					return false, nil
+				}
+				found := false
+				log.V(2).Info("indices", "indices", indices)
+				for _, index := range indices {
+					if strings.HasPrefix(index.Name, prefix) {
+						found = true
+					}
+				}
+				return found, nil
+			})
+			log.V(2).Error(pollErr, "Unable to find logs in store")
+			Expect(pollErr).To(BeNil())
+		}
+
 		BeforeEach(func() {
 			SetupLogGeneratorWithLabels()
 		})
@@ -71,113 +87,67 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		Context("forwarding logs to default output", func() {
 			Context("with TypeKey set in outputDefaults", func() {
-				DeployLogForwarderWithStructuredTypeKey := func() {
-					forwarder := &logging.ClusterLogForwarder{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       logging.ClusterLogForwarderKind,
-							APIVersion: logging.GroupVersion.String(),
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "instance",
-						},
-						Spec: logging.ClusterLogForwarderSpec{
-							OutputDefaults: &logging.OutputDefaults{
-								Elasticsearch: &logging.Elasticsearch{
-									StructuredTypeKey: "kubernetes.labels.logFormat",
-								},
+				DescribeTable("should send logs to index set in labels", func(collectorType helpers.LogComponentType) {
+					DeployLoggingWithComponents([]helpers.LogComponentType{collectorType, helpers.ComponentTypeStore})
+					forwarder := testruntime.NewClusterLogForwarder()
+					forwarder.Spec = logging.ClusterLogForwarderSpec{
+						OutputDefaults: &logging.OutputDefaults{
+							Elasticsearch: &logging.Elasticsearch{
+								StructuredTypeKey: "kubernetes.labels.logFormat",
 							},
-							Pipelines: []logging.PipelineSpec{
-								{
-									Name:       "test-app",
-									OutputRefs: []string{logging.OutputNameDefault},
-									InputRefs:  []string{logging.InputNameApplication},
-									Parse:      "json",
-								},
+						},
+						Pipelines: []logging.PipelineSpec{
+							{
+								Name:       "test-app",
+								OutputRefs: []string{logging.OutputNameDefault},
+								InputRefs:  []string{logging.InputNameApplication},
+								Parse:      "json",
 							},
 						},
 					}
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 					}
-					components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+					components := []helpers.LogComponentType{helpers.ComponentTypeStore, helpers.ComponentTypeCollector}
 					for _, component := range components {
 						if err := e2e.WaitFor(component); err != nil {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
 					}
-				}
-				AssertBehaviours := func() {
-					It("should send logs to index set in labels ", func() {
-						store := e2e.LogStores["elasticsearch"]
-						estore := store.(*framework.ElasticLogStore)
-						var indices framework.Indices
-						var err error
-						err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
-							indices, err = estore.Indices()
-							if err != nil {
-								log.Error(err, "Error retrieving indices from elasticsearch")
-								return false, nil
-							}
-							found := false
-							log.V(2).Info("indices", "indices", indices)
-							for _, index := range indices {
-								if strings.HasPrefix(index.Name, "app-redhat") {
-									found = true
-								}
-							}
-							return found, nil
-						})
-						log.V(2).Info("error", "error", err)
-						Expect(err).To(BeNil())
-					})
-				}
-				Describe("for fluentd collector", func() {
-					BeforeEach(func() {
-						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeStore})
-						DeployLogForwarderWithStructuredTypeKey()
-					})
-					AssertBehaviours()
-				})
-				Describe("for vector collector", func() {
-					BeforeEach(func() {
-						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorVector, helpers.ComponentTypeStore})
-						DeployLogForwarderWithStructuredTypeKey()
-					})
-					AssertBehaviours()
-				})
+
+					store := e2e.LogStores["elasticsearch"]
+					AssertLogStoreHasIndex(store, "app-redhat")
+				},
+					Entry("with fluentd", helpers.ComponentTypeCollectorFluentd),
+					Entry("with vector", helpers.ComponentTypeCollectorVector),
+				)
+
 			})
 			Context("with IndexName set in outputDefaults", func() {
-				IndexName := "testindex"
-				DeployLogForwarderWithStructuredTypeName := func() {
-					forwarder := &logging.ClusterLogForwarder{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       logging.ClusterLogForwarderKind,
-							APIVersion: logging.GroupVersion.String(),
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name: "instance",
-						},
-						Spec: logging.ClusterLogForwarderSpec{
-							Inputs: []logging.InputSpec{
-								{
-									Name: "my-service",
-									Application: &logging.Application{
-										Namespaces: []string{generatorNS},
-									},
+				DescribeTable("should send logs to index set in IndexName", func(collectorType helpers.LogComponentType) {
+					DeployLoggingWithComponents([]helpers.LogComponentType{collectorType, helpers.ComponentTypeStore})
+					IndexName := "testindex"
+					forwarder := testruntime.NewClusterLogForwarder()
+					forwarder.Spec = logging.ClusterLogForwarderSpec{
+						Inputs: []logging.InputSpec{
+							{
+								Name: "my-service",
+								Application: &logging.Application{
+									Namespaces: []string{generatorNS},
 								},
 							},
-							OutputDefaults: &logging.OutputDefaults{
-								Elasticsearch: &logging.Elasticsearch{
-									StructuredTypeName: IndexName,
-								},
+						},
+						OutputDefaults: &logging.OutputDefaults{
+							Elasticsearch: &logging.Elasticsearch{
+								StructuredTypeName: IndexName,
 							},
-							Pipelines: []logging.PipelineSpec{
-								{
-									Name:       "test-app",
-									OutputRefs: []string{logging.OutputNameDefault},
-									InputRefs:  []string{"my-service"},
-									Parse:      "json",
-								},
+						},
+						Pipelines: []logging.PipelineSpec{
+							{
+								Name:       "test-app",
+								OutputRefs: []string{logging.OutputNameDefault},
+								InputRefs:  []string{"my-service"},
+								Parse:      "json",
 							},
 						},
 					}
@@ -190,44 +160,13 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
 						}
 					}
-				}
-				AssertBehaviours := func() {
-					It("should send logs to index set in IndexName ", func() {
-						store := e2e.LogStores["elasticsearch"]
-						estore := store.(*framework.ElasticLogStore)
-						var indices framework.Indices
-						var err error
-						err = wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
-							indices, err = estore.Indices()
-							if err != nil {
-								log.Error(err, "Error retrieving indices from elasticsearch")
-								return false, nil
-							}
-							found := false
-							for _, index := range indices {
-								if strings.HasPrefix(index.Name, "app-testindex") {
-									found = true
-								}
-							}
-							return found, nil
-						})
-						Expect(err).To(BeNil())
-					})
-				}
-				Describe("for fluentd collector", func() {
-					BeforeEach(func() {
-						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeStore})
-						DeployLogForwarderWithStructuredTypeName()
-					})
-					AssertBehaviours()
-				})
-				Describe("for vector collector", func() {
-					BeforeEach(func() {
-						DeployLoggingWithComponents([]helpers.LogComponentType{helpers.ComponentTypeCollectorVector, helpers.ComponentTypeStore})
-						DeployLogForwarderWithStructuredTypeName()
-					})
-					AssertBehaviours()
-				})
+
+					store := e2e.LogStores["elasticsearch"]
+					AssertLogStoreHasIndex(store, "app-testindex")
+				},
+					Entry("with fluentd", helpers.ComponentTypeCollectorFluentd),
+					Entry("with vector", helpers.ComponentTypeCollectorVector),
+				)
 			})
 		})
 	})

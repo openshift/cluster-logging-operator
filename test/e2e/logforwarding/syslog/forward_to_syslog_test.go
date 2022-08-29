@@ -50,7 +50,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		}
 	})
 	JustBeforeEach(func() {
-		if logGenNS, logGenPod, err = e2e.DeployJsonLogGenerator(generatorPayload); err != nil {
+		if logGenNS, logGenPod, err = e2e.DeployJsonLogGenerator(generatorPayload, map[string]string{}); err != nil {
 			log.Error(err, "unable to deploy log generator.")
 		}
 		log.Info("log generator pod: ", "podname", logGenPod)

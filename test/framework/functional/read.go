@@ -7,6 +7,7 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/url"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/helpers/cmd"
@@ -14,6 +15,20 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
+
+type Option struct {
+	Name  string
+	Value string
+}
+
+func OptionsInclude(name string, options []Option) (bool, Option) {
+	for _, o := range options {
+		if o.Name == name {
+			return true, o
+		}
+	}
+	return false, Option{}
+}
 
 func (f *CollectorFunctionalFramework) ReadApplicationLogsFrom(outputName string) ([]types.ApplicationLog, error) {
 	raw, err := f.ReadLogsFrom(outputName, applicationLog)
@@ -71,8 +86,10 @@ func (f *CollectorFunctionalFramework) ReadOvnAuditLogsFrom(outputName string) (
 func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType string) (results []string, err error) {
 	outputSpecs := f.Forwarder.Spec.OutputMap()
 	outputType := outputName
+	var outputSpec *logging.OutputSpec
 	if output, found := outputSpecs[outputName]; found {
 		outputType = output.Type
+		outputSpec = output
 	}
 	var readLogs func() ([]string, error)
 
@@ -92,7 +109,14 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 		}
 	case logging.OutputTypeElasticsearch:
 		readLogs = func() ([]string, error) {
-			result, err := f.GetLogsFromElasticSearch(outputName, sourceType)
+			option := Option{"port", "9200"}
+			if outputSpec != nil {
+				if esurl, err := url.Parse(outputSpec.URL); err == nil {
+					option.Value = esurl.Port()
+				}
+			}
+			result, err := f.GetLogsFromElasticSearch(outputName, sourceType, option)
+
 			if err == nil {
 				result = result[1:]
 				result = result[:len(result)-1]

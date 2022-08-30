@@ -17,18 +17,23 @@ var ElasticIndex = map[string]string{
 	logging.InputNameInfrastructure: "infra-write",
 }
 
-func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string) (result string, err error) {
+func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string, options ...Option) (result string, err error) {
 	index, ok := ElasticIndex[outputLogType]
 	if !ok {
 		return "", fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
 	}
-	return f.GetLogsFromElasticSearchIndex(outputName, index)
+	return f.GetLogsFromElasticSearchIndex(outputName, index, options...)
 }
 
-func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string) (result string, err error) {
+func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string, options ...Option) (result string, err error) {
+	port := "9200"
+	if found, o := OptionsInclude("port", options); found {
+		port = o.Value
+	}
+
 	buffer := []string{}
 	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
-		cmd := `curl -X GET "localhost:9200/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
+		cmd := `curl -X GET "localhost:` + port + `/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
 {
 	"query": {
 	"match_all": {}

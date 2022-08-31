@@ -5,12 +5,13 @@ package v1
 
 // Output type constants, must match JSON tags of OutputTypeSpec fields.
 const (
-	OutputTypeCloudwatch     = "cloudwatch"
-	OutputTypeElasticsearch  = "elasticsearch"
-	OutputTypeFluentdForward = "fluentdForward"
-	OutputTypeSyslog         = "syslog"
-	OutputTypeKafka          = "kafka"
-	OutputTypeLoki           = "loki"
+	OutputTypeCloudwatch         = "cloudwatch"
+	OutputTypeElasticsearch      = "elasticsearch"
+	OutputTypeFluentdForward     = "fluentdForward"
+	OutputTypeSyslog             = "syslog"
+	OutputTypeKafka              = "kafka"
+	OutputTypeLoki               = "loki"
+	OutputTypeGoogleCloudLogging = "googleCloudLogging"
 )
 
 // OutputTypeSpec is a union of optional additional configuration specific to an
@@ -28,6 +29,8 @@ type OutputTypeSpec struct {
 	Cloudwatch *Cloudwatch `json:"cloudwatch,omitempty"`
 	// +optional
 	Loki *Loki `json:"loki,omitempty"`
+	//+optional
+	GoogleCloudLogging *GoogleCloudLogging `json:"googleCloudLogging,omitempty"`
 }
 
 // Cloudwatch provides configuration for the output type `cloudwatch`
@@ -224,4 +227,31 @@ type Loki struct {
 	//
 	// +optional
 	LabelKeys []string `json:"labelKeys,omitempty"`
+}
+
+// GoogleCloudLogging provides configuration for sending logs to Google Cloud Logging
+type GoogleCloudLogging struct {
+	// Only one of BillingAccountID, OrganizationID, FolderID, or ProjectID can be used to send logs.
+	// If more than one are configured, the priority is as follows
+	// 1. BillingAccountID
+	// 2. OrganizationID
+	// 3. FolderID
+	// 4. ProjectID
+	//
+	// Reference: https://cloud.google.com/billing/docs/concepts
+
+	// +optional
+	BillingAccountID string `json:"billingAccountId,omitempty"`
+
+	// +optional
+	OrganizationID string `json:"organizationId,omitempty"`
+
+	// +optional
+	FolderID string `json:"folderId,omitempty"`
+
+	// +optional
+	ProjectID string `json:"projectId,omitempty"`
+
+	//LogID is the log ID to which to publish logs. This identifies log stream.
+	LogID string `json:"logId,omitempty"`
 }

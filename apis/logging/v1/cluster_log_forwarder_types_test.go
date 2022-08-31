@@ -1,6 +1,7 @@
 package v1_test
 
 import (
+	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -143,3 +144,8 @@ var _ = Describe("ClusterLogForwarder", func() {
   }`))
 	})
 })
+
+func TestClusterLogForwarderTypes(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Cluster Log Forwarder Types")
+}

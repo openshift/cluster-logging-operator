@@ -44,6 +44,7 @@ func NewSCC(name string) *SecurityContextConstraints {
 		},
 		ReadOnlyRootFilesystem: true,
 		ForbiddenSysctls:       []string{"*"},
+		SeccompProfiles:        []string{"runtime/default"},
 	}
 	return &scc
 }

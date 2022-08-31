@@ -38,6 +38,14 @@ func checkMountReadOnly(mount string) {
 	}, timeout, pollingInterval).Should(Succeed())
 }
 
+func verifyNamespaceLabels() {
+	labels, err := oc.Get().Resource("namespaces", constants.OpenshiftNS).OutputJsonpath("{.metadata.labels}").Run()
+	Expect(err).To(BeNil())
+	// In ocp 4.12+ only enforce is required
+	expMatch := fmt.Sprintf(`{.*"%s":"%s".*}`, constants.PodSecurityLabelEnforce, constants.PodSecurityLabelValue)
+	Expect(labels).To(MatchRegexp(expMatch), "Expected label to be found")
+}
+
 var _ = Describe("Tests of collector container security stance", func() {
 	_, filename, _, _ := runtime.Caller(0)
 	log.Info("Running ", "filename", filename)
@@ -167,5 +175,9 @@ var _ = Describe("Tests of collector container security stance", func() {
 			g.Expect(result).To(Equal("600"))
 			g.Expect(err).NotTo(HaveOccurred())
 		}, timeout, pollingInterval).Should(Succeed())
+
+		// LOG-2620: containers violate PodSecurity for 4.12+
+		By("making sure collector namespace has the pod security label")
+		verifyNamespaceLabels()
 	})
 })

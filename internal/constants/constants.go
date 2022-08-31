@@ -76,6 +76,10 @@ const (
 	LogStoreURL                = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort
 	MasterCASecretName         = "master-certs"
 	CollectorSecretName        = "collector"
+	PodSecurityLabelEnforce    = "pod-security.kubernetes.io/enforce"
+	PodSecurityLabelAudit      = "pod-security.kubernetes.io/audit"
+	PodSecurityLabelWarn       = "pod-security.kubernetes.io/warn"
+	PodSecurityLabelValue      = "privileged"
 	// Disable gosec linter, complains "possible hard-coded secret"
 	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec

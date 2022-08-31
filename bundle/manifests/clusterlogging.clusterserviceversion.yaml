@@ -425,8 +425,13 @@ spec:
                 resources: {}
                 securityContext:
                   allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
               nodeSelector:
                 kubernetes.io/os: linux
+              securityContext:
+                runAsNonRoot: true
               serviceAccountName: cluster-logging-operator
       permissions:
       - rules:
@@ -449,6 +454,7 @@ spec:
           - serviceaccounts
           - serviceaccounts/finalizers
           - services/finalizers
+          - namespaces
           verbs:
           - '*'
         - apiGroups:

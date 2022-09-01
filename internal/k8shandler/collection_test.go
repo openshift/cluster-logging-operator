@@ -2,7 +2,6 @@ package k8shandler
 
 import (
 	"context"
-
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
@@ -17,6 +16,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -110,8 +110,9 @@ var _ = Describe("Reconciling", func() {
 					fluentdCABundle,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:  client,
-					Cluster: cluster,
+					Client:        client,
+					Cluster:       cluster,
+					EventRecorder: record.NewFakeRecorder(100),
 				}
 			})
 
@@ -169,8 +170,9 @@ var _ = Describe("Reconciling", func() {
 					fluentdCABundle,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:  client,
-					Cluster: cluster,
+					Client:        client,
+					Cluster:       cluster,
+					EventRecorder: record.NewFakeRecorder(100),
 				}
 			})
 

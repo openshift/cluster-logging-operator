@@ -19,10 +19,10 @@ import (
 
 const (
 	clusterLoggingPriorityClassName = "cluster-logging"
-	exporterPort                    = int32(2112)
-	exporterPortName                = "logfile-metrics"
-	metricsPort                     = int32(24231)
-	metricsPortName                 = "metrics"
+	ExporterPort                    = int32(2112)
+	ExporterPortName                = "logfile-metrics"
+	MetricsPort                     = int32(24231)
+	MetricsPortName                 = "metrics"
 	metricsVolumeName               = "collector-metrics"
 	logContainers                   = "varlogcontainers"
 	logContainersValue              = "/var/log/containers"
@@ -175,8 +175,8 @@ func (f *Factory) NewCollectorContainer(secretNames []string) *v1.Container {
 	collector := factory.NewContainer(constants.CollectorName, f.ImageName, v1.PullIfNotPresent, f.CollectorResourceRequirements())
 	collector.Ports = []v1.ContainerPort{
 		{
-			Name:          metricsPortName,
-			ContainerPort: metricsPort,
+			Name:          MetricsPortName,
+			ContainerPort: MetricsPort,
 			Protocol:      v1.ProtocolTCP,
 		},
 	}
@@ -218,8 +218,8 @@ func newLogMetricsExporterContainer() *v1.Container {
 	exporter := factory.NewContainer(constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, v1.PullIfNotPresent, *exporterResources)
 	exporter.Ports = []v1.ContainerPort{
 		{
-			Name:          exporterPortName,
-			ContainerPort: exporterPort,
+			Name:          ExporterPortName,
+			ContainerPort: ExporterPort,
 			Protocol:      v1.ProtocolTCP,
 		},
 	}

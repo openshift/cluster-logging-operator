@@ -11,6 +11,7 @@
     "labels":
       "service": "fluentd"
       "severity": "critical"
+      namespace: "openshift-logging"
   - "alert": "FluentdQueueLengthIncreasing"
     "annotations":
       "message": "For the last hour, fluentd {{ $labels.instance }} output '{{ $labels.plugin_id }}' average buffer queue length has increased continuously."
@@ -21,6 +22,7 @@
     "labels":
       "service": "fluentd"
       "severity": "Warning"
+      namespace: "openshift-logging"
   - alert: FluentDHighErrorRate
     annotations:
       message: |-
@@ -35,7 +37,7 @@
     for: 15m
     labels:
       severity: warning
-
+      namespace: "openshift-logging"
   - alert: FluentDVeryHighErrorRate
     annotations:
       message: |-
@@ -50,6 +52,7 @@
     for: 15m
     labels:
       severity: critical
+      namespace: "openshift-logging"
 - "name": "logging_clusterlogging_telemetry.rules"
   "rules":
   - "expr": |

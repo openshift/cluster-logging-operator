@@ -259,7 +259,9 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		AddConfigMapVolume("config", f.Name).
 		AddConfigMapVolumeWithPermissions("entrypoint", f.Name, utils.GetInt32(0755)).
 		AddConfigMapVolume("certs", certsName)
-	b = f.collector.BuildCollectorContainer(b.AddContainer(constants.CollectorName, f.image).ResourceRequirements(resources), FunctionalNodeName).End()
+	b = f.collector.BuildCollectorContainer(
+		b.AddContainer(constants.CollectorName, f.image).
+			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).End()
 
 	for _, visit := range visitors {
 		if err = visit(b); err != nil {

@@ -297,7 +297,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return fmt.Errorf("service could not be started")
 	}
 	log.V(2).Info("waiting for the collector to be ready")
-	err = wait.PollImmediate(time.Second*2, time.Second*30, func() (bool, error) {
+	err = wait.PollImmediate(time.Second*2, time.Second*90, func() (bool, error) {
 		output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", f.Test.NS.Name, f.Name, constants.CollectorName).Run()
 		if err != nil {
 			return false, nil

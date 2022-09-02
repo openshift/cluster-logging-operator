@@ -33,6 +33,7 @@ var (
 		Annotations:      map[string]string{"*": "*"},
 	}
 	templateForInfraKubernetes = types.Kubernetes{
+		ContainerID:       "**optional**",
 		ContainerName:     "*",
 		PodName:           "*",
 		NamespaceName:     "*",
@@ -74,18 +75,21 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 // NewContainerInfrastructureLogTemplate creates a generally expected template for infrastructure container logs
 func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
-		Timestamp: time.Time{},
-		Message:   "*",
-		LogType:   "infrastructure",
-		Level:     "*",
-		Hostname:  "*",
-		ViaqMsgID: "*",
+		Timestamp:  time.Time{},
+		Message:    "*",
+		LogType:    "infrastructure",
+		Level:      "*",
+		Hostname:   "*",
+		ViaqMsgID:  "**optional**",
+		WriteIndex: "**optional**",
 		Openshift: types.OpenshiftMeta{
 			Labels:   map[string]string{"*": "*"},
 			Sequence: types.NewOptionalInt(""),
 		},
 		PipelineMetadata: TemplateForAnyPipelineMetadata,
-		Docker:           types.Docker{},
-		Kubernetes:       templateForInfraKubernetes,
+		Docker: types.Docker{
+			ContainerID: "**optional**",
+		},
+		Kubernetes: templateForInfraKubernetes,
 	}
 }

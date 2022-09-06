@@ -47,7 +47,7 @@ var _ = Describe("[Functional][Outputs][Multiple]", func() {
 				raw, err := framework.GetLogsFromElasticSearch(loggingv1.OutputTypeElasticsearch, loggingv1.InputNameApplication)
 				Expect(err).To(BeNil(), "Expected no errors reading the logs")
 				Expect(raw).To(Not(BeEmpty()))
-				err = types.StrictlyParseLogs(raw, &logs)
+				err = types.StrictlyParseLogsFromSlice(raw, &logs)
 				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 				Expect(logs).To(HaveLen(1), "Exp. to receive a log message at output type %s", loggingv1.OutputTypeElasticsearch)
 

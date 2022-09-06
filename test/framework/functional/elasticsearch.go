@@ -3,8 +3,6 @@ package functional
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -17,21 +15,19 @@ var ElasticIndex = map[string]string{
 	logging.InputNameInfrastructure: "infra-write",
 }
 
-func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string, options ...Option) (result string, err error) {
+func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName string, outputLogType string, options ...Option) (results []string, err error) {
 	index, ok := ElasticIndex[outputLogType]
 	if !ok {
-		return "", fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
+		return []string{}, fmt.Errorf(fmt.Sprintf("can't find log of type %s", outputLogType))
 	}
 	return f.GetLogsFromElasticSearchIndex(outputName, index, options...)
 }
 
-func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string, options ...Option) (result string, err error) {
+func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string, options ...Option) (results []string, err error) {
 	port := "9200"
 	if found, o := OptionsInclude("port", options); found {
 		port = o.Value
 	}
-
-	buffer := []string{}
 	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
 		cmd := `curl -X GET "localhost:` + port + `/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
 {
@@ -40,6 +36,7 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 }
 }
 '`
+		var result string
 		result, err = f.RunCommand(outputName, "bash", "-c", cmd)
 		if result != "" && err == nil {
 			//var elasticResult ElasticSearchResult
@@ -57,7 +54,7 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 						hit := hits[i].(map[string]interface{})
 						jsonHit, err := json.Marshal(hit["_source"])
 						if err == nil {
-							buffer = append(buffer, string(jsonHit))
+							results = append(results, string(jsonHit))
 						} else {
 							log.V(4).Info("Marshall failed", "err", err)
 						}
@@ -71,9 +68,6 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 		log.V(4).Info("Polling from ElasticSearch", "err", err, "result", result)
 		return false, nil
 	})
-	if err == nil {
-		result = fmt.Sprintf("[%s]", strings.Join(buffer, ","))
-	}
-	log.V(4).Info("Returning", "logs", result)
-	return result, err
+	log.V(4).Info("Returning", "logs", results)
+	return results, err
 }

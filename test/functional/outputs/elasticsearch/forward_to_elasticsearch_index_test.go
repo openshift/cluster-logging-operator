@@ -92,7 +92,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 			// Parse log line
 			var logs []types.ApplicationLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			// Compare to expected template
 			outputTestLog := logs[0]
@@ -119,7 +119,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 			// Parse log line
 			var logs []types.ApplicationLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			// Compare to expected template
 			outputTestLog := logs[0]
@@ -147,7 +147,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 			// Parse log line
 			var logs []types.ApplicationLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			// Compare to expected template
 			outputTestLog := logs[0]
@@ -173,7 +173,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			logs := []types.ApplicationLog{}
 			raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, ESIndexName)
 			Expect(err).To(BeNil(), "Expected no errors reading the logs")
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			Expect(logs).To(Not(BeEmpty()))
 
@@ -201,7 +201,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 			// Parse log line
 			var logs []types.ApplicationLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			Expect(logs).To(Not(BeEmpty()), "Expected to find logs indexed")
 			// Compare to expected template
@@ -241,7 +241,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 					// Parse log line
 					var logs []types.ApplicationLog
-					err = types.StrictlyParseLogs(raw, &logs)
+					err = types.StrictlyParseLogsFromSlice(raw, &logs)
 					Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 					Expect(logs).To(Not(BeEmpty()), "Expected to find a log in index", index)
 					// Compare to expected template
@@ -268,7 +268,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 				// Parse log line
 				var logs []types.ApplicationLog
-				err = types.StrictlyParseLogs(raw, &logs)
+				err = types.StrictlyParseLogsFromSlice(raw, &logs)
 				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 				// Compare to expected template
 				outputTestLog := logs[0]
@@ -299,7 +299,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 				// Parse log line
 				var logs []types.ApplicationLog
-				err = types.StrictlyParseLogs(raw, &logs)
+				err = types.StrictlyParseLogsFromSlice(raw, &logs)
 				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 				// Compare to expected template
 				outputTestLog := logs[0]
@@ -330,7 +330,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 				// Parse log line
 				var logs []types.ApplicationLog
-				err = types.StrictlyParseLogs(raw, &logs)
+				err = types.StrictlyParseLogsFromSlice(raw, &logs)
 				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 				// Compare to expected template
 				outputTestLog := logs[0]

@@ -42,7 +42,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 
 			// Parse log line
 			var logs []types.ApplicationLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			// Compare to expected template
 			outputTestLog := logs[0]
@@ -64,7 +64,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] FluentdForward Output to 
 			Expect(raw).To(Not(BeEmpty()))
 			// Parse log line
 			var logs []types.ApplicationLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			Expect(len(logs)).To(Equal(2))
 			//sort log by time before matching

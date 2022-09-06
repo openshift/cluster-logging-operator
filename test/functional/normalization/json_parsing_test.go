@@ -254,7 +254,7 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 
 		// Parse log line
 		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(raw, &logs)
+		err = types.StrictlyParseLogsFromSlice(raw, &logs)
 		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		Expect(logs).To(HaveLen(1), "Expected to receive the log message")
 		Expect(logs[0].Structured).To(Equal(expected), "structured field with parsed json message not matching")

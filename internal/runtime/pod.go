@@ -98,6 +98,10 @@ func (builder *ContainerBuilder) WithPrivilege() *ContainerBuilder {
 	}
 	return builder
 }
+func (builder *ContainerBuilder) WithImagePullPolicy(policy corev1.PullPolicy) *ContainerBuilder {
+	builder.container.ImagePullPolicy = policy
+	return builder
+}
 
 func (builder *PodBuilder) AddContainer(name, image string) *ContainerBuilder {
 	containerBuilder := ContainerBuilder{

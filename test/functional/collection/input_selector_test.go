@@ -2,6 +2,7 @@ package collection
 
 import (
 	"fmt"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"runtime"
 	"time"
 
@@ -19,7 +20,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 	log.Info("Running ", "filename", filename)
 
 	const (
-		otherFluentForward = "altFluentForward"
+		otherOutput = "elasticsearch2"
 	)
 
 	var (
@@ -37,7 +38,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 		Describe("from pods identified by labels", func() {
 
 			It("should send logs from specific applications by using labels", func() {
-				instance = functional.NewCollectorFunctionalFramework()
+				instance = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 				instance.Labels = map[string]string{
 					"name":     "app1",
 					"env":      "env1",
@@ -53,7 +54,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 							}
 						},
 					).Named("app-1").
-					ToFluentForwardOutput()
+					ToElasticSearchOutput()
 				builder.FromInputWithVisitor("application-logs2",
 					func(spec *logging.InputSpec) {
 						spec.Application = &logging.Application{
@@ -65,39 +66,40 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 				).Named("app-2").
 					ToOutputWithVisitor(
 						func(spec *logging.OutputSpec) {
-							spec.Type = logging.OutputTypeFluentdForward
-							spec.URL = "tcp://0.0.0.0:24225"
-						}, otherFluentForward)
+							spec.Name = otherOutput
+							spec.Type = logging.OutputTypeElasticsearch
+							spec.URL = "http://0.0.0.0:9201"
+						}, otherOutput)
 
 				Expect(instance.Deploy()).To(BeNil())
 				Expect(instance.WritesApplicationLogs(1)).To(Succeed(), "Expected no errors writing log messages")
 
-				logs, err := instance.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
-				Expect(err).To(BeNil(), "Error fetching logs from %s: %v", logging.OutputTypeFluentdForward, err)
-				Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", logging.OutputTypeFluentdForward)
+				logs, err := instance.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
+				Expect(err).To(BeNil(), "Error fetching logs from %s: %v", logging.OutputTypeElasticsearch, err)
+				Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", logging.OutputTypeElasticsearch)
 
 				// verify only appLabels1 logs appear in Application logs
 				for _, msg := range logs {
 					log.V(3).Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
-					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env1"))
+					Expect(msg.Kubernetes.FlatLabels).Should(ContainElement("name=app1"))
+					Expect(msg.Kubernetes.FlatLabels).Should(ContainElement("env=env1"))
 				}
 
-				logs, err = instance.ReadApplicationLogsFrom(otherFluentForward)
-				Expect(err).To(BeNil(), "Error fetching logs from %s: %v", otherFluentForward, err)
-				Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", otherFluentForward)
+				logs, err = instance.ReadApplicationLogsFrom(otherOutput)
+				Expect(err).To(BeNil(), "Error fetching logs from %s: %v", otherOutput, err)
+				Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", otherOutput)
 				// verify only appLabels2 logs appear in Application logs
 				for _, msg := range logs {
 					log.V(3).Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
-					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("fallback", "env2"))
+					Expect(msg.Kubernetes.FlatLabels).Should(ContainElement("name=app1"))
+					Expect(msg.Kubernetes.FlatLabels).Should(ContainElement("fallback=env2"))
 				}
 			})
 		})
 		Describe("from pods identified by labels and namespaces", func() {
-			It("should send logs with labels name:app1 and env:env1 from namespace application-ns1 to fluentd only", func() {
+			It("should only send logs with labels name:app1 and env:env1 from namespace application-ns1", func() {
 
-				instance = functional.NewCollectorFunctionalFramework()
+				instance = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 				instance.Labels = map[string]string{
 					"name": "app1",
 					"env":  "env1",
@@ -113,7 +115,7 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 							}
 						},
 					).
-					ToFluentForwardOutput()
+					ToElasticSearchOutput()
 
 				Expect(instance.Deploy()).To(BeNil())
 				Expect(instance.WritesApplicationLogs(1)).To(Succeed(), "Expected no errors writing log messages")
@@ -122,15 +124,15 @@ var _ = Describe("[Functional][Collection] InputSelector filtering", func() {
 				filepath := fmt.Sprintf("/var/log/pods/%s_%s_%s/%s/0.log", "myname", "application1", "12345", "thecontainer")
 				Expect(instance.WriteMessagesToLog(msg, 1, filepath)).To(Succeed(), "Expected no errors writing log messages")
 
-				logs, err := instance.ReadApplicationLogsFrom(logging.OutputTypeFluentdForward)
-				Expect(err).To(BeNil(), "Error fetching logs from %s: %v", logging.OutputTypeFluentdForward, err)
-				Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", logging.OutputTypeFluentdForward)
+				logs, err := instance.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
+				Expect(err).To(BeNil(), "Error fetching logs from %s: %v", logging.OutputTypeElasticsearch, err)
+				Expect(logs).To(Not(BeEmpty()), "Exp. logs to be forwarded to %s", logging.OutputTypeElasticsearch)
 
 				// verify only appLabels1 logs appear in Application logs
 				for _, msg := range logs {
 					log.V(3).Info("Print", "msg", msg)
-					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("name", "app1"))
-					Expect(msg.Kubernetes.Labels).Should(HaveKeyWithValue("env", "env1"))
+					Expect(msg.Kubernetes.FlatLabels).Should(ContainElement("name=app1"))
+					Expect(msg.Kubernetes.FlatLabels).Should(ContainElement("env=env1"))
 					Expect(msg.Message).To(Not(ContainSubstring("Here is my message")), "Found an unexpected long entry")
 				}
 			})

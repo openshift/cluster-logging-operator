@@ -32,6 +32,7 @@ func CollectorVisitor(collectorContainer *v1.Container, podSpec *v1.PodSpec) {
 				},
 			},
 		},
+		v1.EnvVar{Name: "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", Value: "0.9"},
 	)
 	collectorContainer.VolumeMounts = append(collectorContainer.VolumeMounts,
 		v1.VolumeMount{Name: certsVolumeName, ReadOnly: true, MountPath: certsVolumePath},

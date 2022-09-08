@@ -89,7 +89,7 @@ const OVNAuditLogTemplate = `
 <source>
   @type tail
   @id ovn-audit-input
-  @label @MEASURE
+  @label @{{.OutLabel}}
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
   follow_inodes true

@@ -35,8 +35,8 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/pods/**/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+  path "/var/log/pods/*/*/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   follow_inodes true
   refresh_interval 5
@@ -44,20 +44,12 @@ var _ = Describe("Testing Config Generation", func() {
   tag kubernetes.*
   read_from_head "true"
   skip_refresh_on_startup true
-  @label @MEASURE
+  @label @CONCAT
   <parse>
-    @type multi_format
-    <pattern>
-      format json
-      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
-      keep_time_key true
-    </pattern>
-    <pattern>
-      format regexp
-      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
-      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
-      keep_time_key true
-    </pattern>
+    @type regexp
+    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<message>.*)$/
+    time_key '@timestamp'
+    keep_time_key true
   </parse>
 </source>
 `,
@@ -86,8 +78,8 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/pods/**/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+  path "/var/log/pods/*/*/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   follow_inodes true
   refresh_interval 5
@@ -96,20 +88,12 @@ var _ = Describe("Testing Config Generation", func() {
   read_from_head "true"
   read_lines_limit 1500
   skip_refresh_on_startup true
-  @label @MEASURE
+  @label @CONCAT
   <parse>
-    @type multi_format
-    <pattern>
-      format json
-      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
-      keep_time_key true
-    </pattern>
-    <pattern>
-      format regexp
-      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
-      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
-      keep_time_key true
-    </pattern>
+    @type regexp
+    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<message>.*)$/
+    time_key '@timestamp'
+    keep_time_key true
   </parse>
 </source>
 `,
@@ -131,7 +115,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type systemd
   @id systemd-input
-  @label @MEASURE
+  @label @INGRESS
   path '/var/log/journal'
   <storage>
     @type local
@@ -149,8 +133,8 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id container-input
-  path "/var/log/pods/**/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+  path "/var/log/pods/*/*/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   follow_inodes true
   refresh_interval 5
@@ -158,20 +142,12 @@ var _ = Describe("Testing Config Generation", func() {
   tag kubernetes.*
   read_from_head "true"
   skip_refresh_on_startup true
-  @label @MEASURE
+  @label @CONCAT
   <parse>
-    @type multi_format
-    <pattern>
-      format json
-      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
-      keep_time_key true
-    </pattern>
-    <pattern>
-      format regexp
-      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
-      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
-      keep_time_key true
-    </pattern>
+    @type regexp
+    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<message>.*)$/
+    time_key '@timestamp'
+    keep_time_key true
   </parse>
 </source>
 `,
@@ -193,7 +169,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
   follow_inodes true
@@ -207,7 +183,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id k8s-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
   follow_inodes true
@@ -225,7 +201,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id openshift-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
   follow_inodes true
@@ -243,7 +219,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id ovn-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
   follow_inodes true
@@ -281,7 +257,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
   follow_inodes true
@@ -296,7 +272,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id k8s-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
   follow_inodes true
@@ -315,7 +291,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id openshift-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
   follow_inodes true
@@ -334,7 +310,7 @@ var _ = Describe("Testing Config Generation", func() {
 <source>
   @type tail
   @id ovn-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
   follow_inodes true
@@ -373,7 +349,7 @@ const AllSources = `
 <source>
   @type systemd
   @id systemd-input
-  @label @MEASURE
+  @label @INGRESS
   path '/var/log/journal'
   <storage>
     @type local
@@ -391,8 +367,8 @@ const AllSources = `
 <source>
   @type tail
   @id container-input
-  path "/var/log/pods/**/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+  path "/var/log/pods/*/*/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   follow_inodes true
   refresh_interval 5
@@ -400,20 +376,12 @@ const AllSources = `
   tag kubernetes.*
   read_from_head "true"
   skip_refresh_on_startup true
-  @label @MEASURE
+  @label @CONCAT
   <parse>
-    @type multi_format
-    <pattern>
-      format json
-      time_format '%Y-%m-%dT%H:%M:%S.%N%Z'
-      keep_time_key true
-    </pattern>
-    <pattern>
-      format regexp
-      expression /^(?<time>[^\s]+) (?<stream>stdout|stderr)( (?<logtag>.))? (?<log>.*)$/
-      time_format '%Y-%m-%dT%H:%M:%S.%N%:z'
-      keep_time_key true
-    </pattern>
+    @type regexp
+    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<message>.*)$/
+    time_key '@timestamp'
+    keep_time_key true
   </parse>
 </source>
 
@@ -421,7 +389,7 @@ const AllSources = `
 <source>
   @type tail
   @id audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/audit/audit.log"
   pos_file "/var/lib/fluentd/pos/audit.log.pos"
   follow_inodes true
@@ -435,7 +403,7 @@ const AllSources = `
 <source>
   @type tail
   @id k8s-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/kube-apiserver/audit.log"
   pos_file "/var/lib/fluentd/pos/kube-apiserver.audit.log.pos"
   follow_inodes true
@@ -453,7 +421,7 @@ const AllSources = `
 <source>
   @type tail
   @id openshift-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
   follow_inodes true
@@ -471,7 +439,7 @@ const AllSources = `
 <source>
   @type tail
   @id ovn-audit-input
-  @label @MEASURE
+  @label @INGRESS
   path "/var/log/ovn/acl-audit-log.log"
   pos_file "/var/lib/fluentd/pos/acl-audit-log.pos"
   follow_inodes true

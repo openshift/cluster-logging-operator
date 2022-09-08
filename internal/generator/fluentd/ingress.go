@@ -46,6 +46,11 @@ func Ingress(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 					TemplateStr:  ProcessOVNLogs,
 				},
 				ConfLiteral{
+					Desc:         "Process Kube and OpenShift Audit logs",
+					TemplateName: "processKubeAuditEvents",
+					TemplateStr:  ProcessKubeAuditEvents,
+				},
+				ConfLiteral{
 					Desc:         "Retag Journal logs to specific tags",
 					OutLabel:     "INGRESS",
 					TemplateName: "retagJournal",
@@ -103,6 +108,17 @@ const ProcessOVNLogs string = `
   <record>
     @timestamp ${DateTime.parse(record['message'].split('|')[0]).rfc3339(6)}
     level ${record['message'].split('|')[3].downcase}
+  </record>
+</filter>
+{{end}}
+`
+const ProcessKubeAuditEvents string = `
+{{define "processKubeAuditEvents" -}}
+# {{.Desc}}
+<filter k8s-audit.log openshift-audit.log>
+  @type record_modifier
+  <record>
+    @timestamp ${record['requestReceivedTimestamp']}
   </record>
 </filter>
 {{end}}

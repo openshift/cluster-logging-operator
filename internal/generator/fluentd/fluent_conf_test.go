@@ -292,7 +292,15 @@ var _ = Describe("Generating fluentd config", func() {
       level ${record['message'].split('|')[3].downcase}
     </record>
   </filter>
-  
+
+  # Process Kube and OpenShift Audit logs
+  <filter k8s-audit.log openshift-audit.log>
+    @type record_modifier
+    <record>
+      @timestamp ${record['requestReceivedTimestamp']}
+    </record>
+  </filter>  
+
   # Retag Journal logs to specific tags
   <match journal>
     @type rewrite_tag_filter
@@ -1013,7 +1021,15 @@ var _ = Describe("Generating fluentd config", func() {
       level ${record['message'].split('|')[3].downcase}
     </record>
   </filter>
-  
+
+  # Process Kube and OpenShift Audit logs
+  <filter k8s-audit.log openshift-audit.log>
+    @type record_modifier
+    <record>
+      @timestamp ${record['requestReceivedTimestamp']}
+    </record>
+  </filter>
+
   # Retag Journal logs to specific tags
   <match journal>
     @type rewrite_tag_filter
@@ -1720,6 +1736,14 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
   
+  # Process Kube and OpenShift Audit logs
+  <filter k8s-audit.log openshift-audit.log>
+    @type record_modifier
+    <record>
+      @timestamp ${record['requestReceivedTimestamp']}
+    </record>
+  </filter>  
+
   # Retag Journal logs to specific tags
   <match journal>
     @type rewrite_tag_filter
@@ -2370,7 +2394,15 @@ var _ = Describe("Generating fluentd config", func() {
       level ${record['message'].split('|')[3].downcase}
     </record>
   </filter>
-  
+
+  # Process Kube and OpenShift Audit logs
+  <filter k8s-audit.log openshift-audit.log>
+    @type record_modifier
+    <record>
+      @timestamp ${record['requestReceivedTimestamp']}
+    </record>
+  </filter>  
+
   # Retag Journal logs to specific tags
   <match journal>
     @type rewrite_tag_filter
@@ -2804,7 +2836,15 @@ var _ = Describe("Generating fluentd config", func() {
       level ${record['message'].split('|')[3].downcase}
     </record>
   </filter>
-  
+
+  # Process Kube and OpenShift Audit logs
+  <filter k8s-audit.log openshift-audit.log>
+    @type record_modifier
+    <record>
+      @timestamp ${record['requestReceivedTimestamp']}
+    </record>
+  </filter>
+
   # Retag Journal logs to specific tags
   <match journal>
     @type rewrite_tag_filter
@@ -3812,7 +3852,15 @@ inputs:
       level ${record['message'].split('|')[3].downcase}
     </record>
   </filter>
-  
+
+  # Process Kube and OpenShift Audit logs
+  <filter k8s-audit.log openshift-audit.log>
+    @type record_modifier
+    <record>
+      @timestamp ${record['requestReceivedTimestamp']}
+    </record>
+  </filter>  
+
   # Retag Journal logs to specific tags
   <match journal>
     @type rewrite_tag_filter

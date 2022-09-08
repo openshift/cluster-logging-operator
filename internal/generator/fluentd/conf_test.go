@@ -265,7 +265,15 @@ var _ = Describe("Testing Complete Config Generation", func() {
       level ${record['message'].split('|')[3].downcase}
     </record>
   </filter>
-  
+
+  # Process Kube and OpenShift Audit logs
+  <filter k8s-audit.log openshift-audit.log>
+    @type record_modifier
+    <record>
+      @timestamp ${record['requestReceivedTimestamp']}
+    </record>
+  </filter>  
+
   # Retag Journal logs to specific tags
   <match journal>
     @type rewrite_tag_filter

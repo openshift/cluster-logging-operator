@@ -137,7 +137,8 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		return true
 	}
 
-	if templateValueString == "0001-01-01 00:00:00 +0000 UTC" && valueString != "" { // Any time value not Nil is ok if template value is empty time
+	// Any time value not Nil is ok if template value is empty time and also does not equal the value for time.Time{}
+	if templateValueString == "0001-01-01 00:00:00 +0000 UTC" && valueString != "" && valueString != "0001-01-01 00:00:00 +0000 UTC" {
 		log.V(3).Info("CompareLogLogic: Any value for 'empty time' ", "name", name, "value", valueString)
 		return true
 	}

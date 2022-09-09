@@ -39,10 +39,22 @@ const (
   </parse>
 </filter>
 {{end}}`
+
+	LogLevelSetterTemplate = `{{define "LogLevelSetter" -}}
+# {{.Desc}}
+<filter **>
+  @type record_modifier
+  remove_keys _dummy_
+  <record>
+    _dummy_ ${struct_level = record.dig('structured','level'); level = record['level']; if ![nil, level].include?(struct_level) && [nil, 'default'].include?(level); record['level']=struct_level; end; nil}
+  </record>
+</filter>
+{{end}}
+`
 )
 
 func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Element {
-	var e []Element = []Element{}
+	var e []Element
 	pipelines := spec.Pipelines
 	sort.Slice(pipelines, func(i, j int) bool {
 		return pipelines[i].Name < pipelines[j].Name
@@ -75,6 +87,11 @@ func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Elem
 					Desc:         "Parse the logs into json",
 					TemplateName: "JsonParse",
 					TemplateStr:  JsonParseTemplate,
+				},
+				ConfLiteral{
+					Desc:         "Extract log level from structured if exist",
+					TemplateName: "LogLevelSetter",
+					TemplateStr:  LogLevelSetterTemplate,
 				})
 		}
 		switch len(p.OutputRefs) {

@@ -160,6 +160,14 @@ var _ = Describe("Testing Config Generation", func() {
       json_parser oj
     </parse>
   </filter>
+  # Extract log level from structured if exist
+  <filter **>
+    @type record_modifier
+    remove_keys _dummy_
+    <record>
+      _dummy_ ${struct_level = record.dig('structured','level'); level = record['level']; if ![nil, level].include?(struct_level) && [nil, 'default'].include?(level); record['level']=struct_level; end; nil}
+    </record>
+  </filter>
   
   <match **>
     @type copy

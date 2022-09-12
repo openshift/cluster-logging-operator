@@ -55,7 +55,9 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			outputs = generator.MergeElements(outputs, gcl.Conf(o, inputs, secret, op))
 		}
 	}
-	outputs = append(outputs, PrometheusOutput(PrometheusOutputSinkName, []string{InternalMetricsSourceName}))
+	outputs = append(outputs,
+		AddNodeNameToMetric(AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
+		PrometheusOutput(PrometheusOutputSinkName, []string{AddNodenameToMetricTransformName}))
 	return outputs
 }
 
@@ -64,5 +66,12 @@ func PrometheusOutput(id string, inputs []string) generator.Element {
 		ID:      id,
 		Inputs:  helpers.MakeInputs(inputs...),
 		Address: PrometheusExporterAddress,
+	}
+}
+
+func AddNodeNameToMetric(id string, inputs []string) generator.Element {
+	return AddNodenameToMetric{
+		ID:     id,
+		Inputs: helpers.MakeInputs(inputs...),
 	}
 }

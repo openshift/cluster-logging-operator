@@ -2,10 +2,12 @@ package vector
 
 const (
 	InternalMetricsSourceName = "internal_metrics"
+	HostMetricsSourceName     = "host_metrics"
 	PrometheusOutputSinkName  = "prometheus_output"
 	PrometheusExporterAddress = "0.0.0.0:24231"
 
 	AddNodenameToMetricTransformName = "add_nodename_to_metric"
+	MetricsScrapeIntervalSeconds     = 20
 )
 
 type InternalMetrics struct {
@@ -18,12 +20,32 @@ func (InternalMetrics) Name() string {
 }
 
 //#namespace = "collector"
-//#scrape_interval_secs = {{.ScrapeIntervalSec}}
 func (i InternalMetrics) Template() string {
 	return `
 {{define "` + i.Name() + `" -}}
 [sources.{{.ID}}]
 type = "internal_metrics"
+scrape_interval_secs = {{.ScrapeIntervalSec}}
+{{end}}
+`
+}
+
+type HostMetrics struct {
+	ID                string
+	ScrapeIntervalSec int
+}
+
+func (h HostMetrics) Name() string {
+	return "hostMetricsTemplate"
+}
+
+func (h HostMetrics) Template() string {
+	return `
+{{define "` + h.Name() + `" -}}
+[sources.{{.ID}}]
+type = "host_metrics"
+collectors = ["cpu", "disk", "filesystem", "load", "host", "memory", "network"]
+scrape_interval_secs = {{.ScrapeIntervalSec}}
 {{end}}
 `
 }

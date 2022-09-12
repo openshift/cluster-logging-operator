@@ -28,7 +28,7 @@ const (
 func Sources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 	return generator.MergeElements(
 		LogSources(spec, op),
-		MetricsSources(InternalMetricsSourceName),
+		MetricsSources(),
 	)
 }
 
@@ -109,11 +109,15 @@ func ExcludeContainerPaths() string {
 	))
 }
 
-func MetricsSources(id string) []generator.Element {
+func MetricsSources() []generator.Element {
 	return []generator.Element{
 		InternalMetrics{
-			ID:                id,
-			ScrapeIntervalSec: 2,
+			ID:                InternalMetricsSourceName,
+			ScrapeIntervalSec: MetricsScrapeIntervalSeconds,
+		},
+		HostMetrics{
+			ID:                HostMetricsSourceName,
+			ScrapeIntervalSec: MetricsScrapeIntervalSeconds,
 		},
 	}
 }

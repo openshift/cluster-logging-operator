@@ -134,6 +134,12 @@ glob_minimum_cooldown_ms = 15000
 
 [sources.internal_metrics]
 type = "internal_metrics"
+scrape_interval_secs = 20
+
+[sources.host_metrics]
+type = "host_metrics"
+collectors = ["cpu", "disk", "filesystem", "load", "host", "memory", "network"]
+scrape_interval_secs = 20
 
 [transforms.container_logs]
 type = "remap"
@@ -502,6 +508,12 @@ glob_minimum_cooldown_ms = 15000
 
 [sources.internal_metrics]
 type = "internal_metrics"
+scrape_interval_secs = 20
+
+[sources.host_metrics]
+type = "host_metrics"
+collectors = ["cpu", "disk", "filesystem", "load", "host", "memory", "network"]
+scrape_interval_secs = 20
 
 [transforms.container_logs]
 type = "remap"

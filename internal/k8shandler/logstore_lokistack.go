@@ -6,122 +6,79 @@ import (
 	"strings"
 
 	"github.com/ViaQ/logerr/v2/kverrors"
-	log "github.com/ViaQ/logerr/v2/log/static"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/strings/slices"
 )
 
 const (
-	lokiStackClusterRoleName        = "logging-collector-logs-writer"
-	lokiStackClusterRoleBindingName = "logging-collector-logs-writer"
+	lokiStackFinalizer = "logging.openshift.io/lokistack-rbac"
+
+	lokiStackWriterClusterRoleName        = "logging-collector-logs-writer"
+	lokiStackWriterClusterRoleBindingName = "logging-collector-logs-writer"
+
+	lokiStackAppReaderClusterRoleName        = "logging-application-logs-reader"
+	lokiStackAppReaderClusterRoleBindingName = "logging-all-authenticated-application-logs-reader"
 )
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiStackLogStore() error {
-	if err := clusterRequest.createOrUpdateLokiStackClusterRole(); err != nil {
+	if clusterRequest.Cluster.DeletionTimestamp != nil {
+		// Skip creation if deleting
+		return nil
+	}
+
+	if err := clusterRequest.appendFinalizer(lokiStackFinalizer); err != nil {
+		return kverrors.Wrap(err, "Failed to set finalizer for LokiStack RBAC rules.")
+	}
+
+	if err := clusterRequest.createOrUpdateClusterRole(lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for LokiStack collector.")
 	}
 
-	if err := clusterRequest.createOrUpdateLokiStackClusterRoleBinding(); err != nil {
+	if err := clusterRequest.createOrUpdateClusterRoleBinding(lokiStackWriterClusterRoleBindingName, newLokiStackWriterClusterRoleBinding); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for LokiStack collector.")
 	}
 
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiStackClusterRole() error {
-	clusterRole := &rbacv1.ClusterRole{}
-	if err := clusterRequest.Get(lokiStackClusterRoleName, clusterRole); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to get ClusterRole: %w", err)
-		}
-
-		clusterRole = newLokiStackClusterRole()
-		if err := clusterRequest.Create(clusterRole); err != nil {
-			return fmt.Errorf("failed to create ClusterRole: %w", err)
-		}
-
-		return nil
+	if err := clusterRequest.createOrUpdateClusterRole(lokiStackAppReaderClusterRoleName, newLokiStackAppReaderClusterRole); err != nil {
+		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading application logs.")
 	}
 
-	wantRole := newLokiStackClusterRole()
-	if compareLokiStackClusterRole(clusterRole, wantRole) {
-		log.V(9).Info("LokiStack collector ClusterRole matches.")
-		return nil
-	}
-
-	clusterRole.Rules = wantRole.Rules
-
-	if err := clusterRequest.Update(clusterRole); err != nil {
-		return fmt.Errorf("failed to update ClusterRole: %w", err)
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiStackClusterRoleBinding() error {
-	clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-	if err := clusterRequest.Get(lokiStackClusterRoleBindingName, clusterRoleBinding); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to get ClusterRoleBinding: %w", err)
-		}
-
-		clusterRoleBinding = newLokiStackClusterRoleBinding()
-		if err := clusterRequest.Create(clusterRoleBinding); err != nil {
-			return fmt.Errorf("failed to create ClusterRoleBinding: %w", err)
-		}
-
-		return nil
-	}
-
-	wantRoleBinding := newLokiStackClusterRoleBinding()
-	if compareLokiStackClusterRoleBinding(clusterRoleBinding, wantRoleBinding) {
-		log.V(9).Info("LokiStack collector ClusterRoleBinding matches.")
-		return nil
-	}
-
-	clusterRoleBinding.RoleRef = wantRoleBinding.RoleRef
-	clusterRoleBinding.Subjects = wantRoleBinding.Subjects
-
-	if err := clusterRequest.Update(clusterRoleBinding); err != nil {
-		return fmt.Errorf("failed to update ClusterRoleBinding: %w", err)
+	if err := clusterRequest.createOrUpdateClusterRoleBinding(lokiStackAppReaderClusterRoleBindingName, newLokiStackAppReaderClusterRoleBinding); err != nil {
+		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for reading application logs.")
 	}
 
 	return nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeLokiStackRbac() error {
-	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: lokiStackClusterRoleBindingName,
-		},
-	}
-	if err := clusterRequest.Delete(clusterRoleBinding); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return kverrors.Wrap(err, "Failed to delete LokiStack ClusterRoleBinding", "name", lokiStackClusterRoleBindingName)
-		}
+	if err := clusterRequest.removeClusterRoleBinding(lokiStackAppReaderClusterRoleBindingName); err != nil {
+		return err
 	}
 
-	clusterRole := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: lokiStackClusterRoleName,
-		},
+	if err := clusterRequest.removeClusterRole(lokiStackAppReaderClusterRoleName); err != nil {
+		return err
 	}
-	if err := clusterRequest.Delete(clusterRole); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return kverrors.Wrap(err, "Failed to delete LokiStack ClusterRole", "name", lokiStackClusterRoleName)
-		}
+
+	if err := clusterRequest.removeClusterRoleBinding(lokiStackWriterClusterRoleBindingName); err != nil {
+		return err
 	}
+
+	if err := clusterRequest.removeClusterRole(lokiStackWriterClusterRoleName); err != nil {
+		return err
+	}
+
+	if err := clusterRequest.removeFinalizer(lokiStackFinalizer); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func newLokiStackClusterRole() *rbacv1.ClusterRole {
+func newLokiStackWriterClusterRole() *rbacv1.ClusterRole {
 	return &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: lokiStackClusterRoleName,
+			Name: lokiStackWriterClusterRoleName,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -144,15 +101,15 @@ func newLokiStackClusterRole() *rbacv1.ClusterRole {
 	}
 }
 
-func newLokiStackClusterRoleBinding() *rbacv1.ClusterRoleBinding {
+func newLokiStackWriterClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: lokiStackClusterRoleBindingName,
+			Name: lokiStackWriterClusterRoleBindingName,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     "logging-collector-logs-writer",
+			Name:     lokiStackWriterClusterRoleName,
 		},
 		Subjects: []rbacv1.Subject{
 			{
@@ -164,13 +121,48 @@ func newLokiStackClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 	}
 }
 
-func compareLokiStackClusterRole(got, want *rbacv1.ClusterRole) bool {
-	return equality.Semantic.DeepEqual(got.Rules, want.Rules)
+func newLokiStackAppReaderClusterRole() *rbacv1.ClusterRole {
+	return &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: lokiStackAppReaderClusterRoleName,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{
+					"loki.grafana.com",
+				},
+				Resources: []string{
+					"application",
+				},
+				ResourceNames: []string{
+					"logs",
+				},
+				Verbs: []string{
+					"get",
+				},
+			},
+		},
+	}
 }
 
-func compareLokiStackClusterRoleBinding(got, want *rbacv1.ClusterRoleBinding) bool {
-	return equality.Semantic.DeepEqual(got.RoleRef, want.RoleRef) &&
-		equality.Semantic.DeepEqual(got.Subjects, want.Subjects)
+func newLokiStackAppReaderClusterRoleBinding() *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: lokiStackAppReaderClusterRoleBindingName,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     lokiStackAppReaderClusterRoleName,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "Group",
+				Name:     "system:authenticated",
+			},
+		},
+	}
 }
 
 func (clusterRequest *ClusterLoggingRequest) processPipelinesForLokiStack(inPipelines []loggingv1.PipelineSpec) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec) {

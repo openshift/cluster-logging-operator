@@ -388,9 +388,16 @@ key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 
+[transforms.add_nodename_to_metric]
+type = "remap"
+inputs = ["internal_metrics"]
+source = '''
+.tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
+'''
+
 [sinks.prometheus_output]
 type = "prometheus_exporter"
-inputs = ["internal_metrics"]
+inputs = ["add_nodename_to_metric"]
 address = "0.0.0.0:24231"
 default_namespace = "collector"
 
@@ -891,9 +898,16 @@ key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 
+[transforms.add_nodename_to_metric]
+type = "remap"
+inputs = ["internal_metrics"]
+source = '''
+.tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
+'''
+
 [sinks.prometheus_output]
 type = "prometheus_exporter"
-inputs = ["internal_metrics"]
+inputs = ["add_nodename_to_metric"]
 address = "0.0.0.0:24231"
 default_namespace = "collector"
 

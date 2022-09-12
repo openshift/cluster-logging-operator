@@ -3,15 +3,12 @@ package elasticsearchunmanaged
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"path/filepath"
 	"runtime"
 
-	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -48,31 +45,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		if err := e2e.CreateClusterLogging(cr); err != nil {
 			Fail(fmt.Sprintf("Unable to create an instance of cluster logging: %v", err))
 		}
-	})
-
-	Describe("when the output is Elasticsearch", func() {
-
-		Context("and JSON parsing is enabled", func() {
-
-			It("should fail validation when structuredTypeKey references an invalid value", func() {
-				forwarder := testruntime.NewClusterLogForwarder()
-				clfb := functional.NewClusterLogForwarderBuilder(forwarder).
-					FromInput(logging.InputNameApplication).
-					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
-						spec.Elasticsearch = &logging.Elasticsearch{
-							StructuredTypeKey: "junk",
-						}
-					}, logging.OutputTypeElasticsearch)
-				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
-				var err error
-				if err = e2e.CreateClusterLogForwarder(forwarder); err == nil {
-					Fail(fmt.Sprintf("Expected kubevalidation to fail creation of: %#v", forwarder))
-				}
-				Expect(err.Error()).To(MatchRegexp(`invalid.*spec\.outputs\[[0-9]*\]\.elasticsearch\.structuredTypeKey`))
-			})
-
-		})
-
 	})
 
 	Describe("when the output is a third-party managed elasticsearch", func() {

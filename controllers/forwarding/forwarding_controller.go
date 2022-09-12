@@ -69,6 +69,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client)
 	if reconcileErr != nil {
 		// if cluster is set to fail to reconcile then set healthStatus as 0
+		telemetry.ResetCLFMetricsNoErr()
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLFMetricsNoErr()
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
@@ -84,6 +85,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		// This returns False if SetCondition updates the condition instead of setting it.
 		// For condReady, it will always be updating the status.
 		if !instance.Status.Conditions.SetCondition(condReady) {
+			telemetry.ResetCLFMetricsNoErr()
 			telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
 			telemetry.UpdateCLFMetricsNoErr()
 			r.Recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
@@ -106,6 +108,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	if instance.Status.IsDegraded() {
 		msg := "Some pipelines are degraded or invalid"
 		if instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg)) {
+			telemetry.ResetCLFMetricsNoErr()
 			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 			telemetry.UpdateCLFMetricsNoErr()
 			r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), msg)

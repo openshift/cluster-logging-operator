@@ -37,6 +37,7 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 
 	if !clusterLoggingRequest.isManaged() {
 		// if cluster is set to unmanaged then set managedStatus as 0
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		return clusterLoggingRequest.Cluster, nil
@@ -61,6 +62,7 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 	if clusterLoggingRequest.IncludesManagedStorage() {
 		// Reconcile Log Store
 		if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
+			telemetry.ResetCLMetricsNoErr()
 			telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 			telemetry.UpdateCLMetricsNoErr()
 			return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
@@ -68,6 +70,7 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 
 		// Reconcile Visualization
 		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
+			telemetry.ResetCLMetricsNoErr()
 			telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 			telemetry.UpdateCLMetricsNoErr()
 			return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
@@ -90,6 +93,7 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.Data.CollectorErrorCount.Inc("CollectorErrorCount")
 		telemetry.UpdateCLMetricsNoErr()
@@ -98,6 +102,7 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 
 	// Reconcile metrics Dashboards
 	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader, clusterLoggingRequest.Cluster.Spec.Collection); err != nil {
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)
@@ -133,6 +138,7 @@ func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	log.V(1).Info("Removing managed store components...")
 	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeLokiStackRbac} {
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		if err := remove(); err != nil {
@@ -160,6 +166,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		return nil
@@ -171,6 +178,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
+		telemetry.ResetCLFMetricsNoErr()
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLFMetricsNoErr()
 		log.Error(err, msg)
@@ -179,6 +187,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 
 	///////
 	// if it reaches to this point without throwing any errors than mark CLF in healthy state as with '1' value and also CL in healthy state with '1' value
+	telemetry.ResetCLFMetricsNoErr()
 	telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
 	updateCLFInfo := UpdateInfofromCLF(&clusterLoggingRequest)
 	if updateCLFInfo != nil {
@@ -203,6 +212,7 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		return nil

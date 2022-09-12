@@ -35,6 +35,13 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 	}
 	clusterLoggingRequest.Cluster = instance
 
+	if instance.GetDeletionTimestamp() != nil {
+		// ClusterLogging is being deleted, remove resources that can not be garbage-collected.
+		if err := clusterLoggingRequest.removeLokiStackRbac(); err != nil {
+			log.Error(err, "Error removing RBAC for accessing LokiStack.")
+		}
+	}
+
 	if !clusterLoggingRequest.isManaged() {
 		// if cluster is set to unmanaged then set managedStatus as 0
 		telemetry.ResetCLMetricsNoErr()

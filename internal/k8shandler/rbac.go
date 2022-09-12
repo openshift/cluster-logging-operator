@@ -2,17 +2,18 @@ package k8shandler
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/equality"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	rbac "k8s.io/api/rbac/v1"
+	"github.com/ViaQ/logerr/v2/kverrors"
+	log "github.com/ViaQ/logerr/v2/log/static"
+	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//NewPolicyRule stubs policy rule
-func NewPolicyRule(apiGroups, resources, resourceNames, verbs []string) rbac.PolicyRule {
-	return rbac.PolicyRule{
+// NewPolicyRule stubs policy rule
+func NewPolicyRule(apiGroups, resources, resourceNames, verbs []string) rbacv1.PolicyRule {
+	return rbacv1.PolicyRule{
 		APIGroups:     apiGroups,
 		Resources:     resources,
 		ResourceNames: resourceNames,
@@ -21,16 +22,16 @@ func NewPolicyRule(apiGroups, resources, resourceNames, verbs []string) rbac.Pol
 }
 
 //NewPolicyRules stubs policy rules
-func NewPolicyRules(rules ...rbac.PolicyRule) []rbac.PolicyRule {
+func NewPolicyRules(rules ...rbacv1.PolicyRule) []rbacv1.PolicyRule {
 	return rules
 }
 
-//NewRole stubs a role
-func NewRole(roleName, namespace string, rules []rbac.PolicyRule) *rbac.Role {
-	return &rbac.Role{
+// NewRole stubs a role
+func NewRole(roleName, namespace string, rules []rbacv1.PolicyRule) *rbacv1.Role {
+	return &rbacv1.Role{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Role",
-			APIVersion: rbac.SchemeGroupVersion.String(),
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      roleName,
@@ -40,92 +41,156 @@ func NewRole(roleName, namespace string, rules []rbac.PolicyRule) *rbac.Role {
 	}
 }
 
-//NewSubject stubs a new subect
-func NewSubject(kind, name string) rbac.Subject {
-	return rbac.Subject{
+// NewSubject stubs a new subject
+func NewSubject(kind, name string) rbacv1.Subject {
+	return rbacv1.Subject{
 		Kind:     kind,
 		Name:     name,
-		APIGroup: rbac.GroupName,
+		APIGroup: rbacv1.GroupName,
 	}
 }
 
-//NewSubjects stubs subjects
-func NewSubjects(subjects ...rbac.Subject) []rbac.Subject {
+// NewSubjects stubs subjects
+func NewSubjects(subjects ...rbacv1.Subject) []rbacv1.Subject {
 	return subjects
 }
 
-//NewRoleBinding stubs a role binding
-func NewRoleBinding(bindingName, namespace, roleName string, subjects []rbac.Subject) *rbac.RoleBinding {
-	return &rbac.RoleBinding{
+// NewRoleBinding stubs a role binding
+func NewRoleBinding(bindingName, namespace, roleName string, subjects []rbacv1.Subject) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RoleBinding",
-			APIVersion: rbac.SchemeGroupVersion.String(),
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      bindingName,
 			Namespace: namespace,
 		},
-		RoleRef: rbac.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			Kind:     "Role",
 			Name:     roleName,
-			APIGroup: rbac.GroupName,
+			APIGroup: rbacv1.GroupName,
 		},
 		Subjects: subjects,
 	}
 }
 
-//NewClusterRoleBinding stubs a cluster role binding
-func NewClusterRoleBinding(bindingName, roleName string, subjects []rbac.Subject) *rbac.ClusterRoleBinding {
-	return &rbac.ClusterRoleBinding{
+// NewClusterRoleBinding stubs a cluster role binding
+func NewClusterRoleBinding(bindingName, roleName string, subjects []rbacv1.Subject) *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRoleBinding",
-			APIVersion: rbac.SchemeGroupVersion.String(),
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: bindingName,
 		},
-		RoleRef: rbac.RoleRef{
+		RoleRef: rbacv1.RoleRef{
 			Kind:     "ClusterRole",
 			Name:     roleName,
-			APIGroup: rbac.GroupName,
+			APIGroup: rbacv1.GroupName,
 		},
 		Subjects: subjects,
 	}
 }
 
-// CreateClusterRole creates a cluser role or returns error
-func (clusterRequest *ClusterLoggingRequest) CreateClusterRole(name string, rules []rbac.PolicyRule, cluster *logging.ClusterLogging) (*rbac.ClusterRole, error) {
-	clusterRole := &rbac.ClusterRole{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterRole",
-			APIVersion: rbac.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Rules: rules,
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateClusterRole(name string, generator func() *rbacv1.ClusterRole) error {
+	clusterRole := &rbacv1.ClusterRole{}
+	if err := clusterRequest.Get(name, clusterRole); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to get ClusterRole: %w", err)
+		}
+
+		clusterRole = generator()
+		if err := clusterRequest.Create(clusterRole); err != nil {
+			return fmt.Errorf("failed to create ClusterRole: %w", err)
+		}
+
+		return nil
 	}
 
-	err := clusterRequest.Create(clusterRole)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating '%s' clusterrole: %v", name, err)
+	wantRole := generator()
+	if compareClusterRole(clusterRole, wantRole) {
+		log.V(9).Info("LokiStack collector ClusterRole matches.")
+		return nil
 	}
-	return clusterRole, nil
-}
 
-//RemoveClusterRoleBinding removes a cluster role binding
-func (clusterRequest *ClusterLoggingRequest) RemoveClusterRoleBinding(name string) error {
+	clusterRole.Rules = wantRole.Rules
 
-	binding := NewClusterRoleBinding(
-		name,
-		"",
-		[]rbac.Subject{},
-	)
-
-	err := clusterRequest.Delete(binding)
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting %q clusterrolebinding: %v", name, err)
+	if err := clusterRequest.Update(clusterRole); err != nil {
+		return fmt.Errorf("failed to update ClusterRole: %w", err)
 	}
 
 	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) createOrUpdateClusterRoleBinding(name string, generator func() *rbacv1.ClusterRoleBinding) error {
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+	if err := clusterRequest.Get(name, clusterRoleBinding); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to get ClusterRoleBinding: %w", err)
+		}
+
+		clusterRoleBinding = generator()
+		if err := clusterRequest.Create(clusterRoleBinding); err != nil {
+			return fmt.Errorf("failed to create ClusterRoleBinding: %w", err)
+		}
+
+		return nil
+	}
+
+	wantRoleBinding := generator()
+	if compareClusterRoleBinding(clusterRoleBinding, wantRoleBinding) {
+		log.V(9).Info("LokiStack collector ClusterRoleBinding matches.")
+		return nil
+	}
+
+	clusterRoleBinding.RoleRef = wantRoleBinding.RoleRef
+	clusterRoleBinding.Subjects = wantRoleBinding.Subjects
+
+	if err := clusterRequest.Update(clusterRoleBinding); err != nil {
+		return fmt.Errorf("failed to update ClusterRoleBinding: %w", err)
+	}
+
+	return nil
+}
+
+// removeClusterRoleBinding removes a ClusterRoleBinding
+func (clusterRequest *ClusterLoggingRequest) removeClusterRoleBinding(name string) error {
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	if err := clusterRequest.Delete(clusterRoleBinding); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return kverrors.Wrap(err, "Failed to delete ClusterRoleBinding", "name", name)
+		}
+	}
+
+	return nil
+}
+
+func (clusterRequest *ClusterLoggingRequest) removeClusterRole(name string) error {
+	clusterRole := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+	}
+	if err := clusterRequest.Delete(clusterRole); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return kverrors.Wrap(err, "Failed to delete ClusterRole", "name", name)
+		}
+	}
+
+	return nil
+}
+
+func compareClusterRole(got, want *rbacv1.ClusterRole) bool {
+	return equality.Semantic.DeepEqual(got.Rules, want.Rules)
+}
+
+func compareClusterRoleBinding(got, want *rbacv1.ClusterRoleBinding) bool {
+	return equality.Semantic.DeepEqual(got.RoleRef, want.RoleRef) &&
+		equality.Semantic.DeepEqual(got.Subjects, want.Subjects)
 }

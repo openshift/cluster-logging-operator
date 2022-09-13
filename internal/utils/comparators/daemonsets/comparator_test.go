@@ -39,12 +39,14 @@ var _ = Describe("daemonset#AreSame", func() {
 		It("should recognize the numbers are different", func() {
 			container := v1.Container{}
 			desired.Spec.Template.Spec.Containers = append(desired.Spec.Template.Spec.Containers, container)
-			Expect(daemonsets.AreSame(current, desired)).To(BeFalse())
+			ok, _ := daemonsets.AreSame(current, desired)
+			Expect(ok).To(BeFalse())
 		})
 
 		It("should recognize different images", func() {
 			desired.Spec.Template.Spec.Containers[0].Image = "bar"
-			Expect(daemonsets.AreSame(current, desired)).To(BeFalse())
+			ok, _ := daemonsets.AreSame(current, desired)
+			Expect(ok).To(BeFalse())
 		})
 	})
 
@@ -53,12 +55,14 @@ var _ = Describe("daemonset#AreSame", func() {
 		It("should recognize the numbers are different", func() {
 			container := v1.Container{}
 			desired.Spec.Template.Spec.InitContainers = append(desired.Spec.Template.Spec.InitContainers, container)
-			Expect(daemonsets.AreSame(current, desired)).To(BeFalse())
+			ok, _ := daemonsets.AreSame(current, desired)
+			Expect(ok).To(BeFalse())
 		})
 
 		It("should recognize different images", func() {
 			desired.Spec.Template.Spec.InitContainers[0].Image = "bar"
-			Expect(daemonsets.AreSame(current, desired)).To(BeFalse())
+			ok, _ := daemonsets.AreSame(current, desired)
+			Expect(ok).To(BeFalse())
 		})
 	})
 

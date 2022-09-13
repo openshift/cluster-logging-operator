@@ -7,6 +7,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	corev1 "k8s.io/api/core/v1"
@@ -54,9 +55,10 @@ func condInvalid(format string, args ...interface{}) status.Condition {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.V(3).Info("clusterlogforwarder-controller fetching LF instance")
-
 	// Fetch the ClusterLogForwarder instance
 	instance := &logging.ClusterLogForwarder{}
+	loggingruntime.Initialize(instance, request.NamespacedName.Namespace, request.NamespacedName.Name)
+	r.Recorder.Event(instance, corev1.EventTypeNormal, constants.EventReasonReconcilingLoggingCR, "Reconciling logging resource")
 	if err := r.Client.Get(ctx, request.NamespacedName, instance); err != nil {
 		log.V(2).Info("clusterlogforwarder-controller Error getting instance. It will be retried if other then 'NotFound'", "error", err)
 		if !errors.IsNotFound(err) {

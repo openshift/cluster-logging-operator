@@ -281,7 +281,30 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 
 		Context("if elasticsearch structuredTypeKey wrongly configured", func() {
 			It("should send logs to app-write", func() {
-				Skip("Function test replace by e2e (forward_to_unmanged_elasticsearch_test.go) because of dependency upon kubebuilder validations")
+				clfb := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
+					FromInput(logging.InputNameApplication).
+					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+						spec.Elasticsearch = &logging.Elasticsearch{
+							StructuredTypeKey: "junk",
+						}
+					}, logging.OutputTypeElasticsearch)
+				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+				Expect(framework.Deploy()).To(BeNil())
+
+				applicationLogLine := functional.CreateAppLogFromJson(jsonLog)
+				Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
+				raw, err := framework.GetLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, AppIndex)
+				Expect(err).To(BeNil(), "Expected no errors reading the logs")
+				Expect(raw).To(Not(BeEmpty()))
+
+				// Parse log line
+				var logs []types.ApplicationLog
+				err = types.StrictlyParseLogs(raw, &logs)
+				Expect(err).To(BeNil(), "Expected no errors parsing the logs")
+				// Compare to expected template
+				outputTestLog := logs[0]
+				outputLogTemplate.ViaqIndexName = ""
+				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 			})
 		})
 

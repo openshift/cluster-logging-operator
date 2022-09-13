@@ -3,13 +3,13 @@
   "rules":
   - "alert": "FluentdNodeDown"
     "annotations":
-      "message": "Prometheus could not scrape fluentd {{ $labels.instance }} for more than 10m."
+      "message": "Prometheus could not scrape fluentd {{ $labels.container }} for more than 10m."
       "summary": "Fluentd cannot be scraped"
     "expr": |
-      up{job="collector"} == 0 or absent(up{job="collector"}) == 1
+      up{job = "collector", container = "collector"} == 0 or absent(up{job="collector", container="collector"}) == 1
     "for": "10m"
     "labels":
-      "service": "fluentd"
+      "service": "collector"
       "severity": "critical"
       namespace: "openshift-logging"
   - "alert": "FluentdQueueLengthIncreasing"
@@ -20,7 +20,7 @@
       ( 0 * (deriv(fluentd_output_status_emit_records[1m] offset 1h)))  + on(pod,plugin_id)  ( deriv(fluentd_output_status_buffer_queue_length[10m]) > 0 and delta(fluentd_output_status_buffer_queue_length[1h]) > 1 )
     "for": "1h"
     "labels":
-      "service": "fluentd"
+      "service": "collector"
       "severity": "Warning"
       namespace: "openshift-logging"
   - alert: FluentDHighErrorRate

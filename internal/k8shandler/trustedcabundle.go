@@ -1,7 +1,10 @@
 package k8shandler
 
 import (
+	"context"
 	"fmt"
+	"k8s.io/client-go/util/retry"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -12,35 +15,48 @@ import (
 //createOrGetTrustedCABundleConfigMap creates or returns an existing Trusted CA Bundle ConfigMap.
 //By setting label "config.openshift.io/inject-trusted-cabundle: true", the cert is automatically filled/updated.
 func (clusterRequest *ClusterLoggingRequest) createOrGetTrustedCABundleConfigMap(name string) (*corev1.ConfigMap, error) {
-	configMap := NewConfigMap(
+	desired := NewConfigMap(
 		name,
 		clusterRequest.Cluster.Namespace,
 		map[string]string{
 			constants.TrustedCABundleKey: "",
 		},
 	)
-	configMap.ObjectMeta.Labels = make(map[string]string)
-	configMap.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
+	desired.ObjectMeta.Labels = make(map[string]string)
+	desired.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
 
-	utils.AddOwnerRefToObject(configMap, utils.AsOwner(clusterRequest.Cluster))
+	utils.AddOwnerRefToObject(desired, utils.AsOwner(clusterRequest.Cluster))
 
-	err := clusterRequest.Create(configMap)
-	if err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("failed to create trusted CA bundle config map %q for %q: %s", name, clusterRequest.Cluster.Name, err)
-		}
-
-		// Get the existing config map which may include an injected CA bundle
-		if err = clusterRequest.Get(configMap.Name, configMap); err != nil {
+	reason := constants.EventReasonGetObject
+	var current *corev1.ConfigMap
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		current = &corev1.ConfigMap{}
+		key := client.ObjectKeyFromObject(desired)
+		if err := clusterRequest.Client.Get(context.TODO(), key, current); err != nil {
 			if errors.IsNotFound(err) {
-				// the object doesn't exist -- it was likely culled
-				// recreate it on the next time through if necessary
-				return nil, fmt.Errorf("failed to find trusted CA bundle config map %q for %q: %s", name, clusterRequest.Cluster.Name, err)
+				reason = constants.EventReasonCreateObject
+				return clusterRequest.Client.Create(context.TODO(), desired)
 			}
-			return nil, fmt.Errorf("failed to get trusted CA bundle config map %q for %q: %s", name, clusterRequest.Cluster.Name, err)
+			return fmt.Errorf("failed to get %v ConfigMap: %w", key, err)
 		}
+		if val := current.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel]; val == "true" {
+			return nil
+		}
+		if current.ObjectMeta.Labels == nil {
+			current.ObjectMeta.Labels = map[string]string{}
+		}
+		current.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
+		reason = constants.EventReasonUpdateObject
+		return clusterRequest.Client.Update(context.TODO(), current)
+	})
+	eventType := corev1.EventTypeNormal
+	msg := fmt.Sprintf("%s ConfigMap %s/%s", reason, desired.Namespace, desired.Name)
+	if retryErr != nil {
+		eventType = corev1.EventTypeWarning
+		msg = fmt.Sprintf("Unable to %s: %v", msg, retryErr)
 	}
-	return configMap, err
+	clusterRequest.EventRecorder.Event(desired, eventType, reason, msg)
+	return current, retryErr
 }
 
 func calcTrustedCAHashValue(configMap *corev1.ConfigMap) (string, error) {

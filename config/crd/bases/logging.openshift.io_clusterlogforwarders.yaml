@@ -190,6 +190,36 @@ spec:
                           type: string
                         region:
                           type: string
+                        retentionInDays:
+                          description: 'RetentionInDays defines the expiry time for
+                            auto created log group in days. This is only supported
+                            by fluentd log collector. Possible values are: 1, 3, 5,
+                            7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731,
+                            1827, 2192, 2557, 2922, 3288, and 3653.'
+                          enum:
+                          - 1
+                          - 3
+                          - 5
+                          - 7
+                          - 14
+                          - 30
+                          - 60
+                          - 90
+                          - 120
+                          - 150
+                          - 180
+                          - 365
+                          - 400
+                          - 545
+                          - 731
+                          - 1827
+                          - 2192
+                          - 2557
+                          - 2922
+                          - 3288
+                          - 3653
+                          format: int32
+                          type: integer
                       type: object
                     elasticsearch:
                       properties:

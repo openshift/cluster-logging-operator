@@ -36,9 +36,10 @@ ssl_verify_peer false`
 }
 
 type CloudWatch struct {
-	Region         string
-	SecurityConfig Element
-	EndpointConfig Element
+	Region          string
+	RetentionInDays *int32
+	SecurityConfig  Element
+	EndpointConfig  Element
 }
 
 func (cw CloudWatch) Name() string {
@@ -49,6 +50,9 @@ func (cw CloudWatch) Template() string {
 	return `{{define "` + cw.Name() + `" -}}
 @type cloudwatch_logs
 auto_create_stream true
+{{if .RetentionInDays -}}
+retention_in_days {{.RetentionInDays}}
+{{end -}}
 region {{.Region }}
 log_group_name_key cw_group_name
 log_stream_name_key cw_stream_name
@@ -94,9 +98,10 @@ func OutputConf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o log
 	return Match{
 		MatchTags: "**",
 		MatchElement: CloudWatch{
-			Region:         o.Cloudwatch.Region,
-			SecurityConfig: SecurityConfig(o, secret),
-			EndpointConfig: EndpointConfig(o),
+			Region:          o.Cloudwatch.Region,
+			RetentionInDays: o.Cloudwatch.RetentionInDays,
+			SecurityConfig:  SecurityConfig(o, secret),
+			EndpointConfig:  EndpointConfig(o),
 		},
 	}
 }

@@ -279,6 +279,66 @@ var _ = Describe("Generating fluentd config", func() {
 				Expect(results).To(EqualTrimLines(expConf))
 			})
 		})
+		Context("with retention period in days", func() {
+			var retentionPeriodInDays int32 = 30
+			BeforeEach(func() {
+				output.Cloudwatch.GroupBy = loggingv1.LogGroupByNamespaceName
+				output.Cloudwatch.GroupPrefix = nil
+				output.Cloudwatch.RetentionInDays = &retentionPeriodInDays
+			})
+			It("should provide a valid configuration", func() {
+				expConf := `
+<label @MY_CLOUDWATCH>
+  <filter ` + source.InfraTagsForMultilineEx + `>
+    @type record_modifier
+    <record>
+      cw_group_name infrastructure
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+
+  <filter ` + source.ApplicationTagsForMultilineEx + `>
+    @type record_modifier
+    <record>
+      cw_group_name ${record['kubernetes']['namespace_name']}
+      cw_stream_name ${tag}
+    </record>
+  </filter>
+
+  <filter ` + source.AuditTags + `>
+    @type record_modifier
+    <record>
+      cw_group_name audit
+      cw_stream_name ${record['hostname']}.${tag}
+    </record>
+  </filter>
+
+  <match **>
+    @type cloudwatch_logs
+    auto_create_stream true
+    retention_in_days 30
+    region anumber1
+    log_group_name_key cw_group_name
+    log_stream_name_key cw_stream_name
+    remove_log_stream_name_key true
+    remove_log_group_name_key true
+    concurrency 2
+    aws_key_id "#{open('/var/run/ocp-collector/secrets/my-secret/aws_access_key_id','r') do |f|f.read.strip end}"
+    aws_sec_key "#{open('/var/run/ocp-collector/secrets/my-secret/aws_secret_access_key','r') do |f|f.read.strip end}"
+    include_time_key true
+    log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
+  </match>
+</label>
+`
+				es := Conf(nil, secrets[output.Secret.Name], output, nil)
+				results, err := g.GenerateConf(es...)
+				Expect(err).To(BeNil())
+				Expect(results).To(EqualTrimLines(expConf))
+			})
+		})
 	})
 })
 
@@ -557,6 +617,69 @@ var _ = Describe("Generating fluentd config for sts", func() {
 				es := Conf(nil, secrets[output.Secret.Name], output, nil)
 				results, err := g.GenerateConf(es...)
 				Expect(err).To(BeNil()) //
+				Expect(results).To(EqualTrimLines(expConf))
+			})
+		})
+		Context("grouped by namespace using sts", func() {
+			var retentionPeriodInDays int32 = 30
+			BeforeEach(func() {
+				output.Cloudwatch.GroupBy = loggingv1.LogGroupByNamespaceName
+				output.Cloudwatch.GroupPrefix = nil
+				output.Cloudwatch.RetentionInDays = &retentionPeriodInDays
+			})
+			It("should provide a valid configuration for sts", func() {
+				expConf := `
+<label @MY_CLOUDWATCH>
+ <filter ` + source.InfraTagsForMultilineEx + `>
+   @type record_modifier
+   <record>
+     cw_group_name infrastructure
+     cw_stream_name ${record['hostname']}.${tag}
+   </record>
+ </filter>
+
+ <filter ` + source.ApplicationTagsForMultilineEx + `>
+   @type record_modifier
+   <record>
+     cw_group_name ${record['kubernetes']['namespace_name']}
+     cw_stream_name ${tag}
+   </record>
+ </filter>
+
+ <filter ` + source.AuditTags + `>
+   @type record_modifier
+   <record>
+     cw_group_name audit
+     cw_stream_name ${record['hostname']}.${tag}
+   </record>
+ </filter>
+
+ <match **>
+   @type cloudwatch_logs
+   auto_create_stream true
+   retention_in_days 30
+   region anumber1
+   log_group_name_key cw_group_name
+   log_stream_name_key cw_stream_name
+   remove_log_stream_name_key true
+   remove_log_group_name_key true
+   concurrency 2
+   <web_identity_credentials>
+     role_arn "` + roleArn + `"
+     web_identity_token_file "` + webIdentityTokenFile + `"
+     role_session_name "` + constants.AWSRoleSessionName + `"
+   </web_identity_credentials>
+   include_time_key true
+   log_rejected_request true
+	<buffer>
+	  disable_chunk_backup true
+	</buffer>
+ </match>
+</label>
+`
+				es := Conf(nil, secrets[output.Secret.Name], output, nil)
+				results, err := g.GenerateConf(es...)
+				Expect(err).To(BeNil())
 				Expect(results).To(EqualTrimLines(expConf))
 			})
 		})

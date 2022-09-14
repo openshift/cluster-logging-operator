@@ -46,6 +46,13 @@ type Cloudwatch struct {
 	// +required
 	Region string `json:"region,omitempty"`
 
+	// RetentionInDays defines the expiry time for auto created log group in days.
+	// This is only supported by fluentd log collector. Possible values are:
+	// 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, and 3653.
+	// +optional
+	//+kubebuilder:validation:Enum:=1;3;5;7;14;30;60;90;120;150;180;365;400;545;731;1827;2192;2557;2922;3288;3653
+	RetentionInDays *int32 `json:"retentionInDays,omitempty"`
+
 	//GroupBy defines the strategy for grouping logstreams
 	// +required
 	//+kubebuilder:validation:Enum:=logType;namespaceName;namespaceUUID

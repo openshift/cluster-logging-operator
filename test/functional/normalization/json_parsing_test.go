@@ -263,4 +263,27 @@ var _ = Describe("[Functional][Normalization]Json log parsing", func() {
 		log.V(2).Info("Received", "Diff", diff)
 		Expect(normalizeJson(logs[0].Message)).To(Equal(expectedMessage), "message field not matching")
 	})
+
+	It("should not parse raise warn message in collector container : LOG-1806", func() {
+		// This test case is disabled to fix the behavior of invalid json parsing
+		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
+		Expect(framework.Deploy()).To(BeNil())
+
+		// Log message data
+		invalidJson := `{"key":"v}`
+		timestamp := "2020-11-04T18:13:59.061892+00:00"
+
+		// Write log line as input to fluentd
+		expectedMessage := invalidJson
+		applicationLogLine := fmt.Sprintf("%s stdout F %s", timestamp, expectedMessage)
+		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
+
+		// Read line from Log Forward output
+		_, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		Expect(err).To(BeNil(), "Expected no errors reading the logs")
+
+		output, err := framework.GetLogsFromCollector()
+		Expect(err).To(BeNil(), "Expected no errors reading the logs from collector")
+		Expect(strings.Contains(output, "class=Fluent::Plugin::Parser::ParserError error=\"pattern not matched with data")).To(BeFalse())
+	})
 })

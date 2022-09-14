@@ -351,3 +351,11 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 func (f *CollectorFunctionalFramework) WaitForPodToBeReady() error {
 	return oc.Literal().From("oc wait -n %s pod/%s --timeout=60s --for=condition=Ready", f.Test.NS.Name, f.Name).Output()
 }
+
+func (f *CollectorFunctionalFramework) GetLogsFromCollector() (string, error) {
+	output, err := oc.Literal().From("oc logs -n %s pod/%s -c %s", f.Test.NS.Name, f.Name, constants.CollectorName).Run()
+	if err != nil {
+		return output, err
+	}
+	return output, nil
+}

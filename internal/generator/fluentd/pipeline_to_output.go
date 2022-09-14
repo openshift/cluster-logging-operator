@@ -33,6 +33,10 @@ const (
   key_name message
   reserve_data yes
   hash_value_field structured
+  {{/* https://issues.redhat.com/browse/LOG-1806 
+    A non-JSON log message is forwarded as it would be if JSON parsing was not enabled (e.g. to the app index).
+    This warning is just fluentd detecting a non-JSON message, but it will still be forwarded to the non-JSON index. */}}
+  emit_invalid_record_to_error false 
   <parse>
     @type json
     json_parser oj

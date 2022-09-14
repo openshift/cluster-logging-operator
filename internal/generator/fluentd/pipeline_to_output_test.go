@@ -155,6 +155,7 @@ var _ = Describe("Testing Config Generation", func() {
     key_name message
     reserve_data yes
     hash_value_field structured
+    emit_invalid_record_to_error false
     <parse>
       @type json
       json_parser oj

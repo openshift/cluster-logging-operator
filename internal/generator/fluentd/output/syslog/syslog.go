@@ -113,7 +113,7 @@ func OutputConf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o log
 	if genhelper.IsDebugOutput(op) {
 		return genhelper.DebugOutput
 	}
-	// URL is parasable, checked at input sanitization
+	// URL is parsable, checked at input sanitization
 	u, _ := urlhelper.Parse(o.URL)
 	port := u.Port()
 	if port == "" {
@@ -384,12 +384,20 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			}
 		}
 		// if secret does not contain "hostname_verify" key, default behavior is expected
-
-		if secret != nil && security.HasCABundle(secret) {
-			ca := CAFile{
-				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
+		if secret != nil {
+			if security.HasTLSCertAndKey(secret) {
+				kc := TLSKeyCert{
+					CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
+					KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
+				}
+				conf = append(conf, kc)
 			}
-			conf = append(conf, ca)
+			if security.HasCABundle(secret) {
+				ca := CAFile{
+					CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
+				}
+				conf = append(conf, ca)
+			}
 		}
 		return conf
 	} else {

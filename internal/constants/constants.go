@@ -38,6 +38,11 @@ const (
 	AWSWebIdentityTokenMount    = "/var/run/secrets/openshift/serviceaccount" //nolint:gosec // default location for volume mount
 	AWSWebIdentityTokenFilePath = "token"                                     // file containing token relative to mount
 
+	AWSRegionEnvVarKey           = "AWS_REGION"
+	AWSRoleArnEnvVarKey          = "AWS_ROLE_ARN"
+	AWSRoleSessionEnvVarKey      = "AWS_ROLE_SESSION_NAME"
+	AWSWebIdentityTokenEnvVarKey = "AWS_WEB_IDENTITY_TOKEN_FILE" //nolint:gosec
+
 	TokenKey          = "token"
 	LogCollectorToken = "logcollector-token"
 

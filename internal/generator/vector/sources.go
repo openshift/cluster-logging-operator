@@ -104,6 +104,8 @@ func ExcludeContainerPaths() string {
 			fmt.Sprintf("%q", fmt.Sprintf(CollectorLogsPath(), constants.CollectorName)),
 			fmt.Sprintf("%q", fmt.Sprintf(LogStoreLogsPath(), constants.ElasticsearchName)),
 			fmt.Sprintf("%q", fmt.Sprintf(VisualizationLogsPath(), constants.KibanaName)),
+			fmt.Sprintf("%q", "/var/log/pods/*/*/*.gz"),
+			fmt.Sprintf("%q", "/var/log/pods/*/*/*.tmp"),
 		},
 		", ",
 	))

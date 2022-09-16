@@ -35,6 +35,7 @@ inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
 bulk.index = "{{ "{{ write_index }}" }}"
 bulk.action = "create"
+encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
 {{end}}`

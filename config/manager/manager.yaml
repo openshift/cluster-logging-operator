@@ -16,6 +16,8 @@ spec:
       labels:
         name: cluster-logging-operator
     spec:
+      securityContext:
+        runAsNonRoot: true
       nodeSelector:
         kubernetes.io/os: linux
       serviceAccountName: cluster-logging-operator
@@ -25,6 +27,9 @@ spec:
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         command:
           - cluster-logging-operator
         env:

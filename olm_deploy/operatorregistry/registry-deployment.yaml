@@ -15,10 +15,17 @@ spec:
         registry.operator.cluster-logging: "true"
       name: cluster-logging-operator-registry
     spec:
+      securityContext:
+        runAsNonRoot: true
       initContainers:
       - name: mutate-csv-and-generate-sqlite-db
         image: ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY}
         imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         command:
         - sh
         args:
@@ -44,6 +51,11 @@ spec:
       - name: cluster-logging-operator-registry
         image: ${IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY}
         imagePullPolicy: Always
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         command:
         - /usr/bin/registry-server
         - --database=/bundle/bundles.db

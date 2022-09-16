@@ -74,6 +74,12 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
+		// LOG-2620: containers violate PodSecurity
+		if err = clusterRequest.addSecurityLabelsToNamespace(); err != nil {
+			log.Error(err, "Error adding labels to logging Namespace")
+			return
+		}
+
 		if collectorServiceAccount, err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
 			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorServiceAccount")
 			return
@@ -591,6 +597,32 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	} else {
 		return nil, nil
 	}
+}
+
+func (clusterRequest *ClusterLoggingRequest) addSecurityLabelsToNamespace() error {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterRequest.Cluster.Namespace,
+		},
+	}
+
+	key := types.NamespacedName{Name: ns.Name}
+	if err := clusterRequest.Client.Get(context.TODO(), key, ns); err != nil {
+		return fmt.Errorf("error getting namespace: %w", err)
+	}
+
+	if val := ns.Labels[constants.PodSecurityLabelEnforce]; val != constants.PodSecurityLabelValue {
+		ns.Labels[constants.PodSecurityLabelEnforce] = constants.PodSecurityLabelValue
+		ns.Labels[constants.PodSecurityLabelAudit] = constants.PodSecurityLabelValue
+		ns.Labels[constants.PodSecurityLabelWarn] = constants.PodSecurityLabelValue
+
+		if err := clusterRequest.Client.Update(context.TODO(), ns); err != nil && !errors.IsAlreadyExists(err) {
+			return fmt.Errorf("error updating namespace: %w", err)
+		}
+		log.V(1).Info("Successfully added pod security labels", "namespace.Labels", ns.Labels)
+	}
+
+	return nil
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorTokenSecret() error {

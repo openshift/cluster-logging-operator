@@ -807,6 +807,7 @@ inputs = ["es_1_dedot_and_flatten"]
 endpoint = "https://es-1.svc.messaging.cluster.local:9200"
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
+encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
 
@@ -889,6 +890,7 @@ inputs = ["es_2_dedot_and_flatten"]
 endpoint = "https://es-2.svc.messaging.cluster.local:9200"
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
+encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
 

@@ -167,7 +167,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				//K8SAuditLevel: "debug",
 				//}
 				// Template expected as output Log
-				k8sAuditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"debug"}`, functional.CRIOTime(nanoTime))
+				k8sAuditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"Metadata"}`, functional.CRIOTime(nanoTime))
 				Expect(framework.WriteMessagesTok8sAuditLog(k8sAuditLogLine, 10)).To(BeNil())
 				// Read line from Log Forward output
 				raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
@@ -179,7 +179,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				//outputTestLog := logs[0]
 				//Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 				results := strings.Join(raw, " ")
-				Expect(results).To(MatchRegexp("kind.*Event.*level.*debug"), "Message should contain the audit log: %v", raw)
+				Expect(results).To(MatchRegexp("kind.*Event.*level.*default.*k8s_audit_level.*Metadata"), "Message should contain the audit log: %v", raw)
 
 			})
 			//TODO: fix me when audit formatting is enabled
@@ -202,7 +202,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				//K8SAuditLevel: "debug",
 				//}
 				// Template expected as output Log
-				auditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"debug"}`, functional.CRIOTime(nanoTime))
+				auditLogLine := fmt.Sprintf(`{"kind":"Event","requestReceivedTimestamp":"%s","level":"Metadata"}`, functional.CRIOTime(nanoTime))
 				Expect(framework.WriteMessagesToOpenshiftAuditLog(auditLogLine, 10)).To(BeNil())
 				// Read line from Log Forward output
 				raw, err := framework.ReadAuditLogsFrom(logging.OutputTypeElasticsearch)
@@ -214,7 +214,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 				//outputTestLog := logs[0]
 				//Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 				results := strings.Join(raw, " ")
-				Expect(results).To(MatchRegexp("kind.*Event.*level.*debug"), "Message should contain the audit log: %v", raw)
+				Expect(results).To(MatchRegexp("kind.*Event.*level.*default.*openshift_audit_level.*Metadata"), "Message should contain the audit log: %v", raw)
 
 			})
 			It("should parse oauth audit log format correctly", func() {

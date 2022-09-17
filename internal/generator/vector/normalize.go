@@ -130,6 +130,10 @@ if err == null {
 del(.message)
 `
 	FixHostname = `.hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""`
+
+	FixK8sAuditLevel       = `.k8s_audit_level = .level`
+	FixOpenshiftAuditLevel = `.openshift_audit_level = .level`
+	AddDefaultLogLevel     = `.level = "default"`
 )
 
 var (
@@ -201,6 +205,7 @@ func NormalizeHostAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddHostAuditTag,
 				ParseHostAuditLogs,
+				AddDefaultLogLevel,
 			}), "\n\n"),
 		},
 	}
@@ -214,6 +219,8 @@ func NormalizeK8sAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddK8sAuditTag,
 				ParseAndFlatten,
+				FixK8sAuditLevel,
+				AddDefaultLogLevel,
 			}), "\n"),
 		},
 	}
@@ -227,6 +234,8 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
 			VRL: strings.Join(helpers.TrimSpaces([]string{
 				AddOpenAuditTag,
 				ParseAndFlatten,
+				FixOpenshiftAuditLevel,
+				AddDefaultLogLevel,
 			}), "\n"),
 		},
 	}

@@ -56,7 +56,7 @@ source = '''
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 `,
 		}),
@@ -100,7 +100,7 @@ source = '''
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.journal_logs]
@@ -193,7 +193,7 @@ source = '''
   
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
   
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 `,

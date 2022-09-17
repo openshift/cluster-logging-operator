@@ -36,7 +36,7 @@ if !exists(.level) {
 	RemoveSourceType  = `del(.source_type)`
 	RemoveStream      = `del(.stream)`
 	RemovePodIPs      = `del(.kubernetes.pod_ips)`
-	FixTimestampField = `."@timestamp" = del(.timestamp)`
+	FixTimestampField = `ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}`
 	AddJournalLogTag  = `.tag = ".journal.system"`
 	AddHostName       = `.hostname = del(.host)`
 	AddTime           = `.time = format_timestamp!(.timestamp, format: "%FT%T%:z")`

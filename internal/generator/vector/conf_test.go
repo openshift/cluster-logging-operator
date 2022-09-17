@@ -162,7 +162,7 @@ source = '''
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.journal_logs]
@@ -255,7 +255,7 @@ source = '''
   
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
   
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.host_audit_logs]
@@ -362,7 +362,7 @@ inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_l
 source = '''
   .log_type = "audit"
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.route_application_logs]
@@ -536,7 +536,7 @@ source = '''
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.journal_logs]
@@ -629,7 +629,7 @@ source = '''
   
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
   
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.host_audit_logs]
@@ -736,7 +736,7 @@ inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_l
 source = '''
   .log_type = "audit"
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.pipeline]

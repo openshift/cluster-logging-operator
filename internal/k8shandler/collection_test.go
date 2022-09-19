@@ -63,6 +63,13 @@ var _ = Describe("Reconciling", func() {
 				constants.TrustedCABundleKey: "",
 			},
 		}
+		// Adding ns and label to account for addSecurityLabelsToNamespace() added in LOG-2620
+		namespace = &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{"test": "true"},
+				Name:   cluster.Namespace,
+			},
+		}
 	)
 
 	Describe("Collection", func() {
@@ -108,6 +115,7 @@ var _ = Describe("Reconciling", func() {
 					cluster,
 					fluentdSecret,
 					fluentdCABundle,
+					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
 					Client:  client,
@@ -167,6 +175,7 @@ var _ = Describe("Reconciling", func() {
 					cluster,
 					fluentdSecret,
 					fluentdCABundle,
+					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
 					Client:  client,

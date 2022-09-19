@@ -11,6 +11,11 @@ fi
 set +e
 oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} openshift.io/cluster-monitoring=true --overwrite
 oc annotate ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} openshift.io/node-selector="" --overwrite
+# LOG-2620: containers violate PodSecurity
+oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} pod-security.kubernetes.io/enforce=privileged --overwrite
+oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} pod-security.kubernetes.io/audit=privileged --overwrite
+oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} pod-security.kubernetes.io/warn=privileged --overwrite
+
 set -e
 
 echo "##################"

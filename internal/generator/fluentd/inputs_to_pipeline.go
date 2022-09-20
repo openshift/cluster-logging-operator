@@ -122,7 +122,8 @@ func AppToPipeline1(spec *logging.ClusterLogForwarderSpec, op Options) []Element
 							rd.Namespaces = KV("namespaces", strings.Join(app.Namespaces, ", "))
 						}
 						if app.Selector != nil && len(app.Selector.MatchLabels) != 0 {
-							rd.Labels = KV("labels", strings.Join(helpers.LabelsKV(app.Selector), ", "))
+							selector := &logging.LabelSelector{MatchLabels: app.Selector.MatchLabels}
+							rd.Labels = KV("labels", strings.Join(helpers.LabelsKV(selector), ", "))
 						}
 						routes = append(routes, Route{
 							RoutePipeline: RoutePipeline{

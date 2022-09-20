@@ -101,6 +101,19 @@ type InputSpec struct {
 	Audit *Audit `json:"audit,omitempty"`
 }
 
+// NOTE: We currently only support matchLabels so define a LabelSelector type with
+// only matchLabels. When matchExpressions is implemented (LOG-1126), replace this with:
+// k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector
+
+// A label selector is a label query over a set of resources.
+type LabelSelector struct {
+	// matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+	// map is equivalent to an element of matchExpressions, whose key field is "key", the
+	// operator is "In", and the values array contains only "value". The requirements are ANDed.
+	// +optional
+	MatchLabels map[string]string `json:"matchLabels,omitempty" protobuf:"bytes,1,rep,name=matchLabels"`
+}
+
 // Application log selector.
 // All conditions in the selector must be satisfied (logical AND) to select logs.
 type Application struct {
@@ -116,7 +129,7 @@ type Application struct {
 	// If absent or empty, logs are collected regardless of labels.
 	//
 	// +optional
-	Selector *metav1.LabelSelector `json:"selector,omitempty"`
+	Selector *LabelSelector `json:"selector,omitempty"`
 }
 
 // Infrastructure enables infrastructure logs. Filtering may be added in future.

@@ -8,7 +8,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Testing Config Generation", func() {
@@ -195,7 +194,7 @@ source = '''
 						Name: "myapplogs",
 						Application: &logging.Application{
 							Namespaces: []string{"myapp1", "myapp2"},
-							Selector: &v1.LabelSelector{
+							Selector: &logging.LabelSelector{
 								MatchLabels: map[string]string{
 									"key1": "value1",
 									"key2": "value2",

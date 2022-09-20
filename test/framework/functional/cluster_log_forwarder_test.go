@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("ClustLogForwarderBuilder", func() {
@@ -55,7 +54,7 @@ pipelines:
 				FromInputWithVisitor("application-logs1",
 					func(spec *logging.InputSpec) {
 						spec.Application = &logging.Application{
-							Selector: &metav1.LabelSelector{
+							Selector: &logging.LabelSelector{
 								MatchLabels: appLabels1,
 							},
 						}
@@ -66,7 +65,7 @@ pipelines:
 			builder.FromInputWithVisitor("application-logs2",
 				func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
-						Selector: &metav1.LabelSelector{
+						Selector: &logging.LabelSelector{
 							MatchLabels: appLabels2,
 						},
 					}

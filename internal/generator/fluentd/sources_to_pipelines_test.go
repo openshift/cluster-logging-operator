@@ -7,7 +7,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 /**
@@ -269,7 +268,7 @@ var _ = Describe("Testing Config Generation", func() {
 					{
 						Name: "myapplogs",
 						Application: &logging.Application{
-							Selector: &v1.LabelSelector{
+							Selector: &logging.LabelSelector{
 								MatchLabels: map[string]string{
 									"key1": "value1",
 									"key2": "value2",
@@ -335,7 +334,7 @@ var _ = Describe("Testing Config Generation", func() {
 						Name: "myapplogs",
 						Application: &logging.Application{
 							Namespaces: []string{"myapp1", "myapp2"},
-							Selector: &v1.LabelSelector{
+							Selector: &logging.LabelSelector{
 								MatchLabels: map[string]string{
 									"key1": "value1",
 									"key2": "value2",
@@ -402,7 +401,7 @@ var _ = Describe("Testing Config Generation", func() {
 						Name: "myapplogs",
 						Application: &logging.Application{
 							Namespaces: []string{"myapp1", "myapp2"},
-							Selector: &v1.LabelSelector{
+							Selector: &logging.LabelSelector{
 								MatchLabels: map[string]string{
 									"key1": "value1",
 									"key2": "value2",
@@ -494,7 +493,7 @@ var _ = Describe("Testing Config Generation", func() {
 						Name: "myapplogs2",
 						Application: &logging.Application{
 							Namespaces: []string{"myapp"},
-							Selector: &v1.LabelSelector{
+							Selector: &logging.LabelSelector{
 								MatchLabels: map[string]string{
 									"key1": "value1",
 									"key2": "value2",

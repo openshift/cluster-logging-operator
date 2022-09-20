@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,8 +27,8 @@ func SourceTypeLabelName(name string) string {
 	return strings.ToUpper(fmt.Sprintf("@_%s", Replacer.Replace(name)))
 }
 
-func LabelsKV(ls *metav1.LabelSelector) []string {
-	m, _ := metav1.LabelSelectorAsMap(ls)
+func LabelsKV(ls *loggingv1.LabelSelector) []string {
+	m, _ := metav1.LabelSelectorAsMap(&metav1.LabelSelector{MatchLabels: ls.MatchLabels})
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)

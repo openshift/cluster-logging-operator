@@ -29,6 +29,9 @@ type ReconcileForwarder struct {
 	Client   client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+
+	//ClusterID is the unique identifier of the cluster in which the operator is deployed
+	ClusterID string
 }
 
 var condReady = status.Condition{Type: logging.ConditionReady, Status: corev1.ConditionTrue}
@@ -66,7 +69,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
 
-	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client, r.Recorder)
+	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client, r.Recorder, r.ClusterID)
 	if reconcileErr != nil {
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		telemetry.ResetCLFMetricsNoErr()

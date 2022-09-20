@@ -39,6 +39,7 @@ rules:
 - apiGroups:
     - config.openshift.io
   resources:
+    - clusterversions
     - proxies
     - infrastructures
   verbs:

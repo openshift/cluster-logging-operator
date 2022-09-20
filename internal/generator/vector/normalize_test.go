@@ -10,11 +10,14 @@ import (
 )
 
 var _ = Describe("Vector Config Generation", func() {
-	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-		return generator.MergeElements(
-			NormalizeLogs(&clfspec, op),
-		)
-	}
+	var (
+		f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+			return generator.MergeElements(
+				NormalizeLogs(&clfspec, op),
+			)
+		}
+	)
+
 	DescribeTable("NormalizeLogs(s)", helpers.TestGenerateConfWith(f),
 		Entry("Application logs only", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
@@ -33,6 +36,7 @@ var _ = Describe("Vector Config Generation", func() {
 type = "remap"
 inputs = ["raw_container_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   if !exists(.level) {
     .level = "default"
     if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
@@ -77,6 +81,7 @@ source = '''
 type = "remap"
 inputs = ["raw_container_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   if !exists(.level) {
     .level = "default"
     if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
@@ -107,6 +112,7 @@ source = '''
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".journal.system"
   
   del(.source_type)
@@ -215,6 +221,7 @@ source = '''
 type = "remap"
 inputs = ["raw_host_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".linux-audit.log"
   
   match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
@@ -241,6 +248,7 @@ source = '''
 type = "remap"
 inputs = ["raw_k8s_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
@@ -252,6 +260,7 @@ source = '''
 type = "remap"
 inputs = ["raw_openshift_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
@@ -263,6 +272,7 @@ source = '''
 type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".ovn-audit.log"
   if !exists(.level) {
     .level = "default"

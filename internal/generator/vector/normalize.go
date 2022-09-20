@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	ClusterID   = `.openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"`
 	FixLogLevel = `
 if !exists(.level) {
   .level = "default"
@@ -167,6 +168,7 @@ func NormalizeContainerLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
+				ClusterID,
 				FixLogLevel,
 				RemoveSourceType,
 				RemoveStream,
@@ -183,6 +185,7 @@ func NormalizeJournalLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
+				ClusterID,
 				AddJournalLogTag,
 				DeleteJournalLogFields,
 				FixLogLevel,
@@ -203,6 +206,7 @@ func NormalizeHostAuditLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
+				ClusterID,
 				AddHostAuditTag,
 				ParseHostAuditLogs,
 				AddDefaultLogLevel,
@@ -217,6 +221,7 @@ func NormalizeK8sAuditLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
+				ClusterID,
 				AddK8sAuditTag,
 				ParseAndFlatten,
 				FixK8sAuditLevel,
@@ -232,6 +237,7 @@ func NormalizeOpenshiftAuditLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
+				ClusterID,
 				AddOpenAuditTag,
 				ParseAndFlatten,
 				FixOpenshiftAuditLevel,
@@ -247,6 +253,7 @@ func NormalizeOVNAuditLogs(inLabel, outLabel string) []generator.Element {
 			ComponentID: outLabel,
 			Inputs:      helpers.MakeInputs(inLabel),
 			VRL: strings.Join(helpers.TrimSpaces([]string{
+				ClusterID,
 				AddOvnAuditTag,
 				FixLogLevel,
 			}), "\n"),

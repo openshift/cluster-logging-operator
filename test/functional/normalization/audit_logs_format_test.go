@@ -161,6 +161,9 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						Level:            "default",
 						Timestamp:        time.Time{},
 						PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+						OpenshiftLabels: types.OpenshiftMeta{
+							ClusterID: "*",
+						},
 					},
 					K8SAuditLevel: "Metadata",
 				}
@@ -194,6 +197,9 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						Level:            "default",
 						Timestamp:        time.Time{},
 						PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+						OpenshiftLabels: types.OpenshiftMeta{
+							ClusterID: "*",
+						},
 					},
 					OpenshiftAuditLevel: "Metadata",
 				}
@@ -231,6 +237,9 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					},
 					Timestamp:        testTime,
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+					OpenshiftLabels: types.OpenshiftMeta{
+						ClusterID: "*",
+					},
 				}
 				// Write log line as input to fluentd
 				Expect(framework.WriteMessagesToAuditLog(auditLogLine, 10)).To(BeNil())
@@ -259,7 +268,8 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					Timestamp: time.Time{},
 					LogType:   "audit",
 					Openshift: types.OpenshiftMeta{
-						Sequence: types.NewOptionalInt(""),
+						Sequence:  types.NewOptionalInt(""),
+						ClusterID: "*",
 					},
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 				}

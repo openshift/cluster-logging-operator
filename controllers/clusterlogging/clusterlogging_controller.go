@@ -43,6 +43,9 @@ type ReconcileClusterLogging struct {
 	Reader   client.Reader
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
+
+	//ClusterID is the unique identifier of the cluster in which the operator is deployed
+	ClusterID string
 }
 
 // Reconcile reads that state of the cluster for a ClusterLogging object and makes changes based on the state read
@@ -77,7 +80,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	if _, err = k8shandler.Reconcile(r.Client, r.Reader, r.Recorder); err != nil {
+	if _, err = k8shandler.Reconcile(r.Client, r.Reader, r.Recorder, r.ClusterID); err != nil {
 		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()

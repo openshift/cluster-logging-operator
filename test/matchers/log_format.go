@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/onsi/gomega/types"
@@ -136,11 +137,19 @@ func compareLogLogic(name string, templateValue interface{}, value interface{}) 
 		log.V(3).Info("CompareLogLogic: Any value for * ", "name", name, "value", valueString)
 		return true
 	}
+	if reflect.TypeOf(templateValue).Name() == "Time" {
 
-	// Any time value not Nil is ok if template value is empty time and also does not equal the value for time.Time{}
-	if templateValueString == "0001-01-01 00:00:00 +0000 UTC" && valueString != "" && valueString != "0001-01-01 00:00:00 +0000 UTC" {
-		log.V(3).Info("CompareLogLogic: Any value for 'empty time' ", "name", name, "value", valueString)
-		return true
+		templateTime := templateValue.(time.Time)
+		valueTime := value.(time.Time)
+		if templateTime.UTC() == valueTime.UTC() {
+			return true
+		}
+
+		// Any time value not Nil is ok if template value is empty time and also does not equal the value for time.Time{}
+		if templateValueString == "0001-01-01 00:00:00 +0000 UTC" && valueString != "" && valueString != "0001-01-01 00:00:00 +0000 UTC" {
+			log.V(3).Info("CompareLogLogic: Any value for 'empty time' ", "name", name, "value", valueString)
+			return true
+		}
 	}
 
 	if strings.HasPrefix(templateValueString, "regex:") { // Using regex if starts with "/"

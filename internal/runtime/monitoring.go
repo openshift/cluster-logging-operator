@@ -1,10 +1,6 @@
-package k8shandler
+package runtime
 
 import (
-	"fmt"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,17 +15,6 @@ func NewServiceMonitor(serviceMonitorName, namespace string) *monitoringv1.Servi
 			Name:      serviceMonitorName,
 			Namespace: namespace,
 		},
+		Spec: monitoringv1.ServiceMonitorSpec{},
 	}
-}
-
-func (clusterRequest *ClusterLoggingRequest) RemoveServiceMonitor(smName string) error {
-
-	serviceMonitor := NewServiceMonitor(smName, clusterRequest.Cluster.Namespace)
-
-	err := clusterRequest.Delete(serviceMonitor)
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting %v service monitor: %v", serviceMonitor, err)
-	}
-
-	return nil
 }

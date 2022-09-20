@@ -17,7 +17,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/servicemonitor"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/services"
 
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -36,12 +35,6 @@ import (
 )
 
 const (
-	exporterPort     = int32(2112)
-	exporterPortName = "logfile-metrics"
-	metricsPort      = int32(24231)
-	metricsPortName  = "metrics"
-	prometheusCAFile = "/etc/prometheus/configmaps/serving-certs-ca-bundle/service-ca.crt"
-
 	AnnotationDebugOutput = "logging.openshift.io/debug-output"
 )
 
@@ -107,10 +100,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if err = clusterRequest.reconcileCollectorServiceMonitor(); err != nil {
-			log.V(9).Error(err, "clusterRequest.reconcileCollectorServiceMonitor")
-			return
-		}
+		collector.ReconcileServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, utils.AsOwner(cluster))
 
 		if err = clusterRequest.createOrUpdateCollectorPrometheusRule(); err != nil {
 			log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
@@ -178,9 +168,7 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err e
 			return
 		}
 
-		if err = clusterRequest.RemoveServiceMonitor(name); err != nil {
-			return
-		}
+		collector.RemoveServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, clusterRequest.Cluster.Namespace, constants.CollectorName)
 
 		if err = clusterRequest.RemovePrometheusRule(name); err != nil {
 			return
@@ -213,14 +201,14 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorService() error {
 		constants.CollectorName,
 		[]v1.ServicePort{
 			{
-				Port:       metricsPort,
-				TargetPort: intstr.FromString(metricsPortName),
-				Name:       metricsPortName,
+				Port:       collector.MetricsPort,
+				TargetPort: intstr.FromString(collector.MetricsPortName),
+				Name:       collector.MetricsPortName,
 			},
 			{
-				Port:       exporterPort,
-				TargetPort: intstr.FromString(exporterPortName),
-				Name:       exporterPortName,
+				Port:       collector.ExporterPort,
+				TargetPort: intstr.FromString(collector.ExporterPortName),
+				Name:       collector.ExporterPortName,
 			},
 		},
 	)
@@ -257,81 +245,6 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorService() error {
 		})
 		if retryErr != nil {
 			log.V(3).Error(retryErr, "Reconcile Service retry error")
-		}
-		return retryErr
-	}
-	return err
-}
-
-func (clusterRequest *ClusterLoggingRequest) reconcileCollectorServiceMonitor() error {
-
-	cluster := clusterRequest.Cluster
-
-	desired := NewServiceMonitor(constants.CollectorName, cluster.Namespace)
-
-	endpoint := monitoringv1.Endpoint{
-		Port:   metricsPortName,
-		Path:   "/metrics",
-		Scheme: "https",
-		TLSConfig: &monitoringv1.TLSConfig{
-			CAFile:     prometheusCAFile,
-			ServerName: fmt.Sprintf("%s.%s.svc", constants.CollectorName, cluster.Namespace),
-		},
-	}
-	logMetricExporterEndpoint := monitoringv1.Endpoint{
-		Port:   exporterPortName,
-		Path:   "/metrics",
-		Scheme: "https",
-		TLSConfig: &monitoringv1.TLSConfig{
-			CAFile:     prometheusCAFile,
-			ServerName: fmt.Sprintf("%s.%s.svc", constants.CollectorName, cluster.Namespace),
-		},
-	}
-
-	labelSelector := metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			"logging-infra": "support",
-		},
-	}
-
-	desired.Spec = monitoringv1.ServiceMonitorSpec{
-		JobLabel:  "monitor-collector",
-		Endpoints: []monitoringv1.Endpoint{endpoint, logMetricExporterEndpoint},
-		Selector:  labelSelector,
-		NamespaceSelector: monitoringv1.NamespaceSelector{
-			MatchNames: []string{cluster.Namespace},
-		},
-	}
-
-	utils.AddOwnerRefToObject(desired, utils.AsOwner(cluster))
-
-	err := clusterRequest.Create(desired)
-	if err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure creating the collector ServiceMonitor: %v", err)
-		}
-		current := &monitoringv1.ServiceMonitor{}
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err = clusterRequest.Get(desired.Name, current); err != nil {
-				if errors.IsNotFound(err) {
-					// the object doesn't exist -- it was likely culled
-					// recreate it on the next time through if necessary
-					return nil
-				}
-				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
-			}
-			if servicemonitor.AreSame(current, desired) {
-				log.V(3).Info("ServiceMonitor are the same skipping update")
-				return nil
-			}
-			current.Labels = desired.Labels
-			current.Spec = desired.Spec
-			current.Annotations = desired.Annotations
-
-			return clusterRequest.Update(current)
-		})
-		if retryErr != nil {
-			log.V(3).Error(retryErr, "Reconcile ServiceMonitor retry error")
 		}
 		return retryErr
 	}

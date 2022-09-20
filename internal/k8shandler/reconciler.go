@@ -154,9 +154,10 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	}
 }
 
-func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client) (err error) {
+func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client, er record.EventRecorder) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
-		Client: requestClient,
+		Client:        requestClient,
+		EventRecorder: er,
 	}
 	if forwarder != nil {
 		clusterLoggingRequest.ForwarderRequest = forwarder

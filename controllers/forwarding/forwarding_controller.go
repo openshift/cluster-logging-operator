@@ -66,7 +66,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
 
-	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client)
+	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client, r.Recorder)
 	if reconcileErr != nil {
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		telemetry.ResetCLFMetricsNoErr()

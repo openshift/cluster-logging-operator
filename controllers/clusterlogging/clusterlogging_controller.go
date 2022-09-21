@@ -71,12 +71,14 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 
 	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
 		// if cluster is set to unmanaged then set managedStatus as 0
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		return ctrl.Result{}, nil
 	}
 
 	if _, err = k8shandler.Reconcile(r.Client, r.Reader, r.Recorder); err != nil {
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "Error reconciling clusterlogging instance")
@@ -91,6 +93,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 
 func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (ctrl.Result, error) {
 	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
+		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "clusterlogging-controller error updating status")

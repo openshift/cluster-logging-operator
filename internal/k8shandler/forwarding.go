@@ -143,7 +143,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 	if logStore != nil && logStore.Type == logging.LogStoreTypeLokiStack {
 		outputs, pipelines := clusterRequest.processPipelinesForLokiStack(clusterRequest.ForwarderSpec.Pipelines)
 
-		clusterRequest.ForwarderSpec.Outputs = outputs
+		clusterRequest.ForwarderSpec.Outputs = append(clusterRequest.ForwarderSpec.Outputs, outputs...)
 		clusterRequest.ForwarderSpec.Pipelines = pipelines
 	}
 

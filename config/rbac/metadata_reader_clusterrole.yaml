@@ -12,3 +12,4 @@ rules:
     resources:
       - pods
       - namespaces
+      - nodes

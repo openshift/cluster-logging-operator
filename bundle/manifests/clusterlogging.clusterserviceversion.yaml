@@ -359,6 +359,7 @@ spec:
         - apiGroups:
           - config.openshift.io
           resources:
+          - apiservers
           - clusterversions
           - proxies
           - infrastructures

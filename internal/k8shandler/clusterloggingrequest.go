@@ -14,8 +14,12 @@ import (
 )
 
 type ClusterLoggingRequest struct {
-	Client        client.Client
-	Reader        client.Reader
+	Client client.Client
+	Reader client.Reader
+
+	//ClusterID is the unique identifier of the cluster in which the operator is deployed
+	ClusterID string
+
 	Cluster       *logging.ClusterLogging
 	EventRecorder record.EventRecorder
 	// ForwarderRequest is a logforwarder instance

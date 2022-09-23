@@ -1,6 +1,3 @@
-//go:build fluentd
-// +build fluentd
-
 package normalization
 
 import (
@@ -13,8 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
@@ -28,9 +23,9 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
-			ToFluentForwardOutput().
+			ToElasticSearchOutput().
 			FromInput(logging.InputNameAudit).
-			ToFluentForwardOutput()
+			ToElasticSearchOutput()
 		Expect(framework.Deploy()).To(BeNil())
 	})
 	AfterEach(func() {
@@ -47,18 +42,16 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = message
 		outputLogTemplate.Level = expLevel
+		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+			outputLogTemplate.Openshift.ClusterID = "*"
+		}
 
-		// Write log line as input to fluentd
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
-		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+
+		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		// Parse log line
-		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
-		// Compare to expected template
+
 		outputTestLog := logs[0]
 		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))
 	},
@@ -80,19 +73,17 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
+		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+			outputLogTemplate.Openshift.ClusterID = "*"
+		}
 
 		// Write log line as input to fluentd
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
 
 		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-
-		// Parse log line
-		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 
 		// Compare to expected template
 		outputTestLog := logs[0]
@@ -111,17 +102,16 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
+		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+			outputLogTemplate.Openshift.ClusterID = "*"
+		}
 
 		// Write log line as input to fluentd
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 1)).To(BeNil())
-		// Read line from Log Forward output
-		raw, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeFluentdForward)
+
+		logs, err := framework.ReadApplicationLogsFrom(logging.OutputTypeElasticsearch)
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
-		// Parse log line
-		var logs []types.ApplicationLog
-		err = types.StrictlyParseLogs(utils.ToJsonLogs(raw), &logs)
-		Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 		// Compare to expected template
 		outputTestLog := logs[0]
 		Expect(outputTestLog).To(FitLogFormatTemplate(outputLogTemplate))

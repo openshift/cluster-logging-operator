@@ -2,6 +2,7 @@ package vector
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/matchers"
 	"strings"
 
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
@@ -19,23 +20,18 @@ import (
 
 //TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
-	var f = func(testcase testhelpers.ConfGenerateTest) {
-		g := generator.MakeGenerator()
-		if testcase.Options == nil {
-			testcase.Options = generator.Options{}
+	var (
+		f = func(testcase testhelpers.ConfGenerateTest) {
+			g := generator.MakeGenerator()
+			if testcase.Options == nil {
+				testcase.Options = generator.Options{}
+			}
+			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, testcase.Options))
+			conf, err := g.GenerateConf(e...)
+			Expect(err).To(BeNil())
+			Expect(strings.TrimSpace(testcase.ExpectedConf)).To(matchers.EqualTrimLines(conf))
 		}
-		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, testcase.Options))
-		conf, err := g.GenerateConf(e...)
-		Expect(err).To(BeNil())
-		diff := cmp.Diff(
-			strings.Split(strings.TrimSpace(testcase.ExpectedConf), "\n"),
-			strings.Split(strings.TrimSpace(conf), "\n"))
-		if diff != "" {
-			fmt.Println(conf)
-			fmt.Printf("diff: %s", diff)
-		}
-		Expect(diff).To(Equal(""))
-	}
+	)
 	DescribeTable("Generate full vector.toml", f,
 		Entry("with complex spec", testhelpers.ConfGenerateTest{
 			CLSpec: logging.CollectionSpec{
@@ -139,6 +135,7 @@ type = "internal_metrics"
 type = "remap"
 inputs = ["raw_container_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   if !exists(.level) {
     .level = "default"
     if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
@@ -169,6 +166,7 @@ source = '''
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".journal.system"
   
   del(.source_type)
@@ -262,6 +260,8 @@ source = '''
 type = "remap"
 inputs = ["raw_host_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+
   .tag = ".linux-audit.log"
   
   match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
@@ -288,6 +288,7 @@ source = '''
 type = "remap"
 inputs = ["raw_k8s_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
@@ -299,6 +300,7 @@ source = '''
 type = "remap"
 inputs = ["raw_openshift_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
@@ -310,6 +312,7 @@ source = '''
 type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".ovn-audit.log"
   if !exists(.level) {
     .level = "default"
@@ -513,6 +516,7 @@ type = "internal_metrics"
 type = "remap"
 inputs = ["raw_container_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   if !exists(.level) {
     .level = "default"
     if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
@@ -543,6 +547,8 @@ source = '''
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
+  
   .tag = ".journal.system"
   
   del(.source_type)
@@ -636,6 +642,7 @@ source = '''
 type = "remap"
 inputs = ["raw_host_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".linux-audit.log"
   
   match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
@@ -662,6 +669,7 @@ source = '''
 type = "remap"
 inputs = ["raw_k8s_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
@@ -673,6 +681,7 @@ source = '''
 type = "remap"
 inputs = ["raw_openshift_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
@@ -684,6 +693,7 @@ source = '''
 type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".ovn-audit.log"
   if !exists(.level) {
     .level = "default"

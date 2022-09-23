@@ -261,6 +261,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		AddConfigMapVolume("certs", certsName)
 	b = f.collector.BuildCollectorContainer(
 		b.AddContainer(constants.CollectorName, f.image).
+			AddEnvVar("OPENSHIFT_CLUSTER_ID", f.Name).
 			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).End()
 
 	for _, visit := range visitors {

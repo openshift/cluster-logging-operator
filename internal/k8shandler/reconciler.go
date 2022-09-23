@@ -23,11 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(requestClient client.Client, reader client.Reader, r record.EventRecorder) (instance *logging.ClusterLogging, err error) {
+func Reconcile(requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterID string) (instance *logging.ClusterLogging, err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client:        requestClient,
 		Reader:        reader,
 		EventRecorder: r,
+		ClusterID:     clusterID,
 	}
 
 	if instance, err = clusterLoggingRequest.getClusterLogging(); err != nil {
@@ -154,10 +155,11 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	}
 }
 
-func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client, er record.EventRecorder) (err error) {
+func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, requestClient client.Client, er record.EventRecorder, clusterID string) (err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
 		Client:        requestClient,
 		EventRecorder: er,
+		ClusterID:     clusterID,
 	}
 	if forwarder != nil {
 		clusterLoggingRequest.ForwarderRequest = forwarder

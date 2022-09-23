@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -103,22 +105,29 @@ func main() {
 		os.Exit(1)
 	}
 
+	clusterID, err := getClusterID(mgr.GetAPIReader())
+	if err != nil {
+		setupLog.Error(err, "unable to retrieve the clusterID")
+		os.Exit(1)
+	}
 	log.Info("Registering Components.")
 
 	if err = (&clusterlogging.ReconcileClusterLogging{
-		Client:   mgr.GetClient(),
-		Reader:   mgr.GetAPIReader(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("clusterlogging-controller"),
+		Client:    mgr.GetClient(),
+		Reader:    mgr.GetAPIReader(),
+		Scheme:    mgr.GetScheme(),
+		Recorder:  mgr.GetEventRecorderFor("clusterlogging-controller"),
+		ClusterID: clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
 		telemetry.Data.CLInfo.M["healthStatus"] = UnHealthyStatus
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("clusterlogforwarder"),
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		Recorder:  mgr.GetEventRecorderFor("clusterlogforwarder"),
+		ClusterID: clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
 		telemetry.Data.CLFInfo.M["healthStatus"] = UnHealthyStatus
@@ -176,4 +185,14 @@ func getCLOVersion() (string, error) {
 		return "", fmt.Errorf("%s must be set", CLOVersionEnvVar)
 	}
 	return cloversion, nil
+}
+
+// getClusterID retrieves the ID of the cluster
+func getClusterID(k8client client.Reader) (string, error) {
+	clusterVersion := &configv1.ClusterVersion{}
+	key := client.ObjectKey{Name: "version"}
+	if err := k8client.Get(context.TODO(), key, clusterVersion); err != nil {
+		return "", err
+	}
+	return string(clusterVersion.Spec.ClusterID), nil
 }

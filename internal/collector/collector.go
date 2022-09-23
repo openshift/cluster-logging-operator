@@ -116,16 +116,16 @@ func New(confHash, trustedCAHash string, collectorType logging.LogCollectionType
 	return factory
 }
 
-func NewDaemonSet(namespace, confHash, trustedCAHash string, collectorType logging.LogCollectionType, trustedCABundle *v1.ConfigMap, collectorSpec logging.CollectionSpec, forwarderSpec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret) *apps.DaemonSet {
+func NewDaemonSet(namespace, confHash, trustedCAHash, clusterID string, collectorType logging.LogCollectionType, trustedCABundle *v1.ConfigMap, collectorSpec logging.CollectionSpec, forwarderSpec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret) *apps.DaemonSet {
 	factory := New(confHash, trustedCAHash, collectorType, collectorSpec, secrets)
 
-	podSpec := factory.NewPodSpec(trustedCABundle, forwarderSpec)
+	podSpec := factory.NewPodSpec(trustedCABundle, forwarderSpec, clusterID)
 	ds := coreFactory.NewDaemonSet(constants.CollectorName, namespace, constants.CollectorName, constants.CollectorName, *podSpec)
 
 	return ds
 }
 
-func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec) *v1.PodSpec {
+func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID string) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
@@ -152,7 +152,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 	secretNames := addSecretVolumes(podSpec, forwarderSpec)
 
 	exporter := newLogMetricsExporterContainer()
-	collector := f.NewCollectorContainer(secretNames)
+	collector := f.NewCollectorContainer(secretNames, clusterID)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
 
@@ -170,7 +170,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 // NewCollectorContainer is a constructor for creating the collector container spec.  Note the secretNames are assumed
 // to be a unique list
-func (f *Factory) NewCollectorContainer(secretNames []string) *v1.Container {
+func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) *v1.Container {
 
 	collector := factory.NewContainer(constants.CollectorName, f.ImageName, v1.PullIfNotPresent, f.CollectorResourceRequirements())
 	collector.Ports = []v1.ContainerPort{
@@ -185,6 +185,7 @@ func (f *Factory) NewCollectorContainer(secretNames []string) *v1.Container {
 		{Name: common.TrustedCABundleHashName, Value: f.TrustedCAHash},
 		{Name: "K8S_NODE_NAME", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "spec.nodeName"}}},
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
+		{Name: "OPENSHIFT_CLUSTER_ID", Value: clusterID},
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
 	}
 	collector.Env = append(collector.Env, utils.GetProxyEnvVars()...)

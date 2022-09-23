@@ -370,7 +370,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorDaemonset(collect
 	}
 
 	instance := clusterRequest.Cluster
-	desired := collector.NewDaemonSet(instance.Namespace, configHash, caTrustHash, collectorType, caTrustBundle, *instance.Spec.Collection, clusterRequest.ForwarderSpec, clusterRequest.OutputSecrets)
+	desired := collector.NewDaemonSet(instance.Namespace, configHash, caTrustHash, clusterRequest.ClusterID, collectorType, caTrustBundle, *instance.Spec.Collection, clusterRequest.ForwarderSpec, clusterRequest.OutputSecrets)
 	utils.AddOwnerRefToObject(desired, utils.AsOwner(instance))
 
 	current := &apps.DaemonSet{}

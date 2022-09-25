@@ -10,7 +10,6 @@ const (
 	auditLog           = "audit"
 	ovnAuditLog        = "ovn"
 	k8sAuditLog        = "k8s"
-	infraLog           = "infra"
 	oauthAuditLog      = "oauth-audit-logs"
 	OpenshiftAuditLog  = "openshift-audit-logs"
 	ApplicationLogFile = "/tmp/app-logs"
@@ -31,18 +30,18 @@ var (
 	}
 	outputLogFile = map[string]map[string]string{
 		logging.OutputTypeFluentdForward: {
-			applicationLog: ApplicationLogFile,
-			auditLog:       "/tmp/audit-logs",
-			ovnAuditLog:    "/tmp/audit-logs",
-			k8sAuditLog:    "/tmp/audit-logs",
-			infraLog:       "/tmp/infra-logs",
+			applicationLog:                  ApplicationLogFile,
+			auditLog:                        "/tmp/audit-logs",
+			ovnAuditLog:                     "/tmp/audit-logs",
+			k8sAuditLog:                     "/tmp/audit-logs",
+			logging.InputNameInfrastructure: "/tmp/infra-logs",
 		},
 		logging.OutputTypeSyslog: {
-			applicationLog: "/var/log/infra.log",
-			auditLog:       "/var/log/infra.log",
-			k8sAuditLog:    "/var/log/infra.log",
-			ovnAuditLog:    "/var/log/infra.log",
-			infraLog:       "/var/log/infra.log",
+			applicationLog:                  "/var/log/infra.log",
+			auditLog:                        "/var/log/infra.log",
+			k8sAuditLog:                     "/var/log/infra.log",
+			ovnAuditLog:                     "/var/log/infra.log",
+			logging.InputNameInfrastructure: "/var/log/infra.log",
 		},
 		logging.OutputTypeKafka: {
 			applicationLog: "/var/log/app.log",

@@ -306,7 +306,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 			return false, nil
 		}
 
-		// if fluentd started successfully return success
+		// if collector started successfully return success
 		if f.collector.IsStarted(output) || debugOutput {
 			return true, nil
 		}

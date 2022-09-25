@@ -63,7 +63,7 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 
 			// Parse log line
 			var logs []types.ApplicationLog
-			err = types.StrictlyParseLogs(raw, &logs)
+			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 			// Compare to expected template
 			Expect(logs).To(HaveLen(2), "Expected Elasticsearch to have received all the records")

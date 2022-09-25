@@ -35,6 +35,11 @@ func (f *CollectorFunctionalFramework) WriteMessagesToInfraContainerLog(msg stri
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)
 }
 
+func (f *CollectorFunctionalFramework) WritesInfraContainerLogs(numOfLogs int) error {
+	msg := "2021-03-31T12:59:28.573159188+00:00 stdout F test infra message"
+	return f.WriteMessagesToInfraContainerLog(msg, numOfLogs)
+}
+
 func (f *CollectorFunctionalFramework) WriteMessagesToAuditLog(msg string, numOfLogs int) error {
 	filename := fmt.Sprintf("%s/audit.log", fluentdLogPath[auditLog])
 	return f.WriteMessagesToLog(msg, numOfLogs, filename)

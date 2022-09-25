@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -342,6 +343,11 @@ type AllLog struct {
 	K8SAuditLevel            string           `json:"k8s_audit_level,omitempty"`
 	OpenshiftAuditLevel      string           `json:"openshift_audit_level,omitempty"`
 	OpenshiftLabels          OpenshiftMeta    `json:"openshift,omitempty"`
+}
+
+func StrictlyParseLogsFromSlice(in []string, logs interface{}) error {
+	jsonString := fmt.Sprintf("[%s]", strings.Join(in, ","))
+	return StrictlyParseLogs(jsonString, logs)
 }
 
 func StrictlyParseLogs(in string, logs interface{}) error {

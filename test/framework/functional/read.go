@@ -48,7 +48,7 @@ func (f *CollectorFunctionalFramework) ReadRawApplicationLogsFrom(outputName str
 }
 
 func (f *CollectorFunctionalFramework) ReadInfrastructureLogsFrom(outputName string) ([]string, error) {
-	return f.ReadLogsFrom(outputName, infraLog)
+	return f.ReadLogsFrom(outputName, logging.InputNameInfrastructure)
 }
 func (f *CollectorFunctionalFramework) ReadApplicationLogsFromKafka(topic string, brokerlistener string, consumercontainername string) (results []string, err error) {
 	//inter broker zookeeper connect is plaintext so use plaintext port to check on sent messages from kafka producer ie. fluent-kafka plugin
@@ -115,14 +115,7 @@ func (f *CollectorFunctionalFramework) ReadLogsFrom(outputName, sourceType strin
 					option.Value = esurl.Port()
 				}
 			}
-			result, err := f.GetLogsFromElasticSearch(outputName, sourceType, option)
-
-			if err == nil {
-				result = result[1:]
-				result = result[:len(result)-1]
-				return strings.Split(result, ","), nil
-			}
-			return nil, err
+			return f.GetLogsFromElasticSearch(outputName, sourceType, option)
 		}
 	default:
 		readLogs = func() ([]string, error) {

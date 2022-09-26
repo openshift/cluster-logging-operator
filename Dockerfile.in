@@ -21,10 +21,10 @@ USER 0
 RUN make build
 
 #@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.9)
-FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.9.0-202208150436.p0.gb49c285.assembly.stream AS origincli
+FROM registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.9.0-202208241755.p0.gb49c285.assembly.stream AS origincli
 
 #@follow_tag(registry.redhat.io/ubi8:latest)
-FROM registry.redhat.io/ubi8:8.6-903
+FROM registry.redhat.io/ubi8:8.6-943
 
 ENV APP_DIR=/opt/app-root/src
 ## EXCLUDE BEGIN ##
@@ -67,7 +67,7 @@ LABEL \
         com.redhat.delivery.appregistry="false" \
         maintainer="AOS Logging <team-logging@redhat.com>" \
         License="Apache-2.0" \
-        name="openshift/ose-cluster-logging-operator" \
+        name="openshift-logging/cluster-logging-rhel8-operator" \
         com.redhat.component="cluster-logging-operator-container" \
         io.openshift.maintainer.product="OpenShift Container Platform" \
         io.openshift.build.commit.id=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_COMMIT} \

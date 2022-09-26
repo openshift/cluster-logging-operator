@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -48,6 +49,10 @@ var _ = Describe("Object", func() {
 			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "ns"},
 			TypeMeta:   metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
 			Data:       map[string]string{},
+		}),
+		Entry("NewServiceMonitor", NewServiceMonitor("ns", "foo"), &monitoringv1.ServiceMonitor{
+			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "ns"},
+			TypeMeta:   metav1.TypeMeta{Kind: "ServiceMonitor", APIVersion: "monitoring.coreos.com/v1"},
 		}),
 	)
 })

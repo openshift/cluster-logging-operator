@@ -2,7 +2,6 @@ package consoleplugin_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
@@ -20,10 +19,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/client"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func init() {
@@ -80,23 +76,5 @@ var _ = Describe("[ConsolePlugin]", func() {
 		runtime.Initialize(cp, cl.Namespace, "logging-view-plugin")
 		Eventually(func() error { return c.Get(cp) }, time.Minute, time.Second).Should(Succeed())
 		By("Got console plugin: " + test.JSONLine(cp))
-
-		// Get the console web page, check our plugin is listed.
-		con := &configv1.Console{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
-		ExpectOK(c.Get(con))
-		cfg := config.GetConfigOrDie()
-		http, err := rest.HTTPClientFor(cfg)
-		ExpectOK(err)
-
-		u := con.Status.ConsoleURL + "/monitoring/logs"
-		By("Checking console URL: " + u)
-		Eventually(func() string {
-			resp, err := http.Get(u)
-			ExpectOK(err)
-			b, err := ioutil.ReadAll(resp.Body)
-			ExpectOK(err)
-			By("Got console response: " + string(b))
-			return string(b)
-		}, time.Minute, time.Second).Should(MatchRegexp(`"consolePlugins":\[.*"logging-view-plugin"`))
 	})
 })

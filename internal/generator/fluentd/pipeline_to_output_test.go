@@ -150,11 +150,12 @@ var _ = Describe("Testing Config Generation", func() {
   </filter>
   
   # Parse the logs into json
-  <filter **>
+  <filter /^(?!(kubernetes\.|)var\.log\.pods\.openshift-.+_|(kubernetes\.|)var\.log\.pods\.default_|(kubernetes\.|)var\.log\.pods\.kube-.+_|journal\.|system\.var\.log|linux-audit\.log|k8s-audit\.log|openshift-audit\.log|ovn-audit\.log).+/>
     @type parser
     key_name message
-    reserve_data yes
+    reserve_data true
     hash_value_field structured
+    remove_key_name_field true
     <parse>
       @type json
       json_parser oj

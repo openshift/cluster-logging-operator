@@ -605,7 +605,16 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
-  
+
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+    <record>
+      _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+    </record>
+	remove_keys _dummy_
+  </filter>
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -741,7 +750,16 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
-  
+
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+    <record>
+      _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+    </record>
+	remove_keys _dummy_
+  </filter>
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -1317,7 +1335,16 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
-  
+            
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+	<record>
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	</record>
+	remove_keys _dummy_
+  </filter>
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -1453,7 +1480,16 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
-  
+            
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+	<record>
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	</record>
+	remove_keys _dummy_
+  </filter>
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -2033,7 +2069,16 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
-  
+          
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+	<record>
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	</record>
+	remove_keys _dummy_
+  </filter>
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -2168,6 +2213,15 @@ var _ = Describe("Generating fluentd config", func() {
 	rename_time false
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  </filter>
+          
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+	<record>
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	</record>
+	remove_keys _dummy_
   </filter>
   
   #remove structured field if present
@@ -3146,6 +3200,15 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
+           
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+	<record>
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	</record>
+	remove_keys _dummy_
+  </filter>
   
   #remove structured field if present
   <filter **>
@@ -3282,7 +3345,16 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
-  
+            
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+	<record>
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	</record>
+	remove_keys _dummy_
+  </filter>
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -3418,7 +3490,16 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
-  
+            
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+	<record>
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	</record>
+	remove_keys _dummy_
+  </filter>
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -3554,7 +3635,16 @@ var _ = Describe("Generating fluentd config", func() {
 	undefined_dot_replace_char UNUSED
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
-  
+            
+  #rebuild message field if present
+  <filter **>
+	@type record_modifier
+	<record>
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	</record>
+	remove_keys _dummy_
+  </filter>
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -3706,11 +3796,12 @@ var _ = Describe("Generating fluentd config", func() {
 # Copying pipeline apps-pipeline to outputs
 <label @APPS_PIPELINE>
   # Parse the logs into json
-  <filter **>
+  <filter /^(?!(kubernetes\.|)var\.log\.pods\.openshift-.+_|(kubernetes\.|)var\.log\.pods\.default_|(kubernetes\.|)var\.log\.pods\.kube-.+_|journal\.|system\.var\.log|linux-audit\.log|k8s-audit\.log|openshift-audit\.log|ovn-audit\.log).+/>
     @type parser
     key_name message
-    reserve_data yes
+    reserve_data true
     hash_value_field structured
+    remove_key_name_field true
     <parse>
       @type json
       json_parser oj

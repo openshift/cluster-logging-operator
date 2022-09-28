@@ -1,4 +1,4 @@
-package fluentd
+package vector
 
 import (
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"

@@ -238,7 +238,7 @@ test-unit: test-forwarder-generator
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
-	go test -cover -race ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'`
+	go test -cover -race ./apis/... ./internal/... `go list ./test/... | grep -Ev 'test/(e2e|functional|client|helpers)'`
 
 .PHONY: test-cluster
 test-cluster:

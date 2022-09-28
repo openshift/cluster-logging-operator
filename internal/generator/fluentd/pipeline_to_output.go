@@ -3,6 +3,7 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	"sort"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -28,15 +29,16 @@ const (
 
 	JsonParseTemplate = `{{define "JsonParse" -}}
 # {{.Desc}}
-<filter **>
+<filter %s>
   @type parser
   key_name message
-  reserve_data yes
+  reserve_data true
   hash_value_field structured
   {{/* https://issues.redhat.com/browse/LOG-1806 
     A non-JSON log message is forwarded as it would be if JSON parsing was not enabled (e.g. to the app index).
     This warning is just fluentd detecting a non-JSON message, but it will still be forwarded to the non-JSON index. */}}
   emit_invalid_record_to_error false 
+  remove_key_name_field true
   <parse>
     @type json
     json_parser oj
@@ -78,7 +80,7 @@ func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Elem
 				ConfLiteral{
 					Desc:         "Parse the logs into json",
 					TemplateName: "JsonParse",
-					TemplateStr:  JsonParseTemplate,
+					TemplateStr:  fmt.Sprintf(JsonParseTemplate, source.ApplicationTagsForMultilineEx),
 				})
 		}
 		switch len(p.OutputRefs) {

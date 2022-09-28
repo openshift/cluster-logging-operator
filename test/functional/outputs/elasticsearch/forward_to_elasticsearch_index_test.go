@@ -97,6 +97,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
+			outputLogTemplate.Message = ""
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should not send logs spec'd by structuredTypeName for infrastructure sources", func() {
@@ -124,8 +125,6 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
-			//TODO: Fix me as part of LOG-2759
-			//outputLogTemplate.Structured = map[string]interface{}{}
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should not send logs spec'd by k8s label structuredTypeKey for infrastructure sources", func() {
@@ -152,8 +151,6 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
-			//TODO: Fix me as part of LOG-2759
-			//outputLogTemplate.Structured = map[string]interface{}{}
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should send logs spec'd by k8s label structuredTypeKey", func() {
@@ -180,6 +177,8 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
+			outputLogTemplate.Message = ""
+			outputLogTemplate.Structured = map[string]interface{}{"*": "*"}
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		It("should send logs spec'd by openshift label structuredTypeKey", func() {
@@ -207,6 +206,8 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 			// Compare to expected template
 			outputTestLog := logs[0]
 			outputLogTemplate.ViaqIndexName = ""
+			outputLogTemplate.Message = ""
+			outputLogTemplate.Structured = map[string]interface{}{"*": "*"}
 			Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 		})
 		Context("and enabling sending each container log to different indices", func() {
@@ -273,8 +274,6 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				// Compare to expected template
 				outputTestLog := logs[0]
 				outputLogTemplate.ViaqIndexName = ""
-				//TODO: Fix me as part of LOG-2759
-				//outputLogTemplate.Structured = map[string]interface{}{}
 				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
 			})
 		})

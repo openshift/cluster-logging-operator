@@ -322,6 +322,7 @@ func RemoveString(slice []string, s string) (result []string) {
 func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
 
 	if len(lhs) != len(rhs) {
+		log.V(9).Info("PodVolumeEquivalent unequal lengths", "left", lhs, "right", rhs)
 		return false
 	}
 
@@ -340,6 +341,7 @@ func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
 		if rhsVol, ok := rhsMap[name]; ok {
 			if lhsVol.Secret != nil && rhsVol.Secret != nil {
 				if lhsVol.Secret.SecretName != rhsVol.Secret.SecretName {
+					log.V(9).Info("PodVolumeEquivalent unmatched secretName", "name", name, "left", lhsVol, "right", rhsVol)
 					return false
 				}
 
@@ -347,6 +349,7 @@ func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
 			}
 			if lhsVol.ConfigMap != nil && rhsVol.ConfigMap != nil {
 				if lhsVol.ConfigMap.LocalObjectReference.Name != rhsVol.ConfigMap.LocalObjectReference.Name {
+					log.V(9).Info("PodVolumeEquivalent unmatched configMap.LocalObjectReference", "name", name, "left", lhsVol.ConfigMap, "right", rhsVol.ConfigMap)
 					return false
 				}
 
@@ -354,12 +357,14 @@ func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
 			}
 			if lhsVol.HostPath != nil && rhsVol.HostPath != nil {
 				if lhsVol.HostPath.Path != rhsVol.HostPath.Path {
+					log.V(9).Info("PodVolumeEquivalent unmatched hostpath", "name", name, "left", lhsVol.HostPath, "right", rhsVol.HostPath)
 					return false
 				}
 				continue
 			}
 			if lhsVol.EmptyDir != nil && rhsVol.EmptyDir != nil {
 				if lhsVol.EmptyDir.Medium != rhsVol.EmptyDir.Medium {
+					log.V(9).Info("PodVolumeEquivalent unmatched emptyDir", "name", name, "left", lhsVol.EmptyDir, "right", rhsVol.EmptyDir)
 					return false
 				}
 				continue
@@ -368,6 +373,7 @@ func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
 			return false
 		} else {
 			// if rhsMap doesn't have the same key has lhsMap
+			log.V(9).Info("PodVolumeEquivalent missing volume", "name", name, "left", lhs, "right", rhs)
 			return false
 		}
 	}

@@ -120,10 +120,11 @@ const (
 	// Commonly-used label names.
 	LabelApp = "app"
 
-	EventReasonCreateObject = "CreateObject"
-	EventReasonGetObject    = "GetObject"
-	EventReasonRemoveObject = "RemoveObject"
-	EventReasonUpdateObject = "UpdateObject"
+	EventReasonReconcilingLoggingCR = "ReconcilingLoggingCR"
+	EventReasonCreateObject         = "CreateObject"
+	EventReasonGetObject            = "GetObject"
+	EventReasonRemoveObject         = "RemoveObject"
+	EventReasonUpdateObject         = "UpdateObject"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

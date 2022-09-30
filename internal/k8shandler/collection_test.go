@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"context"
+
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 

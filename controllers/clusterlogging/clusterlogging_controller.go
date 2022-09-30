@@ -2,7 +2,6 @@ package clusterlogging
 
 import (
 	"context"
-
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -20,6 +19,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
+	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -57,6 +57,8 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
+	loggingruntime.Initialize(instance, request.NamespacedName.Namespace, request.NamespacedName.Name)
+	r.Recorder.Event(instance, corev1.EventTypeNormal, constants.EventReasonReconcilingLoggingCR, "Reconciling logging resource")
 	err := r.Client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {

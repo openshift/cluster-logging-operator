@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"path"
 	"reflect"
 	"time"
@@ -11,8 +12,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
-	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
-
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -27,7 +26,6 @@ import (
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -373,33 +371,7 @@ func (clusterRequest *ClusterLoggingRequest) reconcileCollectorDaemonset(collect
 	desired := collector.NewDaemonSet(instance.Namespace, configHash, caTrustHash, clusterRequest.ClusterID, collectorType, caTrustBundle, *instance.Spec.Collection, clusterRequest.ForwarderSpec, clusterRequest.OutputSecrets)
 	utils.AddOwnerRefToObject(desired, utils.AsOwner(instance))
 
-	current := &apps.DaemonSet{}
-	err = clusterRequest.Get(desired.Name, current)
-	if errors.IsNotFound(err) {
-		if err = clusterRequest.Create(desired); err != nil {
-			return fmt.Errorf("Failure creating collector Daemonset %v", err)
-		}
-		return nil
-	}
-	if daemonsets.AreSame(current, desired) {
-		return nil
-	}
-	//With this PR: https://github.com/kubernetes-sigs/controller-runtime/pull/919
-	//we have got new behaviour: Reset resource version if fake client Create call failed.
-	//So if object already exist version will be reset, going to get before try to create.
-	desired.ResourceVersion = current.GetResourceVersion()
-	current.Spec = desired.Spec
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if err = clusterRequest.Update(desired); err != nil {
-			return err
-		}
-		return nil
-	})
-	if retryErr != nil {
-		return retryErr
-	}
-
-	return nil
+	return reconcile.DaemonSet(clusterRequest.EventRecorder, clusterRequest.Client, desired)
 }
 
 func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus(collectorType logging.LogCollectionType) (err error) {

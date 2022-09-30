@@ -3,9 +3,10 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
-	"strings"
 
 	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/ginkgo"

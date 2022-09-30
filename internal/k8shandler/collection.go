@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -290,6 +291,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRu
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfig(collectorType logging.LogCollectionType, collectorConfig string) error {
 	log.V(3).Info("Updating ConfigMap and Secrets")
+	opensslConf := tls.OpenSSLConf(clusterRequest.Client)
 	var err error = nil
 	if collectorType == logging.LogCollectionTypeFluentd {
 		collectorConfigMap := NewConfigMap(
@@ -299,6 +301,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfig(colle
 				"fluent.conf":         collectorConfig,
 				"run.sh":              fluentd.RunScript,
 				"cleanInValidJson.rb": fluentd.CleanInValidJson,
+				"openssl.cnf":         opensslConf,
 			},
 		)
 		err = clusterRequest.createConfigMap(collectorConfigMap)
@@ -309,6 +312,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfig(colle
 			secrets = map[string][]byte{}
 			// Ignore errors, these files are optional depending on security settings.
 			secrets["vector.toml"] = []byte(collectorConfig)
+			secrets["openssl.cnf"] = []byte(opensslConf)
 			return nil
 		})
 		err = clusterRequest.createSecret(constants.CollectorConfigSecretName, clusterRequest.Cluster.Namespace, secrets)

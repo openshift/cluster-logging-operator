@@ -131,7 +131,7 @@ spec:
                       version:
                         description: 'Version specifies the version of Elasticsearch
                           to be used. Must be one of: - 6 - Default for internal ES
-                          store - 7 - 8 - Default for external ES store'
+                          store - 7 - 8 - Latest for external ES store'
                         minimum: 6
                         type: integer
                     type: object
@@ -191,7 +191,7 @@ spec:
                         version:
                           description: 'Version specifies the version of Elasticsearch
                             to be used. Must be one of: - 6 - Default for internal
-                            ES store - 7 - 8 - Default for external ES store'
+                            ES store - 7 - 8 - Latest for external ES store'
                           minimum: 6
                           type: integer
                       type: object

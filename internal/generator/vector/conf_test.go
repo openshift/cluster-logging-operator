@@ -261,7 +261,6 @@ type = "remap"
 inputs = ["raw_host_audit_logs"]
 source = '''
   .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
-
   .tag = ".linux-audit.log"
   
   match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
@@ -936,9 +935,16 @@ key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 
+[transforms.add_nodename_to_metric]
+type = "remap"
+inputs = ["internal_metrics"]
+source = '''
+.tags.hostname = get_env_var!("VECTOR_SELF_NODE_NAME")
+'''
+
 [sinks.prometheus_output]
 type = "prometheus_exporter"
-inputs = ["internal_metrics"]
+inputs = ["add_nodename_to_metric"]
 address = "0.0.0.0:24231"
 default_namespace = "collector"
 
@@ -1012,7 +1018,7 @@ crt_file = "/etc/collector/metrics/tls.crt"
 type = "kubernetes_logs"
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
-exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log"]
+exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"
@@ -1058,30 +1064,38 @@ type = "internal_metrics"
 type = "remap"
 inputs = ["raw_container_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   if !exists(.level) {
-    .level = "unknown"
-    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
-      .level = "warn"
-    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+    .level = "default"
+    if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
       .level = "info"
+    } else if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
+      .level = "warn"
     } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
       .level = "error"
     } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
       .level = "critical"
     } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
       .level = "debug"
+    } else if match!(.message, r'Notice|NOTICE|^N[0-9]+|level=notice|Value:notice|"level":"notice"|<notice>') {
+      .level = "notice"
+    } else if match!(.message, r'Alert|ALERT|^A[0-9]+|level=alert|Value:alert|"level":"alert"|<alert>') {
+      .level = "alert"
+    } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
+      .level = "emergency"
     }
   }
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.journal_logs]
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".journal.system"
   
   del(.source_type)
@@ -1096,17 +1110,23 @@ source = '''
   del(.TIMESTAMP_MONOTONIC)
   
   if !exists(.level) {
-    .level = "unknown"
-    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
-      .level = "warn"
-    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+    .level = "default"
+    if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
       .level = "info"
+    } else if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
+      .level = "warn"
     } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
       .level = "error"
     } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
       .level = "critical"
     } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
       .level = "debug"
+    } else if match!(.message, r'Notice|NOTICE|^N[0-9]+|level=notice|Value:notice|"level":"notice"|<notice>') {
+      .level = "notice"
+    } else if match!(.message, r'Alert|ALERT|^A[0-9]+|level=alert|Value:alert|"level":"alert"|<alert>') {
+      .level = "alert"
+    } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
+      .level = "emergency"
     }
   }
   
@@ -1162,13 +1182,14 @@ source = '''
   
   .time = format_timestamp!(.timestamp, format: "%FT%T%:z")
   
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.host_audit_logs]
 type = "remap"
 inputs = ["raw_host_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".linux-audit.log"
   
   match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
@@ -1187,43 +1208,58 @@ source = '''
   } else {
     log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
   }
+
+  .level = "default"
 '''
 
 [transforms.k8s_audit_logs]
 type = "remap"
 inputs = ["raw_k8s_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  .k8s_audit_level = .level
+  .level = "default"
 '''
 
 [transforms.openshift_audit_logs]
 type = "remap"
 inputs = ["raw_openshift_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
+  .openshift_audit_level = .level
+  .level = "default"
 '''
 
 [transforms.ovn_audit_logs]
 type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
+  .openshift.cluster_id = "${OPENSHIFT_CLUSTER_ID:-}"
   .tag = ".ovn-audit.log"
   if !exists(.level) {
-    .level = "unknown"
-    if match!(.message,r'(Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>)') {
-      .level = "warn"
-    } else if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
+    .level = "default"
+    if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {
       .level = "info"
+    } else if match!(.message, r'Warning|WARN|^W[0-9]+|level=warn|Value:warn|"level":"warn"|<warn>') {
+      .level = "warn"
     } else if match!(.message, r'Error|ERROR|^E[0-9]+|level=error|Value:error|"level":"error"|<error>') {
       .level = "error"
     } else if match!(.message, r'Critical|CRITICAL|^C[0-9]+|level=critical|Value:critical|"level":"critical"|<critical>') {
       .level = "critical"
     } else if match!(.message, r'Debug|DEBUG|^D[0-9]+|level=debug|Value:debug|"level":"debug"|<debug>') {
       .level = "debug"
+    } else if match!(.message, r'Notice|NOTICE|^N[0-9]+|level=notice|Value:notice|"level":"notice"|<notice>') {
+      .level = "notice"
+    } else if match!(.message, r'Alert|ALERT|^A[0-9]+|level=alert|Value:alert|"level":"alert"|<alert>') {
+      .level = "alert"
+    } else if match!(.message, r'Emergency|EMERGENCY|^EM[0-9]+|level=emergency|Value:emergency|"level":"emergency"|<emergency>') {
+      .level = "emergency"
     }
   }
 '''
@@ -1257,7 +1293,7 @@ inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_l
 source = '''
   .log_type = "audit"
   .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
-  ."@timestamp" = del(.timestamp)
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
 [transforms.pipeline]
@@ -1287,15 +1323,24 @@ source = '''
   del(.file)
   del(.tag)
   del(.source_type)
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
+  }
 '''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
+hooks.init = "init"
 hooks.process = "process"
 source = '''
+    function init()
+        count = 0
+    end
     function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
         if event.log.kubernetes == nil then
             emit(event)
             return
@@ -1340,6 +1385,7 @@ inputs = ["es_1_dedot_and_flatten"]
 endpoint = "https://es-1.svc.messaging.cluster.local:9200"
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
+encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
 
@@ -1369,15 +1415,24 @@ source = '''
   del(.file)
   del(.tag)
   del(.source_type)
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
+  }
 '''
 
 [transforms.es_2_dedot_and_flatten]
 type = "lua"
 inputs = ["es_2_add_es_index"]
 version = "2"
+hooks.init = "init"
 hooks.process = "process"
 source = '''
+    function init()
+        count = 0
+    end
     function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
         if event.log.kubernetes == nil then
             emit(event)
             return
@@ -1422,6 +1477,7 @@ inputs = ["es_2_dedot_and_flatten"]
 endpoint = "https://es-2.svc.messaging.cluster.local:9200"
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
+encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
 suppress_type_name = true

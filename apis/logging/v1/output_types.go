@@ -205,7 +205,7 @@ type Elasticsearch struct {
 	// Must be one of:
 	//  - 6 - Default for internal ES store
 	//  - 7
-	//  - 8 - Default for external ES store
+	//  - 8 - Latest for external ES store
 	//
 	// +kubebuilder:validation:Minimum:=6
 	// +optional

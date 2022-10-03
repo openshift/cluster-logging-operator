@@ -26,52 +26,43 @@ import (
 func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) logging.OutputSpec {
 
 	if outputDefaults != nil && outputDefaults.Elasticsearch != nil {
+		// TODO: fix - outputDefaults should only apply to default output
 		if out.Elasticsearch == nil {
 			out.Elasticsearch = outputDefaults.Elasticsearch
 		} else {
-			// If the output already has outputspec.elasticsearch & output defaults are defined,
-			// merge structures outputdefaults.elasticsearch with out.elasticsearch
-			// Will NOT change already defined fields in out.Elasticsearch
-			outES := out.Elasticsearch
-			outputDefaults := outputDefaults.Elasticsearch
-
-			if outES.StructuredTypeKey == "" && outputDefaults.StructuredTypeKey != "" {
-				outES.StructuredTypeKey = outputDefaults.StructuredTypeKey
-			}
-			if outES.StructuredTypeName == "" && outputDefaults.StructuredTypeName != "" {
-				outES.StructuredTypeName = outputDefaults.StructuredTypeName
-			}
-			if !outES.EnableStructuredContainerLogs && outputDefaults.EnableStructuredContainerLogs {
-				outES.EnableStructuredContainerLogs = outputDefaults.EnableStructuredContainerLogs
-			}
-			if outES.Version < logging.DefaultESVersion && outputDefaults.Version >= logging.DefaultESVersion {
-				outES.Version = outputDefaults.Version
-			}
+			out.Elasticsearch = mergeDefaults(outputDefaults, out)
 		}
 	}
 	out = setESVersion(out)
 	return out
 }
 
+func mergeDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) *logging.Elasticsearch {
+	// Below is necessary since the output version has already been set for default
+	outES := out.Elasticsearch
+	defaults := outputDefaults.Elasticsearch
+
+	if outES.StructuredTypeKey == "" && defaults.StructuredTypeKey != "" {
+		outES.StructuredTypeKey = defaults.StructuredTypeKey
+	}
+	if outES.StructuredTypeName == "" && defaults.StructuredTypeName != "" {
+		outES.StructuredTypeName = defaults.StructuredTypeName
+	}
+	if !outES.EnableStructuredContainerLogs && defaults.EnableStructuredContainerLogs {
+		outES.EnableStructuredContainerLogs = defaults.EnableStructuredContainerLogs
+	}
+	return outES
+}
+
 func setESVersion(out logging.OutputSpec) logging.OutputSpec {
-	// Don't set ES version if valid in out.Elasticsearch
-	if out.Elasticsearch != nil && out.Elasticsearch.Version >= logging.DefaultESVersion {
-		return out
-	}
-
-	esVersion := logging.LatestESVersion
-
-	// Internal "default" elasticsearch is v6
+	// Always set the version for our default output
 	if out.Name == logging.OutputNameDefault {
-		esVersion = logging.DefaultESVersion
-	}
-
-	// Add ES version if not specified
-	if out.Elasticsearch != nil {
-		out.Elasticsearch.Version = esVersion
-	} else {
-		out.Elasticsearch = &logging.Elasticsearch{
-			Version: esVersion,
+		if out.Elasticsearch != nil {
+			out.Elasticsearch.Version = logging.DefaultESVersion
+		} else {
+			out.Elasticsearch = &logging.Elasticsearch{
+				Version: logging.DefaultESVersion,
+			}
 		}
 	}
 

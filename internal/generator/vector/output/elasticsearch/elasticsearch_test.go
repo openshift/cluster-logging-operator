@@ -1051,18 +1051,13 @@ id_key = "_id"
 suppress_type_name = true
 `,
 		}),
-		Entry("with the default Elasticsearch version", helpers.ConfGenerateTest{
+		Entry("without an Elasticsearch version", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
-						Type: logging.OutputTypeElasticsearch,
-						Name: "es-1",
-						URL:  "http://es.svc.infra.cluster:9200",
-						OutputTypeSpec: logging.OutputTypeSpec{
-							Elasticsearch: &logging.Elasticsearch{
-								Version: logging.DefaultESVersion,
-							},
-						},
+						Type:   logging.OutputTypeElasticsearch,
+						Name:   "es-1",
+						URL:    "http://es.svc.infra.cluster:9200",
 						Secret: nil,
 					},
 				},
@@ -1095,9 +1090,15 @@ source = '''
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
+hooks.init = "init"
 hooks.process = "process"
 source = '''
+    function init()
+        count = 0
+    end
     function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
         if event.log.kubernetes == nil then
             emit(event)
             return
@@ -1142,6 +1143,218 @@ inputs = ["es_1_dedot_and_flatten"]
 endpoint = "http://es.svc.infra.cluster:9200"
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
+encoding.except_fields = ["write_index"]
+request.timeout_secs = 2147483648
+id_key = "_id"
+suppress_type_name = true
+`,
+		}),
+		Entry("with an Elasticsearch version less than our default", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeElasticsearch,
+						Name: "es-1",
+						URL:  "http://es.svc.infra.cluster:9200",
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Elasticsearch: &logging.Elasticsearch{
+								Version: 5,
+							},
+						},
+						Secret: nil,
+					},
+				},
+			},
+			Secrets: security.NoSecrets,
+			ExpectedConf: `
+# Set Elasticsearch index
+[transforms.es_1_add_es_index]
+type = "remap"
+inputs = ["application"]
+source = '''
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  .write_index = index + "-write"
+  ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
+  }
+'''
+
+[transforms.es_1_dedot_and_flatten]
+type = "lua"
+inputs = ["es_1_add_es_index"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+        flatten_labels(event)
+        prune_labels(event)
+        emit(event)
+    end
+
+    function flatten_labels(event)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+    end 
+
+  function prune_labels(event)
+    local exclusions = {"app.kubernetes.io/name", "app.kubernetes.io/instance", "app.kubernetes.io/version", "app.kubernetes.io/component", "app.kubernetes.io/part-of", "app.kubernetes.io/managed-by", "app.kubernetes.io/created-by"}
+    local keys = {}
+    for k,v in pairs(event.log.kubernetes.labels) do
+      for index, e in pairs(exclusions) do
+        if k == e then
+          keys[k] = v
+        end
+      end
+    end
+    event.log.kubernetes.labels = keys
+  end
+'''
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["es_1_dedot_and_flatten"]
+endpoint = "http://es.svc.infra.cluster:9200"
+bulk.index = "{{ write_index }}"
+bulk.action = "create"
+encoding.except_fields = ["write_index"]
+request.timeout_secs = 2147483648
+id_key = "_id"
+`,
+		}),
+		Entry("with our default Elasticsearch version", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeElasticsearch,
+						Name: "es-1",
+						URL:  "http://es.svc.infra.cluster:9200",
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Elasticsearch: &logging.Elasticsearch{
+								Version: logging.DefaultESVersion,
+							},
+						},
+						Secret: nil,
+					},
+				},
+			},
+			Secrets: security.NoSecrets,
+			ExpectedConf: `
+# Set Elasticsearch index
+[transforms.es_1_add_es_index]
+type = "remap"
+inputs = ["application"]
+source = '''
+  index = "default"
+  if (.log_type == "application"){
+    index = "app"
+  }
+  if (.log_type == "infrastructure"){
+    index = "infra"
+  }
+  if (.log_type == "audit"){
+    index = "audit"
+  }
+  .write_index = index + "-write"
+  ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
+  }
+'''
+
+[transforms.es_1_dedot_and_flatten]
+type = "lua"
+inputs = ["es_1_add_es_index"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+        flatten_labels(event)
+        prune_labels(event)
+        emit(event)
+    end
+
+    function flatten_labels(event)
+        -- create "flat_labels" key
+        event.log.kubernetes.flat_labels = {}
+        i = 1
+        -- flatten the labels
+        for k,v in pairs(event.log.kubernetes.labels) do
+          event.log.kubernetes.flat_labels[i] = k.."="..v
+          i=i+1
+        end
+    end 
+
+  function prune_labels(event)
+    local exclusions = {"app.kubernetes.io/name", "app.kubernetes.io/instance", "app.kubernetes.io/version", "app.kubernetes.io/component", "app.kubernetes.io/part-of", "app.kubernetes.io/managed-by", "app.kubernetes.io/created-by"}
+    local keys = {}
+    for k,v in pairs(event.log.kubernetes.labels) do
+      for index, e in pairs(exclusions) do
+        if k == e then
+          keys[k] = v
+        end
+      end
+    end
+    event.log.kubernetes.labels = keys
+  end
+'''
+
+[sinks.es_1]
+type = "elasticsearch"
+inputs = ["es_1_dedot_and_flatten"]
+endpoint = "http://es.svc.infra.cluster:9200"
+bulk.index = "{{ write_index }}"
+bulk.action = "create"
+encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
 `,
@@ -1184,15 +1397,24 @@ source = '''
   del(.file)
   del(.tag)
   del(.source_type)
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
+  }
 '''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
+hooks.init = "init"
 hooks.process = "process"
 source = '''
+    function init()
+        count = 0
+    end
     function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
         if event.log.kubernetes == nil then
             emit(event)
             return
@@ -1237,12 +1459,13 @@ inputs = ["es_1_dedot_and_flatten"]
 endpoint = "http://es.svc.infra.cluster:9200"
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
+encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
 suppress_type_name = true
 `,
 		}),
-		Entry("with Latest Elasticsearch version", helpers.ConfGenerateTest{
+		Entry("with an Elasticsearch version greater than latest version", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{
 					{
@@ -1251,7 +1474,7 @@ suppress_type_name = true
 						URL:  "http://es.svc.infra.cluster:9200",
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								Version: logging.LatestESVersion,
+								Version: logging.LatestESVersion + 1,
 							},
 						},
 						Secret: nil,
@@ -1280,15 +1503,24 @@ source = '''
   del(.file)
   del(.tag)
   del(.source_type)
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
+  }
 '''
 
 [transforms.es_1_dedot_and_flatten]
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
+hooks.init = "init"
 hooks.process = "process"
 source = '''
+    function init()
+        count = 0
+    end
     function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
         if event.log.kubernetes == nil then
             emit(event)
             return
@@ -1333,289 +1565,7 @@ inputs = ["es_1_dedot_and_flatten"]
 endpoint = "http://es.svc.infra.cluster:9200"
 bulk.index = "{{ write_index }}"
 bulk.action = "create"
-request.timeout_secs = 2147483648
-id_key = "_id"
-suppress_type_name = true
-`,
-		}),
-		Entry("with no Elasticsearch version", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type:   logging.OutputTypeElasticsearch,
-						Name:   "es-1",
-						URL:    "http://es.svc.infra.cluster:9200",
-						Secret: nil,
-					},
-				},
-			},
-			Secrets: security.NoSecrets,
-			ExpectedConf: `
-# Set Elasticsearch index
-[transforms.es_1_add_es_index]
-type = "remap"
-inputs = ["application"]
-source = '''
-  index = "default"
-  if (.log_type == "application"){
-    index = "app"
-  }
-  if (.log_type == "infrastructure"){
-    index = "infra"
-  }
-  if (.log_type == "audit"){
-    index = "audit"
-  }
-  .write_index = index + "-write"
-  ._id = encode_base64(uuid_v4())
-  del(.file)
-  del(.tag)
-  del(.source_type)
-'''
-
-[transforms.es_1_dedot_and_flatten]
-type = "lua"
-inputs = ["es_1_add_es_index"]
-version = "2"
-hooks.process = "process"
-source = '''
-    function process(event, emit)
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-        flatten_labels(event)
-        prune_labels(event)
-        emit(event)
-    end
-
-    function flatten_labels(event)
-        -- create "flat_labels" key
-        event.log.kubernetes.flat_labels = {}
-        i = 1
-        -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.labels) do
-          event.log.kubernetes.flat_labels[i] = k.."="..v
-          i=i+1
-        end
-    end 
-
-  function prune_labels(event)
-    local exclusions = {"app.kubernetes.io/name", "app.kubernetes.io/instance", "app.kubernetes.io/version", "app.kubernetes.io/component", "app.kubernetes.io/part-of", "app.kubernetes.io/managed-by", "app.kubernetes.io/created-by"}
-    local keys = {}
-    for k,v in pairs(event.log.kubernetes.labels) do
-      for index, e in pairs(exclusions) do
-        if k == e then
-          keys[k] = v
-        end
-      end
-    end
-    event.log.kubernetes.labels = keys
-  end
-'''
-
-[sinks.es_1]
-type = "elasticsearch"
-inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
-bulk.index = "{{ write_index }}"
-bulk.action = "create"
-request.timeout_secs = 2147483648
-id_key = "_id"
-suppress_type_name = true
-`,
-		}),
-		Entry("with an Elasticsearch version < default es version", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeElasticsearch,
-						Name: "es-1",
-						URL:  "http://es.svc.infra.cluster:9200",
-						OutputTypeSpec: logging.OutputTypeSpec{
-							Elasticsearch: &logging.Elasticsearch{
-								Version: 2,
-							},
-						},
-						Secret: nil,
-					},
-				},
-			},
-			Secrets: security.NoSecrets,
-			ExpectedConf: `
-# Set Elasticsearch index
-[transforms.es_1_add_es_index]
-type = "remap"
-inputs = ["application"]
-source = '''
-  index = "default"
-  if (.log_type == "application"){
-    index = "app"
-  }
-  if (.log_type == "infrastructure"){
-    index = "infra"
-  }
-  if (.log_type == "audit"){
-    index = "audit"
-  }
-  .write_index = index + "-write"
-  ._id = encode_base64(uuid_v4())
-  del(.file)
-  del(.tag)
-  del(.source_type)
-'''
-
-[transforms.es_1_dedot_and_flatten]
-type = "lua"
-inputs = ["es_1_add_es_index"]
-version = "2"
-hooks.process = "process"
-source = '''
-    function process(event, emit)
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-        flatten_labels(event)
-        prune_labels(event)
-        emit(event)
-    end
-
-    function flatten_labels(event)
-        -- create "flat_labels" key
-        event.log.kubernetes.flat_labels = {}
-        i = 1
-        -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.labels) do
-          event.log.kubernetes.flat_labels[i] = k.."="..v
-          i=i+1
-        end
-    end 
-
-  function prune_labels(event)
-    local exclusions = {"app.kubernetes.io/name", "app.kubernetes.io/instance", "app.kubernetes.io/version", "app.kubernetes.io/component", "app.kubernetes.io/part-of", "app.kubernetes.io/managed-by", "app.kubernetes.io/created-by"}
-    local keys = {}
-    for k,v in pairs(event.log.kubernetes.labels) do
-      for index, e in pairs(exclusions) do
-        if k == e then
-          keys[k] = v
-        end
-      end
-    end
-    event.log.kubernetes.labels = keys
-  end
-'''
-
-[sinks.es_1]
-type = "elasticsearch"
-inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
-bulk.index = "{{ write_index }}"
-bulk.action = "create"
-request.timeout_secs = 2147483648
-id_key = "_id"
-suppress_type_name = true
-`,
-		}),
-		Entry("with an Elasticsearch version greater than the latest version", helpers.ConfGenerateTest{
-			CLFSpec: logging.ClusterLogForwarderSpec{
-				Outputs: []logging.OutputSpec{
-					{
-						Type: logging.OutputTypeElasticsearch,
-						Name: "es-1",
-						URL:  "http://es.svc.infra.cluster:9200",
-						OutputTypeSpec: logging.OutputTypeSpec{
-							Elasticsearch: &logging.Elasticsearch{
-								Version: 10,
-							},
-						},
-						Secret: nil,
-					},
-				},
-			},
-			Secrets: security.NoSecrets,
-			ExpectedConf: `
-# Set Elasticsearch index
-[transforms.es_1_add_es_index]
-type = "remap"
-inputs = ["application"]
-source = '''
-  index = "default"
-  if (.log_type == "application"){
-    index = "app"
-  }
-  if (.log_type == "infrastructure"){
-    index = "infra"
-  }
-  if (.log_type == "audit"){
-    index = "audit"
-  }
-  .write_index = index + "-write"
-  ._id = encode_base64(uuid_v4())
-  del(.file)
-  del(.tag)
-  del(.source_type)
-'''
-
-[transforms.es_1_dedot_and_flatten]
-type = "lua"
-inputs = ["es_1_add_es_index"]
-version = "2"
-hooks.process = "process"
-source = '''
-    function process(event, emit)
-        if event.log.kubernetes == nil then
-            emit(event)
-            return
-        end
-        if event.log.kubernetes.labels == nil then
-            emit(event)
-            return
-        end
-        flatten_labels(event)
-        prune_labels(event)
-        emit(event)
-    end
-
-    function flatten_labels(event)
-        -- create "flat_labels" key
-        event.log.kubernetes.flat_labels = {}
-        i = 1
-        -- flatten the labels
-        for k,v in pairs(event.log.kubernetes.labels) do
-          event.log.kubernetes.flat_labels[i] = k.."="..v
-          i=i+1
-        end
-    end 
-
-  function prune_labels(event)
-    local exclusions = {"app.kubernetes.io/name", "app.kubernetes.io/instance", "app.kubernetes.io/version", "app.kubernetes.io/component", "app.kubernetes.io/part-of", "app.kubernetes.io/managed-by", "app.kubernetes.io/created-by"}
-    local keys = {}
-    for k,v in pairs(event.log.kubernetes.labels) do
-      for index, e in pairs(exclusions) do
-        if k == e then
-          keys[k] = v
-        end
-      end
-    end
-    event.log.kubernetes.labels = keys
-  end
-'''
-
-[sinks.es_1]
-type = "elasticsearch"
-inputs = ["es_1_dedot_and_flatten"]
-endpoint = "http://es.svc.infra.cluster:9200"
-bulk.index = "{{ write_index }}"
-bulk.action = "create"
+encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
 suppress_type_name = true

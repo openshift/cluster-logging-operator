@@ -84,7 +84,7 @@ func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 		Openshift: types.OpenshiftMeta{
 			Labels:    map[string]string{"*": "*"},
 			Sequence:  types.NewOptionalInt(""),
-			ClusterID: "**optional**",
+			ClusterID: "*",
 		},
 		PipelineMetadata: TemplateForAnyPipelineMetadata,
 		Docker: types.Docker{

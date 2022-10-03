@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	"sort"
+	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
@@ -20,9 +21,10 @@ const (
 {{define "PipelineLabels" -}}
 # {{.Desc}}
 <filter **>
-  @type record_transformer
+  @type record_modifier
+  remove_keys _dummy_
   <record>
-    openshift { "labels": %s }
+    _dummy_ ${record['openshift']={"labels"=>{}} unless record['openshift'];record['openshift']['labels'] = %s }
   </record>
 </filter>
 {{end}}`
@@ -65,7 +67,7 @@ func PipelineToOutputs(spec *logging.ClusterLogForwarderSpec, op Options) []Elem
 				ConfLiteral{
 					Desc:         "Add User Defined labels to the output record",
 					TemplateName: "PipelineLabels",
-					TemplateStr:  fmt.Sprintf(PipelineLabels, string(s)),
+					TemplateStr:  fmt.Sprintf(PipelineLabels, strings.ReplaceAll(string(s), ":", "=>")),
 				})
 		}
 		if p.DetectMultilineErrors {

@@ -1,13 +1,14 @@
 package vector
 
 import (
+	"strings"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	. "github.com/openshift/cluster-logging-operator/test/framework/functional/common"
-	"strings"
 )
 
 const entrypointScript = `#!/bin/bash
@@ -38,7 +39,7 @@ func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfYaml string)
 }
 
 func (c *VectorCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, nodeName string) *runtime.ContainerBuilder {
-	return b.AddEnvVar("LOG", AdaptLogLevel()).
+	return b.AddEnvVar("VECTOR_LOG", AdaptLogLevel()).
 		AddEnvVarFromFieldRef("POD_IP", "status.podIP").
 		AddEnvVar("NODE_NAME", nodeName).
 		AddEnvVarFromFieldRef("VECTOR_SELF_NODE_NAME", "spec.nodeName").

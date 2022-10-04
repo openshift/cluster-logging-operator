@@ -227,7 +227,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 	maxtimes := 5
 	times := 0
 	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/collector -o jsonpath={.status.NumberUnavailable}").Run()
+		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/collector -o jsonpath={.status.numberUnavailable}").Run()
 		if err == nil {
 			if numUnavail == "" {
 				numUnavail = "0"

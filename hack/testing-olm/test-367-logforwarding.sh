@@ -55,6 +55,8 @@ fi
 
 reset_logging(){
     oc delete --ignore-not-found --force --grace-period=0 "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"||:
+    oc wait --for=delete "clusterlogging/instance" --timeout=30s
+    oc wait --for=delete "clusterlogforwarder/instance" --timeout=30s
 }
 
 failed=0

@@ -59,7 +59,7 @@ func (clusterRequest *ClusterLoggingRequest) Update(object client.Object) (err e
 	return err
 }
 
-//Update the runtime Object status or return error
+// UpdateStatus modifies the status sub-resource or returns an error.
 func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object client.Object) (err error) {
 	if err = clusterRequest.Client.Status().Update(context.TODO(), object); err != nil {
 		// making this debug because we should be throwing the returned error if we are never
@@ -106,8 +106,13 @@ func (clusterRequest *ClusterLoggingRequest) Delete(object client.Object) error 
 }
 
 func (clusterRequest *ClusterLoggingRequest) UpdateCondition(t logging.ConditionType, message string, reason logging.ConditionReason, status v1.ConditionStatus) error {
-	if logging.SetCondition(&clusterRequest.Cluster.Status.Conditions, t, status, reason, message) {
-		return clusterRequest.UpdateStatus(clusterRequest.Cluster)
+	instance, err := clusterRequest.getClusterLogging(true)
+	if err != nil {
+		return err
+	}
+
+	if logging.SetCondition(&instance.Status.Conditions, t, status, reason, message) {
+		return clusterRequest.UpdateStatus(instance)
 	}
 	return nil
 }

@@ -5,7 +5,11 @@ import (
 )
 
 func (clusterRequest *ClusterLoggingRequest) appendFinalizer(identifier string) error {
-	instance := clusterRequest.Cluster.DeepCopy()
+	instance, err := clusterRequest.getClusterLogging(true)
+	if err != nil {
+		return kverrors.Wrap(err, "Error getting ClusterLogging for appending finalizer.")
+	}
+
 	for _, f := range instance.GetFinalizers() {
 		if f == identifier {
 			// Skip if finalizer already exists
@@ -22,7 +26,10 @@ func (clusterRequest *ClusterLoggingRequest) appendFinalizer(identifier string) 
 }
 
 func (clusterRequest *ClusterLoggingRequest) removeFinalizer(identifier string) error {
-	instance := clusterRequest.Cluster.DeepCopy()
+	instance, err := clusterRequest.getClusterLogging(true)
+	if err != nil {
+		return kverrors.Wrap(err, "Error getting ClusterLogging for removing finalizer.")
+	}
 
 	found := false
 	finalizers := []string{}

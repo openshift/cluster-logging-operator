@@ -386,18 +386,20 @@ func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus(collectorType
 }
 
 func (clusterRequest *ClusterLoggingRequest) UpdateFluentdStatus() (err error) {
-
-	cluster := clusterRequest.Cluster
-
 	fluentdStatus, err := clusterRequest.getFluentdCollectorStatus()
 	if err != nil {
 		return fmt.Errorf("Failed to get status of the collector: %v", err)
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if !compareFluentdCollectorStatus(fluentdStatus, cluster.Status.Collection.Logs.FluentdStatus) {
-			cluster.Status.Collection.Logs.FluentdStatus = fluentdStatus
-			return clusterRequest.UpdateStatus(cluster)
+		instance, err := clusterRequest.getClusterLogging(true)
+		if err != nil {
+			return err
+		}
+
+		if !compareFluentdCollectorStatus(fluentdStatus, instance.Status.Collection.Logs.FluentdStatus) {
+			instance.Status.Collection.Logs.FluentdStatus = fluentdStatus
+			return clusterRequest.UpdateStatus(instance)
 		}
 		return nil
 	})

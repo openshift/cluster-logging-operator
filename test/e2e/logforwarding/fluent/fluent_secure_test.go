@@ -12,7 +12,7 @@ import (
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
-	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
+	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"github.com/openshift/cluster-logging-operator/test/helpers/fluentd"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -29,9 +29,11 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 		privateCA, serverCert, clientCert *certificate.CertKey
 		sharedKey                         string
 		portOffset                        int
+		e2e                               *framework.E2ETestFramework
 	)
 
 	BeforeEach(func() {
+		e2e = framework.NewE2ETestFramework()
 		c = client.NewTest()
 		f = NewFixture(c.NS.Name, secureMessage)
 
@@ -89,7 +91,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 
 	AfterEach(func() {
 		c.Close()
-		e2e.RunCleanupScript()
+		e2e.Cleanup()
 	})
 
 	It("connects to secure destinations", func() {

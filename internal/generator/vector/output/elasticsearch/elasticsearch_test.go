@@ -595,6 +595,10 @@ source = '''
       .write_index, err = "app-" + val + "-write"
     }
   }
+
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
+  }
 '''
 
 [transforms.es_1_dedot_and_flatten]
@@ -693,6 +697,9 @@ source = '''
   del(.source_type)
   if .log_type == "application" && .structured != null {
     .write_index = "app-myindex-write"
+  }
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
   }
 '''
 
@@ -798,6 +805,9 @@ source = '''
     } else {
       .write_index = "app-myindex-write"
     }
+  }
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
   }
 '''
 
@@ -915,6 +925,10 @@ source = '''
     } else {
        log(err, level: "error")
     }
+  }
+
+  if .structured != null && .write_index == "app-write" {
+    .message = encode_json(.structured)
   }
 '''
 

@@ -251,7 +251,7 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 					{
 						Type: logging.OutputTypeLoki,
 						Name: "loki-receiver",
-						URL:  "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
 					},
 				},
 			},
@@ -266,7 +266,7 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 [sinks.loki_receiver]
 type = "loki"
 inputs = ["application"]
-endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false
 
@@ -281,7 +281,6 @@ kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
 [sinks.loki_receiver.tls]
-enabled = true
 ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 # Bearer Auth Config
 [sinks.loki_receiver.auth]

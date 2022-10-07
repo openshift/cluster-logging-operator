@@ -146,6 +146,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			ComponentID: componentID,
 			// Kafka does not use the verify_certificate or verify_hostname options, see insecureTLS
 			InsecureSkipVerify: false,
+			NeedsEnabled: true,
 		})
 
 		if security.HasPassphrase(secret) {

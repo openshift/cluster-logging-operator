@@ -39,6 +39,7 @@ type BearerToken struct {
 type TLSConf struct {
 	ComponentID        string
 	InsecureSkipVerify bool
+	NeedsEnabled       bool
 }
 
 func (t TLSConf) Name() string {
@@ -49,7 +50,9 @@ func (t TLSConf) Template() string {
 	return `
 {{define "vectorTLS" -}}
 [sinks.{{.ComponentID}}.tls]
+{{- if .NeedsEnabled }}
 enabled = true
+{{- end }}
 {{- if .InsecureSkipVerify }}
 verify_certificate = false
 verify_hostname = false

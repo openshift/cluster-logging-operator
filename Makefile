@@ -22,7 +22,7 @@ export LOGGING_VERSION?=5.6
 export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6
-IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.21-rh
+IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.23-rh
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
 # Note: use logging-view-plugin:latest to pick up improvements in the console automatically.
 # Unlike the other components, console changes do not risk breaking the collector,

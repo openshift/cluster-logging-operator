@@ -2,15 +2,21 @@ package functional
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/certificates"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/certificates"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
+
+	"github.com/openshift/cluster-logging-operator/internal/certificates"
+	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 
 	yaml "sigs.k8s.io/yaml"
 
@@ -223,7 +229,9 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		AddConfigMapVolume("config", f.Name).
 		AddConfigMapVolume("entrypoint", f.Name).
 		AddConfigMapVolume("certs", certsName)
-	b = f.collector.BuildCollectorContainer(b.AddContainer(constants.CollectorName, f.image), FunctionalNodeName).End()
+	b = f.collector.BuildCollectorContainer(
+		b.AddContainer(constants.CollectorName, f.image).
+			AddEnvVarFromFieldRef("POD_IPS", "status.podIPs"), FunctionalNodeName).End()
 
 	for _, visit := range visitors {
 		if err = visit(b); err != nil {

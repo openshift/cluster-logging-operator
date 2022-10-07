@@ -95,6 +95,7 @@ func newVectorPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *corev1
 		{Name: "METRICS_KEY", Value: "/etc/vector/metrics/tls.key"},
 		{Name: "NODE_IPV4", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
 		{Name: "POD_IP", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
+		{Name: "POD_IPS", ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIPs"}}},
 	}
 	proxyEnv := utils.GetProxyEnvVars()
 	vectorContainer.Env = append(vectorContainer.Env, proxyEnv...)

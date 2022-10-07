@@ -15,6 +15,13 @@ if [ ! -d $ARTIFACT_DIR ] ; then
   mkdir -p $ARTIFACT_DIR
 fi
 
+reset_logging(){
+    for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
+      oc delete -n ${LOGGING_NS} $r --ignore-not-found --force --grace-period=0||:
+      os::cmd::try_until_failure "oc -n ${LOGGING_NS} get $r" "$((1 * $minute))"
+    done
+}
+
 cleanup(){
   local return_code="$?"
 
@@ -24,10 +31,17 @@ cleanup(){
   os::test::junit::declare_suite_end
 
   set +e
-  os::log::info "Running cleanup"
-  end_seconds=$(date +%s)
-  runtime="$(($end_seconds - $start_seconds))s"
+  if [ "${DO_CLEANUP:-false}" == "true" ] ; then
+    os::log::info "Running cleanup"
+    if [ "$return_code" != "0" ] ; then
+      gather_logging_resources ${LOGGING_NS} $test_artifactdir
 
+      mkdir -p $ARTIFACT_DIR/$test_name
+      oc -n $LOGGING_NS get configmap collector -o jsonpath={.data} --ignore-not-found > $ARTIFACT_DIR/$test_name/collector-configmap.log ||:
+    fi
+    end_seconds=$(date +%s)
+    runtime="$(($end_seconds - $start_seconds))s"
+  fi
   set -e
   exit ${return_code}
 }
@@ -43,16 +57,15 @@ fi
 oc patch consoles.operator.openshift.io cluster  --type=merge --patch '{ "spec": { "plugins": ["logging-view-plugin"] } }'
 
 failed=0
+reset_logging
 for dir in $(ls -d $TEST_DIR); do
   os::log::info "=========================================================="
   os::log::info "Starting test of console-plugin: $dir"
   os::log::info "=========================================================="
   artifact_dir=$ARTIFACT_DIR/consoleplugin/$(basename $dir)
   mkdir -p $artifact_dir
-  GENERATOR_NS="clo-test-$RANDOM"
-  if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/consoleplugin/cleanup.sh $artifact_dir $GENERATOR_NS" \
+  if CLEANUP_CMD="$( cd $( dirname ${BASH_SOURCE[0]} ) >/dev/null 2>&1 && pwd )/../../test/e2e/consoleplugin/cleanup.sh $artifact_dir" \
     artifact_dir=$artifact_dir \
-    GENERATOR_NS=$GENERATOR_NS \
     go test -count=1 -parallel=1 -timeout=60m "$dir" -ginkgo.noColor -ginkgo.trace -ginkgo.slowSpecThreshold=300.0 | tee -a "$artifact_dir/test.log" ; then
     os::log::info "======================================================="
     os::log::info "Consoleplugin $dir passed"
@@ -63,11 +76,6 @@ for dir in $(ls -d $TEST_DIR); do
     os::log::info "Consoleplugin $dir failed"
     os::log::info "======================================================="
   fi
-  if [ "${DO_CLEANUP:-true}" == "true" ] ; then
-    for ns in "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"; do
-      oc delete $ns --ignore-not-found --force --grace-period=0||:
-      os::cmd::try_until_failure "oc get $ns" "$((1 * $minute))"
-    done
-  fi
+  reset_logging
 done
 exit $failed

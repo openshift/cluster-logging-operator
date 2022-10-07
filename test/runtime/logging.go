@@ -22,9 +22,7 @@ func NewClusterLogging() *loggingv1.ClusterLogging {
 	runtime.Initialize(cl, constants.OpenshiftNS, constants.SingletonName)
 	test.MustUnmarshal(`
     collection:
-      logs:
-        fluentd: {}
-        type: fluentd
+      type: fluentd
     managementState: Managed
     `, &cl.Spec)
 	return cl

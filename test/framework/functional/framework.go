@@ -2,13 +2,14 @@ package functional
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/openshift/cluster-logging-operator/internal/certificates"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
@@ -262,6 +263,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	b = f.collector.BuildCollectorContainer(
 		b.AddContainer(constants.CollectorName, f.image).
 			AddEnvVar("OPENSHIFT_CLUSTER_ID", f.Name).
+			AddEnvVarFromFieldRef("POD_IPS", "status.podIPs").
 			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).End()
 
 	for _, visit := range visitors {

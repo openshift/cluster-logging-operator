@@ -187,6 +187,7 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) 
 		{Name: "NODE_IPV4", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.hostIP"}}},
 		{Name: "OPENSHIFT_CLUSTER_ID", Value: clusterID},
 		{Name: "POD_IP", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIP"}}},
+		{Name: "POD_IPS", ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{APIVersion: "v1", FieldPath: "status.podIPs"}}},
 	}
 	collector.Env = append(collector.Env, utils.GetProxyEnvVars()...)
 

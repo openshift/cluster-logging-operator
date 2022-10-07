@@ -11,7 +11,21 @@ ENV SOURCE_GIT_URL=${CI_CLUSTER_LOGGING_OPERATOR_UPSTREAM_URL}
 ENV REMOTE_SOURCES=${REMOTE_SOURCES:-.}
 ENV REMOTE_SOURCES_DIR=${REMOTE_SOURCES_DIR:-.}
 ENV APP_DIR=.
-COPY $REMOTE_SOURCES $REMOTE_SOURCES_DIR
+ENV CACHE_DEPS="true"
+WORKDIR /opt/apt-root/src
+
+
+COPY ${APP_DIR}/go.mod ${APP_DIR}/go.sum ./
+RUN if [ -n $CACHE_DEPS ]; then go mod download ; fi
+COPY ${APP_DIR}/.bingo .bingo
+COPY ${APP_DIR}/Makefile ./Makefile
+COPY ${APP_DIR}/version ./version
+COPY ${APP_DIR}/scripts ./scripts
+COPY ${APP_DIR}/files ./files
+COPY ${APP_DIR}/main.go .
+COPY ${APP_DIR}/apis ./apis
+COPY ${APP_DIR}/controllers ./controllers
+COPY ${APP_DIR}/internal ./internal
 
 USER 0
 RUN make build
@@ -22,7 +36,9 @@ FROM quay.io/openshift/origin-cli:4.11 AS origincli
 #@follow_tag(registry.redhat.io/ubi8:latest)
 FROM registry.redhat.io/ubi8:8.6
 
-ENV APP_DIR=/opt/app-root/src
+ENV APP_DIR=/opt/apt-root/src
+ENV SRC_DIR=./
+
 
 RUN INSTALL_PKGS=" \
       openssl \
@@ -42,11 +58,8 @@ COPY --from=builder $APP_DIR/scripts/* /usr/bin/scripts/
 RUN mkdir -p /usr/share/logging/
 
 COPY --from=builder $APP_DIR/files/ /usr/share/logging/
-
-COPY --from=builder $APP_DIR/bundle/manifests /manifests
-
 COPY --from=origincli /usr/bin/oc /usr/bin
-COPY --from=builder $APP_DIR/must-gather/collection-scripts/* /usr/bin/
+COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
 
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin

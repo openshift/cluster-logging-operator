@@ -1,6 +1,6 @@
 #!/bin/bash
-
-source ./common
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source ${SCRIPT_DIR}/common
 
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
@@ -10,37 +10,10 @@ if [ "${BASE_COLLECTION_PATH}" = "" ]; then
     BASE_COLLECTION_PATH=$(pwd)
 fi
 
-NAMESPACE=openshift-logging
+NAMESPACE=${2:-openshift-logging}
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 es_folder="$CLO_COLLECTION_PATH/es"
-
-get_es_logs() {
-  local pod=$1
-  local logs_folder=$2/logs
-  echo "-- POD $pod Elasticsearch Logs"
-
-  if [ ! -d "$logs_folder" ]
-  then
-    mkdir -p $logs_folder
-  fi
-
-  path=/elasticsearch/persistent/elasticsearch/logs
-  exists=$(oc -n $NAMESPACE exec $pod -c elasticsearch -- ls ${path} 2> /dev/null)
-
-  if [ -z "$exists" ]; then
-    path=/elasticsearch/elasticsearch/logs
-  fi
-
-  exists=$(oc -n $NAMESPACE exec $pod -c elasticsearch -- ls ${path} 2> /dev/null)
-  if [ -z "$exists" ]; then
-    echo "---- Unable to get ES logs from pod $pod"
-  else
-    oc -n $NAMESPACE rsync -c elasticsearch -q $pod:$path $logs_folder 2> /dev/null || echo "---- Unable to get ES logs from pod $pod"
-    mv -f $logs_folder/logs $logs_folder/$pod
-    nice xz $logs_folder/$pod/*
-  fi
-}
 
 list_es_storage() {
   local pod=$1
@@ -69,7 +42,7 @@ get_elasticsearch_status() {
 
   curl_es='curl -s --max-time 20 --key /etc/elasticsearch/secret/admin-key --cert /etc/elasticsearch/secret/admin-cert --cacert /etc/elasticsearch/secret/admin-ca https://localhost:9200'
   local cat_items=(health nodes aliases thread_pool)
-  for cat_item in ${cat_items[@]}
+  for cat_item in "${cat_items[@]}"
   do
     oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/$cat_item?v &> $cluster_folder/${cat_item}.cat
   done
@@ -89,7 +62,7 @@ get_elasticsearch_status() {
     echo "Gathering additional cluster information Cluster status is $health"
 
     cat_items=(recovery shards pending_tasks)
-    for cat_item in ${cat_items[@]}
+    for cat_item in "${cat_items[@]}"
     do
       oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/$cat_item?v &> $cluster_folder/${cat_item}.cat
     done
@@ -111,7 +84,6 @@ for pod in $es_pods
 do
     echo "---- Elasticsearch pod: $pod"
     get_env $pod $es_folder "$NAMESPACE"
-    get_es_logs $pod $es_folder
     list_es_storage $pod
 done
 

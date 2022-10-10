@@ -41,3 +41,5 @@ oc -n $NAMESPACE get pods -o wide > ${clo_folder}/pods.txt 2>&1
 oc -n $NAMESPACE extract secret/elasticsearch --to=${clo_folder}
 oc -n $NAMESPACE extract configmap/collector --to=${clo_folder}
 oc -n $NAMESPACE get events -o yaml > ${clo_folder}/$NAMESPACE-events.yaml 2>&1
+oc -n $NAMESPACE get "${csv_name}" -o jsonpath='{.spec.displayName}{"\n"}{.spec.version}' > "${clo_folder}/version"
+

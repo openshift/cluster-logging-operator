@@ -1,6 +1,6 @@
 #!/bin/bash
-
-source ./common
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source ${SCRIPT_DIR}/common
 
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
@@ -10,7 +10,7 @@ if [ "${BASE_COLLECTION_PATH}" = "" ]; then
     BASE_COLLECTION_PATH=$(pwd)
 fi
 
-NAMESPACE="openshift-logging"
+NAMESPACE=${2:-openshift-logging}
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 kibana_folder="$CLO_COLLECTION_PATH/kibana"

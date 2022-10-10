@@ -5,11 +5,3 @@ GENERATOR_NS=$2
 runtime=$(date +%s)
 mkdir -p "$artifact_dir/$runtime" ||:
 gather_logging_resources "openshift-logging" "$artifact_dir" "$runtime"
-
-oc -n "$GENERATOR_NS" describe deployment/log-generator  > "$artifact_dir/$runtime/log-generator.describe" ||:
-oc -n "$GENERATOR_NS" logs deployment/log-generator  > "$artifact_dir/$runtime/log-generator.logs" ||:
-oc -n "$GENERATOR_NS" get deployment/log-generator -o yaml > "$artifact_dir/$runtime/log-generator.deployment.yaml" ||:
-RECEIVER=$(oc -n openshift-logging get pods -l component=fluent-receiver -o name||:)
-if [ "$RECEIVER" != "" ] ; then
-  oc -n openshift-logging exec $(echo $RECEIVER| sed 's/pod\///') -- cat /tmp/app-logs > "$artifact_dir/$runtime/fluent-receiver-app-logs" ||:
-fi

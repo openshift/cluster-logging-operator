@@ -50,6 +50,7 @@ auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
 request.concurrency = 2
+healthcheck.enabled = false
 `
 	cwSinkRole = `
 # Cloudwatch Logs
@@ -63,6 +64,7 @@ stream_name = "{{ stream_name }}"
 # role_arn and identity token set via env vars
 encoding.codec = "json"
 request.concurrency = 2
+healthcheck.enabled = false
 `
 )
 

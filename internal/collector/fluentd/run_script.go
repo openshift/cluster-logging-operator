@@ -29,6 +29,34 @@ IPADDR6=${NODE_IPV6:-$( /usr/sbin/ip -6 addr show dev eth0 | grep inet | sed -e 
 
 export IPADDR4 IPADDR6
 
+export PROM_BIND_IP=$(
+ruby <<EOF
+  require 'ipaddr'
+  def get_ip (ipstrs)
+	isIPV4 = false
+	isIPV6 = false
+	for ipstr in ipstrs do
+	  begin
+		ipaddr = IPAddr.new ipstr.strip
+	  rescue => e
+		return "#{ipstr} is invalid ip. exception #{e.class} occurred with message #{e.message}"
+	  else
+		isIPV4 |= ipaddr.ipv4?
+		isIPV6 |= ipaddr.ipv6?
+	  end
+	end
+	return "[::]" if isIPV6
+	return "0.0.0.0" if isIPV4
+	return "invalid-ip"
+  end
+  puts get_ip("${POD_IPS}".split(","))
+EOF
+)
+
+echo "POD_IPS: ${POD_IPS}, PROM_BIND_IP: ${PROM_BIND_IP}"
+
+
+
 # Check bearer_token_file for fluent-plugin-kubernetes_metadata_filter.
 if [ ! -s /var/run/secrets/kubernetes.io/serviceaccount/token ] ; then
     echo "ERROR: Bearer_token_file (/var/run/secrets/kubernetes.io/serviceaccount/token) to access the Kubernetes API server is missing or empty."

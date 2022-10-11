@@ -42,9 +42,6 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = message
 		outputLogTemplate.Level = expLevel
-		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-			outputLogTemplate.Openshift.ClusterID = "*"
-		}
 
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
 		Expect(framework.WriteMessagesToApplicationLog(applicationLogLine, 10)).To(BeNil())
@@ -73,9 +70,6 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
-		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-			outputLogTemplate.Openshift.ClusterID = "*"
-		}
 
 		// Write log line as input to fluentd
 		applicationLogLine := functional.NewCRIOLogMessage(timestamp, message, false)
@@ -102,9 +96,6 @@ var _ = Describe("[Functional][LogForwarding][Normalization] tests for message f
 		outputLogTemplate.Timestamp = nanoTime
 		outputLogTemplate.Message = fmt.Sprintf("regex:^%s.*$", message)
 		outputLogTemplate.Level = "*"
-		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
-			outputLogTemplate.Openshift.ClusterID = "*"
-		}
 
 		// Write log line as input to fluentd
 		applicationLogLine := fmt.Sprintf("%s stdout F %s $n", timestamp, message)

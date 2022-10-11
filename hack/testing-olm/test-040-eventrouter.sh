@@ -17,7 +17,6 @@ EVENT_ROUTER_VERSION="0.3"
 IMAGE_LOGGING_EVENTROUTER=${IMAGE_LOGGING_EVENTROUTER:-"quay.io/openshift-logging/eventrouter:${EVENT_ROUTER_VERSION}"}
 EVENT_ROUTER_TEMPLATE=${repo_dir}/hack/eventrouter-template.yaml
 MAX_DEPLOY_WAIT_SECONDS=${MAX_DEPLOY_WAIT_SECONDS:-120}
-GENERATOR_NS="clo-eventrouter-test-$RANDOM"
 mkdir -p /tmp/artifacts/junit
 os::test::junit::declare_suite_start "[ClusterLogging] event router e2e test"
 
@@ -77,9 +76,9 @@ wait_elasticsearch() {
 }
 
 reset_logging(){
-    for r in "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"; do
-      oc delete $r --ignore-not-found --force --grace-period=0||:
-      os::cmd::try_until_failure "oc get $r" "$((1 * $minute))"
+    for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
+      oc -n $LOGGING_NS delete $r --ignore-not-found --force --grace-period=0||:
+      os::cmd::try_until_failure "oc -n $LOGGING_NS get $r" "$((1 * $minute))"
     done
 }
 
@@ -87,25 +86,25 @@ cleanup() {
     local return_code="$?"
     local test_name=$(basename $0)
 
-
-    if [ "true" == "${DO_CLEANUP:-"true"}" ] ; then
-      os::test::junit::declare_suite_end
-      set +e
+    os::test::junit::declare_suite_end
+    set +e
+    if [ "true" == "${DO_CLEANUP:-"false"}" ] ; then
+      os::log::info "Running cleanup"
       if [ "$return_code" != "0" ] ; then
 	      gather_logging_resources ${LOGGING_NS} $test_artifactdir
 
         mkdir -p $ARTIFACT_DIR/$test_name
-        oc -n $LOGGING_NS get configmap fluentd -o jsonpath={.data} --ignore-not-found > $ARTIFACT_DIR/$test_name/fluent-configmap.log ||:
+        oc -n $LOGGING_NS get configmap collector -o jsonpath={.data} --ignore-not-found > $ARTIFACT_DIR/$test_name/collector-configmap.log ||:
       fi
 
       oc process -p SA_NAMESPACE=${LOGGING_NS} -p IMAGE=${IMAGE_LOGGING_EVENTROUTER} \
          -f $EVENT_ROUTER_TEMPLATE | oc -n ${LOGGING_NS} delete -f -
 
-      reset_logging
-
       os::cleanup::all "${return_code}"
     fi
 
+    reset_logging
+    set -e
     exit $return_code
 }
 trap "cleanup" EXIT
@@ -143,6 +142,7 @@ spec:
   collection:
     type: "fluentd"
 EOL
+
 
 deploy_eventrouter
 wait_elasticsearch

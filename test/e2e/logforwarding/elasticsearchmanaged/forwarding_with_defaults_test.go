@@ -57,13 +57,13 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 
 		AssertLogStoreHasIndex := func(store framework.LogStore, prefix string) {
 			estore := store.(*framework.ElasticLogStore)
-			pollErr := wait.PollImmediate(5*time.Second, 5*time.Minute, func() (bool, error) {
-				indices, err := estore.Indices()
+			var indices framework.Indices
+			pollErr := wait.PollImmediate(5*time.Second, 10*time.Minute, func() (found bool, err error) {
+				indices, err = estore.Indices()
 				if err != nil {
 					log.Error(err, "Error retrieving indices from elasticsearch")
 					return false, nil
 				}
-				found := false
 				log.V(2).Info("indices", "indices", indices)
 				for _, index := range indices {
 					if strings.HasPrefix(index.Name, prefix) {
@@ -72,8 +72,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				}
 				return found, nil
 			})
-			log.V(2).Error(pollErr, "Unable to find logs in store")
-			Expect(pollErr).To(BeNil())
+			Expect(pollErr).To(BeNil(), fmt.Sprintf("Unable to find logs in store, indices: %v", indices))
 		}
 
 		BeforeEach(func() {
@@ -86,11 +85,19 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		}, framework.DefaultCleanUpTimeout)
 
 		Context("forwarding logs to default output", func() {
-			Context("with TypeKey set in outputDefaults", func() {
+			Context("with StructuredTypeKey set in outputDefaults", func() {
 				DescribeTable("should send logs to index set in labels", func(collectorType helpers.LogComponentType) {
 					DeployLoggingWithComponents([]helpers.LogComponentType{collectorType, helpers.ComponentTypeStore})
 					forwarder := testruntime.NewClusterLogForwarder()
 					forwarder.Spec = logging.ClusterLogForwarderSpec{
+						Inputs: []logging.InputSpec{
+							{
+								Name: "my-application",
+								Application: &logging.Application{
+									Namespaces: []string{generatorNS},
+								},
+							},
+						},
 						OutputDefaults: &logging.OutputDefaults{
 							Elasticsearch: &logging.Elasticsearch{
 								StructuredTypeKey: "kubernetes.labels.logFormat",
@@ -100,7 +107,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							{
 								Name:       "test-app",
 								OutputRefs: []string{logging.OutputNameDefault},
-								InputRefs:  []string{logging.InputNameApplication},
+								InputRefs:  []string{"my-application"},
 								Parse:      "json",
 							},
 						},
@@ -108,7 +115,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 					}
-					components := []helpers.LogComponentType{helpers.ComponentTypeStore, helpers.ComponentTypeCollector}
+					components := []helpers.LogComponentType{helpers.ComponentTypeStore, collectorType}
 					for _, component := range components {
 						if err := e2e.WaitFor(component); err != nil {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))
@@ -123,8 +130,8 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				)
 
 			})
-			Context("with IndexName set in outputDefaults", func() {
-				DescribeTable("should send logs to index set in IndexName", func(collectorType helpers.LogComponentType) {
+			Context("with StructuredTypeName set in outputDefaults", func() {
+				DescribeTable("should send logs to index set in StructuredTypeName", func(collectorType helpers.LogComponentType) {
 					DeployLoggingWithComponents([]helpers.LogComponentType{collectorType, helpers.ComponentTypeStore})
 					IndexName := "testindex"
 					forwarder := testruntime.NewClusterLogForwarder()
@@ -154,7 +161,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {
 						Fail(fmt.Sprintf("Unable to create an instance of clusterlogforwarder: %v", err))
 					}
-					components := []helpers.LogComponentType{helpers.ComponentTypeCollector, helpers.ComponentTypeStore}
+					components := []helpers.LogComponentType{collectorType, helpers.ComponentTypeStore}
 					for _, component := range components {
 						if err := e2e.WaitFor(component); err != nil {
 							Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", component, err))

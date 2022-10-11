@@ -95,7 +95,7 @@ func TestLogForwardingToLokiWithVector(t *testing.T) {
 
 func testLogForwardingToLoki(t *testing.T, cl *loggingv1.ClusterLogging, clf *loggingv1.ClusterLogForwarder) {
 	c := client.ForTest(t)
-	defer e2e.RunCleanupScript()
+	defer e2e.NewE2ETestFramework().Cleanup()
 	rcv := loki.NewReceiver(c.NS.Name, "loki-receiver")
 	gen := runtime.NewLogGenerator(c.NS.Name, rcv.Name, 100, 0, "I am Loki, of Asgard, and I am burdened with glorious purpose.")
 	clf.Spec.Outputs[0].URL = rcv.InternalURL("").String()

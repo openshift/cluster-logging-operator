@@ -1,43 +1,71 @@
 #!/bin/bash
-BASE_COLLECTION_PATH="${1:-/must-gather}"
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+BASE_COLLECTION_PATH="${1:-./_artifacts}"
 mkdir -p "${BASE_COLLECTION_PATH}"
 
-# resource list
-resources=(ns/openshift-operator-lifecycle-manager)
-
-# cluster logging operator namespace
-resources+=(ns/openshift-logging)
-
-# elasticsearch operator namespace
-resources+=(ns/openshift-operators-redhat)
+LOGGING_NS="${2:-openshift-logging}"
 
 # cluster-scoped resources
-resources+=(nodes)
-resources+=(pods)
+cluster_resources=(ns/openshift-operator-lifecycle-manager)
+
+# cluster logging operator namespace
+cluster_resources+=(ns/$LOGGING_NS)
+
+# elasticsearch operator namespace
+cluster_resources+=(ns/openshift-operators-redhat)
+
+# cluster-scoped resources
+cluster_resources+=(nodes)
+cluster_resources+=(clusterroles)
+cluster_resources+=(clusterrolebindings)
+cluster_resources+=(persistentvolumes)
+
+for cr in "${cluster_resources[@]}" ; do
+  oc adm inspect --dest-dir="${BASE_COLLECTION_PATH}" "${cr}" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+done
+
+# namespace-scoped resources
+resources=(pods)
 resources+=(roles)
 resources+=(rolebindings)
-resources+=(clusterroles)
-resources+=(clusterrolebindings)
 resources+=(configmaps)
 resources+=(serviceaccounts)
 resources+=(events)
-resources+=(persistentvolumes)
 
 # run the collection of resources using must-gather
-for resource in ${resources[@]}; do
-  oc adm inspect --dest-dir="${BASE_COLLECTION_PATH}" --all-namespaces "${resource}" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+for ns in "${LOGGING_NS}" openshift-operator-lifecycle-manager openshift-operators-redhat ; do
+  for resource in "${resources[@]}" ; do
+    oc adm inspect --dest-dir="${BASE_COLLECTION_PATH}" -n "$ns" "${resource}" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  done
 done
 
-{
-    # Call operator and installation gather scripts
-    ./gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH"
-    ./gather_elasticsearch_operator_resources "$BASE_COLLECTION_PATH"
-    ./gather_install_resources "$BASE_COLLECTION_PATH"
+eo_found="$(oc -n openshift-operators-redhat get deployment elasticsearch-operator --ignore-not-found --no-headers)"
+clo_found="$(oc -n "$LOGGING_NS" get deployment cluster-logging-operator --ignore-not-found --no-headers)"
+if [ "$clo_found" != "" ] || [ "$eo_found" != "" ] ; then
+    ${SCRIPT_DIR}/gather_install_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+else
+  echo "Skipping install inspection.  No CLO or EO deployment found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+fi
 
-    # Call per component gather scripts
-    ./gather_collection_resources "$BASE_COLLECTION_PATH"
-    ./gather_logstore_resources "$BASE_COLLECTION_PATH"
-    ./gather_visualization_resources "$BASE_COLLECTION_PATH"
-} >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+if [ "$clo_found" != "" ] ; then
+  ${SCRIPT_DIR}/gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH" "$LOGGING_NS" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+else
+  echo "Skipping collection inspection.  No CLO found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+fi
+
+found="$(oc -n $LOGGING_NS get elasticsearch elasticsearch --ignore-not-found --no-headers)"
+if [ "$found" != "" ] ; then
+  # Call per component gather scripts
+  ${SCRIPT_DIR}/gather_elasticsearch_operator_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+
+  found="$(oc -n $LOGGING_NS get kibana kibana --ignore-not-found --no-headers)"
+  if [ "$found" != "" ] ; then
+    ${SCRIPT_DIR}/gather_visualization_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  fi
+else
+  echo "Skipping logstorage inspection.  No Elasticsearch deployment found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+fi
 
 exit 0

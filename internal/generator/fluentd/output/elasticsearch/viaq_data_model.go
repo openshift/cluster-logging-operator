@@ -22,6 +22,20 @@ func ViaqDataModel(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o 
 			Elasticsearch: o.Elasticsearch,
 		},
 	}
+	rebuildMessage := RecordModifier{
+		Records: []Record{
+			{
+				Key:        "_dummy_",
+				Expression: `${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}`,
+			},
+		},
+		RemoveKeys: []string{"_dummy_"},
+	}
+	elements = append(elements, Filter{
+		Desc:      "rebuild message field if present",
+		MatchTags: "**",
+		Element:   rebuildMessage,
+	})
 	if o.Elasticsearch == nil || (o.Elasticsearch.StructuredTypeKey == "" && o.Elasticsearch.StructuredTypeName == "" && !o.Elasticsearch.EnableStructuredContainerLogs) {
 		recordModifier := RecordModifier{
 			RemoveKeys: []string{KeyStructured},

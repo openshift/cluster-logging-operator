@@ -1,4 +1,4 @@
-package fluentd
+package vector
 
 import (
 	"fmt"

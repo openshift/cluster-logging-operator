@@ -19,6 +19,7 @@ type PipelineBuilder struct {
 	clfb                          *ClusterLogForwarderBuilder
 	inputName                     string
 	enableMultilineErrorDetection bool
+	jsonParsing                   string
 	input                         *logging.InputSpec
 	pipelineName                  string
 }
@@ -102,6 +103,9 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				Name: logging.OutputTypeElasticsearch,
 				Type: logging.OutputTypeElasticsearch,
 				URL:  "http://0.0.0.0:9200",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Elasticsearch: &logging.Elasticsearch{},
+				},
 			}
 		case logging.OutputTypeSyslog:
 			output = &logging.OutputSpec{
@@ -177,6 +181,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 			InputRefs:             []string{p.inputName},
 			OutputRefs:            []string{output.Name},
 			DetectMultilineErrors: p.enableMultilineErrorDetection,
+			Parse:                 p.jsonParsing,
 		})
 	}
 	return p.clfb

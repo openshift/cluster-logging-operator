@@ -320,9 +320,12 @@ source = '''
 type = "remap"
 inputs = ["application","infrastructure"]
 source = '''
-  parsed, err = parse_json(.message)
-  if err == null {
-    .structured = parsed
+  if .log_type == "application" {
+    parsed, err = parse_json(.message)
+      if err == null {
+        .structured = parsed
+        del(.message)
+    }
   }
 '''
 `,

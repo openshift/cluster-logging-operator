@@ -25,7 +25,7 @@ type ContainerLog struct {
 	Timestamp        time.Time              `json:"@timestamp"`
 	Docker           Docker                 `json:"docker"`
 	Kubernetes       Kubernetes             `json:"kubernetes"`
-	Message          string                 `json:"message"`
+	Message          string                 `json:"message,omitempty"`
 	Level            string                 `json:"level"`
 	Hostname         string                 `json:"hostname"`
 	PipelineMetadata PipelineMetadata       `json:"pipeline_metadata"`
@@ -170,7 +170,7 @@ Audit logs are
 type LinuxAuditLog struct {
 	Hostname         string           `json:"hostname"`
 	AuditLinux       AuditLinux       `json:"audit.linux"`
-	Message          string           `json:"message"`
+	Message          string           `json:"message,omitempty"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
 	Timestamp        time.Time        `json:"@timestamp"`
 	LogType          string           `json:"log_type,omitempty"`
@@ -190,7 +190,7 @@ type AuditLinux struct {
 // OVN Audit log
 type OVNAuditLog struct {
 	Hostname         string           `json:"hostname"`
-	Message          string           `json:"message"`
+	Message          string           `json:"message,omitempty"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`
 	Timestamp        time.Time        `json:"@timestamp"`
 	LogType          string           `json:"log_type,omitempty"`
@@ -234,7 +234,7 @@ type AuditLogCommon struct {
 type EventRouterLog struct {
 	Docker           Docker           `json:"docker"`
 	Kubernetes       Kubernetes       `json:"kubernetes"`
-	Message          string           `json:"message"`
+	Message          string           `json:"message,omitempty"`
 	Level            string           `json:"level"`
 	Hostname         string           `json:"hostname,omitempty"`
 	PipelineMetadata PipelineMetadata `json:"pipeline_metadata"`

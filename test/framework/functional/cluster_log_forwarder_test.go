@@ -29,6 +29,7 @@ var _ = Describe("ClustLogForwarderBuilder", func() {
 - name: application
 outputs:
 - name: elasticsearch
+  elasticsearch: {}
   type: elasticsearch
   url: http://0.0.0.0:9200
 - name: syslog

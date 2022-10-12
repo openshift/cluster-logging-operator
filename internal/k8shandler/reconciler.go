@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 	"strconv"
 
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
@@ -59,6 +60,9 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 
 	forwarder := clusterLoggingRequest.getLogForwarder()
 	if forwarder != nil {
+		if err := clusterlogforwarder.Validate(*forwarder); err != nil {
+			return nil, err
+		}
 		clusterLoggingRequest.ForwarderRequest = forwarder
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	} else if !clusterLoggingRequest.IncludesManagedStorage() {
@@ -230,6 +234,9 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 
 	forwarder := clusterLoggingRequest.getLogForwarder()
 	if forwarder != nil {
+		if err := clusterlogforwarder.Validate(*forwarder); err != nil {
+			return err
+		}
 		clusterLoggingRequest.ForwarderRequest = forwarder
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
 	}

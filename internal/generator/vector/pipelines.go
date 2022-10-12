@@ -30,19 +30,22 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 		}
 		if p.Parse == ParseJson {
 			parse := `
-parsed, err = parse_json(.message)
-if err == null {
-  .structured = parsed
+if .log_type == "application" {
+  parsed, err = parse_json(.message)
+  if err == null {
+    .structured = parsed
+    del(.message)
+  }
 }
 `
 			vrls = append(vrls, parse)
 		}
 		inputs := []string{}
-		for _, i := range p.InputRefs {
-			if _, ok := userDefined[i]; ok {
-				inputs = append(inputs, fmt.Sprintf(UserDefinedInput, i))
+		for _, inputName := range p.InputRefs {
+			if _, ok := userDefined[inputName]; ok {
+				inputs = append(inputs, fmt.Sprintf(UserDefinedInput, inputName))
 			} else {
-				inputs = append(inputs, i)
+				inputs = append(inputs, inputName)
 			}
 		}
 		vrl := SrcPassThrough

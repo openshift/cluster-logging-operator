@@ -10,6 +10,7 @@ import (
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/telemetry"
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -69,6 +70,11 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
+	if err := clusterlogforwarder.Validate(*instance); err != nil {
+		instance.Status.Conditions.SetCondition(condInvalid("validation failed: %v", err))
+		return r.updateStatus(instance)
+	}
+
 	log.V(3).Info("clusterlogforwarder-controller run reconciler...")
 
 	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client, r.Recorder, r.ClusterID)
@@ -78,12 +84,6 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.UpdateCLFMetricsNoErr()
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
-	}
-
-	//check for instancename and then update status
-	if instance.Name != constants.SingletonName {
-		instance.Status.Conditions.SetCondition(condInvalid("Invalid name %q, singleton instance must be named %q", instance.Name, constants.SingletonName))
-		return r.updateStatus(instance)
 	}
 
 	if instance.Status.IsReady() {

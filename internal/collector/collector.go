@@ -40,8 +40,6 @@ const (
 	logOpenshiftapiserverValue      = "/var/log/openshift-apiserver"
 	logKubeapiserver                = "varlogkubeapiserver"
 	logKubeapiserverValue           = "/var/log/kube-apiserver"
-	localtime                       = "localtime"
-	localtimeValue                  = "/etc/localtime"
 	metricsVolumePath               = "/etc/collector/metrics"
 	tmpVolumeName                   = "tmp"
 	tmpPath                         = "/tmp"
@@ -142,7 +140,6 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 			{Name: logOauthapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthapiserverValue}}},
 			{Name: logOpenshiftapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
 			{Name: logKubeapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
-			{Name: localtime, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: localtimeValue}}},
 			{Name: metricsVolumeName, VolumeSource: v1.VolumeSource{Secret: &v1.SecretVolumeSource{SecretName: constants.CollectorMetricSecretName}}},
 			{Name: tmpVolumeName, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 		},
@@ -200,7 +197,6 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) 
 		{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
 		{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
 		{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
-		{Name: localtime, ReadOnly: true, MountPath: localtimeValue},
 		{Name: metricsVolumeName, ReadOnly: true, MountPath: metricsVolumePath},
 		{Name: tmpVolumeName, MountPath: tmpPath},
 	}

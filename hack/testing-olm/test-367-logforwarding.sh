@@ -4,6 +4,7 @@
 set -euo pipefail
 
 source "$(dirname $0)/../common"
+source "$(dirname $0)/assertions"
 
 mkdir -p /tmp/artifacts/junit
 os::test::junit::declare_suite_start "[ClusterLogging] Log Forwarding"
@@ -55,8 +56,14 @@ fi
 
 reset_logging(){
     oc delete --ignore-not-found --force --grace-period=0 "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"||:
-    oc wait --for=delete "clusterlogging/instance" --timeout=30s
-    oc wait --for=delete "clusterlogforwarder/instance" --timeout=30s
+    while :; do
+      local code=assert_cl_clf_instance_does_not_exist
+      if [ ${code} -gt 0 ]; then
+        continue
+      else
+        break
+      fi
+    done
 }
 
 failed=0

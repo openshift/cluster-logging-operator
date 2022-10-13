@@ -25,3 +25,25 @@ assert_resources_does_not_exist(){
 assert_kibana_instance_does_not_exists() {
 	os::cmd::try_until_failure "oc -n $LOGGING_NS get kibana kibana"
 }
+
+# assert_cl_clf_instance_does_not_exist checking is
+# 'oc -n $LOGGING_NS get clusterlogging instance' and 'oc -n $LOGGING_NS get clusterlogforwarder instance'
+# both will failure or or times out (60 sec)
+# Returns:
+#  - 0: success - resources was deleted in given timeout
+#  - 1: if clusterlogging instance still exist after 60 sec
+#  - 2: if clusterlogforwarder instance still exist after 60 sec
+assert_cl_clf_instance_does_not_exist(){
+  local return_code1=os::cmd::try_until_failure "oc -n $LOGGING_NS get clusterlogging instance"
+  local return_code2=os::cmd::try_until_failure "oc -n $LOGGING_NS get clusterlogforwarder instance"
+  ret_code=0
+  if [ ${return_code1} -qt 0 ]; then
+    os::log::warning "waiting for deleting clusterlogging instance"
+    ret_code=${return_code1}
+  fi
+  if [ ${return_code2} -qt 0 ]; then
+    os::log::warning "waiting for deleting clusterlogforwarder instance"
+    ret_code=${return_code2}
+  fi
+  return ${ret_code}
+}

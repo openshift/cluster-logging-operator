@@ -255,17 +255,17 @@ spec:
         - urn:alm:descriptor:com.tectonic.ui:select:vector
       - description: Number of nodes to deploy for Elasticsearch
         displayName: Elasticsearch Size
-        path: logStore.nodeCount
+        path: logStore.elasticsearch.nodeCount
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podCount
       - description: Define which Nodes the Pods are scheduled on.
         displayName: Elasticsearch Node Selector
-        path: logStore.nodeSelector
+        path: logStore.elasticsearch.nodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:nodeSelector
       - description: The resource requirements for Elasticsearch
         displayName: Elasticsearch Resource Requirements
-        path: logStore.resources
+        path: logStore.elasticsearch.resources
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:resourceRequirements
       - description: Define which Nodes the Pods are scheduled on.

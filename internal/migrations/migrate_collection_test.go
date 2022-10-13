@@ -34,7 +34,7 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 
 		cl = ClusterLoggingSpec{
 			Collection: &CollectionSpec{
-				Logs: LogCollectionSpec{
+				Logs: &LogCollectionSpec{
 					Type: LogCollectionTypeFluentd,
 					CollectorSpec: CollectorSpec{
 						Resources:    resources,
@@ -77,7 +77,6 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 				Expect(MigrateCollectionSpec(cl)).To(Equal(ClusterLoggingSpec{
 					Collection: &CollectionSpec{
 						Type:    LogCollectionTypeFluentd,
-						Logs:    LogCollectionSpec{},
 						Fluentd: fluentTuning,
 					},
 				}))

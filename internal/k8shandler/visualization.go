@@ -221,7 +221,7 @@ func newKibanaCustomResource(cluster *logging.ClusterLogging, kibanaName string)
 	if visSpec.Replicas != nil {
 		replicas = *visSpec.Replicas
 	} else {
-		if cluster.Spec.LogStore != nil && cluster.Spec.LogStore.ElasticsearchSpec.NodeCount > 0 {
+		if cluster.Spec.LogStore != nil && cluster.Spec.LogStore.Elasticsearch.NodeCount > 0 {
 			replicas = 1
 		} else {
 			replicas = 0

@@ -43,7 +43,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 	case logging.LogCollectionTypeVector:
 		break
 	default:
-		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Logs.Type)
+		return "", fmt.Errorf("%s collector does not support pipelines feature", clusterRequest.Cluster.Spec.Collection.Type)
 	}
 
 	if clusterRequest.ForwarderRequest == nil {

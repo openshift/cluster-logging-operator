@@ -571,8 +571,6 @@ spec:
                                   value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                 type: object
                             type: object
-                        required:
-                        - resources
                         type: object
                       redundancyPolicy:
                         description: The policy towards data redundancy to specify
@@ -670,8 +668,6 @@ spec:
                               type: string
                           type: object
                         type: array
-                    required:
-                    - nodeCount
                     type: object
                   lokistack:
                     description: "LokiStack contains information about which LokiStack
@@ -875,8 +871,6 @@ spec:
                                   value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                                 type: object
                             type: object
-                        required:
-                        - resources
                         type: object
                       replicas:
                         description: Number of instances to deploy for a Kibana deployment

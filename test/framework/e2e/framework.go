@@ -490,8 +490,9 @@ func (tc *E2ETestFramework) Cleanup() {
 		}
 	}
 	tc.CleanupFns = [](func() error){}
-	if tc.ClusterLogging != nil && tc.ClusterLogging.Spec.Collection != nil && (tc.ClusterLogging.Spec.Collection.Type == logging.LogCollectionTypeFluentd ||
-		tc.ClusterLogging.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd) {
+	if tc.ClusterLogging != nil && tc.ClusterLogging.Spec.Collection != nil &&
+		(tc.ClusterLogging.Spec.Collection.Type == logging.LogCollectionTypeFluentd ||
+			tc.ClusterLogging.Spec.Collection.Logs != nil && tc.ClusterLogging.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd) {
 		tc.CleanFluentDBuffers()
 	}
 }

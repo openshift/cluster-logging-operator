@@ -16,13 +16,9 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/tls"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/factory"
-	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/services"
-
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/util/retry"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -94,12 +90,16 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			log.V(9).Error(err, "Returning from unable to calculate MD5 hash")
 			return
 		}
-		if err = clusterRequest.reconcileCollectorService(); err != nil {
-			log.V(9).Error(err, "clusterRequest.reconcileCollectorService")
-			return
+
+		if err := collector.ReconcileService(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, utils.AsOwner(cluster)); err != nil {
+			log.Error(err, "collector.ReconcileService")
+			return err
 		}
 
-		collector.ReconcileServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, utils.AsOwner(cluster))
+		if err := collector.ReconcileServiceMonitor(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorName, utils.AsOwner(cluster)); err != nil {
+			log.Error(err, "collector.ReconcileServiceMonitor")
+			return err
+		}
 
 		if err = clusterRequest.createOrUpdateCollectorPrometheusRule(); err != nil {
 			log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
@@ -191,63 +191,6 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err e
 	}
 
 	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) reconcileCollectorService() error {
-	desired := factory.NewService(
-		constants.CollectorName,
-		clusterRequest.Cluster.Namespace,
-		constants.CollectorName,
-		[]v1.ServicePort{
-			{
-				Port:       collector.MetricsPort,
-				TargetPort: intstr.FromString(collector.MetricsPortName),
-				Name:       collector.MetricsPortName,
-			},
-			{
-				Port:       collector.ExporterPort,
-				TargetPort: intstr.FromString(collector.ExporterPortName),
-				Name:       collector.ExporterPortName,
-			},
-		},
-	)
-
-	desired.Annotations = map[string]string{
-		constants.AnnotationServingCertSecretName: constants.CollectorMetricSecretName,
-	}
-
-	utils.AddOwnerRefToObject(desired, utils.AsOwner(clusterRequest.Cluster))
-	err := clusterRequest.Create(desired)
-	if err != nil {
-		if !errors.IsAlreadyExists(err) {
-			return fmt.Errorf("Failure creating the collector service: %v", err)
-		}
-		current := &v1.Service{}
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err = clusterRequest.Get(desired.Name, current); err != nil {
-				if errors.IsNotFound(err) {
-					// the object doesn't exist -- it was likely culled
-					// recreate it on the next time through if necessary
-					return nil
-				}
-				return fmt.Errorf("Failed to get %q service for %q: %v", current.Name, clusterRequest.Cluster.Name, err)
-			}
-			if services.AreSame(current, desired) {
-				log.V(3).Info("Services are the same skipping update")
-				return nil
-			}
-			//Explicitly copying because services are immutable
-			current.Labels = desired.Labels
-			current.Spec.Selector = desired.Spec.Selector
-			current.Spec.Ports = desired.Spec.Ports
-			return clusterRequest.Update(current)
-		})
-		if retryErr != nil {
-			log.V(3).Error(retryErr, "Reconcile Service retry error")
-		}
-		return retryErr
-	}
-	return err
 }
 
 func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRule() error {

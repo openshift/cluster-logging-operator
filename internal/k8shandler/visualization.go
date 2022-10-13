@@ -118,9 +118,14 @@ func (clusterRequest *ClusterLoggingRequest) UpdateKibanaStatus() (err error) {
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if !compareKibanaStatus(kibanaStatus, clusterRequest.Cluster.Status.Visualization.KibanaStatus) {
-			clusterRequest.Cluster.Status.Visualization.KibanaStatus = kibanaStatus
-			return clusterRequest.UpdateStatus(clusterRequest.Cluster)
+		instance, err := clusterRequest.getClusterLogging(true)
+		if err != nil {
+			return err
+		}
+
+		if !compareKibanaStatus(kibanaStatus, instance.Status.Visualization.KibanaStatus) {
+			instance.Status.Visualization.KibanaStatus = kibanaStatus
+			return clusterRequest.UpdateStatus(instance)
 		}
 		return nil
 	})

@@ -58,9 +58,14 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateElasticSearchLogStore
 	}
 
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		if !compareElasticsearchStatus(elasticsearchStatus, cluster.Status.LogStore.ElasticsearchStatus) {
-			cluster.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
-			return clusterRequest.UpdateStatus(cluster)
+		instance, err := clusterRequest.getClusterLogging(true)
+		if err != nil {
+			return err
+		}
+
+		if !compareElasticsearchStatus(elasticsearchStatus, instance.Status.LogStore.ElasticsearchStatus) {
+			instance.Status.LogStore.ElasticsearchStatus = elasticsearchStatus
+			return clusterRequest.UpdateStatus(instance)
 		}
 		return nil
 	})

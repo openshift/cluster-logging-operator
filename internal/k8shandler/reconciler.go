@@ -32,7 +32,7 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 		ClusterID:     clusterID,
 	}
 
-	if instance, err = clusterLoggingRequest.getClusterLogging(); err != nil {
+	if instance, err = clusterLoggingRequest.getClusterLogging(false); err != nil {
 		return nil, err
 	}
 	clusterLoggingRequest.Cluster = instance
@@ -171,7 +171,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	}
 
 	var clusterLogging *logging.ClusterLogging
-	if clusterLogging, err = clusterLoggingRequest.getClusterLogging(); err != nil {
+	if clusterLogging, err = clusterLoggingRequest.getClusterLogging(false); err != nil {
 		return err
 	}
 	if clusterLogging == nil {
@@ -220,7 +220,7 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 	}
 
 	var clusterLogging *logging.ClusterLogging
-	if clusterLogging, err = clusterLoggingRequest.getClusterLogging(); err != nil {
+	if clusterLogging, err = clusterLoggingRequest.getClusterLogging(false); err != nil {
 		return err
 	}
 	clusterLoggingRequest.Cluster = clusterLogging
@@ -244,19 +244,22 @@ func ReconcileForTrustedCABundle(requestName string, requestClient client.Client
 	return clusterLoggingRequest.RestartCollector()
 }
 
-func (clusterRequest *ClusterLoggingRequest) getClusterLogging() (*logging.ClusterLogging, error) {
+func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bool) (*logging.ClusterLogging, error) {
 	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	clusterLogging := &logging.ClusterLogging{}
 
 	if err := clusterRequest.Client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
-		if !apierrors.IsNotFound(err) {
-			log.Error(err, "Encountered unexpected error getting", "NamespacedName", clusterLoggingNamespacedName)
-			return nil, err
-		}
-		return nil, nil
+		return nil, err
 	}
 
-	//TODO Drop migration upon introduction of v2
+	// Do not modify cached copy
+	clusterLogging = clusterLogging.DeepCopy()
+
+	if skipMigrations {
+		return clusterLogging, nil
+	}
+
+	// TODO Drop migration upon introduction of v2
 	clusterLogging.Spec = migrations.MigrateCollectionSpec(clusterLogging.Spec)
 
 	return clusterLogging, nil

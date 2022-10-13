@@ -782,9 +782,15 @@ source = '''
 type = "lua"
 inputs = ["es_1_add_es_index"]
 version = "2"
+hooks.init = "init"
 hooks.process = "process"
 source = '''
+    function init()
+        count = 0
+    end
     function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
         if event.log.kubernetes == nil then
             emit(event)
             return
@@ -865,9 +871,15 @@ source = '''
 type = "lua"
 inputs = ["es_2_add_es_index"]
 version = "2"
+hooks.init = "init"
 hooks.process = "process"
 source = '''
+    function init()
+        count = 0
+    end
     function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
         if event.log.kubernetes == nil then
             emit(event)
             return

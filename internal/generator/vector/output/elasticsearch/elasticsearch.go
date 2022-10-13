@@ -134,9 +134,15 @@ func FlattenLabels(id string, inputs []string) Element {
 type = "lua"
 inputs = {{.InLabel}}
 version = "2"
+hooks.init = "init"
 hooks.process = "process"
 source = '''
+    function init()
+        count = 0
+    end
     function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
         if event.log.kubernetes == nil then
             emit(event)
             return

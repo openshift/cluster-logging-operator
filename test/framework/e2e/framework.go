@@ -210,11 +210,11 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 }
 
 func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
+	clolog.Info("Waiting for component to be ready", "component", component)
 	switch component {
 	case helpers.ComponentTypeVisualization:
 		return tc.waitForDeployment(constants.OpenshiftNS, "kibana", defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeCollector, helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeCollectorVector:
-		clolog.V(3).Info("Waiting for ", "component", component)
 		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeStore:
 		return tc.waitForElasticsearchPods(defaultRetryInterval, defaultTimeout)
@@ -227,7 +227,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 	maxtimes := 5
 	times := 0
 	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/collector -o jsonpath={.status.numberUnavailable}").Run()
+		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/collector --ignore-not-found -o jsonpath={.status.numberUnavailable}").Run()
 		if err == nil {
 			if numUnavail == "" {
 				numUnavail = "0"
@@ -344,21 +344,22 @@ func (tc *E2ETestFramework) WaitForCleanupCompletion(namespace string, podlabels
 
 func (tc *E2ETestFramework) waitForClusterLoggingPodsCompletion(namespace string, podlabels []string) error {
 	labels := strings.Join(podlabels, ",")
-	clolog.Info("waiting for pods to complete with labels in namespace:", "labels", labels, "namespace", namespace)
 	labelSelector := fmt.Sprintf("component in (%s)", labels)
 	options := metav1.ListOptions{
 		LabelSelector: labelSelector,
 	}
+	clolog.Info("waiting for pods to complete with labels in namespace:", "labels", labels, "namespace", namespace, "options", options)
 
 	return wait.PollImmediate(defaultRetryInterval, defaultTimeout, func() (bool, error) {
 		pods, err := tc.KubeClient.CoreV1().Pods(namespace).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
+				// this is OK because we want them to not exist
 				clolog.Error(err, "Did not find pods")
-				return false, nil
+				return true, nil
 			}
 			clolog.Error(err, "Error listing pods ")
-			return false, nil
+			return false, err //issue with how the command was crafted
 		}
 		if len(pods.Items) == 0 {
 			clolog.Info("No pods found for label selection", "labels", labels)
@@ -396,9 +397,9 @@ func (tc *E2ETestFramework) SetupClusterLogging(componentTypes ...helpers.LogCom
 	tc.LogStores["elasticsearch"] = &ElasticLogStore{
 		Framework: tc,
 	}
-	if err = tc.CreateClusterLogging(tc.ClusterLogging); apierrors.IsAlreadyExists(err) {
-		clolog.Info("cluster logging instance already exists. Ignoring AlreadyExists error")
-		return nil
+	err = tc.CreateClusterLogging(tc.ClusterLogging)
+	if err == nil {
+		clolog.V(1).Info("Created clusterlogging", "object", tc.ClusterLogging)
 	}
 	return err
 }
@@ -408,22 +409,29 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	if err != nil {
 		return err
 	}
-	tc.AddCleanup(func() error {
+	deleteCL := func() error {
 		return tc.KubeClient.RESTClient().Delete().
 			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
-	})
-	clolog.V(1).Info("Creating ClusterLogging:", "ClusterLogging", string(body))
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(clusterLoggingURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do(context.TODO())
-	err = result.Error()
+	}
+	createCL := func() error {
+		clolog.Info("Creating ClusterLogging:", "ClusterLogging", string(body))
+		return tc.KubeClient.RESTClient().Post().
+			RequestURI(clusterLoggingURI).
+			SetHeader("Content-Type", "application/json").
+			Body(body).
+			Do(context.TODO()).Error()
+	}
+	tc.AddCleanup(deleteCL)
+	err = createCL()
 	if apierrors.IsAlreadyExists(err) {
-		clolog.Info("clusterlogging instance already exists. Reusing deployment...")
-		return nil
+		clolog.Info("clusterlogging instance already exists. Attempting to re-deploy...")
+		if err = deleteCL(); err != nil {
+			clolog.Error(err, "failed deleting clusterlogging instance")
+			return err
+		}
+		err = createCL()
 	}
 	return err
 }
@@ -440,7 +448,7 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 			Do(context.TODO()).Error()
 	}
 	tc.AddCleanup(deleteCLF)
-	clolog.V(1).Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
+	clolog.Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
 	createCLF := func() rest.Result {
 		return tc.KubeClient.RESTClient().Post().
 			RequestURI(clusterlogforwarderURI).
@@ -462,6 +470,7 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 
 func (tc *E2ETestFramework) Cleanup() {
 	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
+		clolog.Info("Test failed", "TestText", g.FullTestText)
 		//allow caller to cleanup if unset (e.g script cleanup())
 		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
 		clolog.Info("Running Cleanup script ....", "DO_CLEANUP", "doCleanup")
@@ -471,7 +480,7 @@ func (tc *E2ETestFramework) Cleanup() {
 	} else {
 		clolog.V(1).Info("Test passed. Skipping artifacts gathering")
 	}
-	clolog.V(3).Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
+	clolog.Info("Running e2e cleanup functions, ", "number", len(tc.CleanupFns))
 	for _, cleanup := range tc.CleanupFns {
 		clolog.V(5).Info("Running an e2e cleanup function")
 		if err := cleanup(); err != nil {
@@ -481,7 +490,10 @@ func (tc *E2ETestFramework) Cleanup() {
 		}
 	}
 	tc.CleanupFns = [](func() error){}
-	tc.CleanFluentDBuffers()
+	if tc.ClusterLogging != nil && tc.ClusterLogging.Spec.Collection != nil && (tc.ClusterLogging.Spec.Collection.Type == logging.LogCollectionTypeFluentd ||
+		tc.ClusterLogging.Spec.Collection.Logs.Type == logging.LogCollectionTypeFluentd) {
+		tc.CleanFluentDBuffers()
+	}
 }
 
 func RunCleanupScript() {

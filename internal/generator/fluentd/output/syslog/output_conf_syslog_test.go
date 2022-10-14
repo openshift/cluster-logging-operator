@@ -243,7 +243,10 @@ var _ = Describe("Generating external syslog server output store config blocks",
     packet_size 4096
     hostname "#{ENV['NODE_NAME']}"
     tls true
+    client_cert_key '/var/run/ocp-collector/secrets/some-secret/tls.key'
+    client_cert '/var/run/ocp-collector/secrets/some-secret/tls.crt'
     ca_file '/var/run/ocp-collector/secrets/some-secret/ca-bundle.crt'
+    client_cert_key_password "#{File.exists?('/var/run/ocp-collector/secrets/some-secret/passphrase') ? open('/var/run/ocp-collector/secrets/some-secret/passphrase','r') do |f|f.read end : ''}"
     timeout 60
     timeout_exception true
     keep_alive true
@@ -350,7 +353,10 @@ var _ = Describe("Generating external syslog server output store config blocks",
 					}
 					secret = &corev1.Secret{
 						Data: map[string][]byte{
-							"ca-bundle.crt": []byte("junk"),
+							"tls.crt":       []byte("my-tls"),
+							"tls.key":       []byte("my-tls-key"),
+							"ca-bundle.crt": []byte("my-bundle"),
+							"passphrase":    []byte("my-tls-passphrase"),
 						},
 					}
 				})

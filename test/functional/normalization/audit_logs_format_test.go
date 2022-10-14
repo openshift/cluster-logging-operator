@@ -51,6 +51,10 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						RequestReceivedTimestamp: nanoTime,
 						ViaqMsgID:                "*",
 						PipelineMetadata:         functional.TemplateForAnyPipelineMetadata,
+						OpenshiftLabels: types.OpenshiftMeta{
+							Sequence:  types.NewOptionalInt(""),
+							ClusterID: "**optional**",
+						},
 					},
 					K8SAuditLevel: "debug",
 				}
@@ -85,6 +89,10 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					Timestamp:        testTime,
 					ViaqMsgID:        "*",
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
+					Openshift: types.OpenshiftMeta{
+						Sequence:  types.NewOptionalInt(""),
+						ClusterID: "**optional**",
+					},
 				}
 				// Write log line as input to fluentd
 				Expect(framework.WriteMessagesToAuditLog(auditLogLine, 10)).To(BeNil())
@@ -112,7 +120,8 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					Timestamp: time.Time{},
 					LogType:   "audit",
 					Openshift: types.OpenshiftMeta{
-						Sequence: types.NewOptionalInt(""),
+						ClusterID: "**optional**",
+						Sequence:  types.NewOptionalInt(""),
 					},
 					ViaqMsgID:        "*",
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
@@ -237,7 +246,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					},
 					Timestamp:        testTime,
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
-					OpenshiftLabels: types.OpenshiftMeta{
+					Openshift: types.OpenshiftMeta{
 						ClusterID: "**optional**",
 					},
 				}

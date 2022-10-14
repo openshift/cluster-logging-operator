@@ -54,11 +54,10 @@ func NewServiceMonitor(namespace, name string, owner metav1.OwnerReference) *mon
 	return desired
 }
 
-func ReconcileServiceMonitor(er record.EventRecorder, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) {
+// ReconcileServiceMonitor reconciles the service monitor specifically for exposing collector metrics
+func ReconcileServiceMonitor(er record.EventRecorder, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) error {
 	desired := NewServiceMonitor(namespace, name, owner)
-	if err := reconcile.ServiceMonitor(er, k8sClient, desired); err != nil {
-		log.Error(err, "collector.ReconcileServiceMonitor")
-	}
+	return reconcile.ServiceMonitor(er, k8sClient, desired)
 }
 
 func RemoveServiceMonitor(er record.EventRecorder, k8sClient client.Client, namespace, name string) {

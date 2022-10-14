@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source ./common
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source ${SCRIPT_DIR}/common
 
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
@@ -10,7 +11,7 @@ if [ "${BASE_COLLECTION_PATH}" = "" ]; then
     BASE_COLLECTION_PATH=$(pwd)
 fi
 
-NAMESPACE="openshift-logging"
+NAMESPACE=${2:-openshift-logging}
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 install_folder="$CLO_COLLECTION_PATH/install"
@@ -26,8 +27,3 @@ echo "-- Install Plan"
 oc get -n ${NAMESPACE} installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-clo"
 oc get -n openshift-operators-redhat installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-eo"
 
-echo "-- Catalog Operator logs"
-oc logs -n openshift-operator-lifecycle-manager -l app=catalog-operator > "$install_folder/co_logs"
-
-echo "-- OLM Operator logs"
-oc logs -n openshift-operator-lifecycle-manager -l app=olm-operator > "$install_folder/olmo_logs"

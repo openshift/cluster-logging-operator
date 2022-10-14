@@ -1,6 +1,6 @@
 #!/bin/bash
-
-source ./common
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+source ${SCRIPT_DIR}/common
 
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
@@ -11,6 +11,7 @@ if [ "${BASE_COLLECTION_PATH}" = "" ]; then
 fi
 
 NAMESPACE=openshift-operators-redhat
+LOGGING_NS=${2:-openshift-logging}
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 eo_folder="$CLO_COLLECTION_PATH/eo"
@@ -24,14 +25,8 @@ do
     get_env $pod $eo_folder $NAMESPACE "Dockerfile-*operator*"
 done
 
-oc -n $NAMESPACE get deployment elasticsearch-operator -o yaml > $eo_folder/deployment
-
-csv_name="$(oc -n $NAMESPACE get csv -o name | grep 'elasticsearch-operator')"
-oc -n $NAMESPACE get "${csv_name}" -o yaml > "${eo_folder}/csv"
 oc -n openshift-logging exec -c elasticsearch \
-    $(oc -n openshift-logging get pods -l component=elasticsearch -o jsonpath='{.items[0].metadata.name}') \
+    $(oc -n $LOGGING_NS get pods -l component=elasticsearch -o jsonpath='{.items[0].metadata.name}') \
     -- indices > ${eo_folder}/indices.txt
 
-oc -n $NAMESPACE get deployment elasticsearch-operator -o wide > ${eo_folder}/eo-deployment.txt 2>&1
 oc -n $NAMESPACE describe deployment elasticsearch-operator > ${eo_folder}/eo-deployment.describe 2>&1
-oc -n $NAMESPACE logs deployment/elasticsearch-operator -c elasticsearch-operator > ${eo_folder}/elasticsearch-operator.logs 2>&1

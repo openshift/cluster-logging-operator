@@ -122,7 +122,7 @@ type KibanaSpec struct {
 
 type ProxySpec struct {
 	// +nullable
-	Resources *v1.ResourceRequirements `json:"resources"`
+	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // The LogStoreSpec contains information about how logs are stored.
@@ -140,7 +140,7 @@ type LogStoreSpec struct {
 	Type LogStoreType `json:"type"`
 
 	// Specification of the Elasticsearch Log Store component
-	ElasticsearchSpec `json:"elasticsearch,omitempty"`
+	Elasticsearch *ElasticsearchSpec `json:"elasticsearch,omitempty"`
 
 	// LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
 	//
@@ -188,11 +188,11 @@ type ElasticsearchSpec struct {
 	// +nullable
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Resource Requirements",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:resourceRequirements"}
-	Resources *v1.ResourceRequirements `json:"resources"`
+	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Number of nodes to deploy for Elasticsearch
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Elasticsearch Size",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:podCount"}
-	NodeCount int32 `json:"nodeCount"`
+	NodeCount int32 `json:"nodeCount,omitempty"`
 
 	// Define which Nodes the Pods are scheduled on.
 	//
@@ -205,7 +205,7 @@ type ElasticsearchSpec struct {
 	//
 	// +nullable
 	// +optional
-	Storage elasticsearch.ElasticsearchStorageSpec `json:"storage"`
+	Storage elasticsearch.ElasticsearchStorageSpec `json:"storage,omitempty"`
 
 	// +optional
 	RedundancyPolicy elasticsearch.RedundancyPolicyType `json:"redundancyPolicy,omitempty"`
@@ -238,7 +238,7 @@ type CollectionSpec struct {
 	// See spec.collection
 	// +nullable
 	// +optional
-	Logs LogCollectionSpec `json:"logs,omitempty"`
+	Logs *LogCollectionSpec `json:"logs,omitempty"`
 
 	// CollectorSpec is the common specification that applies to any collector
 	// +nullable
@@ -269,7 +269,7 @@ type CollectorSpec struct {
 	// +nullable
 	// +optional
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Resource Requirements",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:resourceRequirements"}
-	Resources *v1.ResourceRequirements `json:"resources"`
+	Resources *v1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Define which Nodes the Pods are scheduled on.
 	// +nullable

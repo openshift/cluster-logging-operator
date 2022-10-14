@@ -215,11 +215,16 @@ func (cr *ClusterLoggingRequest) emptyElasticsearchCR(elasticsearchName string) 
 func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, existing *elasticsearch.Elasticsearch) *elasticsearch.Elasticsearch {
 
 	var esNodes []elasticsearch.ElasticsearchNode
-	logStoreSpec := logging.LogStoreSpec{}
+	logStoreSpec := logging.LogStoreSpec{
+		Elasticsearch: &logging.ElasticsearchSpec{},
+	}
 	if cr.Cluster.Spec.LogStore != nil {
 		logStoreSpec = *cr.Cluster.Spec.LogStore
 	}
-	var resources = logStoreSpec.Resources
+	if logStoreSpec.Elasticsearch == nil {
+		logStoreSpec.Elasticsearch = &logging.ElasticsearchSpec{}
+	}
+	var resources = logStoreSpec.Elasticsearch.Resources
 	if resources == nil {
 		resources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{
@@ -231,7 +236,7 @@ func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, ex
 			},
 		}
 	}
-	var proxyResources = logStoreSpec.ProxySpec.Resources
+	var proxyResources = logStoreSpec.Elasticsearch.ProxySpec.Resources
 	if proxyResources == nil {
 		proxyResources = &v1.ResourceRequirements{
 			Limits: v1.ResourceList{
@@ -246,22 +251,22 @@ func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, ex
 
 	esNode := elasticsearch.ElasticsearchNode{
 		Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
-		NodeCount: logStoreSpec.NodeCount,
-		Storage:   logStoreSpec.ElasticsearchSpec.Storage,
+		NodeCount: logStoreSpec.Elasticsearch.NodeCount,
+		Storage:   logStoreSpec.Elasticsearch.Storage,
 	}
 
 	// build Nodes
 	esNodes = append(esNodes, esNode)
 
 	// if we had more than 1 es node before, we also want to enter this condition
-	if logStoreSpec.NodeCount > maximumElasticsearchMasterCount || len(existing.Spec.Nodes) > 1 {
+	if logStoreSpec.Elasticsearch.NodeCount > maximumElasticsearchMasterCount || len(existing.Spec.Nodes) > 1 {
 
 		// we need to check this because if we scaled down we can enter this block
-		if logStoreSpec.NodeCount > maximumElasticsearchMasterCount {
+		if logStoreSpec.Elasticsearch.NodeCount > maximumElasticsearchMasterCount {
 			esNodes[0].NodeCount = maximumElasticsearchMasterCount
 		}
 
-		remainder := logStoreSpec.NodeCount - maximumElasticsearchMasterCount
+		remainder := logStoreSpec.Elasticsearch.NodeCount - maximumElasticsearchMasterCount
 		if remainder < 0 {
 			remainder = 0
 		}
@@ -269,14 +274,14 @@ func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, ex
 		dataNode := elasticsearch.ElasticsearchNode{
 			Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data"},
 			NodeCount: remainder,
-			Storage:   logStoreSpec.ElasticsearchSpec.Storage,
+			Storage:   logStoreSpec.Elasticsearch.Storage,
 		}
 
 		esNodes = append(esNodes, dataNode)
 
 	}
 
-	redundancyPolicy := logStoreSpec.ElasticsearchSpec.RedundancyPolicy
+	redundancyPolicy := logStoreSpec.Elasticsearch.RedundancyPolicy
 	if redundancyPolicy == "" {
 		redundancyPolicy = elasticsearch.ZeroRedundancy
 	}
@@ -287,8 +292,8 @@ func (cr *ClusterLoggingRequest) newElasticsearchCR(elasticsearchName string, ex
 	es.Spec = elasticsearch.ElasticsearchSpec{
 		Spec: elasticsearch.ElasticsearchNodeSpec{
 			Resources:      *resources,
-			NodeSelector:   logStoreSpec.NodeSelector,
-			Tolerations:    logStoreSpec.Tolerations,
+			NodeSelector:   logStoreSpec.Elasticsearch.NodeSelector,
+			Tolerations:    logStoreSpec.Elasticsearch.Tolerations,
 			ProxyResources: *proxyResources,
 		},
 		Nodes:            esNodes,

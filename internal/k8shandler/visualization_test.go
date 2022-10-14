@@ -46,7 +46,7 @@ func TestNewKibanaCR(t *testing.T) {
 						KibanaSpec: logging.KibanaSpec{},
 					},
 					LogStore: &logging.LogStoreSpec{
-						ElasticsearchSpec: logging.ElasticsearchSpec{
+						Elasticsearch: &logging.ElasticsearchSpec{
 							NodeCount: 1,
 						},
 					},
@@ -127,7 +127,7 @@ func TestNewKibanaCR(t *testing.T) {
 						},
 					},
 					LogStore: &logging.LogStoreSpec{
-						ElasticsearchSpec: logging.ElasticsearchSpec{
+						Elasticsearch: &logging.ElasticsearchSpec{
 							NodeCount: 1,
 						},
 					},
@@ -171,7 +171,7 @@ func TestNewKibanaCR(t *testing.T) {
 						},
 					},
 					LogStore: &logging.LogStoreSpec{
-						ElasticsearchSpec: logging.ElasticsearchSpec{
+						Elasticsearch: &logging.ElasticsearchSpec{
 							NodeCount: 1,
 						},
 					},
@@ -210,7 +210,7 @@ func TestNewKibanaCR(t *testing.T) {
 				},
 				Spec: logging.ClusterLoggingSpec{
 					LogStore: &logging.LogStoreSpec{
-						ElasticsearchSpec: logging.ElasticsearchSpec{
+						Elasticsearch: &logging.ElasticsearchSpec{
 							NodeCount: 1,
 						},
 					},
@@ -284,7 +284,7 @@ func TestNewKibanaCR(t *testing.T) {
 				},
 				Spec: logging.ClusterLoggingSpec{
 					LogStore: &logging.LogStoreSpec{
-						ElasticsearchSpec: logging.ElasticsearchSpec{
+						Elasticsearch: &logging.ElasticsearchSpec{
 							NodeCount: 1,
 						},
 					},
@@ -333,7 +333,7 @@ func TestNewKibanaCR(t *testing.T) {
 				},
 				Spec: logging.ClusterLoggingSpec{
 					LogStore: &logging.LogStoreSpec{
-						ElasticsearchSpec: logging.ElasticsearchSpec{
+						Elasticsearch: &logging.ElasticsearchSpec{
 							NodeCount: 1,
 						},
 					},

@@ -20,7 +20,7 @@ func MigrateCollectionSpec(spec logging.ClusterLoggingSpec) logging.ClusterLoggi
 
 	if spec.Collection.Type != "" && spec.Collection.Type.IsSupportedCollector() {
 		log.V(3).Info("collectionSpec already using latest. removing spec.Collection.Logs while reconciling")
-		spec.Collection.Logs = logging.LogCollectionSpec{}
+		spec.Collection.Logs = nil
 		return spec
 	}
 
@@ -35,7 +35,7 @@ func MigrateCollectionSpec(spec logging.ClusterLoggingSpec) logging.ClusterLoggi
 	if logSpec.Tolerations != nil {
 		spec.Collection.CollectorSpec.Tolerations = logSpec.Tolerations
 	}
-	spec.Collection.Logs = logging.LogCollectionSpec{}
+	spec.Collection.Logs = nil
 
 	log.V(3).Info("Migrated collectionSpec for reconciliation", "spec", spec)
 	return spec

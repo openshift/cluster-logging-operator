@@ -54,7 +54,7 @@ func ReconcileDashboards(writer client.Writer, reader client.Reader, collection 
 		collectionType = collection.Type
 	}
 	cm := newDashboardConfigMap(collectionType)
-	if err := reconcile.ReconcileConfigmap(writer, reader, cm, configmaps.CompareLabels); err != nil {
+	if err := reconcile.Configmap(writer, reader, cm, configmaps.CompareLabels); err != nil {
 		return err
 	}
 

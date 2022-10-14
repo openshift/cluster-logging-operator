@@ -66,10 +66,12 @@ type Factory struct {
 	ConfigHash    string
 	CollectorSpec logging.CollectionSpec
 	CollectorType logging.LogCollectionType
+	ClusterID     string
 	ImageName     string
 	TrustedCAHash string
 	Visit         Visitor
 	Secrets       map[string]*v1.Secret
+	ForwarderSpec logging.ClusterLogForwarderSpec
 }
 
 // CollectorResourceRequirements returns the resource requirements for a given collector implementation
@@ -97,33 +99,31 @@ func (f *Factory) Tolerations() []v1.Toleration {
 	return f.CollectorSpec.CollectorSpec.Tolerations
 }
 
-func New(confHash, trustedCAHash string, collectorType logging.LogCollectionType, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret) *Factory {
+func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secrets map[string]*v1.Secret, forwarderSpec logging.ClusterLogForwarderSpec) *Factory {
 	factory := &Factory{
+		ClusterID:     clusterID,
 		ConfigHash:    confHash,
 		CollectorSpec: collectorSpec,
-		CollectorType: collectorType,
+		CollectorType: collectorSpec.Type,
 		ImageName:     constants.FluentdName,
-		TrustedCAHash: trustedCAHash,
 		Visit:         fluentd.CollectorVisitor,
 		Secrets:       secrets,
+		ForwarderSpec: forwarderSpec,
 	}
-	if collectorType == logging.LogCollectionTypeVector {
+	if collectorSpec.Type == logging.LogCollectionTypeVector {
 		factory.ImageName = constants.VectorName
 		factory.Visit = vector.CollectorVisitor
 	}
 	return factory
 }
 
-func NewDaemonSet(namespace, confHash, trustedCAHash, clusterID string, collectorType logging.LogCollectionType, trustedCABundle *v1.ConfigMap, collectorSpec logging.CollectionSpec, forwarderSpec logging.ClusterLogForwarderSpec, secrets map[string]*v1.Secret) *apps.DaemonSet {
-	factory := New(confHash, trustedCAHash, collectorType, collectorSpec, secrets)
-
-	podSpec := factory.NewPodSpec(trustedCABundle, forwarderSpec, clusterID)
-	ds := coreFactory.NewDaemonSet(constants.CollectorName, namespace, constants.CollectorName, constants.CollectorName, *podSpec)
-
+func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap) *apps.DaemonSet {
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash)
+	ds := coreFactory.NewDaemonSet(name, namespace, constants.CollectorName, constants.CollectorName, *podSpec)
 	return ds
 }
 
-func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID string) *v1.PodSpec {
+func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),

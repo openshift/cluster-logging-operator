@@ -24,6 +24,19 @@ import (
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	fluentdAlertsFile = "fluentd/fluentd_prometheus_alerts.yaml"
+)
+
+// useOldRemoteSyslogPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
+func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
+	if clusterRequest.ForwarderRequest == nil {
+		return false
+	}
+	enabled, found := clusterRequest.ForwarderRequest.Annotations[UseOldRemoteSyslogPlugin]
+	return found && enabled == "enabled"
+}
+
 func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) logging.OutputSpec {
 
 	if outputDefaults != nil && outputDefaults.Elasticsearch != nil {

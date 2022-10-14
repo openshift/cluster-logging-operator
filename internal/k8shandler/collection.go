@@ -3,7 +3,6 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"path"
 	"reflect"
 	"time"
@@ -11,11 +10,8 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector"
-	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/tls"
-
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,7 +21,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,6 +30,9 @@ const (
 
 //CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
+	if !clusterRequest.isManaged() {
+		return nil
+	}
 	cluster := clusterRequest.Cluster
 	collectorConfig := ""
 	collectorConfHash := ""
@@ -105,14 +103,22 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
 		}
 
-		if err = clusterRequest.createOrUpdateCollectorConfig(collectorType, collectorConfig); err != nil {
-			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorConfig")
+		instance := clusterRequest.Cluster
+		factory := collector.New(collectorConfHash, clusterRequest.ClusterID, *instance.Spec.Collection, clusterRequest.OutputSecrets, clusterRequest.ForwarderSpec)
+
+		if err = factory.ReconcileCollectorConfig(clusterRequest.EventRecorder, clusterRequest.Client, instance.Namespace, constants.CollectorName, collectorConfig, utils.AsOwner(instance)); err != nil {
+			log.Error(err, "collector.ReconcileCollectorConfig")
 			return
 		}
 
-		if err = clusterRequest.reconcileCollectorDaemonset(collectorType, collectorConfHash); err != nil {
-			log.V(9).Error(err, "clusterRequest.reconcileCollectorDaemonset")
-			return
+		if err := collector.ReconcileTrustedCABundleConfigMap(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorTrustedCAName, utils.AsOwner(cluster)); err != nil {
+			log.Error(err, "collector.ReconcileTrustedCABundleConfigMap")
+			return err
+		}
+
+		if err := factory.ReconcileDaemonset(clusterRequest.EventRecorder, clusterRequest.Client, instance.Namespace, constants.CollectorName, utils.AsOwner(instance)); err != nil {
+			log.Error(err, "collector.ReconcileDaemonset")
+			return err
 		}
 
 		if err = clusterRequest.UpdateCollectorStatus(collectorType); err != nil {
@@ -230,95 +236,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRu
 		log.V(3).Info("updated prometheus rules")
 		return nil
 	})
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorConfig(collectorType logging.LogCollectionType, collectorConfig string) error {
-	log.V(3).Info("Updating ConfigMap and Secrets")
-	opensslConf := tls.OpenSSLConf(clusterRequest.Client)
-	var err error = nil
-	if collectorType == logging.LogCollectionTypeFluentd {
-		collectorConfigMap := NewConfigMap(
-			constants.CollectorName,
-			clusterRequest.Cluster.Namespace,
-			map[string]string{
-				"fluent.conf":         collectorConfig,
-				"run.sh":              fluentd.RunScript,
-				"cleanInValidJson.rb": fluentd.CleanInValidJson,
-				"openssl.cnf":         opensslConf,
-			},
-		)
-		err = clusterRequest.createConfigMap(collectorConfigMap)
-
-	} else if collectorType == logging.LogCollectionTypeVector {
-		var secrets = map[string][]byte{}
-		_ = Syncronize(func() error {
-			secrets = map[string][]byte{}
-			// Ignore errors, these files are optional depending on security settings.
-			secrets["vector.toml"] = []byte(collectorConfig)
-			secrets["openssl.cnf"] = []byte(opensslConf)
-			return nil
-		})
-		err = clusterRequest.createSecret(constants.CollectorConfigSecretName, clusterRequest.Cluster.Namespace, secrets)
-	}
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createConfigMap(collectorConfigMap *corev1.ConfigMap) error {
-	utils.AddOwnerRefToObject(collectorConfigMap, utils.AsOwner(clusterRequest.Cluster))
-
-	err := clusterRequest.Create(collectorConfigMap)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("Failure constructing collector configmap: %v", err)
-	}
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		current := &v1.ConfigMap{}
-		if err = clusterRequest.Get(collectorConfigMap.Name, current); err != nil {
-			if errors.IsNotFound(err) {
-				log.V(2).Info("Returning nil. The configmap was not found even though create previously failed.  Was it culled?", "configmap name", collectorConfigMap.Name)
-				return nil
-			}
-			return fmt.Errorf("Failed to get %v configmap for %q: %v", collectorConfigMap.Name, clusterRequest.Cluster.Name, err)
-		}
-		if reflect.DeepEqual(collectorConfigMap.Data, current.Data) {
-			return nil
-		}
-		current.Data = collectorConfigMap.Data
-		return clusterRequest.Update(current)
-	})
-	return retryErr
-}
-
-func (clusterRequest *ClusterLoggingRequest) createSecret(secretName, namespace string, secrets map[string][]byte) error {
-	collectorSecret := NewSecret(secretName, namespace, secrets)
-	utils.AddOwnerRefToObject(collectorSecret, utils.AsOwner(clusterRequest.Cluster))
-	err := clusterRequest.CreateOrUpdateSecret(collectorSecret)
-	return err
-}
-
-func (clusterRequest *ClusterLoggingRequest) reconcileCollectorDaemonset(collectorType logging.LogCollectionType, configHash string) (err error) {
-	if !clusterRequest.isManaged() {
-		return nil
-	}
-	var caTrustBundle *v1.ConfigMap
-	// Create or update cluster proxy trusted CA bundle.
-	caTrustBundle, err = clusterRequest.createOrGetTrustedCABundleConfigMap(constants.CollectorTrustedCAName)
-	if err != nil {
-		return
-	}
-	caTrustHash, err := calcTrustedCAHashValue(caTrustBundle)
-	if err != nil || caTrustHash == "" {
-		log.V(1).Info("Cluster wide proxy may not be configured. ConfigMap does not contain expected key or does not contain ca bundle", "configmapName", constants.CollectorTrustedCAName, "key", constants.TrustedCABundleKey, "err", err)
-	}
-
-	instance := clusterRequest.Cluster
-	desired := collector.NewDaemonSet(instance.Namespace, configHash, caTrustHash, clusterRequest.ClusterID, collectorType, caTrustBundle, *instance.Spec.Collection, clusterRequest.ForwarderSpec, clusterRequest.OutputSecrets)
-	utils.AddOwnerRefToObject(desired, utils.AsOwner(instance))
-
-	return reconcile.DaemonSet(clusterRequest.EventRecorder, clusterRequest.Client, desired)
 }
 
 func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus(collectorType logging.LogCollectionType) (err error) {

@@ -52,6 +52,7 @@ auth.access_key_id = "` + keyId + `"
 auth.secret_access_key = "` + keySecret + `"
 encoding.codec = "json"
 request.concurrency = 2
+healthcheck.enabled = false
 `
 	)
 

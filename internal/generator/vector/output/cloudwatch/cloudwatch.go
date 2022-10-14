@@ -59,6 +59,7 @@ stream_name = "{{"{{ stream_name }}"}}"
 {{compose_one .SecurityConfig}}
 encoding.codec = "json"
 request.concurrency = 2
+healthcheck.enabled = false
 {{compose_one .EndpointConfig}}
 {{- end}}
 `

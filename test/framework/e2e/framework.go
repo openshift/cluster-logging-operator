@@ -42,11 +42,8 @@ const (
 	DefaultCleanUpTimeout  = 60.0 * 5
 
 	defaultRetryInterval      = 1 * time.Second
-	defaultTimeout            = 10 * time.Minute
-	DefaultWaitForLogsTimeout = 10 * time.Minute
-	// Shorter timeout for when we are expecting that there will be no logs
-	// since we will always go to the timeout in that case.a
-	DefaultWaitForNoLogsTimeout = 1 * time.Minute
+	defaultTimeout            = 5 * time.Minute
+	DefaultWaitForLogsTimeout = 5 * time.Minute
 )
 
 type LogStore interface {

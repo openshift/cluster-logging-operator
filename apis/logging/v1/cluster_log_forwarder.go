@@ -18,8 +18,10 @@ var ReservedInputNames = sets.NewString(InputNameApplication, InputNameInfrastru
 
 func IsInputTypeName(s string) bool { return ReservedInputNames.Has(s) }
 
-// Default log store output name.
+// Default log store output name and version
 const OutputNameDefault = "default"
+const DefaultESVersion = 6
+const LatestESVersion = 8
 
 // IsReservedOutputName returns true if s is a reserved output name.
 func IsReservedOutputName(s string) bool { return s == OutputNameDefault }

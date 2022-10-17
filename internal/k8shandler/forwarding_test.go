@@ -549,6 +549,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
 					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch).ToNot(BeNil(), "Expected an Elasticsearch specific config")
 					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.Version).To(Equal(logging.DefaultESVersion))
 
 				})
 				It("should setup values for elasticsearch output", func() {
@@ -585,7 +586,45 @@ var _ = Describe("Normalizing forwarder", func() {
 
 					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
 					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.Version).To(Equal(0)) // not set
+				})
 
+				It("should not change elasticsearch version to latest if defined in default outputs", func() {
+					cluster.Spec = logging.ClusterLoggingSpec{
+						Collection: &logging.CollectionSpec{
+							Type: "fluentd",
+						},
+						LogStore: &logging.LogStoreSpec{
+							Type: logging.LogStoreTypeElasticsearch,
+						},
+					}
+					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
+						OutputDefaults: &logging.OutputDefaults{
+							Elasticsearch: &logging.Elasticsearch{
+								StructuredTypeKey: "kubernetes.labels.mylabel",
+								Version:           11,
+							},
+						},
+						Outputs: []logging.OutputSpec{
+							{
+								Type: logging.OutputTypeElasticsearch,
+								Name: "es-out",
+								URL:  "http://some-url",
+							},
+						},
+						Pipelines: []logging.PipelineSpec{
+							{
+								InputRefs:  []string{"application"},
+								OutputRefs: []string{"es-out"},
+								Name:       "mypipe",
+							},
+						},
+					}
+					_, _ = request.generateCollectorConfig()
+
+					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.Version).To(Equal(11))
 				})
 			})
 
@@ -613,11 +652,14 @@ var _ = Describe("Normalizing forwarder", func() {
 			spec, status := request.NormalizeForwarder()
 			Expect(YAMLString(spec)).To(EqualLines(`
 outputs:
-- name: default
+- elasticsearch:
+	version: 6
+	name: default
 	secret:
 		name: collector
 	type: elasticsearch
 	url: https://` + constants.ElasticsearchFQDN + `:9200
+
 pipelines:
 - inputRefs:
 	- application
@@ -631,6 +673,7 @@ pipelines:
 			Expect(status.Outputs["default"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Inputs[logging.InputNameApplication]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Inputs[logging.InputNameInfrastructure]).To(HaveCondition("Ready", true, "", ""))
+			Expect(spec.Outputs[0].Elasticsearch.Version).To(Equal(logging.DefaultESVersion))
 		})
 
 		It("generates default configuration for empty spec with LokiStack log store", func() {
@@ -713,6 +756,7 @@ pipelines:
 			Expect(spec.Outputs[0].URL).To(Equal("https://" + constants.ElasticsearchFQDN + ":9200"))
 			Expect(spec.Outputs[0].Secret.Name).To(Equal(constants.CollectorSecretName))
 			Expect(spec.Outputs[0].Type).To(Equal("elasticsearch"))
+			Expect(spec.Outputs[0].Elasticsearch.Version).To(Equal(logging.DefaultESVersion))
 
 			Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Pipelines).To(HaveLen(1))
@@ -755,6 +799,18 @@ var _ = Describe("#applyOutputDefaults", func() {
 		esOutput      = logging.OutputSpec{
 			Name: "external-elasticsearch",
 			Type: logging.OutputTypeElasticsearch,
+			OutputTypeSpec: logging.OutputTypeSpec{
+				Elasticsearch: &logging.Elasticsearch{
+					Version: logging.LatestESVersion,
+				},
+			},
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+		esOutWithoutVersion = logging.OutputSpec{
+			Name: "external-elasticsearch",
+			Type: logging.OutputTypeElasticsearch,
 			Secret: &logging.OutputSecretSpec{
 				Name: "log-forward-secret",
 			},
@@ -764,6 +820,12 @@ var _ = Describe("#applyOutputDefaults", func() {
 	It("should do nothing when no OutputDefaults are defined", func() {
 		Expect(applyOutputDefaults(nil, esOutput)).To(Equal(esOutput))
 	})
+
+	It("should not set ES version when no OutputDefaults are defined", func() {
+		result := applyOutputDefaults(nil, esOutWithoutVersion)
+		Expect(result).To(Equal(esOutWithoutVersion))
+	})
+
 	Context("when Elasticsearch OutputDefaults are defined", func() {
 
 		BeforeEach(func() {
@@ -771,15 +833,38 @@ var _ = Describe("#applyOutputDefaults", func() {
 				Elasticsearch: &logging.Elasticsearch{
 					StructuredTypeKey:  "kubernetes.labels.app",
 					StructuredTypeName: "nologformat",
+					Version:            logging.DefaultESVersion,
 				},
 			}
 		})
+		It("should not set ES version if not defined in OutputDefaults and the output does not define them", func() {
+			outputDefaultNoVersion := &logging.OutputDefaults{
+				Elasticsearch: &logging.Elasticsearch{
+					StructuredTypeKey:  "some.other.label.value",
+					StructuredTypeName: "anotherTypeName",
+				},
+			}
+			act := applyOutputDefaults(outputDefaultNoVersion, esOutWithoutVersion)
+			esOutput.Elasticsearch = &logging.Elasticsearch{
+				StructuredTypeKey:  outputDefaultNoVersion.Elasticsearch.StructuredTypeKey,
+				StructuredTypeName: outputDefaultNoVersion.Elasticsearch.StructuredTypeName,
+			}
+			Expect(act).To(Equal(esOutput))
+		})
 
-		It("should set the values on the output from the default when the output does not define them", func() {
-			act := applyOutputDefaults(outputDefault, esOutput)
+		It("should set the values on the output from OutputDefaults when the output does not define them", func() {
+			esOutputNoES := logging.OutputSpec{
+				Name: "external-elasticsearch",
+				Type: logging.OutputTypeElasticsearch,
+				Secret: &logging.OutputSecretSpec{
+					Name: "log-forward-secret",
+				},
+			}
+			act := applyOutputDefaults(outputDefault, esOutputNoES)
 			esOutput.Elasticsearch = &logging.Elasticsearch{
 				StructuredTypeKey:  "kubernetes.labels.app",
 				StructuredTypeName: "nologformat",
+				Version:            logging.DefaultESVersion,
 			}
 			Expect(act).To(Equal(esOutput))
 		})
@@ -788,11 +873,113 @@ var _ = Describe("#applyOutputDefaults", func() {
 			esOutput.Elasticsearch = &logging.Elasticsearch{
 				StructuredTypeKey:  "some.label.value",
 				StructuredTypeName: "someTypeName",
+				Version:            logging.LatestESVersion,
 			}
 			act := applyOutputDefaults(outputDefault, esOutput)
 			Expect(act).To(Equal(esOutput))
 		})
+	})
 
+})
+
+var _ = Describe("setESVersion", func() {
+
+	It("Should set output ES version to default if our default log store and not specified", func() {
+		esDeclared := logging.OutputSpec{
+			Name: "default",
+			Type: logging.OutputTypeElasticsearch,
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+		act := setESVersion(esDeclared)
+
+		esExpected := logging.OutputSpec{
+			Name: "default",
+			Type: logging.OutputTypeElasticsearch,
+			OutputTypeSpec: logging.OutputTypeSpec{
+				Elasticsearch: &logging.Elasticsearch{
+					Version: logging.DefaultESVersion,
+				},
+			},
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+		Expect(act).To(Equal(esExpected))
+	})
+
+	It("Should update output ES version to default when default log store", func() {
+		esDeclared := logging.OutputSpec{
+			Name: "default",
+			Type: logging.OutputTypeElasticsearch,
+			OutputTypeSpec: logging.OutputTypeSpec{
+				Elasticsearch: &logging.Elasticsearch{
+					Version: 22,
+				},
+			},
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+		act := setESVersion(esDeclared)
+
+		esExpected := logging.OutputSpec{
+			Name: "default",
+			Type: logging.OutputTypeElasticsearch,
+			OutputTypeSpec: logging.OutputTypeSpec{
+				Elasticsearch: &logging.Elasticsearch{
+					Version: logging.DefaultESVersion,
+				},
+			},
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+		Expect(act).To(Equal(esExpected))
+		Expect(act.Elasticsearch.Version).To(Equal(logging.DefaultESVersion))
+	})
+
+	It("Should set output ES version if version is defined and not default log store", func() {
+		esDeclared := logging.OutputSpec{
+			Name: "external-elasticsearch",
+			Type: logging.OutputTypeElasticsearch,
+			OutputTypeSpec: logging.OutputTypeSpec{
+				Elasticsearch: &logging.Elasticsearch{
+					Version: 7,
+				},
+			},
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+		act := setESVersion(esDeclared)
+
+		esExpected := logging.OutputSpec{
+			Name: "external-elasticsearch",
+			Type: logging.OutputTypeElasticsearch,
+			OutputTypeSpec: logging.OutputTypeSpec{
+				Elasticsearch: &logging.Elasticsearch{
+					Version: 7,
+				},
+			},
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+		Expect(act).To(Equal(esExpected))
+	})
+
+	It("Should not set a version if not specified and not our default log store", func() {
+		esDeclared := logging.OutputSpec{
+			Name: "external-elasticsearch",
+			Type: logging.OutputTypeElasticsearch,
+			Secret: &logging.OutputSecretSpec{
+				Name: "log-forward-secret",
+			},
+		}
+		act := setESVersion(esDeclared)
+		Expect(act).To(Equal(esDeclared))
 	})
 })
 
@@ -883,10 +1070,14 @@ var _ = DescribeTable("Normalizing round trip of valid YAML specs",
 	},
 	Entry("simple", `
 outputs:
-- name: myOutput
+- elasticsearch:
+    version: 8
+  name: myOutput
   type: elasticsearch
   url: http://here
-- name: someothername
+- elasticsearch:
+    version: 8
+  name: someothername
   type: elasticsearch
   url: http://there
 pipelines:

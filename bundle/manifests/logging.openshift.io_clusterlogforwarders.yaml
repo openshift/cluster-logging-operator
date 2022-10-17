@@ -128,6 +128,12 @@ spec:
                         description: StructuredTypeName specifies the name of elasticsearch
                           schema
                         type: string
+                      version:
+                        description: 'Version specifies the version of Elasticsearch
+                          to be used. Must be one of: - 6 - Default for internal ES
+                          store - 7 - 8 - Latest for external ES store'
+                        minimum: 6
+                        type: integer
                     type: object
                 type: object
               outputs:
@@ -182,6 +188,12 @@ spec:
                           description: StructuredTypeName specifies the name of elasticsearch
                             schema
                           type: string
+                        version:
+                          description: 'Version specifies the version of Elasticsearch
+                            to be used. Must be one of: - 6 - Default for internal
+                            ES store - 7 - 8 - Latest for external ES store'
+                          minimum: 6
+                          type: integer
                       type: object
                     fluentdForward:
                       description: "FluentdForward does not provide additional fields,

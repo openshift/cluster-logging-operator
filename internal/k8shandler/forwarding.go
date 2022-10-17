@@ -24,11 +24,48 @@ import (
 )
 
 func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) logging.OutputSpec {
+
 	if outputDefaults != nil && outputDefaults.Elasticsearch != nil {
-		if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {
+		// TODO: fix - outputDefaults should only apply to default output
+		if out.Elasticsearch == nil {
 			out.Elasticsearch = outputDefaults.Elasticsearch
+		} else {
+			out.Elasticsearch = mergeDefaults(outputDefaults, out)
 		}
 	}
+	out = setESVersion(out)
+	return out
+}
+
+func mergeDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) *logging.Elasticsearch {
+	// Below is necessary since the output version has already been set for default
+	outES := out.Elasticsearch
+	defaults := outputDefaults.Elasticsearch
+
+	if outES.StructuredTypeKey == "" && defaults.StructuredTypeKey != "" {
+		outES.StructuredTypeKey = defaults.StructuredTypeKey
+	}
+	if outES.StructuredTypeName == "" && defaults.StructuredTypeName != "" {
+		outES.StructuredTypeName = defaults.StructuredTypeName
+	}
+	if !outES.EnableStructuredContainerLogs && defaults.EnableStructuredContainerLogs {
+		outES.EnableStructuredContainerLogs = defaults.EnableStructuredContainerLogs
+	}
+	return outES
+}
+
+func setESVersion(out logging.OutputSpec) logging.OutputSpec {
+	// Always set the version for our default output
+	if out.Name == logging.OutputNameDefault {
+		if out.Elasticsearch != nil {
+			out.Elasticsearch.Version = logging.DefaultESVersion
+		} else {
+			out.Elasticsearch = &logging.Elasticsearch{
+				Version: logging.DefaultESVersion,
+			}
+		}
+	}
+
 	return out
 }
 
@@ -388,6 +425,11 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 					Type:   logging.OutputTypeElasticsearch,
 					URL:    constants.LogStoreURL,
 					Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
+					OutputTypeSpec: logging.OutputTypeSpec{
+						Elasticsearch: &logging.Elasticsearch{
+							Version: logging.DefaultESVersion,
+						},
+					},
 				})
 				status.Outputs.Set(name, condReady)
 			case logging.LogStoreTypeLokiStack:
@@ -397,9 +439,11 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			}
 		}
 	}
-
 	for i, out := range spec.Outputs {
-		out = applyOutputDefaults(clusterRequest.ForwarderSpec.OutputDefaults, out)
+		if out.Type == logging.OutputTypeElasticsearch {
+			// applyOutputDefaults only applies to Elasticsearch
+			out = applyOutputDefaults(clusterRequest.ForwarderSpec.OutputDefaults, out)
+		}
 		spec.Outputs[i] = out
 	}
 

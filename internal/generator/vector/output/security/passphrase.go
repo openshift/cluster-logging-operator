@@ -1,10 +1,4 @@
-package kafka
-
-import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
-)
-
-type Passphrase security.Passphrase
+package security
 
 func (p Passphrase) Name() string {
 	return "passphraseTemplate"
@@ -17,15 +11,15 @@ key_pass = "{{p.PassphrasePath}}"
 `
 }
 
-type insecureTLS struct {
+type InsecureTLS struct {
 	ComponentID string
 }
 
-func (i insecureTLS) Name() string {
+func (i InsecureTLS) Name() string {
 	return "kafkaInsecureTLSTemplate"
 }
 
-func (i insecureTLS) Template() string {
+func (i InsecureTLS) Template() string {
 	return `{{define "` + i.Name() + `" -}}
 [sinks.{{.ComponentID}}.librdkafka_options]
 "enable.ssl.certificate.verification" = "false"

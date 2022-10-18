@@ -44,7 +44,7 @@ spec:
           - name: OPERATOR_NAME
             value: "cluster-logging-operator"
           - name: RELATED_IMAGE_VECTOR
-            value: "quay.io/openshift-logging/vector:0.21-rh"
+            value: "quay.io/openshift-logging/vector:v0.23-rh"
           - name: RELATED_IMAGE_FLUENTD
             value: "quay.io/openshift-logging/fluentd:1.14.6"
           - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER

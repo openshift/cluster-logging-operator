@@ -307,6 +307,18 @@ spec:
                       required:
                       - name
                       type: object
+                    splunk:
+                      description: 'Splunk Deliver log data to Splunk’s HTTP Event
+                        Collector Provides optional extra properties for `type: splunk_hec`
+                        (''splunk_hec_logs'' after Vector 0.23'
+                      properties:
+                        fields:
+                          description: Fields to be added to Splunk index. https://docs.splunk.com/Documentation/Splunk/8.0.0/Data/IFXandHEC
+                            Should be a valid JSON object
+                          items:
+                            type: string
+                          type: array
+                      type: object
                     syslog:
                       description: Syslog provides optional extra properties for output
                         type `syslog`
@@ -389,6 +401,7 @@ spec:
                       - cloudwatch
                       - loki
                       - googleCloudLogging
+                      - splunk
                       type: string
                     url:
                       description: "URL to send log records to. \n An absolute URL,

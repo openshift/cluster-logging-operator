@@ -1,3 +1,5 @@
+test.cov
+coverage.html
 benchmark*/
 .make
 **/.kube/*

@@ -131,14 +131,14 @@ if ( .log_type == "application" ) {
 }
 if ( .log_type == "audit" ) {
  .group_name = "` + auditGroupName + `"
- .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + .tag ) ?? .stream_name
+ .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + "." + .tag ) ?? .stream_name
 }
 if ( .log_type == "infrastructure" ) {
  .group_name = "` + infraGroupName + `"
  .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
 }
-if ( .tag == ".journal.system" ) {
- .stream_name =  ( .hostname + .tag ) ?? .stream_name
+if ( .tag == "journal.system" ) {
+ .stream_name =  ( .hostname + "." + .tag ) ?? .stream_name
 }
 del(.tag)
 del(.source_type)

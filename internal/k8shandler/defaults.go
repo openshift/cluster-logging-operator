@@ -10,10 +10,4 @@ var (
 
 	defaultEsProxyMemory     resource.Quantity = resource.MustParse("256Mi")
 	defaultEsProxyCpuRequest resource.Quantity = resource.MustParse("100m")
-
-	defaultKibanaMemory     resource.Quantity = resource.MustParse("736Mi")
-	defaultKibanaCpuRequest resource.Quantity = resource.MustParse("100m")
-
-	defaultKibanaProxyMemory     resource.Quantity = resource.MustParse("256Mi")
-	defaultKibanaProxyCpuRequest resource.Quantity = resource.MustParse("100m")
 )

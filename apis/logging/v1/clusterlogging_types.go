@@ -33,7 +33,7 @@ type ClusterLoggingSpec struct {
 	//
 	// +kubebuilder:validation:Enum:=Managed;Unmanaged
 	// +optional
-	ManagementState ManagementState `json:"managementState"`
+	ManagementState ManagementState `json:"managementState,omitempty"`
 
 	// Specification of the Visualization component for the cluster
 	//

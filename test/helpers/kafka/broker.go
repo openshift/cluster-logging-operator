@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 
@@ -348,17 +349,17 @@ func NewBrokerConfigMapFunctionalTestPod(namespace string) *v1.ConfigMap {
 }
 
 func NewBrokerSecret(namespace string) *v1.Secret {
-
-	// Receiver acts as TLS server.
-	privateCA := certificate.NewCA(nil, "Root CA")
-	serverCert := certificate.NewCert(privateCA, "Server", "localhost") // Receiver is server.
-	clientCert := certificate.NewCert(privateCA, "Client")
+	// Intermediate CA is part of the test for BZ 1904380
+	// Don't remove it.
+	rootCA := certificate.NewCA(nil, "Root CA")
+	intermediateCA := certificate.NewCA(rootCA, "Intermediate CA")
+	serverCert := certificate.NewCert(intermediateCA, "Server")
+	clientCert := certificate.NewCert(intermediateCA, "Client")
 
 	data := map[string][]byte{
 		"server.jks":    certificate.JKSKeyStore(serverCert, "server"),
-		"ca-bundle.jks": certificate.JKSTrustStore([]*certificate.CertKey{privateCA, serverCert}, "ca-bundle"),
-		"ca-bundle.crt": privateCA.CertificatePEM(),
-		"ca.key":        privateCA.PrivateKeyPEM(),
+		"ca-bundle.jks": certificate.JKSTrustStore([]*certificate.CertKey{rootCA, intermediateCA}, "ca-bundle"),
+		"ca-bundle.crt": bytes.Join([][]byte{rootCA.CertificatePEM(), intermediateCA.CertificatePEM()}, []byte{}),
 		"tls.crt":       clientCert.CertificatePEM(),
 		"tls.key":       clientCert.PrivateKeyPEM(),
 	}

@@ -9,7 +9,7 @@ const PrometheusMonitorTemplate = `
 # {{.Desc}}
 <source>
   @type prometheus
-  bind "[::]"
+  bind "#{ENV['PROM_BIND_IP']}"
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key

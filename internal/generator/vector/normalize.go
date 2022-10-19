@@ -37,7 +37,7 @@ if !exists(.level) {
 	RemoveStream      = `del(.stream)`
 	RemovePodIPs      = `del(.kubernetes.pod_ips)`
 	FixTimestampField = `."@timestamp" = del(.timestamp)`
-	AddJournalLogTag  = `.tag = ".journal.system"`
+	AddJournalLogTag  = `.tag = "journal.system"`
 	AddHostName       = `.hostname = del(.host)`
 	AddTime           = `.time = format_timestamp!(.timestamp, format: "%FT%T%:z")`
 
@@ -122,10 +122,10 @@ if err == null {
   log("could not parse host audit msg. err=" + err, rate_limit_secs: 0)
 }
 `
-	HostAuditLogTag = ".linux-audit.log"
-	K8sAuditLogTag  = ".k8s-audit.log"
-	OpenAuditLogTag = ".openshift-audit.log"
-	OvnAuditLogTag  = ".ovn-audit.log"
+	HostAuditLogTag = "linux-audit.log"
+	K8sAuditLogTag  = "k8s-audit.log"
+	OpenAuditLogTag = "openshift-audit.log"
+	OvnAuditLogTag  = "ovn-audit.log"
 	ParseAndFlatten = `. = merge(., parse_json!(string!(.message))) ?? .
 del(.message)
 `

@@ -107,7 +107,7 @@ source = '''
 type = "remap"
 inputs = ["raw_journal_logs"]
 source = '''
-  .tag = ".journal.system"
+  .tag = "journal.system"
   
   del(.source_type)
   del(._CPU_USAGE_NSEC)
@@ -215,7 +215,7 @@ source = '''
 type = "remap"
 inputs = ["raw_host_audit_logs"]
 source = '''
-  .tag = ".linux-audit.log"
+  .tag = "linux-audit.log"
   
   match1 = parse_regex(.message, r'type=(?P<type>[^ ]+)') ?? {}
   envelop = {}
@@ -241,7 +241,7 @@ source = '''
 type = "remap"
 inputs = ["raw_k8s_audit_logs"]
 source = '''
-  .tag = ".k8s-audit.log"
+  .tag = "k8s-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
   .k8s_audit_level = .level
@@ -252,7 +252,7 @@ source = '''
 type = "remap"
 inputs = ["raw_openshift_audit_logs"]
 source = '''
-  .tag = ".openshift-audit.log"
+  .tag = "openshift-audit.log"
   . = merge(., parse_json!(string!(.message))) ?? .
   del(.message)
   .openshift_audit_level = .level
@@ -263,7 +263,7 @@ source = '''
 type = "remap"
 inputs = ["raw_ovn_audit_logs"]
 source = '''
-  .tag = ".ovn-audit.log"
+  .tag = "ovn-audit.log"
   if !exists(.level) {
     .level = "default"
     if match!(.message, r'Info|INFO|^I[0-9]+|level=info|Value:info|"level":"info"|<info>') {

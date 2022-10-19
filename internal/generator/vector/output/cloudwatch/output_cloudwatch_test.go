@@ -32,8 +32,8 @@ source = '''
   }
 `
 		transformEnd = `
-  if ( .tag == ".journal.system" ) {
-   .stream_name =  ( .hostname + .tag ) ?? .stream_name
+  if ( .tag == "journal.system" ) {
+   .stream_name =  ( .hostname + "." + .tag ) ?? .stream_name
   }
   del(.tag)
   del(.source_type)
@@ -106,7 +106,7 @@ healthcheck.enabled = false
   }
   if ( .log_type == "audit" ) {
    .group_name = "` + groupPrefix + `.audit"
-   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + .tag ) ?? .stream_name
+   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + "." + .tag ) ?? .stream_name
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "` + groupPrefix + `.infrastructure"
@@ -138,7 +138,7 @@ healthcheck.enabled = false
   }
   if ( .log_type == "audit" ) {
    .group_name = "` + groupPrefix + `.audit"
-   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + .tag ) ?? .stream_name
+   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + "." + .tag ) ?? .stream_name
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "` + groupPrefix + `.infrastructure"
@@ -170,7 +170,7 @@ healthcheck.enabled = false
   }
   if ( .log_type == "audit" ) {
    .group_name = "` + groupPrefix + `.audit"
-   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + .tag ) ?? .stream_name
+   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + "." + .tag ) ?? .stream_name
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "` + groupPrefix + `.infrastructure"
@@ -209,7 +209,7 @@ healthcheck.enabled = false
   }
   if ( .log_type == "audit" ) {
    .group_name = "audit"
-   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + .tag ) ?? .stream_name
+   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + "." + .tag ) ?? .stream_name
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "infrastructure"
@@ -243,7 +243,7 @@ healthcheck.enabled = false
   }
   if ( .log_type == "audit" ) {
    .group_name = "audit"
-   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + .tag ) ?? .stream_name
+   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + "." + .tag ) ?? .stream_name
   }
   if ( .log_type == "infrastructure" ) {
    .group_name = "infrastructure"

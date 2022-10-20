@@ -55,14 +55,9 @@ if [ "${DO_SETUP:-false}" == "true" ] ; then
 fi
 
 reset_logging(){
-    oc delete --ignore-not-found --force --grace-period=0 "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"||:
-    while :; do
-      local code=assert_cl_clf_instance_does_not_exist
-      if [ ${code} -gt 0 ]; then
-        continue
-      else
-        break
-      fi
+    for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
+      oc -n $LOGGING_NS delete $r --ignore-not-found --force --grace-period=0||:
+      os::cmd::try_until_failure "oc -n $LOGGING_NS get $r" "$((5 * $minute))"
     done
 }
 

@@ -1,75 +1,13 @@
-package k8shandler
+package clusterrolebinding_test
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/clusterrolebinding"
 	"testing"
 
 	rbacv1 "k8s.io/api/rbac/v1"
 )
 
-func TestCompareLokiStackClusterRole(t *testing.T) {
-	rules := []rbacv1.PolicyRule{
-		{
-			Verbs:           []string{"verb"},
-			APIGroups:       []string{"apigroup"},
-			Resources:       []string{"resource"},
-			ResourceNames:   []string{"resourcename"},
-			NonResourceURLs: []string{"url"},
-		},
-	}
-
-	tests := []struct {
-		name        string
-		gotRole     *rbacv1.ClusterRole
-		wantRole    *rbacv1.ClusterRole
-		wantCompare bool
-	}{
-		{
-			name:        "empty",
-			gotRole:     &rbacv1.ClusterRole{},
-			wantRole:    &rbacv1.ClusterRole{},
-			wantCompare: true,
-		},
-		{
-			name: "same rules",
-			gotRole: &rbacv1.ClusterRole{
-				Rules: rules,
-			},
-			wantRole: &rbacv1.ClusterRole{
-				Rules: rules,
-			},
-			wantCompare: true,
-		},
-		{
-			name:    "different rules",
-			gotRole: &rbacv1.ClusterRole{},
-			wantRole: &rbacv1.ClusterRole{
-				Rules: rules,
-			},
-			wantCompare: false,
-		},
-		{
-			name: "different rule",
-			gotRole: &rbacv1.ClusterRole{
-				Rules: []rbacv1.PolicyRule{
-					{},
-				},
-			},
-			wantRole: &rbacv1.ClusterRole{
-				Rules: rules,
-			},
-			wantCompare: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := compareClusterRole(tt.gotRole, tt.wantRole); got != tt.wantCompare {
-				t.Errorf("compareClusterRole() = %v, want %v", got, tt.wantCompare)
-			}
-		})
-	}
-}
-
-func TestCompareLokiStackClusterRoleBinding(t *testing.T) {
+func TestCompareClusterRoleBinding(t *testing.T) {
 	roleRef := rbacv1.RoleRef{
 		APIGroup: "apigroup",
 		Kind:     "kind",
@@ -154,8 +92,8 @@ func TestCompareLokiStackClusterRoleBinding(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := compareClusterRoleBinding(tt.gotBinding, tt.wantBinding); got != tt.wantCompare {
-				t.Errorf("compareClusterRoleBinding() = %v, want %v", got, tt.wantCompare)
+			if got := clusterrolebinding.AreSame(tt.gotBinding, tt.wantBinding); got != tt.wantCompare {
+				t.Errorf("CompareClusterRoleBinding() = %v, want %v", got, tt.wantCompare)
 			}
 		})
 	}

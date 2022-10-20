@@ -2,13 +2,14 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/reconcile"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"sort"
 	"strings"
 
 	"github.com/ViaQ/logerr/v2/kverrors"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/strings/slices"
 )
 
@@ -32,19 +33,19 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiStackLogStore() e
 		return kverrors.Wrap(err, "Failed to set finalizer for LokiStack RBAC rules.")
 	}
 
-	if err := clusterRequest.createOrUpdateClusterRole(lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
+	if err := reconcile.ClusterRole(clusterRequest.EventRecorder, clusterRequest.Client, lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for LokiStack collector.")
 	}
 
-	if err := clusterRequest.createOrUpdateClusterRoleBinding(lokiStackWriterClusterRoleBindingName, newLokiStackWriterClusterRoleBinding); err != nil {
+	if err := reconcile.ClusterRoleBinding(clusterRequest.EventRecorder, clusterRequest.Client, lokiStackWriterClusterRoleBindingName, newLokiStackWriterClusterRoleBinding); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for LokiStack collector.")
 	}
 
-	if err := clusterRequest.createOrUpdateClusterRole(lokiStackAppReaderClusterRoleName, newLokiStackAppReaderClusterRole); err != nil {
+	if err := reconcile.ClusterRole(clusterRequest.EventRecorder, clusterRequest.Client, lokiStackAppReaderClusterRoleName, newLokiStackAppReaderClusterRole); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading application logs.")
 	}
 
-	if err := clusterRequest.createOrUpdateClusterRoleBinding(lokiStackAppReaderClusterRoleBindingName, newLokiStackAppReaderClusterRoleBinding); err != nil {
+	if err := reconcile.ClusterRoleBinding(clusterRequest.EventRecorder, clusterRequest.Client, lokiStackAppReaderClusterRoleBindingName, newLokiStackAppReaderClusterRoleBinding); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for reading application logs.")
 	}
 
@@ -76,93 +77,76 @@ func (clusterRequest *ClusterLoggingRequest) removeLokiStackRbac() error {
 }
 
 func newLokiStackWriterClusterRole() *rbacv1.ClusterRole {
-	return &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: lokiStackWriterClusterRoleName,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{
-					"loki.grafana.com",
-				},
-				Resources: []string{
-					"application",
-					"audit",
-					"infrastructure",
-				},
-				ResourceNames: []string{
-					"logs",
-				},
-				Verbs: []string{
-					"create",
-				},
+
+	return runtime.NewClusterRole(lokiStackWriterClusterRoleName,
+		rbacv1.PolicyRule{
+			APIGroups: []string{
+				"loki.grafana.com",
+			},
+			Resources: []string{
+				"application",
+				"audit",
+				"infrastructure",
+			},
+			ResourceNames: []string{
+				"logs",
+			},
+			Verbs: []string{
+				"create",
 			},
 		},
-	}
+	)
 }
 
 func newLokiStackWriterClusterRoleBinding() *rbacv1.ClusterRoleBinding {
-	return &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: lokiStackWriterClusterRoleBindingName,
-		},
-		RoleRef: rbacv1.RoleRef{
+	return runtime.NewClusterRoleBinding(
+		lokiStackWriterClusterRoleBindingName,
+		rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
 			Name:     lokiStackWriterClusterRoleName,
+		}, rbacv1.Subject{
+			Kind:      "ServiceAccount",
+			Name:      "logcollector",
+			Namespace: "openshift-logging",
 		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      "logcollector",
-				Namespace: "openshift-logging",
-			},
-		},
-	}
+	)
 }
 
 func newLokiStackAppReaderClusterRole() *rbacv1.ClusterRole {
-	return &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: lokiStackAppReaderClusterRoleName,
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{
-					"loki.grafana.com",
-				},
-				Resources: []string{
-					"application",
-				},
-				ResourceNames: []string{
-					"logs",
-				},
-				Verbs: []string{
-					"get",
-				},
+	return runtime.NewClusterRole(
+		lokiStackAppReaderClusterRoleName,
+		rbacv1.PolicyRule{
+			APIGroups: []string{
+				"loki.grafana.com",
+			},
+			Resources: []string{
+				"application",
+			},
+			ResourceNames: []string{
+				"logs",
+			},
+			Verbs: []string{
+				"get",
 			},
 		},
-	}
+	)
 }
 
 func newLokiStackAppReaderClusterRoleBinding() *rbacv1.ClusterRoleBinding {
-	return &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: lokiStackAppReaderClusterRoleBindingName,
-		},
-		RoleRef: rbacv1.RoleRef{
+	return runtime.NewClusterRoleBinding(
+		lokiStackAppReaderClusterRoleBindingName,
+		rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
 			Name:     lokiStackAppReaderClusterRoleName,
 		},
-		Subjects: []rbacv1.Subject{
-			{
-				APIGroup: "rbac.authorization.k8s.io",
-				Kind:     "Group",
-				Name:     "system:authenticated",
-			},
+		rbacv1.Subject{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Group",
+			Name:     "system:authenticated",
 		},
-	}
+	)
 }
 
 func (clusterRequest *ClusterLoggingRequest) processPipelinesForLokiStack(inPipelines []loggingv1.PipelineSpec) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec) {

@@ -34,8 +34,10 @@ assert_kibana_instance_does_not_exists() {
 #  - 1: if clusterlogging instance still exist after 60 sec
 #  - 2: if clusterlogforwarder instance still exist after 60 sec
 assert_cl_clf_instance_does_not_exist(){
-  local return_code1=os::cmd::try_until_failure "oc -n $LOGGING_NS get clusterlogging instance"
-  local return_code2=os::cmd::try_until_failure "oc -n $LOGGING_NS get clusterlogforwarder instance"
+  os::cmd::try_until_failure "oc -n $LOGGING_NS get clusterlogging instance"
+  local return_code1=$?
+  os::cmd::try_until_failure "oc -n $LOGGING_NS get clusterlogforwarder instance"
+  local return_code2=$?
   ret_code=0
   if [ ${return_code1} -qt 0 ]; then
     os::log::warning "waiting for deleting clusterlogging instance"

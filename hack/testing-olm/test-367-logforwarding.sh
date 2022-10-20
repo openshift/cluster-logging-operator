@@ -57,7 +57,8 @@ fi
 reset_logging(){
     oc delete --ignore-not-found --force --grace-period=0 "ns/$GENERATOR_NS" "clusterlogging/instance" "clusterlogforwarder/instance"||:
     while :; do
-      local code=assert_cl_clf_instance_does_not_exist
+      assert_cl_clf_instance_does_not_exist
+      local code=$?
       if [ ${code} -gt 0 ]; then
         continue
       else

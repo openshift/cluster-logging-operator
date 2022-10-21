@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/collector"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -143,7 +144,7 @@ var _ = Describe("Reconciling", func() {
 
 				bundleVar, found := utils.GetEnvVar(common.TrustedCABundleHashName, ds.Spec.Template.Spec.Containers[0].Env)
 				Expect(found).To(BeTrue(), "Exp. the trusted bundle CA hash to be added to the collector container")
-				Expect(calcTrustedCAHashValue(injectedCABundle)).To(Equal(bundleVar.Value))
+				Expect(collector.CalcTrustedCAHashValue(injectedCABundle)).To(Equal(bundleVar.Value))
 				Expect(ds.Spec.Template.Spec.Volumes).To(ContainElement(trustedCABundleVolume))
 				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(ContainElement(trustedCABundleVolumeMount))
 			})

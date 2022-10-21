@@ -213,37 +213,6 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	return nil
 }
 
-func ReconcileForTrustedCABundle(requestName string, requestClient client.Client) (err error) {
-
-	clusterLoggingRequest := ClusterLoggingRequest{
-		Client: requestClient,
-	}
-
-	var clusterLogging *logging.ClusterLogging
-	if clusterLogging, err = clusterLoggingRequest.getClusterLogging(false); err != nil {
-		return err
-	}
-	clusterLoggingRequest.Cluster = clusterLogging
-
-	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
-		telemetry.ResetCLMetricsNoErr()
-		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
-		telemetry.UpdateCLMetricsNoErr()
-		return nil
-	}
-
-	forwarder := clusterLoggingRequest.getLogForwarder()
-	if forwarder != nil {
-		if err := clusterlogforwarder.Validate(*forwarder); err != nil {
-			return err
-		}
-		clusterLoggingRequest.ForwarderRequest = forwarder
-		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
-	}
-
-	return clusterLoggingRequest.RestartCollector()
-}
-
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bool) (*logging.ClusterLogging, error) {
 	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
 	clusterLogging := &logging.ClusterLogging{}

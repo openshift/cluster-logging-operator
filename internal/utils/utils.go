@@ -212,7 +212,7 @@ func GetShareDir() string {
 	log.V(5).Info("GetShareDir", "workingdir", wd)
 	i := strings.LastIndex(wd, repoRoot)
 	if i >= 0 {
-		shareDir := filepath.Join(wd, "files")
+		shareDir := filepath.Join(wd[:i+len(repoRoot)], "files")
 		log.V(5).Info("GetShareDir", "sharedir", shareDir)
 		return shareDir
 	}

@@ -5,10 +5,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-const (
-	fluentdAlertsFile = "fluentd/fluentd_prometheus_alerts.yaml"
-)
-
 // useOldRemoteSyslogPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
 func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 	if clusterRequest.ForwarderRequest == nil {

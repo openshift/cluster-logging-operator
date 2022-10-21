@@ -23,6 +23,11 @@ import (
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	fluentdAlertsFile = "collector/fluentd_prometheus_alerts.yaml"
+	vectorAlertsFile  = "collector/vector_prometheus_alerts.yaml"
+)
+
 func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) logging.OutputSpec {
 	if outputDefaults != nil && outputDefaults.Elasticsearch != nil {
 		if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {

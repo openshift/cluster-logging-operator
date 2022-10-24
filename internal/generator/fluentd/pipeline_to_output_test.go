@@ -102,9 +102,10 @@ var _ = Describe("Testing Config Generation", func() {
 <label @APP_TO_ES>
   # Add User Defined labels to the output record
   <filter **>
-    @type record_transformer
+    @type record_modifier
+    remove_keys _dummy_
     <record>
-      openshift { "labels": {"a":"b","c":"d"} }
+      _dummy_ ${record['openshift']={"labels"=>{}} unless record['openshift'];record['openshift']['labels'] = {"a"=>"b","c"=>"d"} }
     </record>
   </filter>
   
@@ -143,9 +144,10 @@ var _ = Describe("Testing Config Generation", func() {
 <label @APP_TO_ES>
   # Add User Defined labels to the output record
   <filter **>
-    @type record_transformer
+    @type record_modifier
+    remove_keys _dummy_
     <record>
-      openshift { "labels": {"a":"b","c":"d"} }
+      _dummy_ ${record['openshift']={"labels"=>{}} unless record['openshift'];record['openshift']['labels'] = {"a"=>"b","c"=>"d"} }
     </record>
   </filter>
   

@@ -1,6 +1,3 @@
-//go:build fluentd || vector
-// +build fluentd vector
-
 package normalization
 
 import (
@@ -52,8 +49,8 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						ViaqMsgID:                "*",
 						PipelineMetadata:         functional.TemplateForAnyPipelineMetadata,
 						OpenshiftLabels: types.OpenshiftMeta{
-							Sequence:  types.NewOptionalInt(""),
 							ClusterID: "**optional**",
+							Sequence:  types.NewOptionalInt(""),
 						},
 					},
 					K8SAuditLevel: "debug",

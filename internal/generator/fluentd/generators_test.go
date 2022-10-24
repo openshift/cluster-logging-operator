@@ -62,9 +62,10 @@ var _ = Describe("Generating pipeline to output labels", func() {
 <label @PIPELINE_1>
   # Add User Defined labels to the output record
   <filter **>
-    @type record_transformer
+    @type record_modifier
+    remove_keys _dummy_
     <record>
-      openshift { "labels": {"1":"2"} }
+      _dummy_ ${record['openshift']={"labels"=>{}} unless record['openshift'];record['openshift']['labels'] = {"1"=>"2"} }
     </record>
   </filter>
   
@@ -95,9 +96,10 @@ var _ = Describe("Generating pipeline to output labels", func() {
 <label @PIPELINE_1>
   # Add User Defined labels to the output record
   <filter **>
-    @type record_transformer
+    @type record_modifier
+    remove_keys _dummy_
     <record>
-      openshift { "labels": {"1":"2","3":"4"} }
+      _dummy_ ${record['openshift']={"labels"=>{}} unless record['openshift'];record['openshift']['labels'] = {"1"=>"2","3"=>"4"} }
     </record>
   </filter>
   
@@ -134,9 +136,10 @@ var _ = Describe("Generating pipeline to output labels", func() {
 <label @PIPELINE_1>
   # Add User Defined labels to the output record
   <filter **>
-    @type record_transformer
+    @type record_modifier
+    remove_keys _dummy_
     <record>
-      openshift { "labels": {"1":"2","3":"4"} }
+      _dummy_ ${record['openshift']={"labels"=>{}} unless record['openshift'];record['openshift']['labels'] = {"1"=>"2","3"=>"4"} }
     </record>
   </filter>
   
@@ -150,9 +153,10 @@ var _ = Describe("Generating pipeline to output labels", func() {
 <label @PIPELINE_2>
   # Add User Defined labels to the output record
   <filter **>
-    @type record_transformer
+    @type record_modifier
+    remove_keys _dummy_
     <record>
-      openshift { "labels": {"5":"6","7":"8"} }
+      _dummy_ ${record['openshift']={"labels"=>{}} unless record['openshift'];record['openshift']['labels'] = {"5"=>"6","7"=>"8"} }
     </record>
   </filter>
   

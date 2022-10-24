@@ -58,10 +58,13 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 		cwlClient *cloudwatchlogs.Client
 		service   *v1.Service
 		route     *openshiftv1.Route
+
+		maxDuration, _ = time.ParseDuration("10m")
 	)
 
 	BeforeEach(func() {
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+		framework.MaxReadDuration = &maxDuration
 
 		log.V(2).Info("Creating service moto-server")
 		service = runtime.NewService(framework.Namespace, "moto-server")

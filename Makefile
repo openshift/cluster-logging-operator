@@ -1,4 +1,5 @@
 # Define the target to run if make is called with no arguments.
+.PHONY: default
 default: pre-commit
 
 export LOG_LEVEL?=9
@@ -14,11 +15,35 @@ export GOFLAGS=
 export GO111MODULE=on
 export GODEBUG=x509ignoreCN=0
 
-export APP_NAME=cluster-logging-operator
+ifdef OVERLAY
+$(if $(wildcard $(OVERLAY)),,$(error "OVERLAY file '$(OVERLAY)' does not exist"))
+# Set variables from overlay file instead of environment variables.
+KUSTOMIZE_VALUE=$(shell grep '$(1): *' $(OVERLAY)/kustomization.yaml | sed 's/^.*$(1): *//')
+IMAGE_NAME=$(or $(call KUSTOMIZE_VALUE,newName),$(call KUSTOMIZE_VALUE,name))
+VERSION=$(call KUSTOMIZE_VALUE,newTag)
+NAMESPACE=$(shell awk '/namespace:/{print $$2}' $(OVERLAY)/kustomization.yaml)
+
+# Get operand image names from the deployment patch in the overlay.
+DEPLOY_IMG=$(shell awk '/name:/ {NAME = $$NF} /value: / { if (NAME == "$(1)") { print $$NF; exit 0; }  }' $(OVERLAY_DIR)/deployment_patch.yaml)
+IMAGE_LOGGING_VECTOR=$(call DEPLOY_ENV,RELATED_IMAGE_VECTOR)
+IMAGE_LOGGING_FLUENTD=$(call DEPLOY_ENV,RELATED_IMAGE_FLUENTD)
+IMAGE_LOGFILEMETRICEXPORTER=$(call DEPLOY_ENV,RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER)
+IMAGE_LOGGING_CONSOLE_PLUGIN?=$(call DEPLOY_ENV,RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN)
+
+export IMAGE_TAG=$(IMAGE_NAME):$(VERSION)
+BUNDLE_TAG=$(IMAGE_NAME)-bundle:$(VERSION)
+LOGGING_VERSION=$(shell echo "$(VERSION)" | grep -o '^[0-9]\+\.[0-9]\+')
+
+else
+# Set variables from environment or hard-coded default
+
+export OPERATOR_NAME=cluster-logging-operator
 export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
-export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(APP_NAME):$(CURRENT_BRANCH)
+export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
+BUNDLE_TAG=$(error set OVERLAY to deploy or run a bundle)
 
 export LOGGING_VERSION?=5.6
+export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6
@@ -28,12 +53,13 @@ IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:
 # Unlike the other components, console changes do not risk breaking the collector,
 # the console depends only on the format of the LokiStore records.
 IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:latest
+endif # ifdef OVERLAY
 
 REPLICAS?=0
 export E2E_TEST_INCLUDES?=
 export CLF_TEST_INCLUDES?=
 
-.PHONY: force all build clean generate regenerate deploy-setup deploy-image image deploy deploy-example test-functional test-unit test-e2e test-sec undeploy run
+.PHONY: force
 
 .PHONY: tools
 tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN)
@@ -102,7 +128,7 @@ run:
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN=$(IMAGE_LOGGING_CONSOLE_PLUGIN) \
-	OPERATOR_NAME=cluster-logging-operator \
+	OPERATOR_NAME=$(OPERATOR_NAME) \
 	WATCH_NAMESPACE=$(NAMESPACE) \
 	KUBERNETES_CONFIG=$(KUBECONFIG) \
 	WORKING_DIR=$(CURDIR)/tmp \
@@ -128,7 +154,7 @@ clean:
 
 .PHONY: image
 image: .target/image
-.target/image: .target $(shell find must-gather version scripts files bundle .bingo apis controllers internal -type f) Makefile Dockerfile  go.mod go.sum
+.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version scripts files bundle .bingo apis controllers internal -type f) Dockerfile  go.mod go.sum
 	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 
@@ -165,7 +191,7 @@ regenerate: $(OPERATOR_SDK) $(CONTROLLER_GEN) $(KUSTOMIZE)
 	@$(MAKE) generate
 
 .PHONY: deploy-image
-deploy-image: image
+deploy-image: .target/image
 	hack/deploy-image.sh
 
 .PHONY: deploy
@@ -177,7 +203,7 @@ install:
 	$(MAKE) cluster-logging-operator-install
 
 .PHONY: deploy-catalog
-deploy-catalog: .target
+deploy-catalog:
 	LOCAL_IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=127.0.0.1:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
 	$(MAKE) cluster-logging-catalog-build
 	IMAGE_CLUSTER_LOGGING_OPERATOR_REGISTRY=image-registry.openshift-image-registry.svc:5000/openshift/cluster-logging-operator-registry:$(CURRENT_BRANCH) \
@@ -250,10 +276,10 @@ test-cluster:
 
 OPENSHIFT_VERSIONS?="v4.7"
 # Generate bundle manifests and metadata, then validate generated files.
-BUNDLE_VERSION?=$(LOGGING_VERSION).0
-# Options for 'bundle-build'
-BUNDLE_CHANNELS := --channels=stable,stable-${LOGGING_VERSION}
-BUNDLE_DEFAULT_CHANNEL := --default-channel=stable
+BUNDLE_VERSION?=$(VERSION)
+CHANNEL=$(or $(filename $(OVERLAY)),stable)
+BUNDLE_CHANNELS := --channels=$(CHANNEL),$(CHANNEL)-${LOGGING_VERSION}
+BUNDLE_DEFAULT_CHANNEL := --default-channel=$(CHANNEL)
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
@@ -268,11 +294,42 @@ ifeq ($(USE_IMAGE_DIGESTS), true)
 endif
 
 .PHONY: bundle
- bundle: regenerate $(KUSTOMIZE) ## Generate operator bundle.
+bundle: $(GEN_TIMESTAMP) $(KUSTOMIZE) $(find config -name *.yaml) ## Generate operator bundle.
 	$(OPERATOR_SDK) generate kustomize manifests -q
-	$(KUSTOMIZE) build config/manifests | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
-	$(OPERATOR_SDK) bundle validate ./bundle
+	$(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 	MANIFEST_VERSION=${LOGGING_VERSION} OPENSHIFT_VERSIONS=${OPENSHIFT_VERSIONS} CHANNELS=${CHANNELS} DEFAULT_CHANNEL=${DEFAULT_CHANNEL} hack/generate-bundle.sh
+	$(OPERATOR_SDK) bundle validate ./bundle
+	@touch $@
+
+.PHONY: deploy-bundle
+deploy-bundle: bundle bundle.Dockerfile
+	podman build -t $(BUNDLE_TAG) -f bundle.Dockerfile .
+	podman push --tls-verify=false ${BUNDLE_TAG}
+	@echo "To run the bundle without this Makefile:"
+	@echo "    oc create ns $(NAMESPACE)"
+	@echo "    run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG)"
+	@touch $@
+
+.PHONY: clean-bundle
+clean-bundle:
+	$(OPERATOR_SDK) cleanup --delete-all cluster-logging
+
+WATCH_EVENTS=oc get events -A --watch-only& trap "kill %%" EXIT;
+WAIT_FOR_OPERATOR=oc wait -n $(NAMESPACE) --for=condition=available deployment/cluster-logging-operator
+
+.PHONY: namespace
+namespace:
+	oc delete ns/$(NAMESPACE) --ignore-not-found
+	oc create ns $(NAMESPACE)
+
+.PHONY: run-bundle
+run-bundle: namespace $(OPERATOR_SDK) ## Run the overlay bundle image, assumes it has been pushed
+	$(WATCH_EVENTS)	$(OPERATOR_SDK) run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG); $(WAIT_FOR_OPERATOR)
+
+.PHONY: apply
+apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the cluster.
+	$(OPERATOR_SDK) generate kustomize manifests -q
+	$(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | $(WATCH_EVENTS) oc apply -f -; $(WAIT_FOR_OPERATOR)
 
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.
@@ -323,8 +380,7 @@ cluster-logging-catalog-build: .target/cluster-logging-catalog-build
 
 .PHONY: cluster-logging-catalog-deploy
 # deploys the operator registry image and creates a catalogsource referencing it
-cluster-logging-catalog-deploy: .target/cluster-logging-catalog-deploy
-.target/cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
+cluster-logging-catalog-deploy: $(shell find olm_deploy -type f)
 	olm_deploy/scripts/catalog-deploy.sh
 
 .PHONY: cluster-logging-catalog-uninstall

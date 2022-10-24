@@ -49,7 +49,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						ViaqMsgID:                "*",
 						PipelineMetadata:         functional.TemplateForAnyPipelineMetadata,
 						OpenshiftLabels: types.OpenshiftMeta{
-							ClusterID: "**optional**",
+							ClusterID: "*",
 							Sequence:  types.NewOptionalInt(""),
 						},
 					},
@@ -88,7 +88,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 					Openshift: types.OpenshiftMeta{
 						Sequence:  types.NewOptionalInt(""),
-						ClusterID: "**optional**",
+						ClusterID: "*",
 					},
 				}
 				// Write log line as input to fluentd
@@ -117,7 +117,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					Timestamp: time.Time{},
 					LogType:   "audit",
 					Openshift: types.OpenshiftMeta{
-						ClusterID: "**optional**",
+						ClusterID: "*",
 						Sequence:  types.NewOptionalInt(""),
 					},
 					ViaqMsgID:        "*",
@@ -168,7 +168,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						Timestamp:        time.Time{},
 						PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 						OpenshiftLabels: types.OpenshiftMeta{
-							ClusterID: "**optional**",
+							ClusterID: "*",
 						},
 					},
 					K8SAuditLevel: "Metadata",
@@ -204,7 +204,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 						Timestamp:        time.Time{},
 						PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 						OpenshiftLabels: types.OpenshiftMeta{
-							ClusterID: "**optional**",
+							ClusterID: "*",
 						},
 					},
 					OpenshiftAuditLevel: "Metadata",
@@ -244,7 +244,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					Timestamp:        testTime,
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 					Openshift: types.OpenshiftMeta{
-						ClusterID: "**optional**",
+						ClusterID: "*",
 					},
 				}
 				// Write log line as input to fluentd
@@ -275,7 +275,7 @@ var _ = Describe("[Functional][LogForwarding][Normalization] message format test
 					LogType:   "audit",
 					Openshift: types.OpenshiftMeta{
 						Sequence:  types.NewOptionalInt(""),
-						ClusterID: "**optional**",
+						ClusterID: "*",
 					},
 					PipelineMetadata: functional.TemplateForAnyPipelineMetadata,
 				}

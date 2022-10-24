@@ -76,7 +76,7 @@ var _ = Describe("[Functional][Normalization] Fluentd normalization for EventRou
 				LogType:          "application",
 				ViaqMsgID:        "*",
 				OpenshiftLabels: types.OpenshiftMeta{
-					ClusterID: "**optional**",
+					ClusterID: "*",
 					Sequence:  types.NewOptionalInt(""),
 				},
 			}

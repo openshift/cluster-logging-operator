@@ -207,6 +207,42 @@ var _ = Describe("Reconciling", func() {
 				Expect(ds.Spec.Template.Spec.Containers[0].VolumeMounts).To(Not(ContainElement(trustedCABundleVolumeMount)))
 			})
 		})
+		Context("when creating prometheus rule for collector", func() {
+			BeforeEach(func() {
+				client = fake.NewFakeClient( //nolint
+					cluster,
+					fluentdSecret,
+					fluentdCABundle,
+					namespace,
+				)
+				clusterRequest = &ClusterLoggingRequest{
+					Client:        client,
+					Cluster:       cluster,
+					EventRecorder: record.NewFakeRecorder(100),
+				}
+			})
+
+			It("a fluentd collector should create the logging_fluentd alerts", func() {
+				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
+
+				collectorKey := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
+				rule := &monitoringv1.PrometheusRule{}
+				Expect(client.Get(context.TODO(), collectorKey, rule)).Should(Succeed())
+				Expect(rule.Spec.Groups[0].Name).To(Equal("logging_fluentd.alerts"))
+				Expect(rule.Spec.Groups[0].Rules[0].Alert).To(Equal("FluentdNodeDown"))
+			})
+			It("a vector collector should create the logging_collector alerts", func() {
+				// Set collector to vector
+				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
+				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
+
+				collectorKey := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
+				rule := &monitoringv1.PrometheusRule{}
+				Expect(client.Get(context.TODO(), collectorKey, rule)).Should(Succeed())
+				Expect(rule.Spec.Groups[0].Name).To(Equal("logging_collector.alerts"))
+				Expect(rule.Spec.Groups[0].Rules[0].Alert).To(Equal("CollectorNodeDown"))
+			})
+		})
 	})
 })
 
@@ -231,7 +267,7 @@ var _ = Describe("compareFluentdCollectorStatus", func() {
 			Pods:       map[loggingv1.PodStateType][]string{},
 		}
 	})
-	It("should succed if everything is the same", func() {
+	It("should succeed if everything is the same", func() {
 		Expect(compareFluentdCollectorStatus(lhs, rhs)).To(BeTrue())
 	})
 	It("should determine different names to be different", func() {

@@ -204,8 +204,12 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRu
 	cluster := clusterRequest.Cluster
 
 	rule := NewPrometheusRule(constants.CollectorName, cluster.Namespace)
+	alertRulesFile := fluentdAlertsFile
+	if clusterRequest.Cluster.Spec.Collection.Type == logging.LogCollectionTypeVector {
+		alertRulesFile = vectorAlertsFile
+	}
 
-	spec, err := NewPrometheusRuleSpecFrom(path.Join(utils.GetShareDir(), fluentdAlertsFile))
+	spec, err := NewPrometheusRuleSpecFrom(path.Join(utils.GetShareDir(), alertRulesFile))
 	if err != nil {
 		return fmt.Errorf("failure creating the collector PrometheusRule: %w", err)
 	}

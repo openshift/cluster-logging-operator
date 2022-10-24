@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	fluentdAlertsFile = "fluentd/fluentd_prometheus_alerts.yaml"
+	fluentdAlertsFile = "collector/fluentd_prometheus_alerts.yaml"
+	vectorAlertsFile  = "collector/vector_prometheus_alerts.yaml"
 )
 
 // useOldRemoteSyslogPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used

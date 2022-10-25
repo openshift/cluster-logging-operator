@@ -136,12 +136,14 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			})).To(BeNil())
 
 			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize)).To(BeNil())
+			time.Sleep(10 * time.Second)
 			Eventually(func(g Gomega) int {
 				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
 				Expect(err).To(BeNil())
 				Expect(logs).To(HaveLen(numOfLogs))
 				return len(logs)
 			}).WithTimeout(time.Second).Should(Equal(numOfLogs))
+
 		})
 
 		It("should be able to forward by user-defined pod labels", func() {
@@ -173,7 +175,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 
 			// Write logs
 			Expect(framework.WritesApplicationLogs(numOfLogs)).To(BeNil())
-
+			time.Sleep(10 * time.Second)
 			Eventually(func(g Gomega) string {
 				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
 				Expect(err).To(BeNil())
@@ -214,7 +216,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			}
 
 			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
-
+			time.Sleep(10 * time.Second)
 			Eventually(func(g Gomega) string {
 				raw, err := framework.ReadLogsFromCloudwatch(cwlClient, logging.InputNameApplication)
 				Expect(err).To(BeNil(), "Expected no errors reading the logs")
@@ -268,7 +270,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			// Write a single app log just to be sure its picked up ("test-..." namespace)
 			writeAppLogs := framework.WritesApplicationLogs(numLogsSent)
 			Expect(writeAppLogs).To(BeNil(), "Expect no errors writing logs")
-
+			time.Sleep(10 * time.Second)
 			Eventually(func(g Gomega) string {
 				// Get application logs from Cloudwatch
 				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)
@@ -301,7 +303,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			auditLogLine := functional.NewAuditHostLog(tstamp)
 			writeAuditLogs := framework.WriteMessagesToAuditLog(auditLogLine, numLogsSent)
 			Expect(writeAuditLogs).To(BeNil(), "Expect no errors writing logs")
-
+			time.Sleep(10 * time.Second)
 			// Get audit logs from Cloudwatch
 			Eventually(func(g Gomega) string {
 				logs, err := framework.ReadLogsFromCloudwatch(cwlClient, readLogType)

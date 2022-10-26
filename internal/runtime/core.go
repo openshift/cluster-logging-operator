@@ -3,7 +3,6 @@ package runtime
 import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 )
 
 // NewNamespace returns a corev1.Namespace with name.
@@ -59,42 +58,4 @@ func NewDaemonSet(namespace, name string) *appsv1.DaemonSet {
 	ds := &appsv1.DaemonSet{}
 	Initialize(ds, namespace, name)
 	return ds
-}
-
-//NewRole returns a role with namespace, names, rules
-func NewRole(namespace, name string, rules ...rbacv1.PolicyRule) *rbacv1.Role {
-	role := &rbacv1.Role{
-		Rules: rules,
-	}
-	Initialize(role, namespace, name)
-	return role
-}
-
-//NewClusterRole returns a role with namespace, names, rules
-func NewClusterRole(name string, rules ...rbacv1.PolicyRule) *rbacv1.ClusterRole {
-	role := &rbacv1.ClusterRole{
-		Rules: rules,
-	}
-	Initialize(role, "", name)
-	return role
-}
-
-//NewRoleBinding returns a role with namespace, names, rules
-func NewRoleBinding(namespace, name string, roleRef rbacv1.RoleRef, subjects ...rbacv1.Subject) *rbacv1.RoleBinding {
-	binding := &rbacv1.RoleBinding{
-		RoleRef:  roleRef,
-		Subjects: subjects,
-	}
-	Initialize(binding, namespace, name)
-	return binding
-}
-
-//NewClusterRoleBinding returns a role with namespace, names, rules
-func NewClusterRoleBinding(name string, roleRef rbacv1.RoleRef, subjects ...rbacv1.Subject) *rbacv1.ClusterRoleBinding {
-	binding := &rbacv1.ClusterRoleBinding{
-		RoleRef:  roleRef,
-		Subjects: subjects,
-	}
-	Initialize(binding, "", name)
-	return binding
 }

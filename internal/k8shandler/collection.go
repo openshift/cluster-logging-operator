@@ -341,12 +341,6 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 		return nil, fmt.Errorf("Failure creating Log collector SecurityContextConstraints: %v", err)
 	}
 
-	subject := NewSubject(
-		"ServiceAccount",
-		constants.CollectorServiceAccountName,
-	)
-	subject.APIGroup = ""
-
 	if delfinalizer {
 		return collectorServiceAccount, nil
 	} else {

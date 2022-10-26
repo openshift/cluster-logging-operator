@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"strconv"
 	"strings"
 	"time"
@@ -223,17 +224,17 @@ func (tc *E2ETestFramework) createServiceAccount() (serviceAccount *corev1.Servi
 
 func (tc *E2ETestFramework) createRbac(name string) (err error) {
 	opts := metav1.CreateOptions{}
-	saRole := k8shandler.NewRole(
-		name,
+	saRole := runtime.NewRole(
 		constants.OpenshiftNS,
-		k8shandler.NewPolicyRules(
-			k8shandler.NewPolicyRule(
+		name,
+		runtime.NewPolicyRules(
+			runtime.NewPolicyRule(
 				[]string{"security.openshift.io"},
 				[]string{"securitycontextconstraints"},
 				[]string{"privileged"},
 				[]string{"use"},
 			),
-		),
+		)...,
 	)
 	if _, err = tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Create(context.TODO(), saRole, opts); err != nil {
 		return err
@@ -242,19 +243,23 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 		opts := metav1.DeleteOptions{}
 		return tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
 	})
-	subject := k8shandler.NewSubject(
+	subject := runtime.NewSubject(
 		"ServiceAccount",
 		name,
 	)
 	subject.APIGroup = ""
-	roleBinding := k8shandler.NewRoleBinding(
-		name,
+	roleBinding := runtime.NewRoleBinding(
 		constants.OpenshiftNS,
-		saRole.Name,
-		k8shandler.NewSubjects(
+		name,
+		rbacv1.RoleRef{
+			Kind:     "Role",
+			Name:     saRole.Name,
+			APIGroup: rbacv1.GroupName,
+		}, runtime.NewSubjects(
 			subject,
-		),
+		)...,
 	)
+
 	if _, err = tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Create(context.TODO(), roleBinding, opts); err != nil {
 		return err
 	}

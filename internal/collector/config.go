@@ -7,7 +7,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
@@ -17,7 +16,6 @@ import (
 // ReconcileCollectorConfig reconciles a collector config specifically for the collector defined by the factory
 func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient client.Client, namespace, name, collectorConfig string, owner metav1.OwnerReference) error {
 	log.V(3).Info("Updating ConfigMap and Secrets")
-	opensslConf := tls.OpenSSLConf(k8sClient)
 	if f.CollectorType == logging.LogCollectionTypeFluentd {
 		collectorConfigMap := runtime.NewConfigMap(
 			namespace,
@@ -26,7 +24,6 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 				"fluent.conf":         collectorConfig,
 				"run.sh":              fluentd.RunScript,
 				"cleanInValidJson.rb": fluentd.CleanInValidJson,
-				"openssl.cnf":         opensslConf,
 			},
 		)
 		utils.AddOwnerRefToObject(collectorConfigMap, owner)
@@ -37,7 +34,6 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 			constants.CollectorConfigSecretName,
 			map[string][]byte{
 				"vector.toml": []byte(collectorConfig),
-				"openssl.cnf": []byte(opensslConf),
 			})
 		return reconcile.Secret(er, k8sClient, secret)
 	}

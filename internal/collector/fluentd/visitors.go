@@ -1,8 +1,6 @@
 package fluentd
 
 import (
-	"fmt"
-
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -35,7 +33,6 @@ func CollectorVisitor(collectorContainer *v1.Container, podSpec *v1.PodSpec) {
 			},
 		},
 		v1.EnvVar{Name: "RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR", Value: "0.9"},
-		v1.EnvVar{Name: "OPENSSL_CONF", Value: fmt.Sprintf("%s/openssl.cnf", configVolumePath)},
 	)
 	collectorContainer.VolumeMounts = append(collectorContainer.VolumeMounts,
 		v1.VolumeMount{Name: certsVolumeName, ReadOnly: true, MountPath: certsVolumePath},

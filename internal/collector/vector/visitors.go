@@ -1,8 +1,6 @@
 package vector
 
 import (
-	"fmt"
-
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -25,7 +23,6 @@ func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodS
 				},
 			},
 		},
-		corev1.EnvVar{Name: "OPENSSL_CONF", Value: fmt.Sprintf("%s/openssl.cnf", vectorConfigPath)},
 	)
 	collectorContainer.VolumeMounts = append(collectorContainer.VolumeMounts,
 		corev1.VolumeMount{Name: common.ConfigVolumeName, ReadOnly: true, MountPath: vectorConfigPath},

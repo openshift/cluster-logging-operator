@@ -30,7 +30,7 @@ const (
 	InfraIndexPrefix          = "infra-"
 	ProjectIndexPrefix        = "app-"
 	AuditIndexPrefix          = "audit-"
-	elasticsearchesLoggingURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/elasticsearches"
+	elasticsearchesLoggingURI = "apis/logging.openshift.io/v1/namespaces/%s/elasticsearches"
 )
 
 type Indices []Index
@@ -154,7 +154,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 		LabelSelector: "component=elasticsearch",
 	}
 
-	pods, err := es.Framework.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
+	pods, err := es.Framework.KubeClient.CoreV1().Pods(constants.WatchNamespace).List(context.TODO(), options)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	}
 	clolog.V(3).Info("Pod ", "PodName", pods.Items[0].Name)
 	indices := []Index{}
-	stdout, err := es.Framework.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
+	stdout, err := es.Framework.PodExec(constants.WatchNamespace, pods.Items[0].Name, "elasticsearch", []string{"es_util", "--query=_cat/indices?format=json"})
 	if err != nil {
 		return nil, err
 	}
@@ -183,15 +183,15 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 	opts := metav1.CreateOptions{}
 	esSecret := k8shandler.NewSecret(
 		logStoreName,
-		constants.OpenshiftNS,
+		constants.WatchNamespace,
 		k8shandler.LoadElasticsearchSecretMap(),
 	)
 	clolog.V(3).Info("Creating secret for an elasticsearch cluster: ", "secret", esSecret.Name)
-	_, err = tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), esSecret, opts)
+	_, err = tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Create(context.TODO(), esSecret, opts)
 	if err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			sOpts := metav1.UpdateOptions{}
-			_, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Update(context.TODO(), esSecret, sOpts)
+			_, err := tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Update(context.TODO(), esSecret, sOpts)
 			if err != nil {
 				return nil, nil, nil
 			}
@@ -210,7 +210,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 	cr = &elasticsearch.Elasticsearch{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      esSecret.Name,
-			Namespace: constants.OpenshiftNS,
+			Namespace: constants.WatchNamespace,
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Elasticsearch",
@@ -238,7 +238,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 	}
 	tc.AddCleanup(func() error {
 		result := tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/%s", elasticsearchesLoggingURI, cr.Name)).
+			RequestURI(fmt.Sprintf("%s/%s", fmt.Sprintf(elasticsearchesLoggingURI, cr.Namespace), cr.Name)).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO())
 		return result.Error()
@@ -246,7 +246,7 @@ func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasti
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
 		for _, name := range []string{esSecret.Name, pipelineSecret.Name} {
-			if err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Delete(context.TODO(), name, opts); err != nil {
+			if err := tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Delete(context.TODO(), name, opts); err != nil {
 				return err
 			}
 		}

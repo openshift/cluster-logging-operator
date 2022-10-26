@@ -37,11 +37,11 @@ var (
 			logging.InputNameInfrastructure: "/tmp/infra-logs",
 		},
 		logging.OutputTypeSyslog: {
-			applicationLog:                  "/var/log/infra.log",
-			auditLog:                        "/var/log/infra.log",
-			k8sAuditLog:                     "/var/log/infra.log",
-			ovnAuditLog:                     "/var/log/infra.log",
-			logging.InputNameInfrastructure: "/var/log/infra.log",
+			applicationLog:                  "/tmp/infra.log",
+			auditLog:                        "/tmp/infra.log",
+			k8sAuditLog:                     "/tmp/infra.log",
+			ovnAuditLog:                     "/tmp/infra.log",
+			logging.InputNameInfrastructure: "/tmp/infra.log",
 		},
 		logging.OutputTypeKafka: {
 			applicationLog: "/var/log/app.log",

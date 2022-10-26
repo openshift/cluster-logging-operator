@@ -10,7 +10,7 @@ TOKEN=`echo $(oc get secret $SECRET -n openshift-monitoring -o json | jq -r '.da
 THANOS_QUERIER_HOST=`oc get route thanos-querier -n openshift-monitoring -o json | jq -r '.spec.host'`
 echo $THANOS_QUERIER_HOST
 
-export NAMESPACE=openshift-logging
+export LOGGING_NS=${LOGGING_NS:-openshift-logging}
 
 
 
@@ -24,8 +24,8 @@ for clometricname in "${clometrics[@]}"
 
 do
    echo "$clometricname"
-   curl -X GET -kG "https://$THANOS_QUERIER_HOST/api/v1/query?query=${clometricname}" --data-urlencode "query=${clometricname}{namespace='$NAMESPACE'}" -H "Authorization: Bearer $TOKEN"
-   result=`curl -X GET -kG "https://$THANOS_QUERIER_HOST/api/v1/query?query=${clometricname}" --data-urlencode "query=${clometricname}{namespace='$NAMESPACE'}" -H "Authorization: Bearer $TOKEN" | xargs |  grep -s -c status:success - `
+   curl -X GET -kG "https://$THANOS_QUERIER_HOST/api/v1/query?query=${clometricname}" --data-urlencode "query=${clometricname}{namespace='$LOGGING_NS'}" -H "Authorization: Bearer $TOKEN"
+   result=`curl -X GET -kG "https://$THANOS_QUERIER_HOST/api/v1/query?query=${clometricname}" --data-urlencode "query=${clometricname}{namespace='$LOGGING_NS'}" -H "Authorization: Bearer $TOKEN" | xargs |  grep -s -c status:success - `
    #check if metric is successfully published in prometheus end point 
    if [[ $result -eq 1 ]]
    then

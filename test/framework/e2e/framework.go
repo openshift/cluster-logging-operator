@@ -37,8 +37,8 @@ import (
 )
 
 const (
-	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterloggings"
-	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/openshift-logging/clusterlogforwarders"
+	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/%s/clusterloggings"
+	clusterlogforwarderURI = "apis/logging.openshift.io/v1/namespaces/%s/clusterlogforwarders"
 	DefaultCleanUpTimeout  = 60.0 * 5
 
 	defaultRetryInterval      = 1 * time.Second
@@ -97,9 +97,21 @@ func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) er
 		Image:           "quay.io/quay/busybox",
 		ImagePullPolicy: corev1.PullAlways,
 		Args:            []string{"sh", "-c", "i=0; while true; do echo $i: My life is my message; i=$((i+1)) ; sleep 1; done"},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: utils.GetBool(false),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		},
 	}
 	podSpec := corev1.PodSpec{
 		Containers: []corev1.Container{container},
+		SecurityContext: &corev1.PodSecurityContext{
+			RunAsNonRoot: utils.GetBool(true),
+			SeccompProfile: &corev1.SeccompProfile{
+				Type: corev1.SeccompProfileTypeRuntimeDefault,
+			},
+		},
 	}
 	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
 	clolog.Info("Deploying LogGenerator to namespace", "deployment name", deployment.Name, "namespace", deployment.Namespace)
@@ -210,7 +222,7 @@ func (tc *E2ETestFramework) WaitFor(component helpers.LogComponentType) error {
 	clolog.Info("Waiting for component to be ready", "component", component)
 	switch component {
 	case helpers.ComponentTypeVisualization:
-		return tc.waitForDeployment(constants.OpenshiftNS, "kibana", defaultRetryInterval, defaultTimeout)
+		return tc.waitForDeployment(constants.WatchNamespace, "kibana", defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeCollector, helpers.ComponentTypeCollectorFluentd, helpers.ComponentTypeCollectorVector:
 		return tc.waitForFluentDaemonSet(defaultRetryInterval, defaultTimeout)
 	case helpers.ComponentTypeStore:
@@ -224,7 +236,7 @@ func (tc *E2ETestFramework) waitForFluentDaemonSet(retryInterval, timeout time.D
 	maxtimes := 5
 	times := 0
 	return wait.PollImmediate(retryInterval, timeout, func() (bool, error) {
-		numUnavail, err := oc.Literal().From("oc -n openshift-logging get daemonset/collector --ignore-not-found -o jsonpath={.status.numberUnavailable}").Run()
+		numUnavail, err := oc.Literal().From(fmt.Sprintf("oc -n %s get daemonset/collector --ignore-not-found -o jsonpath={.status.numberUnavailable}", constants.WatchNamespace)).Run()
 		if err == nil {
 			if numUnavail == "" {
 				numUnavail = "0"
@@ -280,7 +292,7 @@ func (tc *E2ETestFramework) waitForElasticsearchPods(retryInterval, timeout time
 		options := metav1.ListOptions{
 			LabelSelector: "component=elasticsearch",
 		}
-		pods, err := tc.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
+		pods, err := tc.KubeClient.CoreV1().Pods(constants.WatchNamespace).List(context.TODO(), options)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				clolog.V(2).Error(err, "Did not find elasticsearch pods")
@@ -408,14 +420,14 @@ func (tc *E2ETestFramework) CreateClusterLogging(clusterlogging *cl.ClusterLoggi
 	}
 	deleteCL := func() error {
 		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", clusterLoggingURI)).
+			RequestURI(fmt.Sprintf("%s/instance", fmt.Sprintf(clusterLoggingURI, clusterlogging.Namespace))).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
 	}
 	createCL := func() error {
 		clolog.Info("Creating ClusterLogging:", "ClusterLogging", string(body))
 		return tc.KubeClient.RESTClient().Post().
-			RequestURI(clusterLoggingURI).
+			RequestURI(fmt.Sprintf(clusterLoggingURI, clusterlogging.Namespace)).
 			SetHeader("Content-Type", "application/json").
 			Body(body).
 			Do(context.TODO()).Error()
@@ -440,7 +452,7 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 	}
 	deleteCLF := func() error {
 		return tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/instance", clusterlogforwarderURI)).
+			RequestURI(fmt.Sprintf("%s/instance", fmt.Sprintf(clusterlogforwarderURI, forwarder.Namespace))).
 			SetHeader("Content-Type", "application/json").
 			Do(context.TODO()).Error()
 	}
@@ -448,7 +460,7 @@ func (tc *E2ETestFramework) CreateClusterLogForwarder(forwarder *logging.Cluster
 	clolog.Info("Creating ClusterLogForwarder", "ClusterLogForwarder", string(body))
 	createCLF := func() rest.Result {
 		return tc.KubeClient.RESTClient().Post().
-			RequestURI(clusterlogforwarderURI).
+			RequestURI(fmt.Sprintf(clusterlogforwarderURI, forwarder.Namespace)).
 			SetHeader("Content-Type", "application/json").
 			Body(body).
 			Do(context.TODO())
@@ -651,7 +663,7 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 		return nil, err
 	}
 	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
-	if err, _, _ := certificates.GenerateCertificates(constants.OpenshiftNS, scriptsDir, logStoreName, workingDir); err != nil {
+	if err, _, _ := certificates.GenerateCertificates(constants.WatchNamespace, scriptsDir, logStoreName, workingDir); err != nil {
 		return nil, err
 	}
 	data := map[string][]byte{
@@ -667,17 +679,17 @@ func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName s
 	sOpts := metav1.CreateOptions{}
 	secret := k8shandler.NewSecret(
 		secretName,
-		constants.OpenshiftNS,
+		constants.WatchNamespace,
 		data,
 	)
 	clolog.V(3).Info("Creating secret for logStore ", "secret", secret.Name, "logStoreName", logStoreName)
-	newSecret, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Create(context.TODO(), secret, sOpts)
+	newSecret, err := tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Create(context.TODO(), secret, sOpts)
 	if err == nil {
 		return newSecret, nil
 	}
 	if errors.IsAlreadyExists(err) {
 		sOpts := metav1.UpdateOptions{}
-		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Update(context.TODO(), secret, sOpts)
+		updatedSecret, err := tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Update(context.TODO(), secret, sOpts)
 		if err == nil {
 			return updatedSecret, nil
 		}

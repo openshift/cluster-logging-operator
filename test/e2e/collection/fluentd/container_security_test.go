@@ -26,7 +26,7 @@ const (
 var collector string
 
 func runInFluentdContainer(command string, args ...string) (string, error) {
-	return oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(collector).Container(constants.CollectorName).WithCmd(command, args...).Run()
+	return oc.Exec().WithNamespace(constants.WatchNamespace).Pod(collector).Container(constants.CollectorName).WithCmd(command, args...).Run()
 }
 
 func checkMountReadOnly(mount string) {
@@ -60,7 +60,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      constants.SingletonName,
-				Namespace: constants.OpenshiftNS,
+				Namespace: constants.WatchNamespace,
 			},
 			Spec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{
@@ -100,7 +100,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		}
 		nodes = len(strings.Split(out, "\n"))
 		log.V(3).Info("Waiting for a stable number collectors to be ready", "nodes", nodes)
-		if err := e2e.WaitForResourceCondition(constants.OpenshiftNS, "daemonset", constants.CollectorName, "", "{.status.numberReady}", 10,
+		if err := e2e.WaitForResourceCondition(constants.WatchNamespace, "daemonset", constants.CollectorName, "", "{.status.numberReady}", 10,
 			func(out string) (bool, error) {
 				ready, err := strconv.Atoi(strings.TrimSpace(out))
 				if err != nil {
@@ -115,10 +115,10 @@ var _ = Describe("Tests of collector container security stance", func() {
 			Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", helpers.ComponentTypeCollector, err))
 		}
 
-		podList, err := oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").OutputJsonpath("{.items[*].metadata.name}").Run()
+		podList, err := oc.Get().WithNamespace(constants.WatchNamespace).Pod().Selector("component=collector").OutputJsonpath("{.items[*].metadata.name}").Run()
 		Expect(err).To(BeNil())
 		for _, pod := range strings.Split(podList, " ") {
-			if oc.Exec().WithNamespace(constants.OpenshiftNS).Pod(pod).Container(constants.CollectorName).WithCmd("hostname").Output() == nil {
+			if oc.Exec().WithNamespace(constants.WatchNamespace).Pod(pod).Container(constants.CollectorName).WithCmd("hostname").Output() == nil {
 				collector = pod
 			}
 		}
@@ -127,7 +127,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 
 	AfterEach(func() {
 		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName})
+		e2e.WaitForCleanupCompletion(constants.WatchNamespace, []string{constants.CollectorName})
 	}, framework.DefaultCleanUpTimeout)
 
 	It("collector containers should have tight security settings", func() {
@@ -163,7 +163,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 
 		By("not running as a privileged container")
 		Eventually(func(g Gomega) {
-			result, err := oc.Get().WithNamespace(constants.OpenshiftNS).Pod().Selector("component=collector").
+			result, err := oc.Get().WithNamespace(constants.WatchNamespace).Pod().Selector("component=collector").
 				OutputJsonpath("{.items[0].spec.containers[0].securityContext.privileged}").Run()
 			g.Expect(result).To(BeEmpty())
 			g.Expect(err).NotTo(HaveOccurred())

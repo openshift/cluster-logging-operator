@@ -148,7 +148,7 @@ const (
       # A segment will be deleted whenever *either* of these criteria are met. Deletion always happens
       # from the end of the log.
 
-      # https://cwiki.apache.org/confluence/display/KAFKA/KIP-186%3A+Increase+offsets+retention+default+to+7+days
+      # https://cwiki.apache.org/confluence/display/KAFKA/KIP-186%%3A+Increase+offsets+retention+default+to+7+days
       offsets.retention.minutes=10080
 
       # The minimum age of a log file to be eligible for deletion due to age
@@ -172,7 +172,7 @@ const (
       # server. e.g. "127.0.0.1:3000,127.0.0.1:3001,127.0.0.1:3002".
       # You can also append an optional chroot string to the urls to specify the
       # root directory for all kafka znodes.
-      zookeeper.connect=zookeeper.openshift-logging.svc.cluster.local:2181
+      zookeeper.connect=zookeeper.%s.svc.cluster.local:2181
 
       # Timeout in ms for connecting to zookeeper
       #zookeeper.connection.timeout.ms=6000

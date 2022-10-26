@@ -19,7 +19,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 )
 
 const (
@@ -70,37 +70,29 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		})
 		Describe("with rfc5424", func() {
 			BeforeEach(func() {
-				forwarder = &logging.ClusterLogForwarder{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       logging.ClusterLogForwarderKind,
-						APIVersion: logging.GroupVersion.String(),
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "instance",
-					},
-					Spec: logging.ClusterLogForwarderSpec{
-						Outputs: []logging.OutputSpec{
-							{
-								Name: "syslogout",
-								Type: "syslog",
-								OutputTypeSpec: logging.OutputTypeSpec{
-									Syslog: &logging.Syslog{
-										Facility: "user",
-										Severity: "debug",
-										AppName:  "myapp",
-										ProcID:   "myproc",
-										MsgID:    "mymsg",
-										RFC:      "RFC5424",
-									},
+				forwarder = testruntime.NewClusterLogForwarder()
+				forwarder.Spec = logging.ClusterLogForwarderSpec{
+					Outputs: []logging.OutputSpec{
+						{
+							Name: "syslogout",
+							Type: "syslog",
+							OutputTypeSpec: logging.OutputTypeSpec{
+								Syslog: &logging.Syslog{
+									Facility: "user",
+									Severity: "debug",
+									AppName:  "myapp",
+									ProcID:   "myproc",
+									MsgID:    "mymsg",
+									RFC:      "RFC5424",
 								},
 							},
 						},
-						Pipelines: []logging.PipelineSpec{
-							{
-								Name:       "test-app",
-								OutputRefs: []string{"syslogout"},
-								InputRefs:  []string{"application"},
-							},
+					},
+					Pipelines: []logging.PipelineSpec{
+						{
+							Name:       "test-app",
+							OutputRefs: []string{"syslogout"},
+							InputRefs:  []string{"application"},
 						},
 					},
 				}
@@ -130,7 +122,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					}
 				}
 				logStore := e2e.LogStores[syslogDeployment.GetName()]
-				Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 				expectedAppName := forwarder.Spec.Outputs[0].Syslog.AppName
 				Expect(logStore.GrepLogs(grepappname, framework.DefaultWaitForLogsTimeout)).To(Equal(expectedAppName), "Expected: "+expectedAppName)
@@ -147,35 +138,27 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		})
 		Describe("with rfc3164", func() {
 			BeforeEach(func() {
-				forwarder = &logging.ClusterLogForwarder{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       logging.ClusterLogForwarderKind,
-						APIVersion: logging.GroupVersion.String(),
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "instance",
-					},
-					Spec: logging.ClusterLogForwarderSpec{
-						Outputs: []logging.OutputSpec{
-							{
-								Name: "syslogout",
-								Type: "syslog",
-								OutputTypeSpec: logging.OutputTypeSpec{
-									Syslog: &logging.Syslog{
-										Facility: "user",
-										Severity: "debug",
-										RFC:      "RFC3164",
-										Tag:      "mytag",
-									},
+				forwarder = testruntime.NewClusterLogForwarder()
+				forwarder.Spec = logging.ClusterLogForwarderSpec{
+					Outputs: []logging.OutputSpec{
+						{
+							Name: "syslogout",
+							Type: "syslog",
+							OutputTypeSpec: logging.OutputTypeSpec{
+								Syslog: &logging.Syslog{
+									Facility: "user",
+									Severity: "debug",
+									RFC:      "RFC3164",
+									Tag:      "mytag",
 								},
 							},
 						},
-						Pipelines: []logging.PipelineSpec{
-							{
-								Name:       "test-app",
-								OutputRefs: []string{"syslogout"},
-								InputRefs:  []string{"application"},
-							},
+					},
+					Pipelines: []logging.PipelineSpec{
+						{
+							Name:       "test-app",
+							OutputRefs: []string{"syslogout"},
+							InputRefs:  []string{"application"},
 						},
 					},
 				}
@@ -210,7 +193,6 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 					}
 				}
 				logStore := e2e.LogStores[syslogDeployment.GetName()]
-				Expect(logStore.HasInfraStructureLogs(framework.DefaultWaitForLogsTimeout)).To(BeTrue(), "Expected to find stored infrastructure logs")
 				if !useOldPlugin {
 					_, _ = logStore.GrepLogs(waitlogs, framework.DefaultWaitForLogsTimeout)
 					expectedAppName := forwarder.Spec.Outputs[0].Syslog.Tag
@@ -230,7 +212,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		AfterEach(func() {
 			e2e.Cleanup()
 			e2e.WaitForCleanupCompletion(logGenNS, []string{"test"})
-			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "syslog-receiver"})
+			e2e.WaitForCleanupCompletion(constants.WatchNamespace, []string{constants.CollectorName, "syslog-receiver"})
 			generatorPayload = map[string]string{}
 		})
 	})

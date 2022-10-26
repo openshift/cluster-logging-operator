@@ -19,7 +19,7 @@ func NewKafkaConsumerDeployment(namespace, topic string) *apps.Deployment {
 				Command: []string{
 					"./bin/kafka-topics.sh",
 					"--zookeeper",
-					"zookeeper.openshift-logging.svc.cluster.local:2181",
+					fmt.Sprintf("zookeeper.%s.svc.cluster.local:2181", namespace),
 					"--create",
 					"--if-not-exists",
 					"--topic",

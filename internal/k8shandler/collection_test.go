@@ -126,11 +126,11 @@ var _ = Describe("Reconciling", func() {
 				}
 			})
 
-			It("should use the injected custom CA bundle in fluentd", func() {
+			It("should use the injected custom CA bundle for the collector", func() {
 				// Reconcile w/o custom CA bundle
 				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
 
-				// Inject custom CA bundle into fluentd config map
+				// Inject custom CA bundle into collector config map
 				injectedCABundle := fluentdCABundle.DeepCopy()
 				injectedCABundle.Data[constants.TrustedCABundleKey] = customCABundle
 				Expect(client.Update(context.TODO(), injectedCABundle)).Should(Succeed())

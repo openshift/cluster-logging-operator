@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"runtime"
@@ -87,15 +88,9 @@ func main() {
 		"go_arch", runtime.GOARCH,
 	)
 
-	namespace, err := getWatchNamespace()
-	if err != nil {
-		log.Error(err, "Failed to get watch namespace")
-		os.Exit(1)
-	}
-
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		Namespace:              namespace,
+		Namespace:              constants.WatchNamespace,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
@@ -178,16 +173,17 @@ func migrateManifestResources(k8sClient client.Client) {
 	}
 }
 
-// getWatchNamespace get the namespace name of the scoped operator
-// - https://sdk.operatorframework.io/docs/building-operators/golang/operator-scope/#configuring-namespace-scoped-operators
-func getWatchNamespace() (string, error) {
-	watchNamespaceEnvVar := "WATCH_NAMESPACE"
-	ns, found := os.LookupEnv(watchNamespaceEnvVar)
-	if !found {
-		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
-	}
-	return ns, nil
-}
+// TODO - Re-enable when CLO can be installed in alternate namespace
+//// getWatchNamespace get the namespace name of the scoped operator
+//// - https://sdk.operatorframework.io/docs/building-operators/golang/operator-scope/#configuring-namespace-scoped-operators
+//func getWatchNamespace() (string, error) {
+//	watchNamespaceEnvVar := "WATCH_NAMESPACE"
+//	ns, found := os.LookupEnv(watchNamespaceEnvVar)
+//	if !found {
+//		return "", fmt.Errorf("%s must be set", watchNamespaceEnvVar)
+//	}
+//	return ns, nil
+//}
 
 //get clo operator version from CLUSTER_OPERATOR_CONDITION ENV variable .. supported OCP 4.8 version onwards
 func getCLOVersion() (string, error) {

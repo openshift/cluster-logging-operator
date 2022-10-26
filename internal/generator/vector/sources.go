@@ -25,14 +25,14 @@ const (
 	OvnAuditLogs    = "ovn_audit_logs"
 )
 
-func Sources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+func Sources(spec *logging.ClusterLogForwarderSpec, namespace string, op generator.Options) []generator.Element {
 	return generator.MergeElements(
-		LogSources(spec, op),
+		LogSources(spec, namespace, op),
 		MetricsSources(InternalMetricsSourceName),
 	)
 }
 
-func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+func LogSources(spec *logging.ClusterLogForwarderSpec, namespace string, op generator.Options) []generator.Element {
 	var el []generator.Element = make([]generator.Element, 0)
 	types := generator.GatherSources(spec, op)
 	if types.Has(logging.InputNameApplication) || types.Has(logging.InputNameInfrastructure) {
@@ -40,7 +40,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, op generator.Options) []g
 			source.KubernetesLogs{
 				ComponentID:  "raw_container_logs",
 				Desc:         "Logs from containers (including openshift containers)",
-				ExcludePaths: ExcludeContainerPaths(),
+				ExcludePaths: ExcludeContainerPaths(namespace),
 			})
 	}
 	if types.Has(logging.InputNameInfrastructure) {
@@ -86,24 +86,24 @@ func ContainerLogPaths() string {
 	return fmt.Sprintf("%q", "/var/log/pods/*/*/*.log")
 }
 
-func CollectorLogsPath() string {
-	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", constants.OpenshiftNS)
+func CollectorLogsPath(namespace string) string {
+	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", namespace)
 }
 
-func LogStoreLogsPath() string {
-	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", constants.OpenshiftNS)
+func LogStoreLogsPath(namespace string) string {
+	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", namespace)
 }
 
-func VisualizationLogsPath() string {
-	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", constants.OpenshiftNS)
+func VisualizationLogsPath(namespace string) string {
+	return fmt.Sprintf("/var/log/pods/%s_%%s-*/*/*.log", namespace)
 }
 
-func ExcludeContainerPaths() string {
+func ExcludeContainerPaths(namespace string) string {
 	return fmt.Sprintf("[%s]", strings.Join(
 		[]string{
-			fmt.Sprintf("%q", fmt.Sprintf(CollectorLogsPath(), constants.CollectorName)),
-			fmt.Sprintf("%q", fmt.Sprintf(LogStoreLogsPath(), constants.ElasticsearchName)),
-			fmt.Sprintf("%q", fmt.Sprintf(VisualizationLogsPath(), constants.KibanaName)),
+			fmt.Sprintf("%q", fmt.Sprintf(CollectorLogsPath(namespace), constants.CollectorName)),
+			fmt.Sprintf("%q", fmt.Sprintf(LogStoreLogsPath(namespace), constants.ElasticsearchName)),
+			fmt.Sprintf("%q", fmt.Sprintf(VisualizationLogsPath(namespace), constants.KibanaName)),
 			fmt.Sprintf("%q", "/var/log/pods/*/*/*.gz"),
 			fmt.Sprintf("%q", "/var/log/pods/*/*/*.tmp"),
 		},

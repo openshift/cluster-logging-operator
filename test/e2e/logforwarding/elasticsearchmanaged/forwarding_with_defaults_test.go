@@ -80,7 +80,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		})
 		AfterEach(func() {
 			e2e.Cleanup()
-			e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "elasticsearch"})
+			e2e.WaitForCleanupCompletion(constants.WatchNamespace, []string{constants.CollectorName, "elasticsearch"})
 			e2e.WaitForCleanupCompletion(generatorNS, []string{"component", "test"})
 		}, framework.DefaultCleanUpTimeout)
 

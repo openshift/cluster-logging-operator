@@ -4,7 +4,7 @@ millisecond=1
 second=$(( 1000 * millisecond ))
 minute=$(( 60 * second ))
 
-LOGGING_NS="openshift-logging"
+LOGGING_NS=${LOGGING_NS:-openshift-logging}
 
 gather_logging_resources() {
   set +e

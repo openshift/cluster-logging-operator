@@ -3,6 +3,7 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -21,7 +22,7 @@ import (
 var _ = Describe("Testing Complete Config Generation", func() {
 	var f = func(testcase testhelpers.ConfGenerateTest) {
 		g := generator.MakeGenerator()
-		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, generator.NoOptions))
+		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, generator.NoOptions))
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
 		diff := cmp.Diff(

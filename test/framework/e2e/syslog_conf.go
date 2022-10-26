@@ -56,7 +56,7 @@ input(type="imudp" port="24224" ruleset="test")
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc5424"]){
     action(type="omstdout")
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
+    action(type="omfile" file="/tmp/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
 
@@ -64,14 +64,14 @@ ruleset(name="test" parser=["rsyslog.rfc5424"]){
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc3164"]){
     action(type="omstdout")
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
+    action(type="omfile" file="/tmp/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
 	// includes both rfc parsers
 	RuleSetRfc3164Rfc5424 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc3164","rsyslog.rfc5424"]){
-    action(type="omfile" file="/var/log/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
+    action(type="omfile" file="/tmp/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
 )

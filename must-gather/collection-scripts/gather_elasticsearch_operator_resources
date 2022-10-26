@@ -25,7 +25,7 @@ do
     get_env $pod $eo_folder $NAMESPACE "Dockerfile-*operator*"
 done
 
-oc -n openshift-logging exec -c elasticsearch \
+oc -n $LOGGING_NS-logging exec -c elasticsearch \
     $(oc -n $LOGGING_NS get pods -l component=elasticsearch -o jsonpath='{.items[0].metadata.name}') \
     -- indices > ${eo_folder}/indices.txt
 

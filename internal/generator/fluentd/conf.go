@@ -7,14 +7,14 @@ import (
 )
 
 //nolint:govet // using declarative style
-func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) []generator.Section {
+func Conf(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, namespace string, op generator.Options) []generator.Section {
 	return []generator.Section{
 		{
 			Header(op),
 			`Generated fluentd conf Header`,
 		},
 		{
-			Sources(clspec, clfspec, op),
+			Sources(clspec, clfspec, namespace, op),
 			"Set of all input sources",
 		},
 		{

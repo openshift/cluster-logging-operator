@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	corev1 "k8s.io/api/core/v1"
@@ -15,7 +16,7 @@ var _ = Describe("Testing Config Generation", func() {
 		if clspec.Fluentd != nil && clspec.Fluentd.InFile != nil {
 			tuning = clspec.Fluentd.InFile
 		}
-		return LogSources(&clfspec, tuning, op)
+		return LogSources(&clfspec, tuning, constants.OpenshiftNS, op)
 	}
 	DescribeTable("Source(s)", helpers.TestGenerateConfWith(f),
 		Entry("Only Application", helpers.ConfGenerateTest{

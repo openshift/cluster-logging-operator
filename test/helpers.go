@@ -18,8 +18,6 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-
 	"github.com/go-logr/logr"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega/format"
@@ -111,14 +109,6 @@ func GinkgoCurrentTest() (g ginkgo.GinkgoTestDescription, ok bool) {
 
 // UniqueNameForTest generates a unique name for a test.
 func UniqueNameForTest() string { return UniqueName("test") }
-
-// LoggingNamespace returns env-var NAMESPACE or "openshift-logging".
-func LoggingNamespace() string {
-	if ns := os.Getenv("NAMESPACE"); ns != "" {
-		return ns
-	}
-	return constants.OpenshiftNS
-}
 
 // LogBeginEnd logs an  l.V(3) begin message, returns func to log an lV(2) end message.
 // End message includes elapsed time and error errp and *errp are non nil.

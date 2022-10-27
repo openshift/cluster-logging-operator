@@ -24,11 +24,6 @@ import (
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	fluentdAlertsFile = "collector/fluentd_prometheus_alerts.yaml"
-	vectorAlertsFile  = "collector/vector_prometheus_alerts.yaml"
-)
-
 // useOldRemoteSyslogPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
 func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 	if clusterRequest.ForwarderRequest == nil {

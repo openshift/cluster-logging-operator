@@ -1,3 +1,6 @@
+package alerts
+
+const VectorPrometheusAlerts = `
 "groups":
 - "name": "logging_collector.alerts"
   "rules":
@@ -50,3 +53,4 @@
   - "expr": |
       sum by(cluster)(log_logged_bytes_total)
     "record": "cluster:log_logged_bytes_total:sum"
+`

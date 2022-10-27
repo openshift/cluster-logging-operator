@@ -120,9 +120,10 @@ var _ = Describe("Reconciling", func() {
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:        client,
-					Cluster:       cluster,
-					EventRecorder: record.NewFakeRecorder(100),
+					Client:           client,
+					Cluster:          cluster,
+					EventRecorder:    record.NewFakeRecorder(100),
+					ForwarderRequest: &loggingv1.ClusterLogForwarder{},
 				}
 			})
 

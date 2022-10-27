@@ -470,7 +470,7 @@ func (tc *E2ETestFramework) Cleanup() {
 		clolog.Info("Test failed", "TestText", g.FullTestText)
 		//allow caller to cleanup if unset (e.g script cleanup())
 		doCleanup := strings.TrimSpace(os.Getenv("DO_CLEANUP"))
-		clolog.Info("Running Cleanup script ....", "DO_CLEANUP", "doCleanup")
+		clolog.Info("Running Cleanup script ....", "DO_CLEANUP", doCleanup)
 		if doCleanup == "" || strings.ToLower(doCleanup) == "true" {
 			RunCleanupScript()
 		}

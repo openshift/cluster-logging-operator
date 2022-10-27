@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -60,7 +61,8 @@ func main() {
 
 	log.Info("Finished reading yaml", "content", string(content))
 
-	generatedConfig, err := forwarder.Generate(logCollectorType, string(content), *includeDefaultLogStore, *debugOutput, nil)
+	client := fake.NewClientBuilder().Build()
+	generatedConfig, err := forwarder.Generate(logCollectorType, string(content), *includeDefaultLogStore, *debugOutput, client)
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")
 		os.Exit(1)

@@ -223,7 +223,7 @@ func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterL
 		}
 		return nil
 	}
-
+	forwarder.Spec = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec)
 	return forwarder
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -168,6 +169,17 @@ func (clusterRequest *ClusterLoggingRequest) removeCollectorSecretIfOwnedByCLO()
 func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err error) {
 	log.V(3).Info("Removing collector", "name", name)
 	if clusterRequest.isManaged() {
+
+		// https://issues.redhat.com/browse/LOG-3233  Assume if the DS doesn't exist
+		// everything is removed
+		ds := runtime.NewDaemonSet(clusterRequest.Cluster.Namespace, name)
+		key := client.ObjectKeyFromObject(ds)
+		if err := clusterRequest.Client.Get(context.TODO(), key, ds); err != nil {
+			if errors.IsNotFound(err) {
+				return nil
+			}
+			return err
+		}
 
 		if err = clusterRequest.RemoveService(name); err != nil {
 			return

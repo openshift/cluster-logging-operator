@@ -137,7 +137,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	if urlhelper.IsTLSScheme(u.Scheme) {
 		componentID := strings.ToLower(helpers.Replacer.Replace(o.Name))
 		if o.TLS != nil && o.TLS.InsecureSkipVerify {
-			conf = append(conf, insecureTLS{
+			conf = append(conf, security.InsecureTLS{
 				ComponentID: componentID,
 			})
 		}
@@ -149,7 +149,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		})
 
 		if security.HasPassphrase(secret) {
-			pp := Passphrase{
+			pp := security.Passphrase{
 				PassphrasePath: security.SecretPath(o.Secret.Name, constants.Passphrase),
 			}
 			conf = append(conf, pp)

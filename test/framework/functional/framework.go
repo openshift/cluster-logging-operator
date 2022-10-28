@@ -225,7 +225,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	role := runtime.NewClusterRole(fmt.Sprintf("%s-%s", f.Test.NS.Name, f.Name),
 		v1.PolicyRule{
 			Verbs:     []string{"list", "get", "watch"},
-			Resources: []string{"pods", "namespaces"},
+			Resources: []string{"pods", "namespaces", "nodes"},
 			APIGroups: []string{""},
 		},
 	)
@@ -281,6 +281,12 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 
 	log.V(2).Info("waiting for pod to be ready")
 	if err = oc.Literal().From("oc wait -n %s pod/%s --timeout=120s --for=condition=Ready", f.Test.NS.Name, f.Name).Output(); err != nil {
+		if out, describeErr := oc.Literal().From("oc describe -n %s pod/%s ", f.Test.NS.Name, f.Name).Run(); describeErr == nil {
+			log.Info("Describe of the test pod", "describe", out)
+		} else {
+			log.V(2).Error(describeErr, "Error trying to describe the functional pod")
+		}
+
 		return err
 	}
 	if err = f.Test.Client.Get(f.Pod); err != nil {

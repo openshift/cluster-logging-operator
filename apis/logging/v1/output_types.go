@@ -12,6 +12,7 @@ const (
 	OutputTypeKafka              = "kafka"
 	OutputTypeLoki               = "loki"
 	OutputTypeGoogleCloudLogging = "googleCloudLogging"
+	OutputTypeSplunk             = "splunk"
 )
 
 // OutputTypeSpec is a union of optional additional configuration specific to an
@@ -31,6 +32,8 @@ type OutputTypeSpec struct {
 	Loki *Loki `json:"loki,omitempty"`
 	//+optional
 	GoogleCloudLogging *GoogleCloudLogging `json:"googleCloudLogging,omitempty"`
+	// +optional
+	Splunk *Splunk `json:"splunk,omitempty"`
 }
 
 // Cloudwatch provides configuration for the output type `cloudwatch`
@@ -264,4 +267,13 @@ type GoogleCloudLogging struct {
 
 	//LogID is the log ID to which to publish logs. This identifies log stream.
 	LogID string `json:"logId,omitempty"`
+}
+
+// Splunk Deliver log data to Splunk’s HTTP Event Collector
+// Provides optional extra properties for `type: splunk_hec` ('splunk_hec_logs' after Vector 0.23
+type Splunk struct {
+	// Fields to be added to Splunk index. https://docs.splunk.com/Documentation/Splunk/8.0.0/Data/IFXandHEC
+	// Should be a valid JSON object
+	// +optional
+	Fields []string `json:"fields,omitempty"`
 }

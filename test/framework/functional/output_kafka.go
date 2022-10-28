@@ -29,7 +29,7 @@ const (
 	zookeeperLeaderElectionPort = int32(3888)
 )
 
-func (f *CollectorFunctionalFramework) addKafkaOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
+func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
 	log.V(2).Info("Adding kafka output", "name", output.Name)
 	name := strings.ToLower(output.Name)
 

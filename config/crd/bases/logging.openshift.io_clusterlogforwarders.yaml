@@ -211,6 +211,34 @@ spec:
                         projectId:
                           type: string
                       type: object
+                    http:
+                      description: Http provided configuration for sending json encoded
+                        logs to a generic http endpoint.
+                      properties:
+                        headers:
+                          additionalProperties:
+                            type: string
+                          description: Headers specify optional headers to be sent
+                            with the request
+                          type: object
+                        method:
+                          description: Method specifies the Http method to be used
+                            for sending logs. If not set, 'POST' is used.
+                          enum:
+                          - GET
+                          - HEAD
+                          - POST
+                          - PUT
+                          - DELETE
+                          - OPTIONS
+                          - TRACE
+                          - PATCH
+                          type: string
+                        timeout:
+                          description: Timeout specifies the Http request timeout
+                            in seconds. If not set, 10secs is used.
+                          type: string
+                      type: object
                     kafka:
                       description: 'Kafka provides optional extra properties for `type:
                         kafka`'
@@ -395,6 +423,7 @@ spec:
                       - loki
                       - googleCloudLogging
                       - splunk
+                      - http
                       type: string
                     url:
                       description: "URL to send log records to. \n An absolute URL,
@@ -466,7 +495,7 @@ spec:
                 type: array
             type: object
           status:
-            description: ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
+            description: Status of the ClusterLogForwarder
             properties:
               conditions:
                 description: Conditions of the log forwarder.

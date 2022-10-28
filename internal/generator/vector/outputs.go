@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/gcl"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/http"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/kafka"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
@@ -56,6 +57,8 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			outputs = generator.MergeElements(outputs, gcl.Conf(o, inputs, secret, op))
 		case logging.OutputTypeSplunk:
 			outputs = generator.MergeElements(outputs, splunk.Conf(o, inputs, secret, op))
+		case logging.OutputTypeHttp:
+			outputs = generator.MergeElements(outputs, http.Conf(o, inputs, secret, op))
 		}
 	}
 	outputs = append(outputs,

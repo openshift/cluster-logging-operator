@@ -253,6 +253,7 @@ test-functional-fluentd:
 
 .PHONY: test-functional-vector
 test-functional-vector:
+	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test --tags=vector -race \
@@ -260,6 +261,7 @@ test-functional-vector:
 		./test/functional/outputs/kafka/... \
 		./test/functional/outputs/cloudwatch/... \
 		./test/functional/outputs/loki/... \
+		./test/functional/outputs/http/... \
 		./test/functional/normalization \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 

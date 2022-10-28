@@ -1,0 +1,308 @@
+package http
+
+import (
+	"testing"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
+	corev1 "k8s.io/api/core/v1"
+)
+
+var _ = Describe("Generate vector config", func() {
+	inputPipeline := []string{"application"}
+	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
+		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], generator.NoOptions)
+	}
+	DescribeTable("for Http output", helpers.TestGenerateConfWith(f),
+		Entry("", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeHttp,
+						Name: "http-receiver",
+						URL:  "https://my-logstore.com",
+						Secret: &logging.OutputSecretSpec{
+							Name: "http-receiver",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"http-receiver": {
+					Data: map[string][]byte{
+						"username": []byte("username"),
+						"password": []byte("password"),
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.http_receiver_normalize_http]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.file)
+'''
+
+[sinks.http_receiver]
+type = "http"
+inputs = ["http_receiver_normalize_http"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.request]
+timeout_secs = 10
+
+# Basic Auth Config
+[sinks.http_receiver.auth]
+strategy = "basic"
+user = "username"
+password = "password"
+`,
+		}),
+		Entry("with custom bearer token", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeHttp,
+						Name: "http-receiver",
+						URL:  "https://my-logstore.com",
+						Secret: &logging.OutputSecretSpec{
+							Name: "http-receiver",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"http-receiver": {
+					Data: map[string][]byte{
+						"token": []byte("token-for-custom-http"),
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.http_receiver_normalize_http]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.file)
+'''
+
+[sinks.http_receiver]
+type = "http"
+inputs = ["http_receiver_normalize_http"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.request]
+timeout_secs = 10
+
+# Bearer Auth Config
+[sinks.http_receiver.auth]
+strategy = "bearer"
+token = "token-for-custom-http"
+`,
+		}),
+		Entry("with Http config", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeHttp,
+						Name: "http-receiver",
+						URL:  "https://my-logstore.com",
+						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
+							Timeout: "50",
+							Headers: map[string]string{
+								"k1": "v1",
+							},
+						}},
+						Secret: &logging.OutputSecretSpec{
+							Name: "http-receiver",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"http-receiver": {
+					Data: map[string][]byte{
+						"token": []byte("token-for-custom-http"),
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.http_receiver_normalize_http]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.file)
+'''
+
+[sinks.http_receiver]
+type = "http"
+inputs = ["http_receiver_normalize_http"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.request]
+timeout_secs = 50
+headers = {"k1"="v1"}
+
+# Bearer Auth Config
+[sinks.http_receiver.auth]
+strategy = "bearer"
+token = "token-for-custom-http"
+`,
+		}),
+		Entry("with Http config", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeHttp,
+						Name: "http-receiver",
+						URL:  "https://my-logstore.com",
+						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
+							Timeout: "50",
+							Headers: map[string]string{
+								"k1": "v1",
+							},
+						}},
+						Secret: &logging.OutputSecretSpec{
+							Name: "http-receiver",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"http-receiver": {
+					Data: map[string][]byte{
+						"token": []byte("token-for-custom-http"),
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.http_receiver_normalize_http]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.file)
+'''
+
+[sinks.http_receiver]
+type = "http"
+inputs = ["http_receiver_normalize_http"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.request]
+timeout_secs = 50
+headers = {"k1"="v1"}
+
+# Bearer Auth Config
+[sinks.http_receiver.auth]
+strategy = "bearer"
+token = "token-for-custom-http"
+`,
+		}),
+		Entry("with TLS config", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeHttp,
+						Name: "http-receiver",
+						URL:  "https://my-logstore.com",
+						OutputTypeSpec: v1.OutputTypeSpec{Http: &v1.Http{
+							Timeout: "50",
+							Headers: map[string]string{
+								"k1": "v1",
+							},
+						}},
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
+						Secret: &logging.OutputSecretSpec{
+							Name: "http-receiver",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"http-receiver": {
+					Data: map[string][]byte{
+						"token":         []byte("token-for-custom-http"),
+						"tls.crt":       []byte("-- crt-- "),
+						"tls.key":       []byte("-- key-- "),
+						"ca-bundle.crt": []byte("-- ca-bundle -- "),
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.http_receiver_normalize_http]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.file)
+'''
+
+[sinks.http_receiver]
+type = "http"
+inputs = ["http_receiver_normalize_http"]
+uri = "https://my-logstore.com"
+method = "post"
+
+[sinks.http_receiver.encoding]
+codec = "json"
+
+[sinks.http_receiver.request]
+timeout_secs = 50
+headers = {"k1"="v1"}
+
+[sinks.http_receiver.tls]
+enabled = true
+verify_certificate = false
+verify_hostname = false
+key_file = "/var/run/ocp-collector/secrets/http-receiver/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/http-receiver/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/http-receiver/ca-bundle.crt"
+
+# Bearer Auth Config
+[sinks.http_receiver.auth]
+strategy = "bearer"
+token = "token-for-custom-http"
+`,
+		}),
+	)
+})
+
+func TestVectorConfGenerator(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Vector Conf Generation")
+}
+
+func TestMap(t *testing.T) {
+	h := map[string]string{
+		"k1": "v1",
+	}
+	expected := `{"k1"="v1"}`
+	got := ToHeaderStr(h)
+	if got != expected {
+		t.Logf("got: %s, expected: %s", got, expected)
+		t.Fail()
+	}
+}

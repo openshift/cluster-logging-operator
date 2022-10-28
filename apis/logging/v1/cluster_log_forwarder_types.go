@@ -162,7 +162,7 @@ type OutputSpec struct {
 
 	// Type of output plugin.
 	//
-	// +kubebuilder:validation:Enum:=syslog;fluentdForward;elasticsearch;kafka;cloudwatch;loki;googleCloudLogging;splunk
+	// +kubebuilder:validation:Enum:=syslog;fluentdForward;elasticsearch;kafka;cloudwatch;loki;googleCloudLogging;splunk;http
 	// +required
 	Type string `json:"type"`
 

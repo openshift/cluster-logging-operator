@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,6 +34,7 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/controllers/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
+	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
@@ -110,6 +112,9 @@ func main() {
 		setupLog.Error(err, "unable to retrieve the clusterID")
 		os.Exit(1)
 	}
+
+	migrateManifestResources(mgr.GetClient())
+
 	log.Info("Registering Components.")
 
 	if err = (&clusterlogging.ReconcileClusterLogging{
@@ -164,6 +169,13 @@ func main() {
 		os.Exit(1)
 	}
 
+}
+
+func migrateManifestResources(k8sClient client.Client) {
+	log.Info("migrating resources provided by the manifest")
+	if err := k8sClient.Delete(context.TODO(), loggingruntime.NewPriorityClass("cluster-logging", 0, false, "")); err != nil && !errors.IsNotFound(err) {
+		log.V(1).Error(err, "There was an error trying to remove the old collector PriorityClass named 'cluster-logging'")
+	}
 }
 
 // getWatchNamespace get the namespace name of the scoped operator

@@ -1,8 +1,0 @@
-apiVersion: scheduling.k8s.io/v1
-description: This priority class is for the Cluster-Logging Collector
-globalDefault: false
-kind: PriorityClass
-metadata:
-  name: cluster-logging
-preemptionPolicy: PreemptLowerPriority
-value: 1000000

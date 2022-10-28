@@ -1,35 +1,14 @@
 package k8shandler
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
-
-	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"k8s.io/apimachinery/pkg/api/errors"
-
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sYAML "k8s.io/apimachinery/pkg/util/yaml"
 )
-
-func NewPrometheusRule(ruleName, namespace string) *monitoringv1.PrometheusRule {
-	return &monitoringv1.PrometheusRule{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       monitoringv1.PrometheusRuleKind,
-			APIVersion: monitoringv1.SchemeGroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      ruleName,
-			Namespace: namespace,
-		},
-	}
-}
 
 func (clusterRequest *ClusterLoggingRequest) RemovePrometheusRule(ruleName string) error {
 
-	promRule := NewPrometheusRule(ruleName, clusterRequest.Cluster.Namespace)
+	promRule := runtime.NewPrometheusRule(clusterRequest.Cluster.Namespace, ruleName)
 
 	err := clusterRequest.Delete(promRule)
 	if err != nil && !errors.IsNotFound(err) {
@@ -37,19 +16,4 @@ func (clusterRequest *ClusterLoggingRequest) RemovePrometheusRule(ruleName strin
 	}
 
 	return nil
-}
-
-func NewPrometheusRuleSpecFrom(filePath string) (*monitoringv1.PrometheusRuleSpec, error) {
-	if err := utils.CheckFileExists(filePath); err != nil {
-		return nil, err
-	}
-	fileContent, err := ioutil.ReadFile(filepath.Clean(filePath))
-	if err != nil {
-		return nil, fmt.Errorf("'%s' not readable", filePath)
-	}
-	ruleSpec := monitoringv1.PrometheusRuleSpec{}
-	if err := k8sYAML.NewYAMLOrJSONDecoder(bytes.NewBufferString(string(fileContent)), 1000).Decode(&ruleSpec); err != nil {
-		return nil, err
-	}
-	return &ruleSpec, nil
 }

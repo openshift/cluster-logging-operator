@@ -1,3 +1,6 @@
+package alerts
+
+const FluentdPrometheusAlert = `
 "groups":
 - "name": "logging_fluentd.alerts"
   "rules":
@@ -61,3 +64,4 @@
   - "expr": |
       sum by(cluster)(log_logged_bytes_total)
     "record": "cluster:log_logged_bytes_total:sum"
+`

@@ -3,7 +3,6 @@ package k8shandler
 import (
 	"context"
 	"fmt"
-	"path"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -18,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/retry"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -100,8 +98,8 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return err
 		}
 
-		if err = clusterRequest.createOrUpdateCollectorPrometheusRule(); err != nil {
-			log.V(9).Error(err, "unable to create or update fluentd prometheus rule")
+		if err := collector.ReconcilePrometheusRule(clusterRequest.EventRecorder, clusterRequest.Client, collectorType, cluster.Namespace, constants.CollectorName, utils.AsOwner(cluster)); err != nil {
+			log.V(9).Error(err, "collector.ReconcilePrometheusRule")
 		}
 
 		instance := clusterRequest.Cluster
@@ -209,49 +207,6 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err e
 	}
 
 	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorPrometheusRule() error {
-	ctx := context.TODO()
-	cluster := clusterRequest.Cluster
-
-	rule := NewPrometheusRule(constants.CollectorName, cluster.Namespace)
-	alertRulesFile := fluentdAlertsFile
-	if clusterRequest.Cluster.Spec.Collection.Type == logging.LogCollectionTypeVector {
-		alertRulesFile = vectorAlertsFile
-	}
-
-	spec, err := NewPrometheusRuleSpecFrom(path.Join(utils.GetShareDir(), alertRulesFile))
-	if err != nil {
-		return fmt.Errorf("failure creating the collector PrometheusRule: %w", err)
-	}
-
-	rule.Spec = *spec
-
-	utils.AddOwnerRefToObject(rule, utils.AsOwner(cluster))
-
-	err = clusterRequest.Create(rule)
-	if err == nil {
-		return nil
-	}
-	if !errors.IsAlreadyExists(err) {
-		return fmt.Errorf("failure creating the collector PrometheusRule: %w", err)
-	}
-
-	current := &monitoringv1.PrometheusRule{}
-	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		err = clusterRequest.Client.Get(ctx, types.NamespacedName{Name: rule.Name, Namespace: rule.Namespace}, current)
-		if err != nil {
-			log.V(2).Info("could not get prometheus rule", rule.Name, err)
-			return err
-		}
-		current.Spec = rule.Spec
-		if err = clusterRequest.Client.Update(ctx, current); err != nil {
-			return err
-		}
-		log.V(3).Info("updated prometheus rules")
-		return nil
-	})
 }
 
 func (clusterRequest *ClusterLoggingRequest) UpdateCollectorStatus(collectorType logging.LogCollectionType) (err error) {

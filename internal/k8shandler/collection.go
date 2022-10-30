@@ -18,7 +18,6 @@ import (
 	"k8s.io/client-go/util/retry"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	core "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,8 +39,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 	defer func() {
 		log.V(9).Info("Leaving CreateOrUpdateCollection")
 	}()
-
-	var collectorServiceAccount *core.ServiceAccount
 
 	// there is no easier way to check this in golang without writing a helper function
 	// TODO: write a helper function to validate Type is a valid option for common setup or tear down
@@ -65,14 +62,9 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if collectorServiceAccount, err = clusterRequest.createOrUpdateCollectorServiceAccount(); err != nil {
-			log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorServiceAccount")
+		if err = collector.ReconcileServiceAccount(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorServiceAccountName, utils.AsOwner(cluster)); err != nil {
+			log.V(9).Error(err, "collector.ReconcileServiceAccount")
 			return
-		} else {
-			if err = clusterRequest.createOrUpdateCollectorTokenSecret(); err != nil {
-				log.V(9).Error(err, "clusterRequest.createOrUpdateCollectorTokenSecret")
-				return
-			}
 		}
 
 		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
@@ -122,17 +114,6 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 
 		if err = clusterRequest.UpdateCollectorStatus(collectorType); err != nil {
 			log.V(9).Error(err, "unable to update status for the collector")
-		}
-
-		if collectorServiceAccount != nil {
-
-			// remove our finalizer from the list and update it.
-			collectorServiceAccount.ObjectMeta.Finalizers = utils.RemoveString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
-			if err = clusterRequest.Update(collectorServiceAccount); err != nil {
-				log.Info("Unable to update the collector serviceaccount finalizers", "collectorServiceAccount.Name", collectorServiceAccount.Name)
-				log.V(9).Error(err, "Unable to update the collector serviceaccount finalizers")
-				return nil
-			}
 		}
 	} else {
 		if err = clusterRequest.RemoveServiceAccount(constants.CollectorServiceAccountName); err != nil {
@@ -280,41 +261,6 @@ func compareFluentdCollectorStatus(lhs, rhs logging.FluentdCollectorStatus) bool
 	return true
 }
 
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccount() (*core.ServiceAccount, error) {
-	collectorServiceAccount := runtime.NewServiceAccount(clusterRequest.Cluster.Namespace, constants.CollectorServiceAccountName)
-
-	utils.AddOwnerRefToObject(collectorServiceAccount, utils.AsOwner(clusterRequest.Cluster))
-
-	delfinalizer := false
-	if collectorServiceAccount.ObjectMeta.DeletionTimestamp.IsZero() {
-		// This object is not being deleted.
-		if !utils.ContainsString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents) {
-			collectorServiceAccount.ObjectMeta.Finalizers = append(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents)
-		}
-		err := clusterRequest.Create(collectorServiceAccount)
-		if err != nil && !errors.IsAlreadyExists(err) {
-			return nil, fmt.Errorf("Failure creating Log collector service account: %v", err)
-		}
-	} else if utils.ContainsString(collectorServiceAccount.ObjectMeta.Finalizers, metav1.FinalizerDeleteDependents) {
-		// This object is being deleted.
-		// our finalizer is present, so lets handle any dependency
-		delfinalizer = true
-	}
-
-	// If needed create a custom SecurityContextConstraints object for the log collector to run with
-	scc := NewSCC(LogCollectorSCCName)
-	err := clusterRequest.Create(scc)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating Log collector SecurityContextConstraints: %v", err)
-	}
-
-	if delfinalizer {
-		return collectorServiceAccount, nil
-	} else {
-		return nil, nil
-	}
-}
-
 func (clusterRequest *ClusterLoggingRequest) addSecurityLabelsToNamespace() error {
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -336,50 +282,6 @@ func (clusterRequest *ClusterLoggingRequest) addSecurityLabelsToNamespace() erro
 			return fmt.Errorf("error updating namespace: %w", err)
 		}
 		log.V(1).Info("Successfully added pod security labels", "namespace.Labels", ns.Labels)
-	}
-
-	return nil
-}
-
-func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorTokenSecret() error {
-	serviceAccount := &corev1.ServiceAccount{}
-	if err := clusterRequest.Get(constants.CollectorServiceAccountName, serviceAccount); err != nil {
-		return fmt.Errorf("failed to get ServiceAccount: %w", err)
-	}
-
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: clusterRequest.Cluster.Namespace,
-			Name:      constants.LogCollectorToken,
-			Annotations: map[string]string{
-				corev1.ServiceAccountNameKey: serviceAccount.Name,
-				corev1.ServiceAccountUIDKey:  string(serviceAccount.UID),
-			},
-		},
-		Type: corev1.SecretTypeServiceAccountToken,
-	}
-	utils.AddOwnerRefToObject(secret, utils.AsOwner(clusterRequest.Cluster))
-
-	if err := clusterRequest.Get(constants.LogCollectorToken, secret); err == nil {
-		accountName := secret.Annotations[corev1.ServiceAccountNameKey]
-		accountUID := secret.Annotations[corev1.ServiceAccountUIDKey]
-		if accountName != serviceAccount.Name || accountUID != string(serviceAccount.UID) {
-			// Delete secret, so that we can create a new one next loop
-			if err := clusterRequest.Delete(secret); err != nil {
-				return err
-			}
-
-			return fmt.Errorf("deleted stale secret: %s", constants.LogCollectorToken)
-		}
-
-		// Existing secret is up-to-date
-		return nil
-	} else if !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to get logcollector token secret: %w", err)
-	}
-
-	if err := clusterRequest.Create(secret); err != nil {
-		return fmt.Errorf("failed to create logcollector token secret: %w", err)
 	}
 
 	return nil

@@ -13,21 +13,22 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func ServiceAccount(er record.EventRecorder, k8Client client.Client, desired *v1.ServiceAccount) error {
+func ServiceAccount(er record.EventRecorder, k8Client client.Client, desired *v1.ServiceAccount) (*v1.ServiceAccount, error) {
 	reason := constants.EventReasonGetObject
 	updateReason := ""
+	current := &v1.ServiceAccount{}
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		current := &v1.ServiceAccount{}
 		key := client.ObjectKeyFromObject(desired)
 		if err := k8Client.Get(context.TODO(), key, current); err != nil {
 			if errors.IsNotFound(err) {
 				reason = constants.EventReasonCreateObject
+				current = desired
 				return k8Client.Create(context.TODO(), desired)
 			}
-			return fmt.Errorf("failed to get %v DaemonSet: %w", key, err)
+			return fmt.Errorf("failed to get %v ServiceAccount: %w", key, err)
 		}
-		same := false
 
+		same := false
 		if same, updateReason = areSame(current, desired); same {
 			log.V(3).Info("ServiceAccount are the same skipping update")
 			return nil
@@ -40,7 +41,7 @@ func ServiceAccount(er record.EventRecorder, k8Client client.Client, desired *v1
 	})
 
 	eventType := v1.EventTypeNormal
-	msg := fmt.Sprintf("%s DaemonSet %s/%s", reason, desired.Namespace, desired.Name)
+	msg := fmt.Sprintf("%s ServiceAccount %s/%s", reason, desired.Namespace, desired.Name)
 	if updateReason != "" {
 		msg = fmt.Sprintf("%s because of change in %s.", msg, updateReason)
 	}
@@ -49,7 +50,7 @@ func ServiceAccount(er record.EventRecorder, k8Client client.Client, desired *v1
 		msg = fmt.Sprintf("Unable to %s: %v", msg, retryErr)
 	}
 	er.Event(desired, eventType, reason, msg)
-	return retryErr
+	return current, retryErr
 }
 
 func areSame(current *v1.ServiceAccount, desired *v1.ServiceAccount) (bool, string) {

@@ -45,7 +45,7 @@ fi
 
 oc -n $NAMESPACE get deployments -o wide > ${clo_folder}/deployments.txt 2>&1
 oc -n $NAMESPACE get ds -o wide > ${clo_folder}/daemonsets.txt 2>&1
-oc -n $NAMESPACE get "${csv_name}" -o jsonpath='{.spec.displayName}{"\n"}{.spec.version}' > "${clo_folder}/version"
+oc -n $NAMESPACE get "${csv_name}" -o jsonpath='{.spec.displayName}{"/must-gather\n"}{.spec.version}' > "${clo_folder}/version"
 
 for r in "secret/elasticsearch" "configmap/collector" ; do
   result="$(oc -n $NAMESPACE get $r --ignore-not-found)"

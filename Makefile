@@ -150,6 +150,8 @@ scale-olm:
 clean:
 	rm -rf bin/cluster-logging-operator bin/forwarder-generator bin/functional-benchmarker tmp _output .target .cache
 	find -name .kube | xargs rm -rf
+
+spotless: clean
 	go clean -cache -testcache ./...
 
 .PHONY: image
@@ -319,17 +321,17 @@ WAIT_FOR_OPERATOR=oc wait -n $(NAMESPACE) --for=condition=available deployment/c
 
 .PHONY: namespace
 namespace:
-	oc delete ns/$(NAMESPACE) --ignore-not-found
-	oc create ns $(NAMESPACE)
+	echo '{"apiVersion": "v1", "kind": "Namespace","metadata":{"name":"$(NAMESPACE)","labels":{"openshift.io/cluster-monitoring":"true"}}}' | oc apply -f -
 
 .PHONY: run-bundle
 run-bundle: namespace $(OPERATOR_SDK) ## Run the overlay bundle image, assumes it has been pushed
+	$(OPERATOR_SDK) cleanup --delete-all cluster-logging || true
 	$(WATCH_EVENTS)	$(OPERATOR_SDK) run bundle -n $(NAMESPACE) --install-mode OwnNamespace $(BUNDLE_TAG); $(WAIT_FOR_OPERATOR)
 
 .PHONY: apply
 apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the cluster.
 	$(OPERATOR_SDK) generate kustomize manifests -q
-	$(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | $(WATCH_EVENTS) oc apply -f -; $(WAIT_FOR_OPERATOR)
+	$(WATCH_EVENTS) $(KUSTOMIZE) build $(or $(OVERLAY),config/manifests) | oc apply -f -; $(WAIT_FOR_OPERATOR)
 
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.

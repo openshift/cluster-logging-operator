@@ -68,19 +68,4 @@ var _ = Describe("telemetry", func() {
 		})
 	})
 
-	Describe("Testing updating metrics for prometheus", func() {
-		Context("Updating metrics for prometheus", func() {
-			It("Show metrics updated without throwing any errors", func() {
-				CLinfo["version"] = "0.0.2"
-				err1 := UpdateCLMetrics()
-				fmt.Printf("UpdateMetrics call returns %v", err1)
-				err2 := UpdateCLFMetrics()
-				fmt.Printf("UpdateMetrics call returns %v", err2)
-				Expect(err1).Should(BeNil())
-				Expect(err2).Should(BeNil())
-			})
-
-		})
-
-	})
 })

@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 	"strconv"
+
+	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
 
@@ -32,6 +33,14 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 		ClusterID:     clusterID,
 	}
 
+	// Cancel previous info metrics
+	telemetry.SetCLFMetrics(0)
+	telemetry.SetCLMetrics(0)
+	defer func() {
+		telemetry.SetCLMetrics(1)
+		telemetry.SetCLFMetrics(1)
+	}()
+
 	if instance, err = clusterLoggingRequest.getClusterLogging(false); err != nil {
 		return nil, err
 	}
@@ -46,18 +55,12 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 
 	if !clusterLoggingRequest.isManaged() {
 		// if cluster is set to unmanaged then set managedStatus as 0
-		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
-		telemetry.UpdateCLMetricsNoErr()
 		return clusterLoggingRequest.Cluster, nil
 	}
 	// CL is managed by default set it as 1
 	telemetry.Data.CLInfo.Set("managedStatus", constants.ManagedStatus)
-	updateCLInfo := UpdateInfofromCL(&clusterLoggingRequest)
-	if updateCLInfo != nil {
-		log.V(1).Info("Error in updating CL Info for CL specific metrics", "updateCLInfo", updateCLInfo)
-	}
-
+	updateInfofromCL(&clusterLoggingRequest)
 	forwarder := clusterLoggingRequest.getLogForwarder()
 	if forwarder != nil {
 		if err := clusterlogforwarder.Validate(*forwarder); err != nil {
@@ -74,17 +77,13 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 	if clusterLoggingRequest.IncludesManagedStorage() {
 		// Reconcile Log Store
 		if err = clusterLoggingRequest.CreateOrUpdateLogStore(); err != nil {
-			telemetry.ResetCLMetricsNoErr()
 			telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-			telemetry.UpdateCLMetricsNoErr()
 			return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update logstore for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
 		// Reconcile Visualization
 		if err = clusterLoggingRequest.CreateOrUpdateVisualization(); err != nil {
-			telemetry.ResetCLMetricsNoErr()
 			telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-			telemetry.UpdateCLMetricsNoErr()
 			return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update visualization for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 		}
 
@@ -105,25 +104,19 @@ func Reconcile(requestClient client.Client, reader client.Reader, r record.Event
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
-		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.Data.CollectorErrorCount.Inc("CollectorErrorCount")
-		telemetry.UpdateCLMetricsNoErr()
 		return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
 	}
 
 	// Reconcile metrics Dashboards
 	if err = metrics.ReconcileDashboards(clusterLoggingRequest.Client, reader, clusterLoggingRequest.Cluster.Spec.Collection); err != nil {
-		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "Unable to create or update metrics dashboards", "clusterName", clusterLoggingRequest.Cluster.Name)
 	}
 
 	//if there is no early exit from reconciler then new CL spec is applied successfully hence healthStatus is set to true or 1
 	telemetry.Data.CLInfo.Set("healthStatus", constants.HealthyStatus)
-	telemetry.UpdateCLMetricsNoErr()
-
 	return clusterLoggingRequest.Cluster, nil
 }
 
@@ -132,7 +125,6 @@ func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 	if err := clusterRequest.removeCollector(constants.CollectorName); err != nil {
 		log.Error(err, "Error removing collector")
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLMetricsNoErr()
 	}
 
 	if updateError := clusterRequest.UpdateCondition(
@@ -143,16 +135,13 @@ func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 	); updateError != nil {
 		log.Error(updateError, "Unable to update the clusterlogging status", "conditionType", logging.CollectorDeadEnd)
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLMetricsNoErr()
 	}
 }
 
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	log.V(1).Info("Removing managed store components...")
 	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeLokiStackRbac} {
-		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLMetricsNoErr()
 		if err := remove(); err != nil {
 			log.Error(err, "Error removing component")
 		}
@@ -180,9 +169,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
-		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
-		telemetry.UpdateCLMetricsNoErr()
 		return nil
 	}
 
@@ -192,22 +179,15 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 
 	if err != nil {
 		msg := fmt.Sprintf("Unable to reconcile collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
-		telemetry.ResetCLFMetricsNoErr()
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLFMetricsNoErr()
 		log.Error(err, msg)
 		return errors.New(msg)
 	}
 
 	///////
 	// if it reaches to this point without throwing any errors than mark CLF in healthy state as with '1' value and also CL in healthy state with '1' value
-	telemetry.ResetCLFMetricsNoErr()
 	telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
-	updateCLFInfo := UpdateInfofromCLF(&clusterLoggingRequest)
-	if updateCLFInfo != nil {
-		log.V(1).Info("Error in updating CLF Info for CLF specific metrics", "updateCLFInfo", updateCLFInfo)
-	}
-	telemetry.UpdateCLFMetricsNoErr()
+	updateInfofromCLF(&clusterLoggingRequest)
 	///////
 
 	return nil
@@ -247,24 +227,15 @@ func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterL
 	return forwarder
 }
 
-func UpdateInfofromCL(request *ClusterLoggingRequest) (err error) {
-
-	//CLO got two custom resources CL, CFL, CLF here is meant for forwarding logs to third party systems
-	//Here we update CL configuration parameters
+func updateInfofromCL(request *ClusterLoggingRequest) {
 	clspec := request.Cluster.Spec
-
-	//default LogStore is set to be internal elasticsearch cluster running within OCP
 	if clspec.LogStore != nil && clspec.LogStore.Type != "" {
 		log.V(1).Info("LogStore Type", "clspecLogStoreType", clspec.LogStore.Type)
 		telemetry.Data.CLLogStoreType.Set(string(clspec.LogStore.Type), constants.IsPresent)
 	}
-
-	return nil
 }
 
-func UpdateInfofromCLF(request *ClusterLoggingRequest) (err error) {
-
-	//Here we update CLF spec parameters
+func updateInfofromCLF(request *ClusterLoggingRequest) {
 
 	var npipelines = 0
 	var output *logging.OutputSpec
@@ -317,5 +288,4 @@ func UpdateInfofromCLF(request *ClusterLoggingRequest) (err error) {
 		log.V(1).Info("post updating inputtype and outputtype")
 		telemetry.Data.CLFInfo.Set("pipelineInfo", strconv.Itoa(npipelines))
 	}
-	return nil
 }

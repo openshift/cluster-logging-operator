@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	log "github.com/ViaQ/logerr/v2/log/static"
 	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
@@ -109,57 +108,15 @@ func RegisterMetrics() error {
 	return nil
 }
 
-func UpdateCLMetricsNoErr() {
-	erru := UpdateCLMetrics()
-	if erru != nil {
-		log.V(1).Error(erru, "Error in updating CL metrics for telemetry")
-	}
-}
-func ResetCLMetricsNoErr() {
-	erru := ResetCLMetrics()
-	if erru != nil {
-		log.V(1).Error(erru, "Error in updating CL metrics for telemetry")
-	}
-}
-func UpdateCLFMetricsNoErr() {
-	erru := UpdateCLFMetrics()
-	if erru != nil {
-		log.V(1).Error(erru, "Error in updating CLF metrics for telemetry")
-	}
-}
-func ResetCLFMetricsNoErr() {
-	erru := ResetCLFMetrics()
-	if erru != nil {
-		log.V(1).Error(erru, "Error in updating CLF metrics for telemetry")
-	}
-}
-
-func UpdateCLMetrics() error {
-
+func SetCLMetrics(value float64) {
 	CLInfo := Data.CLInfo.M
-
 	mCLInfo.With(prometheus.Labels{
 		VersionNo:     CLInfo[VersionNo],
 		ManagedStatus: CLInfo[ManagedStatus],
-		HealthStatus:  CLInfo[HealthStatus]}).Set(1)
-
-	return nil
+		HealthStatus:  CLInfo[HealthStatus]}).Set(value)
 }
 
-func ResetCLMetrics() error {
-
-	CLInfo := Data.CLInfo.M
-
-	mCLInfo.With(prometheus.Labels{
-		VersionNo:     CLInfo[VersionNo],
-		ManagedStatus: CLInfo[ManagedStatus],
-		HealthStatus:  CLInfo[HealthStatus]}).Set(0)
-
-	return nil
-}
-
-func UpdateCLFMetrics() error {
-
+func SetCLFMetrics(value float64) {
 	CLInfo := Data.CLInfo.M
 	CErrorCount := Data.CollectorErrorCount.M
 	CLFInfo := Data.CLFInfo.M
@@ -171,12 +128,12 @@ func UpdateCLFMetrics() error {
 
 	mCLFInfo.With(prometheus.Labels{
 		HealthStatus: CLFInfo[HealthStatus],
-		PipelineNo:   CLFInfo[PipelineNo]}).Set(1)
+		PipelineNo:   CLFInfo[PipelineNo]}).Set(value)
 
 	mCLFInputType.With(prometheus.Labels{
 		InputNameApplication:    CLFInputType[InputNameApplication],
 		InputNameAudit:          CLFInputType[InputNameAudit],
-		InputNameInfrastructure: CLFInputType[InputNameInfrastructure]}).Set(1)
+		InputNameInfrastructure: CLFInputType[InputNameInfrastructure]}).Set(value)
 
 	mCLFOutputType.With(prometheus.Labels{
 		OutputTypeDefault:        CLFOutputType[OutputTypeDefault],
@@ -185,36 +142,7 @@ func UpdateCLFMetrics() error {
 		OutputTypeSyslog:         CLFOutputType[OutputTypeSyslog],
 		OutputTypeKafka:          CLFOutputType[OutputTypeKafka],
 		OutputTypeLoki:           CLFOutputType[OutputTypeLoki],
-		OutputTypeCloudwatch:     CLFOutputType[OutputTypeCloudwatch]}).Set(1)
-
-	return nil
-}
-
-func ResetCLFMetrics() error {
-
-	CLFInfo := Data.CLFInfo.M
-	CLFInputType := Data.CLFInputType.M
-	CLFOutputType := Data.CLFOutputType.M
-
-	mCLFInfo.With(prometheus.Labels{
-		HealthStatus: CLFInfo[HealthStatus],
-		PipelineNo:   CLFInfo[PipelineNo]}).Set(0)
-
-	mCLFInputType.With(prometheus.Labels{
-		InputNameApplication:    CLFInputType[InputNameApplication],
-		InputNameAudit:          CLFInputType[InputNameAudit],
-		InputNameInfrastructure: CLFInputType[InputNameInfrastructure]}).Set(0)
-
-	mCLFOutputType.With(prometheus.Labels{
-		OutputTypeDefault:        CLFOutputType[OutputTypeDefault],
-		OutputTypeElasticsearch:  CLFOutputType[OutputTypeElasticsearch],
-		OutputTypeFluentdForward: CLFOutputType[OutputTypeFluentdForward],
-		OutputTypeSyslog:         CLFOutputType[OutputTypeSyslog],
-		OutputTypeKafka:          CLFOutputType[OutputTypeKafka],
-		OutputTypeLoki:           CLFOutputType[OutputTypeLoki],
-		OutputTypeCloudwatch:     CLFOutputType[OutputTypeCloudwatch]}).Set(0)
-
-	return nil
+		OutputTypeCloudwatch:     CLFOutputType[OutputTypeCloudwatch]}).Set(value)
 }
 
 func NewInfoVec(metricname string, metrichelp string, labelNames []string) *prometheus.GaugeVec {

@@ -331,11 +331,12 @@ func (clusterRequest *ClusterLoggingRequest) addSecurityLabelsToNamespace() erro
 		ns.Labels[constants.PodSecurityLabelEnforce] = constants.PodSecurityLabelValue
 		ns.Labels[constants.PodSecurityLabelAudit] = constants.PodSecurityLabelValue
 		ns.Labels[constants.PodSecurityLabelWarn] = constants.PodSecurityLabelValue
+		ns.Labels[constants.PodSecuritySyncLabel] = "false"
 
 		if err := clusterRequest.Client.Update(context.TODO(), ns); err != nil && !errors.IsAlreadyExists(err) {
 			return fmt.Errorf("error updating namespace: %w", err)
 		}
-		log.V(1).Info("Successfully added pod security labels", "namespace.Labels", ns.Labels)
+		log.V(1).Info("Successfully added pod security labels", "labels", ns.Labels)
 	}
 
 	return nil

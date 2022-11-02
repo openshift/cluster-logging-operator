@@ -80,6 +80,7 @@ const (
 	PodSecurityLabelAudit      = "pod-security.kubernetes.io/audit"
 	PodSecurityLabelWarn       = "pod-security.kubernetes.io/warn"
 	PodSecurityLabelValue      = "privileged"
+	PodSecuritySyncLabel       = "security.openshift.io/scc.podSecurityLabelSync"
 	// Disable gosec linter, complains "possible hard-coded secret"
 	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec

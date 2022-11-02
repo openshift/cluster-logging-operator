@@ -15,6 +15,7 @@ oc annotate ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} openshift.io/node-selector=
 oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} pod-security.kubernetes.io/enforce=privileged --overwrite
 oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} pod-security.kubernetes.io/audit=privileged --overwrite
 oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} pod-security.kubernetes.io/warn=privileged --overwrite
+oc label ns/${CLUSTER_LOGGING_OPERATOR_NAMESPACE} security.openshift.io/scc.podSecurityLabelSync=false --overwrite
 
 set -e
 

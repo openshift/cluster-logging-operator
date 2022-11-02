@@ -52,7 +52,7 @@ rules:
   resources:
     - securitycontextconstraints
   verbs:
-    - create
+    - "*"
 - apiGroups:
     - ""
   resources:

@@ -124,6 +124,7 @@ RUN_CMD?=go run
 run:
 	@ls ./bundle/manifests/logging.openshift.io_*.yaml | xargs -n1 oc apply -f
 	@mkdir -p $(CURDIR)/tmp
+	LOG_LEVEL=$(LOG_LEVEL) \
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
 	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \

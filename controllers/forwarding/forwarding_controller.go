@@ -56,6 +56,10 @@ func condInvalid(format string, args ...interface{}) status.Condition {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.V(3).Info("clusterlogforwarder-controller fetching LF instance")
+
+	telemetry.SetCLFMetrics(0) // Cancel previous info metric
+	defer func() { telemetry.SetCLFMetrics(1) }()
+
 	// Fetch the ClusterLogForwarder instance
 	instance := &logging.ClusterLogForwarder{}
 	loggingruntime.Initialize(instance, request.NamespacedName.Namespace, request.NamespacedName.Name)
@@ -80,9 +84,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	reconcileErr := k8shandler.ReconcileForClusterLogForwarder(instance, r.Client, r.Recorder, r.ClusterID)
 	if reconcileErr != nil {
 		// if cluster is set to fail to reconcile then set healthStatus as 0
-		telemetry.ResetCLFMetricsNoErr()
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLFMetricsNoErr()
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
 	}
 
@@ -90,9 +92,7 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		// This returns False if SetCondition updates the condition instead of setting it.
 		// For condReady, it will always be updating the status.
 		if !instance.Status.Conditions.SetCondition(condReady) {
-			telemetry.ResetCLFMetricsNoErr()
 			telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
-			telemetry.UpdateCLFMetricsNoErr()
 			r.Recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
 		}
 	} else {
@@ -105,17 +105,13 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		for i := range invalidConds {
 			r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), invalidConds[i])
 		}
-
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLFMetricsNoErr()
 	}
 
 	if instance.Status.IsDegraded() {
 		msg := "Some pipelines are degraded or invalid"
 		if instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg)) {
-			telemetry.ResetCLFMetricsNoErr()
 			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
-			telemetry.UpdateCLFMetricsNoErr()
 			r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), msg)
 		}
 	}

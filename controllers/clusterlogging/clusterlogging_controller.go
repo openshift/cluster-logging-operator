@@ -2,6 +2,7 @@ package clusterlogging
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -55,6 +56,9 @@ type ReconcileClusterLogging struct {
 func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.V(3).Info("Clusterlogging reconcile request.", "name", request.Name)
 
+	telemetry.SetCLMetrics(0) // Cancel previous info metric
+	defer func() { telemetry.SetCLMetrics(1) }()
+
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
 	loggingruntime.Initialize(instance, request.NamespacedName.Namespace, request.NamespacedName.Name)
@@ -76,16 +80,12 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 
 	if instance.Spec.ManagementState == loggingv1.ManagementStateUnmanaged {
 		// if cluster is set to unmanaged then set managedStatus as 0
-		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("managedStatus", constants.UnManagedStatus)
-		telemetry.UpdateCLMetricsNoErr()
 		return ctrl.Result{}, nil
 	}
 
 	if _, err = k8shandler.Reconcile(r.Client, r.Reader, r.Recorder, r.ClusterID); err != nil {
-		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "Error reconciling clusterlogging instance")
 	}
 
@@ -98,9 +98,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 
 func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (ctrl.Result, error) {
 	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
-		telemetry.ResetCLMetricsNoErr()
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		telemetry.UpdateCLMetricsNoErr()
 		log.Error(err, "clusterlogging-controller error updating status")
 		return ctrl.Result{}, err
 	}

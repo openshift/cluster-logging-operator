@@ -415,7 +415,7 @@ key_file = "/etc/collector/metrics/tls.key"
 crt_file = "/etc/collector/metrics/tls.crt"
 `,
 		}),
-		Entry("with complex spec for elasticsearch", testhelpers.ConfGenerateTest{
+		Entry("with complex spec for elasticsearch, without version specified", testhelpers.ConfGenerateTest{
 			CLSpec: logging.CollectionSpec{},
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
@@ -837,7 +837,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 
 [sinks.es_1.tls]
 enabled = true
@@ -927,7 +926,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 
 [sinks.es_2.tls]
 enabled = true

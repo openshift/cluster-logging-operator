@@ -34,7 +34,6 @@ func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 }
 
 func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) logging.OutputSpec {
-
 	if outputDefaults != nil && outputDefaults.Elasticsearch != nil {
 		// TODO: fix - outputDefaults should only apply to default output
 		if out.Elasticsearch == nil {
@@ -43,7 +42,6 @@ func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.Out
 			out.Elasticsearch = mergeDefaults(outputDefaults, out)
 		}
 	}
-	out = setESVersion(out)
 	return out
 }
 
@@ -62,21 +60,6 @@ func mergeDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpe
 		outES.EnableStructuredContainerLogs = defaults.EnableStructuredContainerLogs
 	}
 	return outES
-}
-
-func setESVersion(out logging.OutputSpec) logging.OutputSpec {
-	// Always set the version for our default output
-	if out.Name == logging.OutputNameDefault {
-		if out.Elasticsearch != nil {
-			out.Elasticsearch.Version = logging.DefaultESVersion
-		} else {
-			out.Elasticsearch = &logging.Elasticsearch{
-				Version: logging.DefaultESVersion,
-			}
-		}
-	}
-
-	return out
 }
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
@@ -435,11 +418,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 					Type:   logging.OutputTypeElasticsearch,
 					URL:    constants.LogStoreURL,
 					Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
-					OutputTypeSpec: logging.OutputTypeSpec{
-						Elasticsearch: &logging.Elasticsearch{
-							Version: logging.DefaultESVersion,
-						},
-					},
 				})
 				status.Outputs.Set(name, condReady)
 			case logging.LogStoreTypeLokiStack:

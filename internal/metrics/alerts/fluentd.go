@@ -17,10 +17,10 @@ const FluentdPrometheusAlert = `
       namespace: "openshift-logging"
   - "alert": "FluentdQueueLengthIncreasing"
     "annotations":
-      "message": "For the last hour, fluentd {{ $labels.instance }} output '{{ $labels.plugin_id }}' average buffer queue length has increased continuously."
-      "summary": "Fluentd is unable to keep up with traffic over time for forwarder output {{ $labels.plugin_id }}."
+      "message": "For the last hour, fluentd {{ $labels.pod }} output '{{ $labels.plugin_id }}' average buffer queue length has increased continuously."
+      "summary": "Fluentd pod {{ $labels.pod }} is unable to keep up with traffic over time for forwarder output {{ $labels.plugin_id }}."
     "expr": |
-      ( 0 * (deriv(fluentd_output_status_emit_records[1m] offset 1h)))  + on(pod,plugin_id)  ( deriv(fluentd_output_status_buffer_queue_length[10m]) > 0 and delta(fluentd_output_status_buffer_queue_length[1h]) > 1 )
+      sum by (pod,plugin_id) ( 0 * (deriv(fluentd_output_status_emit_records[1m] offset 1h)))  + on(pod,plugin_id)  ( deriv(fluentd_output_status_buffer_queue_length[10m]) > 0 and delta(fluentd_output_status_buffer_queue_length[1h]) > 1 )
     "for": "1h"
     "labels":
       "service": "collector"

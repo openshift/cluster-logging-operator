@@ -1325,6 +1325,7 @@ source = '''
   del(.source_type)
   if .structured != null && .write_index == "app-write" {
     .message = encode_json(.structured)
+    del(.structured)
   }
 '''
 
@@ -1417,6 +1418,7 @@ source = '''
   del(.source_type)
   if .structured != null && .write_index == "app-write" {
     .message = encode_json(.structured)
+    del(.structured)
   }
 '''
 

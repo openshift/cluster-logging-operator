@@ -117,6 +117,7 @@ if .log_type == "application" && .structured != null {
 		vrls = append(vrls, `
   if .structured != null && .write_index == "app-write" {
     .message = encode_json(.structured)
+    del(.structured)
   }
 `)
 	}

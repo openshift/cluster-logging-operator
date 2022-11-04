@@ -15,6 +15,8 @@ metadata:
     "operatorframework.io/suggested-namespace": openshift-logging
     "operatorframework.io/cluster-monitoring": "true"
     "operators.openshift.io/infrastructure-features": '["disconnected","proxy-aware"]'
+    operators.openshift.io/valid-subscription: '["OpenShift Kubernetes Engine", "OpenShift
+      Container Platform", "OpenShift Platform Plus"]'
     capabilities: Seamless Upgrades
     categories: "OpenShift Optional, Logging & Tracing"
     certified: "false"

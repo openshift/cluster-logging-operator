@@ -15,14 +15,14 @@ import (
 )
 
 type Elasticsearch struct {
-	ID_Key         string
-	Desc           string
-	ComponentID    string
-	Inputs         string
-	Index          string
-	Endpoint       string
-	Version        int
-	DefaultVersion int
+	ID_Key          string
+	Desc            string
+	ComponentID     string
+	Inputs          string
+	Index           string
+	Endpoint        string
+	Version         int
+	SuppressVersion int
 }
 
 func (e Elasticsearch) Name() string {
@@ -40,7 +40,7 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-{{ if or (gt .Version .DefaultVersion) (eq .Version 0) -}}
+{{ if ge .Version .SuppressVersion -}}
 suppress_type_name = true
 {{ end -}}
 {{end}}`
@@ -218,10 +218,10 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
 	es := Elasticsearch{
-		ComponentID:    helpers.FormatComponentID(o.Name),
-		Endpoint:       o.URL,
-		Inputs:         helpers.MakeInputs(inputs...),
-		DefaultVersion: logging.DefaultESVersion,
+		ComponentID:     helpers.FormatComponentID(o.Name),
+		Endpoint:        o.URL,
+		Inputs:          helpers.MakeInputs(inputs...),
+		SuppressVersion: logging.LatestESVersion,
 	}
 	// If valid version is specified
 	if o.Elasticsearch != nil && o.Elasticsearch.Version > 0 {

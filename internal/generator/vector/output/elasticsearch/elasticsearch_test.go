@@ -129,7 +129,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 
 # Basic Auth Config
 [sinks.es_1.auth]
@@ -243,7 +242,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 
 [sinks.es_1.tls]
 enabled = true
@@ -347,7 +345,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 `,
 		}),
 		Entry("with multiple pipelines for elastic-search", helpers.ConfGenerateTest{
@@ -487,7 +484,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 
 [sinks.es_1.tls]
 enabled = true
@@ -577,7 +573,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 
 [sinks.es_2.tls]
 enabled = true
@@ -696,7 +691,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 `,
 		}),
 		Entry("with StructuredTypeName", helpers.ConfGenerateTest{
@@ -805,7 +799,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 `,
 		}),
 		Entry("with both StructuredTypeKey and StructuredTypeName", helpers.ConfGenerateTest{
@@ -920,7 +913,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 `,
 		}),
 		Entry("with StructuredTypeKey, StructuredTypeName, container annotations enabled", helpers.ConfGenerateTest{
@@ -1048,7 +1040,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 `,
 		}),
 		Entry("without an Elasticsearch version", helpers.ConfGenerateTest{
@@ -1146,7 +1137,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 `,
 		}),
 		Entry("with an Elasticsearch version less than our default", helpers.ConfGenerateTest{
@@ -1462,7 +1452,6 @@ bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-suppress_type_name = true
 `,
 		}),
 		Entry("with an Elasticsearch version greater than latest version", helpers.ConfGenerateTest{

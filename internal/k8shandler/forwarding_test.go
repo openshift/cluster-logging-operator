@@ -549,7 +549,6 @@ var _ = Describe("Normalizing forwarder", func() {
 					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
 					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch).ToNot(BeNil(), "Expected an Elasticsearch specific config")
 					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.Version).To(Equal(logging.DefaultESVersion))
 
 				})
 				It("should setup values for elasticsearch output", func() {
@@ -652,14 +651,11 @@ var _ = Describe("Normalizing forwarder", func() {
 			spec, status := request.NormalizeForwarder()
 			Expect(YAMLString(spec)).To(EqualLines(`
 outputs:
-- elasticsearch:
-	version: 6
-	name: default
+- name: default
 	secret:
 		name: collector
 	type: elasticsearch
 	url: https://` + constants.ElasticsearchFQDN + `:9200
-
 pipelines:
 - inputRefs:
 	- application
@@ -673,7 +669,6 @@ pipelines:
 			Expect(status.Outputs["default"]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Inputs[logging.InputNameApplication]).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Inputs[logging.InputNameInfrastructure]).To(HaveCondition("Ready", true, "", ""))
-			Expect(spec.Outputs[0].Elasticsearch.Version).To(Equal(logging.DefaultESVersion))
 		})
 
 		It("generates default configuration for empty spec with LokiStack log store", func() {
@@ -756,7 +751,6 @@ pipelines:
 			Expect(spec.Outputs[0].URL).To(Equal("https://" + constants.ElasticsearchFQDN + ":9200"))
 			Expect(spec.Outputs[0].Secret.Name).To(Equal(constants.CollectorSecretName))
 			Expect(spec.Outputs[0].Type).To(Equal("elasticsearch"))
-			Expect(spec.Outputs[0].Elasticsearch.Version).To(Equal(logging.DefaultESVersion))
 
 			Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""))
 			Expect(status.Pipelines).To(HaveLen(1))
@@ -880,107 +874,6 @@ var _ = Describe("#applyOutputDefaults", func() {
 		})
 	})
 
-})
-
-var _ = Describe("setESVersion", func() {
-
-	It("Should set output ES version to default if our default log store and not specified", func() {
-		esDeclared := logging.OutputSpec{
-			Name: "default",
-			Type: logging.OutputTypeElasticsearch,
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-		act := setESVersion(esDeclared)
-
-		esExpected := logging.OutputSpec{
-			Name: "default",
-			Type: logging.OutputTypeElasticsearch,
-			OutputTypeSpec: logging.OutputTypeSpec{
-				Elasticsearch: &logging.Elasticsearch{
-					Version: logging.DefaultESVersion,
-				},
-			},
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-		Expect(act).To(Equal(esExpected))
-	})
-
-	It("Should update output ES version to default when default log store", func() {
-		esDeclared := logging.OutputSpec{
-			Name: "default",
-			Type: logging.OutputTypeElasticsearch,
-			OutputTypeSpec: logging.OutputTypeSpec{
-				Elasticsearch: &logging.Elasticsearch{
-					Version: 22,
-				},
-			},
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-		act := setESVersion(esDeclared)
-
-		esExpected := logging.OutputSpec{
-			Name: "default",
-			Type: logging.OutputTypeElasticsearch,
-			OutputTypeSpec: logging.OutputTypeSpec{
-				Elasticsearch: &logging.Elasticsearch{
-					Version: logging.DefaultESVersion,
-				},
-			},
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-		Expect(act).To(Equal(esExpected))
-		Expect(act.Elasticsearch.Version).To(Equal(logging.DefaultESVersion))
-	})
-
-	It("Should set output ES version if version is defined and not default log store", func() {
-		esDeclared := logging.OutputSpec{
-			Name: "external-elasticsearch",
-			Type: logging.OutputTypeElasticsearch,
-			OutputTypeSpec: logging.OutputTypeSpec{
-				Elasticsearch: &logging.Elasticsearch{
-					Version: 7,
-				},
-			},
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-		act := setESVersion(esDeclared)
-
-		esExpected := logging.OutputSpec{
-			Name: "external-elasticsearch",
-			Type: logging.OutputTypeElasticsearch,
-			OutputTypeSpec: logging.OutputTypeSpec{
-				Elasticsearch: &logging.Elasticsearch{
-					Version: 7,
-				},
-			},
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-		Expect(act).To(Equal(esExpected))
-	})
-
-	It("Should not set a version if not specified and not our default log store", func() {
-		esDeclared := logging.OutputSpec{
-			Name: "external-elasticsearch",
-			Type: logging.OutputTypeElasticsearch,
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-		act := setESVersion(esDeclared)
-		Expect(act).To(Equal(esDeclared))
-	})
 })
 
 var _ = DescribeTable("#generateCollectorConfig",

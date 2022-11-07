@@ -275,6 +275,7 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 				outputTestLog := logs[0]
 				outputLogTemplate.ViaqIndexName = ""
 				Expect(outputTestLog).To(matchers.FitLogFormatTemplate(outputLogTemplate))
+				Expect(outputTestLog.Structured).To(BeEmpty())
 			})
 		})
 

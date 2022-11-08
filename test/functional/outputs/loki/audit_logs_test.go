@@ -49,12 +49,12 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 		f.Cleanup()
 	})
 
-	writeAndVerifyLogs := func(auditType string, writeLogs func() error) {
+	writeAndVerifyLogs := func(writeLogs func() error) {
 
 		Expect(writeLogs()).To(Succeed())
 
 		// Verify we can query by Loki labels
-		query := fmt.Sprintf(`{log_type=%q, tag=%q}`, "audit", auditType)
+		query := fmt.Sprintf(`{log_type=%q, kubernetes_host=%q}`, "audit", functional.FunctionalNodeName)
 		r, err := l.QueryUntil(query, "", 1)
 		Expect(err).To(Succeed())
 		records := r[0].Records()
@@ -62,7 +62,6 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 
 		expLabels := map[string]string{
 			"kubernetes_host": functional.FunctionalNodeName,
-			"tag":             auditType,
 			"log_type":        "audit",
 		}
 		actualLabels := r[0].Stream
@@ -82,7 +81,7 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			earlier := now.Add(-1 * 30 * time.Minute)
 			earlierLog := functional.NewKubeAuditLog(earlier)
 
-			writeAndVerifyLogs("k8s-audit.log", func() error {
+			writeAndVerifyLogs(func() error {
 				Expect(f.WriteMessagesToOpenshiftAuditLog(openshiftAuditLogs, 1)).To(Succeed())
 				return f.WriteMessagesTok8sAuditLog(earlierLog, 1)
 			})
@@ -91,16 +90,16 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 	Context("when writing Audit logs", func() {
 
 		It("should ingest linux audit records without error", func() {
-			writeAndVerifyLogs("linux-audit.log", func() error { return f.WriteAuditHostLog(1) })
+			writeAndVerifyLogs(func() error { return f.WriteAuditHostLog(1) })
 		})
 		It("should ingest kubernetes audit records without error", func() {
-			writeAndVerifyLogs("k8s-audit.log", func() error { return f.WriteK8sAuditLog(1) })
+			writeAndVerifyLogs(func() error { return f.WriteK8sAuditLog(1) })
 		})
 		It("should ingest openshift audit records without error", func() {
-			writeAndVerifyLogs("openshift-audit.log", func() error { return f.WriteOpenshiftAuditLog(1) })
+			writeAndVerifyLogs(func() error { return f.WriteOpenshiftAuditLog(1) })
 		})
 		It("should ingest OVN audit records without error", func() {
-			writeAndVerifyLogs("ovn-audit.log", func() error { return f.WriteOVNAuditLog(1) })
+			writeAndVerifyLogs(func() error { return f.WriteOVNAuditLog(1) })
 		})
 
 	})

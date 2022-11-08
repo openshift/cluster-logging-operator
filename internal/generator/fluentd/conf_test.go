@@ -362,7 +362,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
   # Viaq Data Model
   <filter **>
     @type viaq_data_model
-    enable_prune_empty_fields false
     default_keep_fields CEE,time,@timestamp,aushape,ci_job,collectd,docker,fedora-ci,file,foreman,geoip,hostname,ipaddr4,ipaddr6,kubernetes,level,message,namespace_name,namespace_uuid,offset,openstack,ovirt,pid,pipeline_metadata,rsyslog,service,systemd,tags,testcase,tlog,viaq_msg_id
     keep_empty_fields 'message'
     rename_time true

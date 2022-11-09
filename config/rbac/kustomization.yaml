@@ -5,7 +5,6 @@ resources:
 - log-collector-privileged_role.yaml
 - log_collector_privileged_binding.yaml
 - metadata_reader_clusterrole.yaml
-- metadata_reader_clusterrolebinding.yaml
 - prometheus_role.yaml
 - prometheus_role_binding.yaml
 - cluster-logging-operator_clusterrole.yaml

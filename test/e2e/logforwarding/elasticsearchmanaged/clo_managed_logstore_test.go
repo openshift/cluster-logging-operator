@@ -32,7 +32,13 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		if err := e2e.DeployLogGeneratorWithNamespaceAndLabels(ns, appLabels); err != nil {
 			Fail(fmt.Sprintf("Timed out waiting for the log generator to deploy: %v", err))
 		}
+
 	})
+
+	AfterEach(func() {
+		e2e.Cleanup()
+		e2e.WaitForCleanupCompletion(constants.WatchNamespace, []string{constants.CollectorName, "elasticsearch"})
+	}, framework.DefaultCleanUpTimeout)
 
 	DescribeTable("when the output is a CLO managed elasticsearch and no explicit forwarder is configured should default to forwarding logs to the spec'd logstore", func(collectorType helpers.LogComponentType) {
 		components := []helpers.LogComponentType{collectorType, helpers.ComponentTypeStore}
@@ -63,10 +69,5 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 		Entry("using fluentd collector", helpers.ComponentTypeCollectorFluentd),
 		Entry("using vector collector", helpers.ComponentTypeCollectorVector),
 	)
-
-	AfterEach(func() {
-		e2e.Cleanup()
-		e2e.WaitForCleanupCompletion(constants.OpenshiftNS, []string{constants.CollectorName, "elasticsearch"})
-	}, framework.DefaultCleanUpTimeout)
 
 })

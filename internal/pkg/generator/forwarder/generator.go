@@ -79,5 +79,5 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	if configGenerator == nil {
 		return "", errors.New("unsupported collector implementation")
 	}
-	return configGenerator.GenerateConf(&clspec, clRequest.OutputSecrets, spec, op)
+	return configGenerator.GenerateConf(&clspec, clRequest.OutputSecrets, spec, clRequest.Cluster.Namespace, op)
 }

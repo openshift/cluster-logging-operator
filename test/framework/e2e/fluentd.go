@@ -106,7 +106,7 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	options := metav1.ListOptions{
 		LabelSelector: "component=fluent-receiver",
 	}
-	pods, err := fluent.tc.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
+	pods, err := fluent.tc.KubeClient.CoreV1().Pods(constants.WatchNamespace).List(context.TODO(), options)
 	if err != nil {
 		return false, err
 	}
@@ -117,7 +117,7 @@ func (fluent *fluentReceiverLogStore) hasLogs(file string, timeToWait time.Durat
 	cmd := fmt.Sprintf("ls %s | wc -l", file)
 
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		output, err := fluent.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
+		output, err := fluent.tc.PodExec(constants.WatchNamespace, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd})
 		if err != nil {
 			clolog.Error(err, "Error polling fluent-receiver for logs")
 			return false, nil
@@ -139,7 +139,7 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	options := metav1.ListOptions{
 		LabelSelector: "component=fluent-receiver",
 	}
-	pods, err := fluent.tc.KubeClient.CoreV1().Pods(constants.OpenshiftNS).List(context.TODO(), options)
+	pods, err := fluent.tc.KubeClient.CoreV1().Pods(constants.WatchNamespace).List(context.TODO(), options)
 	if err != nil {
 		return "", err
 	}
@@ -150,7 +150,7 @@ func (fluent *fluentReceiverLogStore) logs(file string, timeToWait time.Duration
 	cmd := fmt.Sprintf("cat %s | awk -F '\t' '{print $3}'| head -n 1", file)
 	result := ""
 	err = wait.PollImmediate(defaultRetryInterval, timeToWait, func() (done bool, err error) {
-		if result, err = fluent.tc.PodExec(constants.OpenshiftNS, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
+		if result, err = fluent.tc.PodExec(constants.WatchNamespace, pods.Items[0].Name, "fluent-receiver", []string{"bash", "-c", cmd}); err != nil {
 			clolog.Error(err, "Failed to fetch logs from fluent-receiver ")
 			return false, nil
 		}
@@ -211,13 +211,13 @@ func (fluent *fluentReceiverLogStore) ClusterLocalEndpoint() string {
 
 func (tc *E2ETestFramework) createServiceAccount() (serviceAccount *corev1.ServiceAccount, err error) {
 	opts := metav1.CreateOptions{}
-	serviceAccount = runtime.NewServiceAccount(constants.OpenshiftNS, "fluent-receiver")
-	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Create(context.TODO(), serviceAccount, opts); err != nil {
+	serviceAccount = runtime.NewServiceAccount(constants.WatchNamespace, "fluent-receiver")
+	if serviceAccount, err = tc.KubeClient.CoreV1().ServiceAccounts(constants.WatchNamespace).Create(context.TODO(), serviceAccount, opts); err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ServiceAccounts(constants.OpenshiftNS).Delete(context.TODO(), serviceAccount.Name, opts)
+		return tc.KubeClient.CoreV1().ServiceAccounts(constants.WatchNamespace).Delete(context.TODO(), serviceAccount.Name, opts)
 	})
 	return serviceAccount, nil
 }
@@ -225,7 +225,7 @@ func (tc *E2ETestFramework) createServiceAccount() (serviceAccount *corev1.Servi
 func (tc *E2ETestFramework) createRbac(name string) (err error) {
 	opts := metav1.CreateOptions{}
 	saRole := runtime.NewRole(
-		constants.OpenshiftNS,
+		constants.WatchNamespace,
 		name,
 		runtime.NewPolicyRules(
 			runtime.NewPolicyRule(
@@ -236,12 +236,12 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 			),
 		)...,
 	)
-	if _, err = tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Create(context.TODO(), saRole, opts); err != nil {
+	if _, err = tc.KubeClient.RbacV1().Roles(constants.WatchNamespace).Create(context.TODO(), saRole, opts); err != nil {
 		return err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().Roles(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
+		return tc.KubeClient.RbacV1().Roles(constants.WatchNamespace).Delete(context.TODO(), name, opts)
 	})
 	subject := runtime.NewSubject(
 		"ServiceAccount",
@@ -249,7 +249,7 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 	)
 	subject.APIGroup = ""
 	roleBinding := runtime.NewRoleBinding(
-		constants.OpenshiftNS,
+		constants.WatchNamespace,
 		name,
 		rbacv1.RoleRef{
 			Kind:     "Role",
@@ -259,13 +259,12 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 			subject,
 		)...,
 	)
-
-	if _, err = tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Create(context.TODO(), roleBinding, opts); err != nil {
+	if _, err = tc.KubeClient.RbacV1().RoleBindings(constants.WatchNamespace).Create(context.TODO(), roleBinding, opts); err != nil {
 		return err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.RbacV1().RoleBindings(constants.OpenshiftNS).Delete(context.TODO(), name, opts)
+		return tc.KubeClient.RbacV1().RoleBindings(constants.WatchNamespace).Delete(context.TODO(), name, opts)
 	})
 	return nil
 }
@@ -324,7 +323,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		}
 		tc.AddCleanup(func() error {
 			opts := metav1.DeleteOptions{}
-			return tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Delete(context.TODO(), receiverName, opts)
+			return tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Delete(context.TODO(), receiverName, opts)
 		})
 		container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 			Name:      "certs",
@@ -335,7 +334,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		logStore.pipelineSecret.Data["shared_key"] = []byte("fluent-receiver")
 
 		opts := metav1.UpdateOptions{}
-		if logStore.pipelineSecret, err = tc.KubeClient.CoreV1().Secrets(constants.OpenshiftNS).Update(context.TODO(), logStore.pipelineSecret, opts); err != nil {
+		if logStore.pipelineSecret, err = tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Update(context.TODO(), logStore.pipelineSecret, opts); err != nil {
 			return nil, err
 		}
 		podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
@@ -348,16 +347,16 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 	}
 
 	opts := metav1.CreateOptions{}
-	config := k8shandler.NewConfigMap(container.Name, constants.OpenshiftNS, map[string]string{
+	config := k8shandler.NewConfigMap(container.Name, constants.WatchNamespace, map[string]string{
 		"fluent.conf": fluentConf,
 	})
-	config, err = tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Create(context.TODO(), config, opts)
+	config, err = tc.KubeClient.CoreV1().ConfigMaps(constants.WatchNamespace).Create(context.TODO(), config, opts)
 	if err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().ConfigMaps(constants.OpenshiftNS).Delete(context.TODO(), config.Name, opts)
+		return tc.KubeClient.CoreV1().ConfigMaps(constants.WatchNamespace).Delete(context.TODO(), config.Name, opts)
 	})
 
 	dOpts := metav1.CreateOptions{}
@@ -369,13 +368,13 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		podSpec,
 	)
 
-	fluentDeployment, err = tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Create(context.TODO(), fluentDeployment, dOpts)
+	fluentDeployment, err = tc.KubeClient.AppsV1().Deployments(constants.WatchNamespace).Create(context.TODO(), fluentDeployment, dOpts)
 	if err != nil {
 		return nil, err
 	}
 	service := factory.NewService(
 		serviceAccount.Name,
-		constants.OpenshiftNS,
+		constants.WatchNamespace,
 		serviceAccount.Name,
 		[]corev1.ServicePort{
 			{
@@ -386,9 +385,9 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 
 	tc.AddCleanup(func() error {
 		_, err := oc.Exec().
-			WithNamespace(constants.OpenshiftNS).
+			WithNamespace(constants.WatchNamespace).
 			WithPodGetter(oc.Get().
-				WithNamespace(constants.OpenshiftNS).
+				WithNamespace(constants.WatchNamespace).
 				Pod().
 				Selector("component=fluent-receiver").
 				OutputJsonpath("{.items[0].metadata.name}")).
@@ -403,20 +402,20 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		opts := metav1.DeleteOptions{
 			GracePeriodSeconds: &zerograce,
 		}
-		return tc.KubeClient.AppsV1().Deployments(constants.OpenshiftNS).Delete(context.TODO(), fluentDeployment.Name, opts)
+		return tc.KubeClient.AppsV1().Deployments(constants.WatchNamespace).Delete(context.TODO(), fluentDeployment.Name, opts)
 	})
 
 	sOpts := metav1.CreateOptions{}
-	service, err = tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Create(context.TODO(), service, sOpts)
+	service, err = tc.KubeClient.CoreV1().Services(constants.WatchNamespace).Create(context.TODO(), service, sOpts)
 	if err != nil {
 		return nil, err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.CoreV1().Services(constants.OpenshiftNS).Delete(context.TODO(), service.Name, opts)
+		return tc.KubeClient.CoreV1().Services(constants.WatchNamespace).Delete(context.TODO(), service.Name, opts)
 	})
 	logStore.deployment = fluentDeployment
 	name := fluentDeployment.GetName()
 	tc.LogStores[name] = logStore
-	return fluentDeployment, tc.waitForDeployment(constants.OpenshiftNS, fluentDeployment.Name, defaultRetryInterval, defaultTimeout)
+	return fluentDeployment, tc.waitForDeployment(constants.WatchNamespace, fluentDeployment.Name, defaultRetryInterval, defaultTimeout)
 }

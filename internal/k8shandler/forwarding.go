@@ -113,7 +113,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		return "", err
 	}
 
-	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, op)
+	generatedConfig, err := g.GenerateConf(clusterRequest.Cluster.Spec.Collection, clusterRequest.OutputSecrets, &clusterRequest.ForwarderSpec, clusterRequest.Cluster.Namespace, op)
 
 	if err != nil {
 		log.Error(err, "Unable to generate log configuration")

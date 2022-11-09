@@ -4,7 +4,7 @@ set -eou pipefail
 
 repo_dir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )/../.."
 KUBECONFIG=${KUBECONFIG:-$HOME/.kube/config}
-NAMESPACE=openshift-logging
+NAMESPACE=${LOGGING_NS:-openshift-logging}
 TOT_ITERATIONS=${TOT_ITERATIONS:-3}
 
 SVT_REPO=https://github.com/RH-ematysek/workloads 

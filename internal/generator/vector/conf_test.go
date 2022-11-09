@@ -2,6 +2,7 @@ package vector
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 	"strings"
 
@@ -26,7 +27,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 			if testcase.Options == nil {
 				testcase.Options = generator.Options{}
 			}
-			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, testcase.Options))
+			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, testcase.Options))
 			conf, err := g.GenerateConf(e...)
 			Expect(err).To(BeNil())
 			Expect(strings.TrimSpace(testcase.ExpectedConf)).To(matchers.EqualTrimLines(conf))

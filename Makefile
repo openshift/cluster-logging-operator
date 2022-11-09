@@ -253,8 +253,8 @@ test-functional-vector:
 
 .PHONY: test-forwarder-generator
 test-forwarder-generator: bin/forwarder-generator
-	@bin/forwarder-generator --file hack/logforwarder.yaml --collector=fluentd > /dev/null
-	@bin/forwarder-generator --file hack/logforwarder.yaml --collector=vector > /dev/null
+	WATCH_NAMESPACE=openshift-logging bin/forwarder-generator --file hack/logforwarder.yaml --collector=fluentd > /dev/null
+	WATCH_NAMESPACE=openshift-logging bin/forwarder-generator --file hack/logforwarder.yaml --collector=vector > /dev/null
 
 
 .PHONY: test-functional-benchmarker

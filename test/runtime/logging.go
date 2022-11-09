@@ -10,7 +10,7 @@ import (
 // NewClusterLogForwarder returns a ClusterLogForwarder with default name and namespace.
 func NewClusterLogForwarder() *loggingv1.ClusterLogForwarder {
 	clf := &loggingv1.ClusterLogForwarder{}
-	runtime.Initialize(clf, constants.OpenshiftNS, constants.SingletonName)
+	runtime.Initialize(clf, constants.WatchNamespace, constants.SingletonName)
 	return clf
 }
 
@@ -19,7 +19,7 @@ func NewClusterLogForwarder() *loggingv1.ClusterLogForwarder {
 // see ClusterLoggingDefaultXXX to add them.
 func NewClusterLogging() *loggingv1.ClusterLogging {
 	cl := &loggingv1.ClusterLogging{}
-	runtime.Initialize(cl, constants.OpenshiftNS, constants.SingletonName)
+	runtime.Initialize(cl, constants.WatchNamespace, constants.SingletonName)
 	test.MustUnmarshal(`
     collection:
       type: fluentd

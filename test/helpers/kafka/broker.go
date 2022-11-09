@@ -331,7 +331,7 @@ func NewBrokerRBAC(namespace string) (*rbacv1.ClusterRole, *rbacv1.ClusterRoleBi
 func NewBrokerConfigMap(namespace string) *v1.ConfigMap {
 	data := map[string]string{
 		"init.sh":           initKafkaScript,
-		"server.properties": serverProperties,
+		"server.properties": fmt.Sprintf(serverProperties, namespace),
 		"client.properties": clientProperties,
 		"log4j.properties":  log4jProperties,
 	}

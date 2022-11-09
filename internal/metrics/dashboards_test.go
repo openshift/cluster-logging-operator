@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -13,10 +12,9 @@ import (
 
 var _ = Describe("ReconcileDashboards", func() {
 	var (
-		fakeClient client.Client
-
-		collectionType logging.LogCollectionType = logging.LogCollectionTypeFluentd
-		collectionSpec *logging.CollectionSpec   = &logging.CollectionSpec{
+		fakeClient     client.Client
+		collectionType = logging.LogCollectionTypeFluentd
+		collectionSpec = &logging.CollectionSpec{
 			Type: logging.LogCollectionTypeFluentd,
 		}
 

@@ -9,14 +9,14 @@ import (
 	"strings"
 )
 
-func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
+func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSpec, namespace string, o generator.Options) []generator.Element {
 	var tunings *logging.FluentdInFileSpec
 	if clspec != nil && clspec.Fluentd != nil && clspec.Fluentd.InFile != nil {
 		tunings = clspec.Fluentd.InFile
 	}
 	return generator.MergeElements(
 		MetricSources(spec, o),
-		LogSources(spec, tunings, o),
+		LogSources(spec, tunings, namespace, o),
 	)
 }
 
@@ -30,7 +30,7 @@ func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) [
 	}
 }
 
-func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdInFileSpec, o generator.Options) []generator.Element {
+func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdInFileSpec, namespace string, o generator.Options) []generator.Element {
 	var el []generator.Element = make([]generator.Element, 0)
 	types := generator.GatherSources(spec, o)
 	if types.Has(logging.InputNameInfrastructure) {
@@ -47,7 +47,7 @@ func LogSources(spec *logging.ClusterLogForwarderSpec, tunings *logging.FluentdI
 			source2.ContainerLogs{
 				Desc:         "Logs from containers (including openshift containers)",
 				Paths:        ContainerLogPaths(),
-				ExcludePaths: ExcludeContainerPaths(),
+				ExcludePaths: ExcludeContainerPaths(namespace),
 				PosFile:      "/var/lib/fluentd/pos/es-containers.log.pos",
 				OutLabel:     "CONCAT",
 				Tunings:      tunings,
@@ -100,10 +100,10 @@ func ContainerLogPaths() string {
 	return fmt.Sprintf("%q", "/var/log/pods/*/*/*.log")
 }
 
-func ExcludeContainerPaths() string {
+func ExcludeContainerPaths(namespace string) string {
 	paths := []string{}
 	for _, comp := range []string{constants.CollectorName, constants.ElasticsearchName, constants.KibanaName} {
-		paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_%s-*/*/*.log\"", constants.OpenshiftNS, comp))
+		paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_%s-*/*/*.log\"", namespace, comp))
 	}
 	paths = append(paths, "\"/var/log/pods/*/*/*.gz\"", "\"/var/log/pods/*/*/*.tmp\"")
 

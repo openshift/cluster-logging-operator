@@ -12,6 +12,7 @@ fi
 
 NAMESPACE=${2:-openshift-logging}
 
+
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 collector_folder="$CLO_COLLECTION_PATH/collector"
 

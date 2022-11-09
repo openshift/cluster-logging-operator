@@ -54,7 +54,7 @@ type ReconcileClusterLogging struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
-	log.V(3).Info("Clusterlogging reconcile request.", "name", request.Name)
+	log.V(3).Info("Clusterlogging reconcile request.", "namespace", request.Namespace, "name", request.Name)
 
 	telemetry.SetCLMetrics(0) // Cancel previous info metric
 	defer func() { telemetry.SetCLMetrics(1) }()
@@ -84,7 +84,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	if _, err = k8shandler.Reconcile(r.Client, r.Reader, r.Recorder, r.ClusterID); err != nil {
+	if _, err = k8shandler.Reconcile(instance, r.Client, r.Reader, r.Recorder, r.ClusterID); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Error reconciling clusterlogging instance")
 	}
@@ -112,7 +112,7 @@ func IsElasticsearchRelatedObj(obj client.Object) (bool, ctrl.Request) {
 		return false, ctrl.Request{}
 	}
 
-	if constants.OpenshiftNS != obj.GetNamespace() {
+	if constants.WatchNamespace != obj.GetNamespace() {
 		// ignore object in another namespace
 		return false, ctrl.Request{}
 	}
@@ -124,7 +124,7 @@ func IsElasticsearchRelatedObj(obj client.Object) (bool, ctrl.Request) {
 	return true, ctrl.Request{
 		NamespacedName: types.NamespacedName{
 			Name:      constants.SingletonName,
-			Namespace: constants.OpenshiftNS,
+			Namespace: constants.WatchNamespace,
 		},
 	}
 }

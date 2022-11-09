@@ -3,7 +3,7 @@ source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/../../
 artifact_dir=$1
 runtime=$(date +%s)
 mkdir -p "$artifact_dir/$runtime" ||:
-gather_logging_resources "openshift-logging" "$artifact_dir" "$runtime"
+gather_logging_resources $LOGGING_NS "$artifact_dir" "$runtime"
 
 name=logging-view-plugin
 
@@ -14,9 +14,9 @@ get_describe() {
 }
 
 for kind in configmap service deployment; do
-    get_describe $kind -n openshift-logging
+    get_describe $kind -n $LOGGING_NS
 done
 get_describe consoleplugin
 
 kind=deployment
-oc -n openshift-logging logs $kind/$name  > "$artifact_dir/$runtime/$name.logs" ||:
+oc -n $LOGGING_NS logs $kind/$name  > "$artifact_dir/$runtime/$name.logs" ||:

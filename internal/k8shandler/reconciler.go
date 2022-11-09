@@ -25,8 +25,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterID string) (instance *logging.ClusterLogging, err error) {
+func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterID string) (instance *logging.ClusterLogging, err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
+		Cluster:       cl,
 		Client:        requestClient,
 		Reader:        reader,
 		EventRecorder: r,
@@ -194,7 +195,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 }
 
 func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bool) (*logging.ClusterLogging, error) {
-	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
+	clusterLoggingNamespacedName := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.WatchNamespace}
 	clusterLogging := &logging.ClusterLogging{}
 
 	if err := clusterRequest.Client.Get(context.TODO(), clusterLoggingNamespacedName, clusterLogging); err != nil {
@@ -215,7 +216,7 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bo
 }
 
 func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {
-	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: constants.OpenshiftNS}
+	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: clusterRequest.Cluster.Namespace}
 	forwarder := &logging.ClusterLogForwarder{}
 	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
 		if !apierrors.IsNotFound(err) {

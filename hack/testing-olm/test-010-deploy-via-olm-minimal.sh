@@ -8,6 +8,8 @@ set -eou pipefail
 source "$(dirname "${BASH_SOURCE[0]}" )/../lib/init.sh"
 source "$(dirname $0)/assertions"
 
+LOGGING_NS=${LOGGING_NS:-"openshift-logging"}
+
 mkdir -p /tmp/artifacts/junit
 os::test::junit::declare_suite_start "[ClusterLogging] Deploy via OLM minimal"
 
@@ -17,8 +19,7 @@ if [ ! -d $test_artifactdir ] ; then
   mkdir -p $test_artifactdir
 fi
 
-export CLUSTER_LOGGING_OPERATOR_NAMESPACE="openshift-logging"
-NAMESPACE="${CLUSTER_LOGGING_OPERATOR_NAMESPACE}"
+export CLUSTER_LOGGING_OPERATOR_NAMESPACE=$LOGGING_NS
 repo_dir="$(dirname $0)/../.."
 
 cleanup(){
@@ -26,13 +27,13 @@ cleanup(){
 
   set +e
   if [ "$return_code" != "0" ] ; then 
-    gather_logging_resources ${CLUSTER_LOGGING_OPERATOR_NAMESPACE} $test_artifactdir
+    gather_logging_resources ${LOGGING_NS} $test_artifactdir
   fi
 
   if [ "${DO_TEST_CLEANUP:-true}" == "true" ] ; then
     for r in "clusterlogging/instance" "clusterlogforwarder/instance"; do
-      oc -n $NAMESPACE delete $r --ignore-not-found --force --grace-period=0||:
-      os::cmd::try_until_failure "oc -n $NAMESPACE get $r" "$((1 * $minute))"
+      oc -n $LOGGING_NS delete $r --ignore-not-found --force --grace-period=0||:
+      os::cmd::try_until_failure "oc -n $LOGGING_NS get $r" "$((1 * $minute))"
     done
   fi
 
@@ -68,13 +69,13 @@ TIMEOUT_MIN=$((2 * $minute))
 #os::cmd::expect_success "oc get clusterrolebinding clusterlogging-collector-metrics"
 
 # wait for operator to be ready
-os::cmd::try_until_text "oc -n $NAMESPACE get deployment cluster-logging-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
+os::cmd::try_until_text "oc -n $LOGGING_NS get deployment cluster-logging-operator -o jsonpath={.status.availableReplicas} --ignore-not-found" "1" ${TIMEOUT_MIN}
 
 # test the validation of an invalid cr
-os::cmd::expect_failure_and_text "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr_invalid.yaml" "invalid: metadata.name: Unsupported value"
+os::cmd::expect_failure_and_text "oc -n $LOGGING_NS create -f ${repo_dir}/hack/cr_invalid.yaml" "invalid: metadata.name: Unsupported value"
 
 # deploy cluster logging with unmanaged state
-os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr-unmanaged.yaml"
+os::cmd::expect_success "oc -n $LOGGING_NS create -f ${repo_dir}/hack/cr-unmanaged.yaml"
 
 # wait few seconds
 sleep 10
@@ -86,10 +87,10 @@ assert_kibana_instance_does_not_exists
 # wait few seconds
 sleep 10
 # delete cluster logging
-os::cmd::expect_success "oc -n $NAMESPACE delete -f ${repo_dir}/hack/cr-unmanaged.yaml"
+os::cmd::expect_success "oc -n $LOGGING_NS delete -f ${repo_dir}/hack/cr-unmanaged.yaml"
 
 # deploy cluster logging
-os::cmd::expect_success "oc -n $NAMESPACE create -f ${repo_dir}/hack/cr.yaml"
+os::cmd::expect_success "oc -n $LOGGING_NS create -f ${repo_dir}/hack/cr.yaml"
 
 # assert deployment
 assert_resources_exist
@@ -97,7 +98,7 @@ assert_resources_exist
 assert_kibana_instance_exists
 
 # modify the collector
-os::cmd::expect_success "oc  -n $NAMESPACE patch clusterlogging instance --type='json' -p '[{\"op\":\"replace\",\"path\":\"/spec/collection/type\",\"value\":\"vector\"}]'"
+os::cmd::expect_success "oc  -n $LOGGING_NS patch clusterlogging instance --type='json' -p '[{\"op\":\"replace\",\"path\":\"/spec/collection/type\",\"value\":\"vector\"}]'"
 
 # wait few seconds since CLO reconciles every 30
 sleep 40

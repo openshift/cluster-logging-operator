@@ -1,6 +1,22 @@
 package constants
 
+var WatchNamespace string
+
+func init() {
+	//TODO Enable when we allow deployment in different NS
+	//ns, found := os.LookupEnv("WATCH_NAMESPACE")
+	//if !found {
+	//	log.Error(fmt.Errorf("Exiting. %s must be set", watchNamespaceEnvVar), "Failed to get watch namespace")
+	//	os.Exit(1)
+	//}
+	WatchNamespace = OpenshiftNS
+}
+
 const (
+	// watchNamespaceEnvVar
+	// https://sdk.operatorframework.io/docs/building-operators/golang/operator-scope/#configuring-namespace-scoped-operators
+	//watchNamespaceEnvVar = "WATCH_NAMESPACE"
+
 	// Keys used in ClusterLogForwarder.Output Secrets keys.
 	// Documented with OutputSpec.Secret in ../../apis/logging/v1/cluster_log_forwarder_types.go
 	//
@@ -85,22 +101,17 @@ const (
 	CollectorSecretsDir     = "/var/run/ocp-collector/secrets" //nolint:gosec
 	KibanaSessionSecretName = "kibana-session-secret"          //nolint:gosec
 
-	CollectorName             = "collector"
-	CollectorConfigSecretName = "collector-config"
-	CollectorMetricSecretName = "collector-metrics"
-	CollectorMonitorJobLabel  = "monitor-collector"
-	CollectorTrustedCAName    = "collector-trusted-ca-bundle"
-
+	CollectorName               = "collector"
+	CollectorConfigSecretName   = "collector-config"
+	CollectorMetricSecretName   = "collector-metrics"
+	CollectorMonitorJobLabel    = "monitor-collector"
 	CollectorServiceAccountName = "logcollector"
-
-	LegacySecureforward = "_LEGACY_SECUREFORWARD"
-	LegacySyslog        = "_LEGACY_SYSLOG"
+	CollectorTrustedCAName      = "collector-trusted-ca-bundle"
 
 	FluentdImageEnvVar            = "RELATED_IMAGE_FLUENTD"
 	VectorImageEnvVar             = "RELATED_IMAGE_VECTOR"
 	LogfilesmetricImageEnvVar     = "RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER"
 	ConsolePluginImageEnvVar      = "RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN"
-	CertEventName                 = "cluster-logging-certs-generate"
 	ClusterInfrastructureInstance = "cluster"
 
 	ContainerLogDir = "/var/log/containers"

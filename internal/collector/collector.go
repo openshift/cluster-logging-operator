@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	clusterLoggingPriorityClassName = "cluster-logging"
+	clusterLoggingPriorityClassName = "system-node-critical"
 	exporterPort                    = int32(2112)
 	exporterPortName                = "logfile-metrics"
 	metricsPort                     = int32(24231)

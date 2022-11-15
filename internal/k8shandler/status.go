@@ -69,7 +69,7 @@ func (clusterRequest *ClusterLoggingRequest) getElasticsearchStatus() ([]logging
 	}
 
 	err := clusterRequest.List(map[string]string{}, esList)
-	status := []logging.ElasticsearchStatus{}
+	var status []logging.ElasticsearchStatus
 
 	if err != nil {
 		return status, fmt.Errorf("Unable to get Elasticsearches: %v", err)

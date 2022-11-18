@@ -60,6 +60,7 @@ COPY --from=origincli /usr/bin/oc /usr/bin
 COPY --from=builder /go/src/github.com/openshift/cluster-logging-operator/must-gather/collection-scripts/* /usr/bin/
 
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
+USER 1000
 WORKDIR /usr/bin
 CMD ["/usr/bin/cluster-logging-operator"]
 

@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"context"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"path"
 	"reflect"
 	"time"
@@ -586,10 +587,9 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateCollectorServiceAccou
 	}
 
 	// If needed create a custom SecurityContextConstraints object for the log collector to run with
-	scc := NewSCC(LogCollectorSCCName)
-	err := clusterRequest.Create(scc)
-	if err != nil && !errors.IsAlreadyExists(err) {
-		return nil, fmt.Errorf("Failure creating Log collector SecurityContextConstraints: %v", err)
+	scc := collector.NewSCC(collector.LogCollectorSCCName)
+	if err := reconcile.SecurityContextConstraints(clusterRequest.Client, scc); err != nil {
+		return nil, err
 	}
 
 	subject := NewSubject(

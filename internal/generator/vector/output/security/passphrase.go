@@ -6,7 +6,7 @@ func (p Passphrase) Name() string {
 
 func (p Passphrase) Template() string {
 	return `{{define "` + p.Name() + `" -}}
-key_pass = "{{p.PassphrasePath}}"
+key_pass = {{.PassphrasePath}}
 {{- end}}
 `
 }

@@ -2,11 +2,14 @@ package fluentd
 
 import (
 	"fmt"
+	"strings"
+
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	source2 "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
-	"strings"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
 
 func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSpec, namespace string, o generator.Options) []generator.Element {
@@ -21,11 +24,23 @@ func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSp
 }
 
 func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
+	tlsProfileSpec := o[generator.TlsProfileSpec].(configv1.TLSProfileSpec)
+	var minTlsVersion string
+	switch tls.MinTLSVersion(tlsProfileSpec) {
+	case "VersionTLS10":
+		minTlsVersion = "TLS1_1" // no TLS1_0 in fluentd conf
+	case "VersionTLS11":
+		minTlsVersion = "TLS1_1"
+	case "VersionTLS12":
+		minTlsVersion = "TLS1_2"
+	case "VersionTLS13":
+		minTlsVersion = "TLS1_3"
+	}
+	cipherSuites := strings.Join(tls.TLSCiphers(tlsProfileSpec), ":")
 	return []generator.Element{
 		PrometheusMonitor{
-			Desc:         "Prometheus Monitoring",
-			TemplateName: "PrometheusMonitor",
-			TemplateStr:  PrometheusMonitorTemplate,
+			TlsMinVersion: minTlsVersion,
+			CipherSuites:  cipherSuites,
 		},
 	}
 }

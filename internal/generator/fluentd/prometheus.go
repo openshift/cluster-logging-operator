@@ -1,48 +1,54 @@
 package fluentd
 
-import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-)
+type PrometheusMonitor struct {
+	TlsMinVersion string
+	CipherSuites  string
+}
 
-const PrometheusMonitorTemplate = `
-{{define "PrometheusMonitor" -}}
-# {{.Desc}}
-<source>
-  @type prometheus
-  bind "#{ENV['PROM_BIND_IP']}"
-  <transport tls>
-    cert_path /etc/collector/metrics/tls.crt
-    private_key_path /etc/collector/metrics/tls.key
-  </transport>
-</source>
+func (p PrometheusMonitor) Name() string {
+	return "PrometheusMonitor"
+}
 
-<source>
-  @type prometheus_monitor
-  <labels>
-    hostname ${hostname}
-  </labels>
-</source>
+func (p PrometheusMonitor) Template() string {
+	return `{{define "` + p.Name() + `" -}}
+  # Prometheus Monitoring
+  <source>
+    @type prometheus
+    bind "#{ENV['PROM_BIND_IP']}"
+    <transport tls>
+      cert_path /etc/collector/metrics/tls.crt
+      private_key_path /etc/collector/metrics/tls.key
+      min_version {{.TlsMinVersion}}
+      max_version TLS1_3
+      ciphers {{.CipherSuites}}
+    </transport>
+  </source>
 
-# excluding prometheus_tail_monitor
-# since it leaks namespace/pod info
-# via file paths
+  <source>
+    @type prometheus_monitor
+    <labels>
+      hostname ${hostname}
+    </labels>
+  </source>
 
-# tail_monitor plugin which publishes log_collected_bytes_total
-<source>
-  @type collected_tail_monitor
-  <labels>
-    hostname ${hostname}
-  </labels>
-</source>
+  # excluding prometheus_tail_monitor
+  # since it leaks namespace/pod info
+  # via file paths
 
-# This is considered experimental by the repo
-<source>
-  @type prometheus_output_monitor
-  <labels>
-    hostname ${hostname}
-  </labels>
-</source>
-{{end}}
-`
+  # tail_monitor plugin which publishes log_collected_bytes_total
+  <source>
+    @type collected_tail_monitor
+    <labels>
+      hostname ${hostname}
+    </labels>
+  </source>
 
-type PrometheusMonitor = generator.ConfLiteral
+  # This is considered experimental by the repo
+  <source>
+    @type prometheus_output_monitor
+    <labels>
+      hostname ${hostname}
+    </labels>
+  </source>
+  {{end}}`
+}

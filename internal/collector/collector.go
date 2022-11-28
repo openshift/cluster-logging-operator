@@ -2,12 +2,15 @@ package collector
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	vector "github.com/openshift/cluster-logging-operator/internal/collector/vector"
@@ -119,13 +122,13 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 	return factory
 }
 
-func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap) *apps.DaemonSet {
-	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash)
+func (f *Factory) NewDaemonSet(namespace, name string, trustedCABundle *v1.ConfigMap, tlsProfileSpec configv1.TLSProfileSpec) *apps.DaemonSet {
+	podSpec := f.NewPodSpec(trustedCABundle, f.ForwarderSpec, f.ClusterID, f.TrustedCAHash, tlsProfileSpec)
 	ds := coreFactory.NewDaemonSet(name, namespace, constants.CollectorName, constants.CollectorName, *podSpec)
 	return ds
 }
 
-func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string) *v1.PodSpec {
+func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec logging.ClusterLogForwarderSpec, clusterID, trustedCAHash string, tlsProfileSpec configv1.TLSProfileSpec) *v1.PodSpec {
 
 	podSpec := &v1.PodSpec{
 		NodeSelector:                  utils.EnsureLinuxNodeSelector(f.NodeSelector()),
@@ -151,7 +154,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	secretNames := addSecretVolumes(podSpec, forwarderSpec)
 
-	exporter := newLogMetricsExporterContainer()
+	exporter := newLogMetricsExporterContainer(tlsProfileSpec)
 	collector := f.NewCollectorContainer(secretNames, clusterID)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
@@ -214,7 +217,7 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) 
 	return &collector
 }
 
-func newLogMetricsExporterContainer() *v1.Container {
+func newLogMetricsExporterContainer(tlsProfileSpec configv1.TLSProfileSpec) *v1.Container {
 	// deliberately not passing any resources for running the below container process, let it have cpu and memory as the process requires
 	exporterResources := &v1.ResourceRequirements{}
 	exporter := factory.NewContainer(constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, v1.PullIfNotPresent, *exporterResources)
@@ -226,7 +229,9 @@ func newLogMetricsExporterContainer() *v1.Container {
 		},
 	}
 	exporter.Command = []string{"/bin/bash"}
-	exporter.Args = []string{"-c", "/usr/local/bin/log-file-metric-exporter -verbosity=2 -dir=/var/log/pods -http=:2112 -keyFile=/etc/collector/metrics/tls.key -crtFile=/etc/collector/metrics/tls.crt"}
+	exporter.Args = []string{"-c",
+		"/usr/local/bin/log-file-metric-exporter -verbosity=2 -dir=/var/log/pods -http=:2112 -keyFile=/etc/collector/metrics/tls.key -crtFile=/etc/collector/metrics/tls.crt -tlsMinVersion=" +
+			tls.MinTLSVersion(tlsProfileSpec) + " -cipherSuites=" + strings.Join(tls.TLSCiphers(tlsProfileSpec), ",")}
 
 	exporter.VolumeMounts = []v1.VolumeMount{
 		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},

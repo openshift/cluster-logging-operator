@@ -32,7 +32,7 @@ CipherSuites = {{CipherSuites}}
 
 func OpenSSLConf(k8client client.Client) string {
 	pr, _ := FetchAPIServerTlsProfile(k8client)
-	tls := getTLSProfileSpec(pr)
+	tls := GetTLSProfileSpec(pr)
 	conf, _ := opensslConf(tls)
 	return conf
 }

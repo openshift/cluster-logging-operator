@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/status"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/url"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -66,6 +67,8 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[
 	if debug, ok := clusterRequest.ForwarderRequest.Annotations[AnnotationDebugOutput]; ok && strings.ToLower(debug) == "true" {
 		op[helpers.EnableDebugOutput] = "true"
 	}
+	tlsProfile, _ := tls.FetchAPIServerTlsProfile(clusterRequest.Client)
+	op[generator.TlsProfileSpec] = tls.GetTLSProfileSpec(tlsProfile)
 
 	var collectorType = clusterRequest.Cluster.Spec.Collection.Type
 	g := forwardergenerator.New(collectorType)

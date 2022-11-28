@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"context"
+
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
@@ -11,6 +12,7 @@ import (
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	configv1 "github.com/openshift/api/config/v1"
 	securityv1 "github.com/openshift/api/security/v1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -30,6 +32,7 @@ var _ = Describe("Reconciling", func() {
 	_ = loggingv1.SchemeBuilder.AddToScheme(scheme.Scheme)
 	_ = monitoringv1.AddToScheme(scheme.Scheme)
 	_ = securityv1.AddToScheme(scheme.Scheme)
+	_ = configv1.AddToScheme(scheme.Scheme)
 
 	var (
 		cluster = &loggingv1.ClusterLogging{

@@ -5,7 +5,6 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	"testing"
@@ -28,16 +27,6 @@ func TestLokiOutput(t *testing.T) {
 		l      *loki.Receiver
 		tsTime = time.Now()
 		ts     = functional.CRIOTime(tsTime)
-
-		containerTag = func(f *functional.CollectorFunctionalFramework) string {
-			for _, s := range f.Pod.Status.ContainerStatuses {
-				if s.Name == constants.CollectorName {
-					return fmt.Sprintf("kubernetes.var.log.pods.%s_%s_%s.%s.0.log", f.Pod.Namespace, f.Pod.Name, f.Pod.UID, f.Pod.Spec.Containers[0].Name)
-				}
-			}
-			assert.Fail(t, "Unable to find the container id to create a tag for the test")
-			return ""
-		}
 	)
 
 	// testCase does common setup/teardown around a testFunc
@@ -93,7 +82,6 @@ func TestLokiOutput(t *testing.T) {
 			"kubernetes_namespace_name": f.Namespace,
 			"kubernetes_pod_name":       f.Name,
 			"kubernetes_container_name": f.Pod.Spec.Containers[0].Name,
-			"tag":                       containerTag(f),
 		}
 		assert.Equal(t, want, labels)
 
@@ -139,7 +127,6 @@ func TestLokiOutput(t *testing.T) {
 				"kubernetes_labels_k8s":     "k8s-value",
 				"openshift_labels_logging":  "logging-value",
 				"kubernetes_host":           functional.FunctionalNodeName,
-				"tag":                       containerTag(f),
 			}
 			labels := r[0].Stream
 			delete(labels, "fluentd_thread") // Added by loki plugin.

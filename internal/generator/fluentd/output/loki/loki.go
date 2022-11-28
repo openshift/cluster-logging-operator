@@ -21,7 +21,6 @@ import (
 
 const (
 	lokiLabelKubernetesHost = "kubernetes.host"
-	lokiLabelTag            = "tag"
 )
 
 var (
@@ -35,7 +34,6 @@ var (
 	}
 	requiredLabelKeys = []string{
 		lokiLabelKubernetesHost,
-		lokiLabelTag,
 	}
 )
 
@@ -85,7 +83,7 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 	if genhelper.IsDebugOutput(op) {
 		return genhelper.DebugOutput
 	}
-	// url is parasable, checked at input sanitization
+	// url is parsable, checked at input sanitization
 	u, _ := urlhelper.Parse(o.URL)
 	urlBase := fmt.Sprintf("%v://%v%v", u.Scheme, u.Host, u.Path)
 	storeID := helpers.StoreID("", o.Name, "")
@@ -163,11 +161,6 @@ func LokiLabelFilter(l *logging.Loki) Element {
 		recordKeys := strings.Replace(k, ".", `","`, -1)
 		var r Record
 		switch k {
-		case lokiLabelTag:
-			r = Record{
-				Key:        "_tag",
-				Expression: "${tag}",
-			}
 		case lokiLabelKubernetesHost:
 			r = Record{
 				Key:        fmt.Sprintf("_%v", tempName),

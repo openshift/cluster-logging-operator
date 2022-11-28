@@ -60,7 +60,6 @@ func TestLokiOutput(t *testing.T) {
          _kubernetes_namespace_name ${record.dig("kubernetes","namespace_name")}
          _kubernetes_pod_name ${record.dig("kubernetes","pod_name")}
          _log_type ${record.dig("log_type")}
-         _tag ${tag}
 `,
 				label: `
        kubernetes_container_name _kubernetes_container_name
@@ -68,7 +67,6 @@ func TestLokiOutput(t *testing.T) {
        kubernetes_namespace_name _kubernetes_namespace_name
        kubernetes_pod_name _kubernetes_pod_name
        log_type _log_type
-       tag _tag
 `,
 				buffer: `
      @type file
@@ -162,13 +160,11 @@ bearer_token_file /var/run/secrets/kubernetes.io/serviceaccount/token`
       _kubernetes_container_name ${record.dig("kubernetes","container_name")}
       _kubernetes_host "#{ENV['NODE_NAME']}"
       _kubernetes_labels_app ${record.dig("kubernetes","labels","app")}
-      _tag ${tag}
 `
 		config.label = `
       kubernetes_container_name _kubernetes_container_name
       kubernetes_host _kubernetes_host
       kubernetes_labels_app _kubernetes_labels_app
-      tag _tag
 `
 		require.Equal(t, test.TrimLines(config.String()), test.TrimLines(results), results)
 	})

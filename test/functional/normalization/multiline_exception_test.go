@@ -1,6 +1,3 @@
-//go:build fluentd
-// +build fluentd
-
 package normalization
 
 import (
@@ -18,6 +15,7 @@ import (
 // Multiline Detect Exception test to verify proper re-assembly of
 // multi-line exceptions (e.g. java stacktrace)
 // https://issues.redhat.com/browse/LOG-1717
+// https://issues.redhat.com/browse/LOG-1796
 var _ = Describe("[Functional][Normalization] Multi-line exception detection", func() {
 	const (
 		timestamp = "2021-03-31T12:59:28.573159188+00:00"
@@ -28,17 +26,93 @@ var _ = Describe("[Functional][Normalization] Multi-line exception detection", f
         at testjava.Main.printMe(Main.java:19)
         at testjava.Main.main(Main.java:10)`
 
+		javaExceptionComp = `java.lang.IndexOutOfBoundsException: Index: 1, Size: 0
+		at java.util.ArrayList.rangeCheck(ArrayList.java:657)
+		at java.util.ArrayList.get(ArrayList.java:433)
+		at com.in28minutes.rest.webservices.restfulwebservices.HelloWorldController.helloWorld(HelloWorldController.java:14)
+		at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+		at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+		at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+		at java.lang.reflect.Method.invoke(Method.java:498)
+		at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:190)
+		at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:138)
+		at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:104)
+		at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:892)
+		at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:797)
+		at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
+		at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1039)
+		at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:942)
+		at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1005)
+		at org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:897)
+		at javax.servlet.http.HttpServlet.service(HttpServlet.java:634)
+		at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:882)
+		at javax.servlet.http.HttpServlet.service(HttpServlet.java:741)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:231)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+		at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:53)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+		at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:99)
+		at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:118)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+		at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:92)
+		at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:118)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+		at org.springframework.web.filter.HiddenHttpMethodFilter.doFilterInternal(HiddenHttpMethodFilter.java:93)
+		at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:118)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+		at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:200)
+		at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:118)
+		at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:193)
+		at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:166)
+		at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:202)
+		at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:96)
+		at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:490)
+		at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:139)
+		at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:92)
+		at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
+		at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:343)
+		at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:408)
+		at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:66)
+		at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:853)
+		at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1587)
+		at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:49)
+		at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+		at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+		at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61)
+		at java.lang.Thread.run(Thread.java:748)
+	Caused by: com.example.myproject.MyProjectServletException
+		at com.example.myproject.MyServlet.doPost(MyServlet.java:169)
+		at javax.servlet.http.HttpServlet.service(HttpServlet.java:727)
+		at javax.servlet.http.HttpServlet.service(HttpServlet.java:820)
+		at org.mortbay.jetty.servlet.ServletHolder.handle(ServletHolder.java:511)
+		at org.mortbay.jetty.servlet.ServletHandler$CachedChain.doFilter(ServletHandler.java:1166)
+		at com.example.myproject.OpenSessionInViewFilter.doFilter(OpenSessionInViewFilter.java:30)
+		... 27 common frames omitted`
+
+		pythonException = `Traceback (most recent call last):
+  File "/usr/bin/python/python27/python27_lib/versions/third_party/webapp2-2.5.2/webapp2.py", line 1535, in __call__
+    rv = self.handle_exception(request, response, e)
+  File "/home/apps/myapp/app.py", line 10, in start
+    return get()
+  File "/home/apps/myapp/app.py", line 5, in get
+    raise Exception('exception')
+Exception: ('exception')`
+
 		nodeJSException = `ReferenceError: myArray is not defined
-  at next (/app/node_modules/express/lib/router/index.js:256:14)
-  at /app/node_modules/express/lib/router/index.js:615:15
-  at next (/app/node_modules/express/lib/router/index.js:271:10)
-  at Function.process_params (/app/node_modules/express/lib/router/index.js:330:12)
-  at /app/node_modules/express/lib/router/index.js:277:22
-  at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-  at Route.dispatch (/app/node_modules/express/lib/router/route.js:112:3)
-  at next (/app/node_modules/express/lib/router/route.js:131:13)
-  at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
-  at /app/app.js:52:3`
+		at next (/app/node_modules/express/lib/router/index.js:256:14)
+		at /app/node_modules/express/lib/router/index.js:615:15
+		at next (/app/node_modules/express/lib/router/index.js:271:10)
+		at Function.process_params (/app/node_modules/express/lib/router/index.js:330:12)
+		at /app/node_modules/express/lib/router/index.js:277:22
+		at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+		at Route.dispatch (/app/node_modules/express/lib/router/route.js:112:3)
+		at next (/app/node_modules/express/lib/router/route.js:131:13)
+		at Layer.handle [as handle_request] (/app/node_modules/express/lib/router/layer.js:95:5)
+		at /app/app.js:52:3`
 
 		goLangException = `panic: my panic
 
@@ -70,7 +144,7 @@ created by main.main
 				functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					WithMultineErrorDetection().
-					ToFluentForwardOutput()
+					ToElasticSearchOutput()
 			}
 		}
 		buildLogForwarder(framework)
@@ -85,8 +159,12 @@ created by main.main
 			crioLine := functional.NewCRIOLogMessage(timestamp, line, false)
 			buffer = append(buffer, crioLine)
 		}
-		// Application log in namespace
-		Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
+
+		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+			Expect(framework.WriteMessagesToApplicationLog(strings.Join(buffer, "\n"), 1)).To(Succeed())
+		} else {
+			Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
+		}
 
 		for _, output := range framework.Forwarder.Spec.Outputs {
 			outputType := output.Type
@@ -98,9 +176,14 @@ created by main.main
 		}
 	},
 		Entry("of Java services", javaException, nil),
+		Entry("of Java services more advance", javaExceptionComp, nil),
 		Entry("of NodeJS services", nodeJSException, nil),
 		Entry("of GoLang services", goLangException, nil),
+		Entry("of Python services", pythonException, nil),
 		Entry("of single application NS to single pipeline", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("not a valid test for vector since we route by namespace")
+			}
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("forward-pipeline", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
@@ -108,9 +191,12 @@ created by main.main
 					}
 				}).
 				WithMultineErrorDetection().
-				ToFluentForwardOutput()
+				ToElasticSearchOutput()
 		}),
 		Entry("of single application NS sources with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("not a valid test for vector since we route by namespace")
+			}
 			b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
@@ -118,7 +204,7 @@ created by main.main
 					}
 				}).
 				WithMultineErrorDetection().
-				ToFluentForwardOutput()
+				ToElasticSearchOutput()
 			//LOG-2241
 			b.FromInput("multiline-log-ns").
 				Named("other").
@@ -126,6 +212,9 @@ created by main.main
 				ToElasticSearchOutput()
 		}),
 		Entry("of multiple application NS source with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("not a valid test for vector since we route by namespace")
+			}
 			b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
@@ -133,7 +222,7 @@ created by main.main
 					}
 				}).
 				WithMultineErrorDetection().
-				ToFluentForwardOutput()
+				ToElasticSearchOutput()
 			//LOG-2241
 			b.FromInput("multiline-log-ns").
 				Named("other").

@@ -52,13 +52,21 @@ if .log_type == "application" {
 		if len(vrls) != 0 {
 			vrl = strings.Join(helpers.TrimSpaces(vrls), "\n\n")
 		}
+		if p.DetectMultilineErrors {
+			m := Multiline{
+				ComponentID: "multiline_logs",
+				Desc:        "Multiline logs detection",
+				Inputs:      helpers.MakeInputs(inputs...),
+			}
+			el = append(el, m)
+			inputs = []string{"multiline_logs"}
+		}
 		r := Remap{
 			ComponentID: p.Name,
 			Inputs:      helpers.MakeInputs(inputs...),
 			VRL:         vrl,
 		}
 		el = append(el, r)
-
 	}
 	return el
 }

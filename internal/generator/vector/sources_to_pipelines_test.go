@@ -142,6 +142,83 @@ source = '''
 '''
 `,
 		}),
+		Entry("Send same logtype to with multiline", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							logging.InputNameApplication,
+							logging.InputNameInfrastructure,
+							logging.InputNameAudit,
+						},
+						OutputRefs: []string{logging.OutputNameDefault},
+						Name:       "pipeline1",
+					},
+					{
+						InputRefs: []string{
+							logging.InputNameApplication,
+						},
+						OutputRefs:            []string{logging.OutputNameDefault},
+						Name:                  "pipeline2",
+						DetectMultilineErrors: true,
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube")'
+
+# Set log_type to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = '''
+  .log_type = "application"
+'''
+
+# Set log_type to "infrastructure"
+[transforms.infrastructure]
+type = "remap"
+inputs = ["route_container_logs.infra","journal_logs"]
+source = '''
+  .log_type = "infrastructure"
+'''
+
+# Set log_type to "audit"
+[transforms.audit]
+type = "remap"
+inputs = ["host_audit_logs","k8s_audit_logs","openshift_audit_logs","ovn_audit_logs"]
+source = '''
+  .log_type = "audit"
+  .hostname = get_env_var("VECTOR_SELF_NODE_NAME") ?? ""
+  ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
+'''
+
+[transforms.pipeline1]
+type = "remap"
+inputs = ["application","infrastructure","audit"]
+source = '''
+  .
+'''
+# Multiline logs detection
+[transforms.multiline_logs]
+type = "reduce"
+inputs = ["application"]
+starts_when.type = "vrl"
+starts_when.source = "match_any(string!(.message), [r'^\\d{4}-\\d{2}-\\d{2} .+', r'/Error \\(.*\\):$/', r'\bpanic:', r'http: panic serving', r'^Traceback \\(most recent call last\\):$/'])"
+merge_strategies.message = "concat_newline"
+
+[transforms.pipeline2]
+type = "remap"
+inputs = ["multiline_logs"]
+source = '''
+  .
+'''
+`,
+		}),
 		Entry("Route Logs by Namespace(s)", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Inputs: []logging.InputSpec{

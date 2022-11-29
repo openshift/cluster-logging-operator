@@ -264,6 +264,43 @@ crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 `,
 		}),
+		Entry("with TLS Key Pass", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeKafka,
+						Name: "kafka-receiver",
+						URL:  "tls://broker1-kafka.svc.messaging.cluster.local:9092/topic",
+						Secret: &logging.OutputSecretSpec{
+							Name: "kafka-receiver-1",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"kafka-receiver": {
+					Data: map[string][]byte{
+						"passphrase": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: `
+# Kafka config
+[sinks.kafka_receiver]
+type = "kafka"
+inputs = ["pipeline_1","pipeline_2"]
+bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
+topic = "topic"
+
+[sinks.kafka_receiver.encoding]
+codec = "json"
+timestamp_format = "rfc3339"
+
+[sinks.kafka_receiver.tls]
+enabled = true
+key_pass = "junk"
+`,
+		}),
 		Entry("with basic TLS", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{

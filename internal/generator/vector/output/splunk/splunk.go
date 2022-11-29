@@ -91,7 +91,7 @@ func Encoding(o logging.OutputSpec) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
-	conf := []Element{}
+	var conf []Element
 	if o.Secret == nil {
 		return conf
 	}
@@ -100,7 +100,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 	if urlhelper.IsTLSScheme(u.Scheme) {
 		if security.HasPassphrase(secret) {
 			pp := security.Passphrase{
-				PassphrasePath: security.SecretPath(o.Secret.Name, constants.Passphrase),
+				KeyPass: security.GetFromSecret(secret, constants.Passphrase),
 			}
 			conf = append(conf, pp)
 			hasTLS = true

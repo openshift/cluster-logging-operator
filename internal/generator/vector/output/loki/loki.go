@@ -2,6 +2,7 @@ package loki
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -109,9 +110,12 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
+	outputName := helpers.FormatComponentID(o.Name)
+	componentID := fmt.Sprintf("%s_%s", outputName, "remap")
 	return MergeElements(
 		[]Element{
-			Output(o, inputs, secret, op),
+			CleanupFields(componentID, inputs),
+			Output(o, []string{componentID}),
 			Encoding(o),
 			Labels(o),
 		},
@@ -121,7 +125,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	)
 }
 
-func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
+func Output(o logging.OutputSpec, inputs []string) Element {
 	return Loki{
 		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
@@ -262,4 +266,12 @@ func BearerTokenAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		}
 	}
 	return conf
+}
+
+func CleanupFields(id string, inputs []string) Element {
+	return Remap{
+		ComponentID: id,
+		Inputs:      helpers.MakeInputs(inputs...),
+		VRL:         "del(.tag)",
+	}
 }

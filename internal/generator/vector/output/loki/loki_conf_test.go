@@ -70,9 +70,16 @@ var _ = Describe("Generate vector config", func() {
 				},
 			},
 			ExpectedConf: `
+[transforms.loki_receiver_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["application"]
+inputs = ["loki_receiver_remap"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -119,9 +126,16 @@ password = "password"
 				},
 			},
 			ExpectedConf: `
+[transforms.loki_receiver_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["application"]
+inputs = ["loki_receiver_remap"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -166,9 +180,16 @@ password = "password"
 				},
 			},
 			ExpectedConf: `
+[transforms.loki_receiver_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["application"]
+inputs = ["loki_receiver_remap"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -213,9 +234,16 @@ password = "password"
 				},
 			},
 			ExpectedConf: `
+[transforms.loki_receiver_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["application"]
+inputs = ["loki_receiver_remap"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -263,9 +291,16 @@ var _ = Describe("Generate vector config for in cluster loki", func() {
 				},
 			},
 			ExpectedConf: `
+[transforms.loki_receiver_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["application"]
+inputs = ["loki_receiver_remap"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false

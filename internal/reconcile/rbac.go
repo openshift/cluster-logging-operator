@@ -4,20 +4,15 @@ import (
 	"context"
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/clusterrole"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/clusterrolebinding"
-	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func ClusterRole(er record.EventRecorder, k8sClient client.Client, name string, generator func() *rbacv1.ClusterRole) error {
-	reason := constants.EventReasonGetObject
-	updateReason := ""
+func ClusterRole(k8sClient client.Client, name string, generator func() *rbacv1.ClusterRole) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current := &rbacv1.ClusterRole{}
 		key := client.ObjectKey{Name: name}
@@ -45,22 +40,10 @@ func ClusterRole(er record.EventRecorder, k8sClient client.Client, name string, 
 		return k8sClient.Update(context.TODO(), current)
 	})
 
-	eventType := v1.EventTypeNormal
-	msg := fmt.Sprintf("%s ClusterRole %s", reason, generator().Name)
-	if updateReason != "" {
-		msg = fmt.Sprintf("%s because of change in %s.", msg, updateReason)
-	}
-	if retryErr != nil {
-		eventType = v1.EventTypeWarning
-		msg = fmt.Sprintf("Unable to %s: %v", msg, retryErr)
-	}
-	er.Event(generator(), eventType, reason, msg)
 	return retryErr
 }
 
-func ClusterRoleBinding(er record.EventRecorder, k8sClient client.Client, name string, generator func() *rbacv1.ClusterRoleBinding) error {
-	reason := constants.EventReasonGetObject
-	updateReason := ""
+func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *rbacv1.ClusterRoleBinding) error {
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		current := &rbacv1.ClusterRoleBinding{}
 		key := client.ObjectKey{Name: name}
@@ -88,15 +71,5 @@ func ClusterRoleBinding(er record.EventRecorder, k8sClient client.Client, name s
 
 		return k8sClient.Update(context.TODO(), current)
 	})
-	eventType := v1.EventTypeNormal
-	msg := fmt.Sprintf("%s ClusterRoleBinding %s", reason, generator().Name)
-	if updateReason != "" {
-		msg = fmt.Sprintf("%s because of change in %s.", msg, updateReason)
-	}
-	if retryErr != nil {
-		eventType = v1.EventTypeWarning
-		msg = fmt.Sprintf("Unable to %s: %v", msg, retryErr)
-	}
-	er.Event(generator(), eventType, reason, msg)
 	return retryErr
 }

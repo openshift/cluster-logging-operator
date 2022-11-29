@@ -55,7 +55,7 @@ codec = "json"
 
 [sinks.splunk_hec.tls]
 enabled = true
-key_pass = "/var/run/ocp-collector/secrets/vector-splunk-secret-passphrase/passphrase"
+key_pass = "junk"
 `
 	)
 

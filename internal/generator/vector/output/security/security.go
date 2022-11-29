@@ -29,7 +29,7 @@ type CAFile struct {
 }
 
 type Passphrase struct {
-	PassphrasePath string
+	KeyPass string
 }
 
 type BearerToken struct {

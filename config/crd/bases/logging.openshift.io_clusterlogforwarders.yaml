@@ -98,8 +98,12 @@ spec:
                   type: object
                 type: array
               outputDefaults:
-                description: OutputDefaults are used to specify default values for
-                  OutputSpec
+                description: 'DEPRECATED OutputDefaults specify forwarder config explicitly
+                  for the default managed log store named ''default''.  If there is
+                  a need to spec the managed logstore, define an outputSpec like the
+                  following where the managed fields (e.g. URL, Secret.Name) will
+                  be replaced with the required values: spec: - outputs: - name: default
+                  type: elasticsearch elasticsearch: structuredTypeKey: kubernetes.labels.myvalue'
                 properties:
                   elasticsearch:
                     description: "Elasticsearch OutputSpec default values \n Values

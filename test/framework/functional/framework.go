@@ -178,7 +178,7 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 	debugOutput := false
 	testClient := client.Get().ControllerRuntimeClient()
 	if strings.TrimSpace(f.Conf) == "" {
-		if f.Conf, err = forwarder.Generate(logging.LogCollectionType(f.collector.String()), string(clfYaml), false, debugOutput, &testClient); err != nil {
+		if f.Conf, err = forwarder.Generate(logging.LogCollectionType(f.collector.String()), string(clfYaml), false, debugOutput, testClient); err != nil {
 			return err
 		}
 		//remove journal for now since we can not mimic it

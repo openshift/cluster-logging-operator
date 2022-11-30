@@ -2,6 +2,8 @@ package k8shandler
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/migrations"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
@@ -195,6 +197,32 @@ var _ = Describe("Normalizing forwarder", func() {
 		})
 
 		Context("outputs", func() {
+
+			// Ref: https://issues.redhat.com/browse/LOG-3228
+			It("should validate the default output as any other without adding a new one", func() {
+				request.Cluster.Namespace = constants.OpenshiftNS
+				request.Client = fake.NewClientBuilder().WithRuntimeObjects(runtime.NewSecret(
+					constants.OpenshiftNS, constants.CollectorSecretName, nil,
+				)).Build()
+				request.Cluster.Spec.LogStore = &logging.LogStoreSpec{
+					Type: logging.LogStoreTypeElasticsearch,
+				}
+				request.ForwarderSpec.Outputs = []logging.OutputSpec{
+					migrations.NewDefaultOutput(nil),
+				}
+				request.ForwarderSpec.Pipelines = []logging.PipelineSpec{
+					{
+						Name:       "aPipeline",
+						OutputRefs: []string{logging.OutputNameDefault},
+						InputRefs:  []string{logging.InputNameApplication},
+					},
+				}
+				// sanity check
+				Expect(request.ForwarderSpec.Outputs).To(HaveLen(1))
+				spec, status := request.NormalizeForwarder()
+				Expect(status.Outputs[logging.OutputNameDefault]).To(HaveCondition(logging.ConditionReady, true, "", ""))
+				Expect(spec.Outputs).To(HaveLen(1), "Exp. the number of outputs to remain unchanged")
+			})
 			It("should drop outputs that do not have unique names", func() {
 				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs, logging.OutputSpec{
 					Name: "myOutput",
@@ -220,16 +248,15 @@ var _ = Describe("Normalizing forwarder", func() {
 				Expect(status.Outputs["output_2_"]).To(HaveCondition("Ready", false, "Invalid", "must have a name"))
 			})
 
-			It("should drop outputs that conflict with the internally reserved name", func() {
-				request.ForwarderSpec.Outputs = append(request.ForwarderSpec.Outputs, logging.OutputSpec{
+			It("should not drop outputs that conflict with the internally reserved name 'default' ", func() {
+				outputs := append(request.ForwarderSpec.Outputs, logging.OutputSpec{
 					Name: "default",
 					Type: "elasticsearch",
 					URL:  "http://here",
 				})
-				spec, status := request.NormalizeForwarder()
-				Expect(spec.Outputs).To(HaveLen(2), "Exp. outputs with an internal name conflict to be dropped")
-				Expect(status.Outputs).To(HaveKey("output_2_"))
-				Expect(status.Outputs["output_2_"]).To(HaveCondition("Ready", false, "Invalid", "reserved"))
+				request.ForwarderSpec.Outputs = outputs
+				spec, _ := request.NormalizeForwarder()
+				Expect(len(spec.Outputs)).To(Equal(len(outputs)), "Exp. outputs with an internal name of 'default' do be kept")
 			})
 
 			It("should drop outputs that have empty types", func() {
@@ -521,73 +548,6 @@ var _ = Describe("Normalizing forwarder", func() {
 			})
 
 			Context("with outputDefaults specified", func() {
-				It("should accept default output", func() {
-					cluster.Spec = logging.ClusterLoggingSpec{
-						Collection: &logging.CollectionSpec{
-							Type: "fluentd",
-						},
-						LogStore: &logging.LogStoreSpec{
-							Type: logging.LogStoreTypeElasticsearch,
-						},
-					}
-					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
-						OutputDefaults: &logging.OutputDefaults{
-							Elasticsearch: &logging.Elasticsearch{
-								StructuredTypeKey: "kubernetes.labels.mylabel",
-							},
-						},
-						Pipelines: []logging.PipelineSpec{
-							{
-								InputRefs:  []string{"application"},
-								OutputRefs: []string{"default"},
-								Name:       "mypipe",
-							},
-						},
-					}
-					_, _ = request.generateCollectorConfig()
-
-					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch).ToNot(BeNil(), "Expected an Elasticsearch specific config")
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
-
-				})
-				It("should setup values for elasticsearch output", func() {
-					cluster.Spec = logging.ClusterLoggingSpec{
-						Collection: &logging.CollectionSpec{
-							Type: "fluentd",
-						},
-						LogStore: &logging.LogStoreSpec{
-							Type: logging.LogStoreTypeElasticsearch,
-						},
-					}
-					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
-						OutputDefaults: &logging.OutputDefaults{
-							Elasticsearch: &logging.Elasticsearch{
-								StructuredTypeKey: "kubernetes.labels.mylabel",
-							},
-						},
-						Outputs: []logging.OutputSpec{
-							{
-								Type: logging.OutputTypeElasticsearch,
-								Name: "es-out",
-								URL:  "http://some-url",
-							},
-						},
-						Pipelines: []logging.PipelineSpec{
-							{
-								InputRefs:  []string{"application"},
-								OutputRefs: []string{"es-out"},
-								Name:       "mypipe",
-							},
-						},
-					}
-					_, _ = request.generateCollectorConfig()
-
-					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.Version).To(Equal(0)) // not set
-				})
-
 				It("should not change elasticsearch version to latest if defined in default outputs", func() {
 					cluster.Spec = logging.ClusterLoggingSpec{
 						Collection: &logging.CollectionSpec{
@@ -622,8 +582,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					_, _ = request.generateCollectorConfig()
 
 					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.StructuredTypeKey).To(Equal("kubernetes.labels.mylabel"))
-					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch.Version).To(Equal(11))
+					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch).To(BeNil())
 				})
 			})
 
@@ -645,6 +604,10 @@ var _ = Describe("Normalizing forwarder", func() {
 		})
 
 		It("generates default configuration for empty spec with default log store", func() {
+			request.Cluster.Namespace = constants.OpenshiftNS
+			request.Client = fake.NewClientBuilder().WithRuntimeObjects(runtime.NewSecret(
+				constants.OpenshiftNS, constants.CollectorSecretName, nil,
+			)).Build()
 			cluster.Spec.LogStore = &logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
 			}
@@ -734,6 +697,10 @@ pipelines:
 		})
 
 		It("forwards logs to an explicit default logstore", func() {
+			request.Cluster.Namespace = constants.OpenshiftNS
+			request.Client = fake.NewClientBuilder().WithRuntimeObjects(runtime.NewSecret(
+				constants.OpenshiftNS, constants.CollectorSecretName, nil,
+			)).Build()
 			cluster.Spec.LogStore = &logging.LogStoreSpec{
 				Type: logging.LogStoreTypeElasticsearch,
 			}
@@ -785,95 +752,6 @@ pipelines:
 		Expect(status.Conditions).NotTo(HaveCondition("Degraded", true, "", ""), "unexpected "+YAMLString(status))
 		Expect(*spec).To(EqualDiff(request.ForwarderSpec))
 	})
-})
-
-var _ = Describe("#applyOutputDefaults", func() {
-	var (
-		outputDefault *logging.OutputDefaults
-		esOutput      = logging.OutputSpec{
-			Name: "external-elasticsearch",
-			Type: logging.OutputTypeElasticsearch,
-			OutputTypeSpec: logging.OutputTypeSpec{
-				Elasticsearch: &logging.Elasticsearch{
-					Version: logging.LatestESVersion,
-				},
-			},
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-		esOutWithoutVersion = logging.OutputSpec{
-			Name: "external-elasticsearch",
-			Type: logging.OutputTypeElasticsearch,
-			Secret: &logging.OutputSecretSpec{
-				Name: "log-forward-secret",
-			},
-		}
-	)
-
-	It("should do nothing when no OutputDefaults are defined", func() {
-		Expect(applyOutputDefaults(nil, esOutput)).To(Equal(esOutput))
-	})
-
-	It("should not set ES version when no OutputDefaults are defined", func() {
-		result := applyOutputDefaults(nil, esOutWithoutVersion)
-		Expect(result).To(Equal(esOutWithoutVersion))
-	})
-
-	Context("when Elasticsearch OutputDefaults are defined", func() {
-
-		BeforeEach(func() {
-			outputDefault = &logging.OutputDefaults{
-				Elasticsearch: &logging.Elasticsearch{
-					StructuredTypeKey:  "kubernetes.labels.app",
-					StructuredTypeName: "nologformat",
-					Version:            logging.DefaultESVersion,
-				},
-			}
-		})
-		It("should not set ES version if not defined in OutputDefaults and the output does not define them", func() {
-			outputDefaultNoVersion := &logging.OutputDefaults{
-				Elasticsearch: &logging.Elasticsearch{
-					StructuredTypeKey:  "some.other.label.value",
-					StructuredTypeName: "anotherTypeName",
-				},
-			}
-			act := applyOutputDefaults(outputDefaultNoVersion, esOutWithoutVersion)
-			esOutput.Elasticsearch = &logging.Elasticsearch{
-				StructuredTypeKey:  outputDefaultNoVersion.Elasticsearch.StructuredTypeKey,
-				StructuredTypeName: outputDefaultNoVersion.Elasticsearch.StructuredTypeName,
-			}
-			Expect(act).To(Equal(esOutput))
-		})
-
-		It("should set the values on the output from OutputDefaults when the output does not define them", func() {
-			esOutputNoES := logging.OutputSpec{
-				Name: "external-elasticsearch",
-				Type: logging.OutputTypeElasticsearch,
-				Secret: &logging.OutputSecretSpec{
-					Name: "log-forward-secret",
-				},
-			}
-			act := applyOutputDefaults(outputDefault, esOutputNoES)
-			esOutput.Elasticsearch = &logging.Elasticsearch{
-				StructuredTypeKey:  "kubernetes.labels.app",
-				StructuredTypeName: "nologformat",
-				Version:            logging.DefaultESVersion,
-			}
-			Expect(act).To(Equal(esOutput))
-		})
-
-		It("should not set the values on the output from the default when the output defines them", func() {
-			esOutput.Elasticsearch = &logging.Elasticsearch{
-				StructuredTypeKey:  "some.label.value",
-				StructuredTypeName: "someTypeName",
-				Version:            logging.LatestESVersion,
-			}
-			act := applyOutputDefaults(outputDefault, esOutput)
-			Expect(act).To(Equal(esOutput))
-		})
-	})
-
 })
 
 var _ = DescribeTable("#generateCollectorConfig",

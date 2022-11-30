@@ -32,7 +32,7 @@ func UnMarshalClusterLogForwarder(clfYaml string) (forwarder *logging.ClusterLog
 	return forwarder, err
 }
 
-func Generate(collectionType logging.LogCollectionType, clfYaml string, includeDefaultLogStore, debugOutput bool, client *client.Client) (string, error) {
+func Generate(collectionType logging.LogCollectionType, clfYaml string, includeDefaultLogStore, debugOutput bool, client client.Client) (string, error) {
 	var err error
 	forwarder, err := UnMarshalClusterLogForwarder(clfYaml)
 	if err != nil {
@@ -51,7 +51,7 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	}
 
 	if client != nil {
-		clRequest.Client = *client
+		clRequest.Client = client
 	}
 
 	if includeDefaultLogStore {

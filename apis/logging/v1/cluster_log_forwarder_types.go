@@ -49,7 +49,16 @@ type ClusterLogForwarderSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Forwarder Pipelines",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:forwarderPipelines"}
 	Pipelines []PipelineSpec `json:"pipelines,omitempty"`
 
-	// OutputDefaults are used to specify default values for OutputSpec
+	// DEPRECATED OutputDefaults specify forwarder config explicitly for the
+	// default managed log store named 'default'.  If there is a need to spec
+	// the managed logstore, define an outputSpec like the following where the
+	// managed fields (e.g. URL, Secret.Name) will be replaced with the required values:
+	// spec:
+	//   - outputs:
+	//     - name: default
+	//       type: elasticsearch
+	//       elasticsearch:
+	//         structuredTypeKey: kubernetes.labels.myvalue
 	//
 	// +optional
 	OutputDefaults *OutputDefaults `json:"outputDefaults,omitempty"`

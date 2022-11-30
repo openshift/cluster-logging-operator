@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"strings"
 
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
@@ -31,35 +32,6 @@ func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 	}
 	enabled, found := clusterRequest.ForwarderRequest.Annotations[UseOldRemoteSyslogPlugin]
 	return found && enabled == "enabled"
-}
-
-func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) logging.OutputSpec {
-	if outputDefaults != nil && outputDefaults.Elasticsearch != nil {
-		// TODO: fix - outputDefaults should only apply to default output
-		if out.Elasticsearch == nil {
-			out.Elasticsearch = outputDefaults.Elasticsearch
-		} else {
-			out.Elasticsearch = mergeDefaults(outputDefaults, out)
-		}
-	}
-	return out
-}
-
-func mergeDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) *logging.Elasticsearch {
-	// Below is necessary since the output version has already been set for default
-	outES := out.Elasticsearch
-	defaults := outputDefaults.Elasticsearch
-
-	if outES.StructuredTypeKey == "" && defaults.StructuredTypeKey != "" {
-		outES.StructuredTypeKey = defaults.StructuredTypeKey
-	}
-	if outES.StructuredTypeName == "" && defaults.StructuredTypeName != "" {
-		outES.StructuredTypeName = defaults.StructuredTypeName
-	}
-	if !outES.EnableStructuredContainerLogs && defaults.EnableStructuredContainerLogs {
-		outES.EnableStructuredContainerLogs = defaults.EnableStructuredContainerLogs
-	}
-	return outES
 }
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
@@ -177,6 +149,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 		clusterRequest.ForwarderSpec.Pipelines = pipelines
 	}
 
+	clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec)
 	spec := &logging.ClusterLogForwarderSpec{}
 	status := &logging.ClusterLogForwarderStatus{}
 
@@ -370,9 +343,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		case output.Name == "":
 			log.V(3).Info("verifyOutputs failed", "reason", "output must have a name")
 			badName("output must have a name")
-		case logging.IsReservedOutputName(output.Name):
-			log.V(3).Info("verifyOutputs failed", "reason", "output name is reserved", "output name", output.Name)
-			badName("output name %q is reserved", output.Name)
 		case names.Has(output.Name):
 			log.V(3).Info("verifyOutputs failed", "reason", "output name is duplicated", "output name", output.Name)
 			badName("duplicate name: %q", output.Name)
@@ -401,42 +371,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			}
 		}
 		names.Insert(output.Name)
-	}
-
-	// Add the default output if required and available.
-	routes := logging.NewRoutes(clusterRequest.ForwarderSpec.Pipelines)
-	name := logging.OutputNameDefault
-	if _, ok := routes.ByOutput[name]; ok {
-		if clusterRequest.Cluster.Spec.LogStore == nil {
-			status.Outputs.Set(name, condMissing("no default log store specified"))
-		} else {
-			logStore := clusterRequest.Cluster.Spec.LogStore
-			switch logStore.Type {
-			case logging.LogStoreTypeElasticsearch:
-				spec.Outputs = append(spec.Outputs, logging.OutputSpec{
-					Name:   logging.OutputNameDefault,
-					Type:   logging.OutputTypeElasticsearch,
-					URL:    constants.LogStoreURL,
-					Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
-				})
-				status.Outputs.Set(name, condReady)
-			case logging.LogStoreTypeLokiStack:
-				// The outputs for LokiStack will already have been added at this point
-			default:
-				status.Outputs.Set(name, condInvalid(fmt.Sprintf("unknown log store type: %s", clusterRequest.Cluster.Spec.LogStore.Type)))
-			}
-		}
-	}
-	for i, out := range spec.Outputs {
-		if out.Type == logging.OutputTypeElasticsearch {
-			// applyOutputDefaults only applies to Elasticsearch
-			out = applyOutputDefaults(clusterRequest.ForwarderSpec.OutputDefaults, out)
-		}
-		spec.Outputs[i] = out
-	}
-
-	if clusterRequest.ForwarderSpec.OutputDefaults != nil {
-		spec.OutputDefaults = clusterRequest.ForwarderSpec.OutputDefaults
 	}
 }
 

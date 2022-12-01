@@ -53,11 +53,11 @@ var _ = Describe("[internal][validations] ClusterLogForwarder", func() {
 			Expect(validateJsonParsingToElasticsearch(*clf)).To(Succeed())
 		})
 		It("should pass validation when the pipeline includes Elasticsearch and OutputDefaults.StructuredTypeName is spec'd", func() {
-			clf.Spec.OutputDefaults = &v1.OutputDefaults{Elasticsearch: &v1.Elasticsearch{StructuredTypeName: "foo"}}
+			clf.Spec.OutputDefaults = &v1.OutputDefaults{Elasticsearch: &v1.ElasticsearchStructuredSpec{StructuredTypeName: "foo"}}
 			Expect(validateJsonParsingToElasticsearch(*clf)).To(Succeed())
 		})
 		It("should pass validation when the pipeline includes Elasticsearch and and OutputDefaults.StructuredTypeKey is spec'd", func() {
-			clf.Spec.OutputDefaults = &v1.OutputDefaults{Elasticsearch: &v1.Elasticsearch{StructuredTypeKey: "foo"}}
+			clf.Spec.OutputDefaults = &v1.OutputDefaults{Elasticsearch: &v1.ElasticsearchStructuredSpec{StructuredTypeKey: "foo"}}
 			Expect(validateJsonParsingToElasticsearch(*clf)).To(Succeed())
 		})
 		It("should pass validation when the pipeline does not ref an Elasticsearch output type", func() {

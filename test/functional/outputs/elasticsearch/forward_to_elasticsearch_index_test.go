@@ -54,17 +54,23 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 	Context("when sending to ElasticSearch "+elasticSearchTag+" protocol", func() {
 		withStructuredTypeName := func(spec *logging.OutputSpec) {
 			spec.Elasticsearch = &logging.Elasticsearch{
-				StructuredTypeName: StructuredTypeName,
+				ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+					StructuredTypeName: StructuredTypeName,
+				},
 			}
 		}
 		withK8sLabelsTypeKey := func(spec *logging.OutputSpec) {
 			spec.Elasticsearch = &logging.Elasticsearch{
-				StructuredTypeKey: fmt.Sprintf("kubernetes.labels.%s", LabelName),
+				ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+					StructuredTypeKey: fmt.Sprintf("kubernetes.labels.%s", LabelName),
+				},
 			}
 		}
 		withOpenshiftLabelsTypeKey := func(spec *logging.OutputSpec) {
 			spec.Elasticsearch = &logging.Elasticsearch{
-				StructuredTypeKey: fmt.Sprintf("openshift.labels.%s", LabelName),
+				ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+					StructuredTypeKey: fmt.Sprintf("openshift.labels.%s", LabelName),
+				},
 			}
 		}
 		setPodLabelsVisitor := func(pb *runtime.PodBuilder) error {
@@ -217,7 +223,9 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 						spec.OutputTypeSpec = logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								EnableStructuredContainerLogs: true,
+								ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+									EnableStructuredContainerLogs: true,
+								},
 							},
 						}
 					}, logging.OutputTypeElasticsearch)
@@ -285,7 +293,9 @@ var _ = Describe("[Functional][Outputs][ElasticSearch] forwarding to specific in
 					FromInput(logging.InputNameApplication).
 					ToOutputWithVisitor(func(spec *logging.OutputSpec) {
 						spec.Elasticsearch = &logging.Elasticsearch{
-							StructuredTypeKey: "junk",
+							ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+								StructuredTypeKey: "junk",
+							},
 						}
 					}, logging.OutputTypeElasticsearch)
 				clfb.Forwarder.Spec.Pipelines[0].Parse = "json"

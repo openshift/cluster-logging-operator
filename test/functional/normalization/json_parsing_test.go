@@ -198,7 +198,9 @@ var _ = Describe("[Functional][Normalization] Json log parsing", func() {
 		structuredTypeName := "kubernetes.namespace_name"
 		clfb.Forwarder.Spec.Pipelines[0].Parse = "json"
 		clfb.Forwarder.Spec.Outputs[0].Elasticsearch = &logging.Elasticsearch{
-			StructuredTypeName: structuredTypeName,
+			ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+				StructuredTypeName: structuredTypeName,
+			},
 		}
 
 		ExpectOK(framework.Deploy())

@@ -298,7 +298,7 @@ type OutputDefaults struct {
 	//
 	// +kubebuilder:default:false
 	// +optional
-	Elasticsearch *Elasticsearch `json:"elasticsearch,omitempty"`
+	Elasticsearch *ElasticsearchStructuredSpec `json:"elasticsearch,omitempty"`
 }
 
 // +kubebuilder:object:root=true

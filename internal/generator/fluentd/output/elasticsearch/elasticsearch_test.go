@@ -830,7 +830,9 @@ var _ = Describe("Generate fluentd config", func() {
 						URL:  "https://es.svc.infra.cluster:9999",
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								EnableStructuredContainerLogs: true,
+								ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+									EnableStructuredContainerLogs: true,
+								},
 							},
 						},
 					},
@@ -982,8 +984,10 @@ var _ = Describe("Generate fluentd config", func() {
 						URL:  "https://es.svc.infra.cluster:9999",
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								StructuredTypeKey:  "kubernetes.labels.foo-bar",
-								StructuredTypeName: "my-name",
+								ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+									StructuredTypeKey:  "kubernetes.labels.foo-bar",
+									StructuredTypeName: "my-name",
+								},
 							},
 						},
 					},

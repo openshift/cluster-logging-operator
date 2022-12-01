@@ -18,7 +18,9 @@ var _ = Describe("MigrateDefaultOutput", func() {
 
 	BeforeEach(func() {
 		esSpec = &logging.Elasticsearch{
-			StructuredTypeKey: "foo.bar",
+			ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+				StructuredTypeKey: "foo.bar",
+			},
 		}
 		pipelines = []logging.PipelineSpec{
 			{
@@ -66,11 +68,14 @@ var _ = Describe("MigrateDefaultOutput", func() {
 			})
 			It("should add the default OutputSpec and OutputDefaults when OutputDefaults are spec'd", func() {
 				spec.OutputDefaults = &logging.OutputDefaults{
-					Elasticsearch: &logging.Elasticsearch{
+					Elasticsearch: &logging.ElasticsearchStructuredSpec{
 						StructuredTypeKey: "foo.bar",
 					},
 				}
-				exp[1].Elasticsearch = spec.OutputDefaults.Elasticsearch
+				exp[1].Elasticsearch = &logging.Elasticsearch{
+					ElasticsearchStructuredSpec: *spec.OutputDefaults.Elasticsearch,
+				}
+
 				Expect(MigrateDefaultOutput(spec)).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and OutputDefault %v", pipelines, spec.OutputDefaults))
 			})
 		})
@@ -98,11 +103,11 @@ var _ = Describe("MigrateDefaultOutput", func() {
 
 			It("should replace the OutputSpec with the default OutputSpec and use the config (e.g. structureTypeKey) defined in the original OutputSpec", func() {
 				tobereplaced.Elasticsearch = esSpec
-				exp = append(outputs, NewDefaultOutput(&logging.OutputDefaults{Elasticsearch: esSpec}))
+				exp = append(outputs, NewDefaultOutput(&logging.OutputDefaults{Elasticsearch: &esSpec.ElasticsearchStructuredSpec}))
 				spec = logging.ClusterLogForwarderSpec{
 					Outputs:        append(outputs, tobereplaced),
 					Pipelines:      pipelines,
-					OutputDefaults: &logging.OutputDefaults{Elasticsearch: &logging.Elasticsearch{StructuredTypeKey: "abc"}},
+					OutputDefaults: &logging.OutputDefaults{Elasticsearch: &logging.ElasticsearchStructuredSpec{StructuredTypeKey: "abc"}},
 				}
 				Expect(MigrateDefaultOutput(spec)).To(Equal(exp), fmt.Sprintf("Exp. default output because of pipeline %v and ElasticsearchSpec %v", pipelines, esSpec))
 			})

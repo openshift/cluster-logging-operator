@@ -184,6 +184,21 @@ type Kafka struct {
 type FluentdForward struct{}
 
 type Elasticsearch struct {
+	ElasticsearchStructuredSpec `json:",inline"`
+
+	// Version specifies the version of Elasticsearch to be used.
+	// Must be one of:
+	//  - 6 - Default for internal ES store
+	//  - 7
+	//  - 8 - Latest for external ES store
+	//
+	// +kubebuilder:validation:Minimum:=6
+	// +optional
+	Version int `json:"version,omitempty"`
+}
+
+// ElasticsearchStructuredSpec is spec related to structured log changes to determine the elasticsearch index
+type ElasticsearchStructuredSpec struct {
 	// StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index
 	// It takes precedence over StructuredTypeName
 	//
@@ -203,16 +218,6 @@ type Elasticsearch struct {
 	//
 	// +optional
 	EnableStructuredContainerLogs bool `json:"enableStructuredContainerLogs,omitempty"`
-
-	// Version specifies the version of Elasticsearch to be used.
-	// Must be one of:
-	//  - 6 - Default for internal ES store
-	//  - 7
-	//  - 8 - Latest for external ES store
-	//
-	// +kubebuilder:validation:Minimum:=6
-	// +optional
-	Version int `json:"version,omitempty"`
 }
 
 // Loki provides optional extra properties for `type: loki`

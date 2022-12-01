@@ -99,7 +99,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							},
 						},
 						OutputDefaults: &logging.OutputDefaults{
-							Elasticsearch: &logging.Elasticsearch{
+							Elasticsearch: &logging.ElasticsearchStructuredSpec{
 								StructuredTypeKey: "kubernetes.labels.logFormat",
 							},
 						},
@@ -145,7 +145,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 							},
 						},
 						OutputDefaults: &logging.OutputDefaults{
-							Elasticsearch: &logging.Elasticsearch{
+							Elasticsearch: &logging.ElasticsearchStructuredSpec{
 								StructuredTypeName: IndexName,
 							},
 						},

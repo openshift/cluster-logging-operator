@@ -53,7 +53,9 @@ func NewDefaultOutput(defaults *logging.OutputDefaults) logging.OutputSpec {
 		Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
 	}
 	if defaults != nil && defaults.Elasticsearch != nil {
-		spec.Elasticsearch = defaults.Elasticsearch
+		spec.Elasticsearch = &logging.Elasticsearch{
+			ElasticsearchStructuredSpec: *defaults.Elasticsearch,
+		}
 	}
 	return spec
 }

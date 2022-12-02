@@ -33,19 +33,19 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateLokiStackLogStore() e
 		return kverrors.Wrap(err, "Failed to set finalizer for LokiStack RBAC rules.")
 	}
 
-	if err := reconcile.ClusterRole(clusterRequest.EventRecorder, clusterRequest.Client, lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
+	if err := reconcile.ClusterRole(clusterRequest.Client, lokiStackWriterClusterRoleName, newLokiStackWriterClusterRole); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for LokiStack collector.")
 	}
 
-	if err := reconcile.ClusterRoleBinding(clusterRequest.EventRecorder, clusterRequest.Client, lokiStackWriterClusterRoleBindingName, newLokiStackWriterClusterRoleBinding); err != nil {
+	if err := reconcile.ClusterRoleBinding(clusterRequest.Client, lokiStackWriterClusterRoleBindingName, newLokiStackWriterClusterRoleBinding); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for LokiStack collector.")
 	}
 
-	if err := reconcile.ClusterRole(clusterRequest.EventRecorder, clusterRequest.Client, lokiStackAppReaderClusterRoleName, newLokiStackAppReaderClusterRole); err != nil {
+	if err := reconcile.ClusterRole(clusterRequest.Client, lokiStackAppReaderClusterRoleName, newLokiStackAppReaderClusterRole); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRole for reading application logs.")
 	}
 
-	if err := reconcile.ClusterRoleBinding(clusterRequest.EventRecorder, clusterRequest.Client, lokiStackAppReaderClusterRoleBindingName, newLokiStackAppReaderClusterRoleBinding); err != nil {
+	if err := reconcile.ClusterRoleBinding(clusterRequest.Client, lokiStackAppReaderClusterRoleBindingName, newLokiStackAppReaderClusterRoleBinding); err != nil {
 		return kverrors.Wrap(err, "Failed to create or update ClusterRoleBinding for reading application logs.")
 	}
 

@@ -66,7 +66,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			log.V(9).Error(err, "collector.ReconcileServiceAccount")
 			return
 		}
-		if err = collector.ReconcileRBAC(clusterRequest.EventRecorder, clusterRequest.Client, cluster.Namespace, constants.CollectorServiceAccountName, utils.AsOwner(cluster)); err != nil {
+		if err = collector.ReconcileRBAC(clusterRequest.Client, cluster.Namespace, constants.CollectorServiceAccountName, utils.AsOwner(cluster)); err != nil {
 			log.V(9).Error(err, "collector.ReconcileRBAC")
 			return
 		}

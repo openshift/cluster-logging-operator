@@ -1,5 +1,4 @@
-# Define the target to run if make is called with no arguments.
-.PHONY: default
+# Define the target to run if make is called with no arguments.  .PHONY: default
 default: pre-commit
 
 export LOG_LEVEL?=9
@@ -33,6 +32,7 @@ IMAGE_LOGGING_CONSOLE_PLUGIN?=$(call DEPLOY_ENV,RELATED_IMAGE_LOGGING_CONSOLE_PL
 export IMAGE_TAG=$(IMAGE_NAME):$(VERSION)
 BUNDLE_TAG=$(IMAGE_NAME)-bundle:$(VERSION)
 LOGGING_VERSION=$(shell echo "$(VERSION)" | grep -o '^[0-9]\+\.[0-9]\+')
+DEPLOY_CHANNEL?=$LOGGING_VERSION
 
 else
 # Set variables from environment or hard-coded default
@@ -215,7 +215,7 @@ deploy-catalog:
 
 .PHONY: deploy-elasticsearch-operator
 deploy-elasticsearch-operator:
-	hack/deploy-eo.sh
+	DEPLOY_CHANNEL=$(DEPLOY_CHANNEL) hack/deploy-eo.sh
 
 .PHONY: undeploy-elasticsearch-operator
 undeploy-elasticsearch-operator:
@@ -337,6 +337,7 @@ apply: namespace $(OPERATOR_SDK) ## Install kustomized resources directly to the
 .PHONY: test-e2e-olm
 # NOTE: This is the CI e2e entry point.
 test-e2e-olm: $(JUNITREPORT)
+	DEPLOY_CHANNEL=${DEPLOY_CHANNEL:-$LOGGING_VERSION} \
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) INCLUDES="$(E2E_TEST_INCLUDES)" CLF_INCLUDES="$(CLF_TEST_INCLUDES)" LOG_LEVEL=3 hack/test-e2e-olm.sh
 
 .PHONY: test-e2e-local

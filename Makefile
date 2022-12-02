@@ -1,3 +1,4 @@
+.PHONY: default
 # Define the target to run if make is called with no arguments.  .PHONY: default
 default: pre-commit
 
@@ -32,7 +33,7 @@ IMAGE_LOGGING_CONSOLE_PLUGIN?=$(call DEPLOY_ENV,RELATED_IMAGE_LOGGING_CONSOLE_PL
 export IMAGE_TAG=$(IMAGE_NAME):$(VERSION)
 BUNDLE_TAG=$(IMAGE_NAME)-bundle:$(VERSION)
 LOGGING_VERSION=$(shell echo "$(VERSION)" | grep -o '^[0-9]\+\.[0-9]\+')
-DEPLOY_CHANNEL?=$LOGGING_VERSION
+DEPLOY_CHANNEL?=stable
 
 else
 # Set variables from environment or hard-coded default

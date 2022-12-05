@@ -75,13 +75,13 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 	}
 }
 
-//Brokers returns the list of broker endpoints of a kafka cluster.
-//The list represents only the initial set used by the collector's kafka client for the
-//first connention only. The collector's kafka client fetches constantly an updated list
-//from kafka. These updates are not reconciled back to the collector configuration.
-//The list of brokers are populated from the Kafka OutputSpec `Brokers` field, a list of
-//valid URLs. If none provided the target URL from the OutputSpec is used as fallback.
-//Finally, if neither approach works the current collector process will be terminated.
+// Brokers returns the list of broker endpoints of a kafka cluster.
+// The list represents only the initial set used by the collector's kafka client for the
+// first connention only. The collector's kafka client fetches constantly an updated list
+// from kafka. These updates are not reconciled back to the collector configuration.
+// The list of brokers are populated from the Kafka OutputSpec `Brokers` field, a list of
+// valid URLs. If none provided the target URL from the OutputSpec is used as fallback.
+// Finally, if neither approach works the current collector process will be terminated.
 func Brokers(o logging.OutputSpec) string {
 	brokers := []string{o.URL} // Put o.URL first in the list.
 	if o.Kafka != nil {        // Add optional extra broker URLs.
@@ -95,9 +95,9 @@ func Brokers(o logging.OutputSpec) string {
 	return strings.Join(brokers, ",")
 }
 
-//Topic returns the name of an existing kafka topic.
-//The kafka topic is either extracted from the kafka OutputSpec `Topic` field in a multiple broker
-//setup or as a fallback from the OutputSpec URL if provided as a host path. Defaults to `topic`.
+// Topic returns the name of an existing kafka topic.
+// The kafka topic is either extracted from the kafka OutputSpec `Topic` field in a multiple broker
+// setup or as a fallback from the OutputSpec URL if provided as a host path. Defaults to `topic`.
 func Topics(o logging.OutputSpec) string {
 	if o.Kafka != nil && o.Kafka.Topic != "" {
 		return o.Kafka.Topic
@@ -128,7 +128,7 @@ timestamp_format = "rfc3339"
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
-	conf := []Element{}
+	var conf []Element
 	if o.Secret == nil {
 		return conf
 	}
@@ -150,7 +150,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 
 		if security.HasPassphrase(secret) {
 			pp := security.Passphrase{
-				PassphrasePath: security.SecretPath(o.Secret.Name, constants.Passphrase),
+				KeyPass: security.GetFromSecret(secret, constants.Passphrase),
 			}
 			conf = append(conf, pp)
 		}

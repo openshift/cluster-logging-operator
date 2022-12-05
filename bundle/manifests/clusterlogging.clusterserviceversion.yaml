@@ -96,7 +96,7 @@ metadata:
     createdAt: "2018-08-01T08:00:00Z"
     description: The Red Hat OpenShift Logging Operator for OCP provides a means for
       configuring and managing your aggregated logging stack.
-    olm.skipRange: '>=4.6.0-0 <5.6.0'
+    olm.skipRange: '>=5.5.0-0 <5.7.0'
     operatorframework.io/cluster-monitoring: "true"
     operatorframework.io/suggested-namespace: openshift-logging
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
@@ -111,7 +111,7 @@ metadata:
     operatorframework.io/arch.arm64: supported
     operatorframework.io/arch.ppc64le: supported
     operatorframework.io/arch.s390x: supported
-  name: clusterlogging.v5.6.0
+  name: clusterlogging.v5.7.0
   namespace: openshift-logging
 spec:
   apiservicedefinitions: {}
@@ -543,4 +543,4 @@ spec:
     name: log-file-metric-exporter
   - image: quay.io/openshift-logging/logging-view-plugin:latest
     name: logging-console-plugin
-  version: 5.6.0
+  version: 5.7.0

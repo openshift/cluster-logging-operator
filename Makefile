@@ -1,3 +1,4 @@
+
 # Define the target to run if make is called with no arguments.
 .PHONY: default
 default: pre-commit
@@ -42,7 +43,7 @@ export CURRENT_BRANCH=$(shell git rev-parse --abbrev-ref HEAD;)
 export IMAGE_TAG?=127.0.0.1:5000/openshift/origin-$(OPERATOR_NAME):$(CURRENT_BRANCH)
 BUNDLE_TAG=$(error set OVERLAY to deploy or run a bundle)
 
-export LOGGING_VERSION?=5.6
+export LOGGING_VERSION?=5.7
 export VERSION=$(LOGGING_VERSION).0
 export NAMESPACE?=openshift-logging
 
@@ -277,7 +278,7 @@ coverage: test-unit
 test-cluster:
 	go test  -cover -race ./test/... -- -root=$(CURDIR)
 
-OPENSHIFT_VERSIONS?="v4.7"
+OPENSHIFT_VERSIONS?="v4.11-v4.14"
 # Generate bundle manifests and metadata, then validate generated files.
 BUNDLE_VERSION?=$(VERSION)
 CHANNEL=$(or $(filename $(OVERLAY)),stable)

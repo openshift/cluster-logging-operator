@@ -248,8 +248,8 @@ OPENSHIFT_VERSIONS?="v4.7"
 # Generate bundle manifests and metadata, then validate generated files.
 BUNDLE_VERSION?=$(LOGGING_VERSION).0
 # Options for 'bundle-build'
-BUNDLE_CHANNELS := --channels=stable,stable-${LOGGING_VERSION}
-BUNDLE_DEFAULT_CHANNEL := --default-channel=stable
+BUNDLE_CHANNELS := --channels=stable-${LOGGING_VERSION}
+BUNDLE_DEFAULT_CHANNEL := --default-channel=stable-${LOGGING_VERSION}
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command

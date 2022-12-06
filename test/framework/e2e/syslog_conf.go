@@ -4,7 +4,6 @@ const (
 	TcpSyslogInput = `
 # Provides TCP syslog reception
 # for parameters see http://www.rsyslog.com/doc/imtcp.html
-module(load="omstdout")
 module(load="imtcp") # needs to be done just once
 input(type="imtcp" port="24224" ruleset="test")
 	`
@@ -55,7 +54,6 @@ input(type="imudp" port="24224" ruleset="test")
 	RuleSetRfc5424 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc5424"]){
-    action(type="omstdout")
     action(type="omfile" file="/tmp/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`
@@ -63,7 +61,6 @@ ruleset(name="test" parser=["rsyslog.rfc5424"]){
 	RuleSetRfc3164 = `
 #### RULES ####
 ruleset(name="test" parser=["rsyslog.rfc3164"]){
-    action(type="omstdout")
     action(type="omfile" file="/tmp/infra.log" Template="RSYSLOG_SyslogProtocol23Format")
 }
 	`

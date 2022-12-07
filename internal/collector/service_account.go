@@ -15,6 +15,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	RequiredDropCapabilities = []corev1.Capability{
+		"CHOWN",
+		"DAC_OVERRIDE",
+		"FSETID",
+		"FOWNER",
+		"SETGID",
+		"SETUID",
+		"SETPCAP",
+		"NET_BIND_SERVICE",
+		"KILL",
+	}
+)
+
 // ReconcileServiceAccount reconciles the serviceaccount specifically for a collector deployment
 func ReconcileServiceAccount(er record.EventRecorder, k8sClient client.Client, namespace, name string, owner metav1.OwnerReference) (err error) {
 	serviceAccount := runtime.NewServiceAccount(namespace, name)
@@ -66,17 +80,7 @@ func NewSCC() *security.SecurityContextConstraints {
 
 	scc := runtime.NewSCC("log-collector-scc")
 	scc.AllowPrivilegedContainer = false
-	scc.RequiredDropCapabilities = []corev1.Capability{
-		"CHOWN",
-		"DAC_OVERRIDE",
-		"FSETID",
-		"FOWNER",
-		"SETGID",
-		"SETUID",
-		"SETPCAP",
-		"NET_BIND_SERVICE",
-		"KILL",
-	}
+	scc.RequiredDropCapabilities = RequiredDropCapabilities
 	scc.AllowHostDirVolumePlugin = true
 	scc.Volumes = []security.FSType{"configMap", "secret", "emptyDir", "projected"}
 	scc.DefaultAllowPrivilegeEscalation = utils.GetBool(false)

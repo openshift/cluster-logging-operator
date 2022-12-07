@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"strings"
 
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
@@ -27,15 +28,6 @@ const (
 	fluentdAlertsFile = "collector/fluentd_prometheus_alerts.yaml"
 	vectorAlertsFile  = "collector/vector_prometheus_alerts.yaml"
 )
-
-func applyOutputDefaults(outputDefaults *logging.OutputDefaults, out logging.OutputSpec) logging.OutputSpec {
-	if outputDefaults != nil && outputDefaults.Elasticsearch != nil {
-		if out.Type == logging.OutputTypeElasticsearch && out.Elasticsearch == nil {
-			out.Elasticsearch = outputDefaults.Elasticsearch
-		}
-	}
-	return out
-}
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
 	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
@@ -152,6 +144,7 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 		clusterRequest.ForwarderSpec.Pipelines = pipelines
 	}
 
+	clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec)
 	spec := &logging.ClusterLogForwarderSpec{}
 	status := &logging.ClusterLogForwarderStatus{}
 
@@ -345,9 +338,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		case output.Name == "":
 			log.V(3).Info("verifyOutputs failed", "reason", "output must have a name")
 			badName("output must have a name")
-		case logging.IsReservedOutputName(output.Name):
-			log.V(3).Info("verifyOutputs failed", "reason", "output name is reserved", "output name", output.Name)
-			badName("output name %q is reserved", output.Name)
 		case names.Has(output.Name):
 			log.V(3).Info("verifyOutputs failed", "reason", "output name is duplicated", "output name", output.Name)
 			badName("duplicate name: %q", output.Name)
@@ -376,40 +366,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			}
 		}
 		names.Insert(output.Name)
-	}
-
-	// Add the default output if required and available.
-	routes := logging.NewRoutes(clusterRequest.ForwarderSpec.Pipelines)
-	name := logging.OutputNameDefault
-	if _, ok := routes.ByOutput[name]; ok {
-		if clusterRequest.Cluster.Spec.LogStore == nil {
-			status.Outputs.Set(name, condMissing("no default log store specified"))
-		} else {
-			logStore := clusterRequest.Cluster.Spec.LogStore
-			switch logStore.Type {
-			case logging.LogStoreTypeElasticsearch:
-				spec.Outputs = append(spec.Outputs, logging.OutputSpec{
-					Name:   logging.OutputNameDefault,
-					Type:   logging.OutputTypeElasticsearch,
-					URL:    constants.LogStoreURL,
-					Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
-				})
-				status.Outputs.Set(name, condReady)
-			case logging.LogStoreTypeLokiStack:
-				// The outputs for LokiStack will already have been added at this point
-			default:
-				status.Outputs.Set(name, condInvalid(fmt.Sprintf("unknown log store type: %s", clusterRequest.Cluster.Spec.LogStore.Type)))
-			}
-		}
-	}
-
-	for i, out := range spec.Outputs {
-		out = applyOutputDefaults(clusterRequest.ForwarderSpec.OutputDefaults, out)
-		spec.Outputs[i] = out
-	}
-
-	if clusterRequest.ForwarderSpec.OutputDefaults != nil {
-		spec.OutputDefaults = clusterRequest.ForwarderSpec.OutputDefaults
 	}
 }
 

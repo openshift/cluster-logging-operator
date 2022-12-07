@@ -118,8 +118,9 @@ var _ = Describe("Reconciling", func() {
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:  client,
-					Cluster: cluster,
+					Client:           client,
+					Cluster:          cluster,
+					ForwarderRequest: &loggingv1.ClusterLogForwarder{},
 				}
 			})
 

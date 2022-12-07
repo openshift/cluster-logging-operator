@@ -45,7 +45,7 @@ if [ "${DO_EO_SETUP:-true}" == "true" ] ; then
     # install the catalog containing the elasticsearch operator csv
     ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/catalog-deploy.sh
     # install the elasticsearch operator from that catalog
-    ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
+    DEPLOY_CHANNEL=${DEPLOY_CHANNEL:-$LOGGING_VERSION} ELASTICSEARCH_OPERATOR_NAMESPACE=openshift-operators-redhat olm_deploy/scripts/operator-install.sh
     popd
 fi
 

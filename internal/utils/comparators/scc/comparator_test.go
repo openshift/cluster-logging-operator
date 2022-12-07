@@ -20,13 +20,20 @@ var _ = Describe("scc#AreSame", func() {
 		Expect(same).To(BeTrue(), fmt.Sprintf("Exp. comparator to succeed when fields are the same, reason: %s are different", reason))
 	})
 
-	DescribeTable("should fail with different", func(modify func(*security.SecurityContextConstraints)) {
+	DescribeTable("should fail with different", func(modifications ...func(*security.SecurityContextConstraints)) {
 		left := collector.NewSCC()
 		right := left.DeepCopy()
-		modify(right)
+		if len(modifications) > 0 {
+			modifications[0](right)
+		}
+		if len(modifications) > 1 {
+			modifications[1](left)
+		}
 		same, _ := AreSame(*left, *right)
 		Expect(same).To(BeFalse(), "Exp. comparator to fail for dissimilar property")
 	},
+		Entry("Priority nil", func(right *security.SecurityContextConstraints) { right.Priority = nil }, func(left *security.SecurityContextConstraints) { left.Priority = utils.GetInt32(12) }),
+		Entry("Priority different value", func(right *security.SecurityContextConstraints) { right.Priority = utils.GetInt32(12) }),
 		Entry("AllowPrivilegedContainer", func(right *security.SecurityContextConstraints) { right.AllowPrivilegedContainer = true }),
 		Entry("RequiredDropCapabilities", func(right *security.SecurityContextConstraints) {
 			right.RequiredDropCapabilities = append(right.RequiredDropCapabilities, "foo")

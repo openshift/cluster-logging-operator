@@ -10,6 +10,10 @@ import (
 func AreSame(current, desired security.SecurityContextConstraints) (bool, string) {
 	log.V(3).Info("Comparing SCC current to desired", "current", current, "desired", desired)
 
+	if same, property := samePriority(current.Priority, desired.Priority); !same {
+		return same, property
+	}
+
 	if current.AllowPrivilegedContainer != desired.AllowPrivilegedContainer {
 		log.V(3).Info("SCC AllowPrivilegedContainer change", "current name", current.Name)
 		return false, "allowPrivilegedContainer"
@@ -34,19 +38,13 @@ func AreSame(current, desired security.SecurityContextConstraints) (bool, string
 		return false, "volumes"
 	}
 
-	if (current.DefaultAllowPrivilegeEscalation != nil && desired.DefaultAllowPrivilegeEscalation == nil) ||
-		(current.DefaultAllowPrivilegeEscalation == nil && desired.DefaultAllowPrivilegeEscalation != nil) ||
-		(current.DefaultAllowPrivilegeEscalation != nil && desired.DefaultAllowPrivilegeEscalation != nil &&
-			*current.DefaultAllowPrivilegeEscalation != *desired.DefaultAllowPrivilegeEscalation) {
+	if !sameAllowPrivilegeEscalation(current.DefaultAllowPrivilegeEscalation, desired.DefaultAllowPrivilegeEscalation) {
 		log.V(3).Info("SCC DefaultAllowPrivilegeEscalation change", "current", current.DefaultAllowPrivilegeEscalation, "desired", desired.DefaultAllowPrivilegeEscalation)
 		return false, "defaultAllowPrivilegeEscalation"
 	}
 
-	if (current.AllowPrivilegeEscalation != nil && desired.AllowPrivilegeEscalation == nil) ||
-		(current.AllowPrivilegeEscalation == nil && desired.AllowPrivilegeEscalation != nil) ||
-		(current.AllowPrivilegeEscalation != nil && desired.AllowPrivilegeEscalation != nil &&
-			*current.AllowPrivilegeEscalation != *desired.AllowPrivilegeEscalation) {
-		log.V(3).Info("SCC AllowPrivilegeEscalation change", "current name", current.Name)
+	if !sameAllowPrivilegeEscalation(current.AllowPrivilegeEscalation, desired.AllowPrivilegeEscalation) {
+		log.V(3).Info("SCC AllowPrivilegeEscalation change", "current", current.AllowPrivilegeEscalation, "desired", desired.AllowPrivilegeEscalation)
 		return false, "allowPrivilegeEscalation"
 	}
 
@@ -79,4 +77,33 @@ func AreSame(current, desired security.SecurityContextConstraints) (bool, string
 	}
 
 	return true, ""
+}
+
+func samePriority(current, desired *int32) (bool, string) {
+	if current == nil && desired != nil || current != nil && desired == nil {
+		log.V(3).Info("SCC AllowPrivilegedContainer change")
+		return false, "priority"
+	}
+	if current != nil && desired != nil && *current != *desired {
+		log.V(3).Info("SCC AllowPrivilegedContainer change")
+		return false, "priority"
+	}
+	return true, ""
+}
+
+func sameAllowPrivilegeEscalation(current, desired *bool) bool {
+	if (current != nil && desired == nil) ||
+		(current == nil && desired != nil) ||
+		(current != nil && desired != nil &&
+			*current != *desired) {
+		return false
+	}
+
+	if (desired != nil && current == nil) ||
+		(desired == nil && current != nil) ||
+		(desired != nil && current != nil &&
+			*desired != *current) {
+		return false
+	}
+	return true
 }

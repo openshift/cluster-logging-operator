@@ -253,11 +253,17 @@ func addSecretVolumes(podSpec *v1.PodSpec, pipelineSpec logging.ClusterLogForwar
 
 func addSecurityContextTo(container *v1.Container) *v1.Container {
 	container.SecurityContext = &v1.SecurityContext{
+		Capabilities: &v1.Capabilities{
+			Drop: RequiredDropCapabilities,
+		},
 		SELinuxOptions: &v1.SELinuxOptions{
 			Type: "spc_t",
 		},
 		ReadOnlyRootFilesystem:   utils.GetBool(true),
 		AllowPrivilegeEscalation: utils.GetBool(false),
+		SeccompProfile: &v1.SeccompProfile{
+			Type: v1.SeccompProfileTypeRuntimeDefault,
+		},
 	}
 	return container
 }

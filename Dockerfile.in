@@ -71,6 +71,7 @@ COPY --from=builder $APP_DIR/files/ /usr/share/logging/
 COPY --from=origincli /usr/bin/oc /usr/bin
 COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
 
+USER 1000
 # this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
 CMD ["/usr/bin/cluster-logging-operator"]

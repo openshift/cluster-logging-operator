@@ -1,4 +1,4 @@
-package k8shandler
+package collector
 
 import (
 	. "github.com/openshift/api/security/v1"

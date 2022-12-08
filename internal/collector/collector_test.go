@@ -42,11 +42,27 @@ var _ = Describe("Factory#NewPodSpec", func() {
 		})
 		It("should set a security context", func() {
 			Expect(collector.SecurityContext).To(Equal(&v1.SecurityContext{
+				Capabilities: &v1.Capabilities{
+					Drop: []v1.Capability{
+						"CHOWN",
+						"DAC_OVERRIDE",
+						"FSETID",
+						"FOWNER",
+						"SETGID",
+						"SETUID",
+						"SETPCAP",
+						"NET_BIND_SERVICE",
+						"KILL",
+					},
+				},
 				SELinuxOptions: &v1.SELinuxOptions{
 					Type: "spc_t",
 				},
 				ReadOnlyRootFilesystem:   utils.GetBool(true),
 				AllowPrivilegeEscalation: utils.GetBool(false),
+				SeccompProfile: &v1.SeccompProfile{
+					Type: v1.SeccompProfileTypeRuntimeDefault,
+				},
 			}))
 		})
 	})

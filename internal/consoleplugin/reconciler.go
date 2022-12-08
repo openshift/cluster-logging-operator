@@ -3,6 +3,7 @@ package consoleplugin
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
@@ -12,6 +13,7 @@ import (
 	appv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metaerrors "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -51,8 +53,20 @@ func NewReconciler(c client.Client, cf Config) *Reconciler {
 	return r
 }
 
+func ConsoleCapabilityEnabled(c client.Client, plugin consolev1alpha1.ConsolePlugin) bool {
+	current := &consolev1alpha1.ConsolePlugin{}
+	key := types.NamespacedName{Namespace: plugin.Namespace, Name: plugin.Name}
+	err := c.Get(context.TODO(), key, current)
+
+	return err == nil || !metaerrors.IsNoMatchError(err)
+}
+
 // Reconcile creates or updates cluster objects to match config.
 func (r *Reconciler) Reconcile(ctx context.Context) error {
+	if !ConsoleCapabilityEnabled(r.c, r.consolePlugin) {
+		log.V(3).Info("Cluster console capability disabled.  Skipping logging console plugin reconciliation")
+		return nil
+	}
 	modified := false
 	// Call CreateOrUpdate for each object.
 	err := r.each(func(m mutable) error {
@@ -78,6 +92,10 @@ func (r *Reconciler) Reconcile(ctx context.Context) error {
 
 // Delete the consoleplugin and related objects.
 func (r *Reconciler) Delete(ctx context.Context) error {
+	if !ConsoleCapabilityEnabled(r.c, r.consolePlugin) {
+		log.V(3).Info("Cluster console capability disabled.  Skipping logging console plugin deletion")
+		return nil
+	}
 	var errs []error // Collect errors, don't stop on first.
 	_ = r.each(func(m mutable) error {
 		err := r.c.Delete(ctx, m.o)

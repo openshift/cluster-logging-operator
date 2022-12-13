@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	"github.com/openshift/cluster-logging-operator/internal/url"
-	"github.com/openshift/cluster-logging-operator/internal/visualization/console"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -287,28 +286,6 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 		}
 	}
 	spec.Inputs = inputs
-}
-
-// LokiStackGatewayService returns the name of LokiStack gateway service.
-// Returns an empty string if ClusterLogging is not configured for a LokiStack log store.
-func (clusterRequest *ClusterLoggingRequest) LokiStackGatewayService() string {
-	logStore := clusterRequest.Cluster.Spec.LogStore
-	if logStore == nil || logStore.LokiStack.Name == "" {
-		return ""
-	}
-
-	return fmt.Sprintf("%s-gateway-http", logStore.LokiStack.Name)
-}
-
-// LokiStackURL returns the URL of the LokiStack API for a specific tenant.
-// Returns an empty string if ClusterLogging is not configured for a LokiStack log store.
-func (clusterRequest *ClusterLoggingRequest) LokiStackURL(tenant string) string {
-	service := console.LokiStackGatewayService(clusterRequest.Cluster.Spec.LogStore)
-	if service == "" {
-		return ""
-	}
-
-	return fmt.Sprintf("https://%s.%s.svc:8080/api/logs/v1/%s", service, clusterRequest.Cluster.Namespace, tenant)
 }
 
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {

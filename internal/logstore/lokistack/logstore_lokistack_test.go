@@ -1,4 +1,4 @@
-package migrations
+package lokistack
 
 import (
 	"testing"
@@ -208,7 +208,7 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: "lokistack-testing",
 				},
 			}
-			outputs, pipelines := processPipelinesForLokiStack(logStore, "aNamespace", tc.in)
+			outputs, pipelines := ProcessForwarderPipelines(logStore, "aNamespace", tc.in)
 
 			if diff := cmp.Diff(outputs, tc.wantOutputs); diff != "" {
 				t.Errorf("outputs differ: -got+want\n%s", diff)

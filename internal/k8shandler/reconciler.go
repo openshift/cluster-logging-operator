@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
+	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"strconv"
 
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
@@ -50,7 +52,7 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 
 	if instance.GetDeletionTimestamp() != nil {
 		// ClusterLogging is being deleted, remove resources that can not be garbage-collected.
-		if err := clusterLoggingRequest.removeLokiStackRbac(); err != nil {
+		if err := lokistack.RemoveRbac(clusterLoggingRequest.Client, clusterLoggingRequest.removeFinalizer); err != nil {
 			log.Error(err, "Error removing RBAC for accessing LokiStack.")
 		}
 	}
@@ -142,7 +144,10 @@ func removeCollectorAndUpdate(clusterRequest ClusterLoggingRequest) {
 
 func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 	log.V(1).Info("Removing managed store components...")
-	for _, remove := range []func() error{clusterRequest.removeElasticsearch, clusterRequest.removeKibana, clusterRequest.removeLokiStackRbac} {
+	for _, remove := range []func() error{
+		func() error { return eslogstore.Remove(clusterRequest.Client, clusterRequest.Cluster.Namespace) },
+		clusterRequest.removeKibana,
+		func() error { return lokistack.RemoveRbac(clusterRequest.Client, clusterRequest.removeFinalizer) }} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		if err := remove(); err != nil {
 			log.Error(err, "Error removing component")

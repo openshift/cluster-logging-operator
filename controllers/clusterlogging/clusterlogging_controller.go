@@ -2,7 +2,7 @@ package clusterlogging
 
 import (
 	"context"
-	v1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
+
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -157,10 +157,6 @@ func (r *ReconcileClusterLogging) SetupWithManager(mgr ctrl.Manager) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		Watches(&source.Kind{Type: &loggingv1.ClusterLogging{}}, &handler.EnqueueRequestForObject{}).
 		Watches(&source.Kind{Type: &loggingv1.ClusterLogForwarder{}}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Kind{Type: &v1.Elasticsearch{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &loggingv1.ClusterLogging{},
-		}).
 		Watches(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
 			IsController: true,
 			OwnerType:    &loggingv1.ClusterLogging{},

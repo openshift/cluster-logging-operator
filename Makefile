@@ -147,7 +147,7 @@ lint-dockerfile:
 .PHONY: fmt
 fmt:
 	@echo gofmt		# Show progress, real gofmt line is too long
-	find version test internal controllers apis -name '*.go' | xargs gofmt -s -l -w
+	find . version test internal controllers apis -name '*.go' | xargs gofmt -s -l -w
 
 # Do all code/CRD generation at once, with timestamp file to check out-of-date.
 GEN_TIMESTAMP=.target/codegen

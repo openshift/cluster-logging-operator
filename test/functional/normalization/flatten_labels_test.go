@@ -5,6 +5,7 @@ package normalization
 
 import (
 	"fmt"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -12,9 +13,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"sort"
+	"time"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var _ = Describe("[Functional][Normalization] flatten labels", func() {
@@ -50,8 +53,29 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 		}
 
 		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
+
+		err := wait.PollImmediate(5*time.Second, 60*time.Second, func() (done bool, err error) {
+			ns := framework.Test.NS
+			if err := framework.Test.Client.Get(ns); err != nil {
+				log.V(0).Error(err, "Failed trying to get NS to update labels")
+				return false, nil
+			}
+			namespaceLabels := map[string]string{
+				"foo":     "bar",
+				"foo.bar": "foobar",
+			}
+			ns.Labels = namespaceLabels
+			if err := framework.Test.Client.Update(ns); err != nil {
+				log.V(0).Error(err, "Failed trying to update NS labels")
+				return false, nil
+			}
+			return true, nil
+		})
+		Expect(err).To(BeNil(), "Unable to update NS labels")
+
 		expLabels = map[string]string{}
 
+		framework.Labels["app"] = "bar"
 		for k, v := range applicationLabels {
 			framework.Labels[k] = v
 			expLabels[k] = v

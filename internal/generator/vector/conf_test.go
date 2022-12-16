@@ -802,7 +802,29 @@ source = '''
         end
         flatten_labels(event)
         prune_labels(event)
+		dedot(event.log.kubernetes.namespace_labels)
         emit(event)
+    end
+	
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
     end
 
     function flatten_labels(event)
@@ -891,7 +913,29 @@ source = '''
         end
         flatten_labels(event)
         prune_labels(event)
+		dedot(event.log.kubernetes.namespace_labels)
         emit(event)
+    end
+	
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
     end
 
     function flatten_labels(event)
@@ -1352,7 +1396,29 @@ source = '''
         end
         flatten_labels(event)
         prune_labels(event)
+		dedot(event.log.kubernetes.namespace_labels)
         emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
     end
 
     function flatten_labels(event)
@@ -1445,7 +1511,29 @@ source = '''
         end
         flatten_labels(event)
         prune_labels(event)
+		dedot(event.log.kubernetes.namespace_labels)
         emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "%.", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
     end
 
     function flatten_labels(event)

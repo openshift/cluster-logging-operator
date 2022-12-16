@@ -560,13 +560,14 @@ var _ = Describe("Testing Complete Config Generation", func() {
 	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
   </filter>
 
-  #rebuild message field if present
+  #dedot namespace_labels and rebuild message field if present
   <filter **>
-	@type record_modifier
+    @type record_modifier
     <record>
-      _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
     </record>
-	remove_keys _dummy_
+    remove_keys _dummy_, _dummy2_
   </filter>
 
   #remove structured field if present

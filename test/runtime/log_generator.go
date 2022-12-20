@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -18,9 +19,21 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 	l := runtime.NewPod(namespace, "log-generator", corev1.Container{
 		Name:    name,
 		Image:   "quay.io/quay/busybox",
-		Command: []string{"sh", "-c", cmd}},
-	)
+		Command: []string{"sh", "-c", cmd},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: utils.GetBool(false),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		},
+	})
 	l.Spec.RestartPolicy = corev1.RestartPolicyNever
+	l.Spec.SecurityContext = &corev1.PodSecurityContext{
+		RunAsNonRoot: utils.GetBool(true),
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+	}
 	return l
 }
 

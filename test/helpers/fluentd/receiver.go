@@ -109,7 +109,19 @@ func NewReceiver(ns, name string) *Receiver {
 				MountPath: dataDir,
 			},
 		},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: utils.GetBool(false),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		},
 	}}
+	r.Pod.Spec.SecurityContext = &corev1.PodSecurityContext{
+		RunAsNonRoot: utils.GetBool(true),
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+	}
 	r.Pod.Spec.Volumes = []corev1.Volume{
 		{
 			Name: "config",

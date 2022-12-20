@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -52,7 +53,31 @@ func NewReceiver(ns, name string) *Receiver {
 		Name:  name,
 		Image: Image,
 		Ports: []corev1.ContainerPort{{Name: name, ContainerPort: Port}},
+		SecurityContext: &corev1.SecurityContext{
+			AllowPrivilegeEscalation: utils.GetBool(false),
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+		},
+		VolumeMounts: []corev1.VolumeMount{
+			{
+				Name:      "data",
+				MountPath: "/loki",
+			},
+		},
 	}}
+	r.Pod.Spec.SecurityContext = &corev1.PodSecurityContext{
+		RunAsNonRoot: utils.GetBool(true),
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
+	}
+	r.Pod.Spec.Volumes = append(r.Pod.Spec.Volumes, corev1.Volume{
+		Name: "data",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
 	r.service.Spec = corev1.ServiceSpec{
 		Selector: map[string]string{lokiReceiver: name},
 		Ports:    []corev1.ServicePort{{Name: "loki", Port: Port}},

@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -93,6 +94,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	// https://issues.redhat.com/browse/LOG-3321
+	syncPeriod := time.Minute * 3
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Namespace:              namespace,
@@ -101,6 +104,7 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "b430cc2e.openshift.io",
+		SyncPeriod:             &syncPeriod,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

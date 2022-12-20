@@ -2,8 +2,8 @@ package k8shandler
 
 import (
 	"context"
-
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
+	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -122,6 +122,7 @@ var _ = Describe("Reconciling", func() {
 					Cluster:          cluster,
 					ForwarderRequest: &loggingv1.ClusterLogForwarder{},
 				}
+				clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore)
 			})
 
 			It("should use the injected custom CA bundle in fluentd", func() {
@@ -182,6 +183,7 @@ var _ = Describe("Reconciling", func() {
 					Client:  client,
 					Cluster: cluster,
 				}
+				clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore)
 			})
 
 			//https://issues.redhat.com/browse/LOG-1859
@@ -213,9 +215,11 @@ var _ = Describe("Reconciling", func() {
 					namespace,
 				)
 				clusterRequest = &ClusterLoggingRequest{
-					Client:  client,
-					Cluster: cluster,
+					Client:           client,
+					Cluster:          cluster,
+					ForwarderRequest: &loggingv1.ClusterLogForwarder{},
 				}
+				clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore)
 			})
 
 			It("a fluentd collector should create the logging_fluentd alerts", func() {

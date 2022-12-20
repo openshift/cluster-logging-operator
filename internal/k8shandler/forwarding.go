@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/migrations"
 	"strings"
 
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
@@ -125,34 +124,13 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.ForwarderSpec.Outputs))
 
 	// Check for default configuration
-	logStore := clusterRequest.Cluster.Spec.LogStore
-	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 {
-		if logStore != nil && logStore.Type != "" {
-			log.V(2).Info("ClusterLogForwarder forwarding to default store")
-			clusterRequest.ForwarderSpec.Pipelines = []logging.PipelineSpec{
-				{
-					InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
-					OutputRefs: []string{logging.OutputNameDefault},
-				},
-			}
-			// Continue with normalization to fill out spec and status.
-		} else if clusterRequest.ForwarderRequest == nil {
-			log.V(3).Info("ClusterLogForwarder disabled")
-			return &logging.ClusterLogForwarderSpec{}, &logging.ClusterLogForwarderStatus{}
-		}
+	if len(clusterRequest.ForwarderSpec.Pipelines) == 0 && clusterRequest.ForwarderRequest == nil {
+		log.V(3).Info("ClusterLogForwarder disabled")
+		return &logging.ClusterLogForwarderSpec{}, &logging.ClusterLogForwarderStatus{}
 	}
 
-	if logStore != nil && logStore.Type == logging.LogStoreTypeLokiStack {
-		outputs, pipelines := clusterRequest.processPipelinesForLokiStack(clusterRequest.ForwarderSpec.Pipelines)
-
-		clusterRequest.ForwarderSpec.Outputs = append(clusterRequest.ForwarderSpec.Outputs, outputs...)
-		clusterRequest.ForwarderSpec.Pipelines = pipelines
-	}
-
-	clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec)
-	spec := &logging.ClusterLogForwarderSpec{}
+	spec := &clusterRequest.ForwarderSpec
 	status := &logging.ClusterLogForwarderStatus{}
-
 	clusterRequest.verifyInputs(spec, status)
 	if !status.Inputs.IsAllReady() {
 		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
@@ -238,6 +216,7 @@ func verifyRefs(what string, refs []string, allowed sets.String) (sets.String, [
 }
 
 func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
+	pipelines := []logging.PipelineSpec{}
 	// Validate each pipeline and add a status object.
 	status.Pipelines = logging.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
@@ -272,7 +251,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 			}
 		}
 		status.Pipelines.Set(pipeline.Name, condReady) // Ready, possibly degraded.
-		spec.Pipelines = append(spec.Pipelines, logging.PipelineSpec{
+		pipelines = append(pipelines, logging.PipelineSpec{
 			Name:                  pipeline.Name,
 			InputRefs:             goodIn.List(),
 			OutputRefs:            goodOut.List(),
@@ -281,10 +260,12 @@ func (clusterRequest *ClusterLoggingRequest) verifyPipelines(spec *logging.Clust
 			DetectMultilineErrors: pipeline.DetectMultilineErrors,
 		})
 	}
+	spec.Pipelines = pipelines
 }
 
 // verifyInputs and set status.Inputs conditions
 func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
+	inputs := []logging.InputSpec{}
 	// Collect input conditions
 	status.Inputs = logging.NamedConditions{}
 	for i, input := range clusterRequest.ForwarderSpec.Inputs {
@@ -301,10 +282,11 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 		case len(status.Inputs[input.Name]) > 0:
 			badName("duplicate name: %q", input.Name)
 		default:
-			spec.Inputs = append(spec.Inputs, input)
+			inputs = append(inputs, input)
 			status.Inputs.Set(input.Name, condReady)
 		}
 	}
+	spec.Inputs = inputs
 }
 
 // LokiStackGatewayService returns the name of LokiStack gateway service.
@@ -330,6 +312,7 @@ func (clusterRequest *ClusterLoggingRequest) LokiStackURL(tenant string) string 
 }
 
 func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
+	outputs := []logging.OutputSpec{}
 	status.Outputs = logging.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
 	for i, output := range clusterRequest.ForwarderSpec.Outputs {
@@ -358,7 +341,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 			status.Outputs.Set(output.Name, condInvalid("output %q: Cloudwatch output requires type spec", output.Name))
 		default:
 			status.Outputs.Set(output.Name, condReady)
-			spec.Outputs = append(spec.Outputs, output)
+			outputs = append(outputs, output)
 		}
 		if output.Type == logging.OutputTypeCloudwatch {
 			if output.Cloudwatch != nil && output.Cloudwatch.GroupPrefix == nil {
@@ -372,6 +355,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		}
 		names.Insert(output.Name)
 	}
+	spec.Outputs = outputs
 }
 
 func (clusterRequest *ClusterLoggingRequest) verifyOutputURL(output *logging.OutputSpec, conds logging.NamedConditions) bool {

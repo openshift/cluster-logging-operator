@@ -1,11 +1,10 @@
-package k8shandler
+package migrations
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestProcessPipelinesForLokiStack(t *testing.T) {
@@ -203,23 +202,13 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		tc := tc
 		t.Run(tc.desc, func(t *testing.T) {
 			t.Parallel()
-
-			cr := &ClusterLoggingRequest{
-				Cluster: &loggingv1.ClusterLogging{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: aNamespace,
-					},
-					Spec: loggingv1.ClusterLoggingSpec{
-						LogStore: &loggingv1.LogStoreSpec{
-							Type: loggingv1.LogStoreTypeLokiStack,
-							LokiStack: loggingv1.LokiStackStoreSpec{
-								Name: "lokistack-testing",
-							},
-						},
-					},
+			logStore := &loggingv1.LogStoreSpec{
+				Type: loggingv1.LogStoreTypeLokiStack,
+				LokiStack: loggingv1.LokiStackStoreSpec{
+					Name: "lokistack-testing",
 				},
 			}
-			outputs, pipelines := cr.processPipelinesForLokiStack(tc.in)
+			outputs, pipelines := processPipelinesForLokiStack(logStore, "aNamespace", tc.in)
 
 			if diff := cmp.Diff(outputs, tc.wantOutputs); diff != "" {
 				t.Errorf("outputs differ: -got+want\n%s", diff)

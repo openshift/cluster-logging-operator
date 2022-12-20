@@ -1,16 +1,10 @@
 package k8shandler
 
 import (
-	"fmt"
+	"github.com/ViaQ/logerr/v2/kverrors"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"sort"
-	"strings"
-
-	"github.com/ViaQ/logerr/v2/kverrors"
-	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/utils/strings/slices"
 )
 
 const (
@@ -147,71 +141,4 @@ func newLokiStackAppReaderClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 			Name:     "system:authenticated",
 		},
 	)
-}
-
-func (clusterRequest *ClusterLoggingRequest) processPipelinesForLokiStack(inPipelines []loggingv1.PipelineSpec) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec) {
-	needOutput := make(map[string]bool)
-	pipelines := []loggingv1.PipelineSpec{}
-
-	for _, p := range inPipelines {
-		if !slices.Contains(p.OutputRefs, loggingv1.OutputNameDefault) {
-			// Skip pipelines that do not reference "default" output
-			pipelines = append(pipelines, p)
-			continue
-		}
-
-		for _, i := range p.InputRefs {
-			needOutput[i] = true
-		}
-
-		for i, input := range p.InputRefs {
-			pOut := p.DeepCopy()
-			pOut.InputRefs = []string{input}
-
-			for i, output := range pOut.OutputRefs {
-				if output != loggingv1.OutputNameDefault {
-					// Leave non-default output names as-is
-					continue
-				}
-
-				pOut.OutputRefs[i] = lokiStackOutput(input)
-			}
-
-			if pOut.Name != "" && i > 0 {
-				// Generate new name for named pipelines as duplicate names are not allowed
-				pOut.Name = fmt.Sprintf("%s-%d", pOut.Name, i)
-			}
-
-			pipelines = append(pipelines, *pOut)
-		}
-	}
-
-	outputs := []loggingv1.OutputSpec{}
-	for input := range needOutput {
-		outputs = append(outputs, loggingv1.OutputSpec{
-			Name: lokiStackOutput(input),
-			Type: loggingv1.OutputTypeLoki,
-			URL:  clusterRequest.LokiStackURL(input),
-		})
-	}
-
-	// Sort outputs, because we have tests depending on the exact generated configuration
-	sort.Slice(outputs, func(i, j int) bool {
-		return strings.Compare(outputs[i].Name, outputs[j].Name) < 0
-	})
-
-	return outputs, pipelines
-}
-
-func lokiStackOutput(inputName string) string {
-	switch inputName {
-	case loggingv1.InputNameApplication:
-		return loggingv1.OutputNameDefault + "-loki-apps"
-	case loggingv1.InputNameInfrastructure:
-		return loggingv1.OutputNameDefault + "-loki-infra"
-	case loggingv1.InputNameAudit:
-		return loggingv1.OutputNameDefault + "-loki-audit"
-	}
-
-	return ""
 }

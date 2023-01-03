@@ -1,6 +1,16 @@
 #!/bin/bash
 
+
+get_timestamp(){
+  date '+%Y-%m-%d %H:%M:%S'
+}
+
+log(){
+  echo "$(get_timestamp) ${*}"
+}
+
 get_env() {
+  echo "BEGIN get_env ..."
   local pod=$1
   local env_file=$2/$pod
   local ns=${3:-$NAMESPACE}
@@ -18,4 +28,5 @@ get_env() {
     echo -- Environment Variables >> $env_file
     oc -n $ns exec $pod -c $container -- env | sort >> $env_file
   done
+  echo "END get_env ..."
 }

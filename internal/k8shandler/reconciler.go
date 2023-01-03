@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics"
 
@@ -217,14 +218,14 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bo
 
 func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {
 	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: clusterRequest.Cluster.Namespace}
-	forwarder := &logging.ClusterLogForwarder{}
+	forwarder := runtime.NewClusterLogForwarder(clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name)
 	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
 		if !apierrors.IsNotFound(err) {
 			log.Error(err, "Encountered unexpected error getting", "forwarder", nsname)
 		}
-		return nil
+		forwarder.Spec = logging.ClusterLogForwarderSpec{}
 	}
-	forwarder.Spec = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec)
+	forwarder.Spec = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, clusterRequest.Cluster.Spec.LogStore)
 	return forwarder
 }
 

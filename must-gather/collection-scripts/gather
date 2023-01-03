@@ -1,7 +1,18 @@
 #!/bin/bash
+
+echo "must-gather script started ....."
+echo "for must-gather logs check /must-gather/gather-debug.log"
+
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BASE_COLLECTION_PATH="${1:-/must-gather}"
 mkdir -p "${BASE_COLLECTION_PATH}"
+
+cd $BASE_COLLECTION_PATH
+
+mkdir ${BASE_COLLECTION_PATH}/cache-dir
+export KUBECACHEDIR=${BASE_COLLECTION_PATH}/cache-dir
+
+source ${SCRIPT_DIR}/common
 
 LOGGING_NS="${2:-openshift-logging}"
 
@@ -20,9 +31,13 @@ cluster_resources+=(clusterroles)
 cluster_resources+=(clusterrolebindings)
 cluster_resources+=(persistentvolumes)
 
+log "BEGIN inspecting CRs..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 for cr in "${cluster_resources[@]}" ; do
-  oc adm inspect --dest-dir="${BASE_COLLECTION_PATH}" "${cr}" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  log "BEGIN inspecting CR ${cr} ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
+  oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" "${cr}"  >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  log "END inspecting CR ${cr} ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 done
+log "END inspecting CRs..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 
 # namespace-scoped resources
 resources=(pods)
@@ -32,40 +47,51 @@ resources+=(configmaps)
 resources+=(serviceaccounts)
 resources+=(events)
 
+log "BEGIN inspecting namespaces ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 # run the collection of resources using must-gather
 for ns in "${LOGGING_NS}" openshift-operator-lifecycle-manager openshift-operators-redhat ; do
   for resource in "${resources[@]}" ; do
-    oc adm inspect --dest-dir="${BASE_COLLECTION_PATH}" -n "$ns" "${resource}" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+    log "BEGIN inspecting namespace ${ns}/${resource} ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
+    oc adm inspect --cache-dir=${KUBECACHEDIR} --dest-dir="${BASE_COLLECTION_PATH}" -n "$ns" "${resource}"  >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+    log "END inspecting namespace ${ns}/${resource} ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
   done
 done
+log "END inspecting namespaces ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 
+
+log "BEGIN inspecting install resources ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 eo_found="$(oc -n openshift-operators-redhat get deployment elasticsearch-operator --ignore-not-found --no-headers)"
 clo_found="$(oc -n "$LOGGING_NS" get deployment cluster-logging-operator --ignore-not-found --no-headers)"
 if [ "$clo_found" != "" ] || [ "$eo_found" != "" ] ; then
     ${SCRIPT_DIR}/gather_install_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
 else
-  echo "Skipping install inspection.  No CLO or EO deployment found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  log "Skipping install inspection.  No CLO or EO deployment found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
 fi
+log "END inspecting install resources ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 
 if [ "$clo_found" != "" ] ; then
+  log "BEGIN gathering CLO resources ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
   ${SCRIPT_DIR}/gather_cluster_logging_operator_resources "$BASE_COLLECTION_PATH" "$LOGGING_NS" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
   ${SCRIPT_DIR}/gather_collection_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  log "END gathering CLO resources ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 else
-  echo "Skipping collection inspection.  No CLO found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  log "Skipping collection inspection.  No CLO found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
 fi
 
 found="$(oc -n $LOGGING_NS get elasticsearch elasticsearch --ignore-not-found --no-headers)"
 if [ "$found" != "" ] ; then
   # Call per component gather scripts
+  log "BEGIN gathering EO resources ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
   ${SCRIPT_DIR}/gather_elasticsearch_operator_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
   ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
 
   found="$(oc -n $LOGGING_NS get kibana kibana --ignore-not-found --no-headers)"
   if [ "$found" != "" ] ; then
-    ${SCRIPT_DIR}/gather_visualization_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+    KUBECACHEDIR=${BASE_COLLECTION_PATH}/cache-dir ${SCRIPT_DIR}/gather_visualization_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
   fi
+  log "BEGIN gathering CLO resources ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
 else
-  echo "Skipping logstorage inspection.  No Elasticsearch deployment found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  log "Skipping logstorage inspection.  No Elasticsearch deployment found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
 fi
 
 exit 0

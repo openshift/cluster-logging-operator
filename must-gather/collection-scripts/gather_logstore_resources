@@ -2,6 +2,8 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/common
 
+log "BEGIN gather_logstore_resources ..."
+
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
 
@@ -20,11 +22,11 @@ list_es_storage() {
   local mountPath=$(oc -n $NAMESPACE get pod $pod -o jsonpath='{.spec.containers[0].volumeMounts[?(@.name=="elasticsearch-storage")].mountPath}')
   echo "-- Persistence files" >> $es_folder/$pod
 
-  oc -n $NAMESPACE exec -c elasticsearch $pod -- ls -lR $mountPath >> $es_folder/$pod
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR}  exec -c elasticsearch $pod -- ls -lR $mountPath >> $es_folder/$pod
   
   echo "-- Persistence  storage size " >> $es_folder/$pod-storage
 
-  oc -n $NAMESPACE exec -c elasticsearch $pod -- df -h $mountPath >> $es_folder/$pod-storage
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR}  exec -c elasticsearch $pod -- df -h $mountPath >> $es_folder/$pod-storage
 
 }
 
@@ -44,45 +46,45 @@ get_elasticsearch_status() {
   local cat_items=(health nodes aliases thread_pool)
   for cat_item in "${cat_items[@]}"
   do
-    oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/$cat_item?v &> $cluster_folder/${cat_item}.cat
+    oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_cat/$cat_item?v &> $cluster_folder/${cat_item}.cat
   done
 
-  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_nodes/hot_threads &> $cluster_folder/hot_threads.txt
-  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/indices?v\&bytes=m &> $cluster_folder/indices.cat
-  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/indices?h=i,creation.date,creation.date.string,store.size,pri.store.size > $cluster_folder/indices_size.cat
-  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_search?sort=@timestamp:desc\&pretty > $cluster_folder/latest_documents.json
-  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_nodes/?pretty > $cluster_folder/nodes_state.json
-  oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_nodes/stats?pretty > $cluster_folder/nodes_stats.json
-  local health=$(oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/health?h=status)
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_nodes/hot_threads &> $cluster_folder/hot_threads.txt
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_cat/indices?v\&bytes=m &> $cluster_folder/indices.cat
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_cat/indices?h=i,creation.date,creation.date.string,store.size,pri.store.size > $cluster_folder/indices_size.cat
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_search?sort=@timestamp:desc\&pretty > $cluster_folder/latest_documents.json
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_nodes/?pretty > $cluster_folder/nodes_state.json
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_nodes/stats?pretty > $cluster_folder/nodes_stats.json
+  local health=$(oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_cat/health?h=status)
   if [ -z "$health" ]
   then
-    echo "Unable to get health from $1"
+    log "Unable to get health from $1"
   elif [ $health != "green" ]
   then
-    echo "Gathering additional cluster information Cluster status is $health"
+    log "Gathering additional cluster information Cluster status is $health"
 
     cat_items=(recovery shards pending_tasks)
     for cat_item in "${cat_items[@]}"
     do
-      oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/$cat_item?v &> $cluster_folder/${cat_item}.cat
+      oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_cat/$cat_item?v --cache-dir=${KUBECACHEDIR} &> $cluster_folder/${cat_item}.cat
     done
 
-    oc -n $NAMESPACE exec -c elasticsearch $pod -- $curl_es/_cat/shards?h=index,shard,prirep,state,unassigned.reason,unassigned.description | grep UNASSIGNED &> $cluster_folder/unassigned_shards.cat
+    oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec -c elasticsearch $pod -- $curl_es/_cat/shards?h=index,shard,prirep,state,unassigned.reason,unassigned.description | grep UNASSIGNED &> $cluster_folder/unassigned_shards.cat
   fi
 }
 
 get_elasticsearch_cr() {
-  oc get -n $NAMESPACE elasticsearch.logging.openshift.io elasticsearch -o yaml > $es_folder/cr
+  oc get -n $NAMESPACE --cache-dir=${KUBECACHEDIR} elasticsearch.logging.openshift.io elasticsearch -o yaml > $es_folder/elasticsearch_cr.yaml
 }
 
-echo "Gathering data for logstore component"
-echo "-- Checking Elasticsearch health"
+log "Gathering data for logstore component"
+log "-- Checking Elasticsearch health"
 mkdir -p $es_folder
 
 es_pods=$(oc -n $NAMESPACE get pods -l component=elasticsearch -o jsonpath='{.items[*].metadata.name}')
 for pod in $es_pods
 do
-    echo "---- Elasticsearch pod: $pod"
+    log "---- Elasticsearch pod: $pod"
     get_env $pod $es_folder "$NAMESPACE"
     list_es_storage $pod
 done
@@ -91,9 +93,11 @@ anypod=""
 for comp in "elasticsearch"
 do
     echo "-- Getting Elasticsearch cluster info from logging-${comp} pod"
-    anypod=$(oc -n $NAMESPACE get pod --selector="component=${comp}" --no-headers | grep Running | awk '{print$1}' | tail -1)
+    anypod=$(oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} get pod --selector="component=${comp}" --no-headers | grep Running | awk '{print$1}' | tail -1)
     get_elasticsearch_status ${comp} ${anypod}
 done
 
-echo "-- Gather Elasticsearch CR"
+log "-- Gather Elasticsearch CR"
 get_elasticsearch_cr
+
+log "END gather_logstore_resources ..."

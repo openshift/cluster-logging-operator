@@ -3,7 +3,7 @@ package vector
 const (
 	InternalMetricsSourceName = "internal_metrics"
 	PrometheusOutputSinkName  = "prometheus_output"
-	PrometheusExporterAddress = "0.0.0.0:24231"
+	PrometheusExporterAddress = "[::]:24231"
 
 	AddNodenameToMetricTransformName = "add_nodename_to_metric"
 )

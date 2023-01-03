@@ -2,9 +2,10 @@ package vector
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
-	"strings"
 
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
 
@@ -407,7 +408,7 @@ source = '''
 [sinks.prometheus_output]
 type = "prometheus_exporter"
 inputs = ["add_nodename_to_metric"]
-address = "0.0.0.0:24231"
+address = "[::]:24231"
 default_namespace = "collector"
 
 [sinks.prometheus_output.tls]
@@ -944,7 +945,7 @@ source = '''
 [sinks.prometheus_output]
 type = "prometheus_exporter"
 inputs = ["add_nodename_to_metric"]
-address = "0.0.0.0:24231"
+address = "[::]:24231"
 default_namespace = "collector"
 
 [sinks.prometheus_output.tls]
@@ -1499,7 +1500,7 @@ source = '''
 [sinks.prometheus_output]
 type = "prometheus_exporter"
 inputs = ["add_nodename_to_metric"]
-address = "0.0.0.0:24231"
+address = "[::]:24231"
 default_namespace = "collector"
 
 [sinks.prometheus_output.tls]

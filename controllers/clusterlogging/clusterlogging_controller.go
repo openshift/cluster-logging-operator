@@ -49,7 +49,6 @@ type ReconcileClusterLogging struct {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Request) (ctrl.Result, error) {
 	log.V(3).Info("Clusterlogging reconcile request.", "name", request.Name)
-
 	// Fetch the ClusterLogging instance
 	instance := &loggingv1.ClusterLogging{}
 	err := r.Client.Get(ctx, request.NamespacedName, instance)

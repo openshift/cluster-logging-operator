@@ -16,7 +16,7 @@ This setting configures Fluentd to inspect each log message to determine if it's
 it into the JSON payload document posted to Elasticsearch.  This setting is `false` by default and is a change
 from 3.11 and earlier deployments where it was `true`.  
 
-![WARNING](./images/warn.jpg) **WARNING**
+![WARNING](../images/warn.jpg) **WARNING**
 
 **NOTE:** Enabling this feature comes with [risks](https://github.com/openshift/origin-aggregated-logging/issues/1492) summarized here:
 * Possible log loss due to Elasticsearch rejecting documents when there are inconsistent type mappings

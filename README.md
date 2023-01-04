@@ -34,8 +34,8 @@ The CLO *owns* the following APIs:
 
 To install a released version of cluster logging see the [Openshift Documentation](https://docs.openshift.com/), (e.g., [OCP v4.5](https://docs.openshift.com/container-platform/4.5/logging/cluster-logging-deploying.html))
 
-To experiment or contribute to the development of cluster logging, see [HACKING.md](./docs/HACKING.md) and [REVIEW.md](./docs/REVIEW.md)
+To experiment or contribute to the development of cluster logging, see [HACKING.md](docs/contributing/HACKING.md) and [REVIEW.md](docs/contributing/REVIEW.md)
 
 To debug the cluster logging stack, see [README.md](./must-gather/README.md)
 
-To find currently known Cluster Logging Operator issues with work-arounds, see the [Troubleshooting](./docs/troubleshooting.md) guide.
+To find currently known Cluster Logging Operator issues with work-arounds, see the [Troubleshooting](docs/administration/troubleshooting.md) guide.

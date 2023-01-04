@@ -63,11 +63,11 @@ export CLF_TEST_INCLUDES?=
 .PHONY: force
 
 .PHONY: tools
-tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN)
+tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMIZE) $(CONTROLLER_GEN) $(GEN_CRD_API_REFERENCE_DOCS)
 
 .PHONY: pre-commit
 # Should pass when run before commit.
-pre-commit: clean bundle check
+pre-commit: clean bundle check docs
 
 .PHONY: check
 # check health of the code:
@@ -117,6 +117,17 @@ build: bin/cluster-logging-operator
 .PHONY: build-debug
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
+
+docs: docs/reference/operator/api.adoc docs/reference/datamodels/viaq/v1.adoc
+.PHONY: docs
+
+docs/reference/operator/api.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/apis/" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
+.PHONY: docs/reference/operator/api.adoc
+
+docs/reference/datamodels/viaq/v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/internal/datamodels/viaq/v1" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/datamodels/asciidoc" -out-file "$(PWD)/$@"
+.PHONY: docs/reference/datamodels/viaq/v1.adoc
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run

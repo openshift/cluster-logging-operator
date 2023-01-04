@@ -1,0 +1,2455 @@
+= Logging Data Model Reference
+
+:toc:
+:toclevels: 2
+:doctype: book
+
+= Package viaq/v1== Viaq Data Model for kubernetes api events
+
+The data model for collected audit event logs from kubernetes or OpenShift api servers.
+
+nolint:govet
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|involvedObject
+
+|object
+
+a|  The object that this event is about.
+
+|reason
+
+|string
+
+a|  *(optional)* This should be a short, machine understandable string that gives the reason
+
+|message
+
+|string
+
+a|  *(optional)* A human-readable description of the status of this operation.
+
+|source
+
+|object
+
+a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
+
+|firstTimestamp
+
+|string
+
+a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
+
+|lastTimestamp
+
+|string
+
+a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
+
+|count
+
+|int
+
+a|  *(optional)* The number of times this event has occurred.
+
+|type
+
+|string
+
+a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
+
+|eventTime
+
+|object
+
+a|  *(optional)* Time when this Event was first observed.
+
+|series
+
+|object
+
+a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
+
+|action
+
+|string
+
+a|  *(optional)* What action was taken/failed regarding to the Regarding object.
+
+|related
+
+|object
+
+a|  *(optional)* Optional secondary object for more complex actions.
+
+|reportingComponent
+
+|string
+
+a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
+
+|reportingInstance
+
+|string
+
+a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
+
+|@timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+|message
+
+|string
+
+a|  *(optional)* Original log entry text, UTF-8 encoded
+
+|level
+
+|string
+
+a|  The normalized log level
+
+|hostname
+
+|string
+
+a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+|pipeline_metadata
+
+|object
+
+a| **(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+
+|log_type
+
+|string
+
+a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+|viaq_index_name
+
+|string
+
+a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+|viaq_msg_id
+
+|string
+
+a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+|openshift
+
+|object
+
+a|  Openshift specific metadata
+
+|======================
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|action
+
+|string
+
+a|  *(optional)* What action was taken/failed regarding to the Regarding object.
+
+|count
+
+|int
+
+a|  *(optional)* The number of times this event has occurred.
+
+|eventTime
+
+|object
+
+a|  *(optional)* Time when this Event was first observed.
+
+|firstTimestamp
+
+|string
+
+a|  *(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
+
+|involvedObject
+
+|object
+
+a|  The object that this event is about.
+
+|lastTimestamp
+
+|string
+
+a|  *(optional)* The time at which the most recent occurrence of this event was recorded.
+
+|message
+
+|string
+
+a|  *(optional)* A human-readable description of the status of this operation.
+
+|reason
+
+|string
+
+a|  *(optional)* This should be a short, machine understandable string that gives the reason
+
+|related
+
+|object
+
+a|  *(optional)* Optional secondary object for more complex actions.
+
+|reportingComponent
+
+|string
+
+a|  *(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
+
+|reportingInstance
+
+|string
+
+a|  *(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
+
+|series
+
+|object
+
+a|  *(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
+
+|source
+
+|object
+
+a|  *(optional)* The component reporting this event. Should be a short machine understandable string.
+
+|type
+
+|string
+
+a|  *(optional)* Type of this event (Normal, Warning), new types could be added in the future
+
+|======================
+
+=== .action
+
+===== Description
+
+*(optional)* What action was taken/failed regarding to the Regarding object.
+
+=====  Type
+
+* string
+
+=== .count
+
+===== Description
+
+*(optional)* The number of times this event has occurred.
+
+=====  Type
+
+* int
+
+=== .eventTime
+
+===== Description
+
+*(optional)* Time when this Event was first observed.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|Time
+
+|string
+
+a|  
+
+|======================
+
+=== .eventTime.Time
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .firstTimestamp
+
+===== Description
+
+*(optional)* The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
+
+=====  Type
+
+* string
+
+=== .involvedObject
+
+===== Description
+
+The object that this event is about.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|apiVersion
+
+|string
+
+a|  *(optional)* API version of the referent.
+
+|fieldPath
+
+|string
+
+a|  *(optional)* If referring to a piece of an object instead of an entire object, this string
+
+|kind
+
+|string
+
+a|  *(optional)* Kind of the referent.
+
+|name
+
+|string
+
+a|  *(optional)* Name of the referent.
+
+|namespace
+
+|string
+
+a|  *(optional)* Namespace of the referent.
+
+|resourceVersion
+
+|string
+
+a|  *(optional)* Specific resourceVersion to which this reference is made, if any.
+
+|uid
+
+|string
+
+a|  *(optional)* UID of the referent.
+
+|======================
+
+=== .involvedObject.apiVersion
+
+===== Description
+
+*(optional)* API version of the referent.
+
+=====  Type
+
+* string
+
+=== .involvedObject.fieldPath
+
+===== Description
+
+*(optional)* If referring to a piece of an object instead of an entire object, this string
+should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+For example, if the object reference is to a container within a pod, this would take on a value like:
+&#34;spec.containers{name}&#34; (where &#34;name&#34; refers to the name of the container that triggered
+the event) or if no container name is specified &#34;spec.containers[2]&#34; (container with
+index 2 in this pod). This syntax is chosen only to have some well-defined way of
+referencing a part of an object.
+TODO: this design is not final and this field is subject to change in the future.
+
+=====  Type
+
+* string
+
+=== .involvedObject.kind
+
+===== Description
+
+*(optional)* Kind of the referent.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+
+=====  Type
+
+* string
+
+=== .involvedObject.name
+
+===== Description
+
+*(optional)* Name of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+
+=====  Type
+
+* string
+
+=== .involvedObject.namespace
+
+===== Description
+
+*(optional)* Namespace of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+
+=====  Type
+
+* string
+
+=== .involvedObject.resourceVersion
+
+===== Description
+
+*(optional)* Specific resourceVersion to which this reference is made, if any.
+More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+
+=====  Type
+
+* string
+
+=== .involvedObject.uid
+
+===== Description
+
+*(optional)* UID of the referent.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+
+=====  Type
+
+* string
+
+=== .lastTimestamp
+
+===== Description
+
+*(optional)* The time at which the most recent occurrence of this event was recorded.
+
+=====  Type
+
+* string
+
+=== .message
+
+===== Description
+
+*(optional)* A human-readable description of the status of this operation.
+TODO: decide on maximum length.
+
+=====  Type
+
+* string
+
+=== .reason
+
+===== Description
+
+*(optional)* This should be a short, machine understandable string that gives the reason
+for the transition into the object&#39;s current status.
+TODO: provide exact specification for format.
+
+=====  Type
+
+* string
+
+=== .related
+
+===== Description
+
+*(optional)* Optional secondary object for more complex actions.
+
+=====  Type
+
+* object
+
+=== .reportingComponent
+
+===== Description
+
+*(optional)* Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
+
+=====  Type
+
+* string
+
+=== .reportingInstance
+
+===== Description
+
+*(optional)* ID of the controller instance, e.g. `kubelet-xyzf`.
+
+=====  Type
+
+* string
+
+=== .series
+
+===== Description
+
+*(optional)* Data about the Event series this event represents or nil if it&#39;s a singleton Event.
+
+=====  Type
+
+* object
+
+=== .source
+
+===== Description
+
+*(optional)* The component reporting this event. Should be a short machine understandable string.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|component
+
+|string
+
+a|  *(optional)* Component from which the event is generated.
+
+|host
+
+|string
+
+a|  *(optional)* Node name on which the event is generated.
+
+|======================
+
+=== .source.component
+
+===== Description
+
+*(optional)* Component from which the event is generated.
+
+=====  Type
+
+* string
+
+=== .source.host
+
+===== Description
+
+*(optional)* Node name on which the event is generated.
+
+=====  Type
+
+* string
+
+=== .type
+
+===== Description
+
+*(optional)* Type of this event (Normal, Warning), new types could be added in the future
+
+=====  Type
+
+* string
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|@timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+|hostname
+
+|string
+
+a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+|level
+
+|string
+
+a|  The normalized log level
+
+|log_type
+
+|string
+
+a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+|message
+
+|string
+
+a|  *(optional)* Original log entry text, UTF-8 encoded
+
+|openshift
+
+|object
+
+a|  Openshift specific metadata
+
+|pipeline_metadata
+
+|object
+
+a| **(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+
+|viaq_index_name
+
+|string
+
+a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+|viaq_msg_id
+
+|string
+
+a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+|======================
+
+=== .@timestamp
+
+===== Description
+
+A UTC value that marks when the log payload was created.
+
+If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
+field that is reserved for a particular use.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2015-01-24 14:06:05.071000000 Z`
+
+=====  Type
+
+* string
+
+=== .hostname
+
+===== Description
+
+The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+=====  Type
+
+* string
+
+=== .level
+
+===== Description
+
+The normalized log level
+
+The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
+
+The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
+
+* `0` = `emerg`, system is unusable.
+
+* `1` = `alert`, action must be taken immediately.
+
+* `2` = `crit`, critical conditions.
+
+* `3` = `err`, error conditions.
+
+* `4` = `warn`, warning conditions.
+
+* `5` = `notice`, normal but significant condition.
+
+* `6` = `info`, informational.
+
+* `7` = `debug`, debug-level messages.
+
+The two following values are not part of `syslog.h` but are widely used:
+
+* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
+
+* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
+
+Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
+
+=====  Type
+
+* string
+
+=== .log_type
+
+===== Description
+
+The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
+* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
+* &#34;audit&#34;:
+** Node logs from auditd (/var/log/audit/audit.log)
+** Kubernetes and OpenShift apiservers audit logs.
+** OVN audit logs
+
+=====  Type
+
+* string
+
+=== .message
+
+===== Description
+
+*(optional)* Original log entry text, UTF-8 encoded
+
+This field may be absent or empty if a non-empty `structured` field is present.
+See the description of `structured` for additional details.
+
+=====  Type
+
+* string
+
+=== .openshift
+
+===== Description
+
+Openshift specific metadata
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|cluster_id
+
+|string
+
+a|  ClusterID is the unique id of the cluster where the workload is deployed
+
+|labels
+
+|object
+
+a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
+
+|sequence
+
+|string
+
+a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+
+|======================
+
+=== .openshift.cluster_id
+
+===== Description
+
+ClusterID is the unique id of the cluster where the workload is deployed
+
+=====  Type
+
+* string
+
+=== .openshift.labels
+
+===== Description
+
+*(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
+to be sent with the log Records
+
+=====  Type
+
+* object
+
+=== .openshift.sequence
+
+===== Description
+
+Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+of log records.  This was added as a workaround for logstores that do not have nano-second precision.
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata
+
+===== Description
+
+**(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+Data in this subgroup is forwarded for troubleshooting and tracing purposes.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|collector
+
+|object
+
+a|  Collector metadata
+
+|======================
+
+=== .pipeline_metadata.collector
+
+===== Description
+
+Collector metadata
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|inputname
+
+|string
+
+a| **(DEPRECATED)** 
+
+|ipaddr4
+
+|string
+
+a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
+
+|name
+
+|string
+
+a|  Name is the implementation of the collector agent
+
+|received_at
+
+|string
+
+a|  ReceivedAt the time the collector received the log entry
+
+|version
+
+|string
+
+a|  Version is collector version information
+
+|======================
+
+=== .pipeline_metadata.collector.inputname
+
+===== Description
+
+**(DEPRECATED)** 
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.ipaddr4
+
+===== Description
+
+*(optional)* Ipaddr4 is the ipV4 address of the collector
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.name
+
+===== Description
+
+Name is the implementation of the collector agent
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.received_at
+
+===== Description
+
+ReceivedAt the time the collector received the log entry
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.version
+
+===== Description
+
+Version is collector version information
+
+=====  Type
+
+* string
+
+=== .viaq_index_name
+
+===== Description
+
+*(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
+
+=====  Type
+
+* string
+
+=== .viaq_msg_id
+
+===== Description
+
+*(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
+or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
+logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
+in Elasticsearch, this field will give you the exact document corresponding to the record.
+
+=====  Type
+
+* string
+
+== Viaq Data Model for Containers
+
+The data model for collected logs from containers.
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|@timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+|hostname
+
+|string
+
+a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+|level
+
+|string
+
+a|  The normalized log level
+
+|log_type
+
+|string
+
+a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+|message
+
+|string
+
+a|  *(optional)* Original log entry text, UTF-8 encoded
+
+|openshift
+
+|object
+
+a|  Openshift specific metadata
+
+|pipeline_metadata
+
+|object
+
+a| **(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+
+|viaq_index_name
+
+|string
+
+a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+|viaq_msg_id
+
+|string
+
+a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+|docker
+
+|object
+
+a| **(DEPRECATED)** *(optional)* 
+
+|kubernetes
+
+|object
+
+a|  The Kubernetes-specific metadata
+
+|structured
+
+|object
+
+a|  *(optional)* Original log entry as a structured object.
+
+|======================
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|@timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+|hostname
+
+|string
+
+a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+|level
+
+|string
+
+a|  The normalized log level
+
+|log_type
+
+|string
+
+a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+|message
+
+|string
+
+a|  *(optional)* Original log entry text, UTF-8 encoded
+
+|openshift
+
+|object
+
+a|  Openshift specific metadata
+
+|pipeline_metadata
+
+|object
+
+a| **(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+
+|viaq_index_name
+
+|string
+
+a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+|viaq_msg_id
+
+|string
+
+a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+|======================
+
+=== .@timestamp
+
+===== Description
+
+A UTC value that marks when the log payload was created.
+
+If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
+field that is reserved for a particular use.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2015-01-24 14:06:05.071000000 Z`
+
+=====  Type
+
+* string
+
+=== .hostname
+
+===== Description
+
+The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+=====  Type
+
+* string
+
+=== .level
+
+===== Description
+
+The normalized log level
+
+The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
+
+The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
+
+* `0` = `emerg`, system is unusable.
+
+* `1` = `alert`, action must be taken immediately.
+
+* `2` = `crit`, critical conditions.
+
+* `3` = `err`, error conditions.
+
+* `4` = `warn`, warning conditions.
+
+* `5` = `notice`, normal but significant condition.
+
+* `6` = `info`, informational.
+
+* `7` = `debug`, debug-level messages.
+
+The two following values are not part of `syslog.h` but are widely used:
+
+* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
+
+* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
+
+Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
+
+=====  Type
+
+* string
+
+=== .log_type
+
+===== Description
+
+The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
+* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
+* &#34;audit&#34;:
+** Node logs from auditd (/var/log/audit/audit.log)
+** Kubernetes and OpenShift apiservers audit logs.
+** OVN audit logs
+
+=====  Type
+
+* string
+
+=== .message
+
+===== Description
+
+*(optional)* Original log entry text, UTF-8 encoded
+
+This field may be absent or empty if a non-empty `structured` field is present.
+See the description of `structured` for additional details.
+
+=====  Type
+
+* string
+
+=== .openshift
+
+===== Description
+
+Openshift specific metadata
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|cluster_id
+
+|string
+
+a|  ClusterID is the unique id of the cluster where the workload is deployed
+
+|labels
+
+|object
+
+a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
+
+|sequence
+
+|string
+
+a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+
+|======================
+
+=== .openshift.cluster_id
+
+===== Description
+
+ClusterID is the unique id of the cluster where the workload is deployed
+
+=====  Type
+
+* string
+
+=== .openshift.labels
+
+===== Description
+
+*(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
+to be sent with the log Records
+
+=====  Type
+
+* object
+
+=== .openshift.sequence
+
+===== Description
+
+Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+of log records.  This was added as a workaround for logstores that do not have nano-second precision.
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata
+
+===== Description
+
+**(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+Data in this subgroup is forwarded for troubleshooting and tracing purposes.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|collector
+
+|object
+
+a|  Collector metadata
+
+|======================
+
+=== .pipeline_metadata.collector
+
+===== Description
+
+Collector metadata
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|inputname
+
+|string
+
+a| **(DEPRECATED)** 
+
+|ipaddr4
+
+|string
+
+a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
+
+|name
+
+|string
+
+a|  Name is the implementation of the collector agent
+
+|received_at
+
+|string
+
+a|  ReceivedAt the time the collector received the log entry
+
+|version
+
+|string
+
+a|  Version is collector version information
+
+|======================
+
+=== .pipeline_metadata.collector.inputname
+
+===== Description
+
+**(DEPRECATED)** 
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.ipaddr4
+
+===== Description
+
+*(optional)* Ipaddr4 is the ipV4 address of the collector
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.name
+
+===== Description
+
+Name is the implementation of the collector agent
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.received_at
+
+===== Description
+
+ReceivedAt the time the collector received the log entry
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.version
+
+===== Description
+
+Version is collector version information
+
+=====  Type
+
+* string
+
+=== .viaq_index_name
+
+===== Description
+
+*(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
+
+=====  Type
+
+* string
+
+=== .viaq_msg_id
+
+===== Description
+
+*(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
+or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
+logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
+in Elasticsearch, this field will give you the exact document corresponding to the record.
+
+=====  Type
+
+* string
+
+=== .docker
+
+===== Description
+
+**(DEPRECATED)** *(optional)* 
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|container_id
+
+|string
+
+a|  ContainerID is the id of the container producing the log
+
+|======================
+
+=== .docker.container_id
+
+===== Description
+
+ContainerID is the id of the container producing the log
+
+=====  Type
+
+* string
+
+=== .kubernetes
+
+===== Description
+
+The Kubernetes-specific metadata
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|annotations
+
+|object
+
+a|  *(optional)* Annotations associated with the Kubernetes pod
+
+|container_id
+
+|string
+
+a|  *(optional)* 
+
+|container_image
+
+|string
+
+a|  *(optional)* 
+
+|container_image_id
+
+|string
+
+a|  *(optional)* 
+
+|container_name
+
+|string
+
+a|  ContainerName of the the pod container that produced the log
+
+|flat_labels
+
+|array
+
+a| **(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
+
+|host
+
+|string
+
+a|  *(optional)* Host is the kubernetes node name that hosts the pod
+
+|labels
+
+|object
+
+a|  *(optional)* Labels present on the Pod at time the log was generated
+
+|master_url
+
+|string
+
+a| **(DEPRECATED)** MasterURL is the url to the apiserver
+
+|namespace_id
+
+|string
+
+a|  *(optional)* NamespaceID is the unique uuid of the namespace
+
+|namespace_labels
+
+|object
+
+a|  *(optional)* NamespaceLabels are the labels present on the pod namespace
+
+|namespace_name
+
+|string
+
+a|  NamespaceName where the pod is deployed
+
+|pod_id
+
+|string
+
+a|  *(optional)* PodID is the unique uuid of the pod
+
+|pod_name
+
+|string
+
+a|  PodName is the name of the pod
+
+|======================
+
+=== .kubernetes.annotations
+
+===== Description
+
+*(optional)* Annotations associated with the Kubernetes pod
+
+=====  Type
+
+* object
+
+=== .kubernetes.container_id
+
+===== Description
+
+*(optional)* 
+
+=====  Type
+
+* string
+
+=== .kubernetes.container_image
+
+===== Description
+
+*(optional)* 
+
+=====  Type
+
+* string
+
+=== .kubernetes.container_image_id
+
+===== Description
+
+*(optional)* 
+
+=====  Type
+
+* string
+
+=== .kubernetes.container_name
+
+===== Description
+
+ContainerName of the the pod container that produced the log
+
+=====  Type
+
+* string
+
+=== .kubernetes.flat_labels[]
+
+===== Description
+
+**(DEPRECATED)** *(optional)* FlatLabels is an array of the pod labels joined as key=value
+
+=====  Type
+
+* array
+
+=== .kubernetes.host
+
+===== Description
+
+*(optional)* Host is the kubernetes node name that hosts the pod
+
+=====  Type
+
+* string
+
+=== .kubernetes.labels
+
+===== Description
+
+*(optional)* Labels present on the Pod at time the log was generated
+
+=====  Type
+
+* object
+
+=== .kubernetes.master_url
+
+===== Description
+
+**(DEPRECATED)** MasterURL is the url to the apiserver
+
+=====  Type
+
+* string
+
+=== .kubernetes.namespace_id
+
+===== Description
+
+*(optional)* NamespaceID is the unique uuid of the namespace
+
+=====  Type
+
+* string
+
+=== .kubernetes.namespace_labels
+
+===== Description
+
+*(optional)* NamespaceLabels are the labels present on the pod namespace
+
+=====  Type
+
+* object
+
+=== .kubernetes.namespace_name
+
+===== Description
+
+NamespaceName where the pod is deployed
+
+=====  Type
+
+* string
+
+=== .kubernetes.pod_id
+
+===== Description
+
+*(optional)* PodID is the unique uuid of the pod
+
+=====  Type
+
+* string
+
+=== .kubernetes.pod_name
+
+===== Description
+
+PodName is the name of the pod
+
+=====  Type
+
+* string
+
+=== .structured
+
+===== Description
+
+*(optional)* Original log entry as a structured object.
+
+Example:
+`{&#34;pid&#34;:21631,&#34;ppid&#34;:21618,&#34;worker&#34;:0,&#34;message&#34;:&#34;starting fluentd worker pid=21631 ppid=21618 worker=0&#34;}`
+
+This field may be present if the forwarder was configured to parse structured JSON logs.
+If the original log entry was a valid structured log, this field will contain an equivalent JSON structure.
+Otherwise this field will be empty or absent, and the `message` field will contain the original log message.
+The `structured` field includes the same sub-fields as the original log message.
+
+=====  Type
+
+* object
+
+== Viaq Data Model for journald
+
+The data model for collected logs from node journal.
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|@timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+|hostname
+
+|string
+
+a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+|level
+
+|string
+
+a|  The normalized log level
+
+|log_type
+
+|string
+
+a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+|message
+
+|string
+
+a|  *(optional)* Original log entry text, UTF-8 encoded
+
+|openshift
+
+|object
+
+a|  Openshift specific metadata
+
+|pipeline_metadata
+
+|object
+
+a| **(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+
+|viaq_index_name
+
+|string
+
+a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+|viaq_msg_id
+
+|string
+
+a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+|_STREAM_ID
+
+|string
+
+a|  
+
+|_SYSTEMD_INVOCATION_ID
+
+|string
+
+a|  
+
+|systemd
+
+|object
+
+a|  
+
+|======================
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|@timestamp
+
+|string
+
+a|  A UTC value that marks when the log payload was created.
+
+|hostname
+
+|string
+
+a|  The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+|level
+
+|string
+
+a|  The normalized log level
+
+|log_type
+
+|string
+
+a|  The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+|message
+
+|string
+
+a|  *(optional)* Original log entry text, UTF-8 encoded
+
+|openshift
+
+|object
+
+a|  Openshift specific metadata
+
+|pipeline_metadata
+
+|object
+
+a| **(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+
+|viaq_index_name
+
+|string
+
+a|  *(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+|viaq_msg_id
+
+|string
+
+a|  *(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+|======================
+
+=== .@timestamp
+
+===== Description
+
+A UTC value that marks when the log payload was created.
+
+If the creation time is not known when the log payload was first collected. The “@” prefix denotes a
+field that is reserved for a particular use.
+
+format:
+
+* yyyy-MM-dd HH:mm:ss,SSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ss.SSSSSSZ
+* yyyy-MM-dd&#39;T&#39;HH:mm:ssZ
+* dateOptionalTime
+
+example: `2015-01-24 14:06:05.071000000 Z`
+
+=====  Type
+
+* string
+
+=== .hostname
+
+===== Description
+
+The name of the host where this log message originated. In a Kubernetes cluster, this is the same as `kubernetes.host`.
+
+=====  Type
+
+* string
+
+=== .level
+
+===== Description
+
+The normalized log level
+
+The logging level from various sources, including `rsyslog(severitytext property)`, python&#39;s logging module, and others.
+
+The following values come from link:http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l74[`syslog.h`], and are preceded by their http://sourceware.org/git/?p=glibc.git;a=blob;f=misc/sys/syslog.h;h=ee01478c4b19a954426a96448577c5a76e6647c0;hb=HEAD#l51[numeric equivalents]:
+
+* `0` = `emerg`, system is unusable.
+
+* `1` = `alert`, action must be taken immediately.
+
+* `2` = `crit`, critical conditions.
+
+* `3` = `err`, error conditions.
+
+* `4` = `warn`, warning conditions.
+
+* `5` = `notice`, normal but significant condition.
+
+* `6` = `info`, informational.
+
+* `7` = `debug`, debug-level messages.
+
+The two following values are not part of `syslog.h` but are widely used:
+
+* `8` = `trace`, trace-level messages, which are more verbose than `debug` messages.
+
+* `9` = `unknown`, when the logging system gets a value it doesn&#39;t recognize.
+
+Map the log levels or priorities of other logging systems to their nearest match in the preceding list. For example, from link:https://docs.python.org/2.7/library/logging.html#logging-levels[python logging], you can match `CRITICAL` with `crit`, `ERROR` with `err`, and so on.
+
+=====  Type
+
+* string
+
+=== .log_type
+
+===== Description
+
+The source type of the log. The `log_type` field may contain one of these strings, or may have additional dot-separated components, for example &#34;infrastructure.container&#34; or &#34;infrastructure.node&#34;.
+
+* &#34;application&#34;: Container logs generated by user applications running in the cluster, except infrastructure containers.
+* &#34;infrastructure&#34;: Node logs (such as syslog or journal logs), and container logs from pods in the openshift*, kube*, or default projects.
+* &#34;audit&#34;:
+** Node logs from auditd (/var/log/audit/audit.log)
+** Kubernetes and OpenShift apiservers audit logs.
+** OVN audit logs
+
+=====  Type
+
+* string
+
+=== .message
+
+===== Description
+
+*(optional)* Original log entry text, UTF-8 encoded
+
+This field may be absent or empty if a non-empty `structured` field is present.
+See the description of `structured` for additional details.
+
+=====  Type
+
+* string
+
+=== .openshift
+
+===== Description
+
+Openshift specific metadata
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|cluster_id
+
+|string
+
+a|  ClusterID is the unique id of the cluster where the workload is deployed
+
+|labels
+
+|object
+
+a|  *(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
+
+|sequence
+
+|string
+
+a|  Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+
+|======================
+
+=== .openshift.cluster_id
+
+===== Description
+
+ClusterID is the unique id of the cluster where the workload is deployed
+
+=====  Type
+
+* string
+
+=== .openshift.labels
+
+===== Description
+
+*(optional)* Labels is a set of common, static labels that were spec&#39;d for log forwarding
+to be sent with the log Records
+
+=====  Type
+
+* object
+
+=== .openshift.sequence
+
+===== Description
+
+Sequence is increasing id used in conjunction with the timestamp to estblish a linear timeline
+of log records.  This was added as a workaround for logstores that do not have nano-second precision.
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata
+
+===== Description
+
+**(DEPRECATED)** Metadata related to ViaQ log collection pipeline. Everything about log collector, normalizers, mappings goes here.
+Data in this subgroup is forwarded for troubleshooting and tracing purposes.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|collector
+
+|object
+
+a|  Collector metadata
+
+|======================
+
+=== .pipeline_metadata.collector
+
+===== Description
+
+Collector metadata
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|inputname
+
+|string
+
+a| **(DEPRECATED)** 
+
+|ipaddr4
+
+|string
+
+a|  *(optional)* Ipaddr4 is the ipV4 address of the collector
+
+|name
+
+|string
+
+a|  Name is the implementation of the collector agent
+
+|received_at
+
+|string
+
+a|  ReceivedAt the time the collector received the log entry
+
+|version
+
+|string
+
+a|  Version is collector version information
+
+|======================
+
+=== .pipeline_metadata.collector.inputname
+
+===== Description
+
+**(DEPRECATED)** 
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.ipaddr4
+
+===== Description
+
+*(optional)* Ipaddr4 is the ipV4 address of the collector
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.name
+
+===== Description
+
+Name is the implementation of the collector agent
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.received_at
+
+===== Description
+
+ReceivedAt the time the collector received the log entry
+
+=====  Type
+
+* string
+
+=== .pipeline_metadata.collector.version
+
+===== Description
+
+Version is collector version information
+
+=====  Type
+
+* string
+
+=== .viaq_index_name
+
+===== Description
+
+*(optional)* ViaqIndexName used with Elasticsearch 6.x and later, this is a name of a write index alias (e.g. app-write).
+
+The value depends on the log type of this message. Detailed documentation is found at https://github.com/openshift/enhancements/blob/master/enhancements/cluster-logging/cluster-logging-es-rollover-data-design.md#data-model.
+
+=====  Type
+
+* string
+
+=== .viaq_msg_id
+
+===== Description
+
+*(optional)* ViaqMessageId is a unique ID assigned to each message. The format is not specified.
+
+It may be a UUID or a Base64 (e.g. 82f13a8e-882a-4344-b103-f0a6f30fd218),
+or some other ASCII value and is used as the `_id` of the document when sending to Elasticsearch. The intended use of this field is that if you use another
+logging store or application other than Elasticsearch, but you still need to correlate data with the data stored
+in Elasticsearch, this field will give you the exact document corresponding to the record.
+
+=====  Type
+
+* string
+
+=== ._STREAM_ID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== ._SYSTEMD_INVOCATION_ID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|t
+
+|object
+
+a|  
+
+|u
+
+|object
+
+a|  
+
+|======================
+
+=== .systemd.t
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|BOOT_ID
+
+|string
+
+a|  
+
+|CAP_EFFECTIVE
+
+|string
+
+a|  
+
+|CMDLINE
+
+|string
+
+a|  
+
+|COMM
+
+|string
+
+a|  
+
+|EXE
+
+|string
+
+a|  
+
+|GID
+
+|string
+
+a|  
+
+|MACHINE_ID
+
+|string
+
+a|  
+
+|PID
+
+|string
+
+a|  
+
+|SELINUX_CONTEXT
+
+|string
+
+a|  
+
+|STREAM_ID
+
+|string
+
+a|  
+
+|SYSTEMD_CGROUP
+
+|string
+
+a|  
+
+|SYSTEMD_INVOCATION_ID
+
+|string
+
+a|  
+
+|SYSTEMD_SLICE
+
+|string
+
+a|  
+
+|SYSTEMD_UNIT
+
+|string
+
+a|  
+
+|TRANSPORT
+
+|string
+
+a|  
+
+|UID
+
+|string
+
+a|  
+
+|======================
+
+=== .systemd.t.BOOT_ID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.CAP_EFFECTIVE
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.CMDLINE
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.COMM
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.EXE
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.GID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.MACHINE_ID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.PID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.SELINUX_CONTEXT
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.STREAM_ID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.SYSTEMD_CGROUP
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.SYSTEMD_INVOCATION_ID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.SYSTEMD_SLICE
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.SYSTEMD_UNIT
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.TRANSPORT
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.t.UID
+
+===== Description
+
+=====  Type
+
+* string
+
+=== .systemd.u
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|SYSLOG_IDENTIFIER
+
+|string
+
+a|  
+
+|======================
+
+=== .systemd.u.SYSLOG_IDENTIFIER
+
+===== Description
+
+=====  Type
+
+* string
+

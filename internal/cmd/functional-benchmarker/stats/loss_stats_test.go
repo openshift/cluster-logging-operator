@@ -14,24 +14,33 @@ var _ = Describe("Evaluating log loss stats", func() {
 			return fmt.Sprintf("goloader seq - %s - %010d - %s", "functional.0.00000000000000009B38CE8D200310A4", seq, "some message")
 		}
 
+		newAllLog = func(containerName string, seq int) types.AllLog {
+			return types.AllLog{
+				ContainerLog: types.ContainerLog{
+					Kubernetes: types.Kubernetes{ContainerName: containerName},
+					ViaQCommon: types.ViaQCommon{Message: formatLoaderMessage(seq)},
+				},
+			}
+		}
+
 		logs = PerfLogs{
-			{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host1"}, Message: formatLoaderMessage(2)}},
-			{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host2"}, Message: formatLoaderMessage(1)}},
-			{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host1"}, Message: formatLoaderMessage(3)}},
-			{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host1"}, Message: formatLoaderMessage(4)}},
-			{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host1"}, Message: formatLoaderMessage(10)}},
-			{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host3"}, Message: formatLoaderMessage(1)}},
-			{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host2"}, Message: formatLoaderMessage(2)}},
+			{AllLog: newAllLog("host1", 2)},
+			{AllLog: newAllLog("host2", 1)},
+			{AllLog: newAllLog("host1", 3)},
+			{AllLog: newAllLog("host1", 4)},
+			{AllLog: newAllLog("host1", 10)},
+			{AllLog: newAllLog("host3", 1)},
+			{AllLog: newAllLog("host2", 2)},
 		}
 
 		baselineLogs = PerfLogs{
-			{AllLog: types.AllLog{Message: formatLoaderMessage(2)}},
-			{AllLog: types.AllLog{Message: formatLoaderMessage(1)}},
-			{AllLog: types.AllLog{Message: formatLoaderMessage(3)}},
-			{AllLog: types.AllLog{Message: formatLoaderMessage(4)}},
-			{AllLog: types.AllLog{Message: formatLoaderMessage(10)}},
-			{AllLog: types.AllLog{Message: formatLoaderMessage(1)}},
-			{AllLog: types.AllLog{Message: formatLoaderMessage(2)}},
+			{AllLog: newAllLog("", 2)},
+			{AllLog: newAllLog("", 1)},
+			{AllLog: newAllLog("", 3)},
+			{AllLog: newAllLog("", 4)},
+			{AllLog: newAllLog("", 10)},
+			{AllLog: newAllLog("", 1)},
+			{AllLog: newAllLog("", 2)},
 		}
 
 		stats LossStats
@@ -46,30 +55,30 @@ var _ = Describe("Evaluating log loss stats", func() {
 		It("should separate logs by info in the message for baseline messages", func() {
 			Expect(splitEntriesByLoader(baselineLogs)).To(Equal(map[string][]PerfLog{
 				"functional.0.00000000000000009B38CE8D200310A4": {
-					{AllLog: types.AllLog{Message: formatLoaderMessage(2)}},
-					{AllLog: types.AllLog{Message: formatLoaderMessage(1)}},
-					{AllLog: types.AllLog{Message: formatLoaderMessage(3)}},
-					{AllLog: types.AllLog{Message: formatLoaderMessage(4)}},
-					{AllLog: types.AllLog{Message: formatLoaderMessage(10)}},
-					{AllLog: types.AllLog{Message: formatLoaderMessage(1)}},
-					{AllLog: types.AllLog{Message: formatLoaderMessage(2)}},
+					{AllLog: newAllLog("", 2)},
+					{AllLog: newAllLog("", 1)},
+					{AllLog: newAllLog("", 3)},
+					{AllLog: newAllLog("", 4)},
+					{AllLog: newAllLog("", 10)},
+					{AllLog: newAllLog("", 1)},
+					{AllLog: newAllLog("", 2)},
 				},
 			}))
 		})
 		It("should separate logs by host", func() {
 			Expect(splitEntriesByLoader(logs)).To(Equal(map[string][]PerfLog{
 				"host1": {
-					{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host1"}, Message: formatLoaderMessage(2)}},
-					{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host1"}, Message: formatLoaderMessage(3)}},
-					{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host1"}, Message: formatLoaderMessage(4)}},
-					{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host1"}, Message: formatLoaderMessage(10)}},
+					{AllLog: newAllLog("host1", 2)},
+					{AllLog: newAllLog("host1", 3)},
+					{AllLog: newAllLog("host1", 4)},
+					{AllLog: newAllLog("host1", 10)},
 				},
 				"host2": {
-					{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host2"}, Message: formatLoaderMessage(1)}},
-					{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host2"}, Message: formatLoaderMessage(2)}},
+					{AllLog: newAllLog("host2", 1)},
+					{AllLog: newAllLog("host2", 2)},
 				},
 				"host3": {
-					{AllLog: types.AllLog{Kubernetes: types.Kubernetes{ContainerName: "host3"}, Message: formatLoaderMessage(1)}},
+					{AllLog: newAllLog("host3", 1)},
 				},
 			}))
 		})

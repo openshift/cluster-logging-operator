@@ -94,7 +94,8 @@ type InputSpec struct {
 	// NOTE: the following fields in this struct are deliberately _not_ `omitempty`.
 	// An empty field means enable that input type with no filter.
 
-	// Application, if present, enables `application` logs.
+	// Application, if present, enables named set of `application` logs that
+	// can specify a set of match criteria
 	//
 	// +optional
 	Application *Application `json:"application,omitempty"`
@@ -102,11 +103,13 @@ type InputSpec struct {
 	// Infrastructure, if present, enables `infrastructure` logs.
 	//
 	// +optional
+	// +docgen:ignore
 	Infrastructure *Infrastructure `json:"infrastructure,omitempty"`
 
 	// Audit, if present, enables `audit` logs.
 	//
 	// +optional
+	// +docgen:ignore
 	Audit *Audit `json:"audit,omitempty"`
 }
 
@@ -142,9 +145,11 @@ type Application struct {
 }
 
 // Infrastructure enables infrastructure logs. Filtering may be added in future.
+// +docgen:ignore
 type Infrastructure struct{}
 
 // Audit enables audit logs. Filtering may be added in future.
+// +docgen:ignore
 type Audit struct{}
 
 // Output defines a destination for log messages.
@@ -186,7 +191,6 @@ type OutputSpec struct {
 	// Secret for authentication.
 	//
 	// Names a secret in the same namespace as the ClusterLogForwarder.
-	//
 	// Sensitive authentication information is stored in a separate Secret object.
 	// A Secret is like a ConfigMap, where the keys are strings and the values are
 	// base64-encoded binary data, for example TLS certificates.
@@ -197,29 +201,29 @@ type OutputSpec struct {
 	//
 	// Transport Layer Security (TLS)
 	//
-	// Using a TLS URL ('https://...' or 'tls://...') without any secret enables basic TLS:
+	// Using a TLS URL (`https://...` or `tls://...`) without any secret enables basic TLS:
 	// client authenticates server using system default certificate authority.
 	//
 	// Additional TLS features are enabled by referencing a Secret with the following optional fields in its spec.data.
 	// All data fields are base64 encoded.
 	//
-	//   `tls.crt`: A client certificate, for mutual authentication. Requires `tls.key`.
-	//   `tls.key`: Private key to unlock the client certificate. Requires `tls.crt`
-	//   `passphrase`: Passphrase to decode an encoded TLS private key. Requires tls.key.
-	//   `ca-bundle.crt`: Custom CA to validate certificates.
+	//   * `tls.crt`: A client certificate, for mutual authentication. Requires `tls.key`.
+	//   * `tls.key`: Private key to unlock the client certificate. Requires `tls.crt`
+	//   * `passphrase`: Passphrase to decode an encoded TLS private key. Requires tls.key.
+	//   * `ca-bundle.crt`: Custom CA to validate certificates.
 	//
 	// Username and Password
 	//
-	//   `username`: Authentication user name. Requires `password`.
-	//   `password`: Authentication password. Requires `username`.
+	//   * `username`: Authentication user name. Requires `password`.
+	//   * `password`: Authentication password. Requires `username`.
 	//
 	// Simple Authentication Security Layer (SASL)
 	//
-	//   `sasl.enable`: (boolean) Explicitly enable or disable SASL.
+	//   * `sasl.enable`: (boolean) Explicitly enable or disable SASL.
 	//     If missing, SASL is automatically enabled if any `sasl.*` keys are set.
-	//   `sasl.mechanisms`: (array of string) List of allowed SASL mechanism names.
+	//   * `sasl.mechanisms`: (array of string) List of allowed SASL mechanism names.
 	//     If missing or empty, the system defaults are used.
-	//   `sasl.allow-insecure`: (boolean) Allow mechanisms that send clear-text passwords.
+	//   * `sasl.allow-insecure`: (boolean) Allow mechanisms that send clear-text passwords.
 	//     Default false.
 	//
 	// +optional
@@ -242,6 +246,7 @@ type OutputSecretSpec struct {
 	Name string `json:"name"`
 }
 
+// PipelinesSpec link a set of inputs to a set of outputs.
 type PipelineSpec struct {
 	// OutputRefs lists the names (`output.name`) of outputs from this pipeline.
 	//
@@ -304,7 +309,6 @@ type OutputDefaults struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:categories=logging,shortName=clf
-
 // ClusterLogForwarder is an API to configure forwarding logs.
 //
 // You configure forwarding by specifying a list of `pipelines`,
@@ -322,7 +326,10 @@ type ClusterLogForwarder struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterLogForwarderSpec   `json:"spec,omitempty"`
+	// Specification of the desired behavior of ClusterLogForwarder
+	Spec ClusterLogForwarderSpec `json:"spec,omitempty"`
+
+	// Status of the ClusterLogForwarder
 	Status ClusterLogForwarderStatus `json:"status,omitempty"`
 }
 

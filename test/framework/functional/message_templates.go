@@ -53,18 +53,20 @@ var (
 
 func NewApplicationLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
-		Timestamp: time.Time{},
-		Message:   "*",
-		LogType:   "application",
-		Level:     "*",
-		Hostname:  "*",
-		ViaqMsgID: "**optional**",
-		Openshift: types.OpenshiftMeta{
-			Labels:    map[string]string{"*": "*"},
-			Sequence:  types.NewOptionalInt(""),
-			ClusterID: "*",
+		ViaQCommon: types.ViaQCommon{
+			Timestamp: time.Time{},
+			Message:   "*",
+			LogType:   "application",
+			Level:     "*",
+			Hostname:  "*",
+			ViaqMsgID: "**optional**",
+			Openshift: types.OpenshiftMeta{
+				Labels:    map[string]string{"*": "*"},
+				Sequence:  types.NewOptionalInt(""),
+				ClusterID: "*",
+			},
+			PipelineMetadata: TemplateForAnyPipelineMetadata,
 		},
-		PipelineMetadata: TemplateForAnyPipelineMetadata,
 		Docker: types.Docker{
 			ContainerID: "**optional**",
 		},
@@ -75,18 +77,20 @@ func NewApplicationLogTemplate() types.ApplicationLog {
 // NewContainerInfrastructureLogTemplate creates a generally expected template for infrastructure container logs
 func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 	return types.ApplicationLog{
-		Timestamp: time.Time{},
-		Message:   "*",
-		LogType:   "infrastructure",
-		Level:     "*",
-		Hostname:  "*",
-		ViaqMsgID: "**optional**",
-		Openshift: types.OpenshiftMeta{
-			Labels:    map[string]string{"*": "*"},
-			Sequence:  types.NewOptionalInt(""),
-			ClusterID: "*",
+		ViaQCommon: types.ViaQCommon{
+			Timestamp: time.Time{},
+			Message:   "*",
+			LogType:   "infrastructure",
+			Level:     "*",
+			Hostname:  "*",
+			ViaqMsgID: "**optional**",
+			Openshift: types.OpenshiftMeta{
+				Labels:    map[string]string{"*": "*"},
+				Sequence:  types.NewOptionalInt(""),
+				ClusterID: "*",
+			},
+			PipelineMetadata: TemplateForAnyPipelineMetadata,
 		},
-		PipelineMetadata: TemplateForAnyPipelineMetadata,
 		Docker: types.Docker{
 			ContainerID: "**optional**",
 		},

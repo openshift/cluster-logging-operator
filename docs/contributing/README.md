@@ -12,7 +12,7 @@
 
 Quick summary of main targets only, see below and the Makefile itself for more details.
 
-* `make deploy-bundle`: build and push a bundle image you can install from any public image repository. See [how-to-create-a-custom-bundle.md](./how-to-create-a-custom-bundle.md)
+* `make deploy-bundle`: build and push a bundle image you can install from any public image repository. See [how-to-create-a-custom-bundle.md](how-to-create-a-custom-bundle.md)
 
 * `make check`: Generate and format code, run unit tests and linter.
 

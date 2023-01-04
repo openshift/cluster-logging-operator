@@ -1,7 +1,7 @@
 # Configuring and Tuning Cluster Logging
 
 OKD cluster logging is configurable by modifying the CustomResource deployed
-in the **openshift-logging** namespace.  The [sample](../hack/cr.yaml) resource
+in the **openshift-logging** namespace.  The [sample](../../hack/cr.yaml) resource
 defines a complete cluster logging deployment that includes all the subcomponents
 of the logging stack to collect, store and visualize logs.  The `cluster-logging-operator`
 watches the a `ClusterLogging` CustomResources and adjusts the logging deployment accordingly.

@@ -20,9 +20,9 @@ Do not use the OutputTypeSpec to create extra fields for:
 * Information that can be provided in the URL
 * Private authentication or authorization data, that should be kept in the Secret.
 
-[apis]: ../apis/logging/v1
-[cluster_log_forwarder]: ../apis/logging/v1/cluster_log_forwarder_types.go
-[output_types]: ../apis/logging/v1/output_types.go
+[apis]: ../../apis/logging/v1
+[cluster_log_forwarder]: ../../apis/logging/v1/cluster_log_forwarder_types.go
+[output_types]: ../../apis/logging/v1/output_types.go
 
 ## Coding a new Output type
 
@@ -42,14 +42,14 @@ The generator combines this fragment with others to create the complete collecto
 
 Relevant source files:
 
-[../apis/logging/v1/cluster_log_forwarder_types.go](../apis/logging/v1/cluster_log_forwarder_types.go)
+[../apis/logging/v1/cluster_log_forwarder_types.go](../../apis/logging/v1/cluster_log_forwarder_types.go)
 * Add the name of your output type to the `+kubebuilder:validation` comment on the `OutputSpec.Type` field.
 
-[../apis/logging/v1/output_types.go](../apis/logging/v1/output_types.go)
+[../apis/logging/v1/output_types.go](../../apis/logging/v1/output_types.go)
 * Add a constant for your output type name to the top of the file.
 * If necessary, add a struct for output-specific fields to `OutputTypeSpec`.
 
-[../internal/constants/constants.go](../internal/constants/constants.go)_
+[../internal/constants/constants.go](../../internal/constants/constants.go)_
 * Keys used in the Secret for authentication/authorization data.
 * If your output uses TLS, user name/password, SASL or other common security mechanisms it MUST use the keywords already defined in constants.go.
 * If your output has unique security needs that can't be expressed in common terms, you MAY add output-specific keywords.
@@ -63,13 +63,13 @@ You need to add/edit the following files:
 * The *collector* is `vector` or `fluentd`, do both if your output supports both.
 * Define types implementing [type Element interface][generator] with a Go template and data to instantiate it.
 * Add unit tests to verify your templates produce the expected configuration.
-* For example see [../internal/generator/vector/output/kafka](../internal/generator/vector/output/kafka) or other.
+* For example see [../internal/generator/vector/output/kafka](../../internal/generator/vector/output/kafka) or other.
 
-[../internal/generator/fluentd/outputs.go](../internal/generator/fluentd/outputs.go) \
-[../internal/generator/vector/outputs.go](../internal/generator/vector/outputs.go)
+[../internal/generator/fluentd/outputs.go](../../internal/generator/fluentd/outputs.go) \
+[../internal/generator/vector/outputs.go](../../internal/generator/vector/outputs.go)
 * Add the entry-point function for your vector and/or fluentd output to the switch.
 
-[../test/functional/outputs/***your_output***_test.go](../test/functional/outputs)
+[../test/functional/outputs/***your_output***_test.go](../../test/functional/outputs)
 * Add a functional test to verify your output can connect and forward logs.
 
 [generator]: /home/aconway/src/cluster-logging-operator/internal/generator/generator.go

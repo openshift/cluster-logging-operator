@@ -2,6 +2,8 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/common
 
+log "BEGIN gather_elasticsearch_operator_resources ..."
+
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
 
@@ -16,7 +18,7 @@ LOGGING_NS=${2:-openshift-logging}
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 eo_folder="$CLO_COLLECTION_PATH/eo"
 
-echo "Gathering data for elasticsearch-operator"
+log "Gathering data for elasticsearch-operator"
 mkdir -p "$eo_folder"
 
 pods=$(oc -n $NAMESPACE get pods -l name=elasticsearch-operator -o jsonpath='{.items[*].metadata.name}')
@@ -25,8 +27,9 @@ do
     get_env $pod $eo_folder $NAMESPACE "Dockerfile-*operator*"
 done
 
-oc -n $LOGGING_NS-logging exec -c elasticsearch \
-    $(oc -n $LOGGING_NS get pods -l component=elasticsearch -o jsonpath='{.items[0].metadata.name}') \
+oc -n $LOGGING_NS --cache-dir=${KUBECACHEDIR} exec -c elasticsearch \
+    $(oc -n $LOGGING_NS --cache-dir=${KUBECACHEDIR} get pods -l component=elasticsearch -o jsonpath='{.items[0].metadata.name}') \
     -- indices > ${eo_folder}/indices.txt
 
-oc -n $NAMESPACE describe deployment elasticsearch-operator > ${eo_folder}/eo-deployment.describe 2>&1
+oc -n $NAMESPACE describe deployment elasticsearch-operator --cache-dir=${KUBECACHEDIR} > ${eo_folder}/eo-deployment.describe 2>&1
+log "END gather_elasticsearch_operator_resources ..."

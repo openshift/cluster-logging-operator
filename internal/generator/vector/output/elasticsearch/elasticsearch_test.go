@@ -591,7 +591,9 @@ ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
 						Secret: nil,
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								StructuredTypeKey: "kubernetes.labels.mylabel",
+								ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+									StructuredTypeKey: "kubernetes.labels.mylabel",
+								},
 							},
 						},
 					},
@@ -704,7 +706,9 @@ id_key = "_id"
 						Secret: nil,
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								StructuredTypeName: "myindex",
+								ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+									StructuredTypeName: "myindex",
+								},
 							},
 						},
 					},
@@ -813,8 +817,10 @@ id_key = "_id"
 						Secret: nil,
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								StructuredTypeKey:  "kubernetes.labels.mylabel",
-								StructuredTypeName: "myindex",
+								ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+									StructuredTypeKey:  "kubernetes.labels.mylabel",
+									StructuredTypeName: "myindex",
+								},
 							},
 						},
 					},
@@ -928,9 +934,11 @@ id_key = "_id"
 						Secret: nil,
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								StructuredTypeKey:             "kubernetes.labels.mylabel",
-								StructuredTypeName:            "myindex",
-								EnableStructuredContainerLogs: true,
+								ElasticsearchStructuredSpec: logging.ElasticsearchStructuredSpec{
+									StructuredTypeKey:             "kubernetes.labels.mylabel",
+									StructuredTypeName:            "myindex",
+									EnableStructuredContainerLogs: true,
+								},
 							},
 						},
 					},

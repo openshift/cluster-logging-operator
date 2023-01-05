@@ -559,9 +559,8 @@ var _ = Describe("Normalizing forwarder", func() {
 					}
 					request.ForwarderSpec = logging.ClusterLogForwarderSpec{
 						OutputDefaults: &logging.OutputDefaults{
-							Elasticsearch: &logging.Elasticsearch{
+							Elasticsearch: &logging.ElasticsearchStructuredSpec{
 								StructuredTypeKey: "kubernetes.labels.mylabel",
-								Version:           11,
 							},
 						},
 						Outputs: []logging.OutputSpec{

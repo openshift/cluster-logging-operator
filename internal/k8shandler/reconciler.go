@@ -27,13 +27,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterID string) (instance *logging.ClusterLogging, err error) {
+func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader client.Reader, r record.EventRecorder, clusterVersion, clusterID string) (instance *logging.ClusterLogging, err error) {
 	clusterLoggingRequest := ClusterLoggingRequest{
-		Cluster:       cl,
-		Client:        requestClient,
-		Reader:        reader,
-		EventRecorder: r,
-		ClusterID:     clusterID,
+		Cluster:        cl,
+		Client:         requestClient,
+		Reader:         reader,
+		EventRecorder:  r,
+		ClusterVersion: clusterVersion,
+		ClusterID:      clusterID,
 	}
 
 	// Cancel previous info metrics

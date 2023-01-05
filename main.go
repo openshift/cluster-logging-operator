@@ -106,32 +106,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	clusterID, err := getClusterID(mgr.GetAPIReader())
+	clusterVersion, err := getClusterVersion(mgr.GetAPIReader())
 	if err != nil {
 		setupLog.Error(err, "unable to retrieve the clusterID")
 		os.Exit(1)
 	}
+	clusterID := string(clusterVersion.Spec.ClusterID)
 
 	migrateManifestResources(mgr.GetClient())
 
 	log.Info("Registering Components.")
 
 	if err = (&clusterlogging.ReconcileClusterLogging{
-		Client:    mgr.GetClient(),
-		Reader:    mgr.GetAPIReader(),
-		Scheme:    mgr.GetScheme(),
-		Recorder:  mgr.GetEventRecorderFor("clusterlogging-controller"),
-		ClusterID: clusterID,
+		Client:         mgr.GetClient(),
+		Reader:         mgr.GetAPIReader(),
+		Scheme:         mgr.GetScheme(),
+		Recorder:       mgr.GetEventRecorderFor("clusterlogging-controller"),
+		ClusterVersion: clusterVersion.Status.Desired.Version,
+		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogForwarder")
 		telemetry.Data.CLInfo.M["healthStatus"] = UnHealthyStatus
 		os.Exit(1)
 	}
 	if err = (&forwarding.ReconcileForwarder{
-		Client:    mgr.GetClient(),
-		Scheme:    mgr.GetScheme(),
-		Recorder:  mgr.GetEventRecorderFor("clusterlogforwarder"),
-		ClusterID: clusterID,
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		Recorder:       mgr.GetEventRecorderFor("clusterlogforwarder"),
+		ClusterVersion: clusterVersion.Status.Desired.Version,
+		ClusterID:      clusterID,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterLogging")
 		telemetry.Data.CLFInfo.M["healthStatus"] = UnHealthyStatus
@@ -199,12 +202,12 @@ func getCLOVersion() (string, error) {
 	return cloversion, nil
 }
 
-// getClusterID retrieves the ID of the cluster
-func getClusterID(k8client client.Reader) (string, error) {
+// getClusterVersion retrieves the ID of the cluster
+func getClusterVersion(k8client client.Reader) (*configv1.ClusterVersion, error) {
 	clusterVersion := &configv1.ClusterVersion{}
 	key := client.ObjectKey{Name: "version"}
 	if err := k8client.Get(context.TODO(), key, clusterVersion); err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(clusterVersion.Spec.ClusterID), nil
+	return clusterVersion, nil
 }

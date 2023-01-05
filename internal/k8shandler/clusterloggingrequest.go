@@ -17,6 +17,7 @@ type ClusterLoggingRequest struct {
 	Client client.Client
 	Reader client.Reader
 
+	ClusterVersion string
 	//ClusterID is the unique identifier of the cluster in which the operator is deployed
 	ClusterID string
 

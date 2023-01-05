@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"k8s.io/apimachinery/pkg/types"
+	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
@@ -153,7 +154,7 @@ func (r *Reconciler) mutateConsolePlugin() error {
 			Name:      r.Name,
 			Namespace: r.Namespace(),
 			BasePath:  "/",
-			Port:      r.nginxPort(),
+			Port:      r.pluginBackendPort(),
 		},
 		Proxy: []consolev1alpha1.ConsolePluginProxy{{
 			Type:      "Service",
@@ -188,7 +189,7 @@ func (r *Reconciler) mutateConfigMap() error {
 						root                /usr/share/nginx/html;
 					}
 				}
-				`, r.nginxPort())}
+				`, r.pluginBackendPort())}
 	return r.mutateOwned(o)
 }
 
@@ -203,10 +204,10 @@ func (r *Reconciler) mutateService() error {
 	// Don't replace Spec entirely it may contain immutable values like ClusterIP if we are updating.
 	o.Spec.Selector = r.selector()
 	o.Spec.Ports = []corev1.ServicePort{{
-		Name:       fmt.Sprintf("%v-tcp", r.nginxPort()),
+		Name:       fmt.Sprintf("%v-tcp", r.pluginBackendPort()),
 		Protocol:   "TCP",
-		Port:       r.nginxPort(),
-		TargetPort: intstr.IntOrString{IntVal: r.nginxPort()},
+		Port:       r.pluginBackendPort(),
+		TargetPort: intstr.IntOrString{IntVal: r.pluginBackendPort()},
 	}}
 	return r.mutateOwned(o)
 }
@@ -229,17 +230,18 @@ func (r *Reconciler) mutateDeployment() error {
 								Protocol:      "TCP",
 							},
 						},
+						Command: []string{"./plugin-backend"},
+						Args: []string{
+							"-port", "9443",
+							"-features", strings.Join(r.Config.Features, ","),
+							"-cert", "/var/serving-cert/tls.crt",
+							"-key", "/var/serving-cert/tls.key",
+						},
 						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "serving-cert",
 								ReadOnly:  true,
 								MountPath: "/var/serving-cert",
-							},
-							{
-								Name:      "nginx-conf",
-								ReadOnly:  true,
-								MountPath: "/etc/nginx/nginx.conf",
-								SubPath:   "nginx.conf",
 							},
 						},
 					},
@@ -251,15 +253,6 @@ func (r *Reconciler) mutateDeployment() error {
 							Secret: &corev1.SecretVolumeSource{
 								SecretName:  r.Name,
 								DefaultMode: r.defaultMode(),
-							},
-						},
-					},
-					{
-						Name: "nginx-conf",
-						VolumeSource: corev1.VolumeSource{
-							ConfigMap: &corev1.ConfigMapVolumeSource{
-								LocalObjectReference: corev1.LocalObjectReference{Name: r.Name},
-								DefaultMode:          r.defaultMode(),
 							},
 						},
 					},

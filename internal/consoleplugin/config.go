@@ -8,6 +8,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const Name = "logging-view-plugin"
+
 // Config is the configuration struct for the logging console plugin Reconciler.
 // Construct with NewConfig to set default values.
 type Config struct {
@@ -16,20 +18,22 @@ type Config struct {
 	Image       string        // Image for the logging view service.
 	LokiService string        // Name of the LokiStack gateway service.
 	LokiPort    int32         // Port of the LokiStack gateway service.
+	Features    []string      // The features enabled for the plugin
 }
 
-func (cf *Config) Namespace() string   { return cf.Owner.GetNamespace() }
-func (cf *Config) CreatedBy() string   { return fmt.Sprintf("%v_%v", cf.Namespace(), cf.Owner.GetName()) }
-func (cf *Config) defaultMode() *int32 { return utils.GetInt32(420) }
-func (cf *Config) nginxPort() int32    { return 9443 }
+func (cf *Config) Namespace() string        { return cf.Owner.GetNamespace() }
+func (cf *Config) CreatedBy() string        { return fmt.Sprintf("%v_%v", cf.Namespace(), cf.Owner.GetName()) }
+func (cf *Config) defaultMode() *int32      { return utils.GetInt32(420) }
+func (cf *Config) pluginBackendPort() int32 { return 9443 }
 
 // NewConfig returns a config with default settings.
-func NewConfig(owner client.Object, lokiService string) Config {
+func NewConfig(owner client.Object, lokiService string, features []string) Config {
 	return Config{
 		Owner:       owner,
-		Name:        "logging-view-plugin",
+		Name:        Name,
 		Image:       utils.GetComponentImage(constants.ConsolePluginName),
 		LokiService: lokiService,
 		LokiPort:    8080,
+		Features:    features,
 	}
 }

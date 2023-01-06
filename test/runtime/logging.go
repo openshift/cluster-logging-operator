@@ -9,9 +9,7 @@ import (
 
 // NewClusterLogForwarder returns a ClusterLogForwarder with default name and namespace.
 func NewClusterLogForwarder() *loggingv1.ClusterLogForwarder {
-	clf := &loggingv1.ClusterLogForwarder{}
-	runtime.Initialize(clf, constants.WatchNamespace, constants.SingletonName)
-	return clf
+	return runtime.NewClusterLogForwarder(constants.WatchNamespace, constants.SingletonName)
 }
 
 // NewClusterLogging returns a ClusterLogging with default name, namespace and

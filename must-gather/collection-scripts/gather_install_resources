@@ -3,6 +3,8 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/common
 
+log "BEGIN gather_install_resources ..."
+
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
 
@@ -16,14 +18,16 @@ NAMESPACE=${2:-openshift-logging}
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 install_folder="$CLO_COLLECTION_PATH/install"
 
-echo "Gathering data for install info"
+log "BEGIN gather_install_resources..."
+log "Gathering data for install info"
 mkdir -p "$install_folder"
 
-echo "-- Subscription"
-oc get -n ${NAMESPACE} subscriptions.operators.coreos.com -o yaml > "$install_folder/subscription-clo"
-oc get -n openshift-operators-redhat subscriptions.operators.coreos.com -o yaml > "$install_folder/subscription-eo"
+log "-- Subscription"
+oc get -n ${NAMESPACE} subscriptions.operators.coreos.com -o yaml --cache-dir=${KUBECACHEDIR} > "$install_folder/subscription-clo"
+oc get -n openshift-operators-redhat subscriptions.operators.coreos.com -o yaml --cache-dir=${KUBECACHEDIR} > "$install_folder/subscription-eo"
 
-echo "-- Install Plan"
-oc get -n ${NAMESPACE} installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-clo"
-oc get -n openshift-operators-redhat installplans.operators.coreos.com -o yaml > "$install_folder/install_plan-eo"
+log "-- Install Plan"
+oc get -n ${NAMESPACE} installplans.operators.coreos.com -o yaml --cache-dir=${KUBECACHEDIR} > "$install_folder/install_plan-clo"
+oc get -n openshift-operators-redhat installplans.operators.coreos.com -o yaml --cache-dir=${KUBECACHEDIR} > "$install_folder/install_plan-eo"
 
+log "END gather_install_resources..."

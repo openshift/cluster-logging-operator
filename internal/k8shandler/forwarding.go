@@ -302,6 +302,10 @@ func (clusterRequest *ClusterLoggingRequest) LokiStackURL(tenant string) string 
 	if service == "" {
 		return ""
 	}
+	if !logging.ReservedInputNames.Has(tenant) {
+		log.V(3).Info("url tenant must be one of our reserved input names", "tenant", tenant)
+		return ""
+	}
 
 	return fmt.Sprintf("https://%s.%s.svc:8080/api/logs/v1/%s", service, clusterRequest.Cluster.Namespace, tenant)
 }

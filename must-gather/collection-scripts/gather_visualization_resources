@@ -2,6 +2,8 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source ${SCRIPT_DIR}/common
 
+log "BEGIN gather_visualization_resources ..."
+
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
 
@@ -19,30 +21,31 @@ check_kibana_connectivity() {
   pod=$1
 
   echo "---- Connectivity between $pod and elasticsearch" >> $kibana_folder/$pod
-  es_url=$(oc -n $NAMESPACE get pod $pod  -o jsonpath='{.spec.containers[?(@.name=="kibana")].env[?(@.name=="ELASTICSEARCH_URL")].value}')
+  es_url=$(oc -n $NAMESPACE get pod $pod  -o jsonpath='{.spec.containers[?(@.name=="kibana")].env[?(@.name=="ELASTICSEARCH_URL")].value}' --cache-dir=${KUBECACHEDIR})
 
   echo "  with ca" >> $kibana_folder/$pod
-  oc -n $NAMESPACE exec $pod -c kibana -- curl -ILvs --key /etc/kibana/keys/key --cert /etc/kibana/keys/cert --cacert /etc/kibana/keys/ca -XGET $es_url &>> $kibana_folder/$pod
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c kibana -- curl -ILvs --key /etc/kibana/keys/key --cert /etc/kibana/keys/cert --cacert /etc/kibana/keys/ca -XGET $es_url &>> $kibana_folder/$pod
 
   echo "  without ca" >> $kibana_folder/$pod
-  oc -n $NAMESPACE exec $pod -c kibana -- curl -ILkvs --key /etc/kibana/keys/key --cert /etc/kibana/keys/cert -XGET $es_url &>> $kibana_folder/$pod
+  oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c kibana -- curl -ILkvs --key /etc/kibana/keys/key --cert /etc/kibana/keys/cert -XGET $es_url &>> $kibana_folder/$pod
 }
 
 get_kibana_cr() {
-  oc get -n ${NAMESPACE} kibana.logging.openshift.io kibana -o yaml > $kibana_folder/cr
+  oc get -n ${NAMESPACE} kibana.logging.openshift.io kibana -o yaml --cache-dir=${KUBECACHEDIR} > $kibana_folder/cr
 }
 
-echo "Gathering data for visualization component"
-echo "-- Checking Kibana health"
+log "Gathering data for visualization component"
+log "-- Checking Kibana health"
 mkdir -p $kibana_folder
 
 kibana_pods=$(oc -n $NAMESPACE get pods -l logging-infra=kibana -o jsonpath='{.items[*].metadata.name}')
 for pod in $kibana_pods
 do
-    echo "---- Kibana pod: $pod"
+    log "---- Kibana pod: $pod"
     get_env $pod $kibana_folder "$NAMESPACE"
     check_kibana_connectivity $pod
 done
 
-echo "-- Gather Kibana CR"
+log "-- Gather Kibana CR"
 get_kibana_cr
+log "END gather_visualization_resources ..."

@@ -6,6 +6,8 @@ source ${SCRIPT_DIR}/common
 BASE_COLLECTION_PATH=$1
 NAMESPACE=${2:-openshift-logging}
 
+log "BEGIN gather_cluster_logging_operator_resources ..."
+
 # Use PWD as base path if no argument is passed
 if [ "${BASE_COLLECTION_PATH}" = "" ]; then
     BASE_COLLECTION_PATH=$(pwd)
@@ -14,7 +16,7 @@ fi
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 clo_folder="$CLO_COLLECTION_PATH/clo"
 
-echo "Gathering data for cluster-logging-operator"
+log "Gathering data for cluster-logging-operator"
 mkdir -p "$clo_folder"
 
 pods=$(oc -n $NAMESPACE get pods -l name=cluster-logging-operator -o jsonpath='{.items[*].metadata.name}')
@@ -23,16 +25,18 @@ do
     get_env $pod $clo_folder $NAMESPACE "Dockerfile-*operator*"
 done
 
-oc -n $NAMESPACE get deployment cluster-logging-operator -o yaml > $clo_folder/deployment
+oc -n $NAMESPACE get deployment cluster-logging-operator -o yaml --cache-dir=${KUBECACHEDIR} > $clo_folder/deployment
 
 for csv in $(oc -n $NAMESPACE get csv -o name) ; do
-  oc -n $NAMESPACE get "${csv}" -o yaml > "${clo_folder}/${csv}.yaml"
+  mkdir -p "$(dirname ${clo_folder}/$csv)"
+  oc -n $NAMESPACE get "${csv}" -o yaml --cache-dir=${KUBECACHEDIR} > ${clo_folder}/"${csv}.yaml"
 done
+
 
 for r in "clusterlogging" "clusterlogforwarder" ; do
   data="$(oc -n $NAMESPACE get $r --ignore-not-found -o yaml)"
   if [ "$data" != "" ] ; then
-    echo "${data}" > "${clo_folder}/$r_instance.yaml"
+    echo "${data}" > "${clo_folder}/"$r"_instance.yaml"
   fi
 done
 
@@ -44,13 +48,14 @@ if [ "$data" != "" ] ; then
 fi
 
 csv_name="$(oc -n $NAMESPACE get csv -o name | grep -E 'cluster(-?)logging')"
-oc -n $NAMESPACE get deployments -o wide > ${clo_folder}/deployments.txt 2>&1
-oc -n $NAMESPACE get ds -o wide > ${clo_folder}/daemonsets.txt 2>&1
-oc -n $NAMESPACE get "${csv_name}" -o jsonpath='{.spec.displayName}{"/must-gather\n"}{.spec.version}' > "${clo_folder}/version"
+oc -n $NAMESPACE get deployments -o wide > ${clo_folder}/deployments.txt --cache-dir=${KUBECACHEDIR} 2>&1
+oc -n $NAMESPACE get ds -o wide > ${clo_folder}/daemonsets.txt --cache-dir=${KUBECACHEDIR} 2>&1
+oc -n $NAMESPACE get "${csv_name}" -o jsonpath='{.spec.displayName}{"/must-gather\n"}{.spec.version}' --cache-dir=${KUBECACHEDIR} > "${clo_folder}/version"
 
 for r in "secret/elasticsearch" "configmap/collector" ; do
   result="$(oc -n $NAMESPACE get $r --ignore-not-found)"
   if [ "$result" != "" ] ; then
-    oc -n $NAMESPACE extract $r --to=${clo_folder}
+    oc -n $NAMESPACE extract $r --to=${clo_folder} --cache-dir=${KUBECACHEDIR}
   fi
 done
+log "END gather_cluster_logging_operator_resources ..."

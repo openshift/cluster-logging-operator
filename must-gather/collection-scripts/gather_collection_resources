@@ -16,6 +16,8 @@ NAMESPACE=${2:-openshift-logging}
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 collector_folder="$CLO_COLLECTION_PATH/collector"
 
+log "BEGIN gather_collection_resources..."
+
 check_collector_connectivity() {
   local pod=$1
   echo "--Connectivity between $pod and elasticsearch" >> $collector_folder/$pod
@@ -26,10 +28,10 @@ check_collector_connectivity() {
   local collector=fluent
   local container=$2
   echo "  with ca" >> $collector_folder/$pod
-  oc -n $NAMESPACE exec $pod -c $container -- curl -ILvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert --cacert /etc/$collector/keys/ca -XGET https://$es_host:$es_port &>> $collector_folder/$pod
+  oc -n $NAMESPACE exec $pod -c $container --cache-dir=${KUBECACHEDIR} -- curl -ILvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert --cacert /etc/$collector/keys/ca -XGET https://$es_host:$es_port & >> $collector_folder/$pod
 
   echo "  without ca" >> $collector_folder/$pod
-  oc -n $NAMESPACE exec $pod -c $container -- curl -ILkvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert -XGET https://$es_host:$es_port &>> $collector_folder/$pod
+  oc -n $NAMESPACE exec $pod -c $container --cache-dir=${KUBECACHEDIR} -- curl -ILkvs --key /etc/$collector/keys/key --cert /etc/$collector/keys/cert -XGET https://$es_host:$es_port & >> $collector_folder/$pod
 }
 
 check_collector_persistence() {
@@ -42,13 +44,13 @@ check_collector_persistence() {
   if [ -z "$fbstoragePath" ] ; then
     echo "No filebuffer storage defined" >>  $collector_folder/$pod
   else
-    oc -n $NAMESPACE exec $pod -c $container -- df -h $fbstoragePath >> $collector_folder/$pod
-    oc -n $NAMESPACE exec $pod -c $container -- ls -lr $fbstoragePath >> $collector_folder/$pod
+    oc -n $NAMESPACE exec $pod -c $container --cache-dir=${KUBECACHEDIR} -- df -h $fbstoragePath >> $collector_folder/$pod
+    oc -n $NAMESPACE exec $pod -c $container --cache-dir=${KUBECACHEDIR} -- ls -lr $fbstoragePath >> $collector_folder/$pod
   fi
 }
 
-echo "if the collector 'fluentd' or 'collector' is missing thats OK"
-echo "this must gather is trying to cover all cases for name migration"
+log "if the collector 'fluentd' or 'collector' is missing thats OK"
+log "this must gather is trying to cover all cases for name migration"
 for collector in "fluentd" "collector"; do
   yaml="$(oc -n $NAMESPACE get ds/$collector --ignore-not-found -o yaml)"
   if [ "$yaml" == "" ] ; then
@@ -57,23 +59,24 @@ for collector in "fluentd" "collector"; do
 
   is_fluent=$(echo $yaml|grep fluent)
 
-  echo "Gathering data for collection component: $collector"
+  log "Gathering data for collection component: $collector"
   mkdir -p $collector_folder
 
-  echo "-- Checking Collector health: $collector"
+  log "-- Checking Collector health: $collector"
   pods="$(oc -n $NAMESPACE get pods -l component=collector -o jsonpath='{.items[*].metadata.name}')"
   for pod in $pods
   do
-      echo "---- Collector pod: $pod"
-      oc -n $NAMESPACE describe pod/$pod > $collector_folder/$pod.describe 2>&1
+      log "---- Collector pod: $pod"
+      oc -n $NAMESPACE describe pod/$pod > $collector_folder/$pod.describe --cache-dir=${KUBECACHEDIR} 2>&1
       if [ "$is_fluent" != "" ] ; then
         check_collector_connectivity $pod $collector
         check_collector_persistence $pod $collector
-        oc -n $NAMESPACE exec $pod -c $collector -- ls -l /var/lib/fluentd/default > $collector_folder/$pod.es-buffers.txt
-        oc -n $NAMESPACE exec $pod -c $collector -- ls -l /var/lib/fluentd/retry_default > $collector_folder/$pod.buffers.es-retry.txt
+        oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c $collector -- ls -l /var/lib/fluentd/default  > $collector_folder/$pod.es-buffers.txt
+        oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c $collector -- ls -l /var/lib/fluentd/retry_default > $collector_folder/$pod.buffers.es-retry.txt
         echo "$pod" >> $collector_folder/output-buffer-size.txt
         echo "---------------" >> $collector_folder/output-buffer-size.txt
-        oc -n $NAMESPACE exec $pod -c $collector -- bash -c ' du -sh /var/lib/fluentd/*' >> $collector_folder/output-buffer-size.txt
+        oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} exec $pod -c $collector -- bash -c ' du -sh /var/lib/fluentd/*' >> $collector_folder/output-buffer-size.txt
       fi
   done
 done
+log "END gather_collection_resources..."

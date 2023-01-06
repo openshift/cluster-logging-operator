@@ -1,25 +1,26 @@
 package migrations
 
 import (
-	"testing"
-
 	"github.com/google/go-cmp/cmp"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"testing"
 )
 
 func TestProcessPipelinesForLokiStack(t *testing.T) {
 	tests := []struct {
 		desc          string
-		in            []loggingv1.PipelineSpec
+		spec          loggingv1.ClusterLogForwarderSpec
 		wantOutputs   []loggingv1.OutputSpec
 		wantPipelines []loggingv1.PipelineSpec
 	}{
 		{
 			desc: "no default output",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{"custom-output"},
-					InputRefs:  []string{loggingv1.InputNameApplication},
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{"custom-output"},
+						InputRefs:  []string{loggingv1.InputNameApplication},
+					},
 				},
 			},
 			wantOutputs: []loggingv1.OutputSpec{},
@@ -32,10 +33,12 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "single tenant - single output",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{loggingv1.OutputNameDefault},
-					InputRefs:  []string{loggingv1.InputNameApplication},
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs:  []string{loggingv1.InputNameApplication},
+					},
 				},
 			},
 			wantOutputs: []loggingv1.OutputSpec{
@@ -54,12 +57,14 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "multiple tenants - single output",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{loggingv1.OutputNameDefault},
-					InputRefs: []string{
-						loggingv1.InputNameApplication,
-						loggingv1.InputNameInfrastructure,
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+							loggingv1.InputNameInfrastructure,
+						},
 					},
 				},
 			},
@@ -88,13 +93,15 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "multiple tenants - single output - named pipeline",
-			in: []loggingv1.PipelineSpec{
-				{
-					Name:       "named-pipeline",
-					OutputRefs: []string{loggingv1.OutputNameDefault},
-					InputRefs: []string{
-						loggingv1.InputNameApplication,
-						loggingv1.InputNameInfrastructure,
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						Name:       "named-pipeline",
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+							loggingv1.InputNameInfrastructure,
+						},
 					},
 				},
 			},
@@ -125,14 +132,16 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "single tenant - multiple outputs",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{
-						"custom-output",
-						loggingv1.OutputNameDefault,
-					},
-					InputRefs: []string{
-						loggingv1.InputNameInfrastructure,
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{
+							"custom-output",
+							loggingv1.OutputNameDefault,
+						},
+						InputRefs: []string{
+							loggingv1.InputNameInfrastructure,
+						},
 					},
 				},
 			},
@@ -155,15 +164,17 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "multiple tenants - multiple outputs",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{
-						"custom-output",
-						loggingv1.OutputNameDefault,
-					},
-					InputRefs: []string{
-						loggingv1.InputNameInfrastructure,
-						loggingv1.InputNameAudit,
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{
+							"custom-output",
+							loggingv1.OutputNameDefault,
+						},
+						InputRefs: []string{
+							loggingv1.InputNameInfrastructure,
+							loggingv1.InputNameAudit,
+						},
 					},
 				},
 			},
@@ -196,6 +207,38 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "single tenant - custom input - default output",
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs:  []string{"my-custom-input"},
+					},
+				},
+				Inputs: []loggingv1.InputSpec{
+					{
+						Name: "my-custom-input",
+						Application: &loggingv1.Application{
+							Namespaces: []string{"my-test-namespace"},
+						},
+					},
+				},
+			},
+			wantOutputs: []loggingv1.OutputSpec{
+				{
+					Name: loggingv1.OutputNameDefault + "-my-custom-input",
+					Type: loggingv1.OutputTypeLoki,
+					URL:  "https://lokistack-testing-gateway-http.aNamespace.svc:8080/api/logs/v1/application",
+				},
+			},
+			wantPipelines: []loggingv1.PipelineSpec{
+				{
+					OutputRefs: []string{loggingv1.OutputNameDefault + "-my-custom-input"},
+					InputRefs:  []string{"my-custom-input"},
+				},
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -208,7 +251,7 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: "lokistack-testing",
 				},
 			}
-			outputs, pipelines := processPipelinesForLokiStack(logStore, "aNamespace", tc.in)
+			outputs, pipelines := processPipelinesForLokiStack(logStore, "aNamespace", tc.spec)
 
 			if diff := cmp.Diff(outputs, tc.wantOutputs); diff != "" {
 				t.Errorf("outputs differ: -got+want\n%s", diff)

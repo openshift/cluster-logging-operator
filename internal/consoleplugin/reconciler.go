@@ -85,7 +85,7 @@ func (r *Reconciler) Reconcile(ctx context.Context) error {
 		return err
 	}
 	if modified {
-		log.Info("reconciled console", "plugin", runtime.ID(&r.consolePlugin))
+		log.V(3).Info("reconciled console", "plugin", runtime.ID(&r.consolePlugin))
 	}
 	return nil
 }

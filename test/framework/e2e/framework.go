@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -15,6 +16,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 
 	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/test/client"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
@@ -91,39 +93,18 @@ func (tc *E2ETestFramework) DeployLogGenerator() error {
 }
 
 func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) error {
+	pod := runtime.NewLogGenerator(namespace, "log-generator", 1000, 0, "My life is my message")
+	clolog.Info("Deploying LogGenerator to namespace", "deployment name", pod.Name, "namespace", namespace)
 	opts := metav1.CreateOptions{}
-	container := corev1.Container{
-		Name:            "log-generator",
-		Image:           "quay.io/quay/busybox",
-		ImagePullPolicy: corev1.PullAlways,
-		Args:            []string{"sh", "-c", "i=0; while true; do echo $i: My life is my message; i=$((i+1)) ; sleep 1; done"},
-		SecurityContext: &corev1.SecurityContext{
-			AllowPrivilegeEscalation: utils.GetBool(false),
-			Capabilities: &corev1.Capabilities{
-				Drop: []corev1.Capability{"ALL"},
-			},
-		},
-	}
-	podSpec := corev1.PodSpec{
-		Containers: []corev1.Container{container},
-		SecurityContext: &corev1.PodSecurityContext{
-			RunAsNonRoot: utils.GetBool(true),
-			SeccompProfile: &corev1.SeccompProfile{
-				Type: corev1.SeccompProfileTypeRuntimeDefault,
-			},
-		},
-	}
-	deployment := k8shandler.NewDeployment("log-generator", namespace, "log-generator", "test", podSpec)
-	clolog.Info("Deploying LogGenerator to namespace", "deployment name", deployment.Name, "namespace", deployment.Namespace)
-	deployment, err := tc.KubeClient.AppsV1().Deployments(namespace).Create(context.TODO(), deployment, opts)
+	pod, err := tc.KubeClient.CoreV1().Pods(namespace).Create(context.TODO(), pod, opts)
 	if err != nil {
 		return err
 	}
 	tc.AddCleanup(func() error {
 		opts := metav1.DeleteOptions{}
-		return tc.KubeClient.AppsV1().Deployments(namespace).Delete(context.TODO(), deployment.Name, opts)
+		return tc.KubeClient.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, opts)
 	})
-	return tc.waitForDeployment(namespace, "log-generator", defaultRetryInterval, defaultTimeout)
+	return client.NewTest().Client.WaitFor(pod, client.PodRunning)
 }
 
 func (tc *E2ETestFramework) DeployLogGeneratorWithNamespaceAndLabels(namespace string, labels map[string]string) error {
@@ -205,6 +186,11 @@ func (tc *E2ETestFramework) CreateTestNamespace() string {
 	name := fmt.Sprintf("clo-test-%d", rand.Intn(10000)) //nolint:gosec
 	if value, found := os.LookupEnv("GENERATOR_NS"); found {
 		name = value
+	} else {
+		tc.AddCleanup(func() error {
+			opts := metav1.DeleteOptions{}
+			return tc.KubeClient.CoreV1().Namespaces().Delete(context.TODO(), name, opts)
+		})
 	}
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

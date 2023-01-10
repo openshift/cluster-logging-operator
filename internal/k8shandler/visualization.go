@@ -5,7 +5,6 @@ import (
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/visualization/console"
 	"github.com/openshift/cluster-logging-operator/internal/visualization/kibana"
@@ -42,7 +41,7 @@ func (clusterRequest *ClusterLoggingRequest) createOrUpdateKibana() (err error) 
 
 	cluster := clusterRequest.Cluster
 	cr := kibana.New(cluster.Namespace, constants.KibanaName, cluster.Spec.Visualization, cluster.Spec.LogStore, utils.AsOwner(cluster))
-	if err = reconcile.ReconcileKibana(clusterRequest.EventRecorder, clusterRequest.Client, cr); err != nil {
+	if err = kibana.Reconcile(clusterRequest.EventRecorder, clusterRequest.Client, cr); err != nil {
 		return
 	}
 

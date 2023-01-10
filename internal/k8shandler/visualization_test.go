@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/consoleplugin"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/visualization/console"
 	es "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,7 +63,7 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 			LokiStack: logging.LokiStackStoreSpec{Name: "some-loki-stack"},
 		},
 	}
-	r := consoleplugin.NewReconciler(c, consoleplugin.NewConfig(cl, "some-loki-stack-gateway-http"))
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http"))
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	t.Run("create", func(t *testing.T) {

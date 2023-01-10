@@ -1,11 +1,10 @@
-package reconcile
+package kibana
 
 import (
 	"context"
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/visualization/kibana"
 	loggingv1 "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -14,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func ReconcileKibana(er record.EventRecorder, k8Client client.Client, desired *loggingv1.Kibana) error {
+func Reconcile(er record.EventRecorder, k8Client client.Client, desired *loggingv1.Kibana) error {
 	reason := constants.EventReasonGetObject
 	updateReason := ""
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
@@ -29,7 +28,7 @@ func ReconcileKibana(er record.EventRecorder, k8Client client.Client, desired *l
 		}
 		same := false
 
-		if same, updateReason = kibana.AreSame(*current, *desired); same {
+		if same, updateReason = AreSame(*current, *desired); same {
 			log.V(3).Info("Kibana are the same skipping update")
 			return nil
 		}

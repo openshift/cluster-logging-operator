@@ -13,8 +13,8 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/consoleplugin"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
+	"github.com/openshift/cluster-logging-operator/internal/visualization/console"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
@@ -36,7 +36,7 @@ var ctx = context.TODO()
 var _ = Describe("[ConsolePlugin]", func() {
 	var (
 		c *client.Test
-		r *consoleplugin.Reconciler
+		r *console.Reconciler
 	)
 
 	cleanup := func() {
@@ -47,9 +47,9 @@ var _ = Describe("[ConsolePlugin]", func() {
 
 	BeforeEach(func() {
 		c = client.NewTest()
-		r = consoleplugin.NewReconciler(
+		r = console.NewReconciler(
 			c.ControllerRuntimeClient(),
-			consoleplugin.NewConfig(testruntime.NewClusterLogging(), "lokiService"))
+			console.NewConfig(testruntime.NewClusterLogging(), "lokiService"))
 		cleanup() // Clear out objects left behind by previous tests.
 	})
 

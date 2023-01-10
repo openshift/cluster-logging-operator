@@ -5,14 +5,13 @@ import (
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/consoleplugin"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // ReconcilePlugin reconciles the console plugin to expose log querying of storage
 func ReconcilePlugin(k8sClient client.Client, logStore *logging.LogStoreSpec, owner client.Object) error {
 	lokiService := LokiStackGatewayService(logStore)
-	r := consoleplugin.NewReconciler(k8sClient, consoleplugin.NewConfig(owner, lokiService))
+	r := NewReconciler(k8sClient, NewConfig(owner, lokiService))
 	if logStore != nil && logStore.Type == logging.LogStoreTypeLokiStack {
 		log.V(3).Info("Enabling logging console plugin", "created-by", r.CreatedBy(), "loki-service", lokiService)
 		return r.Reconcile(context.TODO())

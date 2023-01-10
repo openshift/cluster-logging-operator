@@ -2,6 +2,7 @@ package functional
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e/certificates"
 	"os"
 	"regexp"
 	"strconv"
@@ -11,7 +12,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/openshift/cluster-logging-operator/internal/certificates"
 	"github.com/openshift/cluster-logging-operator/internal/pkg/generator/forwarder"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"

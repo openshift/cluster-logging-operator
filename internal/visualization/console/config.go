@@ -1,4 +1,4 @@
-package consoleplugin
+package console
 
 import (
 	"fmt"

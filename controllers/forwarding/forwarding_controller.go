@@ -2,6 +2,7 @@ package forwarding
 
 import (
 	"context"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -9,7 +10,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/status"
-	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

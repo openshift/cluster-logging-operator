@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-//TODO: Use a detailed CLF spec
+// TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
 	var (
 		f = func(testcase testhelpers.ConfGenerateTest) {
@@ -91,7 +91,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 type = "kubernetes_logs"
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
-exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"
@@ -471,7 +471,7 @@ crt_file = "/etc/collector/metrics/tls.crt"
 type = "kubernetes_logs"
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
-exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"
@@ -1018,7 +1018,7 @@ crt_file = "/etc/collector/metrics/tls.crt"
 type = "kubernetes_logs"
 glob_minimum_cooldown_ms = 15000
 auto_partial_merge = true
-exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+exclude_paths_glob_patterns = ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
 pod_annotation_fields.pod_labels = "kubernetes.labels"
 pod_annotation_fields.pod_namespace = "kubernetes.namespace_name"
 pod_annotation_fields.pod_annotations = "kubernetes.annotations"

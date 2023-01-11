@@ -1,0 +1,42 @@
+= Cluster Logging Operator
+
+An operator to support OKD aggregated cluster logging. Cluster logging configuration information
+is found in the link:./docs/administration/configuration.md[configuration] documentation.
+
+== Overview
+
+The CLO (Cluster Logging Operator) provides a set of APIs to control collection and forwarding of logs from
+all pods and nodes in a cluster. This includes _application_ logs (from regular
+pods), _infrastructure_ logs (from system pods and node logs), and _audit_ logs
+(special node logs with legal/security implications)
+
+The CLO does not collect or forward logs itself: it starts, configures, monitors
+and manages the components that do the work.
+
+CLO currently uses:
+
+* Vector as collector/forwarder
+* Loki as store
+* Openshift console for visualization.
+
+(Still supports fluentd, elasticsearch and kibana for compatibility)
+
+The goal is to _encapsulate_ those technologies behind APIs so that:
+
+. The user has less to learn, and has a simpler experience to control logging.
+. These technologies can be replaced in the future without affecting the user experience.
+
+The CLO can also _forward_ logs over multiple protocols, to multiple types of log stores, on- or off-cluster
+
+The CLO _owns_ the following APIs:
+
+* ClusterLogging: Top level control of cluster-wide logging resources
+* ClusterLogForwarder: Configure forwarding of logs to external sources
+
+To install a released version of cluster logging see the https://docs.openshift.com/[Openshift Documentation], (e.g., https://docs.openshift.com/container-platform/4.5/logging/cluster-logging-deploying.html[OCP v4.5])
+
+To experiment or contribute to the development of cluster logging, see the link:docs/contributing/README.adoc[hacking] and link:docs/contributing/REVIEW.adoc[review] documentation
+
+To debug the cluster logging stack, see link:./must-gather/README.md[README.md]
+
+To find currently known Cluster Logging Operator issues with work-arounds, see the link:docs/administration/troubleshooting.md[Troubleshooting] guide.

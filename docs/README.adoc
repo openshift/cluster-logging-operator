@@ -1,0 +1,30 @@
+= Documentation for the cluster logging operator
+
+== What are these docs for?
+
+The topics in this `/docs` directory are a place for developers to share development-related information with other developers.
+These are informal and unofficial docs. They are not carefully maintained or updated.
+
+For the official documentation, see https://docs.openshift.com/container-platform/4.11/logging/cluster-logging-deploying.html
+
+== Where can you get help with these docs?
+
+If you have questions, connect to the coreos.slack.com workspace on slack and check out the #forum-logging channel.
+
+== Index of topics
+
+* link:administration/configuration.md[Configuring and Tuning Cluster Logging]
+* link:administration/deploy-event-router.md[Deploying Event Router]
+* link:contributing/README.md[Contributing the Cluster Logging Operator]
+* link:contributing/REVIEW.md[PR Review Guidelines]
+* link:administration/troubleshooting.md[Troubleshooting the cluster logging operator]
+* link:administration/unmanaged_configuration.md[Unmanaged Configurations for Cluster Logging]
+* link:administration/output_url_field.md[Using the clusterlogforwarder.output.url field]
+* link:contributing/how-to-add-new-output.md[How-to add a new output type]
+
+== Relevant links
+
+* https://viaq.github.io/documentation/[Overall Architecture]
+* link:features/collection.adoc[Collector Features]
+* link:reference/operator/api.adoc[Cluster Logging v1.0 Custom Resources API Reference]
+* link:reference/datamodels/viaq/v1.adoc[ViaQ v1.0 Data Model API Reference]

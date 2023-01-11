@@ -56,6 +56,7 @@ type ClusterLoggingSpec struct {
 	//
 	// +nullable
 	// +optional
+	// +deprecated
 	Curation *CurationSpec `json:"curation,omitempty"`
 
 	// Deprecated. Specification for Forwarder component for the cluster
@@ -63,6 +64,7 @@ type ClusterLoggingSpec struct {
 	//
 	// +nullable
 	// +optional
+	// +deprecated
 	Forwarder *ForwarderSpec `json:"forwarder,omitempty"`
 }
 
@@ -238,6 +240,7 @@ type CollectionSpec struct {
 	// See spec.collection
 	// +nullable
 	// +optional
+	// +deprecated
 	Logs *LogCollectionSpec `json:"logs,omitempty"`
 
 	// CollectorSpec is the common specification that applies to any collector
@@ -658,10 +661,15 @@ type ElasticsearchClusterConditions []elasticsearch.ClusterCondition
 // A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clusterloggings API
 // +operator-sdk:csv:customresourcedefinitions:displayName="Cluster Logging",resources={{Pod,v1},{Deployment,v1},{ReplicaSet,v1},{ConfigMap,v1},{Service,v1},{Route,v1},{CronJob,v1},{Role,v1},{RoleBinding,v1},{ServiceAccount,v1},{ServiceMonitor,v1},{persistentvolumeclaims,v1}}
 type ClusterLogging struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta `json:",inline"`
+
+	// Standard object's metadata
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterLoggingSpec   `json:"spec,omitempty"`
+	// Specification of the desired behavior of ClusterLogging
+	Spec ClusterLoggingSpec `json:"spec,omitempty"`
+
+	// Status defines the observed state of ClusterLogging
 	Status ClusterLoggingStatus `json:"status,omitempty"`
 }
 

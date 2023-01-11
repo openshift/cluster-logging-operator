@@ -127,8 +127,7 @@ const (
   },
   "@timestamp": "2020-11-28T18:18:17.286517+00:00",
   "viaq_index_name": "infra-write",
-  "viaq_msg_id": "ZDY0ZjE4NTAtNGU3ZC00YmQ4LWJjYjctNzVjMTEwMzdlYWIz",
-  "kubernetes": {}
+  "viaq_msg_id": "ZDY0ZjE4NTAtNGU3ZC00YmQ4LWJjYjctNzVjMTEwMzdlYWIz"
 }
 	`
 	LinuxAuditLogStr = `

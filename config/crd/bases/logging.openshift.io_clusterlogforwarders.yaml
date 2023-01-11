@@ -45,8 +45,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ClusterLogForwarderSpec defines how logs should be forwarded
-              to remote targets.
+            description: Specification of the desired behavior of ClusterLogForwarder
             properties:
               inputs:
                 description: "Inputs are named filters for log messages to be forwarded.
@@ -57,8 +56,8 @@ spec:
                   description: InputSpec defines a selector of log messages.
                   properties:
                     application:
-                      description: Application, if present, enables `application`
-                        logs.
+                      description: Application, if present, enables named set of `application`
+                        logs that can specify a set of match criteria
                       properties:
                         namespaces:
                           description: Namespaces from which to collect application
@@ -265,32 +264,32 @@ spec:
                       type: string
                     secret:
                       description: "Secret for authentication. \n Names a secret in
-                        the same namespace as the ClusterLogForwarder. \n Sensitive
-                        authentication information is stored in a separate Secret
-                        object. A Secret is like a ConfigMap, where the keys are strings
-                        and the values are base64-encoded binary data, for example
-                        TLS certificates. \n Common keys are described here. Some
-                        output types support additional keys, documented with the
-                        output-specific configuration field. All secret keys are optional,
-                        enable the security features you want by setting the relevant
-                        keys. \n Transport Layer Security (TLS) \n Using a TLS URL
-                        ('https://...' or 'tls://...') without any secret enables
-                        basic TLS: client authenticates server using system default
-                        certificate authority. \n Additional TLS features are enabled
-                        by referencing a Secret with the following optional fields
-                        in its spec.data. All data fields are base64 encoded. \n `tls.crt`:
-                        A client certificate, for mutual authentication. Requires
-                        `tls.key`. `tls.key`: Private key to unlock the client certificate.
-                        Requires `tls.crt` `passphrase`: Passphrase to decode an encoded
-                        TLS private key. Requires tls.key. `ca-bundle.crt`: Custom
-                        CA to validate certificates. \n Username and Password \n `username`:
-                        Authentication user name. Requires `password`. `password`:
-                        Authentication password. Requires `username`. \n Simple Authentication
-                        Security Layer (SASL) \n `sasl.enable`: (boolean) Explicitly
-                        enable or disable SASL. If missing, SASL is automatically
-                        enabled if any `sasl.*` keys are set. `sasl.mechanisms`: (array
+                        the same namespace as the ClusterLogForwarder. Sensitive authentication
+                        information is stored in a separate Secret object. A Secret
+                        is like a ConfigMap, where the keys are strings and the values
+                        are base64-encoded binary data, for example TLS certificates.
+                        \n Common keys are described here. Some output types support
+                        additional keys, documented with the output-specific configuration
+                        field. All secret keys are optional, enable the security features
+                        you want by setting the relevant keys. \n Transport Layer
+                        Security (TLS) \n Using a TLS URL (`https://...` or `tls://...`)
+                        without any secret enables basic TLS: client authenticates
+                        server using system default certificate authority. \n Additional
+                        TLS features are enabled by referencing a Secret with the
+                        following optional fields in its spec.data. All data fields
+                        are base64 encoded. \n * `tls.crt`: A client certificate,
+                        for mutual authentication. Requires `tls.key`. * `tls.key`:
+                        Private key to unlock the client certificate. Requires `tls.crt`
+                        * `passphrase`: Passphrase to decode an encoded TLS private
+                        key. Requires tls.key. * `ca-bundle.crt`: Custom CA to validate
+                        certificates. \n Username and Password \n * `username`: Authentication
+                        user name. Requires `password`. * `password`: Authentication
+                        password. Requires `username`. \n Simple Authentication Security
+                        Layer (SASL) \n * `sasl.enable`: (boolean) Explicitly enable
+                        or disable SASL. If missing, SASL is automatically enabled
+                        if any `sasl.*` keys are set. * `sasl.mechanisms`: (array
                         of string) List of allowed SASL mechanism names. If missing
-                        or empty, the system defaults are used. `sasl.allow-insecure`:
+                        or empty, the system defaults are used. * `sasl.allow-insecure`:
                         (boolean) Allow mechanisms that send clear-text passwords.
                         Default false."
                       properties:
@@ -418,6 +417,7 @@ spec:
                 description: Pipelines forward the messages selected by a set of inputs
                   to a set of outputs.
                 items:
+                  description: PipelinesSpec link a set of inputs to a set of outputs.
                   properties:
                     detectMultilineErrors:
                       description: DetectMultilineErrors enables multiline error detection

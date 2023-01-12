@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/clusterrole"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/clusterrolebinding"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -72,4 +73,16 @@ func ClusterRoleBinding(k8sClient client.Client, name string, generator func() *
 		return k8sClient.Update(context.TODO(), current)
 	})
 	return retryErr
+}
+
+func DeleteClusterRole(k8sClient client.Client, name string) error {
+	object := runtime.NewClusterRole(name)
+	log.V(3).Info("Deleting", "object", object)
+	return k8sClient.Delete(context.TODO(), object)
+}
+
+func DeleteClusterRoleBinding(k8sClient client.Client, name string) error {
+	object := runtime.NewClusterRoleBinding(name, rbacv1.RoleRef{})
+	log.V(3).Info("Deleting", "object", object)
+	return k8sClient.Delete(context.TODO(), object)
 }

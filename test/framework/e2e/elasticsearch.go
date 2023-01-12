@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch/indexmanagement"
 	"strconv"
 	"strings"
 	"time"
@@ -21,7 +22,6 @@ import (
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler/indexmanagement"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )

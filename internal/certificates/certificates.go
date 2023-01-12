@@ -3,6 +3,7 @@ package certificates
 import (
 	"fmt"
 	"os/exec"
+	"sync"
 
 	"sigs.k8s.io/yaml"
 
@@ -10,7 +11,11 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
+var m sync.Mutex
+
 func GenerateCertificates(namespace, scriptsDir, logStoreName, workDir string) (err error, updated bool, output []interface{}) {
+	m.Lock()
+	defer m.Unlock()
 	script := fmt.Sprintf("%s/cert_generation.sh", scriptsDir)
 	return RunCertificatesScript(namespace, logStoreName, workDir, script)
 }

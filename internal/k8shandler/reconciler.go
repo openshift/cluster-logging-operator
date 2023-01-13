@@ -18,7 +18,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/status"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
@@ -94,17 +93,6 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 	} else {
 		removeManagedStorage(clusterLoggingRequest)
 	}
-
-	// Remove Curator
-	if err := clusterLoggingRequest.removeCurator(); err != nil {
-		log.V(0).Error(err, "Error removing curator component")
-	}
-	clusterLoggingRequest.Cluster.Status.Conditions.SetCondition(status.Condition{
-		Type:    "CuratorRemoved",
-		Status:  corev1.ConditionTrue,
-		Reason:  "ResourceDeprecated",
-		Message: "curator is deprecated in favor of defining retention policy",
-	})
 
 	// Reconcile Collection
 	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {

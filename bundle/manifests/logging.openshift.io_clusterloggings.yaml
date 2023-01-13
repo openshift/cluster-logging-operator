@@ -328,7 +328,8 @@ spec:
                 type: object
               curation:
                 description: Deprecated. Specification of the Curation component for
-                  the cluster
+                  the cluster This component was specifically for use with Elasticsearch
+                  and was replaced by index management spec
                 nullable: true
                 properties:
                   curator:
@@ -963,6 +964,7 @@ spec:
             description: Status defines the observed state of ClusterLogging
             properties:
               collection:
+                description: Deprecated.
                 properties:
                   logs:
                     properties:

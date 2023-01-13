@@ -466,7 +466,7 @@ spec:
                 type: array
             type: object
           status:
-            description: ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
+            description: Status of the ClusterLogForwarder
             properties:
               conditions:
                 description: Conditions of the log forwarder.

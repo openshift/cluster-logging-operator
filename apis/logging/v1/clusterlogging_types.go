@@ -53,6 +53,8 @@ type ClusterLoggingSpec struct {
 	Collection *CollectionSpec `json:"collection,omitempty"`
 
 	// Deprecated. Specification of the Curation component for the cluster
+	// This component was specifically for use with Elasticsearch and was
+	// replaced by index management spec
 	//
 	// +nullable
 	// +optional
@@ -80,7 +82,9 @@ type ClusterLoggingStatus struct {
 	// +optional
 	LogStore LogStoreStatus `json:"logStore"`
 
+	// Deprecated.
 	// +optional
+	// +deprecated
 	Collection CollectionStatus `json:"collection"`
 
 	// +optional

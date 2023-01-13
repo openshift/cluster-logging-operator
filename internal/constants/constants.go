@@ -86,7 +86,6 @@ const (
 	VectorName                 = "vector"
 	KibanaName                 = "kibana"
 	KibanaProxyName            = "kibana-proxy"
-	CuratorName                = "curator"
 	LogfilesmetricexporterName = "logfilesmetricexporter"
 	ConsolePluginName          = "consoleplugin"
 	LogStoreURL                = "https://" + ElasticsearchFQDN + ":" + ElasticsearchPort

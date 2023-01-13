@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"runtime"
@@ -37,7 +38,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/controllers/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"strconv"
 
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
@@ -18,7 +19,6 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/status"
-	"github.com/openshift/cluster-logging-operator/internal/telemetry"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"

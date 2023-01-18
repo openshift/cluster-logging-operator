@@ -59,7 +59,7 @@ func (index *Index) DocCount() int {
 	return value
 }
 
-//HasInfraStructureLogs returns true if there are any indices that begin with InfraIndexPrefix and also contains documents
+// HasInfraStructureLogs returns true if there are any indices that begin with InfraIndexPrefix and also contains documents
 func (indices *Indices) HasInfraStructureLogs() bool {
 	for _, index := range *indices {
 		if strings.HasPrefix(index.Name, InfraIndexPrefix) && index.DocCount() > 0 {
@@ -69,7 +69,7 @@ func (indices *Indices) HasInfraStructureLogs() bool {
 	return false
 }
 
-//HasApplicationLogs returns true if there are any indices that begin with ProjectIndexPrefix and also contains documents
+// HasApplicationLogs returns true if there are any indices that begin with ProjectIndexPrefix and also contains documents
 func (indices *Indices) HasApplicationLogs() bool {
 	for _, index := range *indices {
 		if strings.HasPrefix(index.Name, ProjectIndexPrefix) && index.DocCount() > 0 {
@@ -79,7 +79,7 @@ func (indices *Indices) HasApplicationLogs() bool {
 	return false
 }
 
-//HasAuditLogs returns true if there are any indices that begin with AuditIndexPrefix and also contains documents
+// HasAuditLogs returns true if there are any indices that begin with AuditIndexPrefix and also contains documents
 func (indices *Indices) HasAuditLogs() bool {
 	for _, index := range *indices {
 		if strings.HasPrefix(index.Name, AuditIndexPrefix) && index.DocCount() > 0 {
@@ -148,7 +148,7 @@ func (es *ElasticLogStore) ClusterLocalEndpoint() string {
 	panic("Not implemented")
 }
 
-//Indices fetches the list of indices stored by Elasticsearch
+// Indices fetches the list of indices stored by Elasticsearch
 func (es *ElasticLogStore) Indices() (Indices, error) {
 	options := metav1.ListOptions{
 		LabelSelector: "component=elasticsearch",
@@ -174,9 +174,9 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	return indices, nil
 }
 
-func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
+func (tc *E2ETestFramework) DeployAnElasticsearchCluster() (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
 	logStoreName := "test-elastic-cluster"
-	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
+	if pipelineSecret, err = tc.CreatePipelineSecret(logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
 		return nil, nil, err
 	}
 

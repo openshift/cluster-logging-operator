@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"strconv"
 	"strings"
 	"time"
+
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -318,7 +319,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		otherConf := map[string][]byte{
 			"shared_key": []byte("my_shared_key"),
 		}
-		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(rootDir, receiverName, receiverName, otherConf); err != nil {
+		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(receiverName, receiverName, otherConf); err != nil {
 			return nil, err
 		}
 		tc.AddCleanup(func() error {

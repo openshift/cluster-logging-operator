@@ -7,5 +7,4 @@
 //
 // Most tests should use the singleton client returned by Get().
 // Avoiding creation of multiple clients saves significant time in a test suite.
-//
 package client

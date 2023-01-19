@@ -73,7 +73,7 @@ func IsOwnedBy(references []metav1.OwnerReference, ownerRef metav1.OwnerReferenc
 	return false
 }
 
-//CalculateMD5Hash returns a MD5 hash of the give text
+// CalculateMD5Hash returns a MD5 hash of the give text
 func CalculateMD5Hash(text string) (string, error) {
 	// #nosec G401
 	hasher := md5.New()
@@ -159,7 +159,7 @@ func AppendTolerations(lhsTolerations, rhsTolerations []v1.Toleration) []v1.Tole
 	return append(lhsTolerations, rhsTolerations...)
 }
 
-//AddOwnerRefToObject adds the parent as an owner to the child
+// AddOwnerRefToObject adds the parent as an owner to the child
 func AddOwnerRefToObject(object metav1.Object, ownerRef metav1.OwnerReference) {
 	if (metav1.OwnerReference{}) != ownerRef {
 		object.SetOwnerReferences(append(object.GetOwnerReferences(), ownerRef))
@@ -381,12 +381,14 @@ func PodVolumeEquivalent(lhs, rhs []v1.Volume) bool {
 	return true
 }
 
-/**
+/*
+*
 EnvValueEqual - check if 2 EnvValues are equal or not
 Notes:
 - reflect.DeepEqual does not return expected results if the to-be-compared value is a pointer.
 - needs to adjust with k8s.io/api/core/v#/types.go when the types are updated.
-**/
+*
+*/
 func EnvValueEqual(env1, env2 []v1.EnvVar) bool {
 	var found bool
 	if len(env1) != len(env2) {

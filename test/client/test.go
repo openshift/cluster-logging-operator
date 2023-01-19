@@ -49,7 +49,7 @@ func NewTest(testOptions ...TestOption) *Test {
 	return t
 }
 
-//TestOption is an option to alter a test in some way
+// TestOption is an option to alter a test in some way
 type TestOption string
 
 type TestOptions []TestOption
@@ -63,10 +63,10 @@ func (options TestOptions) Include(option TestOption) bool {
 	return false
 }
 
-//UseInfraNamespaceTestOption is the option to hint the test should be run in an infrastructure namespace
+// UseInfraNamespaceTestOption is the option to hint the test should be run in an infrastructure namespace
 const UseInfraNamespaceTestOption TestOption = "useInfraNamespace"
 
-//NamespaceClient wraps the singleton test client for use with hack testing
+// NamespaceClient wraps the singleton test client for use with hack testing
 type NamespaceClient struct {
 	Test
 }

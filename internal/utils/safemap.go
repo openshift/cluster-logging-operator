@@ -26,7 +26,7 @@ func (r *StringMap) Set(key string, val string) {
 	r.M[key] = val
 }
 
-//for prometheus gauge metric setting up a value of float64
+// for prometheus gauge metric setting up a value of float64
 func (r *Float64Map) Inc(key string) {
 	r.Lock()
 	defer r.Unlock()

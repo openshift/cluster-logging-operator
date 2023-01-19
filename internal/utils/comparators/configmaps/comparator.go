@@ -14,8 +14,8 @@ const (
 	CompareLabels      ComparisonOption = 1
 )
 
-//AreSame compares configmaps for equality and return true equal otherwise false.  This comparison
-//only compares the data of the configmap by default unless otherwise configured
+// AreSame compares configmaps for equality and return true equal otherwise false.  This comparison
+// only compares the data of the configmap by default unless otherwise configured
 func AreSame(actual *corev1.ConfigMap, desired *corev1.ConfigMap, options ...ComparisonOption) bool {
 	log.V(5).Info("Compare configmaps", "actual", actual)
 	log.V(5).Info("Compare configmaps", "desired", desired)

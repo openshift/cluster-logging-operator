@@ -11,8 +11,8 @@ type PodBuilder struct {
 	Pod *corev1.Pod
 }
 
-//PodBuilderVisitor provides the ability to manipulate the PodBuilder with
-//custom logic
+// PodBuilderVisitor provides the ability to manipulate the PodBuilder with
+// custom logic
 type PodBuilderVisitor func(builder *PodBuilder) error
 
 func NewPodBuilder(pod *corev1.Pod) *PodBuilder {
@@ -212,7 +212,7 @@ func (builder *InitContainerBuilder) AddEnvVarFromEnvVarSource(name string, valu
 	return builder
 }
 
-//added functions for support kafka in the functional pod
+// added functions for support kafka in the functional pod
 func (builder *InitContainerBuilder) AddVolumeMount(name, path, subPath string, readonly bool) *InitContainerBuilder {
 	builder.initcontainer.VolumeMounts = append(builder.initcontainer.VolumeMounts, corev1.VolumeMount{
 		Name:      name,

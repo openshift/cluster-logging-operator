@@ -9,7 +9,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-//AreSame compares for equality and return true equal otherwise false
+// AreSame compares for equality and return true equal otherwise false
 func AreSame(current *v1.Service, desired *v1.Service) (bool, string) {
 	log.V(3).Info("Comparing Services current to desired", "current", current, "desired", desired)
 

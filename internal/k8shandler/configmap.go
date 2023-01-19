@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//NewConfigMap stubs an instance of Configmap
+// NewConfigMap stubs an instance of Configmap
 func NewConfigMap(configmapName string, namespace string, data map[string]string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -22,7 +22,7 @@ func NewConfigMap(configmapName string, namespace string, data map[string]string
 	}
 }
 
-//RemoveConfigMap with a given name and namespace
+// RemoveConfigMap with a given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveConfigMap(configmapName string) error {
 
 	configMap := NewConfigMap(

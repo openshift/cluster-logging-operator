@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 )
 
-//AreSame compares for equality and return true equal otherwise false
+// AreSame compares for equality and return true equal otherwise false
 func AreSame(current *monitoringv1.ServiceMonitor, desired *monitoringv1.ServiceMonitor) bool {
 	log.V(3).Info("Comparing Services current to desired", "current", current, "desired", desired)
 

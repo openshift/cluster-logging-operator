@@ -8,8 +8,8 @@ import (
 	log "github.com/ViaQ/logerr/v2/log/static"
 )
 
-//OptionalInt allows passing an arbitrary int as well matching conditional values
-//for message comparison (e.g. >=6).  A value of '' matches:
+// OptionalInt allows passing an arbitrary int as well matching conditional values
+// for message comparison (e.g. >=6).  A value of ” matches:
 // - missing field
 // - any value
 type OptionalInt string
@@ -48,7 +48,7 @@ func (oi OptionalInt) getParts() (string, int) {
 	return comparison, value
 }
 
-//IsSatisfiedBy returns true/false if the comparison needed is satisfied by other
+// IsSatisfiedBy returns true/false if the comparison needed is satisfied by other
 func (oi OptionalInt) IsSatisfiedBy(other OptionalInt) bool {
 	log.V(4).Info("Comparing", "value", oi, "IsSatisfiedByArg", other)
 	if oi == emptyOptionalInt {

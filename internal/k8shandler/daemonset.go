@@ -11,12 +11,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//NewDaemonSet stubs an instance of a daemonset
+// NewDaemonSet stubs an instance of a daemonset
 func NewDaemonSet(daemonsetName, namespace, loggingComponent, component string, podSpec core.PodSpec) *apps.DaemonSet {
 	return factory.NewDaemonSet(daemonsetName, namespace, loggingComponent, component, podSpec)
 }
 
-//GetDaemonSetList lists DS in namespace with given selector
+// GetDaemonSetList lists DS in namespace with given selector
 func (clusterRequest *ClusterLoggingRequest) GetDaemonSetList(selector map[string]string) (*apps.DaemonSetList, error) {
 	list := &apps.DaemonSetList{
 		TypeMeta: metav1.TypeMeta{
@@ -33,7 +33,7 @@ func (clusterRequest *ClusterLoggingRequest) GetDaemonSetList(selector map[strin
 	return list, err
 }
 
-//RemoveDaemonset with given name and namespace
+// RemoveDaemonset with given name and namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveDaemonset(daemonsetName string) error {
 
 	daemonset := NewDaemonSet(

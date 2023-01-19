@@ -26,7 +26,7 @@ const (
 	AnnotationDebugOutput = "logging.openshift.io/debug-output"
 )
 
-//CreateOrUpdateCollection component of the cluster
+// CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
 	if !clusterRequest.isManaged() {
 		return nil

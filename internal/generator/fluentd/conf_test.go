@@ -18,7 +18,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-//TODO: Use a detailed CLF spec
+// TODO: Use a detailed CLF spec
 var _ = Describe("Testing Complete Config Generation", func() {
 	var f = func(testcase testhelpers.ConfGenerateTest) {
 		g := generator.MakeGenerator()

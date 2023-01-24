@@ -60,7 +60,7 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 		}
 	}
 
-	spec, status := clRequest.NormalizeForwarder()
+	spec, status := clRequest.NormalizeForwarder(map[string]bool{})
 	log.V(2).Info("Normalization", "spec", spec)
 	log.V(2).Info("Normalization", "status", status)
 

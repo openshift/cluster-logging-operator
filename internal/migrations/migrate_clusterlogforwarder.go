@@ -10,14 +10,14 @@ import (
 	"strings"
 )
 
-func MigrateClusterLogForwarderSpec(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec) loggingv1.ClusterLogForwarderSpec {
-	spec = MigrateDefaultOutput(spec, logStore)
-	return spec
+func MigrateClusterLogForwarderSpec(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
+	spec, extras = MigrateDefaultOutput(spec, logStore, extras)
+	return spec, extras
 }
 
 // MigrateDefaultOutput adds the 'default' output spec to the list of outputs if it is not defined or
 // selectively replaces it if it is.  It will apply OutputDefaults unless they are already defined.
-func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec) loggingv1.ClusterLogForwarderSpec {
+func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *loggingv1.LogStoreSpec, extras map[string]bool) (loggingv1.ClusterLogForwarderSpec, map[string]bool) {
 	// ClusterLogging without ClusterLogForwarder
 	if len(spec.Pipelines) == 0 && len(spec.Inputs) == 0 && len(spec.Outputs) == 0 && spec.OutputDefaults == nil {
 		if logStore != nil {
@@ -35,39 +35,52 @@ func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *logg
 	}
 
 	if logStore != nil && logStore.Type == loggingv1.LogStoreTypeLokiStack {
-		outputs, pipelines := processPipelinesForLokiStack(logStore, constants.OpenshiftNS, spec)
-		spec.Outputs = append(spec.Outputs, outputs...)
+		var outputs []loggingv1.OutputSpec
+		var pipelines []loggingv1.PipelineSpec
+		outputs, pipelines, extras = processPipelinesForLokiStack(logStore, constants.OpenshiftNS, spec, extras)
+		spec.Outputs = outputs
 		spec.Pipelines = pipelines
+
+		return spec, extras
 	}
 
-	// Migrate ClusterLogForwarder
+	// Migrate ES ClusterLogForwarder
 	routes := loggingv1.NewRoutes(spec.Pipelines)
 	if _, ok := routes.ByOutput[loggingv1.OutputNameDefault]; ok {
 		if logStore == nil {
 			log.V(1).Info("ClusterLogForwarder references default logstore but one is not spec'd")
-			return spec
+			return spec, extras
 		} else {
-			replaced := false
+			found := false
 			defaultOutput := NewDefaultOutput(spec.OutputDefaults)
 			outputs := []loggingv1.OutputSpec{}
 			for _, output := range spec.Outputs {
 				if output.Name == loggingv1.OutputNameDefault {
+					found = true
+					if output.Type != loggingv1.OutputTypeElasticsearch {
+						// append and continue so it will fail validation
+						outputs = append(outputs, output)
+						continue
+					}
 					if output.Elasticsearch != nil {
 						defaultOutput.Elasticsearch = output.Elasticsearch
 					}
 					output = defaultOutput
-					replaced = true
+					// We set this, so we know it was our default that was migrated
+					extras[constants.MigrateDefaultOutput] = true
 				}
 				outputs = append(outputs, output)
 			}
-			if !replaced {
+			if !found {
+				// default output was never found so create it
 				outputs = append(outputs, defaultOutput)
+				extras[constants.MigrateDefaultOutput] = true
 			}
 			spec.Outputs = outputs
-			return spec
+			return spec, extras
 		}
 	}
-	return spec
+	return spec, extras
 }
 
 func NewDefaultOutput(defaults *loggingv1.OutputDefaults) loggingv1.OutputSpec {
@@ -85,7 +98,7 @@ func NewDefaultOutput(defaults *loggingv1.OutputDefaults) loggingv1.OutputSpec {
 	return spec
 }
 
-func processPipelinesForLokiStack(logStore *loggingv1.LogStoreSpec, namespace string, spec loggingv1.ClusterLogForwarderSpec) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec) {
+func processPipelinesForLokiStack(logStore *loggingv1.LogStoreSpec, namespace string, spec loggingv1.ClusterLogForwarderSpec, extras map[string]bool) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec, map[string]bool) {
 	needOutput := make(map[string]bool)
 	inPipelines := spec.Pipelines
 	pipelines := []loggingv1.PipelineSpec{}
@@ -112,6 +125,8 @@ func processPipelinesForLokiStack(logStore *loggingv1.LogStoreSpec, namespace st
 				}
 
 				pOut.OutputRefs[i] = lokiStackOutput(input)
+				// For loki we don't want to set 'extras[constants.MigrateDefaultOutput] = true'
+				// we want 'default' output to fail per LOG-3437 since we did not create it
 			}
 
 			if pOut.Name != "" && i > 0 {
@@ -124,6 +139,10 @@ func processPipelinesForLokiStack(logStore *loggingv1.LogStoreSpec, namespace st
 	}
 
 	outputs := []loggingv1.OutputSpec{}
+	if spec.Outputs != nil {
+		outputs = spec.Outputs
+	}
+	// Now create output from each input
 	for input := range needOutput {
 		tenant := getInputTypeFromName(spec, input)
 		outputs = append(outputs, loggingv1.OutputSpec{
@@ -138,7 +157,7 @@ func processPipelinesForLokiStack(logStore *loggingv1.LogStoreSpec, namespace st
 		return strings.Compare(outputs[i].Name, outputs[j].Name) < 0
 	})
 
-	return outputs, pipelines
+	return outputs, pipelines, extras
 }
 
 func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName string) string {

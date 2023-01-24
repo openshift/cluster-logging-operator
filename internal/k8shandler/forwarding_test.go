@@ -63,6 +63,7 @@ var _ = Describe("Normalizing forwarder", func() {
 		output      logging.OutputSpec
 		otherOutput logging.OutputSpec
 		request     *ClusterLoggingRequest
+		extras      map[string]bool
 	)
 	BeforeEach(func() {
 		output = logging.OutputSpec{
@@ -91,6 +92,7 @@ var _ = Describe("Normalizing forwarder", func() {
 			OutputSecrets: map[string]*corev1.Secret{},
 		}
 		cluster = request.Cluster
+		extras = map[string]bool{}
 	})
 
 	Context("while validating ", func() {
@@ -119,7 +121,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						InputRefs:  []string{logging.InputNameApplication},
 					},
 				}
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Pipelines).To(BeEmpty(), "Exp. all pipelines to be dropped")
 				Expect(status.Inputs).To(BeEmpty())
 			})
@@ -131,7 +133,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						OutputRefs: []string{output.Name, otherOutput.Name},
 						InputRefs:  []string{logging.InputNameApplication},
 					})
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Pipelines).To(HaveLen(1), JSONString(spec))
 				Expect(status.Pipelines).To(HaveKey("pipeline_1_"))
 				Expect(status.Pipelines["pipeline_1_"]).To(HaveCondition(logging.ConditionReady, false, "Invalid", "duplicate"))
@@ -144,7 +146,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						OutputRefs: []string{output.Name},
 						InputRefs:  []string{logging.InputNameInfrastructure},
 					})
-				spec, _ := request.NormalizeForwarder()
+				spec, _ := request.NormalizeForwarder(extras)
 				Expect(spec.Pipelines).To(HaveLen(2), "Exp. all pipelines to be ok")
 				Expect(spec.Pipelines[0].Name).To(Equal("aPipeline"))
 				Expect(spec.Pipelines[1].Name).To(Equal("pipeline_1_"))
@@ -158,7 +160,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						InputRefs:  []string{"foo"},
 					},
 				}
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				conds := status.Pipelines["someDefinedPipeline"]
 				Expect(spec.Pipelines).To(BeEmpty(), "Exp. all pipelines to be dropped")
 				Expect(conds).To(HaveCondition(logging.ConditionReady, false, logging.ReasonInvalid, `inputs:.*\[foo]`))
@@ -171,7 +173,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						OutputRefs: []string{},
 						InputRefs:  []string{logging.InputNameApplication},
 					})
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				conds := status.Pipelines["someDefinedPipeline"]
 				Expect(conds).To(HaveCondition(logging.ConditionReady, false, logging.ReasonInvalid, "no valid outputs"))
 				Expect(spec.Pipelines).NotTo(ContainElement(
@@ -186,7 +188,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						OutputRefs: []string{output.Name, otherOutput.Name, "aMissingOutput"},
 						InputRefs:  []string{logging.InputNameApplication},
 					})
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Pipelines).To(HaveLen(2), "Exp. all defined pipelines")
 				Expect(status.Pipelines).To(HaveLen(2), "Exp. all defined pipelines")
 				Expect(status.Pipelines).To(HaveKey("someDefinedPipeline"))
@@ -210,6 +212,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				request.ForwarderSpec.Outputs = []logging.OutputSpec{
 					migrations.NewDefaultOutput(nil),
 				}
+				extras[constants.MigrateDefaultOutput] = true
 				request.ForwarderSpec.Pipelines = []logging.PipelineSpec{
 					{
 						Name:       "aPipeline",
@@ -219,7 +222,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				}
 				// sanity check
 				Expect(request.ForwarderSpec.Outputs).To(HaveLen(1))
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(status.Outputs[logging.OutputNameDefault]).To(HaveCondition(logging.ConditionReady, true, "", ""))
 				Expect(spec.Outputs).To(HaveLen(1), "Exp. the number of outputs to remain unchanged")
 			})
@@ -231,7 +234,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				})
 				// sanity check
 				Expect(request.ForwarderSpec.Outputs).To(HaveLen(3))
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. non-unique outputs to be dropped")
 				Expect(status.Outputs["myOutput"]).To(HaveCondition(logging.ConditionReady, true, "", ""))
 				Expect(status.Outputs["output_2_"]).To(HaveCondition(logging.ConditionReady, false, logging.ReasonInvalid, "duplicate"))
@@ -243,7 +246,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					Type: "elasticsearch",
 					URL:  "http://here",
 				})
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. outputs with an empty name to be dropped")
 				Expect(status.Outputs["output_2_"]).To(HaveCondition("Ready", false, "Invalid", "must have a name"))
 			})
@@ -255,7 +258,8 @@ var _ = Describe("Normalizing forwarder", func() {
 					URL:  "http://here",
 				})
 				request.ForwarderSpec.Outputs = outputs
-				spec, _ := request.NormalizeForwarder()
+				extras[constants.MigrateDefaultOutput] = true
+				spec, _ := request.NormalizeForwarder(extras)
 				Expect(len(spec.Outputs)).To(Equal(len(outputs)), "Exp. outputs with an internal name of 'default' do be kept")
 			})
 
@@ -264,7 +268,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					Name: "aName",
 					URL:  "http://here",
 				})
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. outputs with an empty type to be dropped")
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "unknown.*\"\""))
 			})
@@ -275,7 +279,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					Type: "foo",
 					URL:  "http://here",
 				})
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. outputs with an unrecognized type to be dropped")
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "unknown.*\"foo\""))
 			})
@@ -293,7 +297,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						URL:  ":invalid",
 					},
 				}
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(HaveLen(0), "Exp. bad endpoint to be dropped")
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "relativeURLPath"))
 				Expect(status.Outputs["bName"]).To(HaveCondition("Ready", false, "Invalid", ":invalid"))
@@ -306,7 +310,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						Type: logging.OutputTypeCloudwatch,
 					},
 				}
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(BeEmpty(), "Expected Cloudwatch output without OutputTypeSpec to be dropped")
 				Expect(status.Outputs["cw"]).To(HaveCondition("Ready", false, "Invalid", "Cloudwatch output requires type spec"))
 			})
@@ -325,7 +329,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						},
 					},
 				}
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
 				Expect(status.Outputs["aKafka"]).To(HaveCondition("Ready", true, "", ""))
 				Expect(status.Outputs["aCloudwatch"]).To(HaveCondition("Ready", true, "", ""))
@@ -338,7 +342,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					URL:    "https://somewhere",
 					Secret: &logging.OutputSecretSpec{},
 				})
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. outputs with empty secrets to be dropped")
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "Invalid", "secret has empty name"))
 			})
@@ -350,7 +354,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					URL:    "https://somewhere",
 					Secret: &logging.OutputSecretSpec{Name: "mysecret"},
 				})
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(spec.Outputs).To(HaveLen(2), "Exp. outputs with non-existent secrets to be dropped")
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "secret.*not found"))
 			})
@@ -386,14 +390,14 @@ var _ = Describe("Normalizing forwarder", func() {
 					})
 					It("should drop outputs with secrets that are missing aws_access_key_id and aws_secret_access_key and role_arn", func() {
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should drop outputs with secrets that is missing aws_secret_access_id", func() {
 						secret.Data[constants.AWSSecretAccessKey] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
@@ -401,14 +405,14 @@ var _ = Describe("Normalizing forwarder", func() {
 						secret.Data[constants.AWSSecretAccessKey] = []byte{}
 						secret.Data[constants.AWSAccessKeyID] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
 					It("should drop outputs with secrets that is missing aws_secret_access_key", func() {
 						secret.Data[constants.AWSAccessKeyID] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
@@ -416,7 +420,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						secret.Data[constants.AWSAccessKeyID] = []byte{}
 						secret.Data[constants.AWSSecretAccessKey] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", missingMessage))
 					})
@@ -424,36 +428,36 @@ var _ = Describe("Normalizing forwarder", func() {
 						secret.Data[constants.AWSSecretAccessKey] = []byte{0, 1, 2}
 						secret.Data[constants.AWSAccessKeyID] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 					})
 					It("should accept outputs with secrets that have role_arn key with valid arn specified", func() {
 						secret.Data[constants.AWSWebIdentityRoleKey] = []byte("arn:aws:iam::123456789012:role/my-role")
-						request.Client = fake.NewFakeClient(secret)  //nolint
-						spec, status := request.NormalizeForwarder() //
+						request.Client = fake.NewFakeClient(secret)        //nolint
+						spec, status := request.NormalizeForwarder(extras) //
 						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 					})
 					It("should drop outputs with role_arn key but without formatted arn specified", func() {
 						secret.Data[constants.AWSWebIdentityRoleKey] = []byte("role/my-role")
-						request.Client = fake.NewFakeClient(secret)  //nolint
-						spec, status := request.NormalizeForwarder() //
+						request.Client = fake.NewFakeClient(secret)        //nolint
+						spec, status := request.NormalizeForwarder(extras) //
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						stsMessage := "auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", stsMessage))
 					})
 					It("should accept outputs with secrets that have credentials key with valid arn specified", func() {
 						secret.Data[constants.AWSCredentialsKey] = []byte("role_arn = arn:aws:iam::123456789012:role/my-role")
-						request.Client = fake.NewFakeClient(secret)  //nolint
-						spec, status := request.NormalizeForwarder() //
+						request.Client = fake.NewFakeClient(secret)        //nolint
+						spec, status := request.NormalizeForwarder(extras) //
 						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 					})
 					It("should drop outputs with credential key but without formatted arn specified", func() {
 						secret.Data[constants.AWSCredentialsKey] = []byte("role/my-role")
-						request.Client = fake.NewFakeClient(secret)  //nolint
-						spec, status := request.NormalizeForwarder() //
+						request.Client = fake.NewFakeClient(secret)        //nolint
+						spec, status := request.NormalizeForwarder(extras) //
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						stsMessage := "auth keys: a 'role_arn' or 'credentials' key is required containing a valid arn value"
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", stsMessage))
@@ -473,7 +477,7 @@ var _ = Describe("Normalizing forwarder", func() {
 					It("should drop outputs with secrets that have missing tls.key", func() {
 						secret.Data["tls.crt"] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 					})
@@ -481,14 +485,14 @@ var _ = Describe("Normalizing forwarder", func() {
 						secret.Data["tls.crt"] = []byte{}
 						secret.Data["tls.key"] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 					})
 					It("should drop outputs with secrets that have missing tls.crt", func() {
 						secret.Data["tls.key"] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 					})
@@ -496,7 +500,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						secret.Data["tls.key"] = []byte{}
 						secret.Data["tls.crt"] = []byte{1, 2, 3}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(BeEmpty(), fmt.Sprintf("secret %+v", secret))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", false, "MissingResource", "cannot have.*without"))
 					})
@@ -504,7 +508,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						secret.Data["tls.key"] = []byte{0, 1, 2}
 						secret.Data["tls.crt"] = []byte{0, 1, 2}
 						request.Client = fake.NewFakeClient(secret) //nolint
-						spec, status := request.NormalizeForwarder()
+						spec, status := request.NormalizeForwarder(extras)
 						Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)))
 						Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""))
 					})
@@ -542,7 +546,7 @@ var _ = Describe("Normalizing forwarder", func() {
 						Secret: &logging.OutputSecretSpec{Name: "mysecret"},
 					},
 				)
-				spec, status := request.NormalizeForwarder()
+				spec, status := request.NormalizeForwarder(extras)
 				Expect(status.Outputs["aName"]).To(HaveCondition("Ready", true, "", ""), fmt.Sprintf("status: %+v", status))
 				Expect(spec.Outputs).To(HaveLen(len(request.ForwarderSpec.Outputs)), fmt.Sprintf("status: %+v", status))
 			})
@@ -578,7 +582,7 @@ var _ = Describe("Normalizing forwarder", func() {
 							},
 						},
 					}
-					_, _ = request.generateCollectorConfig()
+					_, _ = request.generateCollectorConfig(extras)
 
 					Expect(len(request.ForwarderSpec.Outputs) == 1).To(BeTrue())
 					Expect(request.ForwarderSpec.Outputs[0].Elasticsearch).To(BeNil())
@@ -596,7 +600,7 @@ var _ = Describe("Normalizing forwarder", func() {
 
 		It("returns bad status on default output with no default logstore", func() {
 			cluster.Spec.LogStore = nil
-			spec, status := request.NormalizeForwarder()
+			spec, status := request.NormalizeForwarder(extras)
 			Expect(YAMLString(spec)).To(EqualLines("{}"))
 			Expect(status.Conditions).To(HaveCondition("Ready", false, "", ""))
 			Expect(spec).To(Equal(&logging.ClusterLogForwarderSpec{
@@ -622,9 +626,10 @@ var _ = Describe("Normalizing forwarder", func() {
 					},
 				},
 			}
+			extras[constants.MigrateDefaultOutput] = true
 			//HACK to fix test until we move the code completely out of normalization
 			request.ForwarderSpec.Outputs = []logging.OutputSpec{migrations.NewDefaultOutput(nil)}
-			spec, status := request.NormalizeForwarder()
+			spec, status := request.NormalizeForwarder(extras)
 			Expect(spec.Outputs).To(HaveLen(1))
 			Expect(spec.Outputs[0].Name).To(Equal("default"))
 			Expect(spec.Outputs[0].URL).To(Equal("https://" + constants.ElasticsearchFQDN + ":9200"))
@@ -659,7 +664,7 @@ var _ = Describe("Normalizing forwarder", func() {
 				},
 			},
 		}
-		spec, status := request.NormalizeForwarder()
+		spec, status := request.NormalizeForwarder(extras)
 		Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""), "unexpected "+YAMLString(status))
 		Expect(status.Conditions).NotTo(HaveCondition("Degraded", true, "", ""), "unexpected "+YAMLString(status))
 		Expect(*spec).To(EqualDiff(request.ForwarderSpec))
@@ -681,7 +686,7 @@ var _ = DescribeTable("#generateCollectorConfig",
 
 		clusterRequest.Client = fake.NewFakeClient(clusterRequest.Cluster) //nolint
 
-		_, err := clusterRequest.generateCollectorConfig()
+		_, err := clusterRequest.generateCollectorConfig(map[string]bool{})
 		Expect(err).To(BeNil(), "Generating the collector config should not produce an error: %s=%s %s=%s", "clusterRequest", test.YAMLString(clusterRequest))
 	},
 	Entry("Valid collector config", logging.ClusterLogging{
@@ -738,6 +743,7 @@ var _ = DescribeTable("#generateCollectorConfig",
 var _ = DescribeTable("Normalizing round trip of valid YAML specs",
 
 	func(yamlSpec string) {
+		extras := map[string]bool{}
 		request := ClusterLoggingRequest{
 			Client: fake.NewFakeClient(), //nolint
 			Cluster: &logging.ClusterLogging{
@@ -747,7 +753,7 @@ var _ = DescribeTable("Normalizing round trip of valid YAML specs",
 			},
 		}
 		Expect(yaml.Unmarshal([]byte(yamlSpec), &request.ForwarderSpec)).To(Succeed())
-		spec, status := request.NormalizeForwarder()
+		spec, status := request.NormalizeForwarder(extras)
 		Expect(status.Conditions).To(HaveCondition("Ready", true, "", ""), JSONString(status))
 		Expect(yamlSpec).To(EqualLines(test.YAMLString(spec)))
 	},

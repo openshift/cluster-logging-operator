@@ -32,7 +32,7 @@ func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
 	return found && enabled == "enabled"
 }
 
-func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config string, err error) {
+func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[string]bool) (config string, err error) {
 	if clusterRequest.Cluster == nil || clusterRequest.Cluster.Spec.Collection == nil {
 		log.V(2).Info("skipping collection config generation as 'collection' section is not specified in CLO's CR")
 		return "", nil
@@ -50,7 +50,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig() (config s
 		clusterRequest.ForwarderRequest = &logging.ClusterLogForwarder{}
 	}
 
-	spec, status := clusterRequest.NormalizeForwarder()
+	spec, status := clusterRequest.NormalizeForwarder(extras)
 	clusterRequest.ForwarderSpec = *spec
 	clusterRequest.ForwarderRequest.Status = *status
 
@@ -119,7 +119,7 @@ func (clusterRequest *ClusterLoggingRequest) readClusterName() (string, error) {
 }
 
 // NormalizeForwarder normalizes the clusterRequest.ForwarderSpec, returns a normalized spec and status.
-func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
+func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder(extras map[string]bool) (*logging.ClusterLogForwarderSpec, *logging.ClusterLogForwarderStatus) {
 	clusterRequest.OutputSecrets = make(map[string]*corev1.Secret, len(clusterRequest.ForwarderSpec.Outputs))
 
 	// Check for default configuration
@@ -130,11 +130,12 @@ func (clusterRequest *ClusterLoggingRequest) NormalizeForwarder() (*logging.Clus
 
 	spec := &clusterRequest.ForwarderSpec
 	status := &logging.ClusterLogForwarderStatus{}
+
 	clusterRequest.verifyInputs(spec, status)
 	if !status.Inputs.IsAllReady() {
 		log.V(3).Info("Input not Ready", "inputs", status.Inputs)
 	}
-	clusterRequest.verifyOutputs(spec, status)
+	clusterRequest.verifyOutputs(spec, status, extras)
 	if !status.Outputs.IsAllReady() {
 		log.V(3).Info("Output not Ready", "outputs", status.Outputs)
 	}
@@ -288,7 +289,7 @@ func (clusterRequest *ClusterLoggingRequest) verifyInputs(spec *logging.ClusterL
 	spec.Inputs = inputs
 }
 
-func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus) {
+func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.ClusterLogForwarderSpec, status *logging.ClusterLogForwarderStatus, extras map[string]bool) {
 	outputs := []logging.OutputSpec{}
 	status.Outputs = logging.NamedConditions{}
 	names := sets.NewString() // Collect pipeline names
@@ -303,6 +304,10 @@ func (clusterRequest *ClusterLoggingRequest) verifyOutputs(spec *logging.Cluster
 		case output.Name == "":
 			log.V(3).Info("verifyOutputs failed", "reason", "output must have a name")
 			badName("output must have a name")
+		case logging.IsReservedOutputName(output.Name) && !extras[constants.MigrateDefaultOutput]:
+			// adding check for our replaced spec during migration (ES only)
+			log.V(3).Info("verifyOutputs failed", "reason", "output name is reserved", "output name", output.Name)
+			badName("output name %q is reserved", output.Name)
 		case names.Has(output.Name):
 			log.V(3).Info("verifyOutputs failed", "reason", "output name is duplicated", "output name", output.Name)
 			badName("duplicate name: %q", output.Name)

@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/framework/e2e/certificates"
-	"github.com/openshift/cluster-logging-operator/test/runtime"
 	"math/rand"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/framework/e2e/certificates"
+	"github.com/openshift/cluster-logging-operator/test/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
@@ -637,26 +638,17 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 	return oc.Exec().WithNamespace(namespace).Pod(name).Container(container).WithCmd(command[0], command[1:]...).Run()
 }
 
-func (tc *E2ETestFramework) CreatePipelineSecret(pwd, logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {
-	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000)) //nolint:gosec
-	clolog.V(3).Info("Generating Pipeline certificates for Log Store to working dir", "logStoreName", logStoreName, "workingDir", workingDir)
-	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		if err = os.MkdirAll(workingDir, 0766); err != nil {
-			return nil, err
-		}
-	}
-	if err := os.Setenv("WORKING_DIR", workingDir); err != nil {
-		return nil, err
-	}
-	scriptsDir := fmt.Sprintf("%s/scripts", pwd)
-	if err, _, _ := certificates.GenerateCertificates(constants.WatchNamespace, scriptsDir, logStoreName, workingDir); err != nil {
+func (tc *E2ETestFramework) CreatePipelineSecret(logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {
+	err, certsDir := certificates.GenerateTestCertificates(logStoreName)
+	defer os.RemoveAll(certsDir)
+	if err != nil {
 		return nil, err
 	}
 	data := map[string][]byte{
-		"tls.key":       utils.GetWorkingDirFileContents("system.logging.fluentd.key"),
-		"tls.crt":       utils.GetWorkingDirFileContents("system.logging.fluentd.crt"),
-		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca.crt"),
-		"ca.key":        utils.GetWorkingDirFileContents("ca.key"),
+		"tls.key":       utils.GetDirFileContents(certsDir, "system.logging.fluentd.key"),
+		"tls.crt":       utils.GetDirFileContents(certsDir, "system.logging.fluentd.crt"),
+		"ca-bundle.crt": utils.GetDirFileContents(certsDir, "ca.crt"),
+		"ca.key":        utils.GetDirFileContents(certsDir, "ca.key"),
 	}
 	for key, value := range otherData {
 		data[key] = value

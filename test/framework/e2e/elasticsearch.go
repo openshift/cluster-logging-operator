@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch/indexmanagement"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch/indexmanagement"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
@@ -148,7 +149,7 @@ func (es *ElasticLogStore) ClusterLocalEndpoint() string {
 	panic("Not implemented")
 }
 
-//Indices fetches the list of indices stored by Elasticsearch
+// Indices fetches the list of indices stored by Elasticsearch
 func (es *ElasticLogStore) Indices() (Indices, error) {
 	options := metav1.ListOptions{
 		LabelSelector: "component=elasticsearch",
@@ -174,9 +175,9 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	return indices, nil
 }
 
-func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
+func (tc *E2ETestFramework) DeployAnElasticsearchCluster() (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
 	logStoreName := "test-elastic-cluster"
-	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
+	if pipelineSecret, err = tc.CreatePipelineSecret(logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
 		return nil, nil, err
 	}
 

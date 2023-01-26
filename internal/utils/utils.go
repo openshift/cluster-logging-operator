@@ -226,6 +226,10 @@ func GetScriptsDir() string {
 	return scriptsDir
 }
 
+func GetDirFileContents(dirPath, filePath string) []byte {
+	return GetFileContents(path.Join(dirPath, filePath))
+}
+
 func GetWorkingDirFileContents(filePath string) []byte {
 	return GetFileContents(GetWorkingDirFilePath(filePath))
 }

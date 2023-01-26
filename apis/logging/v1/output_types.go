@@ -13,6 +13,7 @@ const (
 	OutputTypeLoki               = "loki"
 	OutputTypeGoogleCloudLogging = "googleCloudLogging"
 	OutputTypeSplunk             = "splunk"
+	OutputTypeHttp               = "http"
 )
 
 // OutputTypeSpec is a union of optional additional configuration specific to an
@@ -30,10 +31,12 @@ type OutputTypeSpec struct {
 	Cloudwatch *Cloudwatch `json:"cloudwatch,omitempty"`
 	// +optional
 	Loki *Loki `json:"loki,omitempty"`
-	//+optional
+	// +optional
 	GoogleCloudLogging *GoogleCloudLogging `json:"googleCloudLogging,omitempty"`
 	// +optional
 	Splunk *Splunk `json:"splunk,omitempty"`
+	// +optional
+	Http *Http `json:"http,omitempty"`
 }
 
 // Cloudwatch provides configuration for the output type `cloudwatch`
@@ -281,4 +284,20 @@ type Splunk struct {
 	// Should be a valid JSON object
 	// +optional
 	Fields []string `json:"fields,omitempty"`
+}
+
+// Http provided configuration for sending json encoded logs to a generic http endpoint.
+type Http struct {
+	// Headers specify optional headers to be sent with the request
+	// +optional
+	Headers map[string]string `json:"headers,omitempty"`
+
+	// Timeout specifies the Http request timeout in seconds. If not set, 10secs is used.
+	// +optional
+	Timeout string `json:"timeout,omitempty"`
+
+	// Method specifies the Http method to be used for sending logs. If not set, 'POST' is used.
+	// +kubebuilder:validation:Enum:=GET;HEAD;POST;PUT;DELETE;OPTIONS;TRACE;PATCH
+	// +optional
+	Method string `json:"method,omitempty"`
 }

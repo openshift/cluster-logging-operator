@@ -42,6 +42,7 @@ logstash 7.10.1|✓|
 |Loki|REST over HTTP(S)|Loki 2.3.0|✓|✓
 |Splunk|HEC|v9.0.0||✓
 |Syslog|RFC3164,RFC5424|rsyslog 8.39.0|✓|
+|Http|Http 1.1|vector 0.21, fluentd 1.14.6||✓
 |======
 
 === Authorization and Authentication
@@ -50,11 +51,11 @@ logstash 7.10.1|✓|
 [options="header"]
 |======
 |Feature|Output Type|Fluentd|Vector
-|Token|loki, splunk||
-|Certificates|elasticsearch, kafka, fluentd forward, splunk|✓|✓
+|Token|loki, splunk, http||
+|Certificates|elasticsearch, kafka, fluentd forward, splunk, http|✓|✓
 |Cloud service keys|cloudwatch|✓|✓
 |Cloud service keys| google||✓
-|Username / Password|elasticsearch, kafka||
+|Username / Password|elasticsearch, kafka, http||
 |Security Token Service (STS)|cloudwatch|✓|✓
 |SASL|kafka|✓|✓
 |======

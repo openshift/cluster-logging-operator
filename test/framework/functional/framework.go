@@ -341,15 +341,19 @@ func (f *CollectorFunctionalFramework) addOutputContainers(b *runtime.PodBuilder
 				return err
 			}
 		case logging.OutputTypeSyslog:
-			if err := f.addSyslogOutput(b, output); err != nil {
+			if err := f.AddSyslogOutput(b, output); err != nil {
 				return err
 			}
 		case logging.OutputTypeKafka:
-			if err := f.addKafkaOutput(b, output); err != nil {
+			if err := f.AddKafkaOutput(b, output); err != nil {
 				return err
 			}
 		case logging.OutputTypeElasticsearch:
-			if err := f.addES7Output(b, output); err != nil {
+			if err := f.AddES7Output(b, output); err != nil {
+				return err
+			}
+		case logging.OutputTypeHttp:
+			if err := f.AddFluentdHttpOutput(b, output); err != nil {
 				return err
 			}
 		}

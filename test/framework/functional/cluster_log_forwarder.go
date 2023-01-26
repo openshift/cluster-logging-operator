@@ -85,6 +85,10 @@ func (p *PipelineBuilder) ToKafkaOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeKafka)
 }
 
+func (p *PipelineBuilder) ToHttpOutput() *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeHttp)
+}
+
 func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputName string) *ClusterLogForwarderBuilder {
 	clf := p.clfb.Forwarder
 	outputs := clf.Spec.OutputMap()
@@ -144,6 +148,20 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				OutputTypeSpec: logging.OutputTypeSpec{
 					Kafka: &logging.Kafka{
 						Topic: kafka.AppLogsTopic,
+					},
+				},
+			}
+		case logging.OutputTypeHttp:
+			output = &logging.OutputSpec{
+				Name: logging.OutputTypeHttp,
+				Type: logging.OutputTypeHttp,
+				URL:  "http://localhost:8090",
+				OutputTypeSpec: logging.OutputTypeSpec{
+					Http: &logging.Http{
+						Headers: map[string]string{
+							"k1": "v1",
+						},
+						Method: "POST",
 					},
 				},
 			}

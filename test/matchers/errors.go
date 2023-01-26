@@ -6,8 +6,10 @@ import (
 )
 
 // ExpectOK is shorthand for these annoyingly long ginkgo forms:
-//    Expect(err).NotTo(HaveOccured()
-//    Expect(err).To(Succeed())
+//
+//	Expect(err).NotTo(HaveOccured()
+//	Expect(err).To(Succeed())
+//
 // It also does a WrapError to show stderr for *exec.ExitError.
 func ExpectOK(err error, description ...interface{}) {
 	ExpectOKWithOffset(1, err, description...)

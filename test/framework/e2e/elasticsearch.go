@@ -60,7 +60,7 @@ func (index *Index) DocCount() int {
 	return value
 }
 
-//HasInfraStructureLogs returns true if there are any indices that begin with InfraIndexPrefix and also contains documents
+// HasInfraStructureLogs returns true if there are any indices that begin with InfraIndexPrefix and also contains documents
 func (indices *Indices) HasInfraStructureLogs() bool {
 	for _, index := range *indices {
 		if strings.HasPrefix(index.Name, InfraIndexPrefix) && index.DocCount() > 0 {
@@ -70,7 +70,7 @@ func (indices *Indices) HasInfraStructureLogs() bool {
 	return false
 }
 
-//HasApplicationLogs returns true if there are any indices that begin with ProjectIndexPrefix and also contains documents
+// HasApplicationLogs returns true if there are any indices that begin with ProjectIndexPrefix and also contains documents
 func (indices *Indices) HasApplicationLogs() bool {
 	for _, index := range *indices {
 		if strings.HasPrefix(index.Name, ProjectIndexPrefix) && index.DocCount() > 0 {
@@ -80,7 +80,7 @@ func (indices *Indices) HasApplicationLogs() bool {
 	return false
 }
 
-//HasAuditLogs returns true if there are any indices that begin with AuditIndexPrefix and also contains documents
+// HasAuditLogs returns true if there are any indices that begin with AuditIndexPrefix and also contains documents
 func (indices *Indices) HasAuditLogs() bool {
 	for _, index := range *indices {
 		if strings.HasPrefix(index.Name, AuditIndexPrefix) && index.DocCount() > 0 {

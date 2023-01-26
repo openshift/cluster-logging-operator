@@ -46,7 +46,7 @@ func LoadElasticsearchSecretMap() map[string][]byte {
 
 var mutex sync.Mutex
 
-//Syncronize blocks single threads access using the certificate mutex
+// Syncronize blocks single threads access using the certificate mutex
 func Syncronize(action func() error) error {
 	mutex.Lock()
 	defer mutex.Unlock()

@@ -44,10 +44,9 @@ type OutputTypeSpec struct {
 // Note: the cloudwatch output recognizes the following keys in the Secret:
 //
 //	`aws_secret_access_key`: AWS secret access key.
-// 	`aws_access_key_id`: AWS secret access key ID.
+//	`aws_access_key_id`: AWS secret access key ID.
 //
 // Or for sts-enabled clusters `credentials` or `role_arn` key specifying a properly formatted role arn
-//
 type Cloudwatch struct {
 	// +required
 	Region string `json:"region,omitempty"`
@@ -183,7 +182,7 @@ type Kafka struct {
 // FluentdForward does not provide additional fields, but note that
 // the fluentforward output allows this additional keys in the Secret:
 //
-//   `shared_key`: (string) Key to enable fluent-forward shared-key authentication.
+//	`shared_key`: (string) Key to enable fluent-forward shared-key authentication.
 type FluentdForward struct{}
 
 type Elasticsearch struct {

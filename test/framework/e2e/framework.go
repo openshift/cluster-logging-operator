@@ -621,7 +621,7 @@ func (tc *E2ETestFramework) CleanFluentDBuffers() {
 	}
 }
 
-//NewKubeClient returns a client using the KUBECONFIG env var or incluster settings
+// NewKubeClient returns a client using the KUBECONFIG env var or incluster settings
 func NewKubeClient() (*kubernetes.Clientset, *rest.Config) {
 	config, err := config.GetConfig()
 	if err != nil {

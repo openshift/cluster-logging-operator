@@ -81,13 +81,13 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 	}
 }
 
-//Brokers returns the list of broker endpoints of a kafka cluster.
-//The list represents only the initial set used by the collector's kafka client for the
-//first connention only. The collector's kafka client fetches constantly an updated list
-//from kafka. These updates are not reconciled back to the collector configuration.
-//The list of brokers are populated from the Kafka OutputSpec `Brokers` field, a list of
-//valid URLs. If none provided the target URL from the OutputSpec is used as fallback.
-//Finally, if neither approach works the current collector process will be terminated.
+// Brokers returns the list of broker endpoints of a kafka cluster.
+// The list represents only the initial set used by the collector's kafka client for the
+// first connention only. The collector's kafka client fetches constantly an updated list
+// from kafka. These updates are not reconciled back to the collector configuration.
+// The list of brokers are populated from the Kafka OutputSpec `Brokers` field, a list of
+// valid URLs. If none provided the target URL from the OutputSpec is used as fallback.
+// Finally, if neither approach works the current collector process will be terminated.
 func Brokers(o logging.OutputSpec) string {
 	parseBroker := func(b string) string {
 		url, _ := url.Parse(b)
@@ -119,9 +119,9 @@ func Brokers(o logging.OutputSpec) string {
 	return fallback
 }
 
-//Topic returns the name of an existing kafka topic.
-//The kafka topic is either extracted from the kafka OutputSpec `Topic` field in a multiple broker
-//setup or as a fallback from the OutputSpec URL if provided as a host path. Defaults to `topic`.
+// Topic returns the name of an existing kafka topic.
+// The kafka topic is either extracted from the kafka OutputSpec `Topic` field in a multiple broker
+// setup or as a fallback from the OutputSpec URL if provided as a host path. Defaults to `topic`.
 func Topics(o logging.OutputSpec) string {
 	if o.Kafka != nil && o.Kafka.Topic != "" {
 		return o.Kafka.Topic

@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//NewSecret stubs an instance of a secret
+// NewSecret stubs an instance of a secret
 func NewSecret(secretName string, namespace string, data map[string][]byte) *core.Secret {
 	return &core.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -29,7 +29,7 @@ func (clusterRequest *ClusterLoggingRequest) GetSecret(secretName string) (*core
 	return secret, err
 }
 
-//RemoveSecret with the given name in namespace
+// RemoveSecret with the given name in namespace
 func (clusterRequest *ClusterLoggingRequest) RemoveSecret(secretName string) error {
 
 	secret := NewSecret(

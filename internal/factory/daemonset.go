@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-//NewDaemonSet stubs an instance of a daemonset
+// NewDaemonSet stubs an instance of a daemonset
 func NewDaemonSet(daemonsetName, namespace, loggingComponent, component string, podSpec core.PodSpec) *apps.DaemonSet {
 	labels := map[string]string{
 		"provider":      "openshift",

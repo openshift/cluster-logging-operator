@@ -9,9 +9,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-/**
+/*
+*
 Note: This test case includes only the dynamic parts of Fluentd conf. This leaves out the static parts which do not change with CLF spec.
-**/
+*
+*/
 var _ = Describe("Testing Config Generation", func() {
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
 		return generator.MergeElements(

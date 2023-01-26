@@ -17,7 +17,7 @@ func TestCart(t *testing.T) {
 	RunSpecs(t, "clo telemetry test")
 }
 
-//Test if ServiceMonitor spec is correct or not, also Prometheus Metrics get Registered, Updated, Retrieved properly or not
+// Test if ServiceMonitor spec is correct or not, also Prometheus Metrics get Registered, Updated, Retrieved properly or not
 var _ = Describe("telemetry", func() {
 
 	var (

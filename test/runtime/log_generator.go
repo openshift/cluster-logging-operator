@@ -38,7 +38,7 @@ func NewLogGenerator(namespace, name string, count int, delay time.Duration, mes
 }
 
 // NewOneLineLogGenerator creates a pod that will print given lines to stdout.
-//Once done printing the pod will be idle but will not exit until deleted.
+// Once done printing the pod will be idle but will not exit until deleted.
 func NewOneLineLogGenerator(namespace, containerName, message string) *corev1.Pod {
 	cmd := fmt.Sprintf(`echo "%v"; sleep infinity`, message)
 	l := runtime.NewPod(namespace, "log-generator", corev1.Container{

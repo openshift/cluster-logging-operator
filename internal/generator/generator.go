@@ -7,7 +7,6 @@ import (
 )
 
 // Element is a basic unit of configuration. It wraps a golang template along with the data type to hold the data template needs. A type implementing
-//
 type Element interface {
 	Name() string
 	Template() string
@@ -110,7 +109,7 @@ func MergeSections(sections []Section) []Element {
 	return merged
 }
 
-//indent helper function to prefix each line of the output by N spaces
+// indent helper function to prefix each line of the output by N spaces
 func indent(length int, in string) string {
 	if len(in) == 0 {
 		return ""

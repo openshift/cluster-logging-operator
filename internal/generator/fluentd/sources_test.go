@@ -37,7 +37,7 @@ var _ = Describe("Testing Config Generation", func() {
   @type tail
   @id container-input
   path "/var/log/pods/*/*/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   follow_inodes true
   refresh_interval 5
@@ -80,7 +80,7 @@ var _ = Describe("Testing Config Generation", func() {
   @type tail
   @id container-input
   path "/var/log/pods/*/*/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   follow_inodes true
   refresh_interval 5
@@ -135,7 +135,7 @@ var _ = Describe("Testing Config Generation", func() {
   @type tail
   @id container-input
   path "/var/log/pods/*/*/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   follow_inodes true
   refresh_interval 5
@@ -342,6 +342,60 @@ var _ = Describe("Testing Config Generation", func() {
 			},
 			ExpectedConf: AllSources,
 		}),
+		Entry("Exclusion log path should include Elasticsearch and Loki", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs: []string{
+							logging.InputNameApplication,
+						},
+						OutputRefs: []string{"es-1", "loki-2"},
+						Name:       "pipeline",
+					},
+				},
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeElasticsearch,
+						Name: "es-1",
+						URL:  "https://es-1.svc.messaging.cluster.local:9200",
+						Secret: &logging.OutputSecretSpec{
+							Name: "es-1",
+						},
+					},
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-2",
+						URL:  "https://loki-2.svc.messaging.cluster.local:9200",
+						Secret: &logging.OutputSecretSpec{
+							Name: "loki-2",
+						},
+					},
+				},
+			},
+			ExpectedConf: `
+# Logs from containers (including openshift containers)
+<source>
+  @type tail
+  @id container-input
+  path "/var/log/pods/*/*/*.log"
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+  pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
+  follow_inodes true
+  refresh_interval 5
+  rotate_wait 5
+  tag kubernetes.*
+  read_from_head "true"
+  skip_refresh_on_startup true
+  @label @CONCAT
+  <parse>
+    @type regexp
+    expression /^(?<@timestamp>[^\s]+) (?<stream>stdout|stderr) (?<logtag>[F|P]) (?<message>.*)$/
+    time_key '@timestamp'
+    keep_time_key true
+  </parse>
+</source>
+`,
+		}),
 	)
 })
 
@@ -369,7 +423,7 @@ const AllSources = `
   @type tail
   @id container-input
   path "/var/log/pods/*/*/*.log"
-  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
+  exclude_path ["/var/log/pods/openshift-logging_collector-*/*/*.log", "/var/log/pods/openshift-logging_elasticsearch-*/*/*.log", "/var/log/pods/openshift-logging_kibana-*/*/*.log", "/var/log/pods/openshift-logging_*/loki*/*.log", "/var/log/pods/*/*/*.gz", "/var/log/pods/*/*/*.tmp"]
   pos_file "/var/lib/fluentd/pos/es-containers.log.pos"
   follow_inodes true
   refresh_interval 5

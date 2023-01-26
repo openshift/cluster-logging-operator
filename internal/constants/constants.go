@@ -81,6 +81,7 @@ const (
 	KibanaTrustedCAName        = "kibana-trusted-ca-bundle"
 	ElasticsearchFQDN          = "elasticsearch"
 	ElasticsearchName          = "elasticsearch"
+	LokiName                   = "loki"
 	ElasticsearchPort          = "9200"
 	FluentdName                = "fluentd"
 	VectorName                 = "vector"

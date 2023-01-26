@@ -15,7 +15,7 @@ input(type="imtcp" port="24224" ruleset="test")
 module(load="imtcp"
     StreamDriver.Name="gtls"
     StreamDriver.Mode="1" # run driver in TLS-only mode
-    StreamDriver.Authmode="anon"
+    StreamDriver.Authmode="x509/certvalid"
 )
 # make gtls driver the default and set certificate files
 global(
@@ -40,7 +40,7 @@ input(type="imudp" port="24224" ruleset="test")
 module(load="imudp"
     StreamDriver.Name="gtls"
     StreamDriver.Mode="1" # run driver in TLS-only mode
-    StreamDriver.Authmode="anon"
+    StreamDriver.Authmode="x509/certvalid"
 ) # needs to be done just once
 # make gtls driver the default and set certificate files
 global(

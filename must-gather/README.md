@@ -44,8 +44,6 @@ Example must-gather for cluster-logging output:
 │  │  └── logforwarding_cr
 │  ├── collector
 │  │  ├── fluentd-2tr64
-│  ├── curator
-│  │  └── curator-1596028500-zkz4s
 │  ├── eo
 │  │  ├── csv
 │  │  ├── deployment
@@ -100,8 +98,6 @@ Example must-gather for cluster-logging output:
    │  │  ├── configmaps.yaml
    │  │  ├── endpoints.yaml
    │  │  ├── events
-   │  │  │  ├── curator-1596021300-wn2ks.162634ebf0055a94.yaml
-   │  │  │  ├── curator.162638330681bee2.yaml
    │  │  │  ├── elasticsearch-delete-app-1596020400-gm6nl.1626341a296c16a1.yaml
    │  │  │  ├── elasticsearch-delete-audit-1596020400-9l9n4.1626341a2af81bbd.yaml
    │  │  │  ├── elasticsearch-delete-infra-1596020400-v98tk.1626341a2d821069.yaml
@@ -138,7 +134,6 @@ Example must-gather for cluster-logging output:
    │  │  │           ├── current.log
    │  │  │           ├── previous.insecure.log
    │  │  │           └── previous.log
-   │  │  ├── curator-1596028500-zkz4s
    │  │  ├── elasticsearch-cdm-lp8l38m0-1-794d6dd989-4jxms
    │  │  ├── elasticsearch-delete-app-1596030300-bpgcx
    │  │  │  ├── elasticsearch-delete-app-1596030300-bpgcx.yaml

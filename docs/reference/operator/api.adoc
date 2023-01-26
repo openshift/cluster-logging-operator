@@ -1116,7 +1116,7 @@ ClusterLoggingStatus defines the observed state of ClusterLogging
 |======================
 |Property|Type|Description
 
-|collection|object|  *(optional)* 
+|collection|object| **(DEPRECATED)** *(optional)* Deprecated.
 |conditions|object|  *(optional)* 
 |curation|object|  *(optional)* 
 |logStore|object|  *(optional)* 

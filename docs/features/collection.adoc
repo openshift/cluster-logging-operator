@@ -28,7 +28,7 @@ Following is a list of possible log sources that are collected from each node in
 |======
 |Feature|Protocol|Tested with|Fluentd|Vector
 |Cloudwatch|REST over HTTPS||✓|✓
-|Elasticearch||||
+|Elasticsearch||||
 | * v6||v6.8.1|✓|✓
 | * v7||v7.12.2|✓|✓
 | * v8||||✓

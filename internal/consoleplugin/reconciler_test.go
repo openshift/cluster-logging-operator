@@ -73,7 +73,7 @@ func assertNotFound(t *testing.T, r *Reconciler) {
 
 func TestVerifyResources(t *testing.T) {
 	c := fakeClient()
-	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "someservice"))
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "someservice", []string{}))
 	assert.NoError(t, r.Reconcile(ctx))
 	assert.NoError(t, r.each(func(m mutable) error {
 		kind := m.o.GetObjectKind().GroupVersionKind().String()
@@ -90,7 +90,7 @@ func TestVerifyResources(t *testing.T) {
 					Name:      name,
 					Namespace: r.Namespace(),
 					BasePath:  "/",
-					Port:      r.nginxPort(),
+					Port:      r.pluginBackendPort(),
 				}, cp.Spec.Service)
 				assert.Equal(t, []consolev1alpha1.ConsolePluginProxy{{
 					Type:      "Service",
@@ -113,14 +113,14 @@ func TestVerifyResources(t *testing.T) {
 
 func TestReconcileCreatesObjects(t *testing.T) {
 	c := fakeClient()
-	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki"))
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", []string{}))
 	require.NoError(t, r.Reconcile(ctx))
 	assertConfig(t, r)
 }
 
 func TestReconcileUpdatesObjects(t *testing.T) {
 	c := fakeClient()
-	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki"))
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", []string{}))
 	require.NoError(t, r.Reconcile(ctx)) // Create objects
 	assertConfig(t, r)
 
@@ -134,7 +134,7 @@ func TestReconcileUpdatesObjects(t *testing.T) {
 
 func TestReconcilerDeletesObjects(t *testing.T) {
 	c := fakeClient()
-	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki"))
+	r := NewReconciler(c, NewConfig(runtime.NewClusterLogging(), "myLoki", []string{}))
 	require.NoError(t, r.Reconcile(ctx)) // Create objects
 	assertConfig(t, r)
 

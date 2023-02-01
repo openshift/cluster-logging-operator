@@ -32,6 +32,8 @@ type ReconcileForwarder struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 
+	//ClusterVersion is the semantic version of the cluster
+	ClusterVersion string
 	//ClusterID is the unique identifier of the cluster in which the operator is deployed
 	ClusterID string
 }

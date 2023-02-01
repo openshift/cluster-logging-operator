@@ -63,7 +63,7 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 			LokiStack: logging.LokiStackStoreSpec{Name: "some-loki-stack"},
 		},
 	}
-	r := consoleplugin.NewReconciler(c, consoleplugin.NewConfig(cl, "some-loki-stack-gateway-http"))
+	r := consoleplugin.NewReconciler(c, consoleplugin.NewConfig(cl, "some-loki-stack-gateway-http", []string{}))
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	t.Run("create", func(t *testing.T) {

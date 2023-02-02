@@ -68,6 +68,7 @@ func NewReceiver(ns, name string) *Receiver {
 	}}
 	r.Pod.Spec.SecurityContext = &corev1.PodSecurityContext{
 		RunAsNonRoot: utils.GetBool(true),
+		RunAsUser:    utils.GetInt64(10001), // uid of user loki in the loki image
 		SeccompProfile: &corev1.SeccompProfile{
 			Type: corev1.SeccompProfileTypeRuntimeDefault,
 		},

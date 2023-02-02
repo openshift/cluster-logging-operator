@@ -174,9 +174,9 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 	return indices, nil
 }
 
-func (tc *E2ETestFramework) DeployAnElasticsearchCluster(pwd string) (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
+func (tc *E2ETestFramework) DeployAnElasticsearchCluster() (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
 	logStoreName := "test-elastic-cluster"
-	if pipelineSecret, err = tc.CreatePipelineSecret(pwd, logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
+	if pipelineSecret, err = tc.CreatePipelineSecret(logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
 		return nil, nil, err
 	}
 

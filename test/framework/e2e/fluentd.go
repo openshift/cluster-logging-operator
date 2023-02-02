@@ -318,7 +318,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		otherConf := map[string][]byte{
 			"shared_key": []byte("my_shared_key"),
 		}
-		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(rootDir, receiverName, receiverName, otherConf); err != nil {
+		if logStore.pipelineSecret, err = tc.CreatePipelineSecret(receiverName, receiverName, otherConf); err != nil {
 			return nil, err
 		}
 		tc.AddCleanup(func() error {

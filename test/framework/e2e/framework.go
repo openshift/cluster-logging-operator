@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	logger "github.com/ViaQ/logerr/v2/log"
 	clolog "github.com/ViaQ/logerr/v2/log/static"
 	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -38,6 +39,16 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
+
+func init() {
+	var verbosity = 0
+	if level, found := os.LookupEnv("LOG_LEVEL"); found {
+		if i, err := strconv.Atoi(level); err == nil {
+			verbosity = i
+		}
+	}
+	clolog.SetLogger(logger.NewLogger("e2e-framework", logger.WithVerbosity(verbosity)))
+}
 
 const (
 	clusterLoggingURI      = "apis/logging.openshift.io/v1/namespaces/%s/clusterloggings"
@@ -88,9 +99,9 @@ func (tc *E2ETestFramework) AddCleanup(fn func() error) {
 	tc.CleanupFns = append(tc.CleanupFns, fn)
 }
 
-func (tc *E2ETestFramework) DeployLogGenerator() error {
+func (tc *E2ETestFramework) DeployLogGenerator() (string, error) {
 	namespace := tc.CreateTestNamespace()
-	return tc.DeployLogGeneratorWithNamespace(namespace)
+	return namespace, tc.DeployLogGeneratorWithNamespace(namespace)
 }
 
 func (tc *E2ETestFramework) DeployLogGeneratorWithNamespace(namespace string) error {

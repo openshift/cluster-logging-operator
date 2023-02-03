@@ -2,6 +2,7 @@ package http
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -184,17 +185,18 @@ func Headers(o logging.OutputSpec) Element {
 }
 
 func ToHeaderStr(h map[string]string) string {
-	str := ""
-	skipComma := true
-	for k, v := range h {
-		if skipComma {
-			str += fmt.Sprintf("%q=%q", k, v)
-			skipComma = false
-		} else {
-			str += fmt.Sprintf(",%q=%q", k, v)
-		}
+	sortedKeys := make([]string, len(h))
+	i := 0
+	for k := range h {
+		sortedKeys[i] = k
+		i += 1
 	}
-	return fmt.Sprintf("{%s}", str)
+	sort.Strings(sortedKeys)
+	hv := make([]string, len(h))
+	for i, k := range sortedKeys {
+		hv[i] = fmt.Sprintf("%q=%q", k, h[k])
+	}
+	return fmt.Sprintf("{%s}", strings.Join(hv, ","))
 }
 
 func Encoding(o logging.OutputSpec) Element {
@@ -221,6 +223,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			}
 			conf = append(conf, kc)
 		}
+
 		if security.HasCABundle(secret) {
 			hasTLS = true
 			ca := CAFile{

@@ -197,7 +197,7 @@ func (fluent *fluentReceiverLogStore) RetrieveLogs() (map[string]string, error) 
 	var err error
 	for key := range result {
 		var s string
-		s, err = fluent.logs(fmt.Sprintf("/tmp/%s.logs", key), 30*time.Second)
+		s, err = fluent.logs(fmt.Sprintf("/tmp/%s-logs", key), 30*time.Second)
 		if err != nil {
 			continue
 		}
@@ -271,6 +271,13 @@ func (tc *E2ETestFramework) createRbac(name string) (err error) {
 }
 
 func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (deployment *apps.Deployment, err error) {
+	if secure {
+		return tc.DeployFluentdReceiverWithConf(rootDir, secure, secureFluentConfTemplate)
+	}
+	return tc.DeployFluentdReceiverWithConf(rootDir, secure, UnsecureFluentConf)
+}
+
+func (tc *E2ETestFramework) DeployFluentdReceiverWithConf(rootDir string, secure bool, fluentConf string) (deployment *apps.Deployment, err error) {
 	logStore := &fluentReceiverLogStore{
 		tc: tc,
 	}
@@ -313,9 +320,7 @@ func (tc *E2ETestFramework) DeployFluentdReceiver(rootDir string, secure bool) (
 		ServiceAccountName: serviceAccount.Name,
 	}
 
-	fluentConf := UnsecureFluentConf
 	if secure {
-		fluentConf = secureFluentConfTemplate
 		otherConf := map[string][]byte{
 			"shared_key": []byte("my_shared_key"),
 		}

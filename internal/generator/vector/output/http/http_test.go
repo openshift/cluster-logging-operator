@@ -30,6 +30,15 @@ var _ = Describe("Generate vector config", func() {
 						Secret: &logging.OutputSecretSpec{
 							Name: "http-receiver",
 						},
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Http: &logging.Http{
+								Headers: map[string]string{
+									"h2": "v2",
+									"h1": "v1",
+								},
+								Method: "POST",
+							},
+						},
 					},
 				},
 			},
@@ -60,6 +69,7 @@ codec = "json"
 
 [sinks.http_receiver.request]
 timeout_secs = 10
+headers = {"h1"="v1","h2"="v2"}
 
 # Basic Auth Config
 [sinks.http_receiver.auth]
@@ -77,6 +87,15 @@ password = "password"
 						URL:  "https://my-logstore.com",
 						Secret: &logging.OutputSecretSpec{
 							Name: "http-receiver",
+						},
+						OutputTypeSpec: logging.OutputTypeSpec{
+							Http: &logging.Http{
+								Headers: map[string]string{
+									"h2": "v2",
+									"h1": "v1",
+								},
+								Method: "POST",
+							},
 						},
 					},
 				},
@@ -107,6 +126,7 @@ codec = "json"
 
 [sinks.http_receiver.request]
 timeout_secs = 10
+headers = {"h1"="v1","h2"="v2"}
 
 # Bearer Auth Config
 [sinks.http_receiver.auth]
@@ -125,6 +145,7 @@ token = "token-for-custom-http"
 							Timeout: "50",
 							Headers: map[string]string{
 								"k1": "v1",
+								"k2": "v2",
 							},
 						}},
 						Secret: &logging.OutputSecretSpec{
@@ -159,7 +180,7 @@ codec = "json"
 
 [sinks.http_receiver.request]
 timeout_secs = 50
-headers = {"k1"="v1"}
+headers = {"k1"="v1","k2"="v2"}
 
 # Bearer Auth Config
 [sinks.http_receiver.auth]
@@ -178,6 +199,7 @@ token = "token-for-custom-http"
 							Timeout: "50",
 							Headers: map[string]string{
 								"k1": "v1",
+								"k2": "v2",
 							},
 						}},
 						Secret: &logging.OutputSecretSpec{
@@ -212,7 +234,7 @@ codec = "json"
 
 [sinks.http_receiver.request]
 timeout_secs = 50
-headers = {"k1"="v1"}
+headers = {"k1"="v1","k2"="v2"}
 
 # Bearer Auth Config
 [sinks.http_receiver.auth]
@@ -231,6 +253,7 @@ token = "token-for-custom-http"
 							Timeout: "50",
 							Headers: map[string]string{
 								"k1": "v1",
+								"k2": "v2",
 							},
 						}},
 						TLS: &logging.OutputTLSSpec{
@@ -271,7 +294,7 @@ codec = "json"
 
 [sinks.http_receiver.request]
 timeout_secs = 50
-headers = {"k1"="v1"}
+headers = {"k1"="v1","k2"="v2"}
 
 [sinks.http_receiver.tls]
 enabled = true

@@ -3,6 +3,8 @@ package collector
 import (
 	"context"
 	"fmt"
+	"time"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
@@ -14,7 +16,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 // ReconcileTrustedCABundleConfigMap creates or returns an existing Trusted CA Bundle ConfigMap.
@@ -40,7 +41,10 @@ func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client
 		if err := k8sClient.Get(context.TODO(), key, current); err != nil {
 			if errors.IsNotFound(err) {
 				reason = constants.EventReasonCreateObject
-				return k8sClient.Create(context.TODO(), desired)
+				if err = k8sClient.Create(context.TODO(), desired); err != nil {
+					return err
+				}
+				return fmt.Errorf("waiting for %v ConfigMap to get created", key)
 			}
 			return fmt.Errorf("failed to get %v ConfigMap: %w", key, err)
 		}
@@ -52,7 +56,10 @@ func ReconcileTrustedCABundleConfigMap(er record.EventRecorder, k8sClient client
 		}
 		current.ObjectMeta.Labels[constants.InjectTrustedCABundleLabel] = "true"
 		reason = constants.EventReasonUpdateObject
-		return k8sClient.Update(context.TODO(), current)
+		if err := k8sClient.Update(context.TODO(), current); err != nil {
+			return err
+		}
+		return fmt.Errorf("waiting for %v ConfigMap to get created", key)
 	})
 	eventType := corev1.EventTypeNormal
 	msg := fmt.Sprintf("%s ConfigMap %s/%s", reason, desired.Namespace, desired.Name)

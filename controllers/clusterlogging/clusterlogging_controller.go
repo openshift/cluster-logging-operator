@@ -85,7 +85,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	if _, err = k8shandler.Reconcile(instance, r.Client, r.Reader, r.Recorder, r.ClusterID); err != nil {
+	if _, err = k8shandler.Reconcile(instance, r.Client, r.Reader, r.Recorder, r.ClusterVersion, r.ClusterID); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "Error reconciling clusterlogging instance")
 	}

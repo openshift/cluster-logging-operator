@@ -52,8 +52,9 @@ func TestRemoveKibanaCR(t *testing.T) {
 func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 	c := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 	cr := &ClusterLoggingRequest{
-		Cluster: runtime.NewClusterLogging(),
-		Client:  c,
+		Cluster:        runtime.NewClusterLogging(),
+		Client:         c,
+		ClusterVersion: "4.10.0",
 	}
 	cl := cr.Cluster
 

@@ -13,10 +13,6 @@ var (
 
 	// featuresIfUnmatched represents the default features to enable
 	featuresIfUnmatched = []string{featureDevConsole}
-
-	versionMap = map[string][]string{
-		"v4.10": {},
-	}
 )
 
 // FeaturesForOCP will return the list of features to enable for the console plugin given the OCP version
@@ -24,8 +20,9 @@ func FeaturesForOCP(version string) []string {
 	if !strings.HasPrefix(version, "v") {
 		version = "v" + version
 	}
-	if features, found := versionMap[semver.MajorMinor(version)]; found {
-		return features
+
+	if semver.Compare(version, "v4.11") < 0 {
+		return []string{}
 	}
 	return featuresIfUnmatched
 }

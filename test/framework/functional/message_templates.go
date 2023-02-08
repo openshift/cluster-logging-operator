@@ -93,3 +93,16 @@ func NewContainerInfrastructureLogTemplate() types.ApplicationLog {
 		Kubernetes: templateForInfraKubernetes,
 	}
 }
+
+// NewJournalInfrastructureLogTemplate creates a generally expected template for infrastructure journal logs
+func NewJournalInfrastructureLogTemplate() types.JournalLog {
+	return types.JournalLog{
+		Timestamp:        time.Time{},
+		Message:          "*",
+		LogType:          "infrastructure",
+		Level:            "*",
+		Hostname:         "*",
+		ViaqMsgID:        "**optional**",
+		PipelineMetadata: TemplateForAnyPipelineMetadata,
+	}
+}

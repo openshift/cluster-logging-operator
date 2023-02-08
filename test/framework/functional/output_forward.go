@@ -35,6 +35,24 @@ const (
   <format>
     @type json
   </format>
+  <buffer>
+    @type file
+    append true
+  </buffer>
+</match>
+
+<match journal.system>
+  @type file
+  append true
+  path /tmp/infra.logs
+  symlink_path /tmp/infra-logs
+  <format>
+    @type json
+  </format>
+  <buffer>
+    @type file
+    append true
+  </buffer>
 </match>
 
 <filter linux-audit.log**>

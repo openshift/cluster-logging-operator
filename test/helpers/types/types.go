@@ -489,12 +489,18 @@ func StrictlyParseLogsFromSlice(in []string, logs interface{}) error {
 }
 
 func StrictlyParseLogs(in string, logs interface{}) error {
+	return ParseLogsFrom(in, logs, true)
+}
+
+func ParseLogsFrom(in string, logs interface{}, strict bool) error {
 	log.V(3).Info("ParseLogs", "content", in)
 	if in == "" {
 		return nil
 	}
 	dec := json.NewDecoder(bytes.NewBufferString(in))
-	dec.DisallowUnknownFields()
+	if strict {
+		dec.DisallowUnknownFields()
+	}
 	err := dec.Decode(&logs)
 	if err != nil {
 		log.V(1).Error(err, "Error decoding", "log", in)

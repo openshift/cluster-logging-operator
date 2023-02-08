@@ -1,7 +1,4 @@
-//go:build fluentd
-// +build fluentd
-
-package normalization
+package loglevel
 
 import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
@@ -17,7 +14,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 )
 
-var _ = Describe("[Functional][LogForwarding][Normalization] tests for message format", func() {
+var _ = Describe("[functional][normalization][loglevel] tests for message format of container logs", func() {
 
 	var (
 		framework *functional.CollectorFunctionalFramework

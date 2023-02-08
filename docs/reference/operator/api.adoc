@@ -148,6 +148,7 @@ Output defines a destination for log messages.
 |loki|object|  *(optional)* 
 |googleCloudLogging|object|  *(optional)* 
 |splunk|object|  *(optional)* 
+|http|object|  *(optional)* 
 |name|string|  Name used to refer to the output from a `pipeline`.
 |secret|object|  *(optional)* Secret for authentication.
 |tls|object|  TLS contains settings for controlling options on TLS client connections.

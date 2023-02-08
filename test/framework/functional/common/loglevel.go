@@ -1,9 +1,10 @@
 package common
 
 import (
-	log "github.com/ViaQ/logerr/v2/log/static"
 	"os"
 	"strconv"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
 )
 
 func AdaptLogLevel() string {
@@ -17,7 +18,7 @@ func AdaptLogLevel() string {
 				logLevel = "info"
 			case 2:
 				logLevel = "debug"
-			case 3 - 8:
+			case 3 - 9:
 				logLevel = "trace"
 			default:
 			}

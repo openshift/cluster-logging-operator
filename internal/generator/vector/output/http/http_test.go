@@ -11,6 +11,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	v1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -313,19 +314,20 @@ token = "token-for-custom-http"
 	)
 })
 
-func TestVectorConfGenerator(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Vector Conf Generation")
-}
-
-func TestMap(t *testing.T) {
+func TestHeaders(t *testing.T) {
 	h := map[string]string{
 		"k1": "v1",
+		"k2": "v2",
 	}
-	expected := `{"k1"="v1"}`
-	got := ToHeaderStr(h)
+	expected := `{"k1"="v1","k2"="v2"}`
+	got := utils.ToHeaderStr(h, "%q=%q")
 	if got != expected {
 		t.Logf("got: %s, expected: %s", got, expected)
 		t.Fail()
 	}
+}
+
+func TestVectorConfGenerator(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Vector Conf Generation")
 }

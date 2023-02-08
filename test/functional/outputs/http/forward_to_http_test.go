@@ -1,6 +1,3 @@
-//go:build vector
-// +build vector
-
 package http
 
 import (
@@ -14,6 +11,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 )
 
@@ -24,7 +22,7 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(logging.LogCollectionTypeVector)
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToHttpOutput()
@@ -48,7 +46,6 @@ var _ = Describe("[Functional][Outputs][Http] Functional tests", func() {
 		Expect(err).To(BeNil(), "Expected no errors reading the logs")
 		Expect(result).ToNot(BeEmpty())
 		raw := strings.Split(strings.TrimSpace(result), "\n")
-		//err = types.ParseLogs(raw[0], &logs)
 		logs, err := types.ParseLogs(utils.ToJsonLogs(raw))
 		Expect(err).To(BeNil(), fmt.Sprintf("Expected no errors parsing the logs: %s", raw[0]))
 		// Compare to expected template

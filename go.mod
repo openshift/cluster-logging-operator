@@ -1,6 +1,6 @@
 module github.com/openshift/cluster-logging-operator
 
-go 1.17
+go 1.18
 
 // Pinned to kubernetes-1.18.3
 require (

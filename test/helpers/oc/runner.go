@@ -5,11 +5,23 @@ import (
 	"fmt"
 	"os"
 	osexec "os/exec"
+	"strconv"
 	"strings"
 	"time"
 
+	logger "github.com/ViaQ/logerr/v2/log"
 	log "github.com/ViaQ/logerr/v2/log/static"
 )
+
+func init() {
+	var verbosity = 0
+	if level, found := os.LookupEnv("LOG_LEVEL"); found {
+		if i, err := strconv.Atoi(level); err == nil {
+			verbosity = i
+		}
+	}
+	log.SetLogger(logger.NewLogger("oc-runner", logger.WithVerbosity(verbosity)))
+}
 
 // Runner is for executing the command. It provides implementation for
 // the methods in oc.Command interface.

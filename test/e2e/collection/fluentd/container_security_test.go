@@ -2,13 +2,14 @@ package fluentd
 
 import (
 	"fmt"
+	"runtime"
+	"strconv"
+	"strings"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	framework "github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"runtime"
-	"strconv"
-	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 
@@ -94,7 +95,7 @@ var _ = Describe("Tests of collector container security stance", func() {
 		}
 
 		nodes := 0
-		out, err := oc.Literal().From("oc get nodes --skip-headers -o name").Run()
+		out, err := oc.Literal().From("oc get nodes -o name").Run()
 		if err != nil {
 			Fail(fmt.Sprintf("Failed waiting for component %s to be ready: %v", helpers.ComponentTypeCollector, err))
 		}

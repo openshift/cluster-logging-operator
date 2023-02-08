@@ -52,3 +52,35 @@ func CreateAppLogFromJson(jsonstr string) string {
 
 	return fmt.Sprintf("%s stdout F %s", timestamp, jsonMsg)
 }
+
+func NewJournalLog(priority int, message, hostname string) string {
+	entry := fmt.Sprintf(`{
+  "PRIORITY": "%d",
+  "_UID": "1000",
+  "_GID": "1000",
+  "_CAP_EFFECTIVE": "0",
+  "_SELINUX_CONTEXT": "unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023",
+  "_AUDIT_SESSION": "3",
+  "_AUDIT_LOGINUID": "1000",
+  "_SYSTEMD_OWNER_UID": "1000",
+  "_SYSTEMD_UNIT": "user@1000.service",
+  "_SYSTEMD_SLICE": "user-1000.slice",
+  "_MACHINE_ID": "e2a074cafa5044c7a2761b4a97e249ce",
+  "_HOSTNAME": "%s",
+  "_TRANSPORT": "stdout",
+  "_SYSTEMD_USER_SLICE": "app.slice",
+  "SYSLOG_IDENTIFIER": "google-chrome.desktop",
+  "_COMM": "cat",
+  "_EXE": "/usr/bin/cat",
+  "_CMDLINE": "cat",
+  "MESSAGE": "%s",
+  "_BOOT_ID": "40646b056fbe4af6a8b9543864ae0216",
+  "_STREAM_ID": "063bc071ac204a37aabc926f2f7614b0",
+  "_PID": "3194",
+  "_SYSTEMD_CGROUP": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-glib-google\\x2dchrome-3188.scope/3194",
+  "_SYSTEMD_USER_UNIT": "app-glib-google\\x2dchrome-3188.scope",
+  "_SYSTEMD_INVOCATION_ID": "764ffdafa8b34ac69ec6055d5f942583"
+}
+`, priority, hostname, message)
+	return strings.ReplaceAll(entry, "\n", "")
+}

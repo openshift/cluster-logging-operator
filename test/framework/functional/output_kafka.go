@@ -7,7 +7,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 )
@@ -82,14 +81,6 @@ func (f *CollectorFunctionalFramework) AddKafkaOutput(b *runtime.PodBuilder, out
 	if err := f.Test.Client.Create(brokercm); err != nil {
 		return err
 	}
-
-	//Doing below at the time of creating spec for fluentd container now as tls.key, tls.crts need to be mounted on fluentd pod
-
-	//add broker secret containing keys,certs for secure connection in the below fluentd container
-
-	b.AddSecretVolume("kafka", kafka.DeploymentName).
-		GetContainer(constants.CollectorName).
-		AddVolumeMount("kafka", "/var/run/ocp-collector/secrets/kafka", "", true)
 
 	//standup pod with container running broker
 	b.AddInitContainer("init-config1", ImageRemoteKafkaInit).

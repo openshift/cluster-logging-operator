@@ -142,17 +142,14 @@ var _ = Describe("Generating fluentd config", func() {
               @id retry_other_elasticsearch
               host es.svc.messaging.cluster.local
               port 9654
-              verify_es_version_at_startup false
               scheme http
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-
+              verify_es_version_at_startup false
               type_name _doc
               http_backend typhoeus
               write_operation create
-              # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-              suppress_type_name 'true'
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
@@ -183,18 +180,15 @@ var _ = Describe("Generating fluentd config", func() {
               @id other_elasticsearch
               host es.svc.messaging.cluster.local
               port 9654
-              verify_es_version_at_startup false
               scheme http
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-
+              verify_es_version_at_startup false
               type_name _doc
               retry_tag retry_other_elasticsearch
               http_backend typhoeus
               write_operation create
-			  # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-			  suppress_type_name 'true'
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
@@ -302,17 +296,14 @@ var _ = Describe("Generating fluentd config", func() {
               @id retry_other_elasticsearch
               host es.svc.messaging.cluster.local
               port 9654
-              verify_es_version_at_startup false
               scheme http
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-
+              verify_es_version_at_startup false
               type_name _doc
               http_backend typhoeus
               write_operation create
-              # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-              suppress_type_name 'true'
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
@@ -343,18 +334,15 @@ var _ = Describe("Generating fluentd config", func() {
               @id other_elasticsearch
               host es.svc.messaging.cluster.local
               port 9654
-              verify_es_version_at_startup false
               scheme http
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-
+              verify_es_version_at_startup false
               type_name _doc
               retry_tag retry_other_elasticsearch
               http_backend typhoeus
               write_operation create
-              # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-			  suppress_type_name 'true'
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
@@ -448,17 +436,14 @@ var _ = Describe("Generating fluentd config", func() {
               @id retry_other_elasticsearch
               host es.svc.messaging.cluster.local
               port 9654
-              verify_es_version_at_startup false
               scheme http
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-
+              verify_es_version_at_startup false
               type_name _doc
               http_backend typhoeus
               write_operation create
-              # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-              suppress_type_name 'true'
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'
@@ -488,18 +473,15 @@ var _ = Describe("Generating fluentd config", func() {
               @id other_elasticsearch
               host es.svc.messaging.cluster.local
               port 9654
-              verify_es_version_at_startup false
               scheme http
               target_index_key viaq_index_name
               id_key viaq_msg_id
               remove_keys viaq_index_name
-
+              verify_es_version_at_startup false
               type_name _doc
               retry_tag retry_other_elasticsearch
               http_backend typhoeus
               write_operation create
-              # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-              suppress_type_name 'true'
               reload_connections 'true'
               # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
               reload_after '200'

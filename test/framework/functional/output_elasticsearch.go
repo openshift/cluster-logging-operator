@@ -11,13 +11,20 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
-const (
-	ElasticSearchTag   = "7.10.1"
-	ElasticSearchImage = "elasticsearch:" + ElasticSearchTag
+var (
+	esVersionToImage = map[ElasticsearchVersion]string{
+		ElasticsearchVersion6: "elasticsearch:6.8.23",
+		ElasticsearchVersion7: "elasticsearch:7.10.1",
+		ElasticsearchVersion8: "elasticsearch:8.6.1",
+	}
 )
 
 func (f *CollectorFunctionalFramework) AddES7Output(b *runtime.PodBuilder, output logging.OutputSpec) error {
-	log.V(2).Info("Adding elasticsearch7 output", "name", output.Name)
+	return AddESOutput(ElasticsearchVersion7, b, output)
+}
+
+func AddESOutput(version ElasticsearchVersion, b *runtime.PodBuilder, output logging.OutputSpec) error {
+	log.V(2).Info("Adding elasticsearch output", "name", output.Name, "version", version)
 	name := strings.ToLower(output.Name)
 
 	esURL, err := url.Parse(output.URL)
@@ -31,10 +38,12 @@ func (f *CollectorFunctionalFramework) AddES7Output(b *runtime.PodBuilder, outpu
 
 	log.V(2).Info("Adding container", "name", name)
 	log.V(2).Info("Adding ElasticSearch output container", "name", logging.OutputTypeElasticsearch)
-	b.AddContainer(name, ElasticSearchImage).
+
+	b.AddContainer(name, esVersionToImage[version]).
 		AddEnvVar("discovery.type", "single-node").
 		AddEnvVar("http.port", esURL.Port()).
 		AddEnvVar("transport.port", transportPort).
+		AddEnvVar("xpack.security.enabled", "false").
 		AddRunAsUser(2000).
 		End()
 	return nil

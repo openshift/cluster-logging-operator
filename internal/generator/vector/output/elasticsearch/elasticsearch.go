@@ -244,7 +244,7 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 		ComponentID:     helpers.FormatComponentID(o.Name),
 		Endpoint:        o.URL,
 		Inputs:          helpers.MakeInputs(inputs...),
-		SuppressVersion: logging.LatestESVersion,
+		SuppressVersion: logging.FirstESVersionWithoutType,
 	}
 	// If valid version is specified
 	if o.Elasticsearch != nil && o.Elasticsearch.Version > 0 {

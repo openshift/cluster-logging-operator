@@ -130,8 +130,7 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 			}
 
 			pb.ToKafkaOutput()
-			secret := kafka.NewBrokerSecret(framework.Namespace)
-			Expect(framework.Test.Client.Create(secret)).To(Succeed())
+			framework.Secrets = append(framework.Secrets, kafka.NewBrokerSecret(framework.Namespace))
 			Expect(framework.Deploy()).To(BeNil())
 
 			Expect(framework.WritesApplicationLogs(1)).To(BeNil())

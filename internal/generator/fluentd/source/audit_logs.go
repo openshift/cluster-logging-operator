@@ -44,7 +44,7 @@ const OpenshiftAuditLogTemplate = `
   @type tail
   @id openshift-audit-input
   @label @{{.OutLabel}}
-  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log,/var/log/oauth-server/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
   follow_inodes true
   {{- .ReadLinesLimit }}

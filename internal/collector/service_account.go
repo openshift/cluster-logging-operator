@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
+
 	security "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -27,6 +28,8 @@ var (
 		"NET_BIND_SERVICE",
 		"KILL",
 	}
+
+	DesiredSCCVolumes = []security.FSType{"configMap", "secret", "emptyDir", "projected"}
 )
 
 // ReconcileServiceAccount reconciles the serviceaccount specifically for a collector deployment
@@ -82,7 +85,7 @@ func NewSCC() *security.SecurityContextConstraints {
 	scc.AllowPrivilegedContainer = false
 	scc.RequiredDropCapabilities = RequiredDropCapabilities
 	scc.AllowHostDirVolumePlugin = true
-	scc.Volumes = []security.FSType{"configMap", "secret", "emptyDir", "projected"}
+	scc.Volumes = DesiredSCCVolumes
 	scc.DefaultAllowPrivilegeEscalation = utils.GetBool(false)
 	scc.AllowPrivilegeEscalation = utils.GetBool(false)
 	scc.RunAsUser = security.RunAsUserStrategyOptions{

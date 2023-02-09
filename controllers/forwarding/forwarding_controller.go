@@ -2,6 +2,7 @@ package forwarding
 
 import (
 	"context"
+
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -44,10 +45,6 @@ func condNotReady(r status.ConditionReason, format string, args ...interface{}) 
 	return logging.NewCondition(logging.ConditionReady, corev1.ConditionFalse, r, format, args...)
 }
 
-func condDegraded(r status.ConditionReason, format string, args ...interface{}) status.Condition {
-	return logging.NewCondition(logging.ConditionReady, corev1.ConditionTrue, r, format, args...)
-}
-
 func condInvalid(format string, args ...interface{}) status.Condition {
 	return condNotReady(logging.ReasonInvalid, format, args...)
 }
@@ -88,33 +85,27 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 		// if cluster is set to fail to reconcile then set healthStatus as 0
 		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.V(2).Error(reconcileErr, "clusterlogforwarder-controller returning, error")
-	}
-
-	if instance.Status.IsReady() {
-		// This returns False if SetCondition updates the condition instead of setting it.
-		// For condReady, it will always be updating the status.
-		if !instance.Status.Conditions.SetCondition(condReady) {
-			telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
-			r.Recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
-		}
 	} else {
-		clfCondition := instance.Status.Conditions.GetCondition(logging.ConditionReady)
-		r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), clfCondition.Message)
+		// Reconciled, check if CLF is ready
+		if instance.Status.Conditions.IsTrueFor(logging.ConditionReady) {
+			// This returns False if SetCondition updates the condition instead of setting it.
+			// For condReady, it will always be updating the status.
+			if !instance.Status.Conditions.SetCondition(condReady) {
+				telemetry.Data.CLFInfo.Set("healthStatus", constants.HealthyStatus)
+				r.Recorder.Event(instance, "Normal", string(condReady.Type), "All pipelines are valid")
+			}
+			// Invalid CLF
+		} else {
+			msg := "No valid inputs, outputs, or pipelines. Invalid CLF spec."
+			clfCondition := instance.Status.Conditions.GetCondition(logging.ConditionReady)
+			r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), clfCondition.Message)
 
-		// Get subordinate conditions (status.Pipelines, status.Inputs, status.Outputs)
-		// and their messages if the condition.status is False
-		invalidConds := instance.Status.GetReadyConditionMessages()
-		for i := range invalidConds {
-			r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), invalidConds[i])
-		}
-		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
-	}
+			r.recordInvalidConditionEvents(instance)
 
-	if instance.Status.IsDegraded() {
-		msg := "Some pipelines are degraded or invalid"
-		if instance.Status.Conditions.SetCondition(condDegraded(logging.ReasonInvalid, msg)) {
-			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
-			r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), msg)
+			if instance.Status.Conditions.SetCondition(condNotReady(logging.ReasonInvalid, msg)) {
+				telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
+				r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), msg)
+			}
 		}
 	}
 
@@ -123,6 +114,16 @@ func (r *ReconcileForwarder) Reconcile(ctx context.Context, request ctrl.Request
 	}
 
 	return ctrl.Result{}, reconcileErr
+}
+
+// Record invalid condition events from inputs, outputs, and/or pipelines to events
+func (r *ReconcileForwarder) recordInvalidConditionEvents(instance *logging.ClusterLogForwarder) {
+	// Get subordinate conditions (status.Pipelines, status.Inputs, status.Outputs)
+	// and their messages if the condition.status is False
+	invalidConds := instance.Status.GetReadyConditionMessages()
+	for i := range invalidConds {
+		r.Recorder.Event(instance, "Warning", string(logging.ReasonInvalid), invalidConds[i])
+	}
 }
 
 func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (ctrl.Result, error) {

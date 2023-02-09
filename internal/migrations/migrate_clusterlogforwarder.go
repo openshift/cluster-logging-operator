@@ -27,6 +27,7 @@ func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *logg
 			}
 			if logStore.Type == loggingv1.LogStoreTypeElasticsearch {
 				spec.Outputs = []loggingv1.OutputSpec{NewDefaultOutput(nil)}
+				spec.Pipelines[0].Name = "default_pipeline_0_"
 			}
 		}
 	}
@@ -74,6 +75,7 @@ func MigrateDefaultOutput(spec loggingv1.ClusterLogForwarderSpec, logStore *logg
 				outputs = append(outputs, defaultOutput)
 				extras[constants.MigrateDefaultOutput] = true
 			}
+
 			spec.Outputs = outputs
 			return spec, extras
 		}

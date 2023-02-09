@@ -97,7 +97,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 	It("connects to secure destinations", func() {
 		// Set up the CLF, one output per receiver source.
 		clf := f.ClusterLogForwarder
-		clf.Spec.Pipelines = []loggingv1.PipelineSpec{{InputRefs: []string{loggingv1.InputNameApplication}}}
+		clf.Spec.Pipelines = []loggingv1.PipelineSpec{{Name: "functional_fluent_pipeline_0_", InputRefs: []string{loggingv1.InputNameApplication}}}
 		for _, s := range f.Receiver.Sources {
 			secret := &loggingv1.OutputSecretSpec{Name: s.Name}
 			var tls *loggingv1.OutputTLSSpec
@@ -175,7 +175,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 
 	It("works when multiple outputs use same Secret", func() {
 		clf := f.ClusterLogForwarder
-		clf.Spec.Pipelines = []loggingv1.PipelineSpec{{InputRefs: []string{loggingv1.InputNameApplication}}}
+		clf.Spec.Pipelines = []loggingv1.PipelineSpec{{Name: "functional_fluent_pipeline_1_", InputRefs: []string{loggingv1.InputNameApplication}}}
 		s := f.Receiver.Sources["server-auth"]
 		for i := 0; i < 2; i++ {
 			name := fmt.Sprintf("%v%v", s.Name, i)

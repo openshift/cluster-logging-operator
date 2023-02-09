@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -62,6 +63,7 @@ var _ = Describe("MigrateDefaultOutput", func() {
 			logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
+						Name:       "default_pipeline_0_",
 						InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
 						OutputRefs: []string{logging.OutputNameDefault},
 					},
@@ -86,10 +88,12 @@ var _ = Describe("MigrateDefaultOutput", func() {
 			logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
+						Name:       "default_loki_pipeline_0_",
 						InputRefs:  []string{logging.InputNameApplication},
 						OutputRefs: []string{"default-loki-apps"},
 					},
 					{
+						Name:       "default_loki_pipeline_1_",
 						InputRefs:  []string{logging.InputNameInfrastructure},
 						OutputRefs: []string{"default-loki-infra"},
 					},
@@ -133,6 +137,7 @@ var _ = Describe("MigrateDefaultOutput", func() {
 			logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
+						Name:       "default_loki_pipeline_0_",
 						InputRefs:  []string{logging.InputNameAudit},
 						OutputRefs: []string{"default-loki-audit"},
 					},

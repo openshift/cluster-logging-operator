@@ -107,7 +107,7 @@ include = ["/var/log/kube-apiserver/audit.log"]
 [sources.openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
-include = ["/var/log/oauth-apiserver.audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -315,7 +315,7 @@ include = ["/var/log/kube-apiserver/audit.log"]
 [sources.openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
-include = ["/var/log/oauth-apiserver.audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
 
 [sources.internal_metrics]
 type = "internal_metrics"
@@ -673,7 +673,7 @@ include = ["/var/log/kube-apiserver/audit.log"]
 [sources.openshift_audit_logs]
 type = "file"
 ignore_older_secs = 600
-include = ["/var/log/oauth-apiserver.audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
 
 [sources.internal_metrics]
 type = "internal_metrics"

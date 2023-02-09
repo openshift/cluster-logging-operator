@@ -202,7 +202,7 @@ var _ = Describe("Testing Config Generation", func() {
   @type tail
   @id openshift-audit-input
   @label @INGRESS
-  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log,/var/log/oauth-server/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
   follow_inodes true
   tag openshift-audit.log
@@ -292,7 +292,7 @@ var _ = Describe("Testing Config Generation", func() {
   @type tail
   @id openshift-audit-input
   @label @INGRESS
-  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log,/var/log/oauth-server/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
   follow_inodes true
   read_lines_limit 1500
@@ -422,7 +422,7 @@ const AllSources = `
   @type tail
   @id openshift-audit-input
   @label @INGRESS
-  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log
+  path /var/log/oauth-apiserver/audit.log,/var/log/openshift-apiserver/audit.log,/var/log/oauth-server/audit.log
   pos_file /var/lib/fluentd/pos/oauth-apiserver.audit.log
   follow_inodes true
   tag openshift-audit.log

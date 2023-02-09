@@ -26,8 +26,8 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
 		diff := cmp.Diff(
-			strings.Split(strings.TrimSpace(helpers.FormatFluentConf(testcase.ExpectedConf)), "\n"),
-			strings.Split(strings.TrimSpace(helpers.FormatFluentConf(conf)), "\n"))
+			strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(testcase.ExpectedConf)), "\n\n", "\n", -1), "\n"),
+			strings.Split(strings.Replace(strings.TrimSpace(helpers.FormatFluentConf(conf)), "\n\n", "\n", -1), "\n"))
 		if diff != "" {
 			b, _ := json.MarshalIndent(e, "", " ")
 			fmt.Printf("elements:\n%s\n", string(b))
@@ -582,7 +582,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
     @id retry_es_1
     host es.svc.infra.cluster
     port 9999
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/es-1-secret/tls.key'
@@ -591,11 +590,10 @@ var _ = Describe("Testing Complete Config Generation", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -627,7 +625,6 @@ var _ = Describe("Testing Complete Config Generation", func() {
     @id es_1
     host es.svc.infra.cluster
     port 9999
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/es-1-secret/tls.key'
@@ -636,12 +633,11 @@ var _ = Describe("Testing Complete Config Generation", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_es_1
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'

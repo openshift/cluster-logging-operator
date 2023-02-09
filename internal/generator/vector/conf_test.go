@@ -1025,7 +1025,7 @@ crt_file = "/etc/collector/metrics/tls.crt"
 						URL:  "https://es-2.svc.messaging.cluster.local:9200",
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								Version: logging.LatestESVersion,
+								Version: logging.FirstESVersionWithoutType,
 							},
 						},
 						Secret: &logging.OutputSecretSpec{

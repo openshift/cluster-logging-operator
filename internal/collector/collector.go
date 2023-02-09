@@ -146,7 +146,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 	}
 	podSpec.Tolerations = append(podSpec.Tolerations, f.Tolerations()...)
 
-	secretNames := addSecretVolumes(podSpec, forwarderSpec)
+	secretNames := AddSecretVolumes(podSpec, forwarderSpec)
 
 	exporter := newLogMetricsExporterContainer()
 	collector := f.NewCollectorContainer(secretNames, clusterID)
@@ -201,10 +201,7 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) 
 		{Name: tmpVolumeName, MountPath: tmpPath},
 	}
 	// List of _unique_ output secret names, several outputs may use the same secret.
-	for _, name := range secretNames {
-		path := fmt.Sprintf("/var/run/ocp-collector/secrets/%s", name)
-		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path})
-	}
+	AddSecretVolumeMounts(&collector, secretNames)
 
 	addSecurityContextTo(&collector)
 	return &collector
@@ -234,9 +231,18 @@ func newLogMetricsExporterContainer() *v1.Container {
 	return &exporter
 }
 
-// addSecretVolumes adds secret volumes to the pod spec for the unique set of pipeline secrets and returns the list of
+// AddSecretVolumeMounts to the collector container
+func AddSecretVolumeMounts(collector *v1.Container, secretNames []string) {
+	// List of _unique_ output secret names, several outputs may use the same secret.
+	for _, name := range secretNames {
+		path := fmt.Sprintf("/var/run/ocp-collector/secrets/%s", name)
+		collector.VolumeMounts = append(collector.VolumeMounts, v1.VolumeMount{Name: name, ReadOnly: true, MountPath: path})
+	}
+}
+
+// AddSecretVolumes adds secret volumes to the pod spec for the unique set of pipeline secrets and returns the list of
 // the secret names
-func addSecretVolumes(podSpec *v1.PodSpec, pipelineSpec logging.ClusterLogForwarderSpec) []string {
+func AddSecretVolumes(podSpec *v1.PodSpec, pipelineSpec logging.ClusterLogForwarderSpec) []string {
 	// List of _unique_ output secret names, several outputs may use the same secret.
 	unique := sets.NewString()
 	for _, o := range pipelineSpec.Outputs {

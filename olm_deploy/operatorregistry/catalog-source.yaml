@@ -1,7 +1,11 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
+  labels:
+    opsrc-datastore: 'true'
+    opsrc-provider: redhat
   name: cluster-logging-catalog
 spec:
   sourceType: grpc
   address: ${CLUSTER_IP}:50051
+  publisher: Red Hat

@@ -138,6 +138,8 @@ const (
 	EventReasonGetObject            = "GetObject"
 	EventReasonRemoveObject         = "RemoveObject"
 	EventReasonUpdateObject         = "UpdateObject"
+
+	MigrateDefaultOutput = "default-replaced"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

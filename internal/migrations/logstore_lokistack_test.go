@@ -251,7 +251,9 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: "lokistack-testing",
 				},
 			}
-			outputs, pipelines := processPipelinesForLokiStack(logStore, "aNamespace", tc.spec)
+			var outputs []loggingv1.OutputSpec
+			var pipelines []loggingv1.PipelineSpec
+			outputs, pipelines, _ = processPipelinesForLokiStack(logStore, "aNamespace", tc.spec, map[string]bool{})
 
 			if diff := cmp.Diff(outputs, tc.wantOutputs); diff != "" {
 				t.Errorf("outputs differ: -got+want\n%s", diff)

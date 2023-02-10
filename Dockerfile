@@ -1,6 +1,6 @@
 ### This is a generated file from Dockerfile.in ###
-#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:rhel_8_golang_1.17)
-FROM registry.redhat.io/ubi8/go-toolset:1.17.12 AS builder
+#@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-golang-builder:rhel_8_golang_1.18)
+FROM registry.redhat.io/ubi8/go-toolset:1.18.9 AS builder
 
 ENV BUILD_VERSION=${CI_CONTAINER_VERSION}
 ENV OS_GIT_MAJOR=${CI_X_VERSION}
@@ -31,10 +31,10 @@ USER 0
 RUN make build
 
 #@follow_tag(registry-proxy.engineering.redhat.com/rh-osbs/openshift-ose-cli:v4.9)
-FROM quay.io/openshift/origin-cli:4.11 AS origincli
+FROM quay.io/openshift/origin-cli:4.12 AS origincli
 
 #@follow_tag(registry.redhat.io/ubi8:latest)
-FROM registry.redhat.io/ubi8:8.6
+FROM registry.redhat.io/ubi8:8.7
 
 ENV APP_DIR=/opt/apt-root/src
 ENV SRC_DIR=./

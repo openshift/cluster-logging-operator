@@ -197,18 +197,17 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 
-	log.V(2).Info("Generating Certificates")
-	if err, _, _ = certificates.GenerateCertificates(f.Test.NS.Name,
-		test.GitRoot("scripts"), "elasticsearch",
-		utils.DefaultWorkingDir); err != nil {
+	err, certsDir := certificates.GenerateTestCertificates("elasticsearch")
+	defer os.RemoveAll(certsDir)
+	if err != nil {
 		return err
 	}
 	log.V(2).Info("Creating certs configmap")
 	certsName := "certs-" + f.Name
 	certs := runtime.NewConfigMap(f.Test.NS.Name, certsName, map[string]string{})
 	runtime.NewConfigMapBuilder(certs).
-		Add("tls.key", string(utils.GetWorkingDirFileContents("system.logging.fluentd.key"))).
-		Add("tls.crt", string(utils.GetWorkingDirFileContents("system.logging.fluentd.crt")))
+		Add("tls.key", string(utils.GetDirFileContents(certsDir, "system.logging.fluentd.key"))).
+		Add("tls.crt", string(utils.GetDirFileContents(certsDir, "system.logging.fluentd.crt")))
 	if err = f.Test.Client.Create(certs); err != nil {
 		return err
 	}

@@ -2,13 +2,24 @@ package certificates
 
 import (
 	"fmt"
+	"math/rand"
+	"os"
 	"os/exec"
 
 	"sigs.k8s.io/yaml"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test"
 )
+
+func GenerateTestCertificates(logStoreName string) (err error, certsDir string) {
+	certsDir = fmt.Sprintf("/tmp/clo-test-%d-%d", os.Getpid(), rand.Intn(10000)) //nolint:gosec
+	log.V(3).Info("Generating Pipeline certificates for Log Store to certs dir", "logStoreName", logStoreName, "certsDir", certsDir)
+	err, _, _ = GenerateCertificates(constants.WatchNamespace, test.GitRoot("scripts"), logStoreName, certsDir)
+	return
+}
 
 func GenerateCertificates(namespace, scriptsDir, logStoreName, workDir string) (err error, updated bool, output []interface{}) {
 	script := fmt.Sprintf("%s/cert_generation.sh", scriptsDir)

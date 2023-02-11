@@ -17,6 +17,8 @@ NAMESPACE=${2:-openshift-logging}
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 es_folder="$CLO_COLLECTION_PATH/es"
 
+loki_folder="$CLO_COLLECTION_PATH/loki"
+
 list_es_storage() {
   local pod=$1
   local mountPath=$(oc -n $NAMESPACE get pod $pod -o jsonpath='{.spec.containers[0].volumeMounts[?(@.name=="elasticsearch-storage")].mountPath}')
@@ -99,5 +101,14 @@ done
 
 log "-- Gather Elasticsearch CR"
 get_elasticsearch_cr
+
+# LokiStack resource gathering. if the condition is true only then loki directory will be created.
+data="$(oc -n $NAMESPACE get lokistack --ignore-not-found -o yaml)"
+if [ "$data" != "" ] ; then
+  log "Gathering Loki resources"
+  mkdir -p "$loki_folder"
+  echo "${data}" > "${loki_folder}/lokistack_instance.yaml"
+fi
+
 
 log "END gather_logstore_resources ..."

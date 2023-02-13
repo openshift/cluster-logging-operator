@@ -26,8 +26,8 @@ const (
 	AnnotationDebugOutput = "logging.openshift.io/debug-output"
 )
 
-// CreateOrUpdateCollection component of the cluster
-func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err error) {
+//CreateOrUpdateCollection component of the cluster
+func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map[string]bool) (err error) {
 	if !clusterRequest.isManaged() {
 		return nil
 	}
@@ -71,7 +71,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection() (err err
 			return
 		}
 
-		if collectorConfig, err = clusterRequest.generateCollectorConfig(); err != nil {
+		if collectorConfig, err = clusterRequest.generateCollectorConfig(extras); err != nil {
 			log.V(9).Error(err, "clusterRequest.generateCollectorConfig")
 			return
 		}

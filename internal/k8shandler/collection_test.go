@@ -73,6 +73,7 @@ var _ = Describe("Reconciling", func() {
 				Name:   cluster.Namespace,
 			},
 		}
+		extras = map[string]bool{}
 	)
 
 	Describe("Collection", func() {
@@ -126,12 +127,13 @@ var _ = Describe("Reconciling", func() {
 					EventRecorder:    record.NewFakeRecorder(100),
 					ForwarderRequest: &loggingv1.ClusterLogForwarder{},
 				}
-				clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore)
+				extras[constants.MigrateDefaultOutput] = true
+				clusterRequest.ForwarderSpec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore, extras)
 			})
 
 			It("should use the injected custom CA bundle for the collector", func() {
 				// Reconcile w/o custom CA bundle
-				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection(extras)).To(Succeed())
 
 				// Inject custom CA bundle into collector config map
 				injectedCABundle := fluentdCABundle.DeepCopy()
@@ -139,7 +141,7 @@ var _ = Describe("Reconciling", func() {
 				Expect(client.Update(context.TODO(), injectedCABundle)).Should(Succeed())
 
 				// Reconcile with injected custom CA bundle
-				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection(extras)).Should(Succeed())
 
 				key := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
 				ds := &appsv1.DaemonSet{}
@@ -188,12 +190,13 @@ var _ = Describe("Reconciling", func() {
 					Cluster:       cluster,
 					EventRecorder: record.NewFakeRecorder(100),
 				}
-				clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore)
+				extras[constants.MigrateDefaultOutput] = true
+				clusterRequest.ForwarderSpec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore, extras)
 			})
 
 			//https://issues.redhat.com/browse/LOG-1859
 			It("should continue to reconcile without error", func() {
-				Expect(clusterRequest.CreateOrUpdateCollection()).Should(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection(extras)).Should(Succeed())
 
 				key := types.NamespacedName{Name: constants.CollectorTrustedCAName, Namespace: cluster.GetNamespace()}
 				fluentdCaBundle := &corev1.ConfigMap{}
@@ -225,11 +228,12 @@ var _ = Describe("Reconciling", func() {
 					EventRecorder:    record.NewFakeRecorder(100),
 					ForwarderRequest: &loggingv1.ClusterLogForwarder{},
 				}
-				clusterRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore)
+				extras[constants.MigrateDefaultOutput] = true
+				clusterRequest.ForwarderSpec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore, extras)
 			})
 
 			It("a fluentd collector should create the logging_fluentd alerts", func() {
-				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection(extras)).To(Succeed())
 
 				collectorKey := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
 				rule := &monitoringv1.PrometheusRule{}
@@ -240,7 +244,7 @@ var _ = Describe("Reconciling", func() {
 			It("a vector collector should create the logging_collector alerts", func() {
 				// Set collector to vector
 				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
-				Expect(clusterRequest.CreateOrUpdateCollection()).To(Succeed())
+				Expect(clusterRequest.CreateOrUpdateCollection(extras)).To(Succeed())
 
 				collectorKey := types.NamespacedName{Name: constants.CollectorName, Namespace: cluster.GetNamespace()}
 				rule := &monitoringv1.PrometheusRule{}

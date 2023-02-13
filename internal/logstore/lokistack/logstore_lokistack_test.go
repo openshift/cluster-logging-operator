@@ -10,16 +10,18 @@ import (
 func TestProcessPipelinesForLokiStack(t *testing.T) {
 	tests := []struct {
 		desc          string
-		in            []loggingv1.PipelineSpec
+		spec          loggingv1.ClusterLogForwarderSpec
 		wantOutputs   []loggingv1.OutputSpec
 		wantPipelines []loggingv1.PipelineSpec
 	}{
 		{
 			desc: "no default output",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{"custom-output"},
-					InputRefs:  []string{loggingv1.InputNameApplication},
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{"custom-output"},
+						InputRefs:  []string{loggingv1.InputNameApplication},
+					},
 				},
 			},
 			wantOutputs: []loggingv1.OutputSpec{},
@@ -32,10 +34,12 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "single tenant - single output",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{loggingv1.OutputNameDefault},
-					InputRefs:  []string{loggingv1.InputNameApplication},
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs:  []string{loggingv1.InputNameApplication},
+					},
 				},
 			},
 			wantOutputs: []loggingv1.OutputSpec{
@@ -54,12 +58,14 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "multiple tenants - single output",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{loggingv1.OutputNameDefault},
-					InputRefs: []string{
-						loggingv1.InputNameApplication,
-						loggingv1.InputNameInfrastructure,
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+							loggingv1.InputNameInfrastructure,
+						},
 					},
 				},
 			},
@@ -88,13 +94,15 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "multiple tenants - single output - named pipeline",
-			in: []loggingv1.PipelineSpec{
-				{
-					Name:       "named-pipeline",
-					OutputRefs: []string{loggingv1.OutputNameDefault},
-					InputRefs: []string{
-						loggingv1.InputNameApplication,
-						loggingv1.InputNameInfrastructure,
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						Name:       "named-pipeline",
+						OutputRefs: []string{loggingv1.OutputNameDefault},
+						InputRefs: []string{
+							loggingv1.InputNameApplication,
+							loggingv1.InputNameInfrastructure,
+						},
 					},
 				},
 			},
@@ -125,14 +133,16 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "single tenant - multiple outputs",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{
-						"custom-output",
-						loggingv1.OutputNameDefault,
-					},
-					InputRefs: []string{
-						loggingv1.InputNameInfrastructure,
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{
+							"custom-output",
+							loggingv1.OutputNameDefault,
+						},
+						InputRefs: []string{
+							loggingv1.InputNameInfrastructure,
+						},
 					},
 				},
 			},
@@ -155,15 +165,17 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 		},
 		{
 			desc: "multiple tenants - multiple outputs",
-			in: []loggingv1.PipelineSpec{
-				{
-					OutputRefs: []string{
-						"custom-output",
-						loggingv1.OutputNameDefault,
-					},
-					InputRefs: []string{
-						loggingv1.InputNameInfrastructure,
-						loggingv1.InputNameAudit,
+			spec: loggingv1.ClusterLogForwarderSpec{
+				Pipelines: []loggingv1.PipelineSpec{
+					{
+						OutputRefs: []string{
+							"custom-output",
+							loggingv1.OutputNameDefault,
+						},
+						InputRefs: []string{
+							loggingv1.InputNameInfrastructure,
+							loggingv1.InputNameAudit,
+						},
 					},
 				},
 			},
@@ -208,7 +220,9 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					Name: "lokistack-testing",
 				},
 			}
-			outputs, pipelines := ProcessForwarderPipelines(logStore, "aNamespace", tc.in)
+			var outputs []loggingv1.OutputSpec
+			var pipelines []loggingv1.PipelineSpec
+			outputs, pipelines, _ = ProcessForwarderPipelines(logStore, "aNamespace", tc.spec, map[string]bool{})
 
 			if diff := cmp.Diff(outputs, tc.wantOutputs); diff != "" {
 				t.Errorf("outputs differ: -got+want\n%s", diff)

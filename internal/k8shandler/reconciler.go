@@ -65,7 +65,7 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 	// CL is managed by default set it as 1
 	telemetry.Data.CLInfo.Set("managedStatus", constants.ManagedStatus)
 	updateInfofromCL(&clusterLoggingRequest)
-	forwarder := clusterLoggingRequest.getLogForwarder()
+	forwarder, extras := clusterLoggingRequest.getLogForwarder()
 	if forwarder != nil {
 		if err := clusterlogforwarder.Validate(*forwarder); err != nil {
 			return nil, err
@@ -96,7 +96,7 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 	}
 
 	// Reconcile Collection
-	if err = clusterLoggingRequest.CreateOrUpdateCollection(); err != nil {
+	if err = clusterLoggingRequest.CreateOrUpdateCollection(extras); err != nil {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		telemetry.Data.CollectorErrorCount.Inc("CollectorErrorCount")
 		return clusterLoggingRequest.Cluster, fmt.Errorf("unable to create or update collection for %q: %v", clusterLoggingRequest.Cluster.Name, err)
@@ -163,7 +163,8 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 		return nil
 	}
 
-	clusterLoggingRequest.ForwarderSpec = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, clusterLogging.Spec.LogStore)
+	extras := map[string]bool{}
+	clusterLoggingRequest.ForwarderSpec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, clusterLogging.Spec.LogStore, extras)
 	clusterLoggingRequest.Cluster = clusterLogging
 
 	if clusterLogging.Spec.ManagementState == logging.ManagementStateUnmanaged {
@@ -172,7 +173,7 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 	}
 
 	// Reconcile Collection
-	err = clusterLoggingRequest.CreateOrUpdateCollection()
+	err = clusterLoggingRequest.CreateOrUpdateCollection(extras)
 	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
 
 	if err != nil {
@@ -212,7 +213,7 @@ func (clusterRequest *ClusterLoggingRequest) getClusterLogging(skipMigrations bo
 	return clusterLogging, nil
 }
 
-func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterLogForwarder {
+func (clusterRequest *ClusterLoggingRequest) getLogForwarder() (*logging.ClusterLogForwarder, map[string]bool) {
 	nsname := types.NamespacedName{Name: constants.SingletonName, Namespace: clusterRequest.Cluster.Namespace}
 	forwarder := runtime.NewClusterLogForwarder(clusterRequest.Cluster.Namespace, clusterRequest.Cluster.Name)
 	if err := clusterRequest.Client.Get(context.TODO(), nsname, forwarder); err != nil {
@@ -221,8 +222,9 @@ func (clusterRequest *ClusterLoggingRequest) getLogForwarder() *logging.ClusterL
 		}
 		forwarder.Spec = logging.ClusterLogForwarderSpec{}
 	}
-	forwarder.Spec = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, clusterRequest.Cluster.Spec.LogStore)
-	return forwarder
+	extras := map[string]bool{}
+	forwarder.Spec, extras = migrations.MigrateClusterLogForwarderSpec(forwarder.Spec, clusterRequest.Cluster.Spec.LogStore, extras)
+	return forwarder, extras
 }
 
 func updateInfofromCL(request *ClusterLoggingRequest) {

@@ -78,12 +78,19 @@ else
   log "Skipping collection inspection.  No CLO found" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
 fi
 
-found="$(oc -n $LOGGING_NS get elasticsearch elasticsearch --ignore-not-found --no-headers)"
-if [ "$found" != "" ] ; then
+found_es="$(oc -n $LOGGING_NS get elasticsearch elasticsearch --ignore-not-found --no-headers)"
+found_lokistack="$(oc -n $LOGGING_NS get lokistack.loki.grafana.com --ignore-not-found --no-headers)"
+if [ "$found_es" != "" ] || [ "$found_lokistack" != "" ] ; then
   # Call per component gather scripts
-  log "BEGIN gathering EO resources ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
-  ${SCRIPT_DIR}/gather_elasticsearch_operator_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
-  ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  if [ "$found_es" != "" ] ; then
+    log "BEGIN gathering EO resources ..." >> "${BASE_COLLECTION_PATH}/gather-debug.log"
+    ${SCRIPT_DIR}/gather_elasticsearch_operator_resources "$BASE_COLLECTION_PATH" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+    ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "elasticsearch" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  fi
+
+  if [ "$found_lokistack" != "" ] ; then
+    ${SCRIPT_DIR}/gather_logstore_resources "$BASE_COLLECTION_PATH" "lokistack" >> "${BASE_COLLECTION_PATH}/gather-debug.log" 2>&1
+  fi
 
   found="$(oc -n $LOGGING_NS get kibana kibana --ignore-not-found --no-headers)"
   if [ "$found" != "" ] ; then

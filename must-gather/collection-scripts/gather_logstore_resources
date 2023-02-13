@@ -6,18 +6,19 @@ log "BEGIN gather_logstore_resources ..."
 
 # Expect base collection path as an argument
 BASE_COLLECTION_PATH=$1
+LOG_STORE_TYPE=$2
 
 # Use PWD as base path if no argument is passed
 if [ "${BASE_COLLECTION_PATH}" = "" ]; then
     BASE_COLLECTION_PATH=$(pwd)
 fi
 
-NAMESPACE=${2:-openshift-logging}
+NAMESPACE=${3:-openshift-logging}
 
 CLO_COLLECTION_PATH="$BASE_COLLECTION_PATH/cluster-logging"
 es_folder="$CLO_COLLECTION_PATH/es"
 
-loki_folder="$CLO_COLLECTION_PATH/loki"
+lokistack_folder="$CLO_COLLECTION_PATH/lokistack"
 
 list_es_storage() {
   local pod=$1
@@ -79,36 +80,41 @@ get_elasticsearch_cr() {
   oc get -n $NAMESPACE --cache-dir=${KUBECACHEDIR} elasticsearch.logging.openshift.io elasticsearch -o yaml > $es_folder/elasticsearch_cr.yaml
 }
 
+get_lokistack_cr() {
+  oc get -n $NAMESPACE --cache-dir=${KUBECACHEDIR} lokistacks.loki.grafana.com -o yaml > $lokistack_folder/lokistack_cr.yaml
+}
+
 log "Gathering data for logstore component"
-log "-- Checking Elasticsearch health"
-mkdir -p $es_folder
+if [ "$LOG_STORE_TYPE" = "elasticsearch" ] ; then
+  log "-- Checking Elasticsearch health"
+  mkdir -p $es_folder
 
-es_pods=$(oc -n $NAMESPACE get pods -l component=elasticsearch -o jsonpath='{.items[*].metadata.name}')
-for pod in $es_pods
-do
-    log "---- Elasticsearch pod: $pod"
-    get_env $pod $es_folder "$NAMESPACE"
-    list_es_storage $pod
-done
+  es_pods=$(oc -n $NAMESPACE get pods -l component=elasticsearch -o jsonpath='{.items[*].metadata.name}')
+  for pod in $es_pods
+  do
+      log "---- Elasticsearch pod: $pod"
+      get_env $pod $es_folder "$NAMESPACE"
+      list_es_storage $pod
+  done
 
-anypod=""
-for comp in "elasticsearch"
-do
-    echo "-- Getting Elasticsearch cluster info from logging-${comp} pod"
-    anypod=$(oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} get pod --selector="component=${comp}" --no-headers | grep Running | awk '{print$1}' | tail -1)
-    get_elasticsearch_status ${comp} ${anypod}
-done
+  anypod=""
+  for comp in "elasticsearch"
+  do
+      echo "-- Getting Elasticsearch cluster info from logging-${comp} pod"
+      anypod=$(oc -n $NAMESPACE --cache-dir=${KUBECACHEDIR} get pod --selector="component=${comp}" --no-headers | grep Running | awk '{print$1}' | tail -1)
+      get_elasticsearch_status ${comp} ${anypod}
+  done
 
-log "-- Gather Elasticsearch CR"
-get_elasticsearch_cr
-
-# LokiStack resource gathering. if the condition is true only then loki directory will be created.
-data="$(oc -n $NAMESPACE get lokistack --ignore-not-found -o yaml)"
-if [ "$data" != "" ] ; then
-  log "Gathering Loki resources"
-  mkdir -p "$loki_folder"
-  echo "${data}" > "${loki_folder}/lokistack_instance.yaml"
+  log "-- Gather Elasticsearch CR"
+  get_elasticsearch_cr
 fi
 
+if [ "$LOG_STORE_TYPE" = "lokistack" ] ; then
+  log "Gathering Lokistack resources"
+  mkdir -p "$lokistack_folder"
+
+  log "-- Gather Lokistack CR"
+  get_lokistack_cr
+fi
 
 log "END gather_logstore_resources ..."

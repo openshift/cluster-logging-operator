@@ -1,10 +1,11 @@
 package scc
 
 import (
-	log "github.com/ViaQ/logerr/v2/log/static"
-	security "github.com/openshift/api/security/v1"
 	"reflect"
 	"sort"
+
+	log "github.com/ViaQ/logerr/v2/log/static"
+	security "github.com/openshift/api/security/v1"
 )
 
 func AreSame(current, desired security.SecurityContextConstraints) (bool, string) {
@@ -31,11 +32,17 @@ func AreSame(current, desired security.SecurityContextConstraints) (bool, string
 		return false, "allowHostDirVolumePlugin"
 	}
 
-	sort.Slice(current.Volumes, func(i, j int) bool { return current.Volumes[i] < current.Volumes[j] })
-	sort.Slice(desired.Volumes, func(i, j int) bool { return desired.Volumes[i] < desired.Volumes[j] })
-	if !reflect.DeepEqual(current.Volumes, desired.Volumes) {
-		log.V(3).Info("SCC Volumes change", "current name", current.Name)
-		return false, "volumes"
+	for _, dv := range desired.Volumes {
+		exist := false
+		for _, cv := range current.Volumes {
+			if dv == cv {
+				exist = true
+			}
+		}
+		if !exist {
+			log.V(3).Info("Desired SCC Volume not found", "Volume name", dv)
+			return false, "volumes"
+		}
 	}
 
 	if !sameAllowPrivilegeEscalation(current.DefaultAllowPrivilegeEscalation, desired.DefaultAllowPrivilegeEscalation) {

@@ -2,6 +2,7 @@ package scc_test
 
 import (
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -39,7 +40,7 @@ var _ = Describe("scc#AreSame", func() {
 			right.RequiredDropCapabilities = append(right.RequiredDropCapabilities, "foo")
 		}),
 		Entry("AllowHostDirVolumePlugin", func(right *security.SecurityContextConstraints) { right.AllowHostDirVolumePlugin = false }),
-		Entry("Volumes", func(right *security.SecurityContextConstraints) { right.Volumes = right.Volumes[1:] }),
+		Entry("Volumes", func(none *security.SecurityContextConstraints) {}, func(left *security.SecurityContextConstraints) { left.Volumes = left.Volumes[1:] }),
 		Entry("DefaultAllowPrivilegeEscalation", func(right *security.SecurityContextConstraints) {
 			right.DefaultAllowPrivilegeEscalation = utils.GetBool(true)
 		}),

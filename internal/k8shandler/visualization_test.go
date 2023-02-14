@@ -52,8 +52,9 @@ func TestRemoveKibanaCR(t *testing.T) {
 func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 	c := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 	cr := &ClusterLoggingRequest{
-		Cluster: runtime.NewClusterLogging(),
-		Client:  c,
+		Cluster:        runtime.NewClusterLogging(),
+		Client:         c,
+		ClusterVersion: "4.10.0",
 	}
 	cl := cr.Cluster
 
@@ -63,7 +64,7 @@ func TestConsolePluginIsCreatedAndDeleted(t *testing.T) {
 			LokiStack: logging.LokiStackStoreSpec{Name: "some-loki-stack"},
 		},
 	}
-	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http"))
+	r := console.NewReconciler(c, console.NewConfig(cl, "some-loki-stack-gateway-http", []string{}))
 	cp := &consolev1alpha1.ConsolePlugin{}
 
 	t.Run("create", func(t *testing.T) {

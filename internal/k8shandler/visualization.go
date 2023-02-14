@@ -24,7 +24,7 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() error
 	}
 	var errs []error
 	errs = append(errs, clusterRequest.createOrUpdateKibana())
-	errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster))
+	errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster, clusterRequest.ClusterVersion))
 	return utilerrors.NewAggregate(errs)
 }
 

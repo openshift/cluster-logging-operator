@@ -2,6 +2,9 @@ package consoleplugin_test
 
 import (
 	"context"
+	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 	"strconv"
 	"time"
@@ -49,7 +52,7 @@ var _ = Describe("[ConsolePlugin]", func() {
 		c = client.NewTest()
 		r = console.NewReconciler(
 			c.ControllerRuntimeClient(),
-			console.NewConfig(testruntime.NewClusterLogging(), "lokiService"))
+			console.NewConfig(testruntime.NewClusterLogging(), "lokiService", []string{}))
 		cleanup() // Clear out objects left behind by previous tests.
 	})
 
@@ -76,5 +79,22 @@ var _ = Describe("[ConsolePlugin]", func() {
 		runtime.Initialize(cp, cl.Namespace, "logging-view-plugin")
 		Eventually(func() error { return c.Get(cp) }, time.Minute, time.Second).Should(Succeed())
 		By("Got console plugin: " + test.JSONLine(cp))
+
+		Eventually(func() error {
+			pods := &corev1.PodList{}
+			selector := client.MatchingLabels{constants.LabelK8sName: console.Name}
+			if err := c.List(pods, selector, client.InNamespace(cl.GetNamespace())); err != nil {
+				return err
+			}
+			for _, pod := range pods.Items {
+				for _, cond := range pod.Status.Conditions {
+					if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
+						return nil
+					}
+				}
+			}
+			return fmt.Errorf("No pods found in ready condition")
+		},
+			time.Minute, time.Second).Should(Succeed())
 	})
 })

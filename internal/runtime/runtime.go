@@ -92,6 +92,10 @@ func Initialize(o runtime.Object, namespace, name string) {
 	m.SetNamespace(namespace)
 	m.SetName(name)
 	o.GetObjectKind().SetGroupVersionKind(GroupVersionKind(o))
+	m.SetLabels(map[string]string{
+		"pod-security.kubernetes.io/enforce":             "privileged",
+		"security.openshift.io/scc.podSecurityLabelSync": "false",
+	})
 }
 
 // ServiceDomainName returns "name.namespace.svc".

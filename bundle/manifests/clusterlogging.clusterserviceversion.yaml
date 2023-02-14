@@ -429,9 +429,12 @@ spec:
                 resources: {}
                 securityContext:
                   allowPrivilegeEscalation: false
+                  runAsNonRoot: true
                   capabilities:
                     drop:
                     - ALL
+                  seccompProfile:
+                    type: "RuntimeDefault"
               nodeSelector:
                 kubernetes.io/os: linux
               securityContext:

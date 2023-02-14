@@ -16,6 +16,9 @@ kind: ClusterRoleBinding
 metadata:
   creationTimestamp: null
   name: cluster-logging-metadata-reader
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    security.openshift.io/scc.podSecurityLabelSync: "false"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

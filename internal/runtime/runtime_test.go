@@ -42,13 +42,19 @@ var _ = Describe("Object", func() {
 	DescribeTable("New",
 		func(got, want Object) { Expect(got).To(EqualDiff(want)) },
 		Entry("NewNamespace", NewNamespace("foo"), &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-			TypeMeta:   metav1.TypeMeta{Kind: "Namespace", APIVersion: "v1"},
+			ObjectMeta: metav1.ObjectMeta{Name: "foo", Labels: map[string]string{
+				"pod-security.kubernetes.io/enforce":             "privileged",
+				"security.openshift.io/scc.podSecurityLabelSync": "false",
+			}},
+			TypeMeta: metav1.TypeMeta{Kind: "Namespace", APIVersion: "v1"},
 		}),
 		Entry("NewConfigMap", NewConfigMap("ns", "foo", nil), &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "ns"},
-			TypeMeta:   metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
-			Data:       map[string]string{},
+			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "ns", Labels: map[string]string{
+				"pod-security.kubernetes.io/enforce":             "privileged",
+				"security.openshift.io/scc.podSecurityLabelSync": "false",
+			}},
+			TypeMeta: metav1.TypeMeta{Kind: "ConfigMap", APIVersion: "v1"},
+			Data:     map[string]string{},
 		}),
 		Entry("NewServiceMonitor", NewServiceMonitor("ns", "foo"), &monitoringv1.ServiceMonitor{
 			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "ns"},

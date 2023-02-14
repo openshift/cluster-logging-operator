@@ -92,6 +92,22 @@ func (builder *ContainerBuilder) AddEnvVarFromFieldRef(name, fieldRef string) *C
 	return builder
 }
 
+func (builder *ContainerBuilder) WithPodSecurity() *ContainerBuilder {
+	builder.container.SecurityContext = &corev1.SecurityContext{
+		AllowPrivilegeEscalation: utils.GetBool(false),
+		RunAsNonRoot:             utils.GetBool(true),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{
+				"ALL",
+			},
+		},
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: "RuntimeDefault",
+		},
+	}
+	return builder
+}
+
 func (builder *ContainerBuilder) WithPrivilege() *ContainerBuilder {
 	builder.container.SecurityContext = &corev1.SecurityContext{
 		Privileged: utils.GetBool(true),

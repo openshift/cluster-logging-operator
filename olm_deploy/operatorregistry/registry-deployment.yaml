@@ -23,9 +23,12 @@ spec:
         imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
+          runAsNonRoot: true
           capabilities:
             drop:
               - ALL
+          seccompProfile:
+            type: "RuntimeDefault"
         command:
         - sh
         args:
@@ -53,9 +56,12 @@ spec:
         imagePullPolicy: Always
         securityContext:
           allowPrivilegeEscalation: false
+          runAsNonRoot: true
           capabilities:
             drop:
               - ALL
+          seccompProfile:
+            type: "RuntimeDefault"
         command:
         - /usr/bin/registry-server
         - --database=/bundle/bundles.db

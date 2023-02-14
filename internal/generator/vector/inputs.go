@@ -2,6 +2,7 @@ package vector
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"sort"
 	"strings"
 
@@ -96,7 +97,7 @@ func Inputs(spec *logging.ClusterLogForwarderSpec, o Options) []Element {
 				VRL: strings.Join(helpers.TrimSpaces([]string{
 					AddLogTypeAudit,
 					FixHostname,
-					FixTimestampField,
+					normalize.FixTimestampField,
 				}), "\n"),
 			})
 	}

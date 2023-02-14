@@ -103,7 +103,7 @@ glob_minimum_cooldown_ms = 15000
 # Logs from openshift audit
 [sources.raw_openshift_audit_logs]
 type = "file"
-include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 
@@ -163,7 +163,7 @@ glob_minimum_cooldown_ms = 15000
 # Logs from openshift audit
 [sources.raw_openshift_audit_logs]
 type = "file"
-include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log"]
+include = ["/var/log/oauth-apiserver/audit.log","/var/log/openshift-apiserver/audit.log","/var/log/oauth-server/audit.log"]
 host_key = "hostname"
 glob_minimum_cooldown_ms = 15000
 

@@ -2,13 +2,13 @@ package http
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/utils"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
@@ -181,22 +181,7 @@ func Headers(o logging.OutputSpec) Element {
 	if o.Http == nil || len(o.Http.Headers) == 0 {
 		return Nil
 	}
-	return KV("headers", ToHeaderStr(o.Http.Headers))
-}
-
-func ToHeaderStr(h map[string]string) string {
-	sortedKeys := make([]string, len(h))
-	i := 0
-	for k := range h {
-		sortedKeys[i] = k
-		i += 1
-	}
-	sort.Strings(sortedKeys)
-	hv := make([]string, len(h))
-	for i, k := range sortedKeys {
-		hv[i] = fmt.Sprintf("%q=%q", k, h[k])
-	}
-	return fmt.Sprintf("{%s}", strings.Join(hv, ","))
+	return KV("headers", utils.ToHeaderStr(o.Http.Headers, "%q=%q"))
 }
 
 func Encoding(o logging.OutputSpec) Element {

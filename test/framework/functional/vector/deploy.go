@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/client"
-	. "github.com/openshift/cluster-logging-operator/test/framework/functional/common"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional/common"
 )
 
 const entrypointScript = `#!/bin/bash
@@ -39,9 +39,10 @@ func (c *VectorCollector) DeployConfigMapForConfig(name, config, clfYaml string)
 }
 
 func (c *VectorCollector) BuildCollectorContainer(b *runtime.ContainerBuilder, nodeName string) *runtime.ContainerBuilder {
-	return b.AddEnvVar("VECTOR_LOG", AdaptLogLevel()).
+	return b.AddEnvVar("VECTOR_LOG", common.AdaptLogLevel()).
 		AddEnvVarFromFieldRef("POD_IP", "status.podIP").
 		AddEnvVar("NODE_NAME", nodeName).
+		AddEnvVar("VECTOR_INTERNAL_LOG_RATE_LIMIT", "0").
 		AddEnvVarFromFieldRef("VECTOR_SELF_NODE_NAME", "spec.nodeName").
 		AddVolumeMount("config", "/etc/vector", "", true).
 		AddVolumeMount("entrypoint", "/opt/app-root/src/run.sh", "run.sh", true).

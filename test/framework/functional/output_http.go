@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	"github.com/openshift/cluster-logging-operator/test/framework/functional/common"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 [sources.my_source]
 type = "http"
 address = "127.0.0.1:8090"
-encoding = "json"
+encoding = "ndjson"
 
 [sinks.my_sink]
 inputs = ["my_source"]
@@ -68,6 +69,8 @@ func (f *CollectorFunctionalFramework) AddVectorHttpOutput(b *runtime.PodBuilder
 	log.V(2).Info("Adding vector container", "name", name)
 	b.AddContainer(name, utils.GetComponentImage(constants.VectorName)).
 		AddVolumeMount(config.Name, "/tmp/config", "", false).
+		AddEnvVar("VECTOR_LOG", common.AdaptLogLevel()).
+		AddEnvVar("VECTOR_INTERNAL_LOG_RATE_LIMIT", "0").
 		WithCmd([]string{"vector", "--config-toml", "/tmp/config/vector.toml"}).
 		End().
 		AddConfigMapVolume(config.Name, config.Name)

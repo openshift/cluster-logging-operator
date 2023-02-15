@@ -248,6 +248,7 @@ test-functional: test-functional-benchmarker test-functional-fluentd test-functi
 .PHONY: test-functional-fluentd
 test-functional-fluentd:
 	RELATED_IMAGE_FLUENTD=$(IMAGE_LOGGING_FLUENTD) \
+	RELATED_IMAGE_VECTOR=$(IMAGE_LOGGING_VECTOR) \
 	RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER=$(IMAGE_LOGFILEMETRICEXPORTER) \
 	go test --tags=fluentd -race ./test/functional/... -ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 

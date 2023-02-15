@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/cloudwatch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/fluentdforward"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/http"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/kafka"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/syslog"
@@ -58,6 +59,8 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			outputs = MergeElements(outputs, syslog.Conf(bufspec, secret, o, op))
 		case logging.OutputTypeLoki:
 			outputs = MergeElements(outputs, loki.Conf(bufspec, secret, o, op))
+		case logging.OutputTypeHttp:
+			outputs = MergeElements(outputs, http.Conf(bufspec, secret, o, op))
 		}
 	}
 

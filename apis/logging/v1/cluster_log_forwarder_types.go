@@ -15,6 +15,7 @@ limitations under the License.
 package v1
 
 import (
+	openshiftv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/cluster-logging-operator/internal/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -62,6 +63,10 @@ type ClusterLogForwarderSpec struct {
 	//
 	// +optional
 	OutputDefaults *OutputDefaults `json:"outputDefaults,omitempty"`
+
+	// TLSSecurityProfile is the default for all external connections and listeners which overrides the cluster default.
+	// This setting is used unless one is defined for an output.  The output setting takes precedence
+	TLSSecurityProfile *openshiftv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 }
 
 // ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
@@ -236,6 +241,9 @@ type OutputTLSSpec struct {
 	//
 	// This option is *not* recommended for production configurations.
 	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
+
+	// TLSSecurityProfile is the security profile to apply to the output connection
+	TLSSecurityProfile *openshiftv1.TLSSecurityProfile `json:"securityProfile,omitempty"`
 }
 
 // OutputSecretSpec is a secret reference containing name only, no namespace.

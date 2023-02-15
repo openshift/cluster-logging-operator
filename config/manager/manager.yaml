@@ -27,9 +27,12 @@ spec:
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
+          runAsNonRoot: true
           capabilities:
             drop:
               - ALL
+          seccompProfile:
+            type: "RuntimeDefault"
         command:
           - cluster-logging-operator
         env:

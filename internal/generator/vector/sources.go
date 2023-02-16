@@ -109,6 +109,8 @@ func ExcludeContainerPaths(namespace string) string {
 			fmt.Sprintf("%q", fmt.Sprintf(ElasticSearchLogStoreLogsPath(namespace), constants.ElasticsearchName)),
 			fmt.Sprintf("%q", fmt.Sprintf(LokiLogStoreLogsPath(namespace), constants.LokiName)),
 			fmt.Sprintf("%q", fmt.Sprintf(VisualizationLogsPath(namespace), constants.KibanaName)),
+			fmt.Sprintf("%q", fmt.Sprintf("/var/log/pods/%s_*/%s/*.log", namespace, "gateway")),
+			fmt.Sprintf("%q", fmt.Sprintf("/var/log/pods/%s_*/%s/*.log", namespace, "opa")),
 			fmt.Sprintf("%q", "/var/log/pods/*/*/*.gz"),
 			fmt.Sprintf("%q", "/var/log/pods/*/*/*.tmp"),
 		},

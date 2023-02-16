@@ -3,6 +3,7 @@ package fluentd
 import (
 	. "github.com/openshift/cluster-logging-operator/test/framework/functional/common"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
+	"regexp"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -67,4 +68,24 @@ func (c *FluentdCollector) IsStarted(logs string) bool {
 
 func (c *FluentdCollector) Image() string {
 	return utils.GetComponentImage(constants.FluentdName)
+}
+
+const fakeJournal = `
+  <source>
+    @type tail
+    @id fake-journal
+    path /var/log/fakejournal/*.log
+    refresh_interval 5
+    tag journal
+    @label @INGRESS
+	<parse>
+      @type json
+    </parse>
+  </source>
+`
+
+func (c *FluentdCollector) ModifyConfig(conf string) string {
+	//remove journal for now since we can not mimic it
+	re := regexp.MustCompile(`(?msU).*<source>.*type.*systemd.*</source>`)
+	return string(re.ReplaceAll([]byte(conf), []byte(fakeJournal)))
 }

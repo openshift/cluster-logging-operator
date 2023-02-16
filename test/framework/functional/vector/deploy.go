@@ -1,6 +1,7 @@
 package vector
 
 import (
+	"regexp"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -55,4 +56,50 @@ func (c *VectorCollector) IsStarted(logs string) bool {
 
 func (c *VectorCollector) Image() string {
 	return utils.GetComponentImage(constants.VectorName)
+}
+
+const fakeJournal = `
+[sources.fake_raw_journal_logs]
+type = "file"
+include = ["/var/log/fakejournal/0.log"]
+host_key = "hostname"
+glob_minimum_cooldown_ms = 15000
+
+[transforms.parse_journal_message]
+type= "remap"
+inputs = ["fake_raw_journal_logs"]
+source = '''
+  content = parse_json!(.message)
+  .parsed = content
+'''
+
+[transforms.raw_journal_logs]
+type = "lua"
+inputs = ["parse_journal_message"]
+version = "2"
+hooks.process = "process"
+source = '''
+function process(event, emit)
+  if event.log.parsed ~= nil then
+    for k,v in pairs(event.log.parsed) do
+      event.log[k] = v
+    end
+    event.log.parsed = nil
+  end
+  event.log.host = event.log.hostname
+  event.log.hostname = nil
+  if event.log.MESSAGE ~= nil then
+    event.log.message = event.log.MESSAGE
+    event.log.MESSAGE = nil
+  end
+  emit(event)
+end
+'''
+
+`
+
+func (c *VectorCollector) ModifyConfig(conf string) string {
+	//remove journal for now since we can not mimic it
+	re := regexp.MustCompile(`(?msU)\[sources\.raw_journal_logs\].*^\n`)
+	return string(re.ReplaceAll([]byte(conf), []byte(fakeJournal)))
 }

@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	applicationLog     = "application"
-	auditLog           = "audit"
+	applicationLog     = logging.InputNameApplication
+	auditLog           = logging.InputNameAudit
 	ovnAuditLog        = "ovn"
 	k8sAuditLog        = "k8s"
-	infraLog           = "infra"
+	infraLog           = logging.InputNameInfrastructure
 	oauthAuditLog      = "oauth-audit-logs"
 	OpenshiftAuditLog  = "openshift-audit-logs"
 	ApplicationLogFile = "/tmp/app-logs"

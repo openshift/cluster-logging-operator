@@ -30,3 +30,16 @@ func TrimSpaces(in []string) []string {
 func FormatComponentID(name string) string {
 	return strings.ToLower(Replacer.Replace(name))
 }
+
+func FormatConf(conf string) string {
+	lines := strings.Split(conf, "\n")
+	for i, l := range lines {
+		trimmed := strings.TrimSpace(l)
+		trimmed = strings.ReplaceAll(trimmed, "\t", "  ")
+		if len(strings.TrimSpace(trimmed)) == 0 {
+			trimmed = ""
+		}
+		lines[i] = trimmed
+	}
+	return strings.Join(lines, "\n")
+}

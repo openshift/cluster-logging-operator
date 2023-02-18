@@ -41,6 +41,7 @@ ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 |outputDefaults|object|  *(optional)* DEPRECATED OutputDefaults specify forwarder config explicitly for the
 |outputs|array|  *(optional)* Outputs are named destinations for log messages.
 |pipelines|array|  Pipelines forward the messages selected by a set of inputs to a set of outputs.
+|tlsSecurityProfile|object|  TLSSecurityProfile is the default for all external connections and listeners which overrides the cluster default.
 |======================
 
 === .spec.inputs[]
@@ -182,7 +183,57 @@ OutputTLSSpec contains options for TLS connections that are agnostic to the outp
 |Property|Type|Description
 
 |insecureSkipVerify|bool|  If InsecureSkipVerify is true, then the TLS client will be configured to ignore errors with certificates.
+|securityProfile|object|  TLSSecurityProfile is the security profile to apply to the output connection
 |======================
+
+=== .spec.outputs[].tls.securityProfile
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|custom|object|  *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom
+|intermediate|object|  *(optional)* intermediate is a TLS security profile based on:
+|modern|object|  *(optional)* modern is a TLS security profile based on:
+|old|object|  *(optional)* old is a TLS security profile based on:
+|type|string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides
+|======================
+
+=== .spec.outputs[].tls.securityProfile.custom
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ciphers|array|  ciphers is used to specify the cipher algorithms that are negotiated
+|minTLSVersion|string|  minTLSVersion is used to specify the minimal version of the TLS protocol
+|======================
+
+=== .spec.outputs[].tls.securityProfile.intermediate
+===== Description
+
+=====  Type
+* object
+
+=== .spec.outputs[].tls.securityProfile.modern
+===== Description
+
+=====  Type
+* object
+
+=== .spec.outputs[].tls.securityProfile.old
+===== Description
+
+=====  Type
+* object
 
 === .spec.pipelines[]
 ===== Description
@@ -220,6 +271,55 @@ PipelinesSpec link a set of inputs to a set of outputs.
 
 =====  Type
 * array
+
+=== .spec.tlsSecurityProfile
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|custom|object|  *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom
+|intermediate|object|  *(optional)* intermediate is a TLS security profile based on:
+|modern|object|  *(optional)* modern is a TLS security profile based on:
+|old|object|  *(optional)* old is a TLS security profile based on:
+|type|string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides
+|======================
+
+=== .spec.tlsSecurityProfile.custom
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|ciphers|array|  ciphers is used to specify the cipher algorithms that are negotiated
+|minTLSVersion|string|  minTLSVersion is used to specify the minimal version of the TLS protocol
+|======================
+
+=== .spec.tlsSecurityProfile.intermediate
+===== Description
+
+=====  Type
+* object
+
+=== .spec.tlsSecurityProfile.modern
+===== Description
+
+=====  Type
+* object
+
+=== .spec.tlsSecurityProfile.old
+===== Description
+
+=====  Type
+* object
 
 === .status
 ===== Description

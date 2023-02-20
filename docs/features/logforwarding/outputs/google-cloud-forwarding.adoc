@@ -1,13 +1,15 @@
 
-### Steps to send logs to Google Cloud Logging
+=== Steps to send logs to Google Cloud Logging
 
- 1. Create a secret which contains google application credentials (the credentials which will be used to send logs to Google Cloud Logging)
-    ```
+. Create a secret which contains google application credentials (the credentials which will be used to send logs to Google Cloud Logging)
++
+----
     oc -n openshift-logging create secret generic gcp-secret --from-file=google-application-credentials.json
-    ```
-
-    Where `google-application-credentials.json` has following format
-    ```json
+----
++
+.Where `google-application-credentials.json` has following format
+[source,json]
+----
     {
       "type": "service_account",
       "project_id": "<gcp-project-id>",
@@ -20,16 +22,19 @@
       "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
       "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/aos-serviceaccount%40openshift-gce-devel.iam.gserviceaccount.com"
     }
+----
++
+Replace `project_id` and `private_key` with real values.
 
-    ```
-    Replace `project_id` and `private_key` with real values.
-
-2. Create a `Cluster Logging` instance with vector collector with following yaml.
-  ```
+. Create a `Cluster Logging` instance with vector collector with following yaml.
++
+----
   oc apply -f cluster-logging.yaml
-  ```
-cluster-logging.yaml:
-  ```yaml
+----
++
+.cluster-logging.yaml:
+[source,yaml]
+----
 apiVersion: "logging.openshift.io/v1"
 kind: "ClusterLogging"
 metadata:
@@ -41,16 +46,19 @@ spec:
     type: vector
   managementState: Managed
 
-  ```
+----
 
 
-3. Create a Cluster Log Forwarder instance with following yaml.
-
-  ```
+. Create a Cluster Log Forwarder instance with following yaml.
++
+----
   oc apply -f cluster-log-forwarder.yaml
-  ```
-cluster-log-forwarder.yaml
-  ```yaml
+----
++
+.cluster-log-forwarder.yaml
++
+[source,yaml]
+----
 apiVersion: "logging.openshift.io/v1"
 kind: "ClusterLogForwarder"
 metadata:
@@ -73,14 +81,17 @@ spec:
         - audit
       outputRefs:
         - gcp-1
-  ```
+----
 
-4. Login to google console and check logs
-
+. Login to google console and check logs
++
 set query as:
-```
++
+----
 logName="projects/openshift-gce-devel/logs/app-gcp"
-```
+----
++
 the log name should match `logId` set in Cluster Log Forwarder.
++
+image::logs-in-gcp.png[Logs in Google Cloud Logging]
 
-![Logs in Google Cloud Logging](./logs-in-gcp.png "logs in google cloud logging")

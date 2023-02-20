@@ -21,8 +21,9 @@ If you have questions, connect to the coreos.slack.com workspace on slack and ch
 * link:administration/unmanaged_configuration.md[Unmanaged Configurations for Cluster Logging]
 * link:administration/output_url_field.md[Using the clusterlogforwarder.output.url field]
 * link:contributing/how-to-add-new-output.md[How-to add a new output type]
-* link:docs/logforwarding/outputs/google-cloud-forwarding.md[Forward logs to Google Cloud Logging]
-* link:docs/logforwarding/outputs/splunk-forwarding.adoc[Forward logs to Splunk]
+* link:features/logforwarding/outputs/google-cloud-forwarding.adoc[Forward logs to Google Cloud Logging]
+* link:features/logforwarding/outputs/splunk-forwarding.adoc[Forward logs to Splunk]
+* link:features/logforwarding/outputs/send-logs-to-fluentd-http.adoc[Send logs to Fluentd over Http]
 
 == Relevant links
 

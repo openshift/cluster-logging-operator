@@ -61,8 +61,10 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 				return false, nil
 			}
 			namespaceLabels := map[string]string{
-				"foo":     "bar",
-				"foo.bar": "foobar",
+				"foo":                                "bar",
+				"foo.bar":                            "foobar",
+				"pod-security.kubernetes.io/enforce": "privileged",
+				"security.openshift.io/scc.podSecurityLabelSync": "false",
 			}
 			ns.Labels = namespaceLabels
 			if err := framework.Test.Client.Update(ns); err != nil {

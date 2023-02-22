@@ -3,10 +3,9 @@ package lokistack
 import (
 	"fmt"
 	"github.com/ViaQ/logerr/v2/kverrors"
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
-	"github.com/openshift/cluster-logging-operator/internal/visualization/console"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -153,8 +152,9 @@ func newLokiStackAppReaderClusterRoleBinding() *rbacv1.ClusterRoleBinding {
 	)
 }
 
-func ProcessForwarderPipelines(logStore *logging.LogStoreSpec, namespace string, inPipelines []loggingv1.PipelineSpec) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec) {
+func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace string, spec loggingv1.ClusterLogForwarderSpec, extras map[string]bool) ([]loggingv1.OutputSpec, []loggingv1.PipelineSpec, map[string]bool) {
 	needOutput := make(map[string]bool)
+	inPipelines := spec.Pipelines
 	pipelines := []loggingv1.PipelineSpec{}
 
 	for _, p := range inPipelines {
@@ -179,6 +179,8 @@ func ProcessForwarderPipelines(logStore *logging.LogStoreSpec, namespace string,
 				}
 
 				pOut.OutputRefs[i] = lokiStackOutput(input)
+				// For loki we don't want to set 'extras[constants.MigrateDefaultOutput] = true'
+				// we want 'default' output to fail per LOG-3437 since we did not create it
 			}
 
 			if pOut.Name != "" && i > 0 {
@@ -191,11 +193,16 @@ func ProcessForwarderPipelines(logStore *logging.LogStoreSpec, namespace string,
 	}
 
 	outputs := []loggingv1.OutputSpec{}
+	if spec.Outputs != nil {
+		outputs = spec.Outputs
+	}
+	// Now create output from each input
 	for input := range needOutput {
+		tenant := getInputTypeFromName(spec, input)
 		outputs = append(outputs, loggingv1.OutputSpec{
 			Name: lokiStackOutput(input),
 			Type: loggingv1.OutputTypeLoki,
-			URL:  LokiStackURL(logStore, namespace, input),
+			URL:  lokiStackURL(logStore, namespace, tenant),
 		})
 	}
 
@@ -204,18 +211,55 @@ func ProcessForwarderPipelines(logStore *logging.LogStoreSpec, namespace string,
 		return strings.Compare(outputs[i].Name, outputs[j].Name) < 0
 	})
 
-	return outputs, pipelines
+	return outputs, pipelines, extras
 }
 
-// LokiStackURL returns the URL of the LokiStack API for a specific tenant.
+func getInputTypeFromName(spec loggingv1.ClusterLogForwarderSpec, inputName string) string {
+	if loggingv1.ReservedInputNames.Has(inputName) {
+		// use name as type
+		return inputName
+	}
+
+	for _, input := range spec.Inputs {
+		if input.Name == inputName {
+			if input.Application != nil {
+				return loggingv1.InputNameApplication
+			}
+			if input.Infrastructure != nil {
+				return loggingv1.InputNameInfrastructure
+			}
+			if input.Audit != nil {
+				return loggingv1.InputNameAudit
+			}
+		}
+	}
+	log.V(3).Info("unable to get input type from name", "inputName", inputName)
+	return ""
+}
+
+// lokiStackURL returns the URL of the LokiStack API for a specific tenant.
 // Returns an empty string if ClusterLogging is not configured for a LokiStack log store.
-func LokiStackURL(logStore *logging.LogStoreSpec, namespace, tenant string) string {
-	service := console.LokiStackGatewayService(logStore)
+func lokiStackURL(logStore *loggingv1.LogStoreSpec, namespace, tenant string) string {
+	service := LokiStackGatewayService(logStore)
 	if service == "" {
+		return ""
+	}
+	if !loggingv1.ReservedInputNames.Has(tenant) {
+		log.V(3).Info("url tenant must be one of our reserved input names", "tenant", tenant)
 		return ""
 	}
 
 	return fmt.Sprintf("https://%s.%s.svc:8080/api/logs/v1/%s", service, namespace, tenant)
+}
+
+// LokiStackGatewayService returns the name of LokiStack gateway service.
+// Returns an empty string if ClusterLogging is not configured for a LokiStack log store.
+func LokiStackGatewayService(logStore *loggingv1.LogStoreSpec) string {
+	if logStore == nil || logStore.LokiStack.Name == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("%s-gateway-http", logStore.LokiStack.Name)
 }
 
 func lokiStackOutput(inputName string) string {
@@ -228,5 +272,5 @@ func lokiStackOutput(inputName string) string {
 		return loggingv1.OutputNameDefault + "-loki-audit"
 	}
 
-	return ""
+	return loggingv1.OutputNameDefault + "-" + inputName
 }

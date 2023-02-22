@@ -41,13 +41,24 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 		if result != "" && err == nil {
 			//var elasticResult ElasticSearchResult
 			var elasticResult map[string]interface{}
+			log.V(2).Info("results", "response", result)
 			err = json.Unmarshal([]byte(result), &elasticResult)
 			if err == nil {
 				if elasticResult["timed_out"] == false {
-					resultHits := elasticResult["hits"].(map[string]interface{})
-					total := resultHits["total"].(map[string]interface{})
-					if int(total["value"].(float64)) == 0 {
-						return false, nil
+					rawHits, ok := elasticResult["hits"]
+					if !ok {
+						return false, fmt.Errorf("No hits found")
+					}
+					resultHits := rawHits.(map[string]interface{})
+					total, ok := resultHits["total"].(map[string]interface{})
+					if ok {
+						if int(total["value"].(float64)) == 0 {
+							return false, nil
+						}
+					} else {
+						if resultHits["total"].(float64) == 0 {
+							return false, nil
+						}
 					}
 					hits := resultHits["hits"].([]interface{})
 					for i := 0; i < len(hits); i++ {

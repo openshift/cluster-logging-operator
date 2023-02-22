@@ -21,8 +21,6 @@ import (
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 	v1 "k8s.io/api/core/v1"
-
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 )
 
 var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch", func() {
@@ -47,17 +45,10 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			return nil
 		}
 
-		mountCloudwatchSecretVisitor = func(b *runtime.PodBuilder) error {
-			log.V(2).Info("Mounting cloudwatch secret to the collector container")
-			b.AddSecretVolume("cloudwatch", "cloudwatch").
-				GetContainer(constants.CollectorName).
-				AddVolumeMount("cloudwatch", "/var/run/ocp-collector/secrets/cloudwatch", "", true)
-			return nil
-		}
-
 		cwlClient *cloudwatchlogs.Client
 		service   *v1.Service
 		route     *openshiftv1.Route
+		secret    *v1.Secret
 	)
 
 	BeforeEach(func() {
@@ -69,7 +60,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			AddServicePort(5000, 5000).
 			WithSelector(map[string]string{"testname": "functional"})
 		if err := framework.Test.Client.Create(service); err != nil {
-			panic(err)
+			Fail(fmt.Sprintf("Unable to create service: %v", err))
 		}
 
 		log.V(2).Info("Creating route moto-server")
@@ -79,7 +70,7 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			InsecureEdgeTerminationPolicy: openshiftv1.InsecureEdgeTerminationPolicyNone,
 		}
 		if err := framework.Test.Client.Create(route); err != nil {
-			panic(err)
+			Fail(fmt.Sprintf("Unable to create route: %v", err))
 		}
 
 		cwlClient = cloudwatchlogs.NewFromConfig(
@@ -108,16 +99,12 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			})
 
 		log.V(2).Info("Creating secret cloudwatch with AWS example credentials")
-		secret := runtime.NewSecret(framework.Namespace, "cloudwatch",
+		secret = runtime.NewSecret(framework.Namespace, "cloudwatch",
 			map[string][]byte{
 				"aws_access_key_id":     []byte(awsAccessKeyID),
 				"aws_secret_access_key": []byte(awsSecretAccessKey),
 			},
 		)
-		if err := framework.Test.Client.Create(secret); err != nil {
-			panic(err)
-		}
-
 	})
 
 	AfterEach(func() {
@@ -129,10 +116,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToCloudwatchOutput()
-
+			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
 				addMotoContainerVisitor,
-				mountCloudwatchSecretVisitor,
 			})).To(BeNil())
 
 			Expect(framework.WritesNApplicationLogsOfSize(numOfLogs, logSize)).To(BeNil())
@@ -167,10 +153,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 					},
 				).
 				ToCloudwatchOutput()
-
+			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
 				addMotoContainerVisitor,
-				mountCloudwatchSecretVisitor,
 			})).To(BeNil())
 
 			// Write logs
@@ -198,10 +183,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				WithMultineErrorDetection().
 				ToCloudwatchOutput()
 			framework.VisitConfig = functional.TestAPIAdapterConfigVisitor
-
+			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
 				addMotoContainerVisitor,
-				mountCloudwatchSecretVisitor,
 			})).To(BeNil())
 
 			exception := `java.lang.NullPointerException: Cannot invoke "String.toString()" because "<parameter1>" is null
@@ -245,10 +229,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 				ToCloudwatchOutput().
 				FromInput(logging.InputNameInfrastructure).
 				ToCloudwatchOutput()
-
+			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
 				addMotoContainerVisitor,
-				mountCloudwatchSecretVisitor,
 			})).To(BeNil())
 
 			// Write audit logs
@@ -292,10 +275,9 @@ var _ = Describe("[Functional][Outputs][CloudWatch] Forward Output to CloudWatch
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameAudit).
 				ToCloudwatchOutput()
-
+			framework.Secrets = append(framework.Secrets, secret)
 			Expect(framework.DeployWithVisitors([]runtime.PodBuilderVisitor{
 				addMotoContainerVisitor,
-				mountCloudwatchSecretVisitor,
 			})).To(BeNil())
 
 			// Write audit logs

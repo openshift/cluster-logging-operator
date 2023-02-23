@@ -20,12 +20,12 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeclock "k8s.io/apimachinery/pkg/util/clock"
+	kubeclock "k8s.io/utils/clock"
 )
 
 // clock is used to set status condition timestamps.
 // This variable makes it easier to test conditions.
-var clock kubeclock.Clock = &kubeclock.RealClock{}
+var clock kubeclock.WithTickerAndDelayedExecution = &kubeclock.RealClock{}
 
 // ConditionType is the type of the condition and is typically a CamelCased
 // word or short phrase.

@@ -42,7 +42,7 @@ You can modify:
 * The image name/tag for the operator image (the bundle will have the same name with "-bundle" added)
 * The image names/tags for related images used by the operator
 
-See [../config/overlays/README.md](../config/overlays/README.md) for instructions to create your overlay.
+See [../config/overlays/README.md](../../config/overlays/README.md) for instructions to create your overlay.
 
 ### Build and push operator and bundle images
 

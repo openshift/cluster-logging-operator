@@ -1,4 +1,4 @@
-# Auto generated binary variables helper managed by https://github.com/bwplotka/bingo v0.4.0. DO NOT EDIT.
+# Auto generated binary variables helper managed by https://github.com/bwplotka/bingo v0.7. DO NOT EDIT.
 # All tools are designed to be build inside $GOBIN.
 BINGO_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 GOPATH ?= $(shell go env GOPATH)
@@ -21,41 +21,47 @@ BINGO := $(GOBIN)/bingo-v0.6.0
 $(BINGO): $(BINGO_DIR)/bingo.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
 	@echo "(re)installing $(GOBIN)/bingo-v0.6.0"
-	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=bingo.mod -o=$(GOBIN)/bingo-v0.6.0 "github.com/bwplotka/bingo"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=bingo.mod -o=$(GOBIN)/bingo-v0.6.0 "github.com/bwplotka/bingo"
 
 CONTROLLER_GEN := $(GOBIN)/controller-gen-v0.8.0
 $(CONTROLLER_GEN): $(BINGO_DIR)/controller-gen.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
 	@echo "(re)installing $(GOBIN)/controller-gen-v0.8.0"
-	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=controller-gen.mod -o=$(GOBIN)/controller-gen-v0.8.0 "sigs.k8s.io/controller-tools/cmd/controller-gen"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=controller-gen.mod -o=$(GOBIN)/controller-gen-v0.8.0 "sigs.k8s.io/controller-tools/cmd/controller-gen"
+
+GEN_CRD_API_REFERENCE_DOCS := $(GOBIN)/gen-crd-api-reference-docs-v0.0.5
+$(GEN_CRD_API_REFERENCE_DOCS): $(BINGO_DIR)/gen-crd-api-reference-docs.mod
+	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
+	@echo "(re)installing $(GOBIN)/gen-crd-api-reference-docs-v0.0.5"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=gen-crd-api-reference-docs.mod -o=$(GOBIN)/gen-crd-api-reference-docs-v0.0.5 "github.com/ViaQ/gen-crd-api-reference-docs"
 
 GOLANGCI_LINT := $(GOBIN)/golangci-lint-v1.45.0
 $(GOLANGCI_LINT): $(BINGO_DIR)/golangci-lint.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
 	@echo "(re)installing $(GOBIN)/golangci-lint-v1.45.0"
-	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=golangci-lint.mod -o=$(GOBIN)/golangci-lint-v1.45.0 "github.com/golangci/golangci-lint/cmd/golangci-lint"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=golangci-lint.mod -o=$(GOBIN)/golangci-lint-v1.45.0 "github.com/golangci/golangci-lint/cmd/golangci-lint"
 
 JUNITREPORT := $(GOBIN)/junitreport-v0.0.0-20220531132329-92dee95b5da2
 $(JUNITREPORT): $(BINGO_DIR)/junitreport.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
 	@echo "(re)installing $(GOBIN)/junitreport-v0.0.0-20220531132329-92dee95b5da2"
-	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=junitreport.mod -o=$(GOBIN)/junitreport-v0.0.0-20220531132329-92dee95b5da2 "github.com/openshift/release/tools/junitreport"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=junitreport.mod -o=$(GOBIN)/junitreport-v0.0.0-20220531132329-92dee95b5da2 "github.com/openshift/release/tools/junitreport"
 
 KUSTOMIZE := $(GOBIN)/kustomize-v3.8.7
 $(KUSTOMIZE): $(BINGO_DIR)/kustomize.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
 	@echo "(re)installing $(GOBIN)/kustomize-v3.8.7"
-	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=kustomize.mod -o=$(GOBIN)/kustomize-v3.8.7 "sigs.k8s.io/kustomize/kustomize/v3"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=kustomize.mod -o=$(GOBIN)/kustomize-v3.8.7 "sigs.k8s.io/kustomize/kustomize/v3"
 
 OPERATOR_SDK := $(GOBIN)/operator-sdk-v1.22.2
 $(OPERATOR_SDK): $(BINGO_DIR)/operator-sdk.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
 	@echo "(re)installing $(GOBIN)/operator-sdk-v1.22.2"
-	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=operator-sdk.mod -o=$(GOBIN)/operator-sdk-v1.22.2 "github.com/operator-framework/operator-sdk/cmd/operator-sdk"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=operator-sdk.mod -o=$(GOBIN)/operator-sdk-v1.22.2 "github.com/operator-framework/operator-sdk/cmd/operator-sdk"
 
 OPM := $(GOBIN)/opm-v1.17.5
 $(OPM): $(BINGO_DIR)/opm.mod
 	@# Install binary/ries using Go 1.14+ build command. This is using bwplotka/bingo-controlled, separate go module with pinned dependencies.
 	@echo "(re)installing $(GOBIN)/opm-v1.17.5"
-	@cd $(BINGO_DIR) && $(GO) build -mod=mod -modfile=opm.mod -o=$(GOBIN)/opm-v1.17.5 "github.com/operator-framework/operator-registry/cmd/opm"
+	@cd $(BINGO_DIR) && GOWORK=off $(GO) build -mod=mod -modfile=opm.mod -o=$(GOBIN)/opm-v1.17.5 "github.com/operator-framework/operator-registry/cmd/opm"
 

@@ -4,8 +4,8 @@ import (
 	"reflect"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 )
 
 // AreSame compares for equality and return true equal otherwise false

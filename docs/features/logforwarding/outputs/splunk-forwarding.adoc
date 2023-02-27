@@ -1,0 +1,59 @@
+=== Steps to forward to Splunk HTTP Event Collector (HEC)
+
+(https://dev.splunk.com/enterprise/docs/devtools/httpeventcollector/)
+
+. Create a secret containing your `hecToken` using the following command:
++
+----
+ oc create secret generic splunk-secret -n openshift-logging --from-literal=hecToken='<hec_token_here>'
+----
+
+. Create a Cluster Logging instance with collection `type: vector`:
++
+----
+ oc apply -f cluster-logging.yaml
+----
++
+.cluster-logging.yaml
+[source,yaml]
+----
+kind: ClusterLogging
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  collection:
+    type: vector
+----
+
+. Create a Cluster Log Forwarder instance by specifying your `url` and the `secret` name:
++
+----
+ oc apply -f cluster-log-forwarder.yaml
+----
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: splunk-receiver
+      type: splunk
+      secret:
+        name: splunk-secret
+      url: 'http://example-splunk-hec-service:8088'
+  pipelines:
+    - name: my-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - splunk-receiver
+----
++

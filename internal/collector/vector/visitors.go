@@ -14,7 +14,7 @@ const (
 
 func CollectorVisitor(collectorContainer *corev1.Container, podSpec *corev1.PodSpec) {
 	collectorContainer.Env = append(collectorContainer.Env,
-		corev1.EnvVar{Name: "VECTOR_LOG", Value: "info"},
+		corev1.EnvVar{Name: "VECTOR_LOG", Value: "WARN"},
 		corev1.EnvVar{
 			Name: "VECTOR_SELF_NODE_NAME",
 			ValueFrom: &corev1.EnvVarSource{

@@ -28,7 +28,6 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	configv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
@@ -39,6 +38,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -192,7 +192,7 @@ func migrateManifestResources(k8sClient client.Client) {
 //	return ns, nil
 //}
 
-//get clo operator version from CLUSTER_OPERATOR_CONDITION ENV variable .. supported OCP 4.8 version onwards
+// get clo operator version from CLUSTER_OPERATOR_CONDITION ENV variable .. supported OCP 4.8 version onwards
 func getCLOVersion() (string, error) {
 	CLOVersionEnvVar := "OPERATOR_CONDITION_NAME"
 	cloversion, found := os.LookupEnv(CLOVersionEnvVar)

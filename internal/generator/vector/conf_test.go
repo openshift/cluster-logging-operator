@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/test/matchers"
 
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
@@ -26,7 +27,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		f = func(testcase testhelpers.ConfGenerateTest) {
 			g := generator.MakeGenerator()
 			if testcase.Options == nil {
-				testcase.Options = generator.Options{}
+				testcase.Options = generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)}
 			}
 			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, testcase.Options))
 			conf, err := g.GenerateConf(e...)
@@ -412,6 +413,8 @@ default_namespace = "collector"
 enabled = true
 key_file = "/etc/collector/metrics/tls.key"
 crt_file = "/etc/collector/metrics/tls.crt"
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 `,
 		}),
 		Entry("with complex spec for elasticsearch, without version specified", testhelpers.ConfGenerateTest{
@@ -462,6 +465,7 @@ crt_file = "/etc/collector/metrics/tls.crt"
 					},
 				},
 			},
+			Options: generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)},
 			ExpectedConf: `
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
@@ -990,6 +994,8 @@ default_namespace = "collector"
 enabled = true
 key_file = "/etc/collector/metrics/tls.key"
 crt_file = "/etc/collector/metrics/tls.crt"
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 `,
 		}),
 		Entry("with complex spec for elasticsearch default v6 & latest version", testhelpers.ConfGenerateTest{
@@ -1586,6 +1592,8 @@ default_namespace = "collector"
 enabled = true
 key_file = "/etc/collector/metrics/tls.key"
 crt_file = "/etc/collector/metrics/tls.crt"
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 `,
 		}),
 	)

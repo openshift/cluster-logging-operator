@@ -1,21 +1,24 @@
 package collector
 
 import (
+	"path"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
-	"path"
 
 	"fmt"
+	"os"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/collector/fluentd"
 	vector "github.com/openshift/cluster-logging-operator/internal/collector/vector"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 )
 
 var _ = Describe("Factory#NewPodSpec", func() {
@@ -31,7 +34,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 			ImageName:     constants.FluentdName,
 			Visit:         fluentd.CollectorVisitor,
 		}
-		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "")
+		podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetTLSProfileSpec(nil))
 		collector = podSpec.Containers[0]
 	})
 	Describe("when creating of the collector container", func() {
@@ -80,7 +83,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 						},
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "")
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetTLSProfileSpec(nil))
 				expTolerations := append(defaultTolerations, providedToleration)
 				Expect(podSpec.Tolerations).To(Equal(expTolerations))
 			})
@@ -104,7 +107,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 						},
 					},
 				}
-				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "")
+				podSpec = *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetTLSProfileSpec(nil))
 				Expect(podSpec.NodeSelector).To(Equal(expSelector))
 			})
 
@@ -170,7 +173,7 @@ var _ = Describe("Factory#NewPodSpec", func() {
 					Data: map[string]string{
 						constants.TrustedCABundleKey: caBundle,
 					},
-				}, logging.ClusterLogForwarderSpec{}, "1234", "")
+				}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetTLSProfileSpec(nil))
 				collector = podSpec.Containers[0]
 
 				verifyEnvVar(collector, "HTTP_PROXY", httpproxy)
@@ -313,7 +316,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
 				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
 					Outputs:   outputs,
 					Pipelines: pipelines,
-				}, "1234", "")
+				}, "1234", "", tls.GetTLSProfileSpec(nil))
 				collector := podSpec.Containers[0]
 
 				verifyEnvVar(collector, constants.AWSRegionEnvVarKey, outputs[0].OutputTypeSpec.Cloudwatch.Region)
@@ -336,7 +339,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
 				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
 					Outputs:   outputs,
 					Pipelines: pipelines,
-				}, "1234", "")
+				}, "1234", "", tls.GetTLSProfileSpec(nil))
 				collector := podSpec.Containers[0]
 
 				verifyEnvVar(collector, constants.AWSRegionEnvVarKey, outputs[0].OutputTypeSpec.Cloudwatch.Region)
@@ -362,7 +365,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
 				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
 					Outputs:   outputs,
 					Pipelines: pipelines,
-				}, "1234", "")
+				}, "1234", "", tls.GetTLSProfileSpec(nil))
 				collector := podSpec.Containers[0]
 
 				verifyEnvVar(collector, constants.AWSRegionEnvVarKey, outputs[0].OutputTypeSpec.Cloudwatch.Region)
@@ -385,7 +388,7 @@ var _ = Describe("Factory#NewPodSpec Add Cloudwatch Resources", func() {
 				podSpec := *factory.NewPodSpec(nil, logging.ClusterLogForwarderSpec{
 					Outputs:   outputs,
 					Pipelines: pipelines,
-				}, "1234", "")
+				}, "1234", "", tls.GetTLSProfileSpec(nil))
 				collector := podSpec.Containers[0]
 
 				verifyEnvVar(collector, constants.AWSRegionEnvVarKey, outputs[0].OutputTypeSpec.Cloudwatch.Region)

@@ -3,8 +3,10 @@ package fluentd
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	testhelpers "github.com/openshift/cluster-logging-operator/test/helpers"
@@ -22,7 +24,7 @@ import (
 var _ = Describe("Testing Complete Config Generation", func() {
 	var f = func(testcase testhelpers.ConfGenerateTest) {
 		g := generator.MakeGenerator()
-		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, generator.NoOptions))
+		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)}))
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
 		diff := cmp.Diff(
@@ -95,6 +97,9 @@ var _ = Describe("Testing Complete Config Generation", func() {
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
+    min_version TLS1_2
+    max_version TLS1_3
+    ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
   </transport>
 </source>
 

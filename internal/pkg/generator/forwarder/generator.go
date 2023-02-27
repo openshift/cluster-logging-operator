@@ -15,6 +15,7 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 )
 
 const (
@@ -75,6 +76,7 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	if debugOutput {
 		op[helpers.EnableDebugOutput] = ""
 	}
+	op[generator.TlsProfileSpec] = tls.GetTLSProfileSpec(nil)
 	configGenerator := forwardergenerator.New(collectionType)
 	if configGenerator == nil {
 		return "", errors.New("unsupported collector implementation")

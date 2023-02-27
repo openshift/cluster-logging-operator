@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +19,7 @@ var _ = Describe("Generating fluentd config", func() {
 	var (
 		forwarder  *logging.ClusterLogForwarderSpec
 		g          generator.Generator
-		op         generator.Options
+		op         generator.Options = generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)}
 		secret     corev1.Secret
 		secretData = map[string][]byte{
 			"tls.key":       []byte("test-key"),
@@ -54,7 +55,7 @@ var _ = Describe("Generating fluentd config", func() {
 	)
 	BeforeEach(func() {
 		g = generator.MakeGenerator()
-		op = generator.NoOptions
+		op = generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)}
 		forwarder = &logging.ClusterLogForwarderSpec{
 			Outputs: []logging.OutputSpec{
 				{
@@ -205,6 +206,9 @@ var _ = Describe("Generating fluentd config", func() {
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
+    min_version TLS1_2
+    max_version TLS1_3
+    ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
   </transport>
 </source>
 
@@ -954,6 +958,9 @@ var _ = Describe("Generating fluentd config", func() {
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
+    min_version TLS1_2
+    max_version TLS1_3
+    ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
   </transport>
 </source>
 
@@ -1688,6 +1695,9 @@ var _ = Describe("Generating fluentd config", func() {
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
+    min_version TLS1_2
+    max_version TLS1_3
+    ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
   </transport>
 </source>
 
@@ -2367,6 +2377,9 @@ var _ = Describe("Generating fluentd config", func() {
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
+    min_version TLS1_2
+    max_version TLS1_3
+    ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
   </transport>
 </source>
 
@@ -2724,6 +2737,9 @@ var _ = Describe("Generating fluentd config", func() {
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
+    min_version TLS1_2
+    max_version TLS1_3
+    ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
   </transport>
 </source>
 
@@ -3833,7 +3849,7 @@ var _ = Describe("Generating fluentd config", func() {
 			var spec logging.ClusterLogForwarderSpec
 			Expect(yaml.Unmarshal([]byte(yamlSpec), &spec)).To(Succeed())
 			g := generator.MakeGenerator()
-			s := Conf(nil, security.NoSecrets, &spec, constants.OpenshiftNS, generator.NoOptions)
+			s := Conf(nil, security.NoSecrets, &spec, constants.OpenshiftNS, op)
 			gotFluentdConf, err := g.GenerateConf(generator.MergeSections(s)...)
 			Expect(err).To(Succeed())
 			Expect(gotFluentdConf).To(EqualTrimLines(wantFluentdConf))
@@ -3867,6 +3883,9 @@ inputs:
   <transport tls>
     cert_path /etc/collector/metrics/tls.crt
     private_key_path /etc/collector/metrics/tls.key
+    min_version TLS1_2
+    max_version TLS1_3
+    ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384
   </transport>
 </source>
 

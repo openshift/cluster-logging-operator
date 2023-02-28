@@ -3,12 +3,14 @@ package syslog
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"strings"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 )
 
 var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
@@ -18,7 +20,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 
 	})
 	AfterEach(func() {
@@ -66,7 +68,7 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 				}), logging.OutputTypeSyslog)
 			Expect(framework.Deploy()).To(BeNil())
 
-			var MaxLen int = 40000
+			var MaxLen int = 30000
 			Expect(framework.WritesNApplicationLogsOfSize(1, MaxLen)).To(BeNil())
 			// Read line from Syslog output
 			outputlogs, err := framework.ReadRawApplicationLogsFrom(logging.OutputTypeSyslog)
@@ -128,6 +130,9 @@ var _ = Describe("[Functional][Outputs][Syslog] Functional tests", func() {
 			Expect(getMsgID(fields)).To(Equal("rec_msgid"))
 		})
 		It("should take values from fluent tag", func() {
+			if testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
+				Skip("Test requires fluentd")
+			}
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInput(logging.InputNameApplication).
 				ToOutputWithVisitor(join(setSyslogSpecValues, func(spec *logging.OutputSpec) {

@@ -2,14 +2,16 @@ package syslog
 
 import (
 	"fmt"
+	"strings"
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/framework/e2e"
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
-	"strings"
-	"time"
+	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 )
 
 var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
@@ -20,14 +22,17 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 	)
 
 	BeforeEach(func() {
-		framework = functional.NewCollectorFunctionalFramework()
+		framework = functional.NewCollectorFunctionalFrameworkUsingCollector(testfw.LogCollectionType)
 		framework.MaxReadDuration = &maxReadDuration
 	})
 
 	AfterEach(func() {
 		framework.Cleanup()
 	})
-	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, expInfo string) {
+	DescribeTable("logforwarder configured with appname, msgid, and procid", func(appName, msgId, procId, expInfo string, requiresFluentd bool) {
+		if requiresFluentd && testfw.LogCollectionType != logging.LogCollectionTypeFluentd {
+			Skip("Test requires fluentd")
+		}
 		functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication).
 			ToOutputWithVisitor(func(spec *logging.OutputSpec) {
@@ -37,6 +42,7 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 				spec.Syslog.ProcID = procId
 				spec.Syslog.MsgID = msgId
 				spec.Syslog.RFC = e2e.RFC5424.String()
+				spec.Syslog.PayloadKey = "message"
 			}, logging.OutputTypeSyslog)
 		Expect(framework.Deploy()).To(BeNil())
 
@@ -49,12 +55,12 @@ var _ = Describe("[Functional][Outputs][Syslog] RFC5424 tests", func() {
 		Expect(outputlogs).To(HaveLen(1), "Expected the receiver to receive the message")
 		expMatch := fmt.Sprintf(`( %s )`, expInfo)
 		Expect(outputlogs[0]).To(MatchRegexp(expMatch), "Exp to match the appname/procid/msgid in received message")
-		Expect(outputlogs[0]).To(MatchRegexp(fmt.Sprintf(`"message":%s`, record)), "Exp to find the original message in received message")
+		Expect(outputlogs[0]).To(MatchRegexp(record), "Exp to find the original message in received message")
 	},
 
-		Entry("should use the value from the record and include the message", "$.message.appname_key", "$.message.msgid_key", "$.message.procid_key", "rec_appname rec_procid rec_msgid"),
-		Entry("should use the value from the complete tag and include the message", "tag", "mymsg", "myproc", `kubernetes\.var\.log.pods\..*myproc mymsg`),
-		Entry("should use values from parts of the tag and include the message", "${tag[0]}#${tag[-2]}", "mymsg", "myproc", `kubernetes#.*myproc mymsg`),
+		Entry("should use the value from the record and include the message", "$.message.appname_key", "$.message.msgid_key", "$.message.procid_key", "rec_appname rec_procid rec_msgid", false),
+		Entry("should use the value from the complete tag and include the message", "tag", "mymsg", "myproc", `kubernetes\.var\.log.pods\..*myproc mymsg`, true),
+		Entry("should use values from parts of the tag and include the message", "${tag[0]}#${tag[-2]}", "mymsg", "myproc", `kubernetes#.*myproc mymsg`, true),
 	)
 	Describe("configured with values for facility,severity", func() {
 		It("should use values from the record", func() {

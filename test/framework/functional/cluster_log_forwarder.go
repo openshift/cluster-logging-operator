@@ -3,6 +3,7 @@ package functional
 import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -73,6 +74,14 @@ func (p *PipelineBuilder) ToElasticSearchOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeElasticsearch)
 }
 
+func (p *PipelineBuilder) ToElasticSearchOutputWithSecret(secret *corev1.Secret) *ClusterLogForwarderBuilder {
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {
+		if secret != nil {
+			output.Secret.Name = secret.Name
+		}
+	}, logging.OutputTypeElasticsearch)
+}
+
 func (p *PipelineBuilder) ToSyslogOutput() *ClusterLogForwarderBuilder {
 	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeSyslog)
 }
@@ -82,7 +91,18 @@ func (p *PipelineBuilder) ToCloudwatchOutput() *ClusterLogForwarderBuilder {
 }
 
 func (p *PipelineBuilder) ToKafkaOutput() *ClusterLogForwarderBuilder {
-	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {}, logging.OutputTypeKafka)
+	return p.ToOutputWithVisitor(func(output *logging.OutputSpec) {
+		output.Type = logging.OutputTypeKafka
+		output.URL = "https://localhost:9093"
+		output.OutputTypeSpec = logging.OutputTypeSpec{
+			Kafka: &logging.Kafka{
+				Topic: kafka.AppLogsTopic,
+			},
+		}
+		output.Secret = &logging.OutputSecretSpec{
+			Name: "kafka",
+		}
+	}, logging.OutputTypeKafka)
 }
 
 func (p *PipelineBuilder) ToHttpOutput() *ClusterLogForwarderBuilder {
@@ -135,20 +155,6 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 				},
 				Secret: &logging.OutputSecretSpec{
 					Name: "cloudwatch",
-				},
-			}
-		case logging.OutputTypeKafka:
-			output = &logging.OutputSpec{
-				Name: logging.OutputTypeKafka,
-				Type: logging.OutputTypeKafka,
-				URL:  "https://localhost:9093",
-				Secret: &logging.OutputSecretSpec{
-					Name: "kafka",
-				},
-				OutputTypeSpec: logging.OutputTypeSpec{
-					Kafka: &logging.Kafka{
-						Topic: kafka.AppLogsTopic,
-					},
 				},
 			}
 		case logging.OutputTypeHttp:

@@ -42,7 +42,9 @@ func NewTest(testOptions ...TestOption) *Test {
 		Client: Get(),
 		NS:     runtime.NewNamespace(ns),
 	}
-	test.Must(t.Create(t.NS))
+	if !TestOptions(testOptions).Include(DryRunTestOption) {
+		test.Must(t.Create(t.NS))
+	}
 	if _, ok := test.GinkgoCurrentTest(); ok {
 		fmt.Fprintf(ginkgo.GinkgoWriter, "test namespace: %v\n", t.NS.Name)
 	}
@@ -63,8 +65,13 @@ func (options TestOptions) Include(option TestOption) bool {
 	return false
 }
 
-// UseInfraNamespaceTestOption is the option to hint the test should be run in an infrastructure namespace
-const UseInfraNamespaceTestOption TestOption = "useInfraNamespace"
+const (
+	//UseInfraNamespaceTestOption is the option to hint the test should be run in an infrastructure namespace
+	UseInfraNamespaceTestOption TestOption = "useInfraNamespace"
+
+	//DryRunTestOption is a hint to use in testing to not actually create resources against cluster (e.g. unit tests)
+	DryRunTestOption TestOption = "dryRun"
+)
 
 // NamespaceClient wraps the singleton test client for use with hack testing
 type NamespaceClient struct {

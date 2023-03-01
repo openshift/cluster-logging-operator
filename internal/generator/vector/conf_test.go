@@ -1031,7 +1031,7 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 						URL:  "https://es-2.svc.messaging.cluster.local:9200",
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								Version: logging.LatestESVersion,
+								Version: logging.FirstESVersionWithoutType,
 							},
 						},
 						Secret: &logging.OutputSecretSpec{

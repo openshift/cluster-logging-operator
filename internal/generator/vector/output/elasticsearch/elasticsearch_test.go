@@ -1764,7 +1764,7 @@ id_key = "_id"
 						URL:  "http://es.svc.infra.cluster:9200",
 						OutputTypeSpec: logging.OutputTypeSpec{
 							Elasticsearch: &logging.Elasticsearch{
-								Version: logging.LatestESVersion + 1,
+								Version: logging.FirstESVersionWithoutType + 1,
 							},
 						},
 						Secret: nil,

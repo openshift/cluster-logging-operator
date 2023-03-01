@@ -2,6 +2,9 @@ package functional
 
 import (
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/collector"
+	"github.com/openshift/cluster-logging-operator/test"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"os"
 	"strconv"
 	"strings"
@@ -23,7 +26,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
-	"github.com/openshift/cluster-logging-operator/test"
 	"github.com/openshift/cluster-logging-operator/test/client"
 	frameworkfluent "github.com/openshift/cluster-logging-operator/test/framework/functional/fluentd"
 	frameworkvector "github.com/openshift/cluster-logging-operator/test/framework/functional/vector"
@@ -32,8 +34,6 @@ import (
 	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
-
-type receiverBuilder func(f *CollectorFunctionalFramework, b *runtime.PodBuilder, output logging.OutputSpec) error
 
 var TestAPIAdapterConfigVisitor = func(conf string) string {
 	conf = strings.Replace(conf, "@type kubernetes_metadata", "@type kubernetes_metadata\ntest_api_adapter  KubernetesMetadata::TestApiAdapter\n", 1)
@@ -60,11 +60,13 @@ type CollectorFunctionalFramework struct {
 	Test              *client.Test
 	Pod               *corev1.Pod
 	fluentContainerId string
-	receiverBuilders  []receiverBuilder
 	closeClient       func()
 
+	//Secrets associated with outputs to mount into the collector podspec
+	Secrets []*corev1.Secret
+
 	collector CollectorFramework
-	//VisitConfig allows the framework to modify the config after generating from logforwardering
+	//VisitConfig allows the Framework to modify the config after generating from logforwardering
 	VisitConfig func(string) string
 
 	//MaxReadDuration is the max duration to wait to read logs from the receiver
@@ -100,7 +102,7 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 		}
 	}
 
-	log.SetLogger(logger.NewLogger("functional-framework", logger.WithVerbosity(verbosity)))
+	log.SetLogger(logger.NewLogger("functional-Framework", logger.WithVerbosity(verbosity)))
 
 	log.Info("Using collector", "impl", collectorImpl.String())
 
@@ -113,11 +115,10 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 			"testtype": "functional",
 			"testname": testName,
 		},
-		Test:             t,
-		Forwarder:        testruntime.NewClusterLogForwarder(),
-		receiverBuilders: []receiverBuilder{},
-		closeClient:      fnClose,
-		collector:        collectorImpl,
+		Test:        t,
+		Forwarder:   testruntime.NewClusterLogForwarder(),
+		closeClient: fnClose,
+		collector:   collectorImpl,
 	}
 	framework.Forwarder.SetNamespace(t.NS.Name)
 	return framework
@@ -174,6 +175,9 @@ func (f *CollectorFunctionalFramework) DeployWithVisitor(visitor runtime.PodBuil
 
 // Deploy the objects needed to functional Test
 func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.PodBuilderVisitor) (err error) {
+	if err := f.deploySecrets(); err != nil {
+		return err
+	}
 	log.V(2).Info("Generating config", "forwarder", f.Forwarder)
 	clfYaml, _ := yaml.Marshal(f.Forwarder)
 	debugOutput := false
@@ -262,13 +266,17 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		b.AddContainer(constants.CollectorName, f.image).
 			AddEnvVar("OPENSHIFT_CLUSTER_ID", f.Name).
 			AddEnvVarFromFieldRef("POD_IPS", "status.podIPs").
-			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).End()
+			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).
+		End()
 
 	for _, visit := range visitors {
 		if err = visit(b); err != nil {
 			return err
 		}
 	}
+	addSecretVolumeMountsToCollector(&f.Pod.Spec, f.Secrets)
+	collector.AddSecretVolumes(&f.Pod.Spec, f.Forwarder.Spec)
+
 	log.V(2).Info("Creating pod", "pod", f.Pod)
 	if err = f.Test.Client.Create(f.Pod); err != nil {
 		return err
@@ -325,6 +333,34 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		if cs.Name == constants.CollectorName {
 			f.fluentContainerId = strings.TrimPrefix(cs.ContainerID, "cri-o://")
 			break
+		}
+	}
+	return nil
+}
+
+func addSecretVolumeMountsToCollector(podSpec *corev1.PodSpec, secrets []*corev1.Secret) {
+	log.V(3).Info("#addSecretVolumeMountsToCollector", "containers", podSpec.Containers)
+	names := sets.NewString()
+	for _, s := range secrets {
+		names.Insert(s.Name)
+	}
+	containers := []corev1.Container{}
+	for i := range podSpec.Containers {
+		if podSpec.Containers[i].Name == constants.CollectorName {
+			log.V(3).Info("Adding secret volume mounts to collector container")
+			collector.AddSecretVolumeMounts(&podSpec.Containers[i], names.List())
+		}
+		containers = append(containers, podSpec.Containers[i])
+	}
+	podSpec.Containers = containers
+}
+
+func (f *CollectorFunctionalFramework) deploySecrets() error {
+	for _, secret := range f.Secrets {
+		secret.Namespace = f.Namespace
+		log.V(2).Info("Creating secret", "namespace", secret.Namespace, "name", secret.Name)
+		if err := f.Test.Client.Create(secret); err != nil {
+			return err
 		}
 	}
 	return nil

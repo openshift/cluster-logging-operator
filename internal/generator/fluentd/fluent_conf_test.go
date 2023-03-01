@@ -632,7 +632,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_apps_es_1
     host es.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -641,11 +640,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -677,7 +675,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id apps_es_1
     host es.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -686,12 +683,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_apps_es_1
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -778,7 +774,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_apps_es_2
     host es2.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -787,11 +782,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -823,7 +817,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id apps_es_2
     host es2.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -832,12 +825,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_apps_es_2
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -1367,7 +1359,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_apps_es_1
     host es.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -1376,11 +1367,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -1412,7 +1402,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id apps_es_1
     host es.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -1421,12 +1410,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_apps_es_1
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -1513,7 +1501,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_apps_es_2
     host es.svc.messaging.cluster.local2
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
@@ -1522,11 +1509,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -1558,7 +1544,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id apps_es_2
     host es.svc.messaging.cluster.local2
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
@@ -1567,12 +1552,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_apps_es_2
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -2106,7 +2090,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_apps_es_1
     host es.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -2115,11 +2098,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -2151,7 +2133,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id apps_es_1
     host es.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -2160,12 +2141,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_apps_es_1
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -2252,7 +2232,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_apps_es_2
     host es.svc.messaging.cluster.local2
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
@@ -2261,11 +2240,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -2297,7 +2275,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id apps_es_2
     host es.svc.messaging.cluster.local2
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
@@ -2306,12 +2283,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_apps_es_2
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -3245,7 +3221,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_infra_es
     host es.svc.infra.cluster
     port 9999
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
@@ -3254,11 +3229,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -3290,7 +3264,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id infra_es
     host es.svc.infra.cluster
     port 9999
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-infra-secret/tls.key'
@@ -3299,12 +3272,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_infra_es
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -3391,7 +3363,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_apps_es_1
     host es.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -3400,11 +3371,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -3436,7 +3406,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id apps_es_1
     host es.svc.messaging.cluster.local
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-es-secret/tls.key'
@@ -3445,12 +3414,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_apps_es_1
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -3537,7 +3505,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_apps_es_2
     host es.svc.messaging.cluster.local2
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
@@ -3546,11 +3513,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -3582,7 +3548,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id apps_es_2
     host es.svc.messaging.cluster.local2
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-other-secret/tls.key'
@@ -3591,12 +3556,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_apps_es_2
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -3683,7 +3647,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id retry_audit_es
     host es.svc.audit.cluster
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
@@ -3692,11 +3655,10 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'
@@ -3728,7 +3690,6 @@ var _ = Describe("Generating fluentd config", func() {
     @id audit_es
     host es.svc.audit.cluster
     port 9654
-    verify_es_version_at_startup false
     scheme https
     ssl_version TLSv1_2
     client_key '/var/run/ocp-collector/secrets/my-audit-secret/tls.key'
@@ -3737,12 +3698,11 @@ var _ = Describe("Generating fluentd config", func() {
     target_index_key viaq_index_name
     id_key viaq_msg_id
     remove_keys viaq_index_name
+    verify_es_version_at_startup false
     type_name _doc
     retry_tag retry_audit_es
     http_backend typhoeus
     write_operation create
-    # https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-    suppress_type_name 'true'
     reload_connections 'true'
     # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
     reload_after '200'

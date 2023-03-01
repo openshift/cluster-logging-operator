@@ -20,13 +20,14 @@ const (
 )
 
 type Elasticsearch struct {
-	Desc           string
-	StoreID        string
-	Host           string
-	Port           string
-	RetryTag       Element
-	SecurityConfig []Element
-	BufferConfig   []Element
+	Desc            string
+	StoreID         string
+	Host            string
+	Port            string
+	RetryTag        Element
+	SecurityConfig  []Element
+	BufferConfig    []Element
+	SuppressVersion []Element
 }
 
 func (e Elasticsearch) Name() string {
@@ -42,17 +43,14 @@ func (e Elasticsearch) Template() string {
 @id {{.StoreID}}
 host {{.Host}}
 port {{.Port}}
-verify_es_version_at_startup false
 {{compose .SecurityConfig}}
 target_index_key viaq_index_name
 id_key viaq_msg_id
 remove_keys viaq_index_name
-type_name _doc
+{{ compose  .SuppressVersion }}
 {{ kv .RetryTag -}}
 http_backend typhoeus
 write_operation create
-# https://github.com/uken/fluent-plugin-elasticsearch#suppress_type_name
-suppress_type_name 'true'
 reload_connections 'true'
 # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
 reload_after '200'
@@ -107,12 +105,26 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 		port = defaultElasticsearchPort
 	}
 	storeID := helpers.StoreID("", o.Name, "")
-	return Elasticsearch{
-		StoreID:        storeID,
-		Host:           u.Hostname(),
-		Port:           port,
-		SecurityConfig: SecurityConfig(o, secret),
-		BufferConfig:   output.Buffer(output.NOKEYS, bufspec, storeID, &o),
+	es := Elasticsearch{
+		StoreID:         storeID,
+		Host:            u.Hostname(),
+		Port:            port,
+		SecurityConfig:  SecurityConfig(o, secret),
+		BufferConfig:    output.Buffer(output.NOKEYS, bufspec, storeID, &o),
+		SuppressVersion: SuppressVersion(o),
+	}
+
+	return es
+}
+
+func SuppressVersion(o logging.OutputSpec) []Element {
+	if o.Elasticsearch != nil && o.Elasticsearch.Version >= logging.FirstESVersionWithoutType {
+		return []Element{KV("suppress_type_name", "true")}
+	} else {
+		return []Element{
+			KV("verify_es_version_at_startup", "false"),
+			KV("type_name", "_doc"),
+		}
 	}
 }
 

@@ -9,7 +9,10 @@ import (
 const (
 	IncludeLegacyForwardConfig = "includeLegacyForwardConfig"
 	UseOldRemoteSyslogPlugin   = "useOldRemoteSyslogPlugin"
-	TlsProfileSpec             = "tlsProfileSpec"
+	ClusterTLSProfileSpec      = "tlsProfileSpec"
+
+	MinTLSVersion = "minTLSVersion"
+	Ciphers       = "ciphers"
 )
 
 // GatherSources collects the set of unique source types and namespaces

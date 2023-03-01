@@ -524,7 +524,7 @@ var _ = Describe("Testing Config Generation", func() {
 					},
 				},
 			},
-			Options: generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)},
+			Options: generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)},
 			ExpectedConf: `
 # Prometheus Monitoring
 <source>

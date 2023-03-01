@@ -2,6 +2,9 @@ package security
 
 import (
 	"fmt"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -39,6 +42,22 @@ type BearerToken struct {
 type TLSConf struct {
 	ComponentID        string
 	InsecureSkipVerify bool
+	TlsMinVersion      string
+	CipherSuites       string
+}
+
+func NewTLSConf(o logging.OutputSpec, op generator.Options) TLSConf {
+	conf := TLSConf{
+		ComponentID:        helpers.FormatComponentID(o.Name),
+		InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
+	}
+	if version, found := op[generator.MinTLSVersion]; found {
+		conf.TlsMinVersion = version.(string)
+	}
+	if ciphers, found := op[generator.Ciphers]; found {
+		conf.CipherSuites = ciphers.(string)
+	}
+	return conf
 }
 
 func (t TLSConf) Name() string {
@@ -50,6 +69,12 @@ func (t TLSConf) Template() string {
 {{define "vectorTLS" -}}
 [sinks.{{.ComponentID}}.tls]
 enabled = true
+{{- if ne .TlsMinVersion "" }}
+min_tls_version = "{{ .TlsMinVersion }}"
+{{- end }}
+{{- if ne .CipherSuites "" }}
+ciphersuites = "{{ .CipherSuites }}"
+{{- end }}
 {{- if .InsecureSkipVerify }}
 verify_certificate = false
 verify_hostname = false

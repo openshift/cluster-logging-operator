@@ -91,7 +91,7 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	if debugOutput {
 		op[helpers.EnableDebugOutput] = ""
 	}
-	op[generator.TlsProfileSpec] = tls.GetTLSProfileSpec(nil)
+	op[generator.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(nil)
 	configGenerator := forwardergenerator.New(collectionType)
 	if configGenerator == nil {
 		return "", errors.New("unsupported collector implementation")

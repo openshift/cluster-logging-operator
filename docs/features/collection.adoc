@@ -82,6 +82,10 @@ logstash 7.10.1|✓|
 |Feature|Desc.|Fluentd|Vector
 |FIPS|Tested on a FIPS enabled cluster|✓|✓
 |Crypto Export||?|?
+
+|https://issues.redhat.com/browse/LOG-3270[TLS Security Profile Compliance]
+|Comply with OCP cluster-wide cryptographic profiles for internal communication and allow configuration of outbound connection profiles. See link:./tls_security_profile.adoc[details]
+|n/a|✓
 |======
 
 === Tuning

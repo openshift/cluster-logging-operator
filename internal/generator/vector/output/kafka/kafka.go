@@ -9,7 +9,6 @@ import (
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
@@ -57,7 +56,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Output(o, inputs, secret, op),
 			Encoding(o, op),
 		},
-		TLSConf(o, secret),
+		TLSConf(o, secret, op),
 		SASLConf(o, secret),
 	)
 }
@@ -68,7 +67,7 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 	}
 	return Kafka{
 		Desc:             "Kafka config",
-		ComponentID:      strings.ToLower(helpers.Replacer.Replace(o.Name)),
+		ComponentID:      vectorhelpers.FormatComponentID(o.Name),
 		Inputs:           vectorhelpers.MakeInputs(inputs...),
 		Topic:            fmt.Sprintf("%q", Topics(o)),
 		BootstrapServers: fmt.Sprintf("%q", Brokers(o)),
@@ -115,7 +114,7 @@ func Topics(o logging.OutputSpec) string {
 
 func Encoding(o logging.OutputSpec, op Options) Element {
 	return ConfLiteral{
-		ComponentID:  strings.ToLower(helpers.Replacer.Replace(o.Name)),
+		ComponentID:  vectorhelpers.FormatComponentID(o.Name),
 		TemplateName: "kafkaEncoding",
 		TemplateStr: `
 {{define "kafkaEncoding" -}}
@@ -127,7 +126,7 @@ timestamp_format = "rfc3339"
 	}
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	var conf []Element
 	if o.Secret == nil {
 		return conf
@@ -135,18 +134,17 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 
 	u, _ := url.Parse(o.URL)
 	if urlhelper.IsTLSScheme(u.Scheme) {
-		componentID := strings.ToLower(helpers.Replacer.Replace(o.Name))
+		componentID := vectorhelpers.FormatComponentID(o.Name)
 		if o.TLS != nil && o.TLS.InsecureSkipVerify {
 			conf = append(conf, security.InsecureTLS{
 				ComponentID: componentID,
 			})
 		}
 
-		conf = append(conf, security.TLSConf{
-			ComponentID: componentID,
-			// Kafka does not use the verify_certificate or verify_hostname options, see insecureTLS
-			InsecureSkipVerify: false,
-		})
+		tlsConf := security.NewTLSConf(o, op)
+		// Kafka does not use the verify_certificate or verify_hostname options, see insecureTLS
+		tlsConf.InsecureSkipVerify = false
+		conf = append(conf, tlsConf)
 
 		if security.HasPassphrase(secret) {
 			pp := security.Passphrase{
@@ -180,7 +178,7 @@ func SASLConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		if security.HasUsernamePassword(secret) {
 			sasl := SASL{
 				Desc:        "SASL Config",
-				ComponentID: strings.ToLower(helpers.Replacer.Replace(o.Name)),
+				ComponentID: vectorhelpers.FormatComponentID(o.Name),
 				Username:    security.GetFromSecret(secret, constants.ClientUsername),
 				Password:    security.GetFromSecret(secret, constants.ClientPassword),
 				Mechanism:   SASLMechanismPlain,

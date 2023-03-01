@@ -123,7 +123,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Encoding(o),
 			Request(o),
 		},
-		TLSConf(o, secret),
+		TLSConf(o, secret, op),
 		BasicAuth(o, secret),
 		BearerTokenAuth(o, secret),
 	)
@@ -191,15 +191,11 @@ func Encoding(o logging.OutputSpec) Element {
 	}
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	conf := []Element{}
 	if o.Secret != nil {
 		hasTLS := false
-		conf = append(conf, security.TLSConf{
-			ComponentID:        strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
-		})
-
+		conf = append(conf, security.NewTLSConf(o, op))
 		if security.HasTLSCertAndKey(secret) {
 			hasTLS = true
 			kc := TLSKeyCert{

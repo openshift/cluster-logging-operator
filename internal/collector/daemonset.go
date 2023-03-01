@@ -15,7 +15,7 @@ func (f *Factory) ReconcileDaemonset(er record.EventRecorder, k8sClient client.C
 	trustedCABundle, trustHash := GetTrustedCABundle(k8sClient, namespace, constants.CollectorTrustedCAName)
 	f.TrustedCAHash = trustHash
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(k8sClient)
-	desired := f.NewDaemonSet(namespace, name, trustedCABundle, tls.GetTLSProfileSpec(tlsProfile))
+	desired := f.NewDaemonSet(namespace, name, trustedCABundle, tls.GetClusterTLSProfileSpec(tlsProfile))
 	utils.AddOwnerRefToObject(desired, owner)
 	return reconcile.DaemonSet(er, k8sClient, desired)
 }

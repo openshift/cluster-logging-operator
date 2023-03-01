@@ -124,6 +124,12 @@ func NewCollectorFunctionalFrameworkUsing(t *client.Test, fnClose func(), verbos
 	return framework
 }
 
+// AddSecret to the framework to be created when Deploy is called
+func (f *CollectorFunctionalFramework) AddSecret(secret *corev1.Secret) *CollectorFunctionalFramework {
+	f.Secrets = append(f.Secrets, secret)
+	return f
+}
+
 func (f *CollectorFunctionalFramework) Cleanup() {
 	if g, ok := test.GinkgoCurrentTest(); ok && g.Failed {
 		for _, container := range f.Pod.Spec.Containers {
@@ -268,12 +274,12 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 			AddEnvVarFromFieldRef("POD_IPS", "status.podIPs").
 			WithImagePullPolicy(corev1.PullAlways).ResourceRequirements(resources), FunctionalNodeName).
 		End()
-
 	for _, visit := range visitors {
 		if err = visit(b); err != nil {
 			return err
 		}
 	}
+
 	addSecretVolumeMountsToCollector(&f.Pod.Spec, f.Secrets)
 	collector.AddSecretVolumes(&f.Pod.Spec, f.Forwarder.Spec)
 

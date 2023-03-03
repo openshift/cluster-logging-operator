@@ -145,7 +145,7 @@ var _ = Describe("GetProxyEnvVars", func() {
 		envvars = map[string]string{}
 	)
 	BeforeEach(func() {
-		for _, envvar := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "NO_PROXY", "no_proxy"} {
+		for _, envvar := range []string{"https_proxy", "http_proxy", "no_proxy"} {
 			envvars[envvar] = os.Getenv(envvar)
 			Expect(os.Setenv(envvar, envvar)).To(Succeed())
 		}
@@ -157,7 +157,7 @@ var _ = Describe("GetProxyEnvVars", func() {
 	})
 	It("should retrieve the proxy settings from the operators ENV variables", func() {
 		envvars := GetProxyEnvVars()
-		Expect(envvars).To(HaveLen(6)) //proxy,noproxy vars
+		Expect(envvars).To(HaveLen(3)) //proxy,noproxy vars
 		for _, envvar := range envvars {
 			if envvar.Name == "NO_PROXY" || envvar.Name == "no_proxy" {
 				Expect(envvar.Value).To(Equal("elasticsearch,"+envvar.Name), "Exp. the value to be set to the name for the test with elasticsearch prepended")

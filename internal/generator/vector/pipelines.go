@@ -30,13 +30,11 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 		}
 		if p.Parse == ParseJson {
 			parse := `
-if .log_type == "application" {
   parsed, err = parse_json(.message)
   if err == null {
     .structured = parsed
     del(.message)
   }
-}
 `
 			vrls = append(vrls, parse)
 		}

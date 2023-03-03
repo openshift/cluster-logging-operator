@@ -1,0 +1,161 @@
+
+=== Steps to send logs using vector to fluentd over http
+
+. Create a Pod which runs http endpoint on fluentd using following fluentd configuration
++
+.fluent.conf
+[source,xml]
+----
+<system>
+  log_level info
+</system>
+<source>
+  # http source plugins uses http path to create fluentd tags
+  @type http
+  port 24224
+  bind 0.0.0.0
+  body_size_limit 32m
+  keepalive_timeout 10s
+  # Headers are capitalized, and added with prefix "HTTP_"
+  add_http_headers true
+  add_remote_addr true
+  <parse>
+    @type json
+  </parse>
+  <transport tls>
+	  ca_path /etc/fluentd/secrets/ca-bundle.crt
+	  cert_path /etc/fluentd/secrets/tls.crt
+	  private_key_path /etc/fluentd/secrets/tls.key
+  </transport>
+</source>
+
+<match logs.app>
+  @type file
+  append true
+  path /tmp/app.logs
+  symlink_path /tmp/app-logs
+</match>
+<match logs.infra>
+  @type file
+  append true
+  path /tmp/infra.logs
+  symlink_path /tmp/infra-logs
+</match>
+<match logs.audit>
+  @type file
+  append true
+  path /tmp/audit.logs
+  symlink_path /tmp/audit-logs
+</match>
+<match **>
+	@type stdout
+</match>
+----
+
+
+. Create a Cluster Log Forwarder instance with following yaml.
++
+----
+  oc apply -f cluster-log-forwarder.yaml
+----
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+    security.openshift.io/scc.podSecurityLabelSync: "false"
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+  - http:
+      headers:
+        h1: v1
+        h2: v2
+      method: POST
+    name: httpout-app
+    secret:
+      name: fluent-receiver
+    tls:
+      insecureSkipVerify: true
+    type: http
+    url: https://fluent-receiver.openshift-logging.svc:24224/logs/app
+  - http:
+      headers:
+        h1: v1
+        h2: v2
+      method: POST
+    name: httpout-infra
+    secret:
+      name: fluent-receiver
+    tls:
+      insecureSkipVerify: true
+    type: http
+    url: https://fluent-receiver.openshift-logging.svc:24224/logs/infra
+  - http:
+      headers:
+        h1: v1
+        h2: v2
+      method: POST
+    name: httpout-audit
+    secret:
+      name: fluent-receiver
+    tls:
+      insecureSkipVerify: true
+    type: http
+    url: https://fluent-receiver.openshift-logging.svc:24224/logs/audit
+  pipelines:
+  - inputRefs:
+    - application
+    name: app-logs
+    outputRefs:
+    - httpout-app
+  - inputRefs:
+    - infrastructure
+    name: infra-logs
+    outputRefs:
+    - httpout-infra
+  - inputRefs:
+    - audit
+    name: audit-logs
+    outputRefs:
+    - httpout-audit
+
+----
+
+
+. Create a `Cluster Logging` instance with vector collector with following yaml.
++
+----
+  oc apply -f cluster-logging.yaml
+----
++
+.cluster-logging.yaml
+[source,yaml]
+----
+apiVersion: "logging.openshift.io/v1"
+kind: "ClusterLogging"
+metadata:
+  name: "instance"
+  namespace: "openshift-logging"
+  annotations:
+spec:
+  collection:
+    type: vector
+  managementState: Managed
+----
+
+
+
+. Check logs in destination http endpoint
++
+----
+ Since the CLF spec sends each log type using a different http path, the receiving fluentd
+ can use fluentd tags to differentiate each log type.
+ In the receiving fluentd, Application logs are dispatched over `logs.app`, similarly infrastructure and
+ audit logs are dispatched over `logs.infra` and `logs.audit` respectively.
+----

@@ -36,6 +36,8 @@ const (
 	logOvnValue                     = "/var/log/ovn"
 	logOauthapiserver               = "varlogoauthapiserver"
 	logOauthapiserverValue          = "/var/log/oauth-apiserver"
+	logOauthserver                  = "varlogoauthserver"
+	logOauthserverValue             = "/var/log/oauth-server"
 	logOpenshiftapiserver           = "varlogopenshiftapiserver"
 	logOpenshiftapiserverValue      = "/var/log/openshift-apiserver"
 	logKubeapiserver                = "varlogkubeapiserver"
@@ -140,6 +142,7 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 			{Name: logAudit, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logAuditValue}}},
 			{Name: logOvn, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOvnValue}}},
 			{Name: logOauthapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthapiserverValue}}},
+			{Name: logOauthserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthserverValue}}},
 			{Name: logOpenshiftapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
 			{Name: logKubeapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
 			{Name: localtime, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: localtimeValue}}},
@@ -197,6 +200,7 @@ func (f *Factory) NewCollectorContainer(secretNames []string) *v1.Container {
 		{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
 		{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
 		{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+		{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
 		{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
 		{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
 		{Name: localtime, ReadOnly: true, MountPath: localtimeValue},

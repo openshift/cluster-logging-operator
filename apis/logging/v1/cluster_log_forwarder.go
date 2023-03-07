@@ -37,13 +37,17 @@ func IsOutputTypeName(s string) bool {
 }
 
 // Get all subordinate condition messages for condition of type "Ready" and False
+// A 'true' Ready condition with a message means some error with pipeline but it is still valid
 func (status ClusterLogForwarderStatus) GetReadyConditionMessages() []string {
 	var messages = []string{}
 	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
 		for _, conds := range nc {
+			currCond := conds.GetCondition(ConditionReady)
 			if !conds.IsTrueFor(ConditionReady) {
-				currCond := conds.GetCondition(ConditionReady)
 				messages = append(messages, currCond.Message)
+				// If a pipeline is "degraded" then it should have an extra error message
+			} else if len(conds) > 1 {
+				messages = append(messages, conds.GetCondition("Error").Message)
 			}
 		}
 	}
@@ -60,18 +64,6 @@ func (status ClusterLogForwarderStatus) IsReady() bool {
 		}
 	}
 	return true
-}
-
-// IsDegraded returns true if any of the subordinate conditions are degraded.
-func (status ClusterLogForwarderStatus) IsDegraded() bool {
-	for _, nc := range []NamedConditions{status.Pipelines, status.Inputs, status.Outputs} {
-		for _, conds := range nc {
-			if conds.IsTrueFor(ConditionDegraded) {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // RouteMap maps input names to connected outputs or vice-versa.

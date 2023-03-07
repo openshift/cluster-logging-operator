@@ -2,6 +2,9 @@ package lokistack
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+
 	"github.com/ViaQ/logerr/v2/kverrors"
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
@@ -9,8 +12,6 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sort"
-	"strings"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -183,8 +184,11 @@ func ProcessForwarderPipelines(logStore *loggingv1.LogStoreSpec, namespace strin
 				// we want 'default' output to fail per LOG-3437 since we did not create it
 			}
 
-			if pOut.Name != "" && i > 0 {
+			// Can no longer have empty pipeline names
+			if pOut.Name == "" {
+				pOut.Name = fmt.Sprintf("%s_%d_", "default_loki_pipeline", i)
 				// Generate new name for named pipelines as duplicate names are not allowed
+			} else if pOut.Name != "" && i > 0 {
 				pOut.Name = fmt.Sprintf("%s-%d", pOut.Name, i)
 			}
 

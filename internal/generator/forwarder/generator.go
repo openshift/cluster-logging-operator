@@ -1,10 +1,8 @@
 package forwarder
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -55,45 +53,4 @@ func (cg *ConfigGenerator) GenerateConf(clspec *logging.CollectionSpec, secrets 
 	sections := cg.conf(clspec, secrets, clfspec, namespace, op)
 	conf, err := cg.g.GenerateConf(generator.MergeSections(sections)...)
 	return cg.format(conf), err
-}
-
-func (cg *ConfigGenerator) Verify(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec *logging.ClusterLogForwarderSpec, op generator.Options) error {
-	var err error
-	types := generator.GatherSources(clfspec, op)
-	if !types.HasAny(logging.InputNameApplication, logging.InputNameInfrastructure, logging.InputNameAudit) {
-		return ErrNoValidInputs
-	}
-	if len(clfspec.Outputs) == 0 {
-		return ErrNoOutputs
-	}
-	for _, p := range clfspec.Pipelines {
-		if _, err := json.Marshal(p.Labels); err != nil {
-			return ErrInvalidInput
-		}
-	}
-	for _, o := range clfspec.Outputs {
-		if _, err = url.Parse(o.URL); err != nil {
-			return ErrInvalidOutputURL(o)
-		}
-		if o.GoogleCloudLogging != nil {
-			gcl := o.GoogleCloudLogging
-			i := 0
-			if gcl.ProjectID != "" {
-				i += 1
-			}
-			if gcl.FolderID != "" {
-				i += 1
-			}
-			if gcl.BillingAccountID != "" {
-				i += 1
-			}
-			if gcl.OrganizationID != "" {
-				i += 1
-			}
-			if i > 1 {
-				return ErrGCL
-			}
-		}
-	}
-	return err
 }

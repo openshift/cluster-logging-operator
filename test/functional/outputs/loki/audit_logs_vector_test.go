@@ -37,6 +37,7 @@ var _ = Describe("[Functional][Outputs][Loki] Forwarding to Loki", func() {
 			})
 		f.Forwarder.Spec.Pipelines = append(f.Forwarder.Spec.Pipelines,
 			logging.PipelineSpec{
+				Name:       "functional-loki-pipeline_0_",
 				OutputRefs: []string{logging.OutputTypeLoki},
 				InputRefs:  []string{logging.InputNameAudit},
 				Labels:     map[string]string{"logging": "logging-value"},

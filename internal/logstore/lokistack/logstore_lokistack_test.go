@@ -51,6 +51,7 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
 				{
+					Name:       "default_loki_pipeline_0_",
 					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-apps"},
 					InputRefs:  []string{loggingv1.InputNameApplication},
 				},
@@ -83,10 +84,12 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
 				{
+					Name:       "default_loki_pipeline_0_",
 					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-apps"},
 					InputRefs:  []string{loggingv1.InputNameApplication},
 				},
 				{
+					Name:       "default_loki_pipeline_1_",
 					OutputRefs: []string{loggingv1.OutputNameDefault + "-loki-infra"},
 					InputRefs:  []string{loggingv1.InputNameInfrastructure},
 				},
@@ -155,6 +158,7 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
 				{
+					Name: "default_loki_pipeline_0_",
 					OutputRefs: []string{
 						"custom-output",
 						loggingv1.OutputNameDefault + "-loki-infra",
@@ -193,6 +197,7 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 			},
 			wantPipelines: []loggingv1.PipelineSpec{
 				{
+					Name: "default_loki_pipeline_0_",
 					OutputRefs: []string{
 						"custom-output",
 						loggingv1.OutputNameDefault + "-loki-infra",
@@ -200,6 +205,7 @@ func TestProcessPipelinesForLokiStack(t *testing.T) {
 					InputRefs: []string{loggingv1.InputNameInfrastructure},
 				},
 				{
+					Name: "default_loki_pipeline_1_",
 					OutputRefs: []string{
 						"custom-output",
 						loggingv1.OutputNameDefault + "-loki-audit",

@@ -73,7 +73,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 
 		It("forwards different types to different outputs with labels", func() {
 			clf := f.ClusterLogForwarder
-			for _, name := range logTypes {
+			for i, name := range logTypes {
 				s := f.Receiver.Sources[name]
 				clf.Spec.Outputs = append(clf.Spec.Outputs, loggingv1.OutputSpec{
 					Name: s.Name,
@@ -81,6 +81,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 					URL:  fmt.Sprintf("tcp://%v:%v", s.Host(), s.Port),
 				})
 				clf.Spec.Pipelines = append(clf.Spec.Pipelines, loggingv1.PipelineSpec{
+					Name:       fmt.Sprintf("functional_fluent_pipeline_%v_", i),
 					InputRefs:  []string{s.Name},
 					OutputRefs: []string{s.Name},
 					Labels:     map[string]string{"log-type": s.Name},
@@ -105,6 +106,7 @@ func addPipeline(clf *loggingv1.ClusterLogForwarder, s *fluentd.Source) {
 	})
 	clf.Spec.Pipelines = append(clf.Spec.Pipelines,
 		loggingv1.PipelineSpec{
+			Name:       "functional_fluent_pipeline_0_",
 			InputRefs:  []string{s.Name},
 			OutputRefs: []string{s.Name},
 		})

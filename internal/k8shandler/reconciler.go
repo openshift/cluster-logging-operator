@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+
 	eslogstore "github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch"
 	"github.com/openshift/cluster-logging-operator/internal/logstore/lokistack"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
-	"strconv"
-
 	"github.com/openshift/cluster-logging-operator/internal/validations/clusterlogforwarder"
 
 	"github.com/openshift/cluster-logging-operator/internal/migrations"
@@ -72,6 +72,24 @@ func Reconcile(cl *logging.ClusterLogging, requestClient client.Client, reader c
 		}
 		clusterLoggingRequest.ForwarderRequest = forwarder
 		clusterLoggingRequest.ForwarderSpec = forwarder.Spec
+
+		// Verify clf inputs, outputs, pipelines AFTER migration
+		status := clusterlogforwarder.ValidateInputsOutputsPipelines(
+			clusterLoggingRequest.Cluster,
+			clusterLoggingRequest.Client,
+			clusterLoggingRequest.ForwarderRequest,
+			clusterLoggingRequest.ForwarderSpec,
+			extras)
+
+		clusterLoggingRequest.ForwarderRequest.Status = *status
+
+		// Rejected if clf condition is not ready
+		// Do not create or update the collection
+		if status.Conditions.IsFalseFor(logging.ConditionReady) {
+			telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
+			return clusterLoggingRequest.Cluster, errors.New("invalid clusterlogforwarder spec. No change in collection")
+		}
+
 	} else if !clusterLoggingRequest.IncludesManagedStorage() {
 		// No clf and no logStore so remove the collector https://issues.redhat.com/browse/LOG-2703
 		removeCollectorAndUpdate(clusterLoggingRequest)
@@ -172,7 +190,24 @@ func ReconcileForClusterLogForwarder(forwarder *logging.ClusterLogForwarder, req
 		return nil
 	}
 
-	// Reconcile Collection
+	// Verify clf inputs, outputs, pipelines AFTER migration
+	status := clusterlogforwarder.ValidateInputsOutputsPipelines(
+		clusterLoggingRequest.Cluster,
+		clusterLoggingRequest.Client,
+		clusterLoggingRequest.ForwarderRequest,
+		clusterLoggingRequest.ForwarderSpec,
+		extras)
+
+	clusterLoggingRequest.ForwarderRequest.Status = *status
+
+	// Rejected if clf condition is not ready
+	// Do not create or update the collection
+	if status.Conditions.IsFalseFor(logging.ConditionReady) {
+		telemetry.Data.CLFInfo.Set("healthStatus", constants.UnHealthyStatus)
+		return nil
+	}
+
+	// If valid, generate the appropriate config
 	err = clusterLoggingRequest.CreateOrUpdateCollection(extras)
 	forwarder.Status = clusterLoggingRequest.ForwarderRequest.Status
 

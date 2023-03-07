@@ -61,9 +61,24 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 		}
 	}
 
-	spec, status := clRequest.NormalizeForwarder(map[string]bool{})
-	log.V(2).Info("Normalization", "spec", spec)
-	log.V(2).Info("Normalization", "status", status)
+	// Added because this generator is used for tests and the tests assume a correct
+	// CLF spec.
+	// Originally, this generator normalized the forwarder spec only which dropped
+	// input specs with names that were reserved (application, audit, infrastructure).
+	// With the change in validation, CLFs are rejected outright with input specs name equal to reserved names.
+	sanitizedInputSpec := []logging.InputSpec{}
+	for _, inputSpec := range forwarder.Spec.Inputs {
+		if inputSpec.Name != logging.InputNameApplication &&
+			inputSpec.Name != logging.InputNameAudit &&
+			inputSpec.Name != logging.InputNameInfrastructure {
+			sanitizedInputSpec = append(sanitizedInputSpec, inputSpec)
+		}
+	}
+
+	forwarder.Spec.Inputs = sanitizedInputSpec
+
+	// Set the output secrets if any
+	clRequest.SetOutputSecrets()
 
 	tunings := &logging.FluentdForwarderSpec{}
 	clspec := logging.CollectionSpec{
@@ -81,5 +96,5 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 	if configGenerator == nil {
 		return "", errors.New("unsupported collector implementation")
 	}
-	return configGenerator.GenerateConf(&clspec, clRequest.OutputSecrets, spec, clRequest.Cluster.Namespace, op)
+	return configGenerator.GenerateConf(&clspec, clRequest.OutputSecrets, &forwarder.Spec, clRequest.Cluster.Namespace, op)
 }

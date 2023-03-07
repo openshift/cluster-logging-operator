@@ -17,7 +17,6 @@ import (
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
-	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 	testruntime "github.com/openshift/cluster-logging-operator/test/runtime"
 )
@@ -180,7 +179,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 				}
 				if useOldPlugin {
 					forwarder.ObjectMeta.Annotations = map[string]string{
-						k8shandler.UseOldRemoteSyslogPlugin: "enabled",
+						constants.UseOldRemoteSyslogPlugin: "enabled",
 					}
 				}
 				if err := e2e.CreateClusterLogForwarder(forwarder); err != nil {

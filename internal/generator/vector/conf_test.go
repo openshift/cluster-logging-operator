@@ -37,6 +37,10 @@ var _ = Describe("Testing Complete Config Generation", func() {
 	)
 	DescribeTable("Generate full vector.toml", f,
 		Entry("with complex spec", testhelpers.ConfGenerateTest{
+			Options: generator.Options{
+				constants.PreviewTLSSecurityProfile: "",
+				generator.ClusterTLSProfileSpec:     tls.GetClusterTLSProfileSpec(nil),
+			},
 			CLSpec: logging.CollectionSpec{
 				Fluentd: &logging.FluentdForwarderSpec{
 					Buffer: &logging.FluentdBufferSpec{
@@ -864,8 +868,6 @@ id_key = "_id"
 
 [sinks.es_1.tls]
 enabled = true
-min_tls_version = "VersionTLS12"
-ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
@@ -977,8 +979,6 @@ id_key = "_id"
 
 [sinks.es_2.tls]
 enabled = true
-min_tls_version = "VersionTLS12"
-ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
@@ -1461,8 +1461,6 @@ id_key = "_id"
 
 [sinks.es_1.tls]
 enabled = true
-min_tls_version = "VersionTLS12"
-ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
@@ -1579,8 +1577,6 @@ suppress_type_name = true
 
 [sinks.es_2.tls]
 enabled = true
-min_tls_version = "VersionTLS12"
-ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"

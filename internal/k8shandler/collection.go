@@ -23,10 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	AnnotationDebugOutput = "logging.openshift.io/debug-output"
-)
-
 // CreateOrUpdateCollection component of the cluster
 func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateCollection(extras map[string]bool) (err error) {
 	if !clusterRequest.isManaged() {

@@ -149,21 +149,21 @@ var _ = Describe("Factory#NewPodSpec", func() {
 			}
 
 			It("should add the proxy variables to the collector", func() {
-				_httpProxy := os.Getenv("HTTP_PROXY")
-				_httpsProxy := os.Getenv("HTTPS_PROXY")
-				_noProxy := os.Getenv("NO_PROXY")
+				_httpProxy := os.Getenv("http_proxy")
+				_httpsProxy := os.Getenv("https_proxy")
+				_noProxy := os.Getenv("no_proxy")
 				cleanup := func() {
-					_ = os.Setenv("HTTP_PROXY", _httpProxy)
-					_ = os.Setenv("HTTPS_PROXY", _httpsProxy)
-					_ = os.Setenv("NO_PROXY", _noProxy)
+					_ = os.Setenv("http_proxy", _httpProxy)
+					_ = os.Setenv("https_proxy", _httpsProxy)
+					_ = os.Setenv("no_proxy", _noProxy)
 				}
 				defer cleanup()
 
 				httpproxy := "http://proxy-user@test.example.com/3128/"
 				noproxy := ".cluster.local,localhost"
-				_ = os.Setenv("HTTP_PROXY", httpproxy)
-				_ = os.Setenv("HTTPS_PROXY", httpproxy)
-				_ = os.Setenv("NO_PROXY", noproxy)
+				_ = os.Setenv("http_proxy", httpproxy)
+				_ = os.Setenv("https_proxy", httpproxy)
+				_ = os.Setenv("no_proxy", noproxy)
 				caBundle := "-----BEGIN CERTIFICATE-----\n<PEM_ENCODED_CERT>\n-----END CERTIFICATE-----\n"
 				podSpec = *factory.NewPodSpec(&v1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
@@ -176,9 +176,9 @@ var _ = Describe("Factory#NewPodSpec", func() {
 				}, logging.ClusterLogForwarderSpec{}, "1234", "", tls.GetTLSProfileSpec(nil))
 				collector = podSpec.Containers[0]
 
-				verifyEnvVar(collector, "HTTP_PROXY", httpproxy)
-				verifyEnvVar(collector, "HTTPS_PROXY", httpproxy)
-				verifyEnvVar(collector, "NO_PROXY", "elasticsearch,"+noproxy)
+				verifyEnvVar(collector, "http_proxy", httpproxy)
+				verifyEnvVar(collector, "https_proxy", httpproxy)
+				verifyEnvVar(collector, "no_proxy", "elasticsearch,"+noproxy)
 				verifyProxyVolumesAndVolumeMounts(collector, podSpec, constants.CollectorTrustedCAName)
 			})
 		})

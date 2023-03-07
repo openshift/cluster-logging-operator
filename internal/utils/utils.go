@@ -474,7 +474,7 @@ func GetProxyEnvVars() []v1.EnvVar {
 				}
 			}
 			envVars = append(envVars, v1.EnvVar{
-				Name:  envvar,
+				Name:  strings.ToLower(envvar),
 				Value: value,
 			})
 		}

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/reconcile"
 	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,7 +21,7 @@ const (
 )
 
 func NewServiceMonitor(namespace, name string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
-	endpoints := []monitoringv1.Endpoint{}
+	var endpoints []monitoringv1.Endpoint
 	for _, portName := range []string{MetricsPortName, ExporterPortName} {
 		endpoints = append(endpoints,
 			monitoringv1.Endpoint{
@@ -29,8 +29,10 @@ func NewServiceMonitor(namespace, name string, owner metav1.OwnerReference) *mon
 				Path:   "/metrics",
 				Scheme: "https",
 				TLSConfig: &monitoringv1.TLSConfig{
-					CAFile:     prometheusCAFile,
-					ServerName: fmt.Sprintf("%s.%s.svc", name, namespace),
+					CAFile: prometheusCAFile,
+					SafeTLSConfig: monitoringv1.SafeTLSConfig{
+						ServerName: fmt.Sprintf("%s.%s.svc", name, namespace),
+					},
 				},
 			},
 		)

@@ -79,7 +79,19 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		SeverityKey:     SeverityKey(g),
 		CredentialsPath: security.SecretPath(o.Secret.Name, GoogleApplicationCredentialsKey),
 	}
-	return []Element{gcl}
+	return MergeElements(
+		[]Element{gcl},
+		TLSConf(o, secret, op),
+	)
+}
+
+func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
+	if o.Secret != nil {
+		if tlsConf := security.GenerateTLSConf(o, secret, op); tlsConf != nil {
+			return []Element{tlsConf}
+		}
+	}
+	return []Element{}
 }
 
 // LogDestination is one of BillingAccountID, OrganizationID, FolderID, or ProjectID in that order

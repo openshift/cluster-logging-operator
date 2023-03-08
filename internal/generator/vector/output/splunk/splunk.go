@@ -2,11 +2,9 @@ package splunk
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
-	"net/url"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
@@ -90,38 +88,11 @@ func Encoding(o logging.OutputSpec) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	var conf []Element
-	if o.Secret == nil {
-		return conf
-	}
-	hasTLS := false
-	u, _ := url.Parse(o.URL)
-	if urlhelper.IsTLSScheme(u.Scheme) {
-		if security.HasPassphrase(secret) {
-			pp := security.Passphrase{
-				KeyPass: security.GetFromSecret(secret, constants.Passphrase),
-			}
-			conf = append(conf, pp)
-			hasTLS = true
-		}
-		if security.HasTLSCertAndKey(secret) {
-			kc := TLSKeyCert{
-				CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
-				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
-			}
-			conf = append(conf, kc)
-			hasTLS = true
-		}
-		if security.HasCABundle(secret) {
-			ca := CAFile{
-				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
-			}
-			conf = append(conf, ca)
-			hasTLS = true
+	if o.Secret != nil {
+		if tlsConf := security.GenerateTLSConf(o, secret, op); tlsConf != nil {
+			return []Element{tlsConf}
 		}
 	}
-	if hasTLS {
-		conf = append([]Element{security.NewTLSConf(o, op)}, conf...)
-	}
-	return conf
+
+	return []Element{}
 }

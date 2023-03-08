@@ -1,15 +1,4 @@
-package security
-
-func (p Passphrase) Name() string {
-	return "passphraseTemplate"
-}
-
-func (p Passphrase) Template() string {
-	return `{{define "` + p.Name() + `" -}}
-key_pass = "{{.KeyPass}}"
-{{- end}}
-`
-}
+package kafka
 
 type InsecureTLS struct {
 	ComponentID string

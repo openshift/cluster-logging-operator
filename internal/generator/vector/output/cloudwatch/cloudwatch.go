@@ -2,6 +2,9 @@ package cloudwatch
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
@@ -10,8 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
-	"regexp"
-	"strings"
 )
 
 type Endpoint struct {
@@ -76,10 +77,13 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Debug(outputName, helpers.MakeInputs([]string{componentID}...)),
 		}
 	}
-	return []Element{
-		NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
-		OutputConf(o, []string{componentID}, secret, op, o.Cloudwatch.Region),
-	}
+	return MergeElements(
+		[]Element{
+			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
+			OutputConf(o, []string{componentID}, secret, op, o.Cloudwatch.Region),
+		},
+		TLSConf(o, secret, op),
+	)
 }
 
 func OutputConf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, region string) Element {
@@ -105,6 +109,15 @@ func SecurityConfig(secret *corev1.Secret) Element {
 		KeyID:     strings.TrimSpace(security.GetFromSecret(secret, constants.AWSAccessKeyID)),
 		KeySecret: strings.TrimSpace(security.GetFromSecret(secret, constants.AWSSecretAccessKey)),
 	}
+}
+
+func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
+	if o.Secret != nil {
+		if tlsConf := security.GenerateTLSConf(o, secret, op); tlsConf != nil {
+			return []Element{tlsConf}
+		}
+	}
+	return []Element{}
 }
 
 func EndpointConfig(o logging.OutputSpec) Element {

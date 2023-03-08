@@ -952,8 +952,25 @@ spec:
                     required:
                     - replicas
                     type: object
+                  ocpConsole:
+                    description: OCPConsole is the specification for the OCP console
+                      plugin
+                    nullable: true
+                    properties:
+                      logsLimit:
+                        description: LogsLimit is the max number of entries returned
+                          for a query.
+                        type: integer
+                      timeout:
+                        description: Timeout is the max duration before a query timeout
+                        pattern: ^([0-9]+)([smhd]{0,1})$
+                        type: string
+                    type: object
                   type:
                     description: The type of Visualization to configure
+                    enum:
+                    - ocp-console
+                    - kibana
                     type: string
                 required:
                 - type

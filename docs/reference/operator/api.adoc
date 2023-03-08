@@ -1086,6 +1086,7 @@ This is the struct that will contain information pertinent to Log visualization 
 |Property|Type|Description
 
 |kibana|object|  Specification of the Kibana Visualization component
+|ocpConsole|object|  OCPConsole is the specification for the OCP console plugin
 |type|string|  The type of Visualization to configure
 |======================
 
@@ -1205,6 +1206,20 @@ This is the struct that will contain information pertinent to Log visualization 
 
 =====  Type
 * int
+
+=== .spec.visualization.ocpConsole
+===== Description
+
+=====  Type
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+
+|logLimit|int|  *(optional)* LogLimit is the max number of entries returned for a query.
+|timeout|string|  *(optional)* Timeout is the max duration before a query timeout
+|======================
 
 === .status
 ===== Description

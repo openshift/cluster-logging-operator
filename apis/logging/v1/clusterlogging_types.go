@@ -96,12 +96,23 @@ type ClusterLoggingStatus struct {
 
 // This is the struct that will contain information pertinent to Log visualization (Kibana)
 type VisualizationSpec struct {
+
 	// The type of Visualization to configure
+	//
+	// +kubebuilder:validation:Enum=ocp-console;kibana
 	Type VisualizationType `json:"type"`
 
 	// Specification of the Kibana Visualization component
+	//
 	// +deprecated
+	// +optional
 	KibanaSpec `json:"kibana,omitempty"`
+
+	// OCPConsole is the specification for the OCP console plugin
+	//
+	// +nullable
+	// +optional
+	OCPConsole *OCPConsoleSpec `json:"ocpConsole,omitempty"`
 }
 
 type KibanaSpec struct {
@@ -125,6 +136,21 @@ type KibanaSpec struct {
 
 	// Specification of the Kibana Proxy component
 	ProxySpec `json:"proxy,omitempty"`
+}
+
+type OCPConsoleSpec struct {
+
+	// LogsLimit is the max number of entries returned for a query.
+	//
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OCP Console Log Limit",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:ocpConsoleLogLimit"}
+	LogsLimit int `json:"logsLimit,omitempty"`
+
+	// Timeout is the max duration before a query timeout
+	//
+	// +optional
+	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="OCP Console Query Timeout",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:ocpConsoleTimeout"}
+	Timeout FluentdTimeUnit `json:"timeout,omitempty"`
 }
 
 type ProxySpec struct {
@@ -613,7 +639,8 @@ const (
 type VisualizationType string
 
 const (
-	VisualizationTypeKibana VisualizationType = "kibana"
+	VisualizationTypeKibana     VisualizationType = "kibana"
+	VisualizationTypeOCPConsole VisualizationType = "ocp-console"
 )
 
 type CurationType string

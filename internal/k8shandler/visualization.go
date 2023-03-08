@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	log "github.com/ViaQ/logerr/v2/log/static"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/internal/visualization/console"
@@ -24,7 +25,13 @@ func (clusterRequest *ClusterLoggingRequest) CreateOrUpdateVisualization() error
 	}
 	var errs []error
 	errs = append(errs, clusterRequest.createOrUpdateKibana())
-	errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster, clusterRequest.ClusterVersion))
+
+	spec := clusterRequest.Cluster.Spec
+	var consoleSpec *logging.OCPConsoleSpec
+	if spec.Visualization != nil && spec.Visualization.Type == logging.VisualizationTypeOCPConsole {
+		consoleSpec = spec.Visualization.OCPConsole
+	}
+	errs = append(errs, console.ReconcilePlugin(clusterRequest.Client, clusterRequest.Cluster.Spec.LogStore, clusterRequest.Cluster, clusterRequest.ClusterVersion, consoleSpec))
 	return utilerrors.NewAggregate(errs)
 }
 

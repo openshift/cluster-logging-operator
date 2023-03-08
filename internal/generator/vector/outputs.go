@@ -1,10 +1,7 @@
 package vector
 
 import (
-	"strings"
-
 	log "github.com/ViaQ/logerr/v2/log/static"
-	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
@@ -16,7 +13,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/kafka"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/loki"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/splunk"
-	"github.com/openshift/cluster-logging-operator/internal/tls"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -47,6 +43,11 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 				log.V(9).Info("No Secret found in " + constants.LogCollectorToken)
 			}
 		}
+
+		outMinTlsVersion, outCiphers := op.TLSProfileInfo(clfspec.TLSSecurityProfile, o)
+		op[generator.MinTLSVersion] = outMinTlsVersion
+		op[generator.Ciphers] = outCiphers
+
 		inputs := ofp[o.Name].List()
 		switch o.Type {
 		case logging.OutputTypeKafka:
@@ -65,10 +66,8 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			outputs = generator.MergeElements(outputs, http.Conf(o, inputs, secret, op))
 		}
 	}
-	tlsProfileSpec := op[generator.TlsProfileSpec].(configv1.TLSProfileSpec)
-	minTlsVersion := tls.MinTLSVersion(tlsProfileSpec)
-	cipherSuites := strings.Join(tls.TLSCiphers(tlsProfileSpec), ",")
 
+	minTlsVersion, cipherSuites := op.TLSProfileInfo(clfspec.TLSSecurityProfile, logging.OutputSpec{})
 	outputs = append(outputs,
 		AddNodeNameToMetric(AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
 		PrometheusOutput(PrometheusOutputSinkName, []string{AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites))

@@ -232,7 +232,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			FlattenLabels(ID(outputName, "dedot_and_flatten"), []string{ID(outputName, "add_es_index")}),
 			Output(o, []string{ID(outputName, "dedot_and_flatten")}, secret, op),
 		},
-		TLSConf(o, secret),
+		TLSConf(o, secret, op),
 		BasicAuth(o, secret),
 	)
 
@@ -253,14 +253,11 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 	return es
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	conf := []Element{}
 	if o.Secret != nil {
 		hasTLS := false
-		conf = append(conf, security.TLSConf{
-			ComponentID:        helpers.FormatComponentID(o.Name),
-			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
-		})
+		conf = append(conf, security.NewTLSConf(o, op))
 		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
 			hasTLS = true
 			kc := TLSKeyCert{

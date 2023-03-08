@@ -3,7 +3,6 @@ package splunk
 import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	"net/url"
@@ -70,7 +69,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Output(o, inputs, secret, op),
 			Encoding(o),
 		},
-		TLSConf(o, secret),
+		TLSConf(o, secret, op),
 	)
 }
 
@@ -90,7 +89,7 @@ func Encoding(o logging.OutputSpec) Element {
 	}
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	var conf []Element
 	if o.Secret == nil {
 		return conf
@@ -122,10 +121,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		}
 	}
 	if hasTLS {
-		conf = append([]Element{security.TLSConf{
-			ComponentID:        strings.ToLower(helpers.Replacer.Replace(o.Name)),
-			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
-		}}, conf...)
+		conf = append([]Element{security.NewTLSConf(o, op)}, conf...)
 	}
 	return conf
 }

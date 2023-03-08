@@ -1,0 +1,49 @@
+== https://issues.redhat.com/browse/LOG-3270[LOG-3270]: OCP Cluster-wide Cryptographic Policies and Output Crypto Configuration
+
+This feature makes collector deployments comply with the OCP cryptographic policy that is defined for
+the https://docs.openshift.com/container-platform/4.6/rest_api/config_apis/apiserver-config-openshift-io-v1.html[cluster] config settings.
+Additionally, this feature enables the capability for administrators to define a TLS profile to be used when forwarding
+logs to different outputs.
+
+TLS profiles are uniquely configurable for each defined output or by defining a single profile to apply to all log forwarding outputs. Profiles
+are applied according to the following order of precedence:
+
+. Output Spec
+. Cluster Log Forwarder Spec
+. Cluster-wide Config
+
+IMPORTANT: This is a tech-preview feature for output configurations. This is enabled by adding the feature gate annotation to the ClusterLogForwarder
+
+.Enable TLS Security Profile feature
+[source]
+----
+apiVersion: "logging.openshift.io/v1"
+kind: ClusterLogForwarder
+metadata:
+  annotations:
+    logging.openshift.io/preview-tls-security-profile: enabled
+spec:
+  outputs:
+  - name: devel
+    type: elasticsearch
+  - name: production
+    type: kafka
+    tls:
+      securityProfile:
+        type: Modern
+  pipelines:
+   - name: application-logs
+     inputRefs:
+     - application
+     outputRefs:
+     - production
+   - name: devel-logs
+     inputRefs:
+     - application
+     outputRefs:
+     - devel
+  tlsSecurityProfile:
+    type: Intermediate
+----
+This configuration will enable the "Modern" profile for application-logs and "Intermediate" for devel-logs
+

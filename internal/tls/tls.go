@@ -48,8 +48,8 @@ func MinTLSVersion(profile configv1.TLSProfileSpec) string {
 	return string(profile.MinTLSVersion)
 }
 
-// getTLSProfileSpec returns TLSProfileSpec to be used for generating OPENSSL_CONF
-func GetTLSProfileSpec(apiServerTLSProfile *configv1.TLSSecurityProfile) configv1.TLSProfileSpec {
+// GetClusterTLSProfileSpec returns TLSProfileSpec to be used for generating OPENSSL_CONF
+func GetClusterTLSProfileSpec(apiServerTLSProfile *configv1.TLSSecurityProfile) configv1.TLSProfileSpec {
 	defaultProfile := *configv1.TLSProfiles[DefaultTLSProfileType]
 	if apiServerTLSProfile == nil || apiServerTLSProfile.Type == "" {
 		return defaultProfile

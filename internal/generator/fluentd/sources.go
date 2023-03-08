@@ -24,7 +24,7 @@ func Sources(clspec *logging.CollectionSpec, spec *logging.ClusterLogForwarderSp
 }
 
 func MetricSources(spec *logging.ClusterLogForwarderSpec, o generator.Options) []generator.Element {
-	tlsProfileSpec := o[generator.TlsProfileSpec].(configv1.TLSProfileSpec)
+	tlsProfileSpec := o[generator.ClusterTLSProfileSpec].(configv1.TLSProfileSpec)
 	var minTlsVersion string
 	switch tls.MinTLSVersion(tlsProfileSpec) {
 	case "VersionTLS10":

@@ -19,7 +19,7 @@ var _ = Describe("Generating fluentd config", func() {
 	var (
 		forwarder  *logging.ClusterLogForwarderSpec
 		g          generator.Generator
-		op         generator.Options = generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)}
+		op         generator.Options = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 		secret     corev1.Secret
 		secretData = map[string][]byte{
 			"tls.key":       []byte("test-key"),
@@ -55,7 +55,7 @@ var _ = Describe("Generating fluentd config", func() {
 	)
 	BeforeEach(func() {
 		g = generator.MakeGenerator()
-		op = generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)}
+		op = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 		forwarder = &logging.ClusterLogForwarderSpec{
 			Outputs: []logging.OutputSpec{
 				{

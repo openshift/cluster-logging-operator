@@ -27,7 +27,7 @@ var _ = Describe("Testing Complete Config Generation", func() {
 		f = func(testcase testhelpers.ConfGenerateTest) {
 			g := generator.MakeGenerator()
 			if testcase.Options == nil {
-				testcase.Options = generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)}
+				testcase.Options = generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}
 			}
 			e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, testcase.Options))
 			conf, err := g.GenerateConf(e...)
@@ -392,6 +392,8 @@ timestamp_format = "rfc3339"
 
 [sinks.kafka_receiver.tls]
 enabled = true
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
@@ -465,7 +467,7 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 					},
 				},
 			},
-			Options: generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)},
+			Options: generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)},
 			ExpectedConf: `
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
@@ -862,6 +864,8 @@ id_key = "_id"
 
 [sinks.es_1.tls]
 enabled = true
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
@@ -973,6 +977,8 @@ id_key = "_id"
 
 [sinks.es_2.tls]
 enabled = true
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"
@@ -1455,6 +1461,8 @@ id_key = "_id"
 
 [sinks.es_1.tls]
 enabled = true
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
@@ -1571,6 +1579,8 @@ suppress_type_name = true
 
 [sinks.es_2.tls]
 enabled = true
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"

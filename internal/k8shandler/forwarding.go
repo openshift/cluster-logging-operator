@@ -59,7 +59,7 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[
 		op[helpers.EnableDebugOutput] = "true"
 	}
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(clusterRequest.Client)
-	op[generator.TlsProfileSpec] = tls.GetTLSProfileSpec(tlsProfile)
+	op[generator.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
 
 	var collectorType = clusterRequest.Cluster.Spec.Collection.Type
 	g := forwardergenerator.New(collectorType)

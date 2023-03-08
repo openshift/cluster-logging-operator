@@ -29,6 +29,11 @@ var (
 		k8sAuditLog:       "/var/log/kube-apiserver",
 	}
 	outputLogFile = map[string]map[string]string{
+		logging.OutputTypeHttp: {
+			logging.InputNameApplication:    ApplicationLogFile,
+			logging.InputNameAudit:          ApplicationLogFile,
+			logging.InputNameInfrastructure: ApplicationLogFile,
+		},
 		logging.OutputTypeFluentdForward: {
 			applicationLog:                  ApplicationLogFile,
 			auditLog:                        "/tmp/audit-logs",

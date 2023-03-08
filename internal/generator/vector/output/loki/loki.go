@@ -119,7 +119,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Encoding(o),
 			Labels(o),
 		},
-		TLSConf(o, secret),
+		TLSConf(o, secret, op),
 		BasicAuth(o, secret),
 		BearerTokenAuth(o, secret),
 	)
@@ -185,14 +185,11 @@ func Tenant(l *logging.Loki) Element {
 	return KV("tenant_id", fmt.Sprintf("%q", fmt.Sprintf("{{%s}}", l.TenantKey)))
 }
 
-func TLSConf(o logging.OutputSpec, secret *corev1.Secret) []Element {
+func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	conf := []Element{}
 	if o.Secret != nil {
 		hasTLS := false
-		conf = append(conf, security.TLSConf{
-			ComponentID:        strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-			InsecureSkipVerify: o.TLS != nil && o.TLS.InsecureSkipVerify,
-		})
+		conf = append(conf, security.NewTLSConf(o, op))
 
 		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
 			hasTLS = true

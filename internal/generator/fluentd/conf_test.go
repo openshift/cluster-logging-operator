@@ -24,7 +24,7 @@ import (
 var _ = Describe("Testing Complete Config Generation", func() {
 	var f = func(testcase testhelpers.ConfGenerateTest) {
 		g := generator.MakeGenerator()
-		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, generator.Options{generator.TlsProfileSpec: tls.GetTLSProfileSpec(nil)}))
+		e := generator.MergeSections(Conf(&testcase.CLSpec, testcase.Secrets, &testcase.CLFSpec, constants.OpenshiftNS, generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)}))
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
 		diff := cmp.Diff(

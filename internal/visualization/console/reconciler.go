@@ -230,7 +230,6 @@ func (r *Reconciler) mutateDeployment() error {
 								Protocol:      "TCP",
 							},
 						},
-						Command: []string{"./plugin-backend"},
 						Args: []string{
 							"-port", "9443",
 							"-features", strings.Join(r.Config.Features, ","),

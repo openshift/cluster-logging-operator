@@ -36,6 +36,8 @@ const (
 	logOvnValue            = "/var/log/ovn"
 	logOauthapiserver      = "varlogoauthapiserver"
 	logOauthapiserverValue = "/var/log/oauth-apiserver"
+	logOauthserver         = "varlogoauthserver"
+	logOauthserverValue    = "/var/log/oauth-server"
 	logOpenshiftapiserver  = "varlogopenshiftapiserver"
 
 	logJournalTransientValue = "/run/log/journal"
@@ -149,6 +151,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 		{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
 		{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
 		{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
+		{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
 		{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
 		{Name: config, ReadOnly: true, MountPath: configValue},
 		{Name: secureforwardconfig, ReadOnly: true, MountPath: secureforwardconfigValue},
@@ -238,6 +241,7 @@ func newFluentdPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *v1.Co
 			{Name: logAudit, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logAuditValue}}},
 			{Name: logOvn, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOvnValue}}},
 			{Name: logOauthapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthapiserverValue}}},
+			{Name: logOauthserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOauthserverValue}}},
 			{Name: logOpenshiftapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
 			{Name: logKubeapiserver, VolumeSource: v1.VolumeSource{HostPath: &v1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
 			{Name: config, VolumeSource: v1.VolumeSource{ConfigMap: &v1.ConfigMapVolumeSource{LocalObjectReference: v1.LocalObjectReference{Name: constants.CollectorName}}}},
@@ -424,7 +428,7 @@ func (clusterRequest *ClusterLoggingRequest) RestartCollector() (err error) {
 	return clusterRequest.UpdateCollectorStatus(collectorType)
 }
 
-//updateEnvar adds the value to the list or replaces it if it already existing
+// updateEnvar adds the value to the list or replaces it if it already existing
 func updateEnvVar(value v1.EnvVar, values []v1.EnvVar) []v1.EnvVar {
 	found := false
 	for i, envvar := range values {

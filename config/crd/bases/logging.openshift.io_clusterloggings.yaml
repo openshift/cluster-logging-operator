@@ -318,9 +318,11 @@ spec:
                     nullable: true
                     type: array
                   type:
+                    default: vector
                     description: The type of Log Collection to configure
-                    nullable: true
                     type: string
+                required:
+                - type
                 type: object
               curation:
                 description: Deprecated. Specification of the Curation component for
@@ -683,8 +685,8 @@ spec:
                     - name
                     type: object
                   retentionPolicy:
-                    description: Retention policy defines the maximum age for an index
-                      after which it should be deleted
+                    description: Retention policy defines the maximum age for an Elasticsearch
+                      index after which it should be deleted
                     nullable: true
                     properties:
                       application:
@@ -803,6 +805,7 @@ spec:
                         type: object
                     type: object
                   type:
+                    default: lokistack
                     description: "The Type of Log Storage to configure. The operator
                       currently supports either using ElasticSearch managed by elasticsearch-operator
                       or Loki managed by loki-operator (LokiStack) as a default log

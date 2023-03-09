@@ -100,6 +100,7 @@ type VisualizationSpec struct {
 	Type VisualizationType `json:"type"`
 
 	// Specification of the Kibana Visualization component
+	// +deprecated
 	KibanaSpec `json:"kibana,omitempty"`
 }
 
@@ -143,9 +144,11 @@ type LogStoreSpec struct {
 	// managing the LokiStack himself.
 	//
 	// +kubebuilder:validation:Enum=elasticsearch;lokistack
+	// +kubebuilder:default:=lokistack
 	Type LogStoreType `json:"type"`
 
 	// Specification of the Elasticsearch Log Store component
+	// +deprecated
 	Elasticsearch *ElasticsearchSpec `json:"elasticsearch,omitempty"`
 
 	// LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
@@ -153,10 +156,11 @@ type LogStoreSpec struct {
 	// The cluster-logging-operator does not create or manage the referenced LokiStack.
 	LokiStack LokiStackStoreSpec `json:"lokistack,omitempty"`
 
-	// Retention policy defines the maximum age for an index after which it should be deleted
+	// Retention policy defines the maximum age for an Elasticsearch index after which it should be deleted
 	//
 	// +nullable
 	// +optional
+	// +deprecated
 	RetentionPolicy *RetentionPoliciesSpec `json:"retentionPolicy,omitempty"`
 }
 
@@ -232,12 +236,11 @@ type LokiStackStoreSpec struct {
 // This is the struct that will contain information pertinent to Log and event collection
 type CollectionSpec struct {
 
-	// TODO make type required in v2 once Logs is removed. For now assume default which is fluentd
+	// TODO make type required in v2 once Logs is removed. For now assume default which is vector
 
 	// The type of Log Collection to configure
-	// +nullable
-	// +optional
-	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Implementation",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:fluentd","urn:alm:descriptor:com.tectonic.ui:select:vector"}
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Implementation",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:fluentd","urn:alm:descriptor:com.tectonic.ui:select:vector"}
+	// +kubebuilder:default:=vector
 	Type LogCollectionType `json:"type"`
 
 	// Deprecated. Specification of Log Collection for the cluster
@@ -245,6 +248,7 @@ type CollectionSpec struct {
 	// +nullable
 	// +optional
 	// +deprecated
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,xDescriptors={"urn:alm:descriptor:com.tectonic.ui:hidden"}
 	Logs *LogCollectionSpec `json:"logs,omitempty"`
 
 	// CollectorSpec is the common specification that applies to any collector

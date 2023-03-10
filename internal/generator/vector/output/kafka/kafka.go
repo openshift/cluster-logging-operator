@@ -127,47 +127,24 @@ timestamp_format = "rfc3339"
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	var conf []Element
-	if o.Secret == nil {
+	if o.Secret != nil {
+		conf := []Element{}
+
+		if tlsConf := security.GenerateTLSConf(o, secret, op); tlsConf != nil {
+			// KafkaInsecure (InsecureTLS)
+			if o.TLS != nil && o.TLS.InsecureSkipVerify {
+				conf = append(conf, InsecureTLS{
+					ComponentID: vectorhelpers.FormatComponentID(o.Name),
+				})
+			}
+
+			tlsConf.InsecureSkipVerify = false
+			conf = append(conf, tlsConf)
+		}
+		// Kafka does not use the verify_certificate or verify_hostname options, see insecureTLS
 		return conf
 	}
-
-	u, _ := url.Parse(o.URL)
-	if urlhelper.IsTLSScheme(u.Scheme) {
-		componentID := vectorhelpers.FormatComponentID(o.Name)
-		if o.TLS != nil && o.TLS.InsecureSkipVerify {
-			conf = append(conf, security.InsecureTLS{
-				ComponentID: componentID,
-			})
-		}
-
-		tlsConf := security.NewTLSConf(o, op)
-		// Kafka does not use the verify_certificate or verify_hostname options, see insecureTLS
-		tlsConf.InsecureSkipVerify = false
-		conf = append(conf, tlsConf)
-
-		if security.HasPassphrase(secret) {
-			pp := security.Passphrase{
-				KeyPass: security.GetFromSecret(secret, constants.Passphrase),
-			}
-			conf = append(conf, pp)
-		}
-		if security.HasTLSCertAndKey(secret) {
-			kc := TLSKeyCert{
-				CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
-				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
-			}
-			conf = append(conf, kc)
-		}
-		if security.HasCABundle(secret) {
-			ca := CAFile{
-				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
-			}
-			conf = append(conf, ca)
-		}
-	}
-
-	return conf
+	return []Element{}
 }
 
 func SASLConf(o logging.OutputSpec, secret *corev1.Secret) []Element {

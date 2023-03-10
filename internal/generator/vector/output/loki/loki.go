@@ -2,8 +2,9 @@ package loki
 
 import (
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -186,41 +187,21 @@ func Tenant(l *logging.Loki) Element {
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	conf := []Element{}
 	if o.Secret != nil {
-		hasTLS := false
-		conf = append(conf, security.NewTLSConf(o, op))
+		if tlsConf := security.GenerateTLSConf(o, secret, op); tlsConf != nil {
+			return []Element{tlsConf}
+		}
 
-		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
-			hasTLS = true
-			kc := TLSKeyCert{
-				CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
-				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
-			}
-			conf = append(conf, kc)
-		}
-		if o.Name == logging.OutputNameDefault || security.HasCABundle(secret) {
-			hasTLS = true
-			ca := CAFile{
-				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
-			}
-			conf = append(conf, ca)
-		}
-		if !hasTLS {
-			return []Element{}
-		}
 	} else if secret != nil {
 		// Set CA from logcollector ServiceAccount for internal Loki
 		return []Element{
 			security.TLSConf{
 				ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
-			},
-			CAFile{
-				CAFilePath: `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
+				CAFilePath:  `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
 			},
 		}
 	}
-	return conf
+	return []Element{}
 }
 
 func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {

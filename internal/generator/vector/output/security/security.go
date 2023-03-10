@@ -2,21 +2,20 @@ package security
 
 import (
 	"fmt"
+	"net/url"
+	"path/filepath"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
+	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
-	"path/filepath"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 )
 
 type TLS bool
-
-type TLSCertKey struct {
-	CertPath string
-	KeyPath  string
-}
 
 type UserNamePass struct {
 	Username string
@@ -25,10 +24,6 @@ type UserNamePass struct {
 
 type SharedKey struct {
 	Key string
-}
-
-type CAFile struct {
-	CAFilePath string
 }
 
 type Passphrase struct {
@@ -44,6 +39,10 @@ type TLSConf struct {
 	InsecureSkipVerify bool
 	TlsMinVersion      string
 	CipherSuites       string
+	CAFilePath         string
+	CertPath           string
+	KeyPath            string
+	PassPhrase         string
 }
 
 func NewTLSConf(o logging.OutputSpec, op generator.Options) TLSConf {
@@ -58,6 +57,27 @@ func NewTLSConf(o logging.OutputSpec, op generator.Options) TLSConf {
 		conf.CipherSuites = ciphers.(string)
 	}
 	return conf
+}
+
+func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) (TLSConf, bool) {
+	hasTLS := false
+	if o.Name == logging.OutputNameDefault || HasTLSCertAndKey(secret) {
+		hasTLS = true
+		conf.CertPath = SecretPath(o.Secret.Name, constants.ClientCertKey)
+		conf.KeyPath = SecretPath(o.Secret.Name, constants.ClientPrivateKey)
+	}
+
+	if o.Name == logging.OutputNameDefault || HasCABundle(secret) {
+		hasTLS = true
+		conf.CAFilePath = SecretPath(o.Secret.Name, constants.TrustedCABundleKey)
+	}
+
+	if HasPassphrase(secret) {
+		hasTLS = true
+		conf.PassPhrase = security.GetFromSecret(secret, constants.Passphrase)
+	}
+
+	return *conf, hasTLS
 }
 
 func (t TLSConf) Name() string {
@@ -78,6 +98,16 @@ ciphersuites = "{{ .CipherSuites }}"
 {{- if .InsecureSkipVerify }}
 verify_certificate = false
 verify_hostname = false
+{{- end }}
+{{- if and .KeyPath .CertPath }}
+key_file = {{ .KeyPath }}
+crt_file = {{ .CertPath }}
+{{- end }}
+{{- if .CAFilePath }}
+ca_file = {{ .CAFilePath }}
+{{- end }}
+{{- if .PassPhrase }}
+key_pass = "{{ .PassPhrase }}"
 {{- end }}
 {{- end}}`
 }
@@ -157,4 +187,19 @@ func GetFromSecret(secret *corev1.Secret, name string) string {
 		return string(secret.Data[name])
 	}
 	return ""
+}
+
+func GenerateTLSConf(o logging.OutputSpec, secret *corev1.Secret, op generator.Options) *TLSConf {
+	u, _ := url.Parse(o.URL)
+	if urlhelper.IsTLSScheme(u.Scheme) || o.URL == "" {
+		hasTLS := false
+		tlsConf := NewTLSConf(o, op)
+		tlsConf, hasTLS = addTLSSettings(o, secret, &tlsConf)
+
+		if hasTLS {
+			return &tlsConf
+		}
+	}
+
+	return nil
 }

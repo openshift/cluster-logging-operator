@@ -254,30 +254,12 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 }
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
-	conf := []Element{}
 	if o.Secret != nil {
-		hasTLS := false
-		conf = append(conf, security.NewTLSConf(o, op))
-		if o.Name == logging.OutputNameDefault || security.HasTLSCertAndKey(secret) {
-			hasTLS = true
-			kc := TLSKeyCert{
-				CertPath: security.SecretPath(o.Secret.Name, constants.ClientCertKey),
-				KeyPath:  security.SecretPath(o.Secret.Name, constants.ClientPrivateKey),
-			}
-			conf = append(conf, kc)
-		}
-		if o.Name == logging.OutputNameDefault || security.HasCABundle(secret) {
-			hasTLS = true
-			ca := CAFile{
-				CAFilePath: security.SecretPath(o.Secret.Name, constants.TrustedCABundleKey),
-			}
-			conf = append(conf, ca)
-		}
-		if !hasTLS {
-			return []Element{}
+		if tlsConf := security.GenerateTLSConf(o, secret, op); tlsConf != nil {
+			return []Element{tlsConf}
 		}
 	}
-	return conf
+	return []Element{}
 }
 
 func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {

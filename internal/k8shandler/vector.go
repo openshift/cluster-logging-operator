@@ -2,7 +2,6 @@ package k8shandler
 
 import (
 	"fmt"
-
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
@@ -106,6 +105,7 @@ func newVectorPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *corev1
 		{Name: logAudit, ReadOnly: true, MountPath: logAuditValue},
 		{Name: logOvn, ReadOnly: true, MountPath: logOvnValue},
 		{Name: logOauthapiserver, ReadOnly: true, MountPath: logOauthapiserverValue},
+		{Name: logOauthserver, ReadOnly: true, MountPath: logOauthserverValue},
 		{Name: logOpenshiftapiserver, ReadOnly: true, MountPath: logOpenshiftapiserverValue},
 		{Name: logKubeapiserver, ReadOnly: true, MountPath: logKubeapiserverValue},
 		{Name: config, ReadOnly: true, MountPath: vectorConfigValue},
@@ -184,6 +184,7 @@ func newVectorPodSpec(cluster *logging.ClusterLogging, trustedCABundleCM *corev1
 			{Name: logAudit, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: logAuditValue}}},
 			{Name: logOvn, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: logOvnValue}}},
 			{Name: logOauthapiserver, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: logOauthapiserverValue}}},
+			{Name: logOauthserver, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: logOauthserverValue}}},
 			{Name: logOpenshiftapiserver, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: logOpenshiftapiserverValue}}},
 			{Name: logKubeapiserver, VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{Path: logKubeapiserverValue}}},
 			{Name: config, VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: constants.CollectorConfigSecretName, Optional: utils.GetBool(true)}}},

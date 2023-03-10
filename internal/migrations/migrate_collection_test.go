@@ -53,6 +53,12 @@ var _ = Describe("Migrating ClusterLogging instance", func() {
 			Expect(MigrateCollectionSpec(spec)).To(Equal(ClusterLoggingSpec{}))
 		})
 
+		It("should return clusterlogging as-is when collection defined with empty value", func() {
+			spec := ClusterLoggingSpec{}
+			spec.Collection = &CollectionSpec{}
+			Expect(MigrateCollectionSpec(spec)).To(Equal(ClusterLoggingSpec{Collection: &CollectionSpec{}}))
+		})
+
 		Context("when new collection fields are not set", func() {
 			It("should move deprecated fields", func() {
 				Expect(MigrateCollectionSpec(cl)).To(Equal(ClusterLoggingSpec{

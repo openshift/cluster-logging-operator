@@ -25,15 +25,17 @@ func MigrateCollectionSpec(spec logging.ClusterLoggingSpec) logging.ClusterLoggi
 	}
 
 	logSpec := spec.Collection.Logs
-	spec.Collection.Type = logSpec.Type
-	if logSpec.Resources != nil {
-		spec.Collection.CollectorSpec.Resources = logSpec.Resources
-	}
-	if logSpec.NodeSelector != nil {
-		spec.Collection.CollectorSpec.NodeSelector = logSpec.NodeSelector
-	}
-	if logSpec.Tolerations != nil {
-		spec.Collection.CollectorSpec.Tolerations = logSpec.Tolerations
+	if logSpec != nil {
+		spec.Collection.Type = logSpec.Type
+		if logSpec.Resources != nil {
+			spec.Collection.CollectorSpec.Resources = logSpec.Resources
+		}
+		if logSpec.NodeSelector != nil {
+			spec.Collection.CollectorSpec.NodeSelector = logSpec.NodeSelector
+		}
+		if logSpec.Tolerations != nil {
+			spec.Collection.CollectorSpec.Tolerations = logSpec.Tolerations
+		}
 	}
 	spec.Collection.Logs = nil
 

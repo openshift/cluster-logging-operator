@@ -41,10 +41,10 @@ def generateNamespace(namespace):
       "annotations": {
         "openshift.io/node-selector": ""
       }
-    },
-    "labels": {
-      "openshift.io/cluster-logging": "true",
-      "openshift.io/cluster-monitoring": "true"
+      "labels": {
+        "openshift.io/cluster-logging": "true",
+        "openshift.io/cluster-monitoring": "true"
+      }
     }
   }
   writeResource(ns)

@@ -1,9 +1,10 @@
 package multiple
 
 import (
-	"sort"
-
+	"fmt"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	"sort"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -72,5 +73,45 @@ var _ = Describe("[Functional][Outputs][Multiple] tests", func() {
 			})
 			Expect(logs[1].Message).To(Equal(appMsg))
 		})
+	})
+
+	Context("LOG-3640", func() {
+		It("should send parsed JSON logs to different outputs when using multiple pipelines", func() {
+			builder := functional.NewClusterLogForwarderBuilder(framework.Forwarder)
+			pipelineBuilder := builder.FromInput(logging.InputNameApplication).WithParseJson().Named("one")
+			pipelineBuilder.ToOutputWithVisitor(func(spec *logging.OutputSpec) {
+				spec.URL = "http://0.0.0.0:9200"
+				spec.Elasticsearch = &logging.Elasticsearch{
+					StructuredTypeName: "foo",
+				}
+			}, logging.OutputTypeElasticsearch)
+
+			builder.FromInput(logging.InputNameApplication).WithParseJson().Named("three").
+				ToFluentForwardOutput()
+
+			Expect(framework.Deploy()).To(BeNil())
+
+			appMsg := `{"key":"value"}`
+			crioMsg := functional.NewCRIOLogMessage("2013-04-28T14:36:03.243000+00:00", appMsg, false)
+			Expect(framework.WriteMessagesToApplicationLog(crioMsg, 1)).To(BeNil())
+
+			otherLogs, err := framework.ReadLogsFromElasticSearchIndex(logging.OutputTypeElasticsearch, "app-foo-write")
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+
+			Expect(otherLogs).To(HaveLen(1), "Expected syslog to have received all the records")
+
+			fluentlogs, err := framework.ReadLogsFrom(logging.OutputTypeFluentdForward, logging.InputNameApplication)
+			Expect(err).To(BeNil(), "Expected no errors reading the logs")
+			Expect(fluentlogs).To(HaveLen(1))
+
+			for output, raw := range map[string][]string{"other-es": otherLogs, "fluentforward": fluentlogs} {
+				// Parse log line
+				var logs []types.ApplicationLog
+				err = types.StrictlyParseLogs(fmt.Sprintf("[%s]", strings.Join(raw, ",")), &logs)
+				Expect(err).To(BeNil(), "Expected no errors parsing the logs for %s", output)
+				Expect(logs[0].Structured).To(Not(BeEmpty()), "Expected structured logs for", output)
+			}
+		})
+
 	})
 })

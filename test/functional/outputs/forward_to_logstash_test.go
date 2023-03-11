@@ -40,7 +40,7 @@ input {
     codec => fluent{
       nanosecond_precision => true
     }
-    port => 24224
+    port => 24226
   }
 }
 

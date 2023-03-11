@@ -26,8 +26,18 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearch(outputName strin
 }
 
 func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName string, index string) (result string, err error) {
+	var buffer []string
+	buffer, err = f.ReadLogsFromElasticSearchIndex(outputName, index)
+	if err == nil {
+		result = fmt.Sprintf("[%s]", strings.Join(buffer, ","))
+	}
+	log.V(4).Info("Returning", "logs", result)
+	return result, err
+}
+
+func (f *CollectorFunctionalFramework) ReadLogsFromElasticSearchIndex(outputName string, index string) ([]string, error) {
 	buffer := []string{}
-	err = wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
+	err := wait.PollImmediate(defaultRetryInterval, maxDuration, func() (done bool, err error) {
 		cmd := `curl -X GET "localhost:9200/` + index + `/_search?pretty" -H 'Content-Type: application/json' -d'
 {
 	"query": {
@@ -35,7 +45,7 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 }
 }
 '`
-		result, err = f.RunCommand(outputName, "bash", "-c", cmd)
+		result, err := f.RunCommand(outputName, "bash", "-c", cmd)
 		if result != "" && err == nil {
 			//var elasticResult ElasticSearchResult
 			var elasticResult map[string]interface{}
@@ -66,9 +76,6 @@ func (f *CollectorFunctionalFramework) GetLogsFromElasticSearchIndex(outputName 
 		log.V(4).Info("Polling from ElasticSearch", "err", err, "result", result)
 		return false, nil
 	})
-	if err == nil {
-		result = fmt.Sprintf("[%s]", strings.Join(buffer, ","))
-	}
-	log.V(4).Info("Returning", "logs", result)
-	return result, err
+	log.V(4).Info("Returning", "logs", buffer)
+	return buffer, err
 }

@@ -1,11 +1,9 @@
 package helpers
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator"
-	"strings"
-
 	. "github.com/onsi/gomega"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/test/matchers"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -40,6 +38,6 @@ func TestGenerateConfAndFormatWith(gf GenerateFunc, format func(string) string) 
 		e := gf(testcase.CLSpec, testcase.Secrets, testcase.CLFSpec, testcase.Options)
 		conf, err := g.GenerateConf(e...)
 		Expect(err).To(BeNil())
-		Expect(strings.TrimSpace(format(testcase.ExpectedConf))).To(EqualTrimLines(format(conf)))
+		Expect(format(conf)).To(EqualTrimLines(format(testcase.ExpectedConf)))
 	}
 }

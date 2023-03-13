@@ -131,6 +131,12 @@ spec:
         name: ""
         version: v1
       specDescriptors:
+      - description: Deprecated. Specification of Log Collection for the cluster See
+          spec.collection
+        displayName: Logs
+        path: collection.logs
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       - description: Define which Nodes the Pods are scheduled on.
         displayName: Collector Node Selector
         path: collection.logs.nodeSelector

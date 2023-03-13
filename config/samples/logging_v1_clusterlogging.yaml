@@ -5,7 +5,7 @@ metadata:
   namespace: openshift-logging
 spec:
   collection:
-    type: fluentd
+    type: vector
   logStore:
     type: elasticsearch
     elasticsearch:
@@ -15,7 +15,6 @@ spec:
           memory: 2Gi
       redundancyPolicy: SingleRedundancy
       storage:
-        storageClassName: gp2
         size: 200G
     retentionPolicy:
       application:

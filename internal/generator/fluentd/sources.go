@@ -106,6 +106,9 @@ func ExcludeContainerPaths(namespace string) string {
 		paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_%s-*/*/*.log\"", namespace, comp))
 	}
 	paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_*/%s*/*.log\"", namespace, constants.LokiName))
+	// in loki stack there 2 container without 'loki' as prefix in name: "gateway" and "opa"
+	paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_*/%s/*.log\"", namespace, "gateway"))
+	paths = append(paths, fmt.Sprintf("\"/var/log/pods/%s_*/%s/*.log\"", namespace, "opa"))
 	paths = append(paths, "\"/var/log/pods/*/*/*.gz\"", "\"/var/log/pods/*/*/*.tmp\"")
 
 	return fmt.Sprintf("[%s]", strings.Join(paths, ", "))

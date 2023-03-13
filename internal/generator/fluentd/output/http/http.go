@@ -37,7 +37,7 @@ func (h Http) Template() string {
 @type http
 endpoint {{.URI}}
 http_method {{.Method}}
-encoding "application/x-ndjson"
+content_type "application/x-ndjson"
 {{kv  .Headers -}}
 {{compose .SecurityConfig}}
 {{compose .BufferConfig}}

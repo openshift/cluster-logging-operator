@@ -1,0 +1,55 @@
+=== Steps to forward to Elasticsearch
+
+
+. Create a ClusterLogging instance with collection `type: vector`:
++
+----
+ oc apply -f cluster-logging.yaml
+----
++
+.cluster-logging.yaml
+[source,yaml]
+----
+kind: ClusterLogging
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  collection:
+    type: vector
+----
+
+. Create a ClusterLogForwarder instance to Elasticsearch.
++
+----
+ oc apply -f cluster-log-forwarder.yaml
+----
++
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+kind: ClusterLogForwarder
+apiVersion: logging.openshift.io/v1
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  outputs:
+    - name: external-es
+      type: elasticsearch
+      secret:
+        name: es-secret <1>
+      url: 'https://example-elasticsearch-secure.com:9200'
+      Version: 8 <2>
+  pipelines:
+    - name: my-logs
+      inputRefs:
+        - application
+        - infrastructure
+      outputRefs:
+        - external-es
+----
++
+<1> For an `https` prefix, specify the name of the secret required by the endpoint for TLS communication. The secret must exist in the `openshift-logging` project, and must have keys of: `tls.crt`, `tls.key`, and `ca-bundle.crt` that point to the respective certificates that they represent. Otherwise, for `http` and `https` prefixes, you can specify a secret that contains a username and password. 
+<2> Forwarding to an external Elasticsearch of version 8.x or greater requires the `Version` field to be specified otherwise this can be omitted.

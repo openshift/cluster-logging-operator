@@ -60,6 +60,11 @@ func (p *PipelineBuilder) WithMultineErrorDetection() *PipelineBuilder {
 	return p
 }
 
+func (p *PipelineBuilder) WithParseJson() *PipelineBuilder {
+	p.jsonParsing = "json"
+	return p
+}
+
 // Named is the name to be given to the ClusterLogForwarder pipeline
 func (p *PipelineBuilder) Named(name string) *PipelineBuilder {
 	p.pipelineName = name

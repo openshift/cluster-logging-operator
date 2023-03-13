@@ -53,7 +53,7 @@ var _ = Describe("Generate fluentd config", func() {
 	@type http
 	endpoint https://my-logstore.com/logs/app-logs
 	http_method post
-	encoding "application/x-ndjson"
+	content_type "application/x-ndjson"
 	username "#{File.read('/var/run/ocp-collector/secrets/http-receiver/username') rescue nil}"
 	password "#{File.read('/var/run/ocp-collector/secrets/http-receiver/password') rescue nil}"
 	<buffer>
@@ -102,7 +102,7 @@ var _ = Describe("Generate fluentd config", func() {
 	@type http
 	endpoint https://my-logstore.com/logs/app-logs
 	http_method post
-	encoding "application/x-ndjson"
+	content_type "application/x-ndjson"
 	bearer_token_file '/var/run/ocp-collector/secrets/http-receiver/token'
 	<buffer>
 	  @type file
@@ -157,7 +157,7 @@ var _ = Describe("Generate fluentd config", func() {
 	@type http
 	endpoint https://my-logstore.com/logs/app-logs
 	http_method post
-	encoding "application/x-ndjson"
+	content_type "application/x-ndjson"
 	headers {"k1":"v1","k2":"v2"}
 	bearer_token_file '/var/run/ocp-collector/secrets/http-receiver/token'
 	<buffer>
@@ -213,7 +213,7 @@ var _ = Describe("Generate fluentd config", func() {
 	@type http
 	endpoint https://my-logstore.com/logs/app-logs
 	http_method post
-	encoding "application/x-ndjson"
+	content_type "application/x-ndjson"
 	headers {"k1":"v1","k2":"v2"}
 	bearer_token_file '/var/run/ocp-collector/secrets/http-receiver/token'
 	<buffer>
@@ -275,7 +275,7 @@ var _ = Describe("Generate fluentd config", func() {
 	@type http
 	endpoint https://my-logstore.com/logs/app-logs
 	http_method post
-	encoding "application/x-ndjson"
+	content_type "application/x-ndjson"
 	headers {"k1":"v1","k2":"v2"}
 	key '/var/run/ocp-collector/secrets/http-receiver/tls.key'
 	cert '/var/run/ocp-collector/secrets/http-receiver/tls.crt'

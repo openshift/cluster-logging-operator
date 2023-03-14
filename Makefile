@@ -169,7 +169,7 @@ spotless: clean
 
 .PHONY: image
 image: .target/image
-.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version scripts files bundle .bingo apis controllers internal -type f) Dockerfile  go.mod go.sum
+.target/image: .target $(GEN_TIMESTAMP) $(shell find must-gather version files bundle .bingo apis controllers internal -type f) Dockerfile  go.mod go.sum
 	podman build -t $(IMAGE_TAG) . -f Dockerfile
 	touch $@
 

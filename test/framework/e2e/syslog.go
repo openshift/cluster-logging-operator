@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"log"
-	"math/rand"
-	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -457,38 +455,19 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	return syslogDeployment, tc.waitForDeployment(constants.WatchNamespace, syslogDeployment.Name, defaultRetryInterval, defaultTimeout)
 }
 
-func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, secretName string) (*corev1.Secret, error) {
-	workingDir := fmt.Sprintf("/tmp/clo-test-%d", rand.Intn(10000)) //nolint:gosec
-	clolog.V(3).Info("Generating Pipeline certificates for", "rsyslog-receiver", workingDir)
-	if _, err := os.Stat(workingDir); os.IsNotExist(err) {
-		if err = os.MkdirAll(workingDir, 0766); err != nil {
-			return nil, err
-		}
-	}
-	if err := os.Setenv("WORKING_DIR", workingDir); err != nil {
-		return nil, err
-	}
-	script := fmt.Sprintf("%s/syslog_cert_generation.sh", testDir)
-	clolog.Info("Running script '%s %s %s %s'", "script", script, "workingdir", workingDir, "namespace", constants.WatchNamespace, "logStore", logStoreName)
-	cmd := exec.Command(script, workingDir, constants.WatchNamespace, logStoreName)
-	result, err := cmd.Output()
-
-	if clolog.V(3).Enabled() {
-		clolog.V(3).Info("cert_generation :", "output", string(result))
-	}
-	if err != nil {
-		clolog.V(3).Error(err, "Error:")
-	}
+func (tc *E2ETestFramework) CreateSyslogReceiverSecrets(testDir, logStoreName, secretName string) (secret *corev1.Secret, err error) {
+	ca := certificate.NewCA(nil, "Root CA") // Self-signed CA
+	serverCert := certificate.NewCert(ca, "", logStoreName, fmt.Sprintf("%s.%s.svc", logStoreName, constants.WatchNamespace))
 
 	data := map[string][]byte{
-		"tls.key":       utils.GetWorkingDirFileContents("syslog-server.key"),
-		"tls.crt":       utils.GetWorkingDirFileContents("syslog-server.crt"),
-		"ca-bundle.crt": utils.GetWorkingDirFileContents("ca-syslog.crt"),
-		"ca.key":        utils.GetWorkingDirFileContents("ca-syslog.key"),
+		"tls.key":       serverCert.PrivateKeyPEM(),
+		"tls.crt":       serverCert.CertificatePEM(),
+		"ca-bundle.crt": ca.CertificatePEM(),
+		"ca.key":        ca.PrivateKeyPEM(),
 	}
 
 	sOpts := metav1.CreateOptions{}
-	secret := k8shandler.NewSecret(
+	secret = k8shandler.NewSecret(
 		secretName,
 		constants.WatchNamespace,
 		data,

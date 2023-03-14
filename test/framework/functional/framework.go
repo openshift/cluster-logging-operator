@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 	"github.com/openshift/cluster-logging-operator/test"
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"net"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/openshift/cluster-logging-operator/test/framework/e2e/certificates"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -206,17 +206,14 @@ func (f *CollectorFunctionalFramework) DeployWithVisitors(visitors []runtime.Pod
 		return err
 	}
 
-	err, certsDir := certificates.GenerateTestCertificates("elasticsearch")
-	defer os.RemoveAll(certsDir)
-	if err != nil {
-		return err
-	}
-	log.V(2).Info("Creating certs configmap")
+	// Receiver acts as TLS server.
+	privateCA := certificate.NewCA(nil, "Root CA")
+	serverCert := certificate.NewCert(privateCA, "Server", fmt.Sprintf("%s.%s", f.Name, f.Namespace), "localhost", net.IPv4(127, 0, 0, 1), net.IPv6loopback)
 	certsName := "certs-" + f.Name
 	certs := runtime.NewConfigMap(f.Test.NS.Name, certsName, map[string]string{})
 	runtime.NewConfigMapBuilder(certs).
-		Add("tls.key", string(utils.GetDirFileContents(certsDir, "system.logging.fluentd.key"))).
-		Add("tls.crt", string(utils.GetDirFileContents(certsDir, "system.logging.fluentd.crt")))
+		Add("tls.key", string(serverCert.PrivateKeyPEM())).
+		Add("tls.crt", string(serverCert.CertificatePEM()))
 	if err = f.Test.Client.Create(certs); err != nil {
 		return err
 	}

@@ -136,17 +136,24 @@ func (builder *PodBuilder) AddConfigMapVolume(name, configMapName string) *PodBu
 }
 
 func (builder *PodBuilder) AddConfigMapVolumeWithPermissions(name, configMapName string, permissions *int32) *PodBuilder {
-	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, corev1.Volume{
+	return builder.AddConfigMapWith(name, configMapName, func(volume corev1.Volume) corev1.Volume {
+		volume.VolumeSource.ConfigMap.DefaultMode = permissions
+		return volume
+	})
+}
+
+func (builder *PodBuilder) AddConfigMapWith(name, configMapName string, handler func(corev1.Volume) corev1.Volume) *PodBuilder {
+	volume := handler(corev1.Volume{
 		Name: name,
 		VolumeSource: corev1.VolumeSource{
 			ConfigMap: &corev1.ConfigMapVolumeSource{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: configMapName,
 				},
-				DefaultMode: permissions,
 			},
 		},
 	})
+	builder.Pod.Spec.Volumes = append(builder.Pod.Spec.Volumes, volume)
 	return builder
 }
 

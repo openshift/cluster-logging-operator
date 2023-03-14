@@ -45,9 +45,14 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 		}
 
 		if op.Has(constants.PreviewTLSSecurityProfile) {
-			outMinTlsVersion, outCiphers := op.TLSProfileInfo(clfspec.TLSSecurityProfile, o)
-			op[generator.MinTLSVersion] = outMinTlsVersion
-			op[generator.Ciphers] = outCiphers
+			if o.Name == logging.OutputNameDefault && o.Type == logging.OutputTypeElasticsearch {
+				op[generator.MinTLSVersion] = ""
+				op[generator.Ciphers] = ""
+			} else {
+				outMinTlsVersion, outCiphers := op.TLSProfileInfo(clfspec.TLSSecurityProfile, o)
+				op[generator.MinTLSVersion] = outMinTlsVersion
+				op[generator.Ciphers] = outCiphers
+			}
 		}
 
 		inputs := ofp[o.Name].List()
@@ -69,7 +74,7 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 		}
 	}
 
-	minTlsVersion, cipherSuites := op.TLSProfileInfo(clfspec.TLSSecurityProfile, logging.OutputSpec{})
+	minTlsVersion, cipherSuites := op.TLSProfileInfo(nil, logging.OutputSpec{})
 	outputs = append(outputs,
 		AddNodeNameToMetric(AddNodenameToMetricTransformName, []string{InternalMetricsSourceName}),
 		PrometheusOutput(PrometheusOutputSinkName, []string{AddNodenameToMetricTransformName}, minTlsVersion, cipherSuites))

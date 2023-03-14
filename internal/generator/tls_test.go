@@ -6,6 +6,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"strings"
 )
 
@@ -17,10 +18,10 @@ var _ = Describe("Options#TLSProfileInfo", func() {
 
 	Context("when a cluster profile is absent", func() {
 
-		It("should find nothing when clf profile is nil and output.TLS is nil", func() {
+		It("should use the defaults when clf profile is nil and output.TLS is nil", func() {
 			minTLS, ciphers := options.TLSProfileInfo(nil, logging.OutputSpec{})
-			Expect(minTLS).To(BeEmpty(), "Exp to have no profile info when there is no default or any other reference")
-			Expect(ciphers).To(BeEmpty(), "Exp to have no profile info when there is no default or any other reference")
+			Expect(minTLS).To(BeEquivalentTo(tls.DefaultMinTLSVersion))
+			Expect(ciphers).To(Equal(strings.Join(tls.DefaultTLSCiphers, ",")))
 		})
 	})
 

@@ -2,6 +2,7 @@ package vector
 
 import (
 	"fmt"
+	configv1 "github.com/openshift/api/config/v1"
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -471,7 +472,6 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 					},
 				},
 			},
-			Options: generator.Options{generator.ClusterTLSProfileSpec: tls.GetClusterTLSProfileSpec(nil)},
 			ExpectedConf: `
 # Logs from containers (including openshift containers)
 [sources.raw_container_logs]
@@ -1005,19 +1005,30 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 `,
 		}),
 		Entry("with complex spec for elasticsearch default v6 & latest version", testhelpers.ConfGenerateTest{
+			Options: generator.Options{
+				constants.PreviewTLSSecurityProfile: "",
+				generator.ClusterTLSProfileSpec:     tls.GetClusterTLSProfileSpec(&configv1.TLSSecurityProfile{Type: configv1.TLSProfileIntermediateType}),
+			},
 			CLSpec: logging.CollectionSpec{},
 			CLFSpec: logging.ClusterLogForwarderSpec{
+				TLSSecurityProfile: &configv1.TLSSecurityProfile{Type: configv1.TLSProfileModernType},
 				Pipelines: []logging.PipelineSpec{
 					{
 						InputRefs: []string{
 							logging.InputNameApplication,
 							logging.InputNameInfrastructure,
 							logging.InputNameAudit},
-						OutputRefs: []string{"es-1", "es-2"},
+						OutputRefs: []string{"default", "es-1", "es-2"},
 						Name:       "pipeline",
 					},
 				},
 				Outputs: []logging.OutputSpec{
+					{
+						Name:   logging.OutputNameDefault,
+						Type:   logging.OutputTypeElasticsearch,
+						URL:    constants.LogStoreURL,
+						Secret: &logging.OutputSecretSpec{Name: constants.CollectorSecretName},
+					},
 					{
 						Type: logging.OutputTypeElasticsearch,
 						Name: "es-1",
@@ -1029,6 +1040,9 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 						},
 						Secret: &logging.OutputSecretSpec{
 							Name: "es-1",
+						},
+						TLS: &logging.OutputTLSSpec{
+							TLSSecurityProfile: &configv1.TLSSecurityProfile{Type: configv1.TLSProfileIntermediateType},
 						},
 					},
 					{
@@ -1042,6 +1056,9 @@ ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1
 						},
 						Secret: &logging.OutputSecretSpec{
 							Name: "es-2",
+						},
+						TLS: &logging.OutputTLSSpec{
+							TLSSecurityProfile: &configv1.TLSSecurityProfile{Type: configv1.TLSProfileIntermediateType},
 						},
 					},
 				},
@@ -1351,6 +1368,118 @@ source = '''
 '''
 
 # Set Elasticsearch index
+[transforms.default_add_es_index]
+type = "remap"
+inputs = ["pipeline"]
+source = '''
+  index = "default"
+  if (.log_type == "application"){
+	index = "app"
+  }
+  if (.log_type == "infrastructure"){
+	index = "infra"
+  }
+  if (.log_type == "audit"){
+	index = "audit"
+  }
+  .write_index = index + "-write"
+  ._id = encode_base64(uuid_v4())
+  del(.file)
+  del(.tag)
+  del(.source_type)
+'''
+
+[transforms.default_dedot_and_flatten]
+type = "lua"
+inputs = ["default_add_es_index"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+	function init()
+		count = 0
+	end
+	function process(event, emit)
+		count = count + 1
+		event.log.openshift.sequence = count
+		if event.log.kubernetes == nil then
+			emit(event)
+			return
+		end
+		if event.log.kubernetes.labels == nil then
+			emit(event)
+			return
+		end
+		flatten_labels(event)
+		prune_labels(event)
+		dedot(event.log.kubernetes.namespace_labels)
+		emit(event)
+	end
+	
+	function dedot(map)
+		if map == nil then
+			return
+		end
+		local new_map = {}
+		local changed_keys = {}
+		for k, v in pairs(map) do
+			local dedotted = string.gsub(k, "%.", "_")
+			if dedotted ~= k then
+				new_map[dedotted] = v
+				changed_keys[k] = true
+			end
+		end
+		for k in pairs(changed_keys) do
+			map[k] = nil
+		end
+		for k, v in pairs(new_map) do
+			map[k] = v
+		end
+	end
+
+	function flatten_labels(event)
+		-- create "flat_labels" key
+		event.log.kubernetes.flat_labels = {}
+		i = 1
+		-- flatten the labels
+		for k,v in pairs(event.log.kubernetes.labels) do
+		  event.log.kubernetes.flat_labels[i] = k.."="..v
+		  i=i+1
+		end
+	end 
+
+	function prune_labels(event)
+		local exclusions = {"app.kubernetes.io/name", "app.kubernetes.io/instance", "app.kubernetes.io/version", "app.kubernetes.io/component", "app.kubernetes.io/part-of", "app.kubernetes.io/managed-by", "app.kubernetes.io/created-by"}
+		local keys = {}
+		for k,v in pairs(event.log.kubernetes.labels) do
+			for index, e in pairs(exclusions) do
+				if k == e then
+					keys[k] = v
+				end
+			end
+		end
+		event.log.kubernetes.labels = keys
+	end
+'''
+
+[sinks.default]
+type = "elasticsearch"
+inputs = ["default_dedot_and_flatten"]
+endpoint = "https://elasticsearch:9200"
+bulk.index = "{{ write_index }}"
+bulk.action = "create"
+encoding.except_fields = ["write_index"]
+request.timeout_secs = 2147483648
+id_key = "_id"
+
+[sinks.default.tls]
+enabled = true
+key_file = "/var/run/ocp-collector/secrets/collector/tls.key"
+crt_file = "/var/run/ocp-collector/secrets/collector/tls.crt"
+ca_file = "/var/run/ocp-collector/secrets/collector/ca-bundle.crt"
+
+
+# Set Elasticsearch index
 [transforms.es_1_add_es_index]
 type = "remap"
 inputs = ["pipeline"]
@@ -1461,6 +1590,8 @@ id_key = "_id"
 
 [sinks.es_1.tls]
 enabled = true
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-1/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-1/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-1/ca-bundle.crt"
@@ -1577,6 +1708,8 @@ suppress_type_name = true
 
 [sinks.es_2.tls]
 enabled = true
+min_tls_version = "VersionTLS12"
+ciphersuites = "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 key_file = "/var/run/ocp-collector/secrets/es-2/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/es-2/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/es-2/ca-bundle.crt"

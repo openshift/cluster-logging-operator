@@ -3,6 +3,7 @@ package k8shandler
 import (
 	"errors"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"strings"
 
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
@@ -12,17 +13,29 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
-	"github.com/openshift/cluster-logging-operator/internal/tls"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
-// useOldRemoteSyslogPlugin checks if old plugin (docebo/fluent-plugin-remote-syslog) is to be used for sending syslog or new plugin (dlackty/fluent-plugin-remote_syslog) is to be used
-func (clusterRequest *ClusterLoggingRequest) useOldRemoteSyslogPlugin() bool {
-	if clusterRequest.ForwarderRequest == nil {
-		return false
+// EvaluateAnnotationsForEnabledCapabilities populates generator options with capabilities enabled by the ClusterLogForwarder
+func EvaluateAnnotationsForEnabledCapabilities(forwarder *logging.ClusterLogForwarder, options generator.Options) {
+	if forwarder == nil {
+		return
 	}
-	enabled, found := clusterRequest.ForwarderRequest.Annotations[UseOldRemoteSyslogPlugin]
-	return found && enabled == "enabled"
+	for key, value := range forwarder.Annotations {
+		switch key {
+		case constants.PreviewTLSSecurityProfile:
+			fallthrough
+		case constants.UseOldRemoteSyslogPlugin:
+			if strings.ToLower(value) == constants.Enabled {
+				options[key] = ""
+			}
+		case constants.AnnotationDebugOutput:
+			if strings.ToLower(value) == "true" {
+				options[helpers.EnableDebugOutput] = "true"
+			}
+		}
+	}
 }
 
 func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[string]bool) (config string, err error) {
@@ -52,14 +65,9 @@ func (clusterRequest *ClusterLoggingRequest) generateCollectorConfig(extras map[
 	}
 
 	op := generator.Options{}
-	if clusterRequest.useOldRemoteSyslogPlugin() {
-		op[generator.UseOldRemoteSyslogPlugin] = ""
-	}
-	if debug, ok := clusterRequest.ForwarderRequest.Annotations[AnnotationDebugOutput]; ok && strings.ToLower(debug) == "true" {
-		op[helpers.EnableDebugOutput] = "true"
-	}
 	tlsProfile, _ := tls.FetchAPIServerTlsProfile(clusterRequest.Client)
 	op[generator.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(tlsProfile)
+	EvaluateAnnotationsForEnabledCapabilities(clusterRequest.ForwarderRequest, op)
 
 	var collectorType = clusterRequest.Cluster.Spec.Collection.Type
 	g := forwardergenerator.New(collectorType)

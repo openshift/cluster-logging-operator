@@ -44,9 +44,11 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			}
 		}
 
-		outMinTlsVersion, outCiphers := op.TLSProfileInfo(clfspec.TLSSecurityProfile, o)
-		op[generator.MinTLSVersion] = outMinTlsVersion
-		op[generator.Ciphers] = outCiphers
+		if op.Has(constants.PreviewTLSSecurityProfile) {
+			outMinTlsVersion, outCiphers := op.TLSProfileInfo(clfspec.TLSSecurityProfile, o)
+			op[generator.MinTLSVersion] = outMinTlsVersion
+			op[generator.Ciphers] = outCiphers
+		}
 
 		inputs := ofp[o.Name].List()
 		switch o.Type {

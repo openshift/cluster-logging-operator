@@ -27,12 +27,6 @@ type OutLabel = string
 // ComponentID is used to define a component in vector configuration, a source, sink, etc
 type ComponentID = string
 
-// Options is a map of Options used to customize the config generation. E.g. Debugging, legacy config generation
-type Options map[string]interface{}
-
-// NoOptions is used to pass empty options
-var NoOptions = Options{}
-
 // Generator converts an array of Elements to configuration. It is intentionally kept stateless.
 type Generator int
 

@@ -12,8 +12,11 @@ func (up UserNamePass) Name() string {
 
 func (up UserNamePass) Template() string {
 	return `{{define "` + up.Name() + `" -}}
-username "#{File.read({{ .UsernamePath }}) rescue nil}"
-password "#{File.read({{ .PasswordPath }}) rescue nil}"
+<auth>
+  method basic
+  username "#{File.read({{ .UsernamePath }}) rescue nil}"
+  password "#{File.read({{ .PasswordPath }}) rescue nil}"
+</auth>
 {{- end}}
 `
 }

@@ -12,7 +12,7 @@ func (kc TLSKeyCert) Name() string {
 
 func (kc TLSKeyCert) Template() string {
 	return `{{define "` + kc.Name() + `" -}}
-key {{.KeyPath}}
-cert {{.CertPath}}
+tls_private_key_path {{.KeyPath}}
+tls_client_cert_path {{.CertPath}}
 {{- end}}`
 }

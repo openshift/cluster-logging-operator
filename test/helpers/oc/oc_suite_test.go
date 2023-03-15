@@ -21,6 +21,13 @@ spec:
     - name: log-generator
       image: quay.io/quay/busybox
       args: ["sh", "-c", "i=0; while true; do echo $i: Test message; i=$((i+1)) ; sleep 1; done"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["all"]
+        runAsNonRoot: true
+        seccompProfile:
+          type: "RuntimeDefault"
 `
 
 func TestOC(t *testing.T) {

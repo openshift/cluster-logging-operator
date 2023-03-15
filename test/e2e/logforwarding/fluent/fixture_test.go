@@ -34,6 +34,14 @@ func NewFixture(namespace, message string) *Fixture {
 	}
 }
 
+//nolint
+func (f *Fixture) Cleanup(c *client.Client) {
+	c.Remove(f.ClusterLogging)
+	c.Remove(f.ClusterLogForwarder)
+	f.cleanFluentDBuffers(c)
+	c.Remove(f.LogGenerator)
+}
+
 // Create resources, wait for them to be ready.
 func (f *Fixture) Create(c *client.Client) {
 	ExpectOK(c.Remove(f.ClusterLogging))

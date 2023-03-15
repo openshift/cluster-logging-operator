@@ -90,6 +90,7 @@ var _ = Describe("[ClusterLogForwarder]", func() {
 	})
 
 	AfterEach(func() {
+		f.Cleanup(c.Client)
 		c.Close()
 		e2e.Cleanup()
 	})

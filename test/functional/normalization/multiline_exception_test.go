@@ -28,6 +28,13 @@ var _ = Describe("[Functional][Normalization] Multi-line exception detection", f
         at testjava.Main.printMe(Main.java:19)
         at testjava.Main.main(Main.java:10)`
 
+		jsClientSideException = `Error  
+				at bls (<anonymous>:3:9)
+				at <anonymous>:6:4
+				at a_function_name
+				at Object.InjectedScript._evaluateOn (https://<anonymous>/file.js?foo=bar:875:140)
+				at Object.InjectedScript.evaluate (<anonymous>)`
+
 		nodeJSException = `ReferenceError: myArray is not defined
   at next (/app/node_modules/express/lib/router/index.js:256:14)
   at /app/node_modules/express/lib/router/index.js:615:15
@@ -98,6 +105,7 @@ created by main.main
 		}
 	},
 		Entry("of Java services", javaException, nil),
+		Entry("of JS client side exception", jsClientSideException, nil),
 		Entry("of NodeJS services", nodeJSException, nil),
 		Entry("of GoLang services", goLangException, nil),
 		Entry("of single application NS to single pipeline", goLangException, func(framework *functional.CollectorFunctionalFramework) {

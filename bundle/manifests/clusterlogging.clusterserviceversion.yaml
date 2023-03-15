@@ -278,6 +278,16 @@ spec:
         path: visualization.nodeSelector
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:nodeSelector
+      - description: LogsLimit is the max number of entries returned for a query.
+        displayName: OCP Console Log Limit
+        path: visualization.ocpConsole.logsLimit
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:ocpConsoleLogLimit
+      - description: Timeout is the max duration before a query timeout
+        displayName: OCP Console Query Timeout
+        path: visualization.ocpConsole.timeout
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:ocpConsoleTimeout
       - description: Number of instances to deploy for a Kibana deployment
         displayName: Kibana Size
         path: visualization.replicas

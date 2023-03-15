@@ -3,7 +3,9 @@ package console
 import (
 	"context"
 	"fmt"
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/yaml"
 	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -34,15 +36,17 @@ type Reconciler struct {
 	Config
 	c client.Client
 
+	configMapHash string
 	consolePlugin consolev1alpha1.ConsolePlugin
 	configMap     corev1.ConfigMap
 	deployment    appv1.Deployment
 	service       corev1.Service
+	consoleSpec   *logging.OCPConsoleSpec
 }
 
 // NewReconciler creates a Reconciler using client for config.
-func NewReconciler(c client.Client, cf Config) *Reconciler {
-	r := &Reconciler{Config: cf, c: c}
+func NewReconciler(c client.Client, cf Config, consoleSpec *logging.OCPConsoleSpec) *Reconciler {
+	r := &Reconciler{Config: cf, c: c, consoleSpec: consoleSpec}
 	_ = r.each(func(m mutable) error {
 		if m.o == &r.consolePlugin {
 			runtime.Initialize(m.o, "", r.Name) // Plugin is Cluster scope
@@ -189,7 +193,22 @@ func (r *Reconciler) mutateConfigMap() error {
 						root                /usr/share/nginx/html;
 					}
 				}
-				`, r.pluginBackendPort())}
+				`, r.pluginBackendPort()),
+	}
+	var config string
+	if r.consoleSpec != nil {
+		configYaml, err := yaml.Marshal(r.consoleSpec)
+		if err != nil {
+			return err
+		}
+		config = string(configYaml)
+	}
+	o.Data["config.yaml"] = config
+	hash, err := utils.CalculateMD5Hash(config)
+	if err != nil {
+		return err
+	}
+	r.configMapHash = hash
 	return r.mutateOwned(o)
 }
 
@@ -230,17 +249,26 @@ func (r *Reconciler) mutateDeployment() error {
 								Protocol:      "TCP",
 							},
 						},
+						Env: []corev1.EnvVar{
+							{Name: "PLUGIN_CONF_HASH", Value: r.configMapHash},
+						},
 						Args: []string{
 							"-port", "9443",
 							"-features", strings.Join(r.Config.Features, ","),
 							"-cert", "/var/serving-cert/tls.crt",
 							"-key", "/var/serving-cert/tls.key",
+							"-plugin-config-path", "/etc/plugin/config.yaml",
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "serving-cert",
 								ReadOnly:  true,
 								MountPath: "/var/serving-cert",
+							},
+							{
+								Name:      "plugin-config",
+								ReadOnly:  true,
+								MountPath: "/etc/plugin/config.yaml",
 							},
 						},
 					},
@@ -252,6 +280,18 @@ func (r *Reconciler) mutateDeployment() error {
 							Secret: &corev1.SecretVolumeSource{
 								SecretName:  r.Name,
 								DefaultMode: r.defaultMode(),
+							},
+						},
+					},
+					{
+						Name: "plugin-config",
+						VolumeSource: corev1.VolumeSource{
+							ConfigMap: &corev1.ConfigMapVolumeSource{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: r.Name,
+								},
+								DefaultMode: r.defaultMode(),
+								Optional:    utils.GetBool(true),
 							},
 						},
 					},

@@ -9,9 +9,9 @@ import (
 )
 
 // ReconcilePlugin reconciles the console plugin to expose log querying of storage
-func ReconcilePlugin(k8sClient client.Client, logStore *logging.LogStoreSpec, owner client.Object, clusterVersion string) error {
+func ReconcilePlugin(k8sClient client.Client, logStore *logging.LogStoreSpec, owner client.Object, clusterVersion string, consoleSpec *logging.OCPConsoleSpec) error {
 	lokiService := lokistack.LokiStackGatewayService(logStore)
-	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, FeaturesForOCP(clusterVersion)))
+	r := NewReconciler(k8sClient, NewConfig(owner, lokiService, FeaturesForOCP(clusterVersion)), consoleSpec)
 	if logStore != nil && logStore.Type == logging.LogStoreTypeLokiStack {
 		log.V(3).Info("Enabling logging console plugin", "created-by", r.CreatedBy(), "loki-service", lokiService)
 		return r.Reconcile(context.TODO())

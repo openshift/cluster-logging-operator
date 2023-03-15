@@ -52,7 +52,7 @@ var _ = Describe("[ConsolePlugin]", func() {
 		c = client.NewTest()
 		r = console.NewReconciler(
 			c.ControllerRuntimeClient(),
-			console.NewConfig(testruntime.NewClusterLogging(), "lokiService", []string{}))
+			console.NewConfig(testruntime.NewClusterLogging(), "lokiService", []string{}), nil)
 		cleanup() // Clear out objects left behind by previous tests.
 	})
 

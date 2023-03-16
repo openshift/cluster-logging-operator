@@ -2,6 +2,7 @@ package k8shandler
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"reflect"
 	"sync"
 
@@ -187,7 +188,7 @@ func LoadElasticsearchSecretMap() map[string][]byte {
 
 var mutex sync.Mutex
 
-//Syncronize blocks single threads access using the certificate mutex
+// Syncronize blocks single threads access using the certificate mutex
 func Syncronize(action func() error) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -312,8 +313,8 @@ func (clusterRequest *ClusterLoggingRequest) removeElasticsearchCR(elasticsearch
 	esCr := clusterRequest.emptyElasticsearchCR(elasticsearchName)
 
 	err := clusterRequest.Delete(esCr)
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("Failure deleting %v elasticsearch CR for %q: %v", elasticsearchName, clusterRequest.Cluster.Name, err)
+	if err != nil && !(errors.IsNotFound(err) || meta.IsNoMatchError(err)) {
+		return fmt.Errorf("failure deleting %v elasticsearch CR for %q: %v", elasticsearchName, clusterRequest.Cluster.Name, err)
 	}
 
 	return nil

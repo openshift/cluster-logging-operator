@@ -2,11 +2,12 @@ package k8shandler
 
 import (
 	"context"
-
+	"github.com/openshift/cluster-logging-operator/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
+	"strings"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -65,7 +66,12 @@ func (clusterRequest *ClusterLoggingRequest) UpdateStatus(object client.Object) 
 	if err = clusterRequest.Client.Status().Update(context.TODO(), object); err != nil {
 		// making this debug because we should be throwing the returned error if we are never
 		// able to update the status
-		log.V(2).Error(err, "Error updating status")
+		if strings.Contains(err.Error(), constants.OptimisticLockErrorMsg) {
+			// we can skip this error, so rise login level, more info here: https://github.com/kubernetes/kubernetes/issues/28149
+			log.V(5).Error(err, "Error updating status")
+		} else {
+			log.V(2).Error(err, "Error updating status")
+		}
 	}
 	return err
 }

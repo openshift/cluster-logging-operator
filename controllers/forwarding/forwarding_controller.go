@@ -2,6 +2,8 @@ package forwarding
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 
@@ -128,6 +130,13 @@ func (r *ReconcileForwarder) recordInvalidConditionEvents(instance *logging.Clus
 
 func (r *ReconcileForwarder) updateStatus(instance *logging.ClusterLogForwarder) (ctrl.Result, error) {
 	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
+
+		if strings.Contains(err.Error(), constants.OptimisticLockErrorMsg) {
+			// do manual retry without error
+			// more information about this error here: https://github.com/kubernetes/kubernetes/issues/28149
+			return reconcile.Result{RequeueAfter: time.Second * 1}, nil
+		}
+
 		log.Error(err, "clusterlogforwarder-controller error updating status")
 		return ctrl.Result{}, err
 	}

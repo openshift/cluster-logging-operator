@@ -139,6 +139,8 @@ const (
 	EventReasonUpdateObject         = "UpdateObject"
 
 	MigrateDefaultOutput = "default-replaced"
+
+	OptimisticLockErrorMsg = "the object has been modified; please apply your changes to the latest version and try again"
 )
 
 var ReconcileForGlobalProxyList = []string{CollectorTrustedCAName}

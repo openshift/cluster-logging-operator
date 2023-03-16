@@ -156,7 +156,7 @@ func removeManagedStorage(clusterRequest ClusterLoggingRequest) {
 		clusterRequest.removeKibana,
 		func() error { return lokistack.RemoveRbac(clusterRequest.Client, clusterRequest.removeFinalizer) }} {
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
-		if err := remove(); err != nil {
+		if err := remove(); err != nil && !apierrors.IsNotFound(err) {
 			log.Error(err, "Error removing component")
 		}
 	}

@@ -128,12 +128,6 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 			}
 			conf = append(conf, ca)
 		}
-		if security.HasBearerTokenFileKey(secret) {
-			bt := BearerTokenFile{
-				BearerTokenFilePath: security.SecretPath(o.Secret.Name, constants.BearerTokenFileKey),
-			}
-			conf = append(conf, bt)
-		}
 	}
 	return conf
 }

@@ -12,7 +12,7 @@ func (ca CAFile) Name() string {
 
 func (ca CAFile) Template() string {
 	return `{{define "` + ca.Name() + `" -}}
-ca_cert {{.CAFilePath}}
+tls_ca_cert_path {{.CAFilePath}}
 {{- end}}
 `
 }

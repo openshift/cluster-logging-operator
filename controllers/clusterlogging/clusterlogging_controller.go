@@ -3,6 +3,8 @@ package clusterlogging
 import (
 	"context"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
+	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -70,7 +72,7 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			if err := metrics.RemoveDashboardConfigMap(r.Client); err != nil {
+			if err := metrics.RemoveDashboardConfigMap(r.Client); err != nil && !errors.IsNotFound(err) {
 				log.V(1).Error(err, "error deleting grafana configmap")
 			}
 			return ctrl.Result{}, nil
@@ -99,6 +101,13 @@ func (r *ReconcileClusterLogging) Reconcile(ctx context.Context, request ctrl.Re
 
 func (r *ReconcileClusterLogging) updateStatus(instance *loggingv1.ClusterLogging) (ctrl.Result, error) {
 	if err := r.Client.Status().Update(context.TODO(), instance); err != nil {
+
+		if strings.Contains(err.Error(), constants.OptimisticLockErrorMsg) {
+			// do manual retry without error
+			// more information about this error here: https://github.com/kubernetes/kubernetes/issues/28149
+			return reconcile.Result{RequeueAfter: time.Second * 1}, nil
+		}
+
 		telemetry.Data.CLInfo.Set("healthStatus", constants.UnHealthyStatus)
 		log.Error(err, "clusterlogging-controller error updating status")
 		return ctrl.Result{}, err

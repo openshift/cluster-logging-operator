@@ -267,6 +267,7 @@ type CollectionSpec struct {
 	// The type of Log Collection to configure
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Collector Implementation",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:select:fluentd","urn:alm:descriptor:com.tectonic.ui:select:vector"}
 	// +kubebuilder:default:=vector
+	// +kubebuilder:validation:Optional
 	Type LogCollectionType `json:"type"`
 
 	// Deprecated. Specification of Log Collection for the cluster

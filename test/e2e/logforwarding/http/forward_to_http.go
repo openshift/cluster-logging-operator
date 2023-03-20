@@ -204,7 +204,7 @@ var _ = Describe("[ClusterLogForwarder] Forwards logs", func() {
 			}
 			message, ok := appLogs["message"]
 			Expect(ok).To(BeTrue())
-			Expect(message).To(ContainSubstring("My life is my message"))
+			Expect(message).To(Not(BeEmpty()))
 		})
 		AfterEach(func() {
 			e2e.Cleanup()

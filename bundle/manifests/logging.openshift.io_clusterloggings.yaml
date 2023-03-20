@@ -325,8 +325,6 @@ spec:
                     default: vector
                     description: The type of Log Collection to configure
                     type: string
-                required:
-                - type
                 type: object
               curation:
                 description: Deprecated. Specification of the Curation component for

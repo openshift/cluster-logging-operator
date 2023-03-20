@@ -1,9 +1,8 @@
-//go:build fluentd
-// +build fluentd
-
 package normalization
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -12,7 +11,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/test/framework/functional"
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
-	"strings"
 )
 
 // Multiline Detect Exception test to verify proper re-assembly of
@@ -77,20 +75,27 @@ created by main.main
 				functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 					FromInput(logging.InputNameApplication).
 					WithMultineErrorDetection().
-					ToFluentForwardOutput()
+					ToHttpOutput()
 			}
 		}
 		buildLogForwarder(framework)
 		framework.VisitConfig = func(conf string) string {
-			conf = strings.Replace(conf, "@type kubernetes_metadata", "@type kubernetes_metadata\ntest_api_adapter  KubernetesMetadata::TestApiAdapter\n", 1)
+			switch testfw.LogCollectionType {
+			case logging.LogCollectionTypeFluentd:
+				conf = strings.Replace(conf, "@type kubernetes_metadata", "@type kubernetes_metadata\ntest_api_adapter  KubernetesMetadata::TestApiAdapter\n", 1)
+			}
 			return conf
 		}
+
 		Expect(framework.Deploy()).To(BeNil())
 
 		buffer := []string{}
 		for _, line := range strings.Split(exception, "\n") {
 			crioLine := functional.NewCRIOLogMessage(timestamp, line, false)
 			buffer = append(buffer, crioLine)
+		}
+		if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+			appNamespace = framework.Pod.Namespace
 		}
 		// Application log in namespace
 		Expect(framework.WriteMessagesToNamespace(strings.Join(buffer, "\n"), appNamespace, 1)).To(Succeed())
@@ -109,6 +114,9 @@ created by main.main
 		Entry("of NodeJS services", nodeJSException, nil),
 		Entry("of GoLang services", goLangException, nil),
 		Entry("of single application NS to single pipeline", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("skip for vector")
+			}
 			functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("forward-pipeline", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
@@ -116,9 +124,12 @@ created by main.main
 					}
 				}).
 				WithMultineErrorDetection().
-				ToFluentForwardOutput()
+				ToHttpOutput()
 		}),
 		Entry("of single application NS sources with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("skip for vector")
+			}
 			b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
@@ -126,7 +137,7 @@ created by main.main
 					}
 				}).
 				WithMultineErrorDetection().
-				ToFluentForwardOutput()
+				ToHttpOutput()
 			//LOG-2241
 			b.FromInput("multiline-log-ns").
 				Named("other").
@@ -134,6 +145,9 @@ created by main.main
 				ToElasticSearchOutput()
 		}),
 		Entry("of multiple application NS source with multiple pipelines", goLangException, func(framework *functional.CollectorFunctionalFramework) {
+			if testfw.LogCollectionType == logging.LogCollectionTypeVector {
+				Skip("skip for vector")
+			}
 			b := functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 				FromInputWithVisitor("multiline-log-ns", func(spec *logging.InputSpec) {
 					spec.Application = &logging.Application{
@@ -141,7 +155,7 @@ created by main.main
 					}
 				}).
 				WithMultineErrorDetection().
-				ToFluentForwardOutput()
+				ToHttpOutput()
 			//LOG-2241
 			b.FromInput("multiline-log-ns").
 				Named("other").

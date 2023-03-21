@@ -180,6 +180,12 @@ func (clusterRequest *ClusterLoggingRequest) removeCollector(name string) (err e
 			return
 		}
 
+		if logging.LogCollectionTypeVector == clusterRequest.Cluster.Spec.Collection.Type {
+			if err = clusterRequest.RemoveSecret(constants.CollectorConfigSecretName); err != nil {
+				return
+			}
+		}
+
 		if err = clusterRequest.RemoveDaemonset(name); err != nil {
 			return
 		}

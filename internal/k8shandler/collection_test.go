@@ -2,7 +2,6 @@ package k8shandler
 
 import (
 	"context"
-
 	"github.com/openshift/cluster-logging-operator/internal/collector"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
@@ -254,6 +253,35 @@ var _ = Describe("Reconciling", func() {
 				Expect(client.Get(context.TODO(), collectorKey, rule)).Should(Succeed())
 				Expect(rule.Spec.Groups[0].Name).To(Equal("logging_collector.alerts"))
 				Expect(rule.Spec.Groups[0].Rules[0].Alert).To(Equal("CollectorNodeDown"))
+			})
+		})
+		Context("when removing collector", func() {
+			BeforeEach(func() {
+				client = fake.NewFakeClient( //nolint
+					cluster,
+					fluentdSecret,
+					fluentdCABundle,
+					namespace,
+				)
+				clusterRequest = &ClusterLoggingRequest{
+					Client:           client,
+					Cluster:          cluster,
+					EventRecorder:    record.NewFakeRecorder(100),
+					ForwarderRequest: &loggingv1.ClusterLogForwarder{},
+				}
+				extras[constants.MigrateDefaultOutput] = true
+				clusterRequest.ForwarderSpec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore, extras)
+			})
+
+			It("on removing vector collector should be removed collector-config secret", func() {
+				// Set collector to vector
+				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
+				Expect(clusterRequest.CreateOrUpdateCollection(extras)).To(Succeed())
+				secretKey := types.NamespacedName{Name: constants.CollectorConfigSecretName, Namespace: cluster.GetNamespace()}
+				secret := &corev1.Secret{}
+				Expect(client.Get(context.TODO(), secretKey, secret)).Should(Succeed())
+				Expect(clusterRequest.removeCollector(constants.CollectorName))
+				Expect(client.Get(context.TODO(), secretKey, secret)).ShouldNot(Succeed())
 			})
 		})
 	})

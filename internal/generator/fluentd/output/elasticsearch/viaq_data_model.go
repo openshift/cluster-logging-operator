@@ -2,6 +2,7 @@ package elasticsearch
 
 import (
 	"fmt"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
@@ -17,30 +18,54 @@ const (
 )
 
 func ViaqDataModel(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.OutputSpec, op Options) []Element {
-	elements := []Element{
-		Viaq{
-			Elasticsearch: o.Elasticsearch,
+
+	modRecordDedot := RecordModifier{
+		Records: []Record{
+			{
+				Key: "_dummy_",
+				// Replace namespace label names that have '.' & '/' with '_'
+				Expression: `${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}`,
+			},
+			{
+				Key: "_dummy2_",
+				// Replace label names that have '.' & '/' with '_'
+				Expression: `${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}`,
+			},
+			{
+				Key: "_dummy3_",
+				// Replace flattened label names that have '.' & '/' with '_'
+				Expression: `${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}`,
+			},
 		},
+		RemoveKeys: []string{"_dummy_, _dummy2_, _dummy3_"},
 	}
-	modRecord := RecordModifier{
+
+	modRecordRebuildMessage := RecordModifier{
 		Records: []Record{
 			{
 				Key:        "_dummy_",
 				Expression: `${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}`,
 			},
-			{
-				Key:        "_dummy2_",
-				Expression: `${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}`,
-			},
 		},
-		RemoveKeys: []string{"_dummy_, _dummy2_"},
+		RemoveKeys: []string{"_dummy_"},
 	}
-	elements = append(elements,
+
+	elements := []Element{
 		Filter{
-			Desc:      "dedot namespace_labels and rebuild message field if present",
+			Desc:      "dedot namespace_labels",
 			MatchTags: "**",
-			Element:   modRecord,
-		})
+			Element:   modRecordDedot,
+		},
+		Viaq{
+			Elasticsearch: o.Elasticsearch,
+		},
+		Filter{
+			Desc:      "rebuild message field if present",
+			MatchTags: "**",
+			Element:   modRecordRebuildMessage,
+		},
+	}
+
 	if o.Elasticsearch == nil || (o.Elasticsearch.StructuredTypeKey == "" && o.Elasticsearch.StructuredTypeName == "" && !o.Elasticsearch.EnableStructuredContainerLogs) {
 		recordModifier := RecordModifier{
 			RemoveKeys: []string{KeyStructured},
@@ -54,6 +79,7 @@ func ViaqDataModel(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o 
 			Element:   recordModifier,
 		})
 	}
+
 	return elements
 }
 
@@ -133,7 +159,7 @@ func (im Viaq) Template() string {
   enable_openshift_model false
   rename_time false
   undefined_dot_replace_char UNUSED
-  prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
 </filter>
 {{end}}
 `

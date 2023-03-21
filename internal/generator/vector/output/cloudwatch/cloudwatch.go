@@ -2,16 +2,18 @@ package cloudwatch
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
+
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
-	"regexp"
-	"strings"
 )
 
 type Endpoint struct {
@@ -70,6 +72,7 @@ healthcheck.enabled = false
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	outputName := helpers.FormatComponentID(o.Name)
 	componentID := fmt.Sprintf("%s_%s", outputName, "normalize_group_and_streams")
+	dedottedID := normalize.ID(outputName, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
@@ -78,7 +81,8 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	}
 	return []Element{
 		NormalizeGroupAndStreamName(LogGroupNameField(o), LogGroupPrefix(o), componentID, inputs),
-		OutputConf(o, []string{componentID}, secret, op, o.Cloudwatch.Region),
+		normalize.DedotLabels(dedottedID, []string{componentID}),
+		OutputConf(o, []string{dedottedID}, secret, op, o.Cloudwatch.Region),
 	}
 }
 

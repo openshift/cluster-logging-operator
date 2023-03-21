@@ -1,8 +1,9 @@
 package cloudwatch
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -76,6 +77,17 @@ var _ = Describe("Generating fluentd config", func() {
       cw_stream_name ${record['hostname']}.${tag}
     </record>
   </filter>
+
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
   
   <match **>
     @type cloudwatch_logs
@@ -131,6 +143,17 @@ var _ = Describe("Generating fluentd config", func() {
       cw_group_name audit
       cw_stream_name ${record['hostname']}.${tag}
     </record>
+  </filter>
+
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
   </filter>
   
   <match **>
@@ -192,6 +215,17 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
   
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   <match **>
     @type cloudwatch_logs
     auto_create_stream true
@@ -252,6 +286,17 @@ var _ = Describe("Generating fluentd config", func() {
     </record>
   </filter>
   
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   <match **>
     @type cloudwatch_logs
     auto_create_stream true
@@ -342,6 +387,17 @@ var _ = Describe("Generating fluentd config for sts", func() {
     </record>
   </filter>
   
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   <match **>
     @type cloudwatch_logs
     auto_create_stream true
@@ -406,6 +462,17 @@ var _ = Describe("Generating fluentd config for sts", func() {
       cw_stream_name ${record['hostname']}.${tag}
     </record>
   </filter>
+
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
   
   <match **>
     @type cloudwatch_logs
@@ -464,6 +531,17 @@ var _ = Describe("Generating fluentd config for sts", func() {
       cw_group_name audit
       cw_stream_name ${record['hostname']}.${tag}
     </record>
+  </filter>
+
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
   </filter>
   
   <match **>
@@ -526,6 +604,17 @@ var _ = Describe("Generating fluentd config for sts", func() {
       cw_group_name foo.audit
       cw_stream_name ${record['hostname']}.${tag}
     </record>
+  </filter>
+
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
   </filter>
   
   <match **>

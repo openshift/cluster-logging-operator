@@ -5,6 +5,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -47,6 +48,7 @@ func ConfOld(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o loggin
 		FromLabel{
 			InLabel: helpers.LabelName(o.Name),
 			SubElements: []Element{
+				normalize.DedotLabels(),
 				ParseJson(o, op),
 				Match{
 					MatchTags: "**",

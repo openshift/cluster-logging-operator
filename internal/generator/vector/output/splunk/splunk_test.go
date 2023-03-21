@@ -17,20 +17,69 @@ const hecToken = "VS0BNth3wCGF0eol0MuK07SHIrhYwCPHFWMG"
 var _ = Describe("Generating vector config for Splunk output", func() {
 
 	const (
-		splunkSink = `
+		splunkDedot = `
+[transforms.splunk_hec_dedot]
+type = "lua"
+inputs = ["pipelineName"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+`
+		splunkSink = splunkDedot + `
 [sinks.splunk_hec]
 type = "splunk_hec"
-inputs = ["pipelineName"]
+inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
 [sinks.splunk_hec.encoding]
 codec = "json"
 `
-		splunkSinkTls = `
+		splunkSinkTls = splunkDedot + `
 [sinks.splunk_hec]
 type = "splunk_hec"
-inputs = ["pipelineName"]
+inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"
@@ -42,10 +91,10 @@ key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
 `
-		splunkSinkPassphrase = `
+		splunkSinkPassphrase = splunkDedot + `
 [sinks.splunk_hec]
 type = "splunk_hec"
-inputs = ["pipelineName"]
+inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
 default_token = "` + hecToken + `"

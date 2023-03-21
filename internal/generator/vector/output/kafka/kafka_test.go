@@ -48,10 +48,58 @@ var _ = Describe("Generate vector config", func() {
 				},
 			},
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "build_complete"
 
@@ -98,10 +146,58 @@ mechanism = "PLAIN"
 				},
 			},
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "build_complete"
 
@@ -153,10 +249,58 @@ mechanism = "PLAIN"
 				},
 			},
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "build_complete"
 
@@ -200,10 +344,58 @@ mechanism = "SCRAM-SHA-256"
 				},
 			},
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -244,10 +436,58 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 				},
 			},
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -285,10 +525,58 @@ ca_file = "/var/run/ocp-collector/secrets/kafka-receiver-1/ca-bundle.crt"
 				},
 			},
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -313,10 +601,58 @@ key_pass = "junk"
 			},
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -337,10 +673,58 @@ timestamp_format = "rfc3339"
 			},
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 
@@ -361,10 +745,58 @@ timestamp_format = "rfc3339"
 			},
 			Secrets: security.NoSecrets,
 			ExpectedConf: `
+[transforms.kafka_receiver_dedot]
+type = "lua"
+inputs = ["pipeline_1","pipeline_2"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 # Kafka config
 [sinks.kafka_receiver]
 type = "kafka"
-inputs = ["pipeline_1","pipeline_2"]
+inputs = ["kafka_receiver_dedot"]
 bootstrap_servers = "broker1-kafka.svc.messaging.cluster.local:9092"
 topic = "topic"
 

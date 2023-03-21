@@ -12,6 +12,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -109,7 +110,9 @@ func Normalize(componentID string, inputs []string) Element {
 }
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
+	outputName := helpers.FormatComponentID(o.Name)
 	component := strings.ToLower(vectorhelpers.Replacer.Replace(fmt.Sprintf("%s_%s", o.Name, NormalizeHttp)))
+	dedottedID := normalize.ID(outputName, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Normalize(component, inputs),
@@ -119,7 +122,8 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	return MergeElements(
 		[]Element{
 			Normalize(component, inputs),
-			Output(o, []string{component}, secret, op),
+			normalize.DedotLabels(dedottedID, []string{component}),
+			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
 			Request(o),
 		},

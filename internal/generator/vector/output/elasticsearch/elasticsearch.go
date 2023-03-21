@@ -157,9 +157,10 @@ source = '''
             emit(event)
             return
         end
-        flatten_labels(event)
-        prune_labels(event)
 		dedot(event.log.kubernetes.namespace_labels)
+		dedot(event.log.kubernetes.labels)
+		flatten_labels(event)
+		prune_labels(event)
         emit(event)
     end
 	
@@ -170,7 +171,7 @@ source = '''
         local new_map = {}
         local changed_keys = {}
         for k, v in pairs(map) do
-            local dedotted = string.gsub(k, "%.", "_")
+            local dedotted = string.gsub(k, "[./]", "_")
             if dedotted ~= k then
                 new_map[dedotted] = v
                 changed_keys[k] = true
@@ -196,7 +197,7 @@ source = '''
     end 
 
 	function prune_labels(event)
-		local exclusions = {"app.kubernetes.io/name", "app.kubernetes.io/instance", "app.kubernetes.io/version", "app.kubernetes.io/component", "app.kubernetes.io/part-of", "app.kubernetes.io/managed-by", "app.kubernetes.io/created-by"}
+		local exclusions = {"app_kubernetes_io_name", "app_kubernetes_io_instance", "app_kubernetes_io_version", "app_kubernetes_io_component", "app_kubernetes_io_part-of", "app_kubernetes_io_managed-by", "app_kubernetes_io_created-by"}
 		local keys = {}
 		for k,v in pairs(event.log.kubernetes.labels) do
 			for index, e in pairs(exclusions) do

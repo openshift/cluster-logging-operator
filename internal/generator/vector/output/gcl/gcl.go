@@ -10,6 +10,7 @@ import (
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
@@ -71,6 +72,8 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		return []Element{}
 	}
 	g := o.GoogleCloudLogging
+	outputName := helpers.FormatComponentID(o.Name)
+	dedottedID := normalize.ID(outputName, "dedot")
 	gcl := GoogleCloudLogging{
 		ComponentID:     helpers.FormatComponentID(o.Name),
 		Inputs:          helpers.MakeInputs(inputs...),
@@ -79,8 +82,9 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 		SeverityKey:     SeverityKey(g),
 		CredentialsPath: security.SecretPath(o.Secret.Name, GoogleApplicationCredentialsKey),
 	}
+	setInput(&gcl, []string{dedottedID})
 	return MergeElements(
-		[]Element{gcl},
+		[]Element{normalize.DedotLabels(dedottedID, inputs), gcl},
 		TLSConf(o, secret, op),
 	)
 }
@@ -92,6 +96,11 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 		}
 	}
 	return []Element{}
+}
+
+func setInput(gcl *GoogleCloudLogging, inputs []string) Element {
+	gcl.Inputs = helpers.MakeInputs(inputs...)
+	return gcl
 }
 
 // LogDestination is one of BillingAccountID, OrganizationID, FolderID, or ProjectID in that order

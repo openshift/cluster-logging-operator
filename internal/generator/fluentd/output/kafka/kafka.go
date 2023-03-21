@@ -11,6 +11,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -57,6 +58,7 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 		FromLabel{
 			InLabel: helpers.LabelName(o.Name),
 			SubElements: []Element{
+				normalize.DedotLabels(),
 				Output(bufspec, secret, o, op),
 			},
 		},
@@ -67,6 +69,7 @@ func Output(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging
 	if genhelper.IsDebugOutput(op) {
 		return genhelper.DebugOutput
 	}
+
 	topics := Topics(o)
 	storeID := helpers.StoreID("", o.Name, "")
 	return Match{

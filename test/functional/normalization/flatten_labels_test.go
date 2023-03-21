@@ -12,6 +12,7 @@ import (
 	testfw "github.com/openshift/cluster-logging-operator/test/functional"
 	"github.com/openshift/cluster-logging-operator/test/helpers/kafka"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
+	"regexp"
 	"sort"
 	"time"
 
@@ -28,6 +29,7 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 		applicationLabels map[string]string
 		expLabels         map[string]string
 
+		dedotMatcher        = regexp.MustCompile("[./]")
 		expectFlattenLabels = func(kubemeta types.Kubernetes) {
 			Expect(kubemeta.FlatLabels).To(Not(BeNil()), fmt.Sprintf("Expected to find the kubernetes.flat_labels key in %#v", kubemeta))
 			expFlatLabels := []string{}
@@ -63,6 +65,7 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 			namespaceLabels := map[string]string{
 				"foo":                                "bar",
 				"foo.bar":                            "foobar",
+				"foo.bar/baz":                        "foobarbaz",
 				"pod-security.kubernetes.io/enforce": "privileged",
 				"security.openshift.io/scc.podSecurityLabelSync": "false",
 			}
@@ -75,13 +78,14 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 		})
 		Expect(err).To(BeNil(), "Unable to update NS labels")
 
+		// Other kubernetes labels
 		expLabels = map[string]string{}
-
 		framework.Labels["app"] = "bar"
 		for k, v := range applicationLabels {
 			framework.Labels[k] = v
-			expLabels[k] = v
+			expLabels[dedotMatcher.ReplaceAllString(k, "_")] = v
 		}
+
 		pb = functional.NewClusterLogForwarderBuilder(framework.Forwarder).
 			FromInput(logging.InputNameApplication)
 	})
@@ -105,15 +109,22 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 			err = types.StrictlyParseLogsFromSlice(raw, &logs)
 			Expect(err).To(BeNil(), "Expected no errors parsing the logs")
 
-			//verify we removed all but common labels
+			// verify we removed all but common labels
+			// This also verifies if the labels have been de-dotted
 			Expect(logs[0].Kubernetes.Labels).To(Equal(expLabels), fmt.Sprintf("Expect to find only common kubernetes.labels in %#v", logs[0]))
 
+			// Verify de-dotting process for namespace labels
+			Expect(logs[0].Kubernetes.NamespaceLabels).To(HaveKey("foo"), "Expect 'foo' to not change")
+			Expect(logs[0].Kubernetes.NamespaceLabels).To(HaveKey("foo_bar"), "Expect 'foo.bar' to be de-dotted to 'foo_bar'")
+			Expect(logs[0].Kubernetes.NamespaceLabels).To(HaveKey("foo_bar_baz"), "Expect 'foo.bar/baz' to be de-dotted to 'foo_bar_baz'")
+
 			for k, v := range framework.Test.Client.Labels {
-				expLabels[k] = v
+				expLabels[dedotMatcher.ReplaceAllString(k, "_")] = v
 			}
 			for k, v := range framework.Labels {
-				expLabels[k] = v
+				expLabels[dedotMatcher.ReplaceAllString(k, "_")] = v
 			}
+
 			//verify the new key exists
 			expectFlattenLabels(logs[0].Kubernetes)
 		})
@@ -123,10 +134,10 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 		It("should not remove 'kubernetes.labels' and not add 'kubernetes.flat_labels'", func() {
 
 			for k, v := range framework.Test.Client.Labels {
-				expLabels[k] = v
+				expLabels[dedotMatcher.ReplaceAllString(k, "_")] = v
 			}
 			for k, v := range framework.Labels {
-				expLabels[k] = v
+				expLabels[dedotMatcher.ReplaceAllString(k, "_")] = v
 			}
 
 			pb.ToKafkaOutput()
@@ -141,6 +152,11 @@ var _ = Describe("[Functional][Normalization] flatten labels", func() {
 
 			//verify the label key exists as-is
 			Expect(logs[0].Kubernetes.Labels).To(Equal(expLabels), fmt.Sprintf("Expect to find every label in kubernetes.labels in %#v", logs[0]))
+
+			// Verify de-dotting process for namespace labels
+			Expect(logs[0].Kubernetes.NamespaceLabels).To(HaveKey("foo"), "Expect 'foo' to not change")
+			Expect(logs[0].Kubernetes.NamespaceLabels).To(HaveKey("foo_bar"), "Expect 'foo.bar' to be de-dotted to 'foo_bar'")
+			Expect(logs[0].Kubernetes.NamespaceLabels).To(HaveKey("foo_bar_baz"), "Expect 'foo.bar/baz' to be de-dotted to 'foo_bar_baz'")
 
 			if testfw.LogCollectionType == logging.LogCollectionTypeFluentd {
 				//verify the new key exists

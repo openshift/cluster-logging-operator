@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -113,10 +114,12 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 	}
 	outputName := helpers.FormatComponentID(o.Name)
 	componentID := fmt.Sprintf("%s_%s", outputName, "remap")
+	dedottedID := normalize.ID(outputName, "dedot")
 	return MergeElements(
 		[]Element{
 			CleanupFields(componentID, inputs),
-			Output(o, []string{componentID}),
+			normalize.DedotLabels(dedottedID, []string{componentID}),
+			Output(o, []string{dedottedID}),
 			Encoding(o),
 			Labels(o),
 		},

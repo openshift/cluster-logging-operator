@@ -13,6 +13,7 @@ import (
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/vector/elements"
 	vectorhelpers "github.com/openshift/cluster-logging-operator/internal/generator/vector/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -51,9 +52,13 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
+
+	outputName := vectorhelpers.FormatComponentID(o.Name)
+	dedottedID := normalize.ID(outputName, "dedot")
 	return MergeElements(
 		[]Element{
-			Output(o, inputs, secret, op),
+			normalize.DedotLabels(dedottedID, inputs),
+			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o, op),
 		},
 		TLSConf(o, secret, op),

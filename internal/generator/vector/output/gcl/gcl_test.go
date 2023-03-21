@@ -53,9 +53,57 @@ var _ = Describe("Generate Vector config", func() {
 				},
 			},
 			ExpectedConf: `
+[transforms.gcl_1_dedot]
+type = "lua"
+inputs = ["application"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+	
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.gcl_1]
 type = "gcp_stackdriver_logs"
-inputs = ["application"]
+inputs = ["gcl_1_dedot"]
 billing_account_id = "billing-1"
 credentials_path = "/var/run/ocp-collector/secrets/junk/google-application-credentials.json"
 log_id = "vector-1"
@@ -103,9 +151,57 @@ node_name = "{{hostname}}"
 				generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 			},
 			ExpectedConf: `
+[transforms.gcl_tls_dedot]
+type = "lua"
+inputs = ["application"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+	
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.gcl_tls]
 type = "gcp_stackdriver_logs"
-inputs = ["application"]
+inputs = ["gcl_tls_dedot"]
 billing_account_id = "billing-1"
 credentials_path = "/var/run/ocp-collector/secrets/junk/google-application-credentials.json"
 log_id = "vector-1"
@@ -160,9 +256,57 @@ ca_file = "/var/run/ocp-collector/secrets/junk/ca-bundle.crt"
 				generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 			},
 			ExpectedConf: `
+[transforms.gcl_tls_dedot]
+type = "lua"
+inputs = ["application"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+	
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.gcl_tls]
 type = "gcp_stackdriver_logs"
-inputs = ["application"]
+inputs = ["gcl_tls_dedot"]
 billing_account_id = "billing-1"
 credentials_path = "/var/run/ocp-collector/secrets/junk/google-application-credentials.json"
 log_id = "vector-1"

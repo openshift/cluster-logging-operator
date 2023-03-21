@@ -1,10 +1,11 @@
 package loki
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers"
 
@@ -81,9 +82,57 @@ source = '''
   del(.tag)
 '''
 
+[transforms.loki_receiver_dedot]
+type = "lua"
+inputs = ["loki_receiver_remap"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["loki_receiver_remap"]
+inputs = ["loki_receiver_dedot"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -137,9 +186,57 @@ source = '''
   del(.tag)
 '''
 
+[transforms.loki_receiver_dedot]
+type = "lua"
+inputs = ["loki_receiver_remap"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["loki_receiver_remap"]
+inputs = ["loki_receiver_dedot"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -191,9 +288,57 @@ source = '''
   del(.tag)
 '''
 
+[transforms.loki_receiver_dedot]
+type = "lua"
+inputs = ["loki_receiver_remap"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["loki_receiver_remap"]
+inputs = ["loki_receiver_dedot"]
 endpoint = "https://logs-us-west1.grafana.net"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -245,9 +390,57 @@ source = '''
   del(.tag)
 '''
 
+[transforms.loki_receiver_dedot]
+type = "lua"
+inputs = ["loki_receiver_remap"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["loki_receiver_remap"]
+inputs = ["loki_receiver_dedot"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -299,9 +492,57 @@ source = '''
   del(.tag)
 '''
 
+[transforms.loki_receiver_dedot]
+type = "lua"
+inputs = ["loki_receiver_remap"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["loki_receiver_remap"]
+inputs = ["loki_receiver_dedot"]
 endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -354,9 +595,58 @@ inputs = ["application"]
 source = '''
   del(.tag)
 '''
+
+[transforms.loki_receiver_dedot]
+type = "lua"
+inputs = ["loki_receiver_remap"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["loki_receiver_remap"]
+inputs = ["loki_receiver_dedot"]
 endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false
@@ -413,9 +703,57 @@ source = '''
   del(.tag)
 '''
 
+[transforms.loki_receiver_dedot]
+type = "lua"
+inputs = ["loki_receiver_remap"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''
+
 [sinks.loki_receiver]
 type = "loki"
-inputs = ["loki_receiver_remap"]
+inputs = ["loki_receiver_dedot"]
 endpoint = "http://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
 out_of_order_action = "accept"
 healthcheck.enabled = false

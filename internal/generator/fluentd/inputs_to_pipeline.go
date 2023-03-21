@@ -56,7 +56,11 @@ func (a ApplicationsToPipelines) Template() string {
 
 func SourceTypeToPipeline(sourceType string, spec *logging.ClusterLogForwarderSpec, op Options) Element {
 	srcTypePipeline := []string{}
+	parsingEnabled := false
 	for _, pipeline := range spec.Pipelines {
+		if pipeline.Parse != "" {
+			parsingEnabled = true
+		}
 		for _, inRef := range pipeline.InputRefs {
 			if inRef == sourceType {
 				srcTypePipeline = append(srcTypePipeline, pipeline.Name)
@@ -89,7 +93,8 @@ func SourceTypeToPipeline(sourceType string, spec *logging.ClusterLogForwarderSp
 				Match{
 					MatchTags: "**",
 					MatchElement: Copy{
-						Stores: CopyToLabels(helpers.LabelNames(srcTypePipeline)),
+						DeepCopy: parsingEnabled,
+						Stores:   CopyToLabels(helpers.LabelNames(srcTypePipeline)),
 					},
 				},
 			},

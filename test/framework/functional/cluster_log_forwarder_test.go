@@ -76,7 +76,7 @@ pipelines:
 				ToOutputWithVisitor(
 					func(spec *logging.OutputSpec) {
 						spec.Type = logging.OutputTypeFluentdForward
-						spec.URL = "tcp://0.0.0.0:24225"
+						spec.URL = "tcp://0.0.0.0:24228"
 					}, "other")
 
 			Expect(test.YAMLString(forwarder.Spec)).To(MatchYAML(`inputs:
@@ -95,10 +95,10 @@ pipelines:
 outputs:
 - name: fluentdForward
   type: fluentdForward
-  url: tcp://0.0.0.0:24224
+  url: tcp://0.0.0.0:24226
 - name: other
   type: fluentdForward
-  url: tcp://0.0.0.0:24225
+  url: tcp://0.0.0.0:24228
 pipelines:
 - detectMultilineErrors: true
   inputRefs:

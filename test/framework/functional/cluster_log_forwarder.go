@@ -59,6 +59,12 @@ func (p *PipelineBuilder) WithMultineErrorDetection() *PipelineBuilder {
 	return p
 }
 
+func (p *PipelineBuilder) WithParseJson() *PipelineBuilder {
+	p.jsonParsing = "json"
+	return p
+}
+
+// Named is the name to be given to the ClusterLogForwarder pipeline
 func (p *PipelineBuilder) Named(name string) *PipelineBuilder {
 	p.pipelineName = name
 	return p
@@ -95,7 +101,7 @@ func (p *PipelineBuilder) ToOutputWithVisitor(visit OutputSpecVisiter, outputNam
 			output = &logging.OutputSpec{
 				Name: logging.OutputTypeFluentdForward,
 				Type: logging.OutputTypeFluentdForward,
-				URL:  "tcp://0.0.0.0:24224",
+				URL:  "tcp://0.0.0.0:24226",
 			}
 		case logging.OutputTypeElasticsearch:
 			output = &logging.OutputSpec{

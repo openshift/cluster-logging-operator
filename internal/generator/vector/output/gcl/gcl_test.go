@@ -127,6 +127,60 @@ crt_file = "/var/run/ocp-collector/secrets/junk/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/junk/ca-bundle.crt"
 `,
 		}),
+		Entry("with TLS config with default minTLSVersion & ciphers and no certs", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeGoogleCloudLogging,
+						Name: "gcl-tls",
+						OutputTypeSpec: logging.OutputTypeSpec{
+							GoogleCloudLogging: &logging.GoogleCloudLogging{
+								BillingAccountID: "billing-1",
+								LogID:            "vector-1",
+							},
+						},
+						Secret: &logging.OutputSecretSpec{
+							Name: "junk",
+						},
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"gcl-tls": {
+					Data: map[string][]byte{
+						GoogleApplicationCredentialsKey: []byte("dummy-credentials"),
+					},
+				},
+			},
+			Options: generator.Options{
+				generator.MinTLSVersion: string(tls.DefaultMinTLSVersion),
+				generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
+			},
+			ExpectedConf: `
+[sinks.gcl_tls]
+type = "gcp_stackdriver_logs"
+inputs = ["application"]
+billing_account_id = "billing-1"
+credentials_path = "/var/run/ocp-collector/secrets/junk/google-application-credentials.json"
+log_id = "vector-1"
+severity_key = "level"
+
+
+[sinks.gcl_tls.resource]
+type = "k8s_node"
+node_name = "{{hostname}}"
+
+[sinks.gcl_tls.tls]
+enabled = true
+min_tls_version = "` + defaultTLS + `"
+ciphersuites = "` + defaultCiphers + `"
+verify_certificate = false
+verify_hostname = false
+`,
+		}),
 	)
 })
 

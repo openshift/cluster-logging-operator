@@ -93,6 +93,25 @@ key_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/ca-bundle.crt"
 `
+	cwSinkKeyIdTLSNoCerts = `
+# Cloudwatch Logs
+[sinks.cw]
+type = "aws_cloudwatch_logs"
+inputs = ["cw_normalize_group_and_streams"]
+region = "us-east-test"
+compression = "none"
+group_name = "{{ group_name }}"
+stream_name = "{{ stream_name }}"
+auth.access_key_id = "` + keyId + `"
+auth.secret_access_key = "` + keySecret + `"
+encoding.codec = "json"
+request.concurrency = 2
+healthcheck.enabled = false
+[sinks.cw.tls]
+enabled = true
+min_tls_version = "` + defaultTLS + `"
+ciphersuites = "` + defaultCiphers + `"
+`
 
 	cwSinkKeyIdTLSInsecure = `
 # Cloudwatch Logs
@@ -215,7 +234,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 			generator.MinTLSVersion: string(tls.DefaultMinTLSVersion),
 			generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
 		}
-
+		secrets      map[string]*corev1.Secret
 		groupPrefix  = "all-logs"
 		pipelineName = []string{"cw-forward"}
 
@@ -233,7 +252,9 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				Name: "vector-cw-secret",
 			},
 		}
+	)
 
+	BeforeEach(func() {
 		secrets = map[string]*corev1.Secret{
 			output.Secret.Name: {
 				Data: map[string][]byte{
@@ -251,7 +272,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 				},
 			},
 		}
-	)
+	})
 
 	Context("with a group prefix", func() {
 		BeforeEach(func() {
@@ -436,6 +457,37 @@ tls.verify_certificate = false
 			output.Secret.Name = vectorTLSSecret
 			output.Cloudwatch.GroupPrefix = nil
 			output.URL = ""
+		})
+
+		It("should generate an output.tls config block", func() {
+			output.Cloudwatch.GroupBy = ""
+			secrets[vectorTLSSecret].Data = map[string][]byte{
+				"aws_access_key_id":     []byte(keyId),
+				"aws_secret_access_key": []byte(keySecret),
+			}
+			expConf := `
+	` + transformBegin + `
+
+	  if ( .log_type == "application" ) {
+	   .group_name = ( "" + .log_type ) ?? "application"
+	  }
+	  if ( .log_type == "audit" ) {
+	   .group_name = "audit"
+	   .stream_name = ( "${VECTOR_SELF_NODE_NAME}" + .tag ) ?? .stream_name
+	  }
+	  if ( .log_type == "infrastructure" ) {
+	   .group_name = "infrastructure"
+	   .stream_name = ( .hostname + "." + .stream_name ) ?? .stream_name
+	  }
+
+	` + transformEnd + `
+
+	` + cwSinkKeyIdTLSNoCerts + `
+	`
+			element := Conf(output, pipelineName, secrets[output.Secret.Name], op)
+			results, err := g.GenerateConf(element...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(expConf))
 		})
 
 		It("InsecureSkipVerify omitted", func() {

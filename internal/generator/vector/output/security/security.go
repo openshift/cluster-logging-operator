@@ -59,25 +59,28 @@ func NewTLSConf(o logging.OutputSpec, op generator.Options) TLSConf {
 	return conf
 }
 
-func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) (TLSConf, bool) {
-	hasTLS := false
+func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) bool {
+	addTLS := false
 	if o.Name == logging.OutputNameDefault || HasTLSCertAndKey(secret) {
-		hasTLS = true
+		addTLS = true
 		conf.CertPath = SecretPath(o.Secret.Name, constants.ClientCertKey)
 		conf.KeyPath = SecretPath(o.Secret.Name, constants.ClientPrivateKey)
 	}
 
 	if o.Name == logging.OutputNameDefault || HasCABundle(secret) {
-		hasTLS = true
+		addTLS = true
 		conf.CAFilePath = SecretPath(o.Secret.Name, constants.TrustedCABundleKey)
 	}
 
 	if HasPassphrase(secret) {
-		hasTLS = true
+		addTLS = true
 		conf.PassPhrase = security.GetFromSecret(secret, constants.Passphrase)
 	}
+	if (o.Type == logging.OutputTypeGoogleCloudLogging || o.Type == logging.OutputTypeCloudwatch) && (conf.TlsMinVersion != "" || conf.CipherSuites != "") {
+		addTLS = true
+	}
 
-	return *conf, hasTLS
+	return addTLS
 }
 
 func (t TLSConf) Name() string {
@@ -192,11 +195,8 @@ func GetFromSecret(secret *corev1.Secret, name string) string {
 func GenerateTLSConf(o logging.OutputSpec, secret *corev1.Secret, op generator.Options) *TLSConf {
 	u, _ := url.Parse(o.URL)
 	if urlhelper.IsTLSScheme(u.Scheme) || o.URL == "" {
-		hasTLS := false
 		tlsConf := NewTLSConf(o, op)
-		tlsConf, hasTLS = addTLSSettings(o, secret, &tlsConf)
-
-		if hasTLS {
+		if addTLSSettings(o, secret, &tlsConf) {
 			return &tlsConf
 		}
 	}

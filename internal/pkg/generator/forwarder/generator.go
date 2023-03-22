@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	forwardergenerator "github.com/openshift/cluster-logging-operator/internal/generator/forwarder"
-	"github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -16,10 +15,6 @@ import (
 	"github.com/openshift/cluster-logging-operator/internal/generator"
 	"github.com/openshift/cluster-logging-operator/internal/k8shandler"
 	"github.com/openshift/cluster-logging-operator/internal/tls"
-)
-
-const (
-	useOldRemoteSyslogPlugin = false
 )
 
 func UnMarshalClusterLogForwarder(clfYaml string) (forwarder *logging.ClusterLogForwarder, err error) {
@@ -85,13 +80,9 @@ func Generate(collectionType logging.LogCollectionType, clfYaml string, includeD
 		Fluentd: tunings,
 	}
 	op := generator.Options{}
-	if useOldRemoteSyslogPlugin {
-		op[generator.UseOldRemoteSyslogPlugin] = ""
-	}
-	if debugOutput {
-		op[helpers.EnableDebugOutput] = ""
-	}
+	k8shandler.EvaluateAnnotationsForEnabledCapabilities(forwarder, op)
 	op[generator.ClusterTLSProfileSpec] = tls.GetClusterTLSProfileSpec(nil)
+
 	configGenerator := forwardergenerator.New(collectionType)
 	if configGenerator == nil {
 		return "", errors.New("unsupported collector implementation")

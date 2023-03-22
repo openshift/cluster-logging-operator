@@ -171,6 +171,7 @@ var _ = Describe("Generate fluentd config", func() {
 						"tls.crt":       []byte("-- crt-- "),
 						"tls.key":       []byte("-- key-- "),
 						"ca-bundle.crt": []byte("-- ca-bundle -- "),
+						"passphrase":    []byte("-- passphrase --"),
 					},
 				},
 			},
@@ -190,6 +191,7 @@ var _ = Describe("Generate fluentd config", func() {
 	tls_private_key_path '/var/run/ocp-collector/secrets/http-receiver/tls.key'
 	tls_client_cert_path '/var/run/ocp-collector/secrets/http-receiver/tls.crt'
 	tls_ca_cert_path '/var/run/ocp-collector/secrets/http-receiver/ca-bundle.crt'
+  tls_client_private_key_passphrase "-- passphrase --" 
 	<buffer>
 	  @type file
 	  path '/var/lib/fluentd/http_receiver'

@@ -47,16 +47,6 @@ func New(namespace, name string, visSpec *logging.VisualizationSpec, logStore *l
 				replicas = 1
 			}
 		}
-
-		if proxyResources == nil {
-			proxyResources = &v1.ResourceRequirements{
-				Limits: v1.ResourceList{v1.ResourceMemory: DefaultKibanaProxyMemory},
-				Requests: v1.ResourceList{
-					v1.ResourceMemory: DefaultKibanaProxyMemory,
-					v1.ResourceCPU:    DefaultKibanaProxyCpuRequest,
-				},
-			}
-		}
 	}
 	cr := &es.Kibana{
 		TypeMeta: metav1.TypeMeta{

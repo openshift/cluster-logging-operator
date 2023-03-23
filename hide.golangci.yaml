@@ -4,7 +4,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
     - errcheck
@@ -19,11 +18,9 @@ linters:
     - misspell
     - nakedret
     - staticcheck
-    - structcheck
     - typecheck
     - unconvert
     - unused
-    - varcheck
 
 # Consider enabling these, some cleanup required:
 # dupl: Tool for code clone detection [fast: true, auto-fix: false]

@@ -264,6 +264,61 @@ strategy = "bearer"
 token = "token-for-custom-loki"
 `,
 		}),
+		Entry("with TLS insecureSkipVerify=true", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+						Secret: &logging.OutputSecretSpec{
+							Name: "custom-loki-secret",
+						},
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"loki-receiver": {
+					Data: map[string][]byte{
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.loki_receiver_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["loki_receiver_remap"]
+endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+out_of_order_action = "accept"
+healthcheck.enabled = false
+
+[sinks.loki_receiver.encoding]
+codec = "json"
+
+[sinks.loki_receiver.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+
+[sinks.loki_receiver.tls]
+enabled = true
+verify_certificate = false
+verify_hostname = false
+ca_file = "/var/run/ocp-collector/secrets/custom-loki-secret/ca-bundle.crt"
+`,
+		}),
 	)
 })
 

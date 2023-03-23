@@ -20,7 +20,6 @@ RUN if [ -n $CACHE_DEPS ]; then go mod download ; fi
 COPY ${APP_DIR}/.bingo .bingo
 COPY ${APP_DIR}/Makefile ./Makefile
 COPY ${APP_DIR}/version ./version
-COPY ${APP_DIR}/scripts ./scripts
 COPY ${APP_DIR}/files ./files
 COPY ${APP_DIR}/main.go .
 COPY ${APP_DIR}/apis ./apis
@@ -53,7 +52,6 @@ RUN INSTALL_PKGS=" \
     chmod og+w /tmp/ocp-clo
 
 COPY --from=builder $APP_DIR/bin/cluster-logging-operator /usr/bin/
-COPY --from=builder $APP_DIR/scripts/* /usr/bin/scripts/
 
 RUN mkdir -p /usr/share/logging/
 
@@ -62,7 +60,6 @@ COPY --from=origincli /usr/bin/oc /usr/bin
 COPY $SRC_DIR/must-gather/collection-scripts/* /usr/bin/
 
 USER 1000
-# this is required because the operator invokes a script as `bash scripts/cert_generation.sh`
 WORKDIR /usr/bin
 CMD ["/usr/bin/cluster-logging-operator"]
 

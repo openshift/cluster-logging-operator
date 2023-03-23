@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -11,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/test/framework/e2e/certificates"
 	"github.com/openshift/cluster-logging-operator/test/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -36,7 +36,6 @@ import (
 	cl "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/test/helpers/oc"
 )
 
@@ -650,16 +649,14 @@ func (tc *E2ETestFramework) PodExec(namespace, name, container string, command [
 }
 
 func (tc *E2ETestFramework) CreatePipelineSecret(logStoreName, secretName string, otherData map[string][]byte) (*corev1.Secret, error) {
-	err, certsDir := certificates.GenerateTestCertificates(logStoreName)
-	defer os.RemoveAll(certsDir)
-	if err != nil {
-		return nil, err
-	}
+	ca := certificate.NewCA(nil, "Root CA") // Self-signed CA
+	serverCert := certificate.NewCert(ca, "", logStoreName, fmt.Sprintf("%s.%s.svc", logStoreName, constants.WatchNamespace))
+
 	data := map[string][]byte{
-		"tls.key":       utils.GetDirFileContents(certsDir, "system.logging.fluentd.key"),
-		"tls.crt":       utils.GetDirFileContents(certsDir, "system.logging.fluentd.crt"),
-		"ca-bundle.crt": utils.GetDirFileContents(certsDir, "ca.crt"),
-		"ca.key":        utils.GetDirFileContents(certsDir, "ca.key"),
+		"tls.key":       serverCert.PrivateKeyPEM(),
+		"tls.crt":       serverCert.CertificatePEM(),
+		"ca-bundle.crt": ca.CertificatePEM(),
+		"ca.key":        ca.PrivateKeyPEM(),
 	}
 	for key, value := range otherData {
 		data[key] = value

@@ -9,29 +9,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift/cluster-logging-operator/internal/logstore/elasticsearch/indexmanagement"
-
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/test/helpers/types"
 
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	clolog "github.com/ViaQ/logerr/v2/log/static"
-	k8shandler "github.com/openshift/cluster-logging-operator/internal/k8shandler"
-	"github.com/openshift/cluster-logging-operator/internal/utils"
-	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 )
 
 const (
-	InfraIndexPrefix          = "infra-"
-	ProjectIndexPrefix        = "app-"
-	AuditIndexPrefix          = "audit-"
-	elasticsearchesLoggingURI = "apis/logging.openshift.io/v1/namespaces/%s/elasticsearches"
+	InfraIndexPrefix   = "infra-"
+	ProjectIndexPrefix = "app-"
+	AuditIndexPrefix   = "audit-"
 )
 
 type Indices []Index
@@ -173,101 +163,4 @@ func (es *ElasticLogStore) Indices() (Indices, error) {
 		return nil, err
 	}
 	return indices, nil
-}
-
-func (tc *E2ETestFramework) DeployAnElasticsearchCluster() (cr *elasticsearch.Elasticsearch, pipelineSecret *corev1.Secret, err error) {
-	logStoreName := "test-elastic-cluster"
-	if pipelineSecret, err = tc.CreatePipelineSecret(logStoreName, "test-pipeline-to-elastic", map[string][]byte{}); err != nil {
-		return nil, nil, err
-	}
-
-	opts := metav1.CreateOptions{}
-	esSecret := k8shandler.NewSecret(
-		logStoreName,
-		constants.WatchNamespace,
-		k8shandler.LoadElasticsearchSecretMap(),
-	)
-	clolog.V(3).Info("Creating secret for an elasticsearch cluster: ", "secret", esSecret.Name)
-	_, err = tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Create(context.TODO(), esSecret, opts)
-	if err != nil {
-		if apierrors.IsAlreadyExists(err) {
-			sOpts := metav1.UpdateOptions{}
-			_, err := tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Update(context.TODO(), esSecret, sOpts)
-			if err != nil {
-				return nil, nil, nil
-			}
-		} else {
-			return nil, nil, nil
-		}
-	}
-	pvcSize := resource.MustParse("200G")
-	node := elasticsearch.ElasticsearchNode{
-		Roles:     []elasticsearch.ElasticsearchNodeRole{"client", "data", "master"},
-		NodeCount: 1,
-		Storage: elasticsearch.ElasticsearchStorageSpec{
-			Size: &pvcSize,
-		},
-	}
-	cr = &elasticsearch.Elasticsearch{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      esSecret.Name,
-			Namespace: constants.WatchNamespace,
-		},
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Elasticsearch",
-			APIVersion: elasticsearch.GroupVersion.String(),
-		},
-		Spec: elasticsearch.ElasticsearchSpec{
-			Spec: elasticsearch.ElasticsearchNodeSpec{
-				Image: utils.GetComponentImage("elasticsearch"),
-				Resources: corev1.ResourceRequirements{
-					Requests: v1.ResourceList{
-						v1.ResourceMemory: resource.MustParse("3Gi"),
-					},
-				},
-				ProxyResources: corev1.ResourceRequirements{
-					Requests: v1.ResourceList{
-						v1.ResourceMemory: resource.MustParse("128Mi"),
-					},
-				},
-			},
-			Nodes:            []elasticsearch.ElasticsearchNode{node},
-			ManagementState:  elasticsearch.ManagementStateManaged,
-			RedundancyPolicy: elasticsearch.ZeroRedundancy,
-			IndexManagement:  indexmanagement.NewSpec(nil),
-		},
-	}
-	tc.AddCleanup(func() error {
-		result := tc.KubeClient.RESTClient().Delete().
-			RequestURI(fmt.Sprintf("%s/%s", fmt.Sprintf(elasticsearchesLoggingURI, cr.Namespace), cr.Name)).
-			SetHeader("Content-Type", "application/json").
-			Do(context.TODO())
-		return result.Error()
-	})
-	tc.AddCleanup(func() error {
-		opts := metav1.DeleteOptions{}
-		for _, name := range []string{esSecret.Name, pipelineSecret.Name} {
-			if err := tc.KubeClient.CoreV1().Secrets(constants.WatchNamespace).Delete(context.TODO(), name, opts); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-
-	clolog.V(3).Info("Creating an elasticsearch cluster ", "cluster", cr)
-	var body []byte
-	if body, err = json.Marshal(cr); err != nil {
-		return nil, nil, err
-	}
-	result := tc.KubeClient.RESTClient().Post().
-		RequestURI(elasticsearchesLoggingURI).
-		SetHeader("Content-Type", "application/json").
-		Body(body).
-		Do(context.TODO())
-
-	name := cr.GetName()
-	tc.LogStores[name] = &ElasticLogStore{
-		Framework: tc,
-	}
-	return cr, pipelineSecret, result.Error()
 }

@@ -349,6 +349,176 @@ var _ = Describe("Generate fluentd config", func() {
 </label>
 `,
 		}),
+		Entry("with tls key,cert,ca-bundle tls insecureSkipVerify=true", testhelpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeElasticsearch,
+						Name: "es-1",
+						URL:  "https://es.svc.infra.cluster:9999",
+						Secret: &logging.OutputSecretSpec{
+							Name: "es-1",
+						},
+						TLS: &logging.OutputTLSSpec{
+							InsecureSkipVerify: true,
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"es-1": {
+					Data: map[string][]byte{
+						"tls.key":       []byte("junk"),
+						"tls.crt":       []byte("junk"),
+						"ca-bundle.crt": []byte("junk"),
+					},
+				},
+			},
+			ExpectedConf: `
+		<label @ES_1>
+		 # Viaq Data Model
+		 <filter **>
+		   @type viaq_data_model
+		   enable_openshift_model false
+		   enable_prune_empty_fields false
+		   rename_time false
+		   undefined_dot_replace_char UNUSED
+		   elasticsearch_index_prefix_field 'viaq_index_name'
+		   <elasticsearch_index_name>
+		     enabled 'true'
+		     tag "kubernetes.var.log.pods.openshift_** kubernetes.var.log.pods.openshift-*_** kubernetes.var.log.pods.default_** kubernetes.var.log.pods.kube-*_** var.log.pods.openshift_** var.log.pods.openshift-*_** var.log.pods.default_** var.log.pods.kube-*_** journal.system** system.var.log**"
+		     name_type static
+		     static_index_name infra-write
+		   </elasticsearch_index_name>
+		   <elasticsearch_index_name>
+		     enabled 'true'
+		     tag "linux-audit.log** k8s-audit.log** openshift-audit.log** ovn-audit.log**"
+		     name_type static
+		     static_index_name audit-write
+		   </elasticsearch_index_name>
+		   <elasticsearch_index_name>
+		     enabled 'true'
+		     tag "**"
+		     name_type structured
+		     static_index_name app-write
+		   </elasticsearch_index_name>
+		 </filter>
+		 <filter **>
+		   @type viaq_data_model
+		   enable_prune_labels true
+		   enable_openshift_model false
+		   rename_time false
+		   undefined_dot_replace_char UNUSED
+		   prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+		 </filter>
+		
+		 #dedot namespace_labels and rebuild message field if present
+		 <filter **>
+		   @type record_modifier
+		   <record>
+			  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
+			  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+		   </record>
+		   remove_keys _dummy_, _dummy2_
+		 </filter>
+		
+		 #remove structured field if present
+		 <filter **>
+		   @type record_modifier
+		   remove_keys structured
+		 </filter>
+		
+		 <match retry_es_1>
+		   @type elasticsearch
+		   @id retry_es_1
+		   host es.svc.infra.cluster
+		   port 9999
+		   scheme https
+		   ssl_version TLSv1_2
+		   ssl_verify false
+		   client_key '/var/run/ocp-collector/secrets/es-1/tls.key'
+		   client_cert '/var/run/ocp-collector/secrets/es-1/tls.crt'
+		   ca_file '/var/run/ocp-collector/secrets/es-1/ca-bundle.crt'
+		   target_index_key viaq_index_name
+		   id_key viaq_msg_id
+		   remove_keys viaq_index_name
+		   verify_es_version_at_startup false
+		   type_name _doc
+		   http_backend typhoeus
+		   write_operation create
+		   reload_connections 'true'
+		   # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+		   reload_after '200'
+		   # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+		   sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+		   reload_on_failure false
+		   # 2 ^ 31
+		   request_timeout 2147483648
+		   <buffer>
+		     @type file
+		     path '/var/lib/fluentd/retry_es_1'
+		     flush_mode interval
+		     flush_interval 1s
+		     flush_thread_count 2
+		     retry_type exponential_backoff
+		     retry_wait 1s
+		     retry_max_interval 60s
+		     retry_timeout 60m
+		     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
+		     total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
+		     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+		     overflow_action block
+		     disable_chunk_backup true
+		   </buffer>
+		 </match>
+		
+		 <match **>
+		   @type elasticsearch
+		   @id es_1
+		   host es.svc.infra.cluster
+		   port 9999
+		   scheme https
+		   ssl_version TLSv1_2
+		   ssl_verify false
+		   client_key '/var/run/ocp-collector/secrets/es-1/tls.key'
+		   client_cert '/var/run/ocp-collector/secrets/es-1/tls.crt'
+		   ca_file '/var/run/ocp-collector/secrets/es-1/ca-bundle.crt'
+		   target_index_key viaq_index_name
+		   id_key viaq_msg_id
+		   remove_keys viaq_index_name
+		   verify_es_version_at_startup false
+		   type_name _doc
+		   retry_tag retry_es_1
+		   http_backend typhoeus
+		   write_operation create
+		   reload_connections 'true'
+		   # https://github.com/uken/fluent-plugin-elasticsearch#reload-after
+		   reload_after '200'
+		   # https://github.com/uken/fluent-plugin-elasticsearch#sniffer-class-name
+		   sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+		   reload_on_failure false
+		   # 2 ^ 31
+		   request_timeout 2147483648
+		   <buffer>
+		     @type file
+		     path '/var/lib/fluentd/es_1'
+		     flush_mode interval
+		     flush_interval 1s
+		     flush_thread_count 2
+		     retry_type exponential_backoff
+		     retry_wait 1s
+		     retry_max_interval 60s
+		     retry_timeout 60m
+		     queued_chunks_limit_size "#{ENV['BUFFER_QUEUE_LIMIT'] || '32'}"
+		     total_limit_size "#{ENV['TOTAL_LIMIT_SIZE_PER_BUFFER'] || '8589934592'}"
+		     chunk_limit_size "#{ENV['BUFFER_SIZE_LIMIT'] || '8m'}"
+		     overflow_action block
+		     disable_chunk_backup true
+		   </buffer>
+		 </match>
+		</label>
+		`,
+		}),
 		Entry("without security", testhelpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Outputs: []logging.OutputSpec{

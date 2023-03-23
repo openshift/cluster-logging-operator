@@ -1,7 +1,9 @@
 package loki
 
 import (
+	"github.com/openshift/cluster-logging-operator/internal/tls"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/openshift/cluster-logging-operator/test/helpers"
@@ -43,9 +45,11 @@ var _ = Describe("outputLabelConf", func() {
 })
 
 var _ = Describe("Generate vector config", func() {
+	defaultTLS := "VersionTLS12"
+	defaultCiphers := "TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-CHACHA20-POLY1305,ECDHE-RSA-CHACHA20-POLY1305,DHE-RSA-AES128-GCM-SHA256,DHE-RSA-AES256-GCM-SHA384"
 	inputPipeline := []string{"application"}
 	var f = func(clspec logging.CollectionSpec, secrets map[string]*corev1.Secret, clfspec logging.ClusterLogForwarderSpec, op generator.Options) []generator.Element {
-		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], generator.NoOptions)
+		return Conf(clfspec.Outputs[0], inputPipeline, secrets[clfspec.Outputs[0].Name], op)
 	}
 	DescribeTable("for Loki output", helpers.TestGenerateConfWith(f),
 		Entry("with default labels", helpers.ConfGenerateTest{
@@ -317,6 +321,62 @@ enabled = true
 verify_certificate = false
 verify_hostname = false
 ca_file = "/var/run/ocp-collector/secrets/custom-loki-secret/ca-bundle.crt"
+`,
+		}),
+		Entry("with TLS config with default minTLSVersion & ciphers", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Outputs: []logging.OutputSpec{
+					{
+						Type: logging.OutputTypeLoki,
+						Name: "loki-receiver",
+						URL:  "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application",
+						Secret: &logging.OutputSecretSpec{
+							Name: "custom-loki-secret",
+						},
+					},
+				},
+			},
+			Secrets: map[string]*corev1.Secret{
+				"loki-receiver": {
+					Data: map[string][]byte{
+						"token": []byte("token-for-custom-loki"),
+					},
+				},
+			},
+			Options: generator.Options{
+				generator.MinTLSVersion: string(tls.DefaultMinTLSVersion),
+				generator.Ciphers:       strings.Join(tls.DefaultTLSCiphers, ","),
+			},
+			ExpectedConf: `
+[transforms.loki_receiver_remap]
+type = "remap"
+inputs = ["application"]
+source = '''
+  del(.tag)
+'''
+[sinks.loki_receiver]
+type = "loki"
+inputs = ["loki_receiver_remap"]
+endpoint = "https://lokistack-dev-gateway-http.openshift-logging.svc:8080/api/logs/v1/application"
+out_of_order_action = "accept"
+healthcheck.enabled = false
+[sinks.loki_receiver.encoding]
+codec = "json"
+[sinks.loki_receiver.labels]
+kubernetes_container_name = "{{kubernetes.container_name}}"
+kubernetes_host = "${VECTOR_SELF_NODE_NAME}"
+kubernetes_namespace_name = "{{kubernetes.namespace_name}}"
+kubernetes_pod_name = "{{kubernetes.pod_name}}"
+log_type = "{{log_type}}"
+[sinks.loki_receiver.tls]
+enabled = true
+min_tls_version = "` + defaultTLS + `"
+ciphersuites = "` + defaultCiphers + `"
+
+# Bearer Auth Config
+[sinks.loki_receiver.auth]
+strategy = "bearer"
+token = "token-for-custom-loki"
 `,
 		}),
 	)

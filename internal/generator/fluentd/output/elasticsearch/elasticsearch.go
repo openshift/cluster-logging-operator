@@ -136,9 +136,15 @@ func RetryOutput(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o lo
 }
 
 func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
-	// URL is parasable, checked at input sanitization
+	// URL is passable, checked at input sanitization
 	u, _ := url.Parse(o.URL)
-	conf := append([]Element{}, TLS(url.IsTLSScheme(u.Scheme)))
+	isHttps := url.IsTLSScheme(u.Scheme)
+	isSSLVerify := !(o.TLS != nil && o.TLS.InsecureSkipVerify)
+	esTls := EsTLS{
+		security.TLS(isHttps),
+		isSSLVerify,
+	}
+	conf := append([]Element{}, esTls)
 	if o.Secret != nil {
 		if security.HasUsernamePassword(secret) {
 			up := UserNamePass{

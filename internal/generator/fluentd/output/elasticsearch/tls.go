@@ -1,26 +1,30 @@
 package elasticsearch
 
-import (
-	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
-)
+import "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 
-type TLS security.TLS
+type EsTLS struct {
+	security.TLS
+	SSLVerify bool
+}
 
-func (t TLS) Name() string {
+func (t EsTLS) Name() string {
 	return "elasticsearchTLSTemplate"
 }
 
-func (t TLS) Template() string {
+func (t EsTLS) Template() string {
 	https := `{{define "elasticsearchTLSTemplate" -}}
 scheme https
 ssl_version TLSv1_2
+{{- if not .SSLVerify }}
+ssl_verify false
+{{- end }}
 {{- end}}
 `
 	http := `{{define "elasticsearchTLSTemplate" -}}
 scheme http
 {{- end}}
 `
-	if t {
+	if t.TLS {
 		return https
 	}
 	return http

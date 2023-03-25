@@ -76,7 +76,7 @@ func addTLSSettings(o logging.OutputSpec, secret *corev1.Secret, conf *TLSConf) 
 		addTLS = true
 		conf.PassPhrase = security.GetFromSecret(secret, constants.Passphrase)
 	}
-	if (o.Type == logging.OutputTypeGoogleCloudLogging || o.Type == logging.OutputTypeCloudwatch) && (conf.TlsMinVersion != "" || conf.CipherSuites != "") {
+	if conf.TlsMinVersion != "" || conf.CipherSuites != "" {
 		addTLS = true
 	}
 

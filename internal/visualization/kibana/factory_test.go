@@ -54,6 +54,17 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        1,
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+								v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
+							},
+						},
+					},
 					Resources: &v1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							v1.ResourceMemory: kibana.DefaultKibanaMemory,
@@ -91,6 +102,17 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        0,
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+								v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
+							},
+						},
+					},
 					Resources: &v1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							v1.ResourceMemory: kibana.DefaultKibanaMemory,
@@ -135,6 +157,17 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        0,
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+								v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
+							},
+						},
+					},
 					Resources: &v1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							v1.ResourceMemory: kibana.DefaultKibanaMemory,
@@ -179,6 +212,17 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        2,
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+								v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
+							},
+						},
+					},
 					Resources: &v1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							v1.ResourceMemory: kibana.DefaultKibanaMemory,
@@ -218,11 +262,11 @@ func TestNewKibanaCR(t *testing.T) {
 							ProxySpec: logging.ProxySpec{
 								Resources: &v1.ResourceRequirements{
 									Limits: v1.ResourceList{
-										v1.ResourceMemory: resource.MustParse("136Mi"),
+										v1.ResourceMemory: resource.MustParse("1986Mi"),
 									},
 									Requests: v1.ResourceList{
-										v1.ResourceMemory: kibana.DefaultKibanaMemory,
-										v1.ResourceCPU:    kibana.DefaultKibanaCpuRequest,
+										v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+										v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
 									},
 								},
 							},
@@ -254,11 +298,11 @@ func TestNewKibanaCR(t *testing.T) {
 					ProxySpec: es.ProxySpec{
 						Resources: &v1.ResourceRequirements{
 							Limits: v1.ResourceList{
-								v1.ResourceMemory: resource.MustParse("136Mi"),
+								v1.ResourceMemory: resource.MustParse("1986Mi"),
 							},
 							Requests: v1.ResourceList{
-								v1.ResourceMemory: kibana.DefaultKibanaMemory,
-								v1.ResourceCPU:    kibana.DefaultKibanaCpuRequest,
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+								v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
 							},
 						},
 					},
@@ -299,6 +343,17 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        1,
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+								v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
+							},
+						},
+					},
 					Resources: &v1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							v1.ResourceMemory: kibana.DefaultKibanaMemory,
@@ -351,6 +406,17 @@ func TestNewKibanaCR(t *testing.T) {
 				Spec: es.KibanaSpec{
 					ManagementState: es.ManagementStateManaged,
 					Replicas:        1,
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+								v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
+							},
+						},
+					},
 					Resources: &v1.ResourceRequirements{
 						Limits: v1.ResourceList{
 							v1.ResourceMemory: kibana.DefaultKibanaMemory,
@@ -383,7 +449,9 @@ func TestNewKibanaCR(t *testing.T) {
 			if got.Spec.Replicas != test.want.Spec.Replicas {
 				t.Errorf("%s, Replicas: got %d, want %d", test.desc, got.Spec.Replicas, test.want.Spec.Replicas)
 			}
-
+			if !utils.AreResourcesSame(got.Spec.ProxySpec.Resources, test.want.Spec.ProxySpec.Resources) {
+				t.Errorf("Proxy Resources: got\n%v\n\nwant\n%v", got.Spec.ProxySpec.Resources, test.want.Spec.ProxySpec.Resources)
+			}
 			if !reflect.DeepEqual(got.Spec.Resources, test.want.Spec.Resources) {
 				t.Errorf("Resources: got\n%v\n\nwant\n%v", got.Spec.Resources, test.want.Spec.Resources)
 			}

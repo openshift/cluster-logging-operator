@@ -48,6 +48,7 @@ func New(namespace, name string, visSpec *logging.VisualizationSpec, logStore *l
 			}
 		}
 
+		proxyResources = visSpec.ProxySpec.Resources
 		if proxyResources == nil {
 			proxyResources = &v1.ResourceRequirements{
 				Limits: v1.ResourceList{v1.ResourceMemory: DefaultKibanaProxyMemory},

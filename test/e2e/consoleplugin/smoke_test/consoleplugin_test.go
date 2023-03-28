@@ -3,11 +3,12 @@ package consoleplugin_test
 import (
 	"context"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/internal/constants"
-	corev1 "k8s.io/api/core/v1"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/constants"
+	corev1 "k8s.io/api/core/v1"
 
 	logger "github.com/ViaQ/logerr/v2/log"
 	log "github.com/ViaQ/logerr/v2/log/static"
@@ -74,6 +75,9 @@ var _ = Describe("[ConsolePlugin]", func() {
 			Visualization: &loggingv1.VisualizationSpec{
 				Type:   loggingv1.VisualizationTypeOCPConsole,
 				Kibana: &loggingv1.KibanaSpec{},
+			},
+			Collection: &loggingv1.CollectionSpec{
+				Type: loggingv1.LogCollectionTypeFluentd,
 			},
 		}
 		ExpectOK(c.Recreate(cl))

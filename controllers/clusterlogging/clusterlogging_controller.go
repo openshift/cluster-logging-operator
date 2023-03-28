@@ -2,9 +2,10 @@ package clusterlogging
 
 import (
 	"context"
-	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/builder"

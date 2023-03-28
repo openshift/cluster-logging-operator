@@ -2,7 +2,9 @@ package runtime
 
 import (
 	"fmt"
+
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	loggingv1alpha1 "github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils"
 	"github.com/openshift/cluster-logging-operator/version"
@@ -25,6 +27,7 @@ var Codecs = serializer.NewCodecFactory(scheme.Scheme)
 
 func init() {
 	must(loggingv1.AddToScheme(scheme.Scheme)) // Add our types
+	must(loggingv1alpha1.AddToScheme(scheme.Scheme))
 }
 
 // Decode JSON or YAML resource manifest to a new typed struct.
@@ -91,11 +94,11 @@ func Labels(o runtime.Object) map[string]string {
 // SetCommonLabels initialize given object labels with K8s Common labels
 // These are recommended labels. They make it easier to manage applications but aren't required for any core tooling.
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/#labels
-func SetCommonLabels(object runtime.Object, collectorType, instanceName string) {
+func SetCommonLabels(object runtime.Object, collectorType, instanceName, component string) {
 	common := map[string]string{
 		constants.LabelK8sName:      collectorType,
 		constants.LabelK8sInstance:  instanceName,
-		constants.LabelK8sComponent: constants.CollectorName,
+		constants.LabelK8sComponent: component,
 		constants.LabelK8sPartOf:    constants.ClusterLogging,
 		constants.LabelK8sManagedBy: constants.ClusterLoggingOperator,
 		constants.LabelK8sVersion:   version.Version,

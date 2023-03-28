@@ -3,6 +3,7 @@ package reconcile
 import (
 	"context"
 	"fmt"
+
 	log "github.com/ViaQ/logerr/v2/log/static"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/utils/comparators/daemonsets"
@@ -38,6 +39,7 @@ func DaemonSet(er record.EventRecorder, k8Client client.Client, desired *apps.Da
 		reason = constants.EventReasonUpdateObject
 		current.Labels = desired.Labels
 		current.Spec = desired.Spec
+		current.OwnerReferences = desired.OwnerReferences
 		return k8Client.Update(context.TODO(), current)
 	})
 

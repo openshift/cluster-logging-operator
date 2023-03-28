@@ -63,6 +63,12 @@ func AreSame(current *apps.DaemonSet, desired *apps.DaemonSet) (bool, string) {
 		}
 	}
 
+	// Check ownership
+	if !reflect.DeepEqual(current.GetOwnerReferences(), desired.GetOwnerReferences()) {
+		log.V(3).Info("Daemonset ownership change", "current name", current.GetOwnerReferences()[0].Name)
+		return false, "ownerReference"
+	}
+
 	return true, ""
 }
 

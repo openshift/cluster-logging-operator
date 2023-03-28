@@ -80,7 +80,7 @@ func AreResourcesDifferent(current, desired interface{}) bool {
 		for _, des := range desiredContainers {
 			// Only compare the images of containers with the same name
 			if curr.Name == des.Name {
-				if AreResourcesSame(&curr.Resources, &des.Resources) {
+				if !AreResourcesSame(&curr.Resources, &des.Resources) {
 					changed = true
 				}
 			}

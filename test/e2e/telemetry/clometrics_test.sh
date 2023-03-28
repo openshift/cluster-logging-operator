@@ -16,7 +16,7 @@ export LOGGING_NS=${LOGGING_NS:-openshift-logging}
 
 
 
-declare -a clometrics=("log_logging_info" "log_collector_error_count_total" "log_forwarder_input_info" "log_forwarder_output_info" log_forwarder_pipeline_info)
+declare -a clometrics=("log_logging_info" "log_collector_error_count_total" "log_forwarder_input_info" "log_forwarder_output_info" "log_forwarder_pipeline_info" "log_file_metric_exporter_info")
 
 
 ## now loop through the above array
@@ -29,9 +29,9 @@ do
    #check if metric is successfully published in prometheus end point 
    if [[ $result -eq 1 ]]
    then
-     echo "CLO metrics target in up in prometheus "
+     echo "CLO metrics target is up in prometheus "
    else 
-     echo "CLO metrics target in NOT up in prometheus "
+     echo "CLO metrics target is NOT up in prometheus "
    exit 0
    fi
 

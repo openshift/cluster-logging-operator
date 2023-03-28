@@ -26,6 +26,7 @@ var _ = Describe("telemetry", func() {
 		CLinfo        = data.CLInfo.M
 		CLFinputType  = data.CLFInputType.M
 		CLFoutputType = data.CLFOutputType.M
+		LFMEInfo      = data.LFMEInfo.M
 		manifestFile  string
 	)
 
@@ -53,6 +54,7 @@ var _ = Describe("telemetry", func() {
 				Expect(CLinfo["version"]).To(Equal(version.Version))
 				Expect(CLFinputType["application"]).To(Equal("0"))
 				Expect(CLFoutputType["elasticsearch"]).To(Equal("0"))
+				Expect(LFMEInfo[Deployed]).To(Equal("0"))
 			})
 		})
 	})

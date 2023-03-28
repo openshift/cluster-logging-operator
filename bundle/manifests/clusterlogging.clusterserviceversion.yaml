@@ -85,6 +85,32 @@ metadata:
               "type": "kibana"
             }
           }
+        },
+        {
+          "apiVersion": "logging.openshift.io/v1alpha1",
+          "kind": "LogFileMetricExporter",
+          "metadata": {
+            "name": "instance",
+            "namespace": "openshift-logging"
+          },
+          "spec": {
+            "resources": {
+              "limits": {
+                "cpu": "500m"
+              },
+              "requests": {
+                "cpu": "200m",
+                "memory": "128Mi"
+              }
+            },
+            "tolerations": [
+              {
+                "effect": "NoSchedule",
+                "key": "node-role.kubernetes.io/master",
+                "operator": "Exists"
+              }
+            ]
+          }
         }
       ]
     capabilities: Seamless Upgrades
@@ -304,6 +330,9 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:podStatuses
       version: v1
+    - kind: LogFileMetricExporter
+      name: logfilemetricexporters.logging.openshift.io
+      version: v1alpha1
   description: |-
     # Red Hat OpenShift Logging
     The Red Hat OpenShift Logging Operator orchestrates and manages the aggregated logging stack as a cluster-wide service.

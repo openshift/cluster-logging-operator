@@ -1,12 +1,11 @@
 package collector
 
 import (
-	"github.com/openshift/cluster-logging-operator/internal/runtime"
 	"path"
-	"strings"
+
+	"github.com/openshift/cluster-logging-operator/internal/runtime"
 
 	"github.com/openshift/cluster-logging-operator/internal/collector/common"
-	"github.com/openshift/cluster-logging-operator/internal/tls"
 	apps "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -23,8 +22,6 @@ import (
 
 const (
 	clusterLoggingPriorityClassName = "system-node-critical"
-	ExporterPort                    = int32(2112)
-	ExporterPortName                = "logfile-metrics"
 	MetricsPort                     = int32(24231)
 	MetricsPortName                 = "metrics"
 	metricsVolumeName               = "collector-metrics"
@@ -118,7 +115,7 @@ func New(confHash, clusterID string, collectorSpec logging.CollectionSpec, secre
 		Secrets:       secrets,
 		ForwarderSpec: forwarderSpec,
 		CommonLabelInitializer: func(o runtime.Object) {
-			runtime.SetCommonLabels(o, utils.GetCollectorName(collectorSpec.Type), instanceName)
+			runtime.SetCommonLabels(o, utils.GetCollectorName(collectorSpec.Type), instanceName, constants.CollectorName)
 		},
 	}
 	if collectorSpec.Type == logging.LogCollectionTypeVector {
@@ -160,7 +157,6 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	secretNames := AddSecretVolumes(podSpec, forwarderSpec)
 
-	exporter := newLogMetricsExporterContainer(tlsProfileSpec)
 	collector := f.NewCollectorContainer(secretNames, clusterID)
 
 	addTrustedCABundle(collector, podSpec, trustedCABundle)
@@ -171,7 +167,6 @@ func (f *Factory) NewPodSpec(trustedCABundle *v1.ConfigMap, forwarderSpec loggin
 
 	podSpec.Containers = []v1.Container{
 		*collector,
-		*exporter,
 	}
 
 	return podSpec
@@ -216,34 +211,8 @@ func (f *Factory) NewCollectorContainer(secretNames []string, clusterID string) 
 	// List of _unique_ output secret names, several outputs may use the same secret.
 	AddSecretVolumeMounts(&collector, secretNames)
 
-	addSecurityContextTo(&collector)
+	AddSecurityContextTo(&collector)
 	return &collector
-}
-
-func newLogMetricsExporterContainer(tlsProfileSpec configv1.TLSProfileSpec) *v1.Container {
-	// deliberately not passing any resources for running the below container process, let it have cpu and memory as the process requires
-	exporterResources := &v1.ResourceRequirements{}
-	exporter := factory.NewContainer(constants.LogfilesmetricexporterName, constants.LogfilesmetricexporterName, v1.PullIfNotPresent, *exporterResources)
-	exporter.Ports = []v1.ContainerPort{
-		{
-			Name:          ExporterPortName,
-			ContainerPort: ExporterPort,
-			Protocol:      v1.ProtocolTCP,
-		},
-	}
-	exporter.Command = []string{"/bin/bash"}
-	exporter.Args = []string{"-c",
-		"/usr/local/bin/log-file-metric-exporter -verbosity=2 -dir=/var/log/pods -http=:2112 -keyFile=/etc/collector/metrics/tls.key -crtFile=/etc/collector/metrics/tls.crt -tlsMinVersion=" +
-			tls.MinTLSVersion(tlsProfileSpec) + " -cipherSuites=" + strings.Join(tls.TLSCiphers(tlsProfileSpec), ",")}
-
-	exporter.VolumeMounts = []v1.VolumeMount{
-		{Name: logContainers, ReadOnly: true, MountPath: logContainersValue},
-		{Name: logPods, ReadOnly: true, MountPath: logPodsValue},
-		{Name: metricsVolumeName, ReadOnly: true, MountPath: metricsVolumePath},
-	}
-
-	addSecurityContextTo(&exporter)
-	return &exporter
 }
 
 // AddSecretVolumeMounts to the collector container
@@ -272,7 +241,7 @@ func AddSecretVolumes(podSpec *v1.PodSpec, pipelineSpec logging.ClusterLogForwar
 	return secretNames
 }
 
-func addSecurityContextTo(container *v1.Container) *v1.Container {
+func AddSecurityContextTo(container *v1.Container) *v1.Container {
 	container.SecurityContext = &v1.SecurityContext{
 		Capabilities: &v1.Capabilities{
 			Drop: RequiredDropCapabilities,

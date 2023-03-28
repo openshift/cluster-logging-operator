@@ -31,5 +31,11 @@ func AreSame(current *v1.Service, desired *v1.Service) (bool, string) {
 		}
 	}
 
+	// Check ownership
+	if !reflect.DeepEqual(current.GetOwnerReferences(), desired.GetOwnerReferences()) {
+		log.V(3).Info("Service Ownership change", "current name", current.GetOwnerReferences()[0].Name)
+		return false, "spec.ownerReference"
+	}
+
 	return true, ""
 }

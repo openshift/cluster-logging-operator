@@ -4,15 +4,17 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"runtime"
+	"time"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/metrics/telemetry"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"os"
-	"runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 
 	loggingv1 "github.com/openshift/cluster-logging-operator/apis/logging/v1"
+	"github.com/openshift/cluster-logging-operator/apis/logging/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
@@ -36,6 +38,7 @@ import (
 	securityv1 "github.com/openshift/api/security/v1"
 	"github.com/openshift/cluster-logging-operator/controllers/clusterlogging"
 	"github.com/openshift/cluster-logging-operator/controllers/forwarding"
+	"github.com/openshift/cluster-logging-operator/controllers/logfilemetricsexporter"
 	loggingruntime "github.com/openshift/cluster-logging-operator/internal/runtime"
 	elasticsearch "github.com/openshift/elasticsearch-operator/apis/logging/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -65,6 +68,7 @@ func init() {
 	utilruntime.Must(securityv1.AddToScheme(scheme))
 
 	utilruntime.Must(loggingv1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -140,6 +144,20 @@ func main() {
 		telemetry.Data.CLFInfo.M["healthStatus"] = UnHealthyStatus
 		os.Exit(1)
 	}
+
+	// The Log File Metric Exporter Controller
+	if err = (&logfilemetricsexporter.ReconcileLogFileMetricExporter{
+		Client:         mgr.GetClient(),
+		Scheme:         mgr.GetScheme(),
+		Recorder:       mgr.GetEventRecorderFor("logfilemetricexporter"),
+		ClusterVersion: clusterVersion.Status.Desired.Version,
+		ClusterID:      clusterID,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "LogFileMetricExporter")
+		telemetry.Data.LFMEInfo.M[telemetry.HealthStatus] = UnHealthyStatus
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

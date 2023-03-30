@@ -43,11 +43,12 @@ func New(namespace, name string, visSpec *logging.VisualizationSpec, logStore *l
 		if visSpec.Replicas != nil {
 			replicas = *visSpec.Replicas
 		} else {
-			if logStore != nil && logStore.Elasticsearch.NodeCount > 0 {
+			if logStore != nil && logStore.Elasticsearch != nil && logStore.Elasticsearch.NodeCount > 0 {
 				replicas = 1
 			}
 		}
 
+		proxyResources = visSpec.ProxySpec.Resources
 		if proxyResources == nil {
 			proxyResources = &v1.ResourceRequirements{
 				Limits: v1.ResourceList{v1.ResourceMemory: DefaultKibanaProxyMemory},

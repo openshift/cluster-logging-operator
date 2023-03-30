@@ -78,6 +78,55 @@ func TestNewKibanaCR(t *testing.T) {
 			},
 		},
 		{
+			desc: "LOG-3879: visualization without logstore.elasticsearch ",
+			cl: &logging.ClusterLogging{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "instance",
+					Namespace: "openshift-logging",
+				},
+				Spec: logging.ClusterLoggingSpec{
+					Visualization: &logging.VisualizationSpec{
+						KibanaSpec: logging.KibanaSpec{},
+					},
+					LogStore: &logging.LogStoreSpec{},
+				},
+			},
+			want: es.Kibana{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Kibana",
+					APIVersion: es.GroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kibana",
+					Namespace: "openshift-logging",
+				},
+				Spec: es.KibanaSpec{
+					ManagementState: es.ManagementStateManaged,
+					Replicas:        0,
+					ProxySpec: es.ProxySpec{
+						Resources: &v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+							},
+							Requests: v1.ResourceList{
+								v1.ResourceMemory: kibana.DefaultKibanaProxyMemory,
+								v1.ResourceCPU:    kibana.DefaultKibanaProxyCpuRequest,
+							},
+						},
+					},
+					Resources: &v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: kibana.DefaultKibanaMemory,
+						},
+						Requests: v1.ResourceList{
+							v1.ResourceMemory: kibana.DefaultKibanaMemory,
+							v1.ResourceCPU:    kibana.DefaultKibanaCpuRequest,
+						},
+					},
+				},
+			},
+		},
+		{
 			desc: "no kibana replica no elasticsearch",
 			cl: &logging.ClusterLogging{
 				ObjectMeta: metav1.ObjectMeta{

@@ -35,6 +35,7 @@ func (f *Factory) ReconcileCollectorConfig(er record.EventRecorder, k8sClient cl
 			map[string][]byte{
 				"vector.toml": []byte(collectorConfig),
 			})
+		utils.AddOwnerRefToObject(secret, owner)
 		return reconcile.Secret(er, k8sClient, secret)
 	}
 

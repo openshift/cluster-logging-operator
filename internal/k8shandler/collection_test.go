@@ -272,17 +272,6 @@ var _ = Describe("Reconciling", func() {
 				extras[constants.MigrateDefaultOutput] = true
 				clusterRequest.ForwarderSpec, extras = migrations.MigrateClusterLogForwarderSpec(clusterRequest.ForwarderSpec, clusterRequest.Cluster.Spec.LogStore, extras)
 			})
-
-			It("on removing vector collector should be removed collector-config secret", func() {
-				// Set collector to vector
-				cluster.Spec.Collection.Type = loggingv1.LogCollectionTypeVector
-				Expect(clusterRequest.CreateOrUpdateCollection(extras)).To(Succeed())
-				secretKey := types.NamespacedName{Name: constants.CollectorConfigSecretName, Namespace: cluster.GetNamespace()}
-				secret := &corev1.Secret{}
-				Expect(client.Get(context.TODO(), secretKey, secret)).Should(Succeed())
-				Expect(clusterRequest.removeCollector(constants.CollectorName))
-				Expect(client.Get(context.TODO(), secretKey, secret)).ShouldNot(Succeed())
-			})
 		})
 	})
 })

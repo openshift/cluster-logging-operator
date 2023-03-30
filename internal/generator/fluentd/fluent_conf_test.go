@@ -570,6 +570,17 @@ var _ = Describe("Generating fluentd config", func() {
 
 # Ship logs to specific outputs
 <label @APPS_ES_1>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -603,17 +614,16 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
 
-  #dedot namespace_labels and rebuild message field if present
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
 
   #remove structured field if present
@@ -712,6 +722,17 @@ var _ = Describe("Generating fluentd config", func() {
 </label>
 
 <label @APPS_ES_2>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -745,17 +766,16 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
 
-  #dedot namespace_labels and rebuild message field if present
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
 
   #remove structured field if present
@@ -1294,6 +1314,17 @@ var _ = Describe("Generating fluentd config", func() {
 
 # Ship logs to specific outputs
 <label @APPS_ES_1>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -1327,17 +1358,16 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
-            
-  #dedot namespace_labels and rebuild message field if present
+
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
 
   #remove structured field if present
@@ -1436,6 +1466,17 @@ var _ = Describe("Generating fluentd config", func() {
 </label>
 
 <label @APPS_ES_2>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -1469,19 +1510,18 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
-            
-  #dedot namespace_labels and rebuild message field if present
+
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
-
+    
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -2022,6 +2062,17 @@ var _ = Describe("Generating fluentd config", func() {
 
 # Ship logs to specific outputs
 <label @APPS_ES_1>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -2055,17 +2106,16 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
-          
-  #dedot namespace_labels and rebuild message field if present
+
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
 
   #remove structured field if present
@@ -2164,6 +2214,17 @@ var _ = Describe("Generating fluentd config", func() {
 </label>
 
 <label @APPS_ES_2>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -2197,19 +2258,18 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
-          
-  #dedot namespace_labels and rebuild message field if present
+
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
-  
+
   #remove structured field if present
   <filter **>
 	@type record_modifier
@@ -2648,6 +2708,17 @@ var _ = Describe("Generating fluentd config", func() {
 
 # Ship logs to specific outputs
 <label @SECUREFORWARD_RECEIVER>
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   <match **>
     @type forward
     @id secureforward_receiver
@@ -3147,6 +3218,17 @@ var _ = Describe("Generating fluentd config", func() {
 
 # Ship logs to specific outputs
 <label @INFRA_ES>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -3180,17 +3262,16 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
-           
-  #dedot namespace_labels and rebuild message field if present
+
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
   
   #remove structured field if present
@@ -3289,6 +3370,17 @@ var _ = Describe("Generating fluentd config", func() {
 </label>
 
 <label @APPS_ES_1>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -3322,17 +3414,16 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
-            
-  #dedot namespace_labels and rebuild message field if present
+
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
 
   #remove structured field if present
@@ -3431,6 +3522,17 @@ var _ = Describe("Generating fluentd config", func() {
 </label>
 
 <label @APPS_ES_2>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -3464,17 +3566,16 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
-            
-  #dedot namespace_labels and rebuild message field if present
+
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
 
   #remove structured field if present
@@ -3573,6 +3674,17 @@ var _ = Describe("Generating fluentd config", func() {
 </label>
 
 <label @AUDIT_ES>
+  #dedot namespace_labels
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   # Viaq Data Model
   <filter **>
 	@type viaq_data_model
@@ -3606,17 +3718,16 @@ var _ = Describe("Generating fluentd config", func() {
 	enable_openshift_model false
 	rename_time false
 	undefined_dot_replace_char UNUSED
-	prune_labels_exclusions app.kubernetes.io/name,app.kubernetes.io/instance,app.kubernetes.io/version,app.kubernetes.io/component,app.kubernetes.io/part-of,app.kubernetes.io/managed-by,app.kubernetes.io/created-by
+  prune_labels_exclusions app_kubernetes_io_name,app_kubernetes_io_instance,app_kubernetes_io_version,app_kubernetes_io_component,app_kubernetes_io_part-of,app_kubernetes_io_managed-by,app_kubernetes_io_created-by
   </filter>
-            
-  #dedot namespace_labels and rebuild message field if present
+
+  #rebuild message field if present
   <filter **>
     @type record_modifier
     <record>
-	  _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
-	  _dummy2_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub('.','_')]=v}};end}
+    _dummy_ ${(require 'json';record['message']=JSON.dump(record['structured'])) if record['structured'] and record['viaq_index_name'] == 'app-write'}
     </record>
-    remove_keys _dummy_, _dummy2_
+    remove_keys _dummy_
   </filter>
 
   #remove structured field if present

@@ -2,12 +2,14 @@ package splunk
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
+
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
-	"net/url"
-	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
@@ -65,9 +67,12 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
+	outputName := vectorhelpers.FormatComponentID(o.Name)
+	dedottedID := normalize.ID(outputName, "dedot")
 	return MergeElements(
 		[]Element{
-			Output(o, inputs, secret, op),
+			normalize.DedotLabels(dedottedID, inputs),
+			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
 		},
 		TLSConf(o, secret),

@@ -10,6 +10,7 @@ import (
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
@@ -80,6 +81,7 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 				GroupNameStreamName(fmt.Sprintf("%saudit", logGroupPrefix),
 					"${record['hostname']}.${tag}",
 					source.AuditTags, op),
+				normalize.DedotLabels(),
 				OutputConf(bufspec, secret, o, op),
 			},
 		},

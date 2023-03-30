@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
-
-	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -72,6 +72,7 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 		FromLabel{
 			InLabel: helpers.LabelName(o.Name),
 			SubElements: []Element{
+				normalize.DedotLabels(),
 				LokiLabelFilter(o.Loki),
 				Output(bufspec, secret, o, op),
 			},

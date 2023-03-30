@@ -282,7 +282,7 @@ source = '''
 '''
 `,
 		}),
-		Entry("Parse log message as Jaon", helpers.ConfGenerateTest{
+		Entry("Parse log message as Json", helpers.ConfGenerateTest{
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
@@ -327,6 +327,56 @@ source = '''
         del(.message)
     }
   }
+'''
+`,
+		}),
+		Entry("Detect Multi Line Exceptions", helpers.ConfGenerateTest{
+			CLFSpec: logging.ClusterLogForwarderSpec{
+				Pipelines: []logging.PipelineSpec{
+					{
+						InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
+						OutputRefs: []string{logging.OutputNameDefault},
+						Name:       "pipeline",
+						DetectMultilineErrors: true,
+					},
+				},
+			},
+			ExpectedConf: `
+[transforms.route_container_logs]
+type = "route"
+inputs = ["container_logs"]
+route.app = '!((starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube"))'
+route.infra = '(starts_with!(.kubernetes.namespace_name,"kube-")) || (starts_with!(.kubernetes.namespace_name,"openshift-")) || (.kubernetes.namespace_name == "default") || (.kubernetes.namespace_name == "openshift") || (.kubernetes.namespace_name == "kube")'
+
+# Set log_type to "application"
+[transforms.application]
+type = "remap"
+inputs = ["route_container_logs.app"]
+source = '''
+  .log_type = "application"
+'''
+
+# Set log_type to "infrastructure"
+[transforms.infrastructure]
+type = "remap"
+inputs = ["route_container_logs.infra","journal_logs"]
+source = '''
+  .log_type = "infrastructure"
+'''
+
+[transforms.detect_exceptions_pipeline]
+type = "detect_exceptions"
+inputs = ["application","infrastructure"]
+languages = ["All"]
+group_by = ["kubernetes.namespace_name","kubernetes.pod_name","kubernetes.container_name", "kubernetes.pod_id"]
+expire_after_ms = 2000
+multiline_flush_interval_ms = 1000
+
+[transforms.pipeline]
+type = "remap"
+inputs = ["detect_exceptions_pipeline"]
+source = '''
+  .
 '''
 `,
 		}),

@@ -23,6 +23,23 @@ func Pipelines(spec *logging.ClusterLogForwarderSpec, op generator.Options) []ge
 	el := []generator.Element{}
 	userDefined := spec.InputMap()
 	for _, p := range spec.Pipelines {
+		inputs := []string{}
+		for _, inputName := range p.InputRefs {
+			if _, ok := userDefined[inputName]; ok {
+				inputs = append(inputs, fmt.Sprintf(UserDefinedInput, inputName))
+			} else {
+				inputs = append(inputs, inputName)
+			}
+		}
+
+		if p.DetectMultilineErrors {
+			d := DetectExceptions{
+				ComponentID: fmt.Sprintf("detect_exceptions_%s", p.Name),
+				Inputs:      helpers.MakeInputs(inputs...),
+			}
+			el = append(el, d)
+			inputs = []string{d.ComponentID}
+		}
 		vrls := []string{}
 		if p.Labels != nil && len(p.Labels) != 0 {
 			s, _ := json.Marshal(p.Labels)
@@ -39,14 +56,6 @@ if .log_type == "application" {
 }
 `
 			vrls = append(vrls, parse)
-		}
-		inputs := []string{}
-		for _, inputName := range p.InputRefs {
-			if _, ok := userDefined[inputName]; ok {
-				inputs = append(inputs, fmt.Sprintf(UserDefinedInput, inputName))
-			} else {
-				inputs = append(inputs, inputName)
-			}
 		}
 		vrl := SrcPassThrough
 		if len(vrls) != 0 {

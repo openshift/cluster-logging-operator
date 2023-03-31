@@ -11,6 +11,7 @@ var _ = Describe("#FeaturesForOCP", func() {
 	})
 	It("should enable the the dev console and alerts when <= 4.13", func() {
 		features := []string{featureAlerts, featureDevConsole}
+		Expect(FeaturesForOCP("4.13.0-0.nightly-2023-03-23-204038")).To(Equal(features))
 		Expect(FeaturesForOCP("4.13.0")).To(Equal(features))
 		Expect(FeaturesForOCP("4.14.0")).To(Equal(features))
 	})

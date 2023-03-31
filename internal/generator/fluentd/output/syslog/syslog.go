@@ -8,16 +8,16 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/generator"
-	corev1 "k8s.io/api/core/v1"
-
 	. "github.com/openshift/cluster-logging-operator/internal/generator"
 	. "github.com/openshift/cluster-logging-operator/internal/generator/fluentd/elements"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/helpers"
+	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/normalize"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/output/security"
 	"github.com/openshift/cluster-logging-operator/internal/generator/fluentd/source"
 	genhelper "github.com/openshift/cluster-logging-operator/internal/generator/helpers"
 	urlhelper "github.com/openshift/cluster-logging-operator/internal/generator/url"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const SyslogHostnameVerify = "syslog_hostname_verify"
@@ -100,6 +100,7 @@ func Conf(bufspec *logging.FluentdBufferSpec, secret *corev1.Secret, o logging.O
 		FromLabel{
 			InLabel: helpers.LabelName(o.Name),
 			SubElements: []Element{
+				normalize.DedotLabels(),
 				ParseJson(o, op),
 				addLogSource,
 				sendJournalLogs,

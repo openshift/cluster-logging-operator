@@ -49,6 +49,17 @@ var _ = Describe("Generate fluentd config", func() {
 			},
 			ExpectedConf: `
 <label @HTTP_RECEIVER>
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   <match **>
 	@type http
 	endpoint https://my-logstore.com/logs/app-logs
@@ -109,6 +120,17 @@ var _ = Describe("Generate fluentd config", func() {
 			},
 			ExpectedConf: `
 <label @HTTP_RECEIVER>
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+
   <match **>
 	@type http
 	endpoint https://my-logstore.com/logs/app-logs
@@ -177,6 +199,17 @@ var _ = Describe("Generate fluentd config", func() {
 			},
 			ExpectedConf: `
 <label @HTTP_RECEIVER>
+  #dedot namespace_labels and rebuild message field if present
+  <filter **>
+    @type record_modifier
+    <record>
+    _dummy_ ${if m=record.dig("kubernetes","namespace_labels");record["kubernetes"]["namespace_labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy2_ ${if m=record.dig("kubernetes","labels");record["kubernetes"]["labels"]={}.tap{|n|m.each{|k,v|n[k.gsub(/[.\/]/,'_')]=v}};end}
+    _dummy3_ ${if m=record.dig("kubernetes","flat_labels");record["kubernetes"]["flat_labels"]=[].tap{|n|m.each_with_index{|s, i|n[i] = s.gsub(/[.\/]/,'_')}};end}
+    </record>
+    remove_keys _dummy_, _dummy2_, _dummy3_
+  </filter>
+  
   <match **>
 	@type http
 	endpoint https://my-logstore.com/logs/app-logs

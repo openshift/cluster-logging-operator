@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
+
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/output/security"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -62,9 +64,12 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
+	outputName := vectorhelpers.FormatComponentID(o.Name)
+	dedottedID := normalize.ID(outputName, "dedot")
 	return MergeElements(
 		[]Element{
-			Output(o, inputs, secret, op),
+			normalize.DedotLabels(dedottedID, inputs),
+			Output(o, []string{dedottedID}, secret, op),
 			Encoding(o),
 		},
 		TLSConf(o, secret, op),

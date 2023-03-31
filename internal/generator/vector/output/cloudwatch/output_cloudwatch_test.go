@@ -42,11 +42,61 @@ source = '''
   del(.source_type)
 '''
 `
+
+	dedotted = `
+[transforms.cw_dedot]
+type = "lua"
+inputs = ["cw_normalize_group_and_streams"]
+version = "2"
+hooks.init = "init"
+hooks.process = "process"
+source = '''
+    function init()
+        count = 0
+    end
+    function process(event, emit)
+        count = count + 1
+        event.log.openshift.sequence = count
+        if event.log.kubernetes == nil then
+            emit(event)
+            return
+        end
+        if event.log.kubernetes.labels == nil then
+            emit(event)
+            return
+        end
+		dedot(event.log.kubernetes.namespace_labels)
+        dedot(event.log.kubernetes.labels)
+        emit(event)
+    end
+
+    function dedot(map)
+        if map == nil then
+            return
+        end
+        local new_map = {}
+        local changed_keys = {}
+        for k, v in pairs(map) do
+            local dedotted = string.gsub(k, "[./]", "_")
+            if dedotted ~= k then
+                new_map[dedotted] = v
+                changed_keys[k] = true
+            end
+        end
+        for k in pairs(changed_keys) do
+            map[k] = nil
+        end
+        for k, v in pairs(new_map) do
+            map[k] = v
+        end
+    end
+'''	
+`
 	cwSinkKeyId = `
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -61,7 +111,7 @@ healthcheck.enabled = false
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -75,7 +125,7 @@ healthcheck.enabled = false
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -97,7 +147,7 @@ ca_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/ca-bundle.crt"
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -117,7 +167,7 @@ ciphersuites = "` + defaultCiphers + `"
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -141,7 +191,7 @@ ca_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/ca-bundle.crt"
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -162,7 +212,7 @@ ca_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/ca-bundle.crt"
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -185,7 +235,7 @@ ca_file = "/var/run/ocp-collector/secrets/vector-cw-secret-tls/ca-bundle.crt"
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -206,7 +256,7 @@ ca_file = "/var/run/ocp-collector/secrets/vector-tls-credentials/ca-bundle.crt"
 # Cloudwatch Logs
 [sinks.cw]
 type = "aws_cloudwatch_logs"
-inputs = ["cw_normalize_group_and_streams"]
+inputs = ["cw_dedot"]
 region = "us-east-test"
 compression = "none"
 group_name = "{{ group_name }}"
@@ -303,6 +353,8 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 ` + transformEnd + `
 
+` + dedotted + `
+
 ` + cwSinkKeyId + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
@@ -335,6 +387,8 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 ` + transformEnd + `
 
+` + dedotted + `
+
 ` + cwSinkKeyId + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
@@ -366,6 +420,8 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
   }
 
 ` + transformEnd + `
+
+` + dedotted + `
 
 ` + cwSinkKeyId + `
 `
@@ -406,6 +462,8 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 
 ` + transformEnd + `
 
+` + dedotted + `
+
 ` + cwSinkKeyId + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
@@ -439,6 +497,8 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
   }
 
 ` + transformEnd + `
+
+` + dedotted + `
 
 ` + cwSinkKeyId + `
 endpoint = "` + endpoint + `"
@@ -482,6 +542,8 @@ tls.verify_certificate = false
 
 	` + transformEnd + `
 
+	` + dedotted + `
+
 	` + cwSinkKeyIdTLSNoCerts + `
 	`
 			element := Conf(output, pipelineName, secrets[output.Secret.Name], op)
@@ -507,6 +569,8 @@ tls.verify_certificate = false
 	  }
 
 	` + transformEnd + `
+
+	` + dedotted + `
 
 	` + cwSinkKeyIdTLS + `
 	`
@@ -537,6 +601,8 @@ tls.verify_certificate = false
 	  }
 
 	` + transformEnd + `
+
+	` + dedotted + `
 
 	` + cwSinkKeyIdTLSInsecure + `
 	`
@@ -620,6 +686,8 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 ` + transformEnd + `
 
+` + dedotted + `
+
 ` + cwSinkRole + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
@@ -655,6 +723,8 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			}
 			
 			` + transformEnd + `
+
+			` + dedotted + `
 			
 			` + cwSinkRoleTLS + `
 			`
@@ -684,6 +754,8 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			}
 			
 			` + transformEnd + `
+
+			` + dedotted + `
 			
 			` + cwSinkRoleTLSInsecure + `
 			`
@@ -729,6 +801,8 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 
 ` + transformEnd + `
 
+` + dedotted + `
+
 ` + cwSinkRole + `
 `
 				element := Conf(output, pipelineName, secrets[output.Secret.Name], nil)
@@ -773,6 +847,8 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			}
 			
 			` + transformEnd + `
+
+			` + dedotted + `
 			
 			` + cwSinkRoleTLSCredentials + `
 			`
@@ -802,6 +878,8 @@ var _ = Describe("Generating vector config for cloudwatch sts", func() {
 			}
 			
 			` + transformEnd + `
+
+			` + dedotted + `
 			
 			` + cwSinkRoleTLSInsecureCredentials + `
 			`

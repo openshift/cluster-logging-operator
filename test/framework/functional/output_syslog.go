@@ -11,8 +11,6 @@ import (
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 )
 
-const ImageRemoteSyslog = "quay.io/openshift/origin-logging-rsyslog:latest"
-
 const IncreaseRsyslogMaxMessageSize = "$MaxMessageSize 50000"
 
 func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, output logging.OutputSpec) error {
@@ -41,7 +39,7 @@ func (f *CollectorFunctionalFramework) AddSyslogOutput(b *runtime.PodBuilder, ou
 	}
 
 	log.V(2).Info("Adding container", "name", name)
-	b.AddContainer(name, ImageRemoteSyslog).
+	b.AddContainer(name, e2e.ImageRemoteSyslog).
 		AddVolumeMount(config.Name, "/rsyslog/etc", "", false).
 		WithCmdArgs([]string{"rsyslogd", "-n", "-f", "/rsyslog/etc/rsyslog.conf"}).
 		WithPrivilege().

@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/cluster-logging-operator/test/helpers/certificate"
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/openshift/cluster-logging-operator/internal/constants"
 	"github.com/openshift/cluster-logging-operator/internal/factory"
@@ -35,6 +36,7 @@ type syslogReceiverLogStore struct {
 
 const (
 	SyslogReceiverName = "syslog-receiver"
+	ImageRemoteSyslog  = "registry.redhat.io/rhel8/rsyslog:8.7-9"
 )
 
 // SyslogRfc type is the rfc used for sending syslog
@@ -296,7 +298,7 @@ func (tc *E2ETestFramework) DeploySyslogReceiver(testDir string, protocol corev1
 	}
 	container := corev1.Container{
 		Name:            SyslogReceiverName,
-		Image:           "quay.io/openshift/origin-logging-rsyslog:latest",
+		Image:           ImageRemoteSyslog,
 		ImagePullPolicy: corev1.PullAlways,
 		Args:            []string{"rsyslogd", "-n", "-f", "/rsyslog/etc/rsyslog.conf"},
 		VolumeMounts: []corev1.VolumeMount{

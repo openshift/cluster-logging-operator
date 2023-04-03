@@ -264,6 +264,7 @@ test-functional-vector:
 		./test/functional/outputs/loki/... \
 		./test/functional/outputs/http/... \
 		./test/functional/normalization \
+		./test/functional/outputs/syslog/... \
 		-ginkgo.noColor -timeout=40m -ginkgo.slowSpecThreshold=45.0
 
 .PHONY: test-forwarder-generator

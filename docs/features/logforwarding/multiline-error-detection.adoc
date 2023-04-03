@@ -1,0 +1,94 @@
+
+== DetectMultilineErrors
+Enables multi-line error detection of container logs.
+
+*Please be aware* that enabling this feature could have performance implications and may require additional computing resources or alternate logging solutions.
+
+=== Problem
+Log parsers often incorrectly identify separate lines of the same exception as separate exceptions.
+This leads to extra log entries and an incomplete or inaccurate view of the traced information.
+
+.example java exception
+[,text]
+----
+java.lang.NullPointerException: Cannot invoke "String.toString()" because "<param1>" is null
+    at testjava.Main.handle(Main.java:47)
+    at testjava.Main.printMe(Main.java:19)
+    at testjava.Main.main(Main.java:10)
+----
+
+=== Solution
+Include `detectMultilineErrors` set to `true` when you create your Cluster Log Forwarder.
+Openshift Logging will detect multi-line exceptions and reassemble them into a single log entry.
+
+.cluster-log-forwarder.yaml
+[source,yaml]
+----
+apiVersion: logging.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  pipelines:
+    - name: my-app-logs
+      inputRefs:
+        - application
+      outputRefs:
+        - default
+      detectMultilineErrors: true
+----
+
+=== Details
+When a consecutive sequence of log messages forms an exception stack trace, the log messages are combined into a single, unified log record.
+The content of the message field of the first log message is replaced with the concatenated content of all the message fields in the sequence.
+
+.Supported languages per collector:
+|===
+|Language | Fluentd | Vector
+
+|Java | ✓ | ✓
+|JS | ✓ | ✓
+|Ruby | ✓ | ✓
+|Python | ✓ | ✓
+|Golang | ✓ | ✓
+|PHP | ✓ |
+|Dart | ✓ | ✓
+|===
+
+=== Troubleshooting
+When enabled, the collector configuration will include a new section with type: `detect_exceptions`
+
+.vector config section example
+----
+[transforms.detect_exceptions_app-logs]
+ type = "detect_exceptions"
+ inputs = ["application"]
+ languages = ["All"]
+ group_by = ["kubernetes.namespace_name","kubernetes.pod_name","kubernetes.container_name"]
+ expire_after_ms = 2000
+ multiline_flush_interval_ms = 1000
+----
+
+.fluentd config section example
+----
+<label @MULTILINE_APP_LOGS>
+  <match kubernetes.**>
+    @type detect_exceptions
+    remove_tag_prefix 'kubernetes'
+    message message
+    force_line_breaks true
+    multiline_flush_interval .2
+  </match>
+</label>
+
+----
+
+=== Extended support
+
+Supporting new languages or custom formats requires new detection rules and additional feature changes.
+
+The rules currently in use are located in *detect_exceptions* transform in the *ViaQ/Vector* repository on github.
+
+*Notice:* Fluentd as a collector is deprecated and is planned to be removed in a future release.
+Red Hat will provide bug fixes and support for this feature during the current release lifecycle, but will no longer provide enhancements.

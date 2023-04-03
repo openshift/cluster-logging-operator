@@ -69,7 +69,7 @@ logstash 7.10.1|✓|
 |Loglevel||✓|✓
 |https://github.com/openshift/enhancements/blob/196445c9d19b2159c9e8639e4428fa5a4c1b3577/enhancements/cluster-logging/forwarding-json-structured-logs.md[JSON Parsing]||✓|✓
 |Structured Index for Elasticsearch JSON parsing||✓|✓
-|Multiline error detection||✓|✓
+|https://github.com/openshift/cluster-logging-operator/blob/master/docs/features/logforwarding/multiline-error-detection.adoc[Multiline error detection]|See feature document for languages supported by each collector|✓|✓
 |https://github.com/openshift/enhancements/blob/196445c9d19b2159c9e8639e4428fa5a4c1b3577/enhancements/cluster-logging/multi-container-structured-logging.md[Split indices for multi-container pods]||✓|✓
 |https://github.com/openshift/enhancements/blob/196445c9d19b2159c9e8639e4428fa5a4c1b3577/enhancements/cluster-logging/forwarder-tagging.md[Static labels for forwarding pipelines] ||✓|✓
 

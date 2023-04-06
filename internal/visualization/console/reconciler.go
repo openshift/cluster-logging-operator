@@ -176,25 +176,6 @@ func (r *Reconciler) mutateConsolePlugin() error {
 }
 
 func (r *Reconciler) mutateConfigMap() error {
-	o := &r.configMap
-	o.Data = map[string]string{
-		"nginx.conf": fmt.Sprintf(`
-				error_log /dev/stdout info;
-				events {}
-				http {
-					access_log         /dev/stdout;
-					include            /etc/nginx/mime.types;
-					default_type       application/octet-stream;
-					keepalive_timeout  65;
-					server {
-						listen              %v ssl;
-						ssl_certificate     /var/serving-cert/tls.crt;
-						ssl_certificate_key /var/serving-cert/tls.key;
-						root                /usr/share/nginx/html;
-					}
-				}
-				`, r.pluginBackendPort()),
-	}
 	var config string
 	if r.consoleSpec != nil {
 		configYaml, err := yaml.Marshal(r.consoleSpec)
@@ -203,7 +184,10 @@ func (r *Reconciler) mutateConfigMap() error {
 		}
 		config = string(configYaml)
 	}
-	o.Data["config.yaml"] = config
+	o := &r.configMap
+	o.Data = map[string]string{
+		"config.yaml": config,
+	}
 	hash, err := utils.CalculateMD5Hash(config)
 	if err != nil {
 		return err
@@ -257,7 +241,7 @@ func (r *Reconciler) mutateDeployment() error {
 							"-features", strings.Join(r.Config.Features, ","),
 							"-cert", "/var/serving-cert/tls.crt",
 							"-key", "/var/serving-cert/tls.key",
-							"-plugin-config-path", "/etc/plugin/config.yaml",
+							"-plugin-config-path", "/etc/plugin/config/config.yaml",
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{
@@ -268,7 +252,7 @@ func (r *Reconciler) mutateDeployment() error {
 							{
 								Name:      "plugin-config",
 								ReadOnly:  true,
-								MountPath: "/etc/plugin/config.yaml",
+								MountPath: "/etc/plugin/config",
 							},
 						},
 					},

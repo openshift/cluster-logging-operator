@@ -437,7 +437,7 @@ spec:
                 - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
                   value: quay.io/openshift-logging/log-file-metric-exporter:latest
                 - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN
-                  value: quay.io/openshift-logging/logging-view-plugin:latest
+                  value: quay.io/openshift-logging/logging-view-plugin:5.7
                 image: quay.io/openshift-logging/cluster-logging-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: cluster-logging-operator
@@ -561,6 +561,6 @@ spec:
     name: fluentd
   - image: quay.io/openshift-logging/log-file-metric-exporter:latest
     name: log-file-metric-exporter
-  - image: quay.io/openshift-logging/logging-view-plugin:latest
+  - image: quay.io/openshift-logging/logging-view-plugin:5.7
     name: logging-console-plugin
   version: 5.7.0

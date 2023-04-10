@@ -48,7 +48,7 @@ spec:
         - name: IMAGE_LOG_FILE_METRIC_EXPORTER
           value: ${IMAGE_LOG_FILE_METRIC_EXPORTER}
         - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN
-          value: quay.io/openshift-logging/logging-view-plugin:latest
+          value: ${RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN}
 
       containers:
       - name: cluster-logging-operator-registry

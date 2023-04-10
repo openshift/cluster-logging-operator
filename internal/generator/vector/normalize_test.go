@@ -60,6 +60,8 @@ source = '''
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
+  del(.kubernetes.node_labels)
+  del(.timestamp_end)
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 `,
@@ -105,6 +107,8 @@ source = '''
   del(.source_type)
   del(.stream)
   del(.kubernetes.pod_ips)
+  del(.kubernetes.node_labels)
+  del(.timestamp_end)
   ts = del(.timestamp); if !exists(."@timestamp") {."@timestamp" = ts}
 '''
 
@@ -227,8 +231,8 @@ source = '''
   
   match2, err = parse_regex(.message, r'msg=audit\((?P<ts_record>[^ ]+)\):')
   if err == null {
-    sp = split(match2.ts_record,":")
-    if length(sp) == 2 {
+    sp, err = split(match2.ts_record,":")
+    if err == null && length(sp) == 2 {
         ts = parse_timestamp(sp[0],"%s.%3f") ?? ""
         envelop |= {"record_id": sp[1]}
         . |= {"audit.linux" : envelop}

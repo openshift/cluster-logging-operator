@@ -15,7 +15,7 @@ spec:
           env:
             # EDIT HERE: change the 'value' fields to the related images you want to use.
             - name: RELATED_IMAGE_VECTOR
-              value: quay.io/openshift-logging/vector:0.21-rh
+              value: quay.io/openshift-logging/vector:5.8
             - name: RELATED_IMAGE_FLUENTD
               value: quay.io/openshift-logging/fluentd:5.8.0
             - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER

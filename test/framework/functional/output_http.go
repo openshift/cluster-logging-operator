@@ -2,11 +2,12 @@ package functional
 
 import (
 	"bytes"
-	configv1 "github.com/openshift/api/config/v1"
-	corev1 "k8s.io/api/core/v1"
 	"os"
 	"strings"
 	"text/template"
+
+	configv1 "github.com/openshift/api/config/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	log "github.com/ViaQ/logerr/v2/log/static"
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
@@ -42,7 +43,7 @@ type = "file"
 path = "/tmp/app-logs"
 
 [sinks.my_sink.encoding]
-codec = "ndjson"
+codec = "json"
 `
 	FluentdHttpSourceConf = `
 <system>

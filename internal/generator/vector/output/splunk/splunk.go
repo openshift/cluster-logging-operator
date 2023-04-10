@@ -34,7 +34,7 @@ func (s Splunk) Name() string {
 func (s Splunk) Template() string {
 	return `{{define "` + s.Name() + `" -}}
 [sinks.{{.ComponentID}}]
-type = "splunk_hec"
+type = "splunk_hec_logs"
 inputs = {{.Inputs}}
 endpoint = "{{.Endpoint}}"
 compression = "none"
@@ -94,8 +94,8 @@ func Encoding(o logging.OutputSpec) Element {
 
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+		tlsConf.NeedsEnabled = false
 		return []Element{tlsConf}
 	}
-
 	return []Element{}
 }

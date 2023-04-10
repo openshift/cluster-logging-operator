@@ -42,7 +42,7 @@ logstash 7.10.1|✓|
 |Loki|REST over HTTP(S)|Loki 2.3.0|✓|✓
 |Splunk|HEC|v9.0.0||✓
 |Syslog|RFC3164,RFC5424|rsyslog 8.39.0|✓|
-|Http|Http 1.1|vector 0.21, fluentd 1.14.6||✓
+|Http|Http 1.1|vector 0.28-1, fluentd 1.14.6||✓
 |======
 
 === Authorization and Authentication

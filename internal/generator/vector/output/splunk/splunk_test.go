@@ -68,7 +68,7 @@ source = '''
 `
 		splunkSink = splunkDedot + `
 [sinks.splunk_hec]
-type = "splunk_hec"
+type = "splunk_hec_logs"
 inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
@@ -78,7 +78,7 @@ codec = "json"
 `
 		splunkSinkTls = splunkDedot + `
 [sinks.splunk_hec]
-type = "splunk_hec"
+type = "splunk_hec_logs"
 inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
@@ -86,14 +86,13 @@ default_token = "` + hecToken + `"
 [sinks.splunk_hec.encoding]
 codec = "json"
 [sinks.splunk_hec.tls]
-enabled = true
 key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
 crt_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.crt"
 ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt"
 `
 		splunkSinkTlsSkipVerify = splunkDedot + `
 [sinks.splunk_hec]
-type = "splunk_hec"
+type = "splunk_hec_logs"
 inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
@@ -101,7 +100,6 @@ default_token = "` + hecToken + `"
 [sinks.splunk_hec.encoding]
 codec = "json"
 [sinks.splunk_hec.tls]
-enabled = true
 verify_certificate = false
 verify_hostname = false
 key_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/tls.key"
@@ -110,7 +108,7 @@ ca_file = "/var/run/ocp-collector/secrets/vector-splunk-secret-tls/ca-bundle.crt
 `
 		splunkSinkTlsSkipVerifyNoCert = splunkDedot + `
 [sinks.splunk_hec]
-type = "splunk_hec"
+type = "splunk_hec_logs"
 inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
@@ -118,13 +116,12 @@ default_token = ""
 [sinks.splunk_hec.encoding]
 codec = "json"
 [sinks.splunk_hec.tls]
-enabled = true
 verify_certificate = false
 verify_hostname = false
 `
 		splunkSinkPassphrase = splunkDedot + `
 [sinks.splunk_hec]
-type = "splunk_hec"
+type = "splunk_hec_logs"
 inputs = ["splunk_hec_dedot"]
 endpoint = "https://splunk-web:8088/endpoint"
 compression = "none"
@@ -134,7 +131,6 @@ default_token = "` + hecToken + `"
 codec = "json"
 
 [sinks.splunk_hec.tls]
-enabled = true
 key_pass = "junk"
 `
 	)

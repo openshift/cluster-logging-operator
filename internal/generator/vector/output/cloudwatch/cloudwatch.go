@@ -184,7 +184,7 @@ func LogGroupNameField(o logging.OutputSpec) string {
 		case logging.LogGroupByNamespaceName:
 			return ".kubernetes.namespace_name"
 		case logging.LogGroupByNamespaceUUID:
-			return ".kubernetes.namespace_uid"
+			return ".kubernetes.namespace_id"
 		default:
 			return ".log_type"
 		}

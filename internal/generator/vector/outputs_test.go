@@ -114,7 +114,6 @@ kubernetes_pod_name = "{{kubernetes.pod_name}}"
 log_type = "{{log_type}}"
 
 [sinks.default_loki_apps.tls]
-enabled = true
 min_tls_version = "` + defaultTLS + `"
 ciphersuites = "` + defaultCiphers + `"
 ca_file = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"

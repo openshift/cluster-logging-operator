@@ -70,7 +70,8 @@ func (se SyslogEncoding) Name() string {
 
 func (se SyslogEncoding) Template() string {
 	return `{{define "` + se.Name() + `" -}}
-[sinks.{{.ComponentID}}.encoding.codec.syslog]
+[sinks.{{.ComponentID}}.encoding]
+codec = "syslog"
 rfc = "{{.RFC}}"
 facility = "{{.Facility}}"
 severity = "{{.Severity}}"

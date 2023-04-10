@@ -538,7 +538,6 @@ timeout_secs = 50
 headers = {"k1"="v1","k2"="v2"}
 
 [sinks.http_receiver.tls]
-enabled = true
 verify_certificate = false
 verify_hostname = false
 key_file = "/var/run/ocp-collector/secrets/http-receiver/tls.key"

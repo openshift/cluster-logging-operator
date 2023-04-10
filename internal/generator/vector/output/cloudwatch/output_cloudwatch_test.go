@@ -408,7 +408,7 @@ var _ = Describe("Generating vector config for cloudwatch output", func() {
 ` + transformBegin + `
 
   if ( .log_type == "application" ) {
-   .group_name = ( "` + groupPrefix + `." + .kubernetes.namespace_uid ) ?? "application"
+   .group_name = ( "` + groupPrefix + `." + .kubernetes.namespace_id ) ?? "application"
   }
   if ( .log_type == "audit" ) {
    .group_name = "` + groupPrefix + `.audit"

@@ -15,14 +15,13 @@ import (
 )
 
 type Elasticsearch struct {
-	ID_Key          string
-	Desc            string
-	ComponentID     string
-	Inputs          string
-	Index           string
-	Endpoint        string
-	Version         int
-	SuppressVersion int
+	ID_Key      string
+	Desc        string
+	ComponentID string
+	Inputs      string
+	Index       string
+	Endpoint    string
+	Version     int
 }
 
 func (e Elasticsearch) Name() string {
@@ -34,15 +33,15 @@ func (e Elasticsearch) Template() string {
 [sinks.{{.ComponentID}}]
 type = "elasticsearch"
 inputs = {{.Inputs}}
-endpoint = "{{.Endpoint}}"
+endpoints = ["{{.Endpoint}}"]
 bulk.index = "{{ "{{ write_index }}" }}"
 bulk.action = "create"
 encoding.except_fields = ["write_index"]
 request.timeout_secs = 2147483648
 id_key = "_id"
-{{ if ge .Version .SuppressVersion -}}
-suppress_type_name = true
-{{ end -}}
+{{- if ne .Version 0 }}
+api_version = "v{{ .Version }}"
+{{- end }}
 {{end}}`
 }
 
@@ -242,14 +241,15 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
 	es := Elasticsearch{
-		ComponentID:     helpers.FormatComponentID(o.Name),
-		Endpoint:        o.URL,
-		Inputs:          helpers.MakeInputs(inputs...),
-		SuppressVersion: logging.FirstESVersionWithoutType,
+		ComponentID: helpers.FormatComponentID(o.Name),
+		Endpoint:    o.URL,
+		Inputs:      helpers.MakeInputs(inputs...),
 	}
 	// If valid version is specified
 	if o.Elasticsearch != nil && o.Elasticsearch.Version > 0 {
 		es.Version = o.Elasticsearch.Version
+	} else {
+		es.Version = logging.DefaultESVersion
 	}
 	return es
 }
@@ -257,6 +257,7 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element {
 	if o.Secret != nil {
 		if tlsConf := security.GenerateTLSConf(o, secret, op, false); tlsConf != nil {
+			tlsConf.NeedsEnabled = false
 			return []Element{tlsConf}
 		}
 	}

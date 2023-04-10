@@ -49,9 +49,7 @@ const (
 
 func (p *FrameworkPipelineBuilder) ToElasticSearchOutput(version ElasticsearchVersion, secret *corev1.Secret) *CollectorFunctionalFrameworkBuilder {
 	p.pipelineBuilder.ToOutputWithVisitor(func(output *logging.OutputSpec) {
-		if version > ElasticsearchVersion6 {
-			output.Elasticsearch.Version = int(version)
-		}
+		output.Elasticsearch.Version = int(version)
 		if secret != nil {
 			p.frameworkBuilder.Framework.Secrets = append(p.frameworkBuilder.Framework.Secrets, secret)
 			output.Secret = &logging.OutputSecretSpec{

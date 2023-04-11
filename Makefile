@@ -50,10 +50,7 @@ export NAMESPACE?=openshift-logging
 IMAGE_LOGGING_FLUENTD?=quay.io/openshift-logging/fluentd:1.14.6
 IMAGE_LOGGING_VECTOR?=quay.io/openshift-logging/vector:0.21-rh
 IMAGE_LOGFILEMETRICEXPORTER?=quay.io/openshift-logging/log-file-metric-exporter:1.1
-# Note: use logging-view-plugin:latest to pick up improvements in the console automatically.
-# Unlike the other components, console changes do not risk breaking the collector,
-# the console depends only on the format of the LokiStore records.
-IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:latest
+IMAGE_LOGGING_CONSOLE_PLUGIN?=quay.io/openshift-logging/logging-view-plugin:$(LOGGING_VERSION)
 endif # ifdef OVERLAY
 
 REPLICAS?=0

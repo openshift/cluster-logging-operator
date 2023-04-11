@@ -191,7 +191,7 @@ var _ = Describe("Generate fluentd config", func() {
 	tls_private_key_path '/var/run/ocp-collector/secrets/http-receiver/tls.key'
 	tls_client_cert_path '/var/run/ocp-collector/secrets/http-receiver/tls.crt'
 	tls_ca_cert_path '/var/run/ocp-collector/secrets/http-receiver/ca-bundle.crt'
-  tls_client_private_key_passphrase "-- passphrase --" 
+  tls_private_key_passphrase "#{File.exists?('/var/run/ocp-collector/secrets/http-receiver/passphrase') ? open('/var/run/ocp-collector/secrets/http-receiver/passphrase','r') do |f|f.read end : ''}"
 	<buffer>
 	  @type file
 	  path '/var/lib/fluentd/http_receiver'
@@ -228,7 +228,7 @@ func TestHeaders(t *testing.T) {
 	}
 }
 
-func TestVectorConfGenerator(t *testing.T) {
+func TestFluentdConfGenerator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Vector Conf Generation")
+	RunSpecs(t, "Fluentd Conf Generation")
 }

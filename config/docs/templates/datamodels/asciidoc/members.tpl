@@ -19,7 +19,7 @@
     * {{ (yamlType .Type) }}
     {{ end }}
     {{ if not (or .Type.IsPrimitive (eq (yamlType .Type) "string")) }}
-        {{- template "properties" .Type  -}}
+        {{- template "properties" (nodeParent .Type .Path)  -}}
         {{ template "members" (nodeParent .Type .Path) }}
     {{ end }}
 {{ end }}
@@ -54,6 +54,7 @@
 
 
 {{- define "properties" -}}
+{{ $path := .Path }}
 {{- if .Members }}
 
 [options="header"]
@@ -63,9 +64,9 @@
        {{- if (or (or (eq (fieldName .) "metadata") (eq (fieldName .) "TypeMeta")) (ignoreMember .)) -}}
        {{- else -}}
          {{- if (fieldEmbedded . ) -}}
-           {{- template "rows" .Type  -}}
+           {{- template "rows" (nodeParent .Type $path)  -}}
          {{- else -}}
-           {{- template "row" .  -}}
+           {{- template "row" (node . $path) -}}
          {{- end -}}
        {{- end -}}
    {{- end -}}
@@ -74,14 +75,17 @@
 {{- end -}}
 
 {{ define "rows" }}
+{{ $path := .Path }}
 {{ if .Members }}
    {{ range .Members }}
-        {{ template "row" . }}
+        {{ template "row" (node . $path) }}
    {{ end }}
 {{ end }}
 {{ end }}
 
 {{ define "row" }}
+   {{ $path := .Path }}
+   {{ with .Member}}
        {{ if (or (or (eq (fieldName .) "metadata") (eq (fieldName .) "TypeMeta")) (ignoreMember .)) }}
        {{ else }}
            {{ $extra := "" }}
@@ -94,5 +98,6 @@
            |{{ (fieldName .) }}
            |{{ (yamlType .Type)}}
            a| {{ $extra }} {{ (comments .CommentLines "summary")}}
-       {{ end }}
+      {{ end }}
+   {{ end }}
 {{ end }}

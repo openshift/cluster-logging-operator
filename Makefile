@@ -64,7 +64,7 @@ tools: $(BINGO) $(GOLANGCI_LINT) $(JUNITREPORT) $(OPERATOR_SDK) $(OPM) $(KUSTOMI
 
 .PHONY: pre-commit
 # Should pass when run before commit.
-pre-commit: clean bundle check docs
+pre-commit: clean bundle docs check
 
 .PHONY: check
 # check health of the code:
@@ -115,16 +115,16 @@ build: bin/cluster-logging-operator
 build-debug:
 	$(MAKE) build BUILD_OPTS='-gcflags=all="-N -l"'
 
-docs: docs/reference/operator/api.adoc docs/reference/datamodels/viaq/v1.adoc
-.PHONY: docs
+docs: generate docs/reference/operator/api.adoc docs/reference/datamodels/viaq/v1.adoc
+	touch docs
 
-docs/reference/operator/api.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
-	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/apis/" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/apis/asciidoc" -out-file "$(PWD)/$@"
-.PHONY: docs/reference/operator/api.adoc
+PACKAGE_ROOT=github.com/openshift/cluster-logging-operator
 
-docs/reference/datamodels/viaq/v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS)
-	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "github.com/openshift/cluster-logging-operator/internal/datamodels/viaq/v1" -config "$(PWD)/config/docs/config.json" -template-dir "$(PWD)/config/docs/templates/datamodels/asciidoc" -out-file "$(PWD)/$@"
-.PHONY: docs/reference/datamodels/viaq/v1.adoc
+docs/reference/operator/api.adoc: $(GEN_CRD_API_REFERENCE_DOCS) $(shell find apis config/docs -type f )
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "$(PACKAGE_ROOT)/apis" -config config/docs/config.json -template-dir  config/docs/templates/apis/asciidoc -out-file $@
+
+docs/reference/datamodels/viaq/v1.adoc: $(GEN_CRD_API_REFERENCE_DOCS) $(shell find internal/datamodels/viaq/v1 config/docs -type f)
+	$(GEN_CRD_API_REFERENCE_DOCS) -api-dir "$(PACKAGE_ROOT)/internal/datamodels/viaq/v1" -config config/docs/config.json -template-dir config/docs/templates/datamodels/asciidoc -out-file $@
 
 # Run the CLO locally - see HACKING.md
 RUN_CMD?=go run

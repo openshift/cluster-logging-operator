@@ -173,6 +173,9 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:pipelineConditions
       version: v1
+    - kind: ClusterLogForwarder
+      name: clusterlogforwarders.logging.openshift.io
+      version: v2alpha1
     - description: A Red Hat OpenShift Logging instance. ClusterLogging is the Schema
         for the clusterloggings API
       displayName: Cluster Logging

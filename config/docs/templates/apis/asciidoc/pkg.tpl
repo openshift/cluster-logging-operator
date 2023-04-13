@@ -1,20 +1,21 @@
 {{- define "packages" -}}
+= Logging API reference
 :toc:
-:toclevels: 2
+:toclevels: 1
 :toc-placement!:
+:doctype:book
+
 toc::[]
 
-{{ range .packages -}}
+    {{ range .packages -}}
+= {{.ApiGroup}}/{{.ApiVersion}}
 
-    {{- range (sortedTypes (visibleTypes .Types )) -}}
-        {{- if isObjectRoot . -}}
-
+        {{ range (sortedTypes (visibleTypes .Types )) -}}
+            {{ if isObjectRoot . -}}
 == {{ (typeDisplayName .) }}
-{{  (comments .CommentLines) }}
+{{ comments .CommentLines }}
 {{  template "type" (nodeParent . "") -}}
-
+            {{end -}}
         {{end -}}
     {{end -}}
-
-{{end -}}
 {{end -}}

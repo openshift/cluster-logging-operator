@@ -1,7 +1,12 @@
+= Logging API reference
 :toc:
-:toclevels: 2
+:toclevels: 1
 :toc-placement!:
+:doctype:book
+
 toc::[]
+
+= logging.openshift.io/v1
 
 == ClusterLogForwarder
 ClusterLogForwarder is an API to configure forwarding logs.
@@ -21,361 +26,492 @@ For more details see the documentation on the API fields.
 [options="header"]
 |======================
 |Property|Type|Description
+| spec| xref:#_.spec[object]|  Specification of the desired behavior of ClusterLogForwarder
 
-|spec|object|  Specification of the desired behavior of ClusterLogForwarder
-|status|object|  Status of the ClusterLogForwarder
+| status| xref:#_.status[object]|  Status of the ClusterLogForwarder
 |======================
 
+[id=_.spec]
 === .spec
+
 ===== Description
+
 ClusterLogForwarderSpec defines how logs should be forwarded to remote targets.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| inputs| array|  *(optional)* Inputs are named filters for log messages to be forwarded.
 
-|inputs|array|  *(optional)* Inputs are named filters for log messages to be forwarded.
-|outputDefaults|object|  *(optional)* DEPRECATED OutputDefaults specify forwarder config explicitly for the
-|outputs|array|  *(optional)* Outputs are named destinations for log messages.
-|pipelines|array|  Pipelines forward the messages selected by a set of inputs to a set of outputs.
+| outputDefaults| xref:#_.spec.outputDefaults[object]|  *(optional)* DEPRECATED OutputDefaults specify forwarder config explicitly for the
+
+| outputs| array|  *(optional)* Outputs are named destinations for log messages.
+
+| pipelines| array|  Pipelines forward the messages selected by a set of inputs to a set of outputs.
 |======================
 
-=== .spec.inputs[]
+[id=_.spec.inputs]
+=== .spec.inputs
+
 ===== Description
+
 InputSpec defines a selector of log messages.
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| application| xref:#_.spec.inputs.application[object]|  *(optional)* Application, if present, enables named set of `application` logs that
 
-|application|object|  *(optional)* Application, if present, enables named set of `application` logs that
-|name|string|  Name used to refer to the input of a `pipeline`.
+| name| string|  Name used to refer to the input of a `pipeline`.
 |======================
 
-=== .spec.inputs[].application
+[id=_.spec.inputs.application]
+=== .spec.inputs.application
+
 ===== Description
+
 Application log selector.
 All conditions in the selector must be satisfied (logical AND) to select logs.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| namespaces| array|  *(optional)* Namespaces from which to collect application logs.
 
-|namespaces|array|  *(optional)* Namespaces from which to collect application logs.
-|selector|object|  *(optional)* Selector for logs from pods with matching labels.
+| selector| xref:#_.spec.inputs.application.selector[object]|  *(optional)* Selector for logs from pods with matching labels.
 |======================
 
-=== .spec.inputs[].application.namespaces[]
+[id=_.spec.inputs.application.namespaces]
+=== .spec.inputs.application.namespaces
+
 ===== Description
 
 =====  Type
+
 * array
 
-=== .spec.inputs[].application.selector
+[id=_.spec.inputs.application.selector]
+=== .spec.inputs.application.selector
+
 ===== Description
+
 A label selector is a label query over a set of resources.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|matchLabels|object|  *(optional)* matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+| matchLabels| xref:#_.spec.inputs.application.selector.matchLabels[object]|  *(optional)* matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
 |======================
 
-=== .spec.inputs[].application.selector.matchLabels
+[id=_.spec.inputs.application.selector.matchLabels]
+=== .spec.inputs.application.selector.matchLabels
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.outputDefaults]
 === .spec.outputDefaults
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|elasticsearch|object|  *(optional)* Elasticsearch OutputSpec default values
+| elasticsearch| xref:#_.spec.outputDefaults.elasticsearch[object]|  *(optional)* Elasticsearch OutputSpec default values
 |======================
 
+[id=_.spec.outputDefaults.elasticsearch]
 === .spec.outputDefaults.elasticsearch
+
 ===== Description
+
 ElasticsearchStructuredSpec is spec related to structured log changes to determine the elasticsearch index
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| enableStructuredContainerLogs| bool|  *(optional)* EnableStructuredContainerLogs enables multi-container structured logs to allow
 
-|enableStructuredContainerLogs|bool|  *(optional)* EnableStructuredContainerLogs enables multi-container structured logs to allow
-|structuredTypeKey|string|  *(optional)* StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index
-|structuredTypeName|string|  *(optional)* StructuredTypeName specifies the name of elasticsearch schema
+| structuredTypeKey| string|  *(optional)* StructuredTypeKey specifies the metadata key to be used as name of elasticsearch index
+
+| structuredTypeName| string|  *(optional)* StructuredTypeName specifies the name of elasticsearch schema
 |======================
 
-=== .spec.outputs[]
+[id=_.spec.outputs]
+=== .spec.outputs
+
 ===== Description
+
 Output defines a destination for log messages.
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| syslog| xref:#_.spec.outputs.syslog[object]|  *(optional)* 
 
-|syslog|object|  *(optional)* 
-|fluentdForward|object|  *(optional)* 
-|elasticsearch|object|  *(optional)* 
-|kafka|object|  *(optional)* 
-|cloudwatch|object|  *(optional)* 
-|loki|object|  *(optional)* 
-|googleCloudLogging|object|  *(optional)* 
-|splunk|object|  *(optional)* 
-|http|object|  *(optional)* 
-|name|string|  Name used to refer to the output from a `pipeline`.
-|secret|object|  *(optional)* Secret for authentication.
-|tls|object|  TLS contains settings for controlling options on TLS client connections.
-|type|string|  Type of output plugin.
-|url|string|  *(optional)* URL to send log records to.
+| fluentdForward| xref:#_.spec.outputs.fluentdForward[object]|  *(optional)* 
+
+| elasticsearch| xref:#_.spec.outputs.elasticsearch[object]|  *(optional)* 
+
+| kafka| xref:#_.spec.outputs.kafka[object]|  *(optional)* 
+
+| cloudwatch| xref:#_.spec.outputs.cloudwatch[object]|  *(optional)* 
+
+| loki| xref:#_.spec.outputs.loki[object]|  *(optional)* 
+
+| googleCloudLogging| xref:#_.spec.outputs.googleCloudLogging[object]|  *(optional)* 
+
+| splunk| xref:#_.spec.outputs.splunk[object]|  *(optional)* 
+
+| http| xref:#_.spec.outputs.http[object]|  *(optional)* 
+
+| name| string|  Name used to refer to the output from a `pipeline`.
+
+| secret| xref:#_.spec.outputs.secret[object]|  *(optional)* Secret for authentication.
+
+| tls| xref:#_.spec.outputs.tls[object]|  TLS contains settings for controlling options on TLS client connections.
+
+| type| string|  Type of output plugin.
+
+| url| string|  *(optional)* URL to send log records to.
 |======================
 
-=== .spec.outputs[].secret
+[id=_.spec.outputs.secret]
+=== .spec.outputs.secret
+
 ===== Description
+
 OutputSecretSpec is a secret reference containing name only, no namespace.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|name|string|  Name of a secret in the namespace configured for log forwarder secrets.
+| name| string|  Name of a secret in the namespace configured for log forwarder secrets.
 |======================
 
-=== .spec.outputs[].tls
+[id=_.spec.outputs.tls]
+=== .spec.outputs.tls
+
 ===== Description
+
 OutputTLSSpec contains options for TLS connections that are agnostic to the output type.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| insecureSkipVerify| bool|  If InsecureSkipVerify is true, then the TLS client will be configured to ignore errors with certificates.
 
-|insecureSkipVerify|bool|  If InsecureSkipVerify is true, then the TLS client will be configured to ignore errors with certificates.
-|securityProfile|object|  TLSSecurityProfile is the security profile to apply to the output connection
+| securityProfile| xref:#_.spec.outputs.tls.securityProfile[object]|  TLSSecurityProfile is the security profile to apply to the output connection
 |======================
 
-=== .spec.outputs[].tls.securityProfile
+[id=_.spec.outputs.tls.securityProfile]
+=== .spec.outputs.tls.securityProfile
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| custom| xref:#_.spec.outputs.tls.securityProfile.custom[object]|  *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom
 
-|custom|object|  *(optional)* custom is a user-defined TLS security profile. Be extremely careful using a custom
-|intermediate|object|  *(optional)* intermediate is a TLS security profile based on:
-|modern|object|  *(optional)* modern is a TLS security profile based on:
-|old|object|  *(optional)* old is a TLS security profile based on:
-|type|string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides
+| intermediate| xref:#_.spec.outputs.tls.securityProfile.intermediate[object]|  *(optional)* intermediate is a TLS security profile based on:
+
+| modern| xref:#_.spec.outputs.tls.securityProfile.modern[object]|  *(optional)* modern is a TLS security profile based on:
+
+| old| xref:#_.spec.outputs.tls.securityProfile.old[object]|  *(optional)* old is a TLS security profile based on:
+
+| type| string|  *(optional)* type is one of Old, Intermediate, Modern or Custom. Custom provides
 |======================
 
-=== .spec.outputs[].tls.securityProfile.custom
+[id=_.spec.outputs.tls.securityProfile.custom]
+=== .spec.outputs.tls.securityProfile.custom
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| ciphers| array|  ciphers is used to specify the cipher algorithms that are negotiated
 
-|ciphers|array|  ciphers is used to specify the cipher algorithms that are negotiated
-|minTLSVersion|string|  minTLSVersion is used to specify the minimal version of the TLS protocol
+| minTLSVersion| string|  minTLSVersion is used to specify the minimal version of the TLS protocol
 |======================
 
-=== .spec.outputs[].tls.securityProfile.intermediate
+[id=_.spec.outputs.tls.securityProfile.intermediate]
+=== .spec.outputs.tls.securityProfile.intermediate
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .spec.outputs[].tls.securityProfile.modern
+[id=_.spec.outputs.tls.securityProfile.modern]
+=== .spec.outputs.tls.securityProfile.modern
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .spec.outputs[].tls.securityProfile.old
+[id=_.spec.outputs.tls.securityProfile.old]
+=== .spec.outputs.tls.securityProfile.old
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .spec.pipelines[]
+[id=_.spec.pipelines]
+=== .spec.pipelines
+
 ===== Description
+
 PipelinesSpec link a set of inputs to a set of outputs.
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| detectMultilineErrors| bool|  *(optional)* DetectMultilineErrors enables multiline error detection of container logs
 
-|detectMultilineErrors|bool|  *(optional)* DetectMultilineErrors enables multiline error detection of container logs
-|inputRefs|array|  InputRefs lists the names (`input.name`) of inputs to this pipeline.
-|labels|object|  *(optional)* Labels applied to log records passing through this pipeline.
-|name|string|  *(optional)* Name is optional, but must be unique in the `pipelines` list if provided.
-|outputRefs|array|  OutputRefs lists the names (`output.name`) of outputs from this pipeline.
-|parse|string|  *(optional)* Parse enables parsing of log entries into structured logs
+| inputRefs| array|  InputRefs lists the names (`input.name`) of inputs to this pipeline.
+
+| labels| xref:#_.spec.pipelines.labels[object]|  *(optional)* Labels applied to log records passing through this pipeline.
+
+| name| string|  *(optional)* Name is optional, but must be unique in the `pipelines` list if provided.
+
+| outputRefs| array|  OutputRefs lists the names (`output.name`) of outputs from this pipeline.
+
+| parse| string|  *(optional)* Parse enables parsing of log entries into structured logs
 |======================
 
-=== .spec.pipelines[].inputRefs[]
+[id=_.spec.pipelines.inputRefs]
+=== .spec.pipelines.inputRefs
+
 ===== Description
 
 =====  Type
+
 * array
 
-=== .spec.pipelines[].labels
+[id=_.spec.pipelines.labels]
+=== .spec.pipelines.labels
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .spec.pipelines[].outputRefs[]
+[id=_.spec.pipelines.outputRefs]
+=== .spec.pipelines.outputRefs
+
 ===== Description
 
 =====  Type
+
 * array
 
+[id=_.status]
 === .status
+
 ===== Description
+
 ClusterLogForwarderStatus defines the observed state of ClusterLogForwarder
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| conditions| xref:#_.status.conditions[object]|  Conditions of the log forwarder.
 
-|conditions|object|  Conditions of the log forwarder.
-|inputs|Conditions|  Inputs maps input name to condition of the input.
-|outputs|Conditions|  Outputs maps output name to condition of the output.
-|pipelines|Conditions|  Pipelines maps pipeline name to condition of the pipeline.
+| inputs| Conditions|  Inputs maps input name to condition of the input.
+
+| outputs| Conditions|  Outputs maps output name to condition of the output.
+
+| pipelines| Conditions|  Pipelines maps pipeline name to condition of the pipeline.
 |======================
 
+[id=_.status.conditions]
 === .status.conditions
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.status.inputs]
 === .status.inputs
+
 ===== Description
 
 =====  Type
+
 * Conditions
 
+[id=_.status.outputs]
 === .status.outputs
+
 ===== Description
 
 =====  Type
+
 * Conditions
 
+[id=_.status.pipelines]
 === .status.pipelines
+
 ===== Description
 
 =====  Type
-* Conditions== ClusterLogging
+
+* Conditions
+
+== ClusterLogging
 A Red Hat OpenShift Logging instance. ClusterLogging is the Schema for the clusterloggings API
 
 [options="header"]
 |======================
 |Property|Type|Description
+| spec| xref:#_.spec[object]|  Specification of the desired behavior of ClusterLogging
 
-|spec|object|  Specification of the desired behavior of ClusterLogging
-|status|object|  Status defines the observed state of ClusterLogging
+| status| xref:#_.status[object]|  Status defines the observed state of ClusterLogging
 |======================
 
+[id=_.spec]
 === .spec
+
 ===== Description
+
 ClusterLoggingSpec defines the desired state of ClusterLogging
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| collection| xref:#_.spec.collection[object]|  Specification of the Collection component for the cluster
 
-|collection|object|  Specification of the Collection component for the cluster
-|curation|object| **(DEPRECATED)** *(optional)* Deprecated. Specification of the Curation component for the cluster
-|forwarder|object| **(DEPRECATED)** *(optional)* Deprecated. Specification for Forwarder component for the cluster
-|logStore|object|  *(optional)* Specification of the Log Storage component for the cluster
-|managementState|string|  *(optional)* Indicator if the resource is &#39;Managed&#39; or &#39;Unmanaged&#39; by the operator
-|visualization|object|  *(optional)* Specification of the Visualization component for the cluster
+| curation| xref:#_.spec.curation[object]| **(DEPRECATED)** *(optional)* Deprecated. Specification of the Curation component for the cluster
+
+| forwarder| xref:#_.spec.forwarder[object]| **(DEPRECATED)** *(optional)* Deprecated. Specification for Forwarder component for the cluster
+
+| logStore| xref:#_.spec.logStore[object]|  *(optional)* Specification of the Log Storage component for the cluster
+
+| managementState| string|  *(optional)* Indicator if the resource is &#39;Managed&#39; or &#39;Unmanaged&#39; by the operator
+
+| visualization| xref:#_.spec.visualization[object]|  *(optional)* Specification of the Visualization component for the cluster
 |======================
 
+[id=_.spec.collection]
 === .spec.collection
+
 ===== Description
+
 This is the struct that will contain information pertinent to Log and event collection
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| resources| xref:#_.spec.collection.resources[object]|  *(optional)* The resource requirements for the collector
 
-|resources|object|  *(optional)* The resource requirements for the collector
-|nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
-|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
-|fluentd|object|  *(optional)* Fluentd represents the configuration for forwarders of type fluentd.
-|logs|object| **(DEPRECATED)** *(optional)* Deprecated. Specification of Log Collection for the cluster
-|type|string|  The type of Log Collection to configure
+| nodeSelector| xref:#_.spec.collection.nodeSelector[object]|  *(optional)* Define which Nodes the Pods are scheduled on.
+
+| tolerations| array|  *(optional)* Define the tolerations the Pods will accept
+
+| fluentd| xref:#_.spec.collection.fluentd[object]|  *(optional)* Fluentd represents the configuration for forwarders of type fluentd.
+
+| logs| xref:#_.spec.collection.logs[object]| **(DEPRECATED)** *(optional)* Deprecated. Specification of Log Collection for the cluster
+
+| type| string|  The type of Log Collection to configure
 |======================
 
+[id=_.spec.collection.fluentd]
 === .spec.collection.fluentd
+
 ===== Description
+
 FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| buffer| xref:#_.spec.collection.fluentd.buffer[object]|  
 
-|buffer|object|  
-|inFile|object|  
+| inFile| xref:#_.spec.collection.fluentd.inFile[object]|  
 |======================
 
+[id=_.spec.collection.fluentd.buffer]
 === .spec.collection.fluentd.buffer
+
 ===== Description
+
 FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
 the buffer configuration for all fluentd outputs. It supports a subset of
 parameters to configure buffer and queue sizing, flush operations and retry
@@ -391,26 +527,38 @@ For retry parameters refer to:
 https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| chunkLimitSize| string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
 
-|chunkLimitSize|string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
-|flushInterval|string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
-|flushMode|string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
-|flushThreadCount|int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
-|overflowAction|string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
-|retryMaxInterval|string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
-|retryTimeout|string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
-|retryType|string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
-|retryWait|string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
-|totalLimitSize|string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
+| flushInterval| string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
+
+| flushMode| string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
+
+| flushThreadCount| int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
+
+| overflowAction| string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
+
+| retryMaxInterval| string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
+
+| retryTimeout| string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
+
+| retryType| string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
+
+| retryWait| string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
+
+| totalLimitSize| string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
 |======================
 
+[id=_.spec.collection.fluentd.inFile]
 === .spec.collection.fluentd.inFile
+
 ===== Description
+
 FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
 to tune the configuration for all fluentd in-tail inputs.
 
@@ -418,220 +566,289 @@ For general parameters refer to:
 https://docs.fluentd.org/input/tail#parameters
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
+| readLinesLimit| int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
 |======================
 
+[id=_.spec.collection.logs]
 === .spec.collection.logs
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| fluentd| xref:#_.spec.collection.logs.fluentd[object]|  Specification of the Fluentd Log Collection component
 
-|fluentd|object|  Specification of the Fluentd Log Collection component
-|type|string|  The type of Log Collection to configure
+| type| string|  The type of Log Collection to configure
 |======================
 
+[id=_.spec.collection.logs.fluentd]
 === .spec.collection.logs.fluentd
+
 ===== Description
+
 CollectorSpec is spec to define scheduling and resources for a collector
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| nodeSelector| xref:#_.spec.collection.logs.fluentd.nodeSelector[object]|  *(optional)* Define which Nodes the Pods are scheduled on.
 
-|nodeSelector|object|  *(optional)* Define which Nodes the Pods are scheduled on.
-|resources|object|  *(optional)* The resource requirements for the collector
-|tolerations|array|  *(optional)* Define the tolerations the Pods will accept
+| resources| xref:#_.spec.collection.logs.fluentd.resources[object]|  *(optional)* The resource requirements for the collector
+
+| tolerations| array|  *(optional)* Define the tolerations the Pods will accept
 |======================
 
+[id=_.spec.collection.logs.fluentd.nodeSelector]
 === .spec.collection.logs.fluentd.nodeSelector
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.collection.logs.fluentd.resources]
 === .spec.collection.logs.fluentd.resources
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| limits| xref:#_.spec.collection.logs.fluentd.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| requests| xref:#_.spec.collection.logs.fluentd.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
+[id=_.spec.collection.logs.fluentd.resources.limits]
 === .spec.collection.logs.fluentd.resources.limits
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.collection.logs.fluentd.resources.requests]
 === .spec.collection.logs.fluentd.resources.requests
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .spec.collection.logs.fluentd.tolerations[]
+[id=_.spec.collection.logs.fluentd.tolerations]
+=== .spec.collection.logs.fluentd.tolerations
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| effect| string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| key| string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+
+| operator| string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+
+| tolerationSeconds| int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+
+| value| string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.collection.logs.fluentd.tolerations[].tolerationSeconds
+[id=_.spec.collection.logs.fluentd.tolerations.tolerationSeconds]
+=== .spec.collection.logs.fluentd.tolerations.tolerationSeconds
+
 ===== Description
 
 =====  Type
+
 * int
 
+[id=_.spec.curation]
 === .spec.curation
+
 ===== Description
+
 This is the struct that will contain information pertinent to Log curation (Curator)
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| curator| xref:#_.spec.curation.curator[object]|  The specification of curation to configure
 
-|curator|object|  The specification of curation to configure
-|type|string|  The kind of curation to configure
+| type| string|  The kind of curation to configure
 |======================
 
+[id=_.spec.curation.curator]
 === .spec.curation.curator
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| nodeSelector| xref:#_.spec.curation.curator.nodeSelector[object]|  Define which Nodes the Pods are scheduled on.
 
-|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
-|resources|object|  *(optional)* The resource requirements for Curator
-|schedule|string|  The cron schedule that the Curator job is run. Defaults to &#34;30 3 * * *&#34;
-|tolerations|array|  
+| resources| xref:#_.spec.curation.curator.resources[object]|  *(optional)* The resource requirements for Curator
+
+| schedule| string|  The cron schedule that the Curator job is run. Defaults to &#34;30 3 * * *&#34;
+
+| tolerations| array|  
 |======================
 
+[id=_.spec.curation.curator.nodeSelector]
 === .spec.curation.curator.nodeSelector
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.curation.curator.resources]
 === .spec.curation.curator.resources
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| limits| xref:#_.spec.curation.curator.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| requests| xref:#_.spec.curation.curator.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
+[id=_.spec.curation.curator.resources.limits]
 === .spec.curation.curator.resources.limits
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.curation.curator.resources.requests]
 === .spec.curation.curator.resources.requests
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .spec.curation.curator.tolerations[]
+[id=_.spec.curation.curator.tolerations]
+=== .spec.curation.curator.tolerations
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| effect| string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| key| string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+
+| operator| string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+
+| tolerationSeconds| int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+
+| value| string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.curation.curator.tolerations[].tolerationSeconds
+[id=_.spec.curation.curator.tolerations.tolerationSeconds]
+=== .spec.curation.curator.tolerations.tolerationSeconds
+
 ===== Description
 
 =====  Type
+
 * int
 
+[id=_.spec.forwarder]
 === .spec.forwarder
+
 ===== Description
+
 ForwarderSpec contains global tuning parameters for specific forwarder implementations.
 This field is not required for general use, it allows performance tuning by users
 familiar with the underlying forwarder technology.
 Currently supported: `fluentd`.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|fluentd|object|  
+| fluentd| xref:#_.spec.forwarder.fluentd[object]|  
 |======================
 
+[id=_.spec.forwarder.fluentd]
 === .spec.forwarder.fluentd
+
 ===== Description
+
 FluentdForwarderSpec represents the configuration for forwarders of type fluentd.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| buffer| xref:#_.spec.forwarder.fluentd.buffer[object]|  
 
-|buffer|object|  
-|inFile|object|  
+| inFile| xref:#_.spec.forwarder.fluentd.inFile[object]|  
 |======================
 
+[id=_.spec.forwarder.fluentd.buffer]
 === .spec.forwarder.fluentd.buffer
+
 ===== Description
+
 FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
 the buffer configuration for all fluentd outputs. It supports a subset of
 parameters to configure buffer and queue sizing, flush operations and retry
@@ -647,26 +864,38 @@ For retry parameters refer to:
 https://docs.fluentd.org/configuration/buffer-section#retries-parameters
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| chunkLimitSize| string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
 
-|chunkLimitSize|string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
-|flushInterval|string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
-|flushMode|string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
-|flushThreadCount|int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
-|overflowAction|string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
-|retryMaxInterval|string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
-|retryTimeout|string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
-|retryType|string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
-|retryWait|string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
-|totalLimitSize|string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
+| flushInterval| string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
+
+| flushMode| string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
+
+| flushThreadCount| int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
+
+| overflowAction| string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
+
+| retryMaxInterval| string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
+
+| retryTimeout| string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
+
+| retryType| string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
+
+| retryWait| string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
+
+| totalLimitSize| string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
 |======================
 
+[id=_.spec.forwarder.fluentd.inFile]
 === .spec.forwarder.fluentd.inFile
+
 ===== Description
+
 FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
 to tune the configuration for all fluentd in-tail inputs.
 
@@ -674,750 +903,2758 @@ For general parameters refer to:
 https://docs.fluentd.org/input/tail#parameters
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|readLinesLimit|int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
+| readLinesLimit| int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
 |======================
 
+[id=_.spec.logStore]
 === .spec.logStore
+
 ===== Description
+
 The LogStoreSpec contains information about how logs are stored.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| elasticsearch| xref:#_.spec.logStore.elasticsearch[object]| **(DEPRECATED)** Specification of the Elasticsearch Log Store component
 
-|elasticsearch|object| **(DEPRECATED)** Specification of the Elasticsearch Log Store component
-|lokistack|object|  LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
-|retentionPolicy|object| **(DEPRECATED)** *(optional)* Retention policy defines the maximum age for an Elasticsearch index after which it should be deleted
-|type|string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
+| lokistack| xref:#_.spec.logStore.lokistack[object]|  LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
+
+| retentionPolicy| xref:#_.spec.logStore.retentionPolicy[object]| **(DEPRECATED)** *(optional)* Retention policy defines the maximum age for an Elasticsearch index after which it should be deleted
+
+| type| string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
 |======================
 
+[id=_.spec.logStore.elasticsearch]
 === .spec.logStore.elasticsearch
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| nodeCount| int|  Number of nodes to deploy for Elasticsearch
 
-|nodeCount|int|  Number of nodes to deploy for Elasticsearch
-|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
-|proxy|object|  Specification of the Elasticsearch Proxy component
-|redundancyPolicy|string|  *(optional)* 
-|resources|object|  *(optional)* The resource requirements for Elasticsearch
-|storage|object|  *(optional)* The storage specification for Elasticsearch data nodes
-|tolerations|array|  
+| nodeSelector| xref:#_.spec.logStore.elasticsearch.nodeSelector[object]|  Define which Nodes the Pods are scheduled on.
+
+| proxy| xref:#_.spec.logStore.elasticsearch.proxy[object]|  Specification of the Elasticsearch Proxy component
+
+| redundancyPolicy| string|  *(optional)* 
+
+| resources| xref:#_.spec.logStore.elasticsearch.resources[object]|  *(optional)* The resource requirements for Elasticsearch
+
+| storage| xref:#_.spec.logStore.elasticsearch.storage[object]|  *(optional)* The storage specification for Elasticsearch data nodes
+
+| tolerations| array|  
 |======================
 
+[id=_.spec.logStore.elasticsearch.nodeSelector]
 === .spec.logStore.elasticsearch.nodeSelector
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.logStore.elasticsearch.proxy]
 === .spec.logStore.elasticsearch.proxy
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|resources|object|  
+| resources| xref:#_.spec.logStore.elasticsearch.proxy.resources[object]|  
 |======================
 
+[id=_.spec.logStore.elasticsearch.proxy.resources]
 === .spec.logStore.elasticsearch.proxy.resources
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| limits| xref:#_.spec.logStore.elasticsearch.proxy.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| requests| xref:#_.spec.logStore.elasticsearch.proxy.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
+[id=_.spec.logStore.elasticsearch.proxy.resources.limits]
 === .spec.logStore.elasticsearch.proxy.resources.limits
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.logStore.elasticsearch.proxy.resources.requests]
 === .spec.logStore.elasticsearch.proxy.resources.requests
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.logStore.elasticsearch.resources]
 === .spec.logStore.elasticsearch.resources
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| limits| xref:#_.spec.logStore.elasticsearch.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| requests| xref:#_.spec.logStore.elasticsearch.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
+[id=_.spec.logStore.elasticsearch.resources.limits]
 === .spec.logStore.elasticsearch.resources.limits
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.logStore.elasticsearch.resources.requests]
 === .spec.logStore.elasticsearch.resources.requests
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.logStore.elasticsearch.storage]
 === .spec.logStore.elasticsearch.storage
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| size| xref:#_.spec.logStore.elasticsearch.storage.size[object]|  The max storage capacity for the node to provision.
 
-|size|object|  The max storage capacity for the node to provision.
-|storageClassName|string|  *(optional)* The name of the storage class to use with creating the node&#39;s PVC.
+| storageClassName| string|  *(optional)* The name of the storage class to use with creating the node&#39;s PVC.
 |======================
 
+[id=_.spec.logStore.elasticsearch.storage.size]
 === .spec.logStore.elasticsearch.storage.size
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| Format| string|  Change Format at will. See the comment for Canonicalize for
 
-|Format|string|  Change Format at will. See the comment for Canonicalize for
-|d|object|  d is the quantity in inf.Dec form if d.Dec != nil
-|i|int|  i is the quantity in int64 scaled form, if d.Dec == nil
-|s|string|  s is the generated value of this quantity to avoid recalculation
+| d| xref:#_.spec.logStore.elasticsearch.storage.size.d[object]|  d is the quantity in inf.Dec form if d.Dec != nil
+
+| i| int|  i is the quantity in int64 scaled form, if d.Dec == nil
+
+| s| string|  s is the generated value of this quantity to avoid recalculation
 |======================
 
+[id=_.spec.logStore.elasticsearch.storage.size.d]
 === .spec.logStore.elasticsearch.storage.size.d
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|Dec|object|  
+| Dec| xref:#_.spec.logStore.elasticsearch.storage.size.d.Dec[object]|  
 |======================
 
+[id=_.spec.logStore.elasticsearch.storage.size.d.Dec]
 === .spec.logStore.elasticsearch.storage.size.d.Dec
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| scale| int|  
 
-|scale|int|  
-|unscaled|object|  
+| unscaled| xref:#_.spec.logStore.elasticsearch.storage.size.d.Dec.unscaled[object]|  
 |======================
 
+[id=_.spec.logStore.elasticsearch.storage.size.d.Dec.unscaled]
 === .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| abs| Word|  sign
 
-|abs|Word|  sign
-|neg|bool|  
+| neg| bool|  
 |======================
 
+[id=_.spec.logStore.elasticsearch.storage.size.d.Dec.unscaled.abs]
 === .spec.logStore.elasticsearch.storage.size.d.Dec.unscaled.abs
+
 ===== Description
 
 =====  Type
+
 * Word
 
+[id=_.spec.logStore.elasticsearch.storage.size.i]
 === .spec.logStore.elasticsearch.storage.size.i
+
 ===== Description
 
 =====  Type
+
 * int
 
 [options="header"]
 |======================
 |Property|Type|Description
+| scale| int|  
 
-|scale|int|  
-|value|int|  
+| value| int|  
 |======================
 
-=== .spec.logStore.elasticsearch.tolerations[]
+[id=_.spec.logStore.elasticsearch.tolerations]
+=== .spec.logStore.elasticsearch.tolerations
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| effect| string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| key| string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+
+| operator| string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+
+| tolerationSeconds| int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+
+| value| string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.logStore.elasticsearch.tolerations[].tolerationSeconds
+[id=_.spec.logStore.elasticsearch.tolerations.tolerationSeconds]
+=== .spec.logStore.elasticsearch.tolerations.tolerationSeconds
+
 ===== Description
 
 =====  Type
+
 * int
 
+[id=_.spec.logStore.lokistack]
 === .spec.logStore.lokistack
+
 ===== Description
+
 LokiStackStoreSpec is used to set up cluster-logging to use a LokiStack as logging storage.
 It points to an existing LokiStack in the same namespace.
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|name|string|  Name of the LokiStack resource.
+| name| string|  Name of the LokiStack resource.
 |======================
 
+[id=_.spec.logStore.retentionPolicy]
 === .spec.logStore.retentionPolicy
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| application| xref:#_.spec.logStore.retentionPolicy.application[object]|  
 
-|application|object|  
-|audit|object|  
-|infra|object|  
+| audit| xref:#_.spec.logStore.retentionPolicy.audit[object]|  
+
+| infra| xref:#_.spec.logStore.retentionPolicy.infra[object]|  
 |======================
 
+[id=_.spec.logStore.retentionPolicy.application]
 === .spec.logStore.retentionPolicy.application
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| diskThresholdPercent| int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
 
-|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
-|maxAge|string|  *(optional)* 
-|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
-|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+| maxAge| string|  *(optional)* 
+
+| namespaceSpec| array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
+
+| pruneNamespacesInterval| string|  *(optional)* How often to run a new prune-namespaces job
 |======================
 
-=== .spec.logStore.retentionPolicy.application.namespaceSpec[]
+[id=_.spec.logStore.retentionPolicy.application.namespaceSpec]
+=== .spec.logStore.retentionPolicy.application.namespaceSpec
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| minAge| string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
 
-|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
-|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+| namespace| string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
 |======================
 
+[id=_.spec.logStore.retentionPolicy.audit]
 === .spec.logStore.retentionPolicy.audit
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| diskThresholdPercent| int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
 
-|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
-|maxAge|string|  *(optional)* 
-|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
-|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+| maxAge| string|  *(optional)* 
+
+| namespaceSpec| array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
+
+| pruneNamespacesInterval| string|  *(optional)* How often to run a new prune-namespaces job
 |======================
 
-=== .spec.logStore.retentionPolicy.audit.namespaceSpec[]
+[id=_.spec.logStore.retentionPolicy.audit.namespaceSpec]
+=== .spec.logStore.retentionPolicy.audit.namespaceSpec
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| minAge| string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
 
-|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
-|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+| namespace| string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
 |======================
 
+[id=_.spec.logStore.retentionPolicy.infra]
 === .spec.logStore.retentionPolicy.infra
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| diskThresholdPercent| int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
 
-|diskThresholdPercent|int|  *(optional)* The threshold percentage of ES disk usage that when reached, old indices should be deleted (e.g. 75)
-|maxAge|string|  *(optional)* 
-|namespaceSpec|array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
-|pruneNamespacesInterval|string|  *(optional)* How often to run a new prune-namespaces job
+| maxAge| string|  *(optional)* 
+
+| namespaceSpec| array|  *(optional)* The per namespace specification to delete documents older than a given minimum age
+
+| pruneNamespacesInterval| string|  *(optional)* How often to run a new prune-namespaces job
 |======================
 
-=== .spec.logStore.retentionPolicy.infra.namespaceSpec[]
+[id=_.spec.logStore.retentionPolicy.infra.namespaceSpec]
+=== .spec.logStore.retentionPolicy.infra.namespaceSpec
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| minAge| string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
 
-|minAge|string|  *(optional)* Delete the records matching the namespaces which are older than this MinAge (e.g. 1d)
-|namespace|string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
+| namespace| string|  Target Namespace to delete logs older than MinAge (defaults to 7d)
 |======================
 
+[id=_.spec.visualization]
 === .spec.visualization
+
 ===== Description
+
 This is the struct that will contain information pertinent to Log visualization (Kibana)
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| kibana| xref:#_.spec.visualization.kibana[object]| **(DEPRECATED)** *(optional)* Specification of the Kibana Visualization component
 
-|kibana|object| **(DEPRECATED)** *(optional)* Specification of the Kibana Visualization component
-|ocpConsole|object|  *(optional)* OCPConsole is the specification for the OCP console plugin
-|type|string|  The type of Visualization to configure
+| ocpConsole| xref:#_.spec.visualization.ocpConsole[object]|  *(optional)* OCPConsole is the specification for the OCP console plugin
+
+| type| string|  The type of Visualization to configure
 |======================
 
+[id=_.spec.visualization.kibana]
 === .spec.visualization.kibana
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| nodeSelector| xref:#_.spec.visualization.kibana.nodeSelector[object]|  Define which Nodes the Pods are scheduled on.
 
-|nodeSelector|object|  Define which Nodes the Pods are scheduled on.
-|proxy|object|  Specification of the Kibana Proxy component
-|replicas|int|  *(optional)* Number of instances to deploy for a Kibana deployment
-|resources|object|  *(optional)* The resource requirements for Kibana
-|tolerations|array|  
+| proxy| xref:#_.spec.visualization.kibana.proxy[object]|  Specification of the Kibana Proxy component
+
+| replicas| int|  *(optional)* Number of instances to deploy for a Kibana deployment
+
+| resources| xref:#_.spec.visualization.kibana.resources[object]|  *(optional)* The resource requirements for Kibana
+
+| tolerations| array|  
 |======================
 
+[id=_.spec.visualization.kibana.nodeSelector]
 === .spec.visualization.kibana.nodeSelector
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.visualization.kibana.proxy]
 === .spec.visualization.kibana.proxy
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|resources|object|  
+| resources| xref:#_.spec.visualization.kibana.proxy.resources[object]|  
 |======================
 
+[id=_.spec.visualization.kibana.proxy.resources]
 === .spec.visualization.kibana.proxy.resources
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| limits| xref:#_.spec.visualization.kibana.proxy.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| requests| xref:#_.spec.visualization.kibana.proxy.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
+[id=_.spec.visualization.kibana.proxy.resources.limits]
 === .spec.visualization.kibana.proxy.resources.limits
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.visualization.kibana.proxy.resources.requests]
 === .spec.visualization.kibana.proxy.resources.requests
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.visualization.kibana.replicas]
 === .spec.visualization.kibana.replicas
+
 ===== Description
 
 =====  Type
+
 * int
 
+[id=_.spec.visualization.kibana.resources]
 === .spec.visualization.kibana.resources
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| limits| xref:#_.spec.visualization.kibana.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
 
-|limits|object|  *(optional)* Limits describes the maximum amount of compute resources allowed.
-|requests|object|  *(optional)* Requests describes the minimum amount of compute resources required.
+| requests| xref:#_.spec.visualization.kibana.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
 |======================
 
+[id=_.spec.visualization.kibana.resources.limits]
 === .spec.visualization.kibana.resources.limits
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.spec.visualization.kibana.resources.requests]
 === .spec.visualization.kibana.resources.requests
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .spec.visualization.kibana.tolerations[]
+[id=_.spec.visualization.kibana.tolerations]
+=== .spec.visualization.kibana.tolerations
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| effect| string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
 
-|effect|string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
-|key|string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
-|operator|string|  *(optional)* Operator represents a key&#39;s relationship to the value.
-|tolerationSeconds|int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
-|value|string|  *(optional)* Value is the taint value the toleration matches to.
+| key| string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+
+| operator| string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+
+| tolerationSeconds| int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+
+| value| string|  *(optional)* Value is the taint value the toleration matches to.
 |======================
 
-=== .spec.visualization.kibana.tolerations[].tolerationSeconds
+[id=_.spec.visualization.kibana.tolerations.tolerationSeconds]
+=== .spec.visualization.kibana.tolerations.tolerationSeconds
+
 ===== Description
 
 =====  Type
+
 * int
 
+[id=_.spec.visualization.ocpConsole]
 === .spec.visualization.ocpConsole
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| logsLimit| int|  *(optional)* LogsLimit is the max number of entries returned for a query.
 
-|logsLimit|int|  *(optional)* LogsLimit is the max number of entries returned for a query.
-|timeout|string|  *(optional)* Timeout is the max duration before a query timeout
+| timeout| string|  *(optional)* Timeout is the max duration before a query timeout
 |======================
 
+[id=_.status]
 === .status
+
 ===== Description
+
 ClusterLoggingStatus defines the observed state of ClusterLogging
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| collection| xref:#_.status.collection[object]| **(DEPRECATED)** *(optional)* Deprecated.
 
-|collection|object| **(DEPRECATED)** *(optional)* Deprecated.
-|conditions|object|  *(optional)* 
-|curation|object|  *(optional)* 
-|logStore|object|  *(optional)* 
-|visualization|object|  *(optional)* 
+| conditions| xref:#_.status.conditions[object]|  *(optional)* 
+
+| curation| xref:#_.status.curation[object]|  *(optional)* 
+
+| logStore| xref:#_.status.logStore[object]|  *(optional)* 
+
+| visualization| xref:#_.status.visualization[object]|  *(optional)* 
 |======================
 
+[id=_.status.collection]
 === .status.collection
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|logs|object|  *(optional)* 
+| logs| xref:#_.status.collection.logs[object]|  *(optional)* 
 |======================
 
+[id=_.status.collection.logs]
 === .status.collection.logs
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|fluentdStatus|object|  *(optional)* 
+| fluentdStatus| xref:#_.status.collection.logs.fluentdStatus[object]|  *(optional)* 
 |======================
 
+[id=_.status.collection.logs.fluentdStatus]
 === .status.collection.logs.fluentdStatus
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| clusterCondition| xref:#_.status.collection.logs.fluentdStatus.clusterCondition[object]|  *(optional)* 
 
-|clusterCondition|object|  *(optional)* 
-|daemonSet|string|  *(optional)* 
-|nodes|object|  *(optional)* 
-|pods|string|  *(optional)* 
+| daemonSet| string|  *(optional)* 
+
+| nodes| xref:#_.status.collection.logs.fluentdStatus.nodes[object]|  *(optional)* 
+
+| pods| string|  *(optional)* 
 |======================
 
+[id=_.status.collection.logs.fluentdStatus.clusterCondition]
 === .status.collection.logs.fluentdStatus.clusterCondition
+
 ===== Description
+
 `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
 
 =====  Type
+
 * object
 
+[id=_.status.collection.logs.fluentdStatus.nodes]
 === .status.collection.logs.fluentdStatus.nodes
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.status.conditions]
 === .status.conditions
+
 ===== Description
 
 =====  Type
+
 * object
 
+[id=_.status.curation]
 === .status.curation
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|curatorStatus|array|  *(optional)* 
+| curatorStatus| array|  *(optional)* 
 |======================
 
-=== .status.curation.curatorStatus[]
+[id=_.status.curation.curatorStatus]
+=== .status.curation.curatorStatus
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| clusterCondition| xref:#_.status.curation.curatorStatus.clusterCondition[object]|  *(optional)* 
 
-|clusterCondition|object|  *(optional)* 
-|cronJobs|string|  *(optional)* 
-|schedules|string|  *(optional)* 
-|suspended|bool|  *(optional)* 
+| cronJobs| string|  *(optional)* 
+
+| schedules| string|  *(optional)* 
+
+| suspended| bool|  *(optional)* 
 |======================
 
-=== .status.curation.curatorStatus[].clusterCondition
+[id=_.status.curation.curatorStatus.clusterCondition]
+=== .status.curation.curatorStatus.clusterCondition
+
 ===== Description
+
 `operator-sdk generate crds` does not allow map-of-slice, must use a named type.
 
 =====  Type
+
 * object
 
+[id=_.status.logStore]
 === .status.logStore
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|elasticsearchStatus|array|  *(optional)* 
+| elasticsearchStatus| array|  *(optional)* 
 |======================
 
-=== .status.logStore.elasticsearchStatus[]
+[id=_.status.logStore.elasticsearchStatus]
+=== .status.logStore.elasticsearchStatus
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| cluster| xref:#_.status.logStore.elasticsearchStatus.cluster[object]|  *(optional)* 
 
-|cluster|object|  *(optional)* 
-|clusterConditions|object|  *(optional)* 
-|clusterHealth|string|  *(optional)* 
-|clusterName|string|  *(optional)* 
-|deployments|array|  *(optional)* 
-|nodeConditions|object|  *(optional)* 
-|nodeCount|int|  *(optional)* 
-|pods|object|  *(optional)* 
-|replicaSets|array|  *(optional)* 
-|shardAllocationEnabled|string|  *(optional)* 
-|statefulSets|array|  *(optional)* 
+| clusterConditions| xref:#_.status.logStore.elasticsearchStatus.clusterConditions[object]|  *(optional)* 
+
+| clusterHealth| string|  *(optional)* 
+
+| clusterName| string|  *(optional)* 
+
+| deployments| array|  *(optional)* 
+
+| nodeConditions| xref:#_.status.logStore.elasticsearchStatus.nodeConditions[object]|  *(optional)* 
+
+| nodeCount| int|  *(optional)* 
+
+| pods| xref:#_.status.logStore.elasticsearchStatus.pods[object]|  *(optional)* 
+
+| replicaSets| array|  *(optional)* 
+
+| shardAllocationEnabled| string|  *(optional)* 
+
+| statefulSets| array|  *(optional)* 
 |======================
 
-=== .status.logStore.elasticsearchStatus[].cluster
+[id=_.status.logStore.elasticsearchStatus.cluster]
+=== .status.logStore.elasticsearchStatus.cluster
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
+| activePrimaryShards| int|  The number of Active Primary Shards for the Elasticsearch Cluster
 
-|activePrimaryShards|int|  The number of Active Primary Shards for the Elasticsearch Cluster
-|activeShards|int|  The number of Active Shards for the Elasticsearch Cluster
-|initializingShards|int|  The number of Initializing Shards for the Elasticsearch Cluster
-|numDataNodes|int|  The number of Data Nodes for the Elasticsearch Cluster
-|numNodes|int|  The number of Nodes for the Elasticsearch Cluster
-|pendingTasks|int|  
-|relocatingShards|int|  The number of Relocating Shards for the Elasticsearch Cluster
-|status|string|  The current Status of the Elasticsearch Cluster
-|unassignedShards|int|  The number of Unassigned Shards for the Elasticsearch Cluster
+| activeShards| int|  The number of Active Shards for the Elasticsearch Cluster
+
+| initializingShards| int|  The number of Initializing Shards for the Elasticsearch Cluster
+
+| numDataNodes| int|  The number of Data Nodes for the Elasticsearch Cluster
+
+| numNodes| int|  The number of Nodes for the Elasticsearch Cluster
+
+| pendingTasks| int|  
+
+| relocatingShards| int|  The number of Relocating Shards for the Elasticsearch Cluster
+
+| status| string|  The current Status of the Elasticsearch Cluster
+
+| unassignedShards| int|  The number of Unassigned Shards for the Elasticsearch Cluster
 |======================
 
-=== .status.logStore.elasticsearchStatus[].clusterConditions
+[id=_.status.logStore.elasticsearchStatus.clusterConditions]
+=== .status.logStore.elasticsearchStatus.clusterConditions
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .status.logStore.elasticsearchStatus[].deployments[]
+[id=_.status.logStore.elasticsearchStatus.deployments]
+=== .status.logStore.elasticsearchStatus.deployments
+
 ===== Description
 
 =====  Type
+
 * array
 
-=== .status.logStore.elasticsearchStatus[].nodeConditions
+[id=_.status.logStore.elasticsearchStatus.nodeConditions]
+=== .status.logStore.elasticsearchStatus.nodeConditions
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .status.logStore.elasticsearchStatus[].pods
+[id=_.status.logStore.elasticsearchStatus.pods]
+=== .status.logStore.elasticsearchStatus.pods
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .status.logStore.elasticsearchStatus[].replicaSets[]
+[id=_.status.logStore.elasticsearchStatus.replicaSets]
+=== .status.logStore.elasticsearchStatus.replicaSets
+
 ===== Description
 
 =====  Type
+
 * array
 
-=== .status.logStore.elasticsearchStatus[].statefulSets[]
+[id=_.status.logStore.elasticsearchStatus.statefulSets]
+=== .status.logStore.elasticsearchStatus.statefulSets
+
 ===== Description
 
 =====  Type
+
 * array
 
+[id=_.status.visualization]
 === .status.visualization
+
 ===== Description
 
 =====  Type
+
 * object
 
 [options="header"]
 |======================
 |Property|Type|Description
-
-|kibanaStatus|array|  *(optional)* 
+| kibanaStatus| array|  *(optional)* 
 |======================
 
-=== .status.visualization.kibanaStatus[]
+[id=_.status.visualization.kibanaStatus]
+=== .status.visualization.kibanaStatus
+
 ===== Description
 
 =====  Type
+
 * array
 
 [options="header"]
 |======================
 |Property|Type|Description
+| clusterCondition| xref:#_.status.visualization.kibanaStatus.clusterCondition[object]|  *(optional)* 
 
-|clusterCondition|object|  *(optional)* 
-|deployment|string|  *(optional)* 
-|pods|string|  *(optional)* The status for each of the Kibana pods for the Visualization component
-|replicaSets|array|  *(optional)* 
-|replicas|int|  *(optional)* 
+| deployment| string|  *(optional)* 
+
+| pods| string|  *(optional)* The status for each of the Kibana pods for the Visualization component
+
+| replicaSets| array|  *(optional)* 
+
+| replicas| int|  *(optional)* 
 |======================
 
-=== .status.visualization.kibanaStatus[].clusterCondition
+[id=_.status.visualization.kibanaStatus.clusterCondition]
+=== .status.visualization.kibanaStatus.clusterCondition
+
 ===== Description
 
 =====  Type
+
 * object
 
-=== .status.visualization.kibanaStatus[].replicaSets[]
+[id=_.status.visualization.kibanaStatus.replicaSets]
+=== .status.visualization.kibanaStatus.replicaSets
+
 ===== Description
 
 =====  Type
+
+* array
+
+= logging.openshift.io/v2alpha1
+
+== ClusterLogCollector
+ClusterLogCollector configures the log collector used by a ClusterLogForwarder.
+
+[options="header"]
+|======================
+|Property|Type|Description
+| spec| xref:#_.spec[object]|  
+
+| status| xref:#_.status[object]|  
+|======================
+
+[id=_.spec]
+=== .spec
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| fluentd| xref:#_.spec.fluentd[object]|  Fluentd holds configuration specific to fluentd.
+
+| managementState| string|  *(optional)* ManagementState enable/disable management by the operator.
+
+| nodeSelector| xref:#_.spec.nodeSelector[object]|  NodeSelector for scheduling  collector pods.
+
+| resources| xref:#_.spec.resources[object]|  Resources defines resource limits for collector containers.
+
+| tolerations| array|  Tolerations for scheduling  collector pods.
+
+| type| string|  Type of underlying collector implementation to deploy.
+
+| vector| xref:#_.spec.vector[object]|  Vector holds configuration specific to vector.
+|======================
+
+[id=_.spec.fluentd]
+=== .spec.fluentd
+
+===== Description
+
+LogCollectorFluentdSpec represents the configuration for forwarders of type fluentd.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| buffer| xref:#_.spec.fluentd.buffer[object]|  
+
+| inFile| xref:#_.spec.fluentd.inFile[object]|  
+|======================
+
+[id=_.spec.fluentd.buffer]
+=== .spec.fluentd.buffer
+
+===== Description
+
+FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
+the buffer configuration for all fluentd outputs. It supports a subset of
+parameters to configure buffer and queue sizing, flush operations and retry
+flushing.
+
+For general parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
+
+For flush parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
+
+For retry parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#retries-parameters
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| chunkLimitSize| string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
+
+| flushInterval| string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
+
+| flushMode| string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
+
+| flushThreadCount| int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
+
+| overflowAction| string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
+
+| retryMaxInterval| string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
+
+| retryTimeout| string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
+
+| retryType| string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
+
+| retryWait| string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
+
+| totalLimitSize| string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
+|======================
+
+[id=_.spec.fluentd.inFile]
+=== .spec.fluentd.inFile
+
+===== Description
+
+FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
+to tune the configuration for all fluentd in-tail inputs.
+
+For general parameters refer to:
+https://docs.fluentd.org/input/tail#parameters
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| readLinesLimit| int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
+|======================
+
+[id=_.spec.nodeSelector]
+=== .spec.nodeSelector
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.resources]
+=== .spec.resources
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| collector| xref:#_.spec.resources.collector[object]|  Collector resource requirements. The collector collects and forwards logs.
+
+| metricExporter| xref:#_.spec.resources.metricExporter[object]|  MetricExporter resource requirements. The metric exporter montoris log files and provides metrics.
+|======================
+
+[id=_.spec.resources.collector]
+=== .spec.resources.collector
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| limits| xref:#_.spec.resources.collector.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+
+| requests| xref:#_.spec.resources.collector.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+[id=_.spec.resources.collector.limits]
+=== .spec.resources.collector.limits
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.resources.collector.requests]
+=== .spec.resources.collector.requests
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.resources.metricExporter]
+=== .spec.resources.metricExporter
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| limits| xref:#_.spec.resources.metricExporter.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+
+| requests| xref:#_.spec.resources.metricExporter.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+[id=_.spec.resources.metricExporter.limits]
+=== .spec.resources.metricExporter.limits
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.resources.metricExporter.requests]
+=== .spec.resources.metricExporter.requests
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.tolerations]
+=== .spec.tolerations
+
+===== Description
+
+=====  Type
+
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+| effect| string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+
+| key| string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+
+| operator| string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+
+| tolerationSeconds| int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+
+| value| string|  *(optional)* Value is the taint value the toleration matches to.
+|======================
+
+[id=_.spec.tolerations.tolerationSeconds]
+=== .spec.tolerations.tolerationSeconds
+
+===== Description
+
+=====  Type
+
+* int
+
+[id=_.spec.vector]
+=== .spec.vector
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status]
+=== .status
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| conditions| xref:#_.status.conditions[object]|  
+|======================
+
+[id=_.status.conditions]
+=== .status.conditions
+
+===== Description
+
+=====  Type
+
+* object
+
+== ClusterLogForwarder
+ClusterLogForwarder a cluster-scoped resource that forwards logs for the entire cluster.
+
+Forwards application, infrastructure and audit logs.
+
+Configure forwarding by specifying a list of pipelines,
+which forward from a set of named inputs to a set of named outputs.
+
+For more details see the documentation on the API fields.
+
+[options="header"]
+|======================
+|Property|Type|Description
+| spec| xref:#_.spec[object]|  
+
+| status| xref:#_.status[object]|  
+|======================
+
+[id=_.spec]
+=== .spec
+
+===== Description
+
+ClusterLogForwarderSpec specifies log forwarding for the entire cluster.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| outputs| array|  *(optional)* Outputs define destinations for log messages.
+
+| pipelines| array|  Pipelines forward the messages from a set of named inputs to a set of named outputs.
+
+| collectorRef| string|  *(optional)* CollectorRef is the name of a LogCollector resource in the same namespace.
+
+| inputs| array|  *(optional)* Inputs are named filters for log messages to be forwarded.
+|======================
+
+[id=_.spec.inputs]
+=== .spec.inputs
+
+===== Description
+
+input defines selection criteria for logs to be forwarded.
+
+=====  Type
+
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+| name| string|  Name used to refer to the input of a `pipeline`.
+
+| application| xref:#_.spec.inputs.application[object]|  *(optional)* Application enables container logs that can meet the selectino criteria
+|======================
+
+[id=_.status]
+=== .status
+
+===== Description
+
+LogForwarderStatus defines the observed state of LogForwarder
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| conditions| xref:#_.status.conditions[object]|  Conditions of the log forwarder.
+
+| inputs| Conditions|  Inputs maps input name to the condition of the input.
+
+| outputs| Conditions|  Outputs maps output name to the condition of the output.
+
+| pipelines| Conditions|  Pipelines maps pipeline name to the condition of the pipeline.
+|======================
+
+[id=_.status.conditions]
+=== .status.conditions
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status.inputs]
+=== .status.inputs
+
+===== Description
+
+=====  Type
+
+* Conditions
+
+[id=_.status.outputs]
+=== .status.outputs
+
+===== Description
+
+=====  Type
+
+* Conditions
+
+[id=_.status.pipelines]
+=== .status.pipelines
+
+===== Description
+
+=====  Type
+
+* Conditions
+
+== ClusterLogStore
+ClusterLogStore configures the log store used by a ClusterLogForwarder.
+
+[options="header"]
+|======================
+|Property|Type|Description
+| spec| xref:#_.spec[object]|  
+
+| status| xref:#_.status[object]|  
+|======================
+
+[id=_.spec]
+=== .spec
+
+===== Description
+
+LogStoreSpec identifies the default store for logs.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| elasticsearch| xref:#_.spec.elasticsearch[object]|  Specification of the Elasticsearch Log Store component
+
+| lokistack| xref:#_.spec.lokistack[object]|  LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
+
+| type| string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
+|======================
+
+[id=_.spec.elasticsearch]
+=== .spec.elasticsearch
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| nodeCount| int|  Number of nodes to deploy for Elasticsearch
+
+| nodeSelector| xref:#_.spec.elasticsearch.nodeSelector[object]|  Define which Nodes the Pods are scheduled on.
+
+| proxy| xref:#_.spec.elasticsearch.proxy[object]|  Specification of the Elasticsearch Proxy component
+
+| redundancyPolicy| string|  *(optional)* 
+
+| resources| xref:#_.spec.elasticsearch.resources[object]|  *(optional)* The resource requirements for Elasticsearch
+
+| storage| xref:#_.spec.elasticsearch.storage[object]|  *(optional)* The storage specification for Elasticsearch data nodes
+
+| tolerations| array|  
+|======================
+
+[id=_.spec.elasticsearch.nodeSelector]
+=== .spec.elasticsearch.nodeSelector
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.proxy]
+=== .spec.elasticsearch.proxy
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| resources| xref:#_.spec.elasticsearch.proxy.resources[object]|  
+|======================
+
+[id=_.spec.elasticsearch.proxy.resources]
+=== .spec.elasticsearch.proxy.resources
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| limits| xref:#_.spec.elasticsearch.proxy.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+
+| requests| xref:#_.spec.elasticsearch.proxy.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+[id=_.spec.elasticsearch.proxy.resources.limits]
+=== .spec.elasticsearch.proxy.resources.limits
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.proxy.resources.requests]
+=== .spec.elasticsearch.proxy.resources.requests
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.resources]
+=== .spec.elasticsearch.resources
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| limits| xref:#_.spec.elasticsearch.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+
+| requests| xref:#_.spec.elasticsearch.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+[id=_.spec.elasticsearch.resources.limits]
+=== .spec.elasticsearch.resources.limits
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.resources.requests]
+=== .spec.elasticsearch.resources.requests
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.storage]
+=== .spec.elasticsearch.storage
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| size| xref:#_.spec.elasticsearch.storage.size[object]|  The max storage capacity for the node to provision.
+
+| storageClassName| string|  *(optional)* The name of the storage class to use with creating the node&#39;s PVC.
+|======================
+
+[id=_.spec.elasticsearch.storage.size]
+=== .spec.elasticsearch.storage.size
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| Format| string|  Change Format at will. See the comment for Canonicalize for
+
+| d| xref:#_.spec.elasticsearch.storage.size.d[object]|  d is the quantity in inf.Dec form if d.Dec != nil
+
+| i| int|  i is the quantity in int64 scaled form, if d.Dec == nil
+
+| s| string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+[id=_.spec.elasticsearch.storage.size.d]
+=== .spec.elasticsearch.storage.size.d
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| Dec| xref:#_.spec.elasticsearch.storage.size.d.Dec[object]|  
+|======================
+
+[id=_.spec.elasticsearch.storage.size.d.Dec]
+=== .spec.elasticsearch.storage.size.d.Dec
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| scale| int|  
+
+| unscaled| xref:#_.spec.elasticsearch.storage.size.d.Dec.unscaled[object]|  
+|======================
+
+[id=_.spec.elasticsearch.storage.size.d.Dec.unscaled]
+=== .spec.elasticsearch.storage.size.d.Dec.unscaled
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| abs| Word|  sign
+
+| neg| bool|  
+|======================
+
+[id=_.spec.elasticsearch.storage.size.d.Dec.unscaled.abs]
+=== .spec.elasticsearch.storage.size.d.Dec.unscaled.abs
+
+===== Description
+
+=====  Type
+
+* Word
+
+[id=_.spec.elasticsearch.storage.size.i]
+=== .spec.elasticsearch.storage.size.i
+
+===== Description
+
+=====  Type
+
+* int
+
+[options="header"]
+|======================
+|Property|Type|Description
+| scale| int|  
+
+| value| int|  
+|======================
+
+[id=_.spec.elasticsearch.tolerations]
+=== .spec.elasticsearch.tolerations
+
+===== Description
+
+=====  Type
+
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+| effect| string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+
+| key| string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+
+| operator| string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+
+| tolerationSeconds| int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+
+| value| string|  *(optional)* Value is the taint value the toleration matches to.
+|======================
+
+[id=_.spec.elasticsearch.tolerations.tolerationSeconds]
+=== .spec.elasticsearch.tolerations.tolerationSeconds
+
+===== Description
+
+=====  Type
+
+* int
+
+[id=_.spec.lokistack]
+=== .spec.lokistack
+
+===== Description
+
+LokiStackStoreSpec is used to set up cluster-logging to use a LokiStack as logging storage.
+It points to an existing LokiStack in the same namespace.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| name| string|  Name of the LokiStack resource.
+|======================
+
+[id=_.status]
+=== .status
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| elasticsearchStatus| array|  *(optional)* 
+|======================
+
+[id=_.status.elasticsearchStatus]
+=== .status.elasticsearchStatus
+
+===== Description
+
+=====  Type
+
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+| cluster| xref:#_.status.elasticsearchStatus.cluster[object]|  *(optional)* 
+
+| clusterConditions| array|  *(optional)* 
+
+| clusterHealth| string|  *(optional)* 
+
+| clusterName| string|  *(optional)* 
+
+| deployments| array|  *(optional)* 
+
+| nodeConditions| xref:#_.status.elasticsearchStatus.nodeConditions[object]|  *(optional)* 
+
+| nodeCount| int|  *(optional)* 
+
+| pods| xref:#_.status.elasticsearchStatus.pods[object]|  *(optional)* 
+
+| replicaSets| array|  *(optional)* 
+
+| shardAllocationEnabled| string|  *(optional)* 
+
+| statefulSets| array|  *(optional)* 
+|======================
+
+[id=_.status.elasticsearchStatus.cluster]
+=== .status.elasticsearchStatus.cluster
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| activePrimaryShards| int|  The number of Active Primary Shards for the Elasticsearch Cluster
+
+| activeShards| int|  The number of Active Shards for the Elasticsearch Cluster
+
+| initializingShards| int|  The number of Initializing Shards for the Elasticsearch Cluster
+
+| numDataNodes| int|  The number of Data Nodes for the Elasticsearch Cluster
+
+| numNodes| int|  The number of Nodes for the Elasticsearch Cluster
+
+| pendingTasks| int|  
+
+| relocatingShards| int|  The number of Relocating Shards for the Elasticsearch Cluster
+
+| status| string|  The current Status of the Elasticsearch Cluster
+
+| unassignedShards| int|  The number of Unassigned Shards for the Elasticsearch Cluster
+|======================
+
+[id=_.status.elasticsearchStatus.clusterConditions]
+=== .status.elasticsearchStatus.clusterConditions
+
+===== Description
+
+=====  Type
+
+* array
+
+[id=_.status.elasticsearchStatus.deployments]
+=== .status.elasticsearchStatus.deployments
+
+===== Description
+
+=====  Type
+
+* array
+
+[id=_.status.elasticsearchStatus.nodeConditions]
+=== .status.elasticsearchStatus.nodeConditions
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status.elasticsearchStatus.pods]
+=== .status.elasticsearchStatus.pods
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status.elasticsearchStatus.replicaSets]
+=== .status.elasticsearchStatus.replicaSets
+
+===== Description
+
+=====  Type
+
+* array
+
+[id=_.status.elasticsearchStatus.statefulSets]
+=== .status.elasticsearchStatus.statefulSets
+
+===== Description
+
+=====  Type
+
+* array
+
+== LogCollector
+LogCollector configures the log collector used by a LogForwarder.
+
+[options="header"]
+|======================
+|Property|Type|Description
+| spec| xref:#_.spec[object]|  Spec specifies the desired behavior of LogCollector
+
+| status| xref:#_.status[object]|  Status defines the observed state of LogCollector
+|======================
+
+[id=_.spec]
+=== .spec
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| fluentd| xref:#_.spec.fluentd[object]|  Fluentd holds configuration specific to fluentd.
+
+| managementState| string|  *(optional)* ManagementState enable/disable management by the operator.
+
+| nodeSelector| xref:#_.spec.nodeSelector[object]|  NodeSelector for scheduling  collector pods.
+
+| resources| xref:#_.spec.resources[object]|  Resources defines resource limits for collector containers.
+
+| tolerations| array|  Tolerations for scheduling  collector pods.
+
+| type| string|  Type of underlying collector implementation to deploy.
+
+| vector| xref:#_.spec.vector[object]|  Vector holds configuration specific to vector.
+|======================
+
+[id=_.spec.fluentd]
+=== .spec.fluentd
+
+===== Description
+
+LogCollectorFluentdSpec represents the configuration for forwarders of type fluentd.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| buffer| xref:#_.spec.fluentd.buffer[object]|  
+
+| inFile| xref:#_.spec.fluentd.inFile[object]|  
+|======================
+
+[id=_.spec.fluentd.buffer]
+=== .spec.fluentd.buffer
+
+===== Description
+
+FluentdBufferSpec represents a subset of fluentd buffer parameters to tune
+the buffer configuration for all fluentd outputs. It supports a subset of
+parameters to configure buffer and queue sizing, flush operations and retry
+flushing.
+
+For general parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#buffering-parameters
+
+For flush parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#flushing-parameters
+
+For retry parameters refer to:
+https://docs.fluentd.org/configuration/buffer-section#retries-parameters
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| chunkLimitSize| string|  *(optional)* ChunkLimitSize represents the maximum size of each chunk. Events will be
+
+| flushInterval| string|  *(optional)* FlushInterval represents the time duration to wait between two consecutive flush
+
+| flushMode| string|  *(optional)* FlushMode represents the mode of the flushing thread to write chunks. The mode
+
+| flushThreadCount| int|  *(optional)* FlushThreadCount reprents the number of threads used by the fluentd buffer
+
+| overflowAction| string|  *(optional)* OverflowAction represents the action for the fluentd buffer plugin to
+
+| retryMaxInterval| string|  *(optional)* RetryMaxInterval represents the maximum time interval for exponential backoff
+
+| retryTimeout| string|  *(optional)* RetryTimeout represents the maximum time interval to attempt retries before giving up
+
+| retryType| string|  *(optional)* RetryType represents the type of retrying flush operations. Flush operations can
+
+| retryWait| string|  *(optional)* RetryWait represents the time duration between two consecutive retries to flush
+
+| totalLimitSize| string|  *(optional)* TotalLimitSize represents the threshold of node space allowed per fluentd
+|======================
+
+[id=_.spec.fluentd.inFile]
+=== .spec.fluentd.inFile
+
+===== Description
+
+FluentdInFileSpec represents a subset of fluentd in-tail plugin parameters
+to tune the configuration for all fluentd in-tail inputs.
+
+For general parameters refer to:
+https://docs.fluentd.org/input/tail#parameters
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| readLinesLimit| int|  *(optional)* ReadLinesLimit represents the number of lines to read with each I/O operation
+|======================
+
+[id=_.spec.nodeSelector]
+=== .spec.nodeSelector
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.resources]
+=== .spec.resources
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| collector| xref:#_.spec.resources.collector[object]|  Collector resource requirements. The collector collects and forwards logs.
+
+| metricExporter| xref:#_.spec.resources.metricExporter[object]|  MetricExporter resource requirements. The metric exporter montoris log files and provides metrics.
+|======================
+
+[id=_.spec.resources.collector]
+=== .spec.resources.collector
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| limits| xref:#_.spec.resources.collector.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+
+| requests| xref:#_.spec.resources.collector.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+[id=_.spec.resources.collector.limits]
+=== .spec.resources.collector.limits
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.resources.collector.requests]
+=== .spec.resources.collector.requests
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.resources.metricExporter]
+=== .spec.resources.metricExporter
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| limits| xref:#_.spec.resources.metricExporter.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+
+| requests| xref:#_.spec.resources.metricExporter.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+[id=_.spec.resources.metricExporter.limits]
+=== .spec.resources.metricExporter.limits
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.resources.metricExporter.requests]
+=== .spec.resources.metricExporter.requests
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.tolerations]
+=== .spec.tolerations
+
+===== Description
+
+=====  Type
+
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+| effect| string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+
+| key| string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+
+| operator| string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+
+| tolerationSeconds| int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+
+| value| string|  *(optional)* Value is the taint value the toleration matches to.
+|======================
+
+[id=_.spec.tolerations.tolerationSeconds]
+=== .spec.tolerations.tolerationSeconds
+
+===== Description
+
+=====  Type
+
+* int
+
+[id=_.spec.vector]
+=== .spec.vector
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status]
+=== .status
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| conditions| xref:#_.status.conditions[object]|  
+|======================
+
+[id=_.status.conditions]
+=== .status.conditions
+
+===== Description
+
+=====  Type
+
+* object
+
+== LogForwarder
+LogForwarder forwards container logs for a single namespace.
+
+You configure forwarding by specifying a list of pipelines,
+which forward from a set of named inputs to a set of named outputs.
+
+For more details see the documentation on the API fields.
+
+[options="header"]
+|======================
+|Property|Type|Description
+| spec| xref:#_.spec[object]|  
+
+| status| xref:#_.status[object]|  
+|======================
+
+[id=_.spec]
+=== .spec
+
+===== Description
+
+LogForwarderSpec specifies log forwarding for a single namespace.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| outputs| array|  *(optional)* Outputs define destinations for log messages.
+
+| pipelines| array|  Pipelines forward the messages from a set of named inputs to a set of named outputs.
+
+| collectorRef| string|  *(optional)* CollectorRef is the name of a LogCollector resource in the same namespace.
+
+| inputs| array|  *(optional)* Inputs define selection criteria for logs to be forwarded.
+|======================
+
+[id=_.spec.inputs]
+=== .spec.inputs
+
+===== Description
+
+inputs defines selection criteria for logs to be forwarded.
+
+=====  Type
+
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+| application| xref:#_.spec.inputs.application[object]|  *(optional)* Application enables container logs that can meet the selectino criteria
+
+| name| string|  Name used to refer to the input of a `pipeline`.
+|======================
+
+[id=_.spec.inputs.application]
+=== .spec.inputs.application
+
+===== Description
+
+Application log selector.
+All conditions in the selector must be satisfied (logical AND) to select logs.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| namespaces| array|  *(optional)* Namespaces from which to collect application logs.
+
+| selector| xref:#_.spec.inputs.application.selector[object]|  *(optional)* Selector for logs from pods with matching labels.
+|======================
+
+[id=_.spec.inputs.application.namespaces]
+=== .spec.inputs.application.namespaces
+
+===== Description
+
+=====  Type
+
+* array
+
+[id=_.spec.inputs.application.selector]
+=== .spec.inputs.application.selector
+
+===== Description
+
+LabelSelector selects logs from pods with matching labels.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| matchLabels| xref:#_.spec.inputs.application.selector.matchLabels[object]|  *(optional)* matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+|======================
+
+[id=_.spec.inputs.application.selector.matchLabels]
+=== .spec.inputs.application.selector.matchLabels
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status]
+=== .status
+
+===== Description
+
+LogForwarderStatus defines the observed state of LogForwarder
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| conditions| xref:#_.status.conditions[object]|  Conditions of the log forwarder.
+
+| inputs| Conditions|  Inputs maps input name to the condition of the input.
+
+| outputs| Conditions|  Outputs maps output name to the condition of the output.
+
+| pipelines| Conditions|  Pipelines maps pipeline name to the condition of the pipeline.
+|======================
+
+[id=_.status.conditions]
+=== .status.conditions
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status.inputs]
+=== .status.inputs
+
+===== Description
+
+=====  Type
+
+* Conditions
+
+[id=_.status.outputs]
+=== .status.outputs
+
+===== Description
+
+=====  Type
+
+* Conditions
+
+[id=_.status.pipelines]
+=== .status.pipelines
+
+===== Description
+
+=====  Type
+
+* Conditions
+
+== LogStore
+LogStore identifies the default store to be used by a LogForwarder
+
+[options="header"]
+|======================
+|Property|Type|Description
+| spec| xref:#_.spec[object]|  
+
+| status| xref:#_.status[object]|  
+|======================
+
+[id=_.spec]
+=== .spec
+
+===== Description
+
+LogStoreSpec identifies the default store for logs.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| elasticsearch| xref:#_.spec.elasticsearch[object]|  Specification of the Elasticsearch Log Store component
+
+| lokistack| xref:#_.spec.lokistack[object]|  LokiStack contains information about which LokiStack to use for log storage if Type is set to LogStoreTypeLokiStack.
+
+| type| string|  The Type of Log Storage to configure. The operator currently supports either using ElasticSearch
+|======================
+
+[id=_.spec.elasticsearch]
+=== .spec.elasticsearch
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| nodeCount| int|  Number of nodes to deploy for Elasticsearch
+
+| nodeSelector| xref:#_.spec.elasticsearch.nodeSelector[object]|  Define which Nodes the Pods are scheduled on.
+
+| proxy| xref:#_.spec.elasticsearch.proxy[object]|  Specification of the Elasticsearch Proxy component
+
+| redundancyPolicy| string|  *(optional)* 
+
+| resources| xref:#_.spec.elasticsearch.resources[object]|  *(optional)* The resource requirements for Elasticsearch
+
+| storage| xref:#_.spec.elasticsearch.storage[object]|  *(optional)* The storage specification for Elasticsearch data nodes
+
+| tolerations| array|  
+|======================
+
+[id=_.spec.elasticsearch.nodeSelector]
+=== .spec.elasticsearch.nodeSelector
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.proxy]
+=== .spec.elasticsearch.proxy
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| resources| xref:#_.spec.elasticsearch.proxy.resources[object]|  
+|======================
+
+[id=_.spec.elasticsearch.proxy.resources]
+=== .spec.elasticsearch.proxy.resources
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| limits| xref:#_.spec.elasticsearch.proxy.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+
+| requests| xref:#_.spec.elasticsearch.proxy.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+[id=_.spec.elasticsearch.proxy.resources.limits]
+=== .spec.elasticsearch.proxy.resources.limits
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.proxy.resources.requests]
+=== .spec.elasticsearch.proxy.resources.requests
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.resources]
+=== .spec.elasticsearch.resources
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| limits| xref:#_.spec.elasticsearch.resources.limits[object]|  *(optional)* Limits describes the maximum amount of compute resources allowed.
+
+| requests| xref:#_.spec.elasticsearch.resources.requests[object]|  *(optional)* Requests describes the minimum amount of compute resources required.
+|======================
+
+[id=_.spec.elasticsearch.resources.limits]
+=== .spec.elasticsearch.resources.limits
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.resources.requests]
+=== .spec.elasticsearch.resources.requests
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.spec.elasticsearch.storage]
+=== .spec.elasticsearch.storage
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| size| xref:#_.spec.elasticsearch.storage.size[object]|  The max storage capacity for the node to provision.
+
+| storageClassName| string|  *(optional)* The name of the storage class to use with creating the node&#39;s PVC.
+|======================
+
+[id=_.spec.elasticsearch.storage.size]
+=== .spec.elasticsearch.storage.size
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| Format| string|  Change Format at will. See the comment for Canonicalize for
+
+| d| xref:#_.spec.elasticsearch.storage.size.d[object]|  d is the quantity in inf.Dec form if d.Dec != nil
+
+| i| int|  i is the quantity in int64 scaled form, if d.Dec == nil
+
+| s| string|  s is the generated value of this quantity to avoid recalculation
+|======================
+
+[id=_.spec.elasticsearch.storage.size.d]
+=== .spec.elasticsearch.storage.size.d
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| Dec| xref:#_.spec.elasticsearch.storage.size.d.Dec[object]|  
+|======================
+
+[id=_.spec.elasticsearch.storage.size.d.Dec]
+=== .spec.elasticsearch.storage.size.d.Dec
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| scale| int|  
+
+| unscaled| xref:#_.spec.elasticsearch.storage.size.d.Dec.unscaled[object]|  
+|======================
+
+[id=_.spec.elasticsearch.storage.size.d.Dec.unscaled]
+=== .spec.elasticsearch.storage.size.d.Dec.unscaled
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| abs| Word|  sign
+
+| neg| bool|  
+|======================
+
+[id=_.spec.elasticsearch.storage.size.d.Dec.unscaled.abs]
+=== .spec.elasticsearch.storage.size.d.Dec.unscaled.abs
+
+===== Description
+
+=====  Type
+
+* Word
+
+[id=_.spec.elasticsearch.storage.size.i]
+=== .spec.elasticsearch.storage.size.i
+
+===== Description
+
+=====  Type
+
+* int
+
+[options="header"]
+|======================
+|Property|Type|Description
+| scale| int|  
+
+| value| int|  
+|======================
+
+[id=_.spec.elasticsearch.tolerations]
+=== .spec.elasticsearch.tolerations
+
+===== Description
+
+=====  Type
+
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+| effect| string|  *(optional)* Effect indicates the taint effect to match. Empty means match all taint effects.
+
+| key| string|  *(optional)* Key is the taint key that the toleration applies to. Empty means match all taint keys.
+
+| operator| string|  *(optional)* Operator represents a key&#39;s relationship to the value.
+
+| tolerationSeconds| int|  *(optional)* TolerationSeconds represents the period of time the toleration (which must be
+
+| value| string|  *(optional)* Value is the taint value the toleration matches to.
+|======================
+
+[id=_.spec.elasticsearch.tolerations.tolerationSeconds]
+=== .spec.elasticsearch.tolerations.tolerationSeconds
+
+===== Description
+
+=====  Type
+
+* int
+
+[id=_.spec.lokistack]
+=== .spec.lokistack
+
+===== Description
+
+LokiStackStoreSpec is used to set up cluster-logging to use a LokiStack as logging storage.
+It points to an existing LokiStack in the same namespace.
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| name| string|  Name of the LokiStack resource.
+|======================
+
+[id=_.status]
+=== .status
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| elasticsearchStatus| array|  *(optional)* 
+|======================
+
+[id=_.status.elasticsearchStatus]
+=== .status.elasticsearchStatus
+
+===== Description
+
+=====  Type
+
+* array
+
+[options="header"]
+|======================
+|Property|Type|Description
+| cluster| xref:#_.status.elasticsearchStatus.cluster[object]|  *(optional)* 
+
+| clusterConditions| array|  *(optional)* 
+
+| clusterHealth| string|  *(optional)* 
+
+| clusterName| string|  *(optional)* 
+
+| deployments| array|  *(optional)* 
+
+| nodeConditions| xref:#_.status.elasticsearchStatus.nodeConditions[object]|  *(optional)* 
+
+| nodeCount| int|  *(optional)* 
+
+| pods| xref:#_.status.elasticsearchStatus.pods[object]|  *(optional)* 
+
+| replicaSets| array|  *(optional)* 
+
+| shardAllocationEnabled| string|  *(optional)* 
+
+| statefulSets| array|  *(optional)* 
+|======================
+
+[id=_.status.elasticsearchStatus.cluster]
+=== .status.elasticsearchStatus.cluster
+
+===== Description
+
+=====  Type
+
+* object
+
+[options="header"]
+|======================
+|Property|Type|Description
+| activePrimaryShards| int|  The number of Active Primary Shards for the Elasticsearch Cluster
+
+| activeShards| int|  The number of Active Shards for the Elasticsearch Cluster
+
+| initializingShards| int|  The number of Initializing Shards for the Elasticsearch Cluster
+
+| numDataNodes| int|  The number of Data Nodes for the Elasticsearch Cluster
+
+| numNodes| int|  The number of Nodes for the Elasticsearch Cluster
+
+| pendingTasks| int|  
+
+| relocatingShards| int|  The number of Relocating Shards for the Elasticsearch Cluster
+
+| status| string|  The current Status of the Elasticsearch Cluster
+
+| unassignedShards| int|  The number of Unassigned Shards for the Elasticsearch Cluster
+|======================
+
+[id=_.status.elasticsearchStatus.clusterConditions]
+=== .status.elasticsearchStatus.clusterConditions
+
+===== Description
+
+=====  Type
+
+* array
+
+[id=_.status.elasticsearchStatus.deployments]
+=== .status.elasticsearchStatus.deployments
+
+===== Description
+
+=====  Type
+
+* array
+
+[id=_.status.elasticsearchStatus.nodeConditions]
+=== .status.elasticsearchStatus.nodeConditions
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status.elasticsearchStatus.pods]
+=== .status.elasticsearchStatus.pods
+
+===== Description
+
+=====  Type
+
+* object
+
+[id=_.status.elasticsearchStatus.replicaSets]
+=== .status.elasticsearchStatus.replicaSets
+
+===== Description
+
+=====  Type
+
+* array
+
+[id=_.status.elasticsearchStatus.statefulSets]
+=== .status.elasticsearchStatus.statefulSets
+
+===== Description
+
+=====  Type
+
 * array
 

@@ -334,9 +334,9 @@ source = '''
 			CLFSpec: logging.ClusterLogForwarderSpec{
 				Pipelines: []logging.PipelineSpec{
 					{
-						InputRefs:  []string{logging.InputNameApplication, logging.InputNameInfrastructure},
-						OutputRefs: []string{logging.OutputNameDefault},
-						Name:       "pipeline",
+						InputRefs:             []string{logging.InputNameApplication, logging.InputNameInfrastructure},
+						OutputRefs:            []string{logging.OutputNameDefault},
+						Name:                  "pipeline",
 						DetectMultilineErrors: true,
 					},
 				},

@@ -85,12 +85,12 @@ type DetectExceptions struct {
 	Inputs      string
 }
 
-func (d DetectExceptions) Name() string{
-  return "detectExceptions"
+func (d DetectExceptions) Name() string {
+	return "detectExceptions"
 }
 
-func (d DetectExceptions) Template() string{
-  return `{{define "detectExceptions" -}}
+func (d DetectExceptions) Template() string {
+	return `{{define "detectExceptions" -}}
 [transforms.{{.ComponentID}}]
 type = "detect_exceptions"
 inputs = {{.Inputs}}

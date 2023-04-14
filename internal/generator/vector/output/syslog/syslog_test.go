@@ -13,6 +13,25 @@ import (
 
 var _ = Describe("vector syslog clf output", func() {
 	const (
+		xyzDefaults = `
+[transforms.syslog_xyz_json]
+type = "remap"
+inputs = ["pipelineName"]
+source = '''
+. = merge(., parse_json!(string!(.message))) ?? .
+'''
+
+[sinks.syslog_xyz]
+type = "socket"
+inputs = ["syslog_xyz_json"]
+address = "logserver:514"
+mode = "xyz"
+
+[sinks.syslog_xyz.encoding.codec.syslog]
+rfc = "rfc5424"
+facility = "user"
+severity = "informational"
+`
 		tcpDefaults = `
 [transforms.syslog_tcp_json]
 type = "remap"
@@ -106,6 +125,21 @@ key_pass = "mysecretpassword"
 	Context("syslog config", func() {
 		BeforeEach(func() {
 			g = generator.MakeGenerator()
+		})
+
+		It("LOG-3948: should pass URL scheme to vector for validation", func() {
+			element := Conf(
+				loggingv1.OutputSpec{
+					Type: loggingv1.OutputTypeSyslog,
+					Name: "syslog-xyz",
+					URL:  "xyz://logserver:514",
+					OutputTypeSpec: loggingv1.OutputTypeSpec{
+						Syslog: &loggingv1.Syslog{},
+					},
+				}, []string{"pipelineName"}, nil, nil)
+			results, err := g.GenerateConf(element...)
+			Expect(err).To(BeNil())
+			Expect(results).To(EqualTrimLines(xyzDefaults))
 		})
 
 		It("should configure TCP with defaults", func() {

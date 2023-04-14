@@ -18,7 +18,7 @@ import (
 const (
 	SyslogComponentType = `syslog`
 	TCP                 = `tcp`
-	UDP                 = `udp`
+	TLS                 = `tls`
 	RFC3164             = `rfc3164`
 	RFC5424             = `rfc5424`
 )
@@ -100,9 +100,9 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 }
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options, urlScheme string, host string) Element {
-	var mode = TCP
-	if urlScheme == UDP {
-		mode = UDP
+	var mode = strings.ToLower(urlScheme)
+	if urlScheme == TLS {
+		mode = TCP
 	}
 	return Syslog{
 		ComponentID: vectorhelpers.FormatComponentID(o.Name),

@@ -12,7 +12,7 @@ are applied according to the following order of precedence:
 . Cluster Log Forwarder Spec
 . Cluster-wide Config
 
-IMPORTANT: This is a tech-preview feature for output configurations. It is enabled by the feature gate annotation.
+IMPORTANT: This is a tech-preview feature for output configurations. It is enabled by the feature gate annotation.  The feature gate is ignored for the default log storage of type loki.
 
 .Enable TLS Security Profile feature
 [source]

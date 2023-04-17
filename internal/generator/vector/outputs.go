@@ -45,7 +45,7 @@ func Outputs(clspec *logging.CollectionSpec, secrets map[string]*corev1.Secret, 
 			}
 		}
 
-		if op.Has(constants.PreviewTLSSecurityProfile) {
+		if op.Has(constants.PreviewTLSSecurityProfile) || o.Name == logging.OutputNameDefault && o.Type == logging.OutputTypeLoki {
 			if o.Name == logging.OutputNameDefault && o.Type == logging.OutputTypeElasticsearch {
 				op[generator.MinTLSVersion] = ""
 				op[generator.Ciphers] = ""

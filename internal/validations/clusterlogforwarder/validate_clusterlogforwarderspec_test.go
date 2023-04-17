@@ -1074,24 +1074,60 @@ func Test_verifyOutputURL(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "With syslog",
-			args: args{
-				output: &loggingv1.OutputSpec{
-					Name: "test-output",
-					Type: "syslog",
-					URL:  "https://local.svc",
-				},
-				conds: loggingv1.NamedConditions{},
-			},
-			want: true,
-		},
-		{
 			name: "With syslog without url",
 			args: args{
 				output: &loggingv1.OutputSpec{
 					Name: "test-output",
 					Type: "syslog",
 					URL:  "",
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: false,
+		},
+		{
+			name: "With syslog with tcp",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: "syslog",
+					URL:  "tcp://local.svc:514",
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "With syslog with tls",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: "syslog",
+					URL:  "tls://local.svc:514",
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "With syslog with udp",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: "syslog",
+					URL:  "udp://local.svc:514",
+				},
+				conds: loggingv1.NamedConditions{},
+			},
+			want: true,
+		},
+		{
+			name: "With syslog with xyz",
+			args: args{
+				output: &loggingv1.OutputSpec{
+					Name: "test-output",
+					Type: "syslog",
+					URL:  "xyz://local.svc:514",
 				},
 				conds: loggingv1.NamedConditions{},
 			},

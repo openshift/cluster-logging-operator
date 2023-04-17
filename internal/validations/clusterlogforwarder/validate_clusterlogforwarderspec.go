@@ -274,6 +274,12 @@ func verifyOutputURL(output *loggingv1.OutputSpec, conds loggingv1.NamedConditio
 	if err := url.CheckAbsolute(u); err != nil {
 		return fail(CondInvalid("invalid URL: %v", err))
 	}
+	if output.Type == loggingv1.OutputTypeSyslog {
+		scheme := strings.ToLower(u.Scheme)
+		if !(scheme == `tcp` || scheme == `tls` || scheme == `udp`) {
+			return fail(CondInvalid("invalid URL scheme: %v", u.Scheme))
+		}
+	}
 	return true
 }
 

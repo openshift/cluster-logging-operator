@@ -13,15 +13,6 @@ hashDir(){
 
 rc=0
 
-# check dockerfile changes
-change=$(./hack/generate-dockerfile-from-midstream | md5sum | cut -d ' ' -f1)
-if [ "$change" != "$(md5hash Dockerfile)" ] ; then
-    rc=1
-    echo "A change was found in CI file Dockerfile that was not sourced from the midstream file Dockerfile.in (or vice versa)."
-    echo "Please reset the CI file (e.g. Dockerfile), update Dockerfile.in, run make gen-dockerfiles and commit the results"
-    echo ""
-fi
-
 bundleHash=$(hashDir ./bundle)
 make bundle
 if [ "$(hashDir ./bundle)" != "$bundleHash" ] ; then

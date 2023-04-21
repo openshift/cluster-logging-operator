@@ -109,7 +109,7 @@ func (l LokiLabels) Template() string {
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
+			Debug(vectorhelpers.FormatComponentID(o.Name), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	outputName := helpers.FormatComponentID(o.Name)
@@ -131,7 +131,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 func Output(o logging.OutputSpec, inputs []string) Element {
 	return Loki{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		Endpoint:    o.URL,
 		TenantID:    Tenant(o.Loki),
@@ -140,7 +140,7 @@ func Output(o logging.OutputSpec, inputs []string) Element {
 
 func Encoding(o logging.OutputSpec) Element {
 	return LokiEncoding{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		Codec:       lokiEncodingJson,
 	}
 }
@@ -177,7 +177,7 @@ func lokiLabels(lo *logging.Loki) []Label {
 
 func Labels(o logging.OutputSpec) Element {
 	return LokiLabels{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		Labels:      lokiLabels(o.Loki),
 	}
 }
@@ -198,7 +198,7 @@ func TLSConf(o logging.OutputSpec, secret *corev1.Secret, op Options) []Element 
 	} else if secret != nil {
 		// Set CA from logcollector ServiceAccount for internal Loki
 		tlsConf := security.TLSConf{
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			ComponentID: vectorhelpers.FormatComponentID(o.Name),
 			CAFilePath:  `"/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"`,
 		}
 		tlsConf.SetTLSProfileFromOptions(op)
@@ -216,7 +216,7 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		hasBasicAuth := false
 		conf = append(conf, BasicAuthConf{
 			Desc:        "Basic Auth Config",
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		})
 		if security.HasUsernamePassword(secret) {
 			hasBasicAuth = true
@@ -242,7 +242,7 @@ func BearerTokenAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		if security.HasBearerTokenFileKey(secret) {
 			conf = append(conf, BasicAuthConf{
 				Desc:        "Bearer Auth Config",
-				ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+				ComponentID: vectorhelpers.FormatComponentID(o.Name),
 			}, BearerToken{
 				Token: security.GetFromSecret(secret, constants.BearerTokenFileKey),
 			})

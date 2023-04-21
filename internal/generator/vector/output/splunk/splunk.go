@@ -2,7 +2,6 @@ package splunk
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/openshift/cluster-logging-operator/internal/generator/vector/normalize"
 
@@ -61,7 +60,7 @@ codec = {{.Codec}}
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
-			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), vectorhelpers.MakeInputs(inputs...)),
+			Debug(vectorhelpers.FormatComponentID(o.Name), vectorhelpers.MakeInputs(inputs...)),
 		}
 	}
 	outputName := vectorhelpers.FormatComponentID(o.Name)
@@ -78,7 +77,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
 	return Splunk{
-		ComponentID:  strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID:  vectorhelpers.FormatComponentID(o.Name),
 		Inputs:       vectorhelpers.MakeInputs(inputs...),
 		Endpoint:     o.URL,
 		DefaultToken: security.GetFromSecret(secret, "hecToken"),
@@ -87,7 +86,7 @@ func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Opt
 
 func Encoding(o logging.OutputSpec) Element {
 	return SplunkEncoding{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		Codec:       splunkEncodingJson,
 	}
 }

@@ -2,7 +2,6 @@ package http
 
 import (
 	"fmt"
-	"strings"
 
 	logging "github.com/openshift/cluster-logging-operator/apis/logging/v1"
 	"github.com/openshift/cluster-logging-operator/internal/constants"
@@ -111,12 +110,12 @@ func Normalize(componentID string, inputs []string) Element {
 
 func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) []Element {
 	outputName := helpers.FormatComponentID(o.Name)
-	component := strings.ToLower(vectorhelpers.Replacer.Replace(fmt.Sprintf("%s_%s", o.Name, NormalizeHttp)))
+	component := fmt.Sprintf("%s_%s", outputName, NormalizeHttp)
 	dedottedID := normalize.ID(outputName, "dedot")
 	if genhelper.IsDebugOutput(op) {
 		return []Element{
 			Normalize(component, inputs),
-			Debug(strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)), component),
+			Debug(vectorhelpers.FormatComponentID(o.Name), component),
 		}
 	}
 	return MergeElements(
@@ -135,7 +134,7 @@ func Conf(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Optio
 
 func Output(o logging.OutputSpec, inputs []string, secret *corev1.Secret, op Options) Element {
 	return Http{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		Inputs:      vectorhelpers.MakeInputs(inputs...),
 		URI:         o.URL,
 		Method:      Method(o.Http),
@@ -175,7 +174,7 @@ func Request(o logging.OutputSpec) Element {
 		timeout = o.Http.Timeout
 	}
 	return HttpRequest{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		Timeout:     timeout,
 		Headers:     Headers(o),
 	}
@@ -190,7 +189,7 @@ func Headers(o logging.OutputSpec) Element {
 
 func Encoding(o logging.OutputSpec) Element {
 	return HttpEncoding{
-		ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+		ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		Codec:       httpEncodingJson,
 	}
 }
@@ -211,7 +210,7 @@ func BasicAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		hasBasicAuth := false
 		conf = append(conf, BasicAuthConf{
 			Desc:        "Basic Auth Config",
-			ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+			ComponentID: vectorhelpers.FormatComponentID(o.Name),
 		})
 		if security.HasUsernamePassword(secret) {
 			hasBasicAuth = true
@@ -237,7 +236,7 @@ func BearerTokenAuth(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		if security.HasBearerTokenFileKey(secret) {
 			conf = append(conf, BasicAuthConf{
 				Desc:        "Bearer Auth Config",
-				ComponentID: strings.ToLower(vectorhelpers.Replacer.Replace(o.Name)),
+				ComponentID: vectorhelpers.FormatComponentID(o.Name),
 			}, BearerToken{
 				Token: security.GetFromSecret(secret, constants.BearerTokenFileKey),
 			})

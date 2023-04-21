@@ -53,4 +53,4 @@ spec:
           - name: RELATED_IMAGE_LOG_FILE_METRIC_EXPORTER
             value: quay.io/openshift-logging/log-file-metric-exporter:latest
           - name: RELATED_IMAGE_LOGGING_CONSOLE_PLUGIN
-            value: quay.io/openshift-logging/logging-view-plugin:5.7
+            value: quay.io/openshift-logging/logging-view-plugin:5.8

@@ -10,7 +10,7 @@ images:
     # EDIT HERE: replace with the desired image name, without any tag.
     newName: quay.io/openshift-logging/cluster-logging-operator
     # EDIT HERE: replace with desired image tag. The tag must be a valid semantic version, see https://semver.org/
-    newTag: 5.7.0-preview.1
+    newTag: 5.8.0-preview.1
 patchesStrategicMerge:
   # EDIT THIS FILE: to control the related images used for for operands.
   - deployment_patch.yaml

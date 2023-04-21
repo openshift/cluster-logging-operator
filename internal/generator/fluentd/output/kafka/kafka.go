@@ -165,7 +165,16 @@ func SecurityConfig(o logging.OutputSpec, secret *corev1.Secret) []Element {
 		}
 		// Try the preferred and deprecated names.
 		_, ok := security.TryKeys(secret, constants.SASLEnable, constants.DeprecatedSaslOverSSL)
-		conf = append(conf, SaslOverSSL(ok))
+		sasl := SASL{
+			SaslOverSSL: ok,
+		}
+		if security.HasPassphrase(secret) {
+			sasl.SaslKeyPassword = security.SecretPath(o.Secret.Name, constants.Passphrase)
+		}
+		if scramMechanism := security.GetFromSecret(secret, constants.SASLMechanisms); scramMechanism != "" {
+			sasl.ScramMechanism = scramMechanism
+		}
+		conf = append(conf, sasl)
 	}
 	return conf
 }
